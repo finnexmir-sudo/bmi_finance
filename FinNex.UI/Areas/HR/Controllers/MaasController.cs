@@ -78,20 +78,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index), new { il, ay });
             }
 
-            // Sabit hesabları lüğətə yüklə (Açar → nömrə)
-            var hamiHesab = await _muhasibatHesabService.HamisiAsync();
-            var hesabMap = hamiHesab
-                .Where(h => h.Aktiv && !h.Silinib && !string.IsNullOrWhiteSpace(h.HesabNomresi))
-                .ToDictionary(h => h.Acar, h => h.HesabNomresi!.Trim(), StringComparer.OrdinalIgnoreCase);
-            string Hesab(string acar) => hesabMap.TryGetValue(acar, out var v) ? v : "";
-
-            var kliring = Hesab("MaasKliring");
-            if (string.IsNullOrWhiteSpace(kliring))
-            {
-                TempData["Error"] = "Klirinq hesabı (MaasKliring) təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.";
-                return RedirectToAction(nameof(Index), new { il, ay });
-            }
-
             // Ay üzrə hesablanmış maaşlar (detallarla) — Index ilə eyni mənbə
             var maaslar = await _unitOfWork.Repository<Maas>()
                 .Query()
@@ -107,11 +93,55 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index), new { il, ay });
             }
 
+            // Saxlanmış maaşları provodka mənbəyinə (PravodkaIsciKaynak) çevir.
+            var isciler = maaslar.Select(m => new PravodkaIsciKaynak
+            {
+                IsciId           = m.IsciId,
+                AdSoyad          = $"{m.Isci?.Ad} {m.Isci?.Soyad}".Trim(),
+                BankHesabNo      = m.Isci?.Maliye?.BankHesabNo,
+                NetMebleg        = m.NetMebleg,
+                MezQabaqcadanNet = ProvodkaMezQabaqcadanOxu(m.HesablamaIzahi),
+                DetalCemi        = m.Detallar
+                    .GroupBy(d => d.MaasNovu?.Ad ?? "")
+                    .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg), StringComparer.Ordinal)
+            }).ToList();
+
+            var (bytes, error) = await ProvodkaBaytlariniQurAsync(il, ay, isciler);
+            if (error != null)
+            {
+                TempData["Error"] = error;
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+            return File(bytes!, "application/vnd.ms-excel", $"Emek_haqqi_hesablama_{il}_{ay:D2}.xls");
+        }
+
+        // ── Provodka (əməliyyat yazılışı) sətirlərini qurub Excel bayt-massivi qaytarır ──
+        // Mənbə həm SAXLANMIŞ maaşdan (PravodkaExport), həm DRY-RUN önizləmədən
+        // (PravodkaOnizlemeExport) eyni nəticəni verir — çünki hesablama eyni engine-dir.
+        // Uğurda (bytes, null); validasiya xətasında (null, mesaj) qaytarır.
+        // QAYDA: məbləği 0 olan provodka sətirləri Excel-ə yazılmır.
+        private async Task<(byte[]? Bytes, string? Error)> ProvodkaBaytlariniQurAsync(
+            int il, int ay, List<PravodkaIsciKaynak> isciler)
+        {
+            if (isciler.Count == 0)
+                return (null, $"{il}/{ay:D2} üçün provodka qurulacaq maaş tapılmadı.");
+
+            // Sabit hesabları lüğətə yüklə (Açar → nömrə)
+            var hamiHesab = await _muhasibatHesabService.HamisiAsync();
+            var hesabMap = hamiHesab
+                .Where(h => h.Aktiv && !h.Silinib && !string.IsNullOrWhiteSpace(h.HesabNomresi))
+                .ToDictionary(h => h.Acar, h => h.HesabNomresi!.Trim(), StringComparer.OrdinalIgnoreCase);
+            string Hesab(string acar) => hesabMap.TryGetValue(acar, out var v) ? v : "";
+
+            var kliring = Hesab("MaasKliring");
+            if (string.IsNullOrWhiteSpace(kliring))
+                return (null, "Klirinq hesabı (MaasKliring) təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.");
+
             // Köməkçilər
-            decimal Detay(Maas m, string ad) => m.Detallar.Where(d => d.MaasNovu?.Ad == ad).Sum(d => d.Mebleg);
-            bool QeyriRez(Maas m) => (m.Isci?.Maliye?.BankHesabNo?.Trim() ?? "").StartsWith("41015");
-            decimal CemRez(string ad, bool qeyri) => maaslar.Where(m => QeyriRez(m) == qeyri).Sum(m => Detay(m, ad));
-            decimal Cem(string ad) => maaslar.Sum(m => Detay(m, ad));
+            decimal Detay(PravodkaIsciKaynak m, string ad) => m.Detay(ad);
+            bool QeyriRez(PravodkaIsciKaynak m) => m.QeyriRezident;
+            decimal CemRez(string ad, bool qeyri) => isciler.Where(m => QeyriRez(m) == qeyri).Sum(m => Detay(m, ad));
+            decimal Cem(string ad) => isciler.Sum(m => Detay(m, ad));
 
             string[] ayAdlar = { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
                                  "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
@@ -122,23 +152,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             // (DB-dən ayrıca oxunsa, hesablama vaxtı ilə uyğunsuzluq klirinq balansını pozur.)
             var avansCemi = Cem("Avans Kəsintisi");
 
-            // Qabaqcadan ödənilmiş məzuniyyət — maaşın saxlanmış izahından
-            // "Mezuniyyet (qabaqcadan ödənildi)" sətrinin (= net ödənilmiş) cəmi.
-            // Bilərəkdən izahdan oxunur ki, maaş detalında göstərilən dəyərlə dəqiq uyğun gəlsin.
-            decimal mezQabaqcadanCemi = 0m;
-            foreach (var m in maaslar)
-            {
-                if (string.IsNullOrWhiteSpace(m.HesablamaIzahi)) continue;
-                try
-                {
-                    var izahlar = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(m.HesablamaIzahi);
-                    if (izahlar != null)
-                        mezQabaqcadanCemi += izahlar
-                            .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
-                            .Sum(z => z.Mebleg);
-                }
-                catch { /* pozuq izah JSON — keç */ }
-            }
+            // Qabaqcadan ödənilmiş məzuniyyət (= net ödənilmiş) cəmi — hər işçinin
+            // kaynak-ında artıq hesablanıb (saxlanmış izahdan, ya da dry-run izahından).
+            var mezQabaqcadanCemi = isciler.Sum(m => m.MezQabaqcadanNet);
 
             // Xəstəlik — şirkətin ödədiyi müavinət (SirketOdenis, brütə əlavə olunan) ay üzrə cəmi
             var xestelikSirketCemi = await _unitOfWork.Repository<XestelikOdenis>()
@@ -232,25 +248,19 @@ namespace FinNex.UI.Areas.HR.Controllers
                         Q($"{sirket} sığorta şirkətinə ödənilən həyatın yığım sığortası haqqı (sığortaedən)")));
             }
             if (hysSirketsiz.Count > 0)
-            {
-                TempData["Error"] = "HYS hesabları təyin olunmayan şirkət(lər): " + string.Join(", ", hysSirketsiz)
+                return (null, "HYS hesabları təyin olunmayan şirkət(lər): " + string.Join(", ", hysSirketsiz)
                     + ". Mühasibat Hesabları səhifəsindən bu açarları əlavə edin → "
-                    + string.Join("; ", hysSirketsiz.Select(s => $"HysOhdelik:{s} + HysEdenXerc:{s}"));
-                return RedirectToAction(nameof(Index), new { il, ay });
-            }
+                    + string.Join("; ", hysSirketsiz.Select(s => $"HysOhdelik:{s} + HysEdenXerc:{s}")));
 
             // İşçi başına net — cari (bank) hesabı olmayan işçi provodkanı pozar (boş Kredit).
             // Sessiz keçmə yoxdur — bank üçün kritikdir, data düzəldilməlidir.
-            var banksiz = maaslar
-                .Where(m => string.IsNullOrWhiteSpace(m.Isci?.Maliye?.BankHesabNo))
-                .Select(m => $"{m.Isci?.Ad} {m.Isci?.Soyad}".Trim())
+            var banksiz = isciler
+                .Where(m => string.IsNullOrWhiteSpace(m.BankHesabNo))
+                .Select(m => m.AdSoyad)
                 .ToList();
             if (banksiz.Count > 0)
-            {
-                TempData["Error"] = "Cari (bank) hesabı təyin olunmayan işçilər var — provodka yaradıla bilməz: "
-                                    + string.Join(", ", banksiz);
-                return RedirectToAction(nameof(Index), new { il, ay });
-            }
+                return (null, "Cari (bank) hesabı təyin olunmayan işçilər var — provodka yaradıla bilməz: "
+                              + string.Join(", ", banksiz));
 
             // İşçidən digər tutulma (sığorta və s.) — bu ay aktiv olan aylıq paylar.
             // Maaşa təsir etmir; yalnız burada net ödənişdən çıxılır + ayrıca öhdəlik sətri.
@@ -258,16 +268,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             decimal digerTutulmaCemi = digerTutulmaMap.Values.Sum();
             string digerTutulmaHesab = Hesab("IsciDigerTutulmaKredit");
             if (digerTutulmaCemi > 0 && string.IsNullOrWhiteSpace(digerTutulmaHesab))
-            {
-                TempData["Error"] = "İşçidən digər tutulma hesabı (açar: IsciDigerTutulmaKredit) təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.";
-                return RedirectToAction(nameof(Index), new { il, ay });
-            }
+                return (null, "İşçidən digər tutulma hesabı (açar: IsciDigerTutulmaKredit) təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.");
 
             // E) İşçi başına net ödəniş (Debet klirinq, Kredit bank hesabı)
             //    İşçidən digər tutulma varsa, net ödəniş həmin pay qədər azalır.
-            foreach (var m in maaslar)
+            foreach (var m in isciler)
             {
-                var bank = m.Isci!.Maliye!.BankHesabNo!.Trim();
+                var bank = m.BankHesabNo!.Trim();
                 decimal digerTutulma = digerTutulmaMap.TryGetValue(m.IsciId, out var dv) ? dv : 0m;
                 setirler.Add((kliring, bank, m.NetMebleg - digerTutulma, Q("əmək haqqı")));
             }
@@ -279,10 +286,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             // ── Şablonu aç və doldur (avans ilə eyni üsul) ──
             var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Muhasibat", "Emek_haqqi_hesablama.xls");
             if (!System.IO.File.Exists(templatePath))
-            {
-                TempData["Error"] = "Şablon tapılmadı: App_Data/Muhasibat/Emek_haqqi_hesablama.xls";
-                return RedirectToAction(nameof(Index), new { il, ay });
-            }
+                return (null, "Şablon tapılmadı: App_Data/Muhasibat/Emek_haqqi_hesablama.xls");
 
             HSSFWorkbook wb;
             using (var tfs = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
@@ -305,6 +309,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             int r = 1;
             foreach (var s in setirler)
             {
+                // QAYDA: məbləği 0 olan sətir provodkaya yazılmır (yuvarlaqlaşmadan sonra).
+                if (Math.Round(s.Mebleg, 2) == 0m) continue;
                 var row = sheet.CreateRow(r);
                 var c0 = row.CreateCell(0); c0.SetCellValue(r);               if (colStil[0] != null) c0.CellStyle = colStil[0]; // № (sıra)
                 var c3 = row.CreateCell(3); c3.SetCellValue(s.Debet);         c3.CellStyle = colStil[3] ?? textStyle;             // Debet
@@ -314,13 +320,101 @@ namespace FinNex.UI.Areas.HR.Controllers
                 r++;
             }
 
-            byte[] bytes;
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            wb.Write(ms, true);
+            return (ms.ToArray(), null);
+        }
+
+        // ── POST /HR/Maas/PravodkaOnizlemeExport ──────────────────────
+        // ÖNİZLƏMƏ provodka: maaş HƏLƏ saxlanmayıbsa, dry-run (saxla:false) ilə
+        // EYNİ rəqəmlərdən provodka qurur — bazaya heç nə yazılmır. Mühasib
+        // saxlamadan əvvəl yazılışın düzgünlüyünü yoxlaya bilsin deyə. Rəqəmlər
+        // save zamanı yazılacaqlarla eynidir (eyni engine: TopluHesablaAsync).
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Muhasib + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
+        public async Task<IActionResult> PravodkaOnizlemeExport(
+            int il, int ay,
+            [FromForm] List<FerdiElaveDto> ferdiElaveler)
+        {
+            if (ay < 1 || ay > 12)
+                return BadRequest(new { message = "Ay düzgün deyil." });
+
+            // Tarix validasiyası — TopluOnizleme ilə eyni qaydalar
+            var bugun = DateTime.Now;
+            var cariAyBirinci = new DateTime(bugun.Year, bugun.Month, 1);
+            var secilmisAyBirinci = new DateTime(il, ay, 1);
+            var minTarix = cariAyBirinci.AddMonths(-12);
+            if (secilmisAyBirinci > cariAyBirinci || secilmisAyBirinci < minTarix)
+                return BadRequest(new { message = "Seçilmiş ay üçün hesablama aparıla bilməz." });
+
+            // Eyni filtr (TopluOnizleme ilə eyni) — yalnız real əlavəsi olanları saxla
+            var input = new TopluHesablaInputDto
             {
-                wb.Write(ms, true);
-                bytes = ms.ToArray();
+                Il = il,
+                Ay = ay,
+                FerdiElaveler = (ferdiElaveler ?? new()).Where(x =>
+                    x.BonusMeblegi > 0 || x.CerimeMeblegi > 0 || x.IH07Meblegi > 0 || x.VM9821Meblegi > 0
+                    || (x.ElaveGelirler != null && x.ElaveGelirler.Any(e => e.Mebleg > 0))).ToList()
+            };
+
+            // saxla:false → DRY-RUN: hesabla, amma bazaya yazma
+            var r = await _hesablamaService.TopluHesablaAsync(input, saxla: false);
+            if (!r.Success)
+                return BadRequest(new { message = r.Message });
+
+            // Dry-run nəticələrini provodka mənbəyinə (PravodkaIsciKaynak) çevir.
+            var isciler = r.Data!.FerdiNeticeler.Select(d => new PravodkaIsciKaynak
+            {
+                IsciId           = d.IsciId,
+                AdSoyad          = d.IsciAdSoyad,
+                BankHesabNo      = d.BankHesabNo,
+                NetMebleg        = d.NetMaas,
+                MezQabaqcadanNet = d.Izahatlar
+                    .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
+                    .Sum(z => z.Mebleg),
+                DetalCemi        = d.Detallar
+                    .GroupBy(x => x.Ad)
+                    .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg), StringComparer.Ordinal)
+            }).ToList();
+
+            if (isciler.Count == 0)
+                return BadRequest(new { message = "Önizləmə üçün hesablanacaq yeni işçi yoxdur — maaş artıq saxlanıb. Rəsmi provodkanı Maaş Siyahısı səhifəsindən alın." });
+
+            var (bytes, error) = await ProvodkaBaytlariniQurAsync(il, ay, isciler);
+            if (error != null)
+                return BadRequest(new { message = error });
+
+            return File(bytes!, "application/vnd.ms-excel", $"Emek_haqqi_ONIZLEME_{il}_{ay:D2}.xls");
+        }
+
+        // Maaşın saxlanmış izahından "qabaqcadan ödənilmiş məzuniyyət" (net) cəmini oxuyur.
+        private static decimal ProvodkaMezQabaqcadanOxu(string? hesablamaIzahi)
+        {
+            if (string.IsNullOrWhiteSpace(hesablamaIzahi)) return 0m;
+            try
+            {
+                var izahlar = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(hesablamaIzahi);
+                return izahlar?
+                    .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
+                    .Sum(z => z.Mebleg) ?? 0m;
             }
-            return File(bytes, "application/vnd.ms-excel", $"Emek_haqqi_hesablama_{il}_{ay:D2}.xls");
+            catch { return 0m; }
+        }
+
+        // Provodka mənbəyi — saxlanmış Maas və dry-run nəticəsi eyni şəklə düşür.
+        private sealed class PravodkaIsciKaynak
+        {
+            public int IsciId { get; init; }
+            public string AdSoyad { get; init; } = "";
+            public string? BankHesabNo { get; init; }
+            public decimal NetMebleg { get; init; }
+            public decimal MezQabaqcadanNet { get; init; }
+            public Dictionary<string, decimal> DetalCemi { get; init; } = new(StringComparer.Ordinal);
+
+            // MaasNovu adı üzrə detal cəmi (provodka sətirləri ad-ad cəmləyir).
+            public decimal Detay(string ad) => DetalCemi.TryGetValue(ad, out var v) ? v : 0m;
+            // "41015…" ilə başlayan bank hesabı = qeyri-rezident.
+            public bool QeyriRezident => (BankHesabNo?.Trim() ?? "").StartsWith("41015");
         }
 
         private static string IlSuffiks(int il) => (il % 10) switch

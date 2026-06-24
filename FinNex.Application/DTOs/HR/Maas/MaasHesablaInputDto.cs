@@ -145,6 +145,20 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal HysIsegoturen { get; set; }
         public decimal UmumiSirketXerci { get; set; }
         public List<HesablamaIzahiDto> Izahatlar { get; set; } = new();
+
+        // ── Provodka (əməliyyat yazılışı) önizləməsi üçün ──
+        // saxla=false dry-run-da da doldurulur ki, maaş saxlanmadan provodka qurula bilsin.
+        //   BankHesabNo — rezident/qeyri-rezident ayrımı (provodkada "41015…" qeyri-rezidentdir).
+        //   Detallar    — MaasNovu üzrə parçalanma (provodka sətirlərini ad-ad cəmləyir).
+        public string? BankHesabNo { get; set; }
+        public List<MaasDetaySetiriDto> Detallar { get; set; } = new();
+    }
+
+    // Provodka önizləməsi üçün bir maaş detalı (MaasNovu adı + məbləğ).
+    public class MaasDetaySetiriDto
+    {
+        public string Ad { get; set; } = null!;
+        public decimal Mebleg { get; set; }
     }
 
     public class HesablamaIzahiDto
@@ -169,6 +183,10 @@ namespace FinNex.Application.DTOs.HR.Maas
         // yekun rəqəmləri. Eyni FerdiHesablaAsync engine-i ilə hesablanır, ona görə
         // bu rəqəmlər TopluHesablaEt-in bazaya yazacağı rəqəmlərlə EYNİDİR.
         public List<MaasOnizlemeFerdiDto> Ferdiler { get; set; } = new();
+
+        // Provodka önizləməsi üçün hər işçinin TAM server-nəticəsi (Detallar + BankHesabNo daxil).
+        // Browser-ə göndərilmir — yalnız server-tərəfi PravodkaOnizlemeExport istifadə edir.
+        public List<MaasHesablaNeticesiDto> FerdiNeticeler { get; set; } = new();
     }
 
     // Toplu önizləmə — bir işçinin server-tərəfi (FerdiHesablaAsync) yekun rəqəmləri.

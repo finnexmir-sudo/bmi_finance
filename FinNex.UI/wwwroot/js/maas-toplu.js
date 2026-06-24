@@ -784,6 +784,67 @@
         overlay?.classList.add('open');
     });
 
+    /* ── Əməliyyat yazılışı (provodka) — ÖNİZLƏMƏ ──────────────────
+       Maaş saxlanmadan, dry-run (saxla:false) ilə EYNİ rəqəmlərdən provodka
+       Excel-i qurub endirir. Seçilməmiş sətirlərin number input-ları müvəqqəti
+       söndürülür ki, real save ilə eyni nəticə alınsın (TopluOnizleme məntiqi).
+       Bazaya HEÇ NƏ yazılmır. */
+    const btnPravodka = document.getElementById('mthBtnPravodka');
+    let pravodkaRunning = false;
+    btnPravodka?.addEventListener('click', async () => {
+        if (pravodkaRunning) return;
+        const url = mainForm?.dataset.pravodkaOnizlemeUrl;
+        if (!url || !mainForm) return;
+        pravodkaRunning = true;
+
+        // Seçilməmiş sətirlərin number input-larını müvəqqəti söndür (real save ilə eyni).
+        const frozen = [];
+        rows.forEach(r => {
+            if (!rd(r).checked) {
+                r.querySelectorAll('input[type=number]').forEach(i => {
+                    if (!i.disabled) { i.disabled = true; frozen.push(i); }
+                });
+            }
+        });
+        const restore = () => frozen.forEach(i => { i.disabled = false; });
+
+        const oldHtml = btnPravodka.innerHTML;
+        btnPravodka.disabled = true;
+        btnPravodka.innerHTML = 'Hazırlanır…';
+
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                body: new FormData(mainForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const ct = resp.headers.get('content-type') || '';
+            if (!resp.ok || ct.indexOf('application/json') !== -1) {
+                let msg = 'Provodka önizləməsi alınmadı.';
+                try { const j = await resp.json(); if (j && j.message) msg = j.message; } catch (e) { /* ignore */ }
+                alert(msg + '\nHeç bir məlumat bazaya yazılmadı.');
+                return;
+            }
+            const blob = await resp.blob();
+            let fname = 'Emek_haqqi_ONIZLEME.xls';
+            const cd = resp.headers.get('content-disposition') || '';
+            const mm = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+            if (mm && mm[1]) fname = decodeURIComponent(mm[1].replace(/"/g, ''));
+            const dlUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = dlUrl; a.download = fname;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(dlUrl); }, 100);
+        } catch (e) {
+            alert('Provodka önizləməsi serverdə alınmadı (' + e.message + ').\nHeç bir məlumat bazaya yazılmadı.');
+        } finally {
+            restore();
+            btnPravodka.disabled = false;
+            btnPravodka.innerHTML = oldHtml;
+            pravodkaRunning = false;
+        }
+    });
+
     /* ── Close modal ──────────────────────────────────────────── */
     btnNo?.addEventListener('click', () => overlay?.classList.remove('open'));
     overlay?.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });

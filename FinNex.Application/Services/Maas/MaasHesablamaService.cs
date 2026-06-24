@@ -107,6 +107,9 @@ namespace FinNex.Application.Services.HR
                     netice.UgurluSayi++;
                     netice.UmumiNetMebleg += d.NetMaas;
 
+                    // Provodka önizləməsi üçün tam server-nəticəsi (Detallar + BankHesabNo daxil).
+                    netice.FerdiNeticeler.Add(d);
+
                     // Önizləmə üçün: hər işçinin server-tərəfi yekun rəqəmləri.
                     // (saxla=true olsa da doldurulur — zərərsizdir, yalnız oxunur.)
                     netice.Ferdiler.Add(new MaasOnizlemeFerdiDto
@@ -1185,6 +1188,18 @@ namespace FinNex.Application.Services.HR
 
             // 16. Netice DTO  (saxla=false olduqda MaasId = 0 → yazılmadığını bildirir)
             var teyinat = isci.IsciTeyinatlari.FirstOrDefault();
+
+            // Provodka (əməliyyat yazılışı) önizləməsi üçün detal parçalanması:
+            // MaasNovu id → ad. maas.Detallar bütün id-ləri novler-dən götürüb.
+            var novAdMap = novler.ToDictionary(n => n.Id, n => n.Ad);
+            var detalSetirleri = maas.Detallar
+                .Select(d => new MaasDetaySetiriDto
+                {
+                    Ad = novAdMap.TryGetValue(d.MaasNovuId, out var ad) ? ad : "",
+                    Mebleg = d.Mebleg
+                })
+                .ToList();
+
             return Result<MaasHesablaNeticesiDto>.Ok(new MaasHesablaNeticesiDto
             {
                 MaasId = maas.Id,
@@ -1216,7 +1231,9 @@ namespace FinNex.Application.Services.HR
                 ItssIsegoturen = itssIsegoturen,
                 HysIsegoturen = hysIsegoturen,
                 UmumiSirketXerci = brutMaas + dsmfIsegoturen + issizlikIsegoturen + itssIsegoturen + hysIsegoturen,
-                Izahatlar = izahatlar
+                Izahatlar = izahatlar,
+                BankHesabNo = isci.Maliye?.BankHesabNo,
+                Detallar = detalSetirleri
             });
         }
 
