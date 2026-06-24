@@ -809,6 +809,7 @@ namespace FinNex.Application.Services
             BitisSaati = icaze.BitisSaati,
             IcazeSaati = icaze.IcazeSaati,
             NaharNezereAlinmasin = icaze.NaharNezereAlinmasin,
+            JetonOdenenSaat = icaze.JetonOdenenSaat,
             Sebeb = icaze.Sebeb,
             Status = icaze.Status,
             Birdefelik = icaze.Birdefelik,
