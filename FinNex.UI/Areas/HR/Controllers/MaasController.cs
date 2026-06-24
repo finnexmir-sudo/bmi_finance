@@ -94,6 +94,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             // Saxlanmış maaşları provodka mənbəyinə (PravodkaIsciKaynak) çevir.
+            var mezBrutMap = await MezQabaqcadanBrutMapAsync(il, ay);
             var isciler = maaslar.Select(m => new PravodkaIsciKaynak
             {
                 IsciId           = m.IsciId,
@@ -101,6 +102,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 BankHesabNo      = m.Isci?.Maliye?.BankHesabNo,
                 NetMebleg        = m.NetMebleg,
                 MezQabaqcadanNet = ProvodkaMezQabaqcadanOxu(m.HesablamaIzahi),
+                MezQabaqcadanBrut = mezBrutMap.GetValueOrDefault(m.IsciId),
                 DetalCemi        = m.Detallar
                     .GroupBy(d => d.MaasNovu?.Ad ?? "")
                     .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg), StringComparer.Ordinal)
@@ -142,6 +144,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             bool QeyriRez(PravodkaIsciKaynak m) => m.QeyriRezident;
             decimal CemRez(string ad, bool qeyri) => isciler.Where(m => QeyriRez(m) == qeyri).Sum(m => Detay(m, ad));
             decimal Cem(string ad) => isciler.Sum(m => Detay(m, ad));
+            // Qabaqcadan ödənilmiş məzuniyyət brütü — rezident/qeyri-rezident üzrə.
+            decimal MezQabaqBrutCem(bool qeyri) => isciler.Where(m => QeyriRez(m) == qeyri).Sum(m => m.MezQabaqcadanBrut);
 
             string[] ayAdlar = { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
                                  "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
@@ -176,8 +180,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // Əlavə əmək haqqı xərci = Overtime + IH-07 əlavə təminat (hər ikisi ayrı detaldır).
                 (Hesab("ElaveXercRezident"),        kliring, CemRez("Overtime", false) + CemRez("IH-07 Əlavə Təminat", false), Q("rezident işçiyə əlavə əmək haqqı xərci")),
                 (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true)  + CemRez("IH-07 Əlavə Təminat", true),  Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
-                (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false), Q("rezident işçilərə məzuniyyət haqqı")),
-                (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
+                // Məzuniyyət xərci = cari ay məzuniyyəti + qabaqcadan ödənilmiş məzuniyyət BRÜT-ü.
+                // (Avans brütü olmasa provodka balanslaşmır: brüt = bağlanma net + avans vergiləri.)
+                (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false) + MezQabaqBrutCem(false), Q("rezident işçilərə məzuniyyət haqqı")),
+                (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true) + MezQabaqBrutCem(true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
 
                 // Hesablanma — xəstəlik müavinəti (Debet müavinət xərci, Kredit klirinq)
                 (Hesab("MuavinetXerc"), kliring, xestelikSirketCemi, Q("sığortaedən tərəfindən ödənilən müavinət haqqları")),
@@ -363,6 +369,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return BadRequest(new { message = r.Message });
 
             // Dry-run nəticələrini provodka mənbəyinə (PravodkaIsciKaynak) çevir.
+            var mezBrutMap = await MezQabaqcadanBrutMapAsync(il, ay);
             var isciler = r.Data!.FerdiNeticeler.Select(d => new PravodkaIsciKaynak
             {
                 IsciId           = d.IsciId,
@@ -372,6 +379,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 MezQabaqcadanNet = d.Izahatlar
                     .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
                     .Sum(z => z.Mebleg),
+                MezQabaqcadanBrut = mezBrutMap.GetValueOrDefault(d.IsciId),
                 DetalCemi        = d.Detallar
                     .GroupBy(x => x.Ad)
                     .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg), StringComparer.Ordinal)
@@ -401,6 +409,26 @@ namespace FinNex.UI.Areas.HR.Controllers
             catch { return 0m; }
         }
 
+        // Bu ay ödənilmiş (qabaqcadan) məzuniyyət avanslarının BRÜT-ü — işçi üzrə.
+        // Provodkada məzuniyyət xərc sətrinə əlavə olunur (cari ay + avans brüt).
+        // Mənbə controller-dəki məzuniyyət-avans sorğusu ilə EYNİ filtrdir.
+        private async Task<Dictionary<int, decimal>> MezQabaqcadanBrutMapAsync(int il, int ay)
+        {
+            var avanslar = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis &&
+                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib &&
+                    x.OdenilmeTarixi.HasValue &&
+                    x.OdenilmeTarixi.Value.Year == il &&
+                    x.OdenilmeTarixi.Value.Month == ay)
+                .ToListAsync();
+            return avanslar
+                .GroupBy(x => x.IsciId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenMeblegBrut ?? 0m));
+        }
+
         // Provodka mənbəyi — saxlanmış Maas və dry-run nəticəsi eyni şəklə düşür.
         private sealed class PravodkaIsciKaynak
         {
@@ -409,6 +437,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             public string? BankHesabNo { get; init; }
             public decimal NetMebleg { get; init; }
             public decimal MezQabaqcadanNet { get; init; }
+            // Qabaqcadan ödənilmiş məzuniyyətin BRÜT-ü (məzuniyyət xərc sətrinə əlavə olunur).
+            public decimal MezQabaqcadanBrut { get; init; }
             public Dictionary<string, decimal> DetalCemi { get; init; } = new(StringComparer.Ordinal);
 
             // MaasNovu adı üzrə detal cəmi (provodka sətirləri ad-ad cəmləyir).
