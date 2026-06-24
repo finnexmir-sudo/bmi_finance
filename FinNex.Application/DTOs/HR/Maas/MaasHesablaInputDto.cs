@@ -164,6 +164,26 @@ namespace FinNex.Application.DTOs.HR.Maas
         public int AtlananSayi { get; set; }
         public decimal UmumiNetMebleg { get; set; }
         public List<string> Xetalar { get; set; } = new();
+
+        // Önizləmə (dry-run, saxla=false) üçün hər işçinin SERVER-tərəfi hesablanmış
+        // yekun rəqəmləri. Eyni FerdiHesablaAsync engine-i ilə hesablanır, ona görə
+        // bu rəqəmlər TopluHesablaEt-in bazaya yazacağı rəqəmlərlə EYNİDİR.
+        public List<MaasOnizlemeFerdiDto> Ferdiler { get; set; } = new();
+    }
+
+    // Toplu önizləmə — bir işçinin server-tərəfi (FerdiHesablaAsync) yekun rəqəmləri.
+    // JS önizləmə bu dəyərləri göstərir → "görünən rəqəm = bazaya yazılan rəqəm" zəmanəti.
+    public class MaasOnizlemeFerdiDto
+    {
+        public int IsciId { get; set; }
+        public decimal BrutMaas { get; set; }   // = saved BrutMebleg (işəgötürən HYS daxil)
+        public decimal NetMaas { get; set; }    // = saved NetMebleg
+        public decimal GelirVergisi { get; set; }
+        public decimal DsmfIsci { get; set; }
+        public decimal IssizlikIsci { get; set; }
+        public decimal Itss { get; set; }
+        public decimal HysIsci { get; set; }
+        public decimal UmumiTutulma { get; set; }
     }
 
     // ── SİYAHI ───────────────────────────────────────────────────

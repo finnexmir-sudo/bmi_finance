@@ -243,7 +243,8 @@
     }
     else
     {
-        <form id="mthForm" asp-area="HR" asp-controller="Maas" asp-action="TopluHesablaEt" method="post">
+        <form id="mthForm" asp-area="HR" asp-controller="Maas" asp-action="TopluHesablaEt" method="post"
+              data-onizleme-url="@Url.Action("TopluOnizleme", "Maas", new { area = "HR" })">
             @Html.AntiForgeryToken()
             <input type="hidden" name="il" value="@il"/>
             <input type="hidden" name="ay" value="@ay"/>
@@ -1189,17 +1190,17 @@
             </div>
             <div>
                 <div class="mth-modal-title">Toplu hesablamanı təsdiqlə</div>
-                <div class="mth-modal-sub">Seçilmiş işçilər üçün maaş hesablanacaq. Davam edirsiniz?</div>
+                <div class="mth-modal-sub">Aşağıdakı rəqəmlər <b>serverdə</b> hesablandı — təsdiq etsəniz, eyni rəqəmlər bazaya yazılacaq.</div>
             </div>
         </div>
         <div class="mth-modal-body">
             <div class="mth-modal-grid">
                 <div class="mth-modal-item">
-                    <span class="mth-modal-lbl">İşçi sayı</span>
+                    <span class="mth-modal-lbl">Hesablanacaq işçi</span>
                     <span class="mth-modal-val" id="mthMIsci">—</span>
                 </div>
                 <div class="mth-modal-item">
-                    <span class="mth-modal-lbl">Ümumi Gross</span>
+                    <span class="mth-modal-lbl">Ümumi Gross (HYS ilə)</span>
                     <span class="mth-modal-val mth-modal-val--au" id="mthMBrut">—</span>
                 </div>
                 <div class="mth-modal-item">

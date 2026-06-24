@@ -1255,6 +1255,67 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Index), new { il, ay });
         }
 
+        // ── POST /HR/Maas/TopluOnizleme ──────────────────────────
+        // ÖNİZLƏMƏ (dry-run). TopluHesablaEt ilə EYNİ input-u qəbul edir və EYNİ
+        // engine-i (TopluHesablaAsync → FerdiHesablaAsync) saxla:false ilə çağırır:
+        // bütün uyğun işçilər üçün maaş hesablanır, amma BAZAYA HEÇ NƏ YAZILMIR.
+        // Qaytarılan rəqəmlər save zamanı yazılacaq rəqəmlərlə bayt-bayt eynidir.
+        // Məqsəd: mühasibin önizlədə təsdiqlədiyi rəqəm = bazaya düşən rəqəm,
+        // və save mərhələsində "hesablamada fərq var" kimi heç bir xəta ola bilməz.
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Muhasib + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
+        public async Task<IActionResult> TopluOnizleme(
+            int il, int ay,
+            [FromForm] List<FerdiElaveDto> ferdiElaveler)
+        {
+            // Tarix validasiyası — TopluHesablaEt ilə eyni qaydalar
+            var bugun = DateTime.Now;
+            var cariAyBirinci = new DateTime(bugun.Year, bugun.Month, 1);
+            var secilmisAyBirinci = new DateTime(il, ay, 1);
+            var minTarix = cariAyBirinci.AddMonths(-12);
+            if (secilmisAyBirinci > cariAyBirinci || secilmisAyBirinci < minTarix)
+                return Json(new { success = false, message = "Seçilmiş ay üçün hesablama aparıla bilməz." });
+
+            // Eyni filtr (TopluHesablaEt ilə eyni) — yalnız real əlavəsi olanları saxla
+            var input = new TopluHesablaInputDto
+            {
+                Il = il,
+                Ay = ay,
+                FerdiElaveler = (ferdiElaveler ?? new()).Where(x =>
+                    x.BonusMeblegi > 0 || x.CerimeMeblegi > 0 || x.IH07Meblegi > 0 || x.VM9821Meblegi > 0
+                    || (x.ElaveGelirler != null && x.ElaveGelirler.Any(e => e.Mebleg > 0))).ToList()
+            };
+
+            // saxla:false → DRY-RUN: hesabla, amma bazaya yazma
+            var r = await _hesablamaService.TopluHesablaAsync(input, saxla: false);
+            if (!r.Success)
+                return Json(new { success = false, message = r.Message });
+
+            var d = r.Data!;
+            return Json(new
+            {
+                success     = true,
+                sayi        = d.UgurluSayi,
+                xetaliSayi  = d.XetaliSayi,
+                atlananSayi = d.AtlananSayi,
+                umumiNet    = d.UmumiNetMebleg,
+                umumiBrut   = d.Ferdiler.Sum(f => f.BrutMaas),
+                xetalar     = d.Xetalar,
+                ferdiler    = d.Ferdiler.Select(f => new
+                {
+                    isciId  = f.IsciId,
+                    brut    = f.BrutMaas,
+                    net     = f.NetMaas,
+                    gelirV  = f.GelirVergisi,
+                    dsmf    = f.DsmfIsci,
+                    iss     = f.IssizlikIsci,
+                    itss    = f.Itss,
+                    hysIsci = f.HysIsci,
+                    tutulma = f.UmumiTutulma
+                })
+            });
+        }
+
         // ── HELPER: Bütün Rəhbər/Admin istifadəçilərə bildiriş göndər ──
         private async Task BildirisGonderRehberlereAsync(int il, int ay, int ugurluSayi)
         {

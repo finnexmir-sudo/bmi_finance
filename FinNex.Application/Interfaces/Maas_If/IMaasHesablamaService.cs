@@ -6,8 +6,10 @@ namespace FinNex.Application.Interfaces.Maas_If
 {
     public interface IMaasHesablamaService
     {
-        Task<Result<MaasHesablaNeticesiDto>> FerdiHesablaAsync(FerdiHesablaInputDto input);
-        Task<Result<TopluHesablamaNeticesiDto>> TopluHesablaAsync(TopluHesablaInputDto input);
+        // saxla=true → bazaya yazır (normal hesablama). saxla=false → DRY-RUN:
+        // eyni rəqəmləri hesablayır, amma heç nə bazaya yazılmır (önizləmə üçün).
+        Task<Result<MaasHesablaNeticesiDto>> FerdiHesablaAsync(FerdiHesablaInputDto input, bool saxla = true);
+        Task<Result<TopluHesablamaNeticesiDto>> TopluHesablaAsync(TopluHesablaInputDto input, bool saxla = true);
 
         /// <summary>
         /// Hemin aya dusen tesdiqli mezuniyyet IS gunlerini sayir (köhnə — backward compat).

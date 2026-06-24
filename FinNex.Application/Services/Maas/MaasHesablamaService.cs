@@ -53,7 +53,7 @@ namespace FinNex.Application.Services.HR
         // TOPLU HESABLAMA
         // ─────────────────────────────────────────────────────────
 
-        public async Task<Result<TopluHesablamaNeticesiDto>> TopluHesablaAsync(TopluHesablaInputDto input)
+        public async Task<Result<TopluHesablamaNeticesiDto>> TopluHesablaAsync(TopluHesablaInputDto input, bool saxla = true)
         {
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
@@ -99,12 +99,28 @@ namespace FinNex.Application.Services.HR
                     ElaveGelirler = elave?.ElaveGelirler ?? new()
                 };
 
-                var r = await FerdiHesablaAsync(ferdiInput);
+                var r = await FerdiHesablaAsync(ferdiInput, saxla);
 
                 if (r.Success)
                 {
+                    var d = r.Data!;
                     netice.UgurluSayi++;
-                    netice.UmumiNetMebleg += r.Data!.NetMaas;
+                    netice.UmumiNetMebleg += d.NetMaas;
+
+                    // Önizləmə üçün: hər işçinin server-tərəfi yekun rəqəmləri.
+                    // (saxla=true olsa da doldurulur — zərərsizdir, yalnız oxunur.)
+                    netice.Ferdiler.Add(new MaasOnizlemeFerdiDto
+                    {
+                        IsciId       = d.IsciId,
+                        BrutMaas     = d.BrutMaas,
+                        NetMaas      = d.NetMaas,
+                        GelirVergisi = d.GelirVergisi,
+                        DsmfIsci     = d.DsmfIsci,
+                        IssizlikIsci = d.IssizlikIsci,
+                        Itss         = d.Itss,
+                        HysIsci      = d.HysIsci,
+                        UmumiTutulma = d.UmumiTutulma
+                    });
                 }
                 else
                 {
@@ -120,7 +136,7 @@ namespace FinNex.Application.Services.HR
         // FERDI HESABLAMA -- esas engine
         // ─────────────────────────────────────────────────────────
 
-        public async Task<Result<MaasHesablaNeticesiDto>> FerdiHesablaAsync(FerdiHesablaInputDto input)
+        public async Task<Result<MaasHesablaNeticesiDto>> FerdiHesablaAsync(FerdiHesablaInputDto input, bool saxla = true)
         {
             var izahatlar = new List<HesablamaIzahiDto>();
 
@@ -1094,6 +1110,14 @@ namespace FinNex.Application.Services.HR
             // mühasib yekun rəqəmin hardan gəldiyini oxuya bilsin deyə.
             maas.HesablamaIzahi = JsonSerializer.Serialize(izahatlar);
 
+            // ─── DRY-RUN qapısı ──────────────────────────────────────────────
+            // Bütün hesablama yuxarıda BİTDİ (brutMaas, netMaas, vergilər, izahlar).
+            // Aşağıdakı blok YALNIZ persistensiyadır (Maas yaz, XestelikOdenis bağla,
+            // kompensasiya işarələ, qazanc tarixçəsi). saxla=false (önizləmə) olduqda
+            // bu blok atlanır → eyni rəqəmlər qaytarılır, amma heç nə bazaya yazılmır.
+            // Beləliklə: önizlədə görünən rəqəm = save zamanı yazılan rəqəm.
+            if (saxla)
+            {
             await _unitOfWork.Repository<Maas>().YaratAsync(maas);
             await _unitOfWork.YaddaSaxlaAsync();
 
@@ -1157,8 +1181,9 @@ namespace FinNex.Application.Services.HR
                     dsmfIsegoturen: dsmfIsegoturen);
             }
             catch { /* avtomatik sync xətası əsas əməliyyatı pozmasın */ }
+            } // if (saxla) — DRY-RUN qapısının sonu
 
-            // 16. Netice DTO
+            // 16. Netice DTO  (saxla=false olduqda MaasId = 0 → yazılmadığını bildirir)
             var teyinat = isci.IsciTeyinatlari.FirstOrDefault();
             return Result<MaasHesablaNeticesiDto>.Ok(new MaasHesablaNeticesiDto
             {

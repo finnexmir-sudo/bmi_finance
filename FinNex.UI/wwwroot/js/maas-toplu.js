@@ -669,16 +669,118 @@
         setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
     });
 
-    /* ── Open confirm modal ───────────────────────────────────── */
-    btnCalc?.addEventListener('click', () => {
+    /* ── Open confirm modal ───────────────────────────────────────
+       KRİTİK: Modal SERVER rəqəmlərini göstərir, JS təxminini yox.
+       Düyməyə basanda forma SERVER-ə göndərilir (TopluOnizleme = dry-run),
+       server EYNİ engine ilə (TopluHesablaAsync → FerdiHesablaAsync, saxla:false)
+       hesablayır, amma bazaya yazmır. Modalda göstərilən rəqəm = sonra save
+       zamanı bazaya yazılan rəqəm (eyni kod, eyni nəticə). Beləliklə "bir rəqəm
+       göstərib bazaya fərqli atılması" mümkün deyil və save mərhələsində
+       "hesablamada fərq var" kimi heç bir xəta da ola bilməz. */
+    let onizlemeRunning = false;
+    btnCalc?.addEventListener('click', async () => {
+        if (onizlemeRunning) return;            // iki paralel sorğunun qarşısını al
         const sel = rows.filter(r => rd(r).checked);
         if (!sel.length) return;
-        const t = sel.reduce((a, r) => { const d = rd(r); a.brut += d.brut; a.net += d.net; a.bonus += d.bonus; return a; }, { brut: 0, net: 0, bonus: 0 });
+
+        const url = mainForm?.dataset.onizlemeUrl;
+        if (!url || !mainForm) return;
+
+        onizlemeRunning = true;
+
+        // Önizləmənin (dry-run) input-u real save ilə EYNİ olsun deyə, seçilməmiş
+        // sətirlərin number input-larını müvəqqəti söndürürük — btnOk (real submit)
+        // ilə tam eyni məntiq. Disabled input FormData-ya düşmür.
+        const frozen = [];
+        rows.forEach(r => {
+            if (!rd(r).checked) {
+                r.querySelectorAll('input[type=number]').forEach(i => {
+                    if (!i.disabled) { i.disabled = true; frozen.push(i); }
+                });
+            }
+        });
+        const restore = () => frozen.forEach(i => { i.disabled = false; });
+
+        // Görünən düymə mthBtnCalc2-dir (mthBtnCalc gizlidir, onun click-i bura yönəlir).
+        // Server bir neçə saniyə çəkə bilər — hər iki düymədə açıq "hesablanır" bildirişi.
+        const btnCalc2 = document.getElementById('mthBtnCalc2');
+        const oldHtml = btnCalc.innerHTML;
+        const oldHtml2 = btnCalc2 ? btnCalc2.innerHTML : '';
+        const setBusy = (busy) => {
+            btnCalc.disabled = busy;
+            btnCalc.innerHTML = busy ? 'Serverdə hesablanır…' : oldHtml;
+            if (btnCalc2) {
+                btnCalc2.disabled = busy;
+                btnCalc2.innerHTML = busy ? 'Serverdə hesablanır…' : oldHtml2;
+            }
+        };
+        setBusy(true);
+
+        let data;
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                body: new FormData(mainForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            data = await resp.json();
+        } catch (e) {
+            restore();
+            setBusy(false);
+            onizlemeRunning = false;
+            alert('Önizləmə serverdə hesablanmadı (' + e.message + ').\nXahiş olunur yenidən cəhd edin. Heç bir məlumat bazaya yazılmadı.');
+            return;
+        }
+
+        // Inputları geri aç (modal bağlananda forma normal qalsın; real submit btnOk
+        // yenidən söndürəcək).
+        restore();
+        setBusy(false);
+        onizlemeRunning = false;
+
+        if (!data || !data.success) {
+            alert('Önizləmə alınmadı: ' + ((data && data.message) || 'naməlum xəta') + '\nHeç bir məlumat bazaya yazılmadı.');
+            return;
+        }
+
+        // Server rəqəmlərini sətirlərə tətbiq et — hər işçinin NET-i artıq
+        // serverin (bazaya yazılacaq) rəqəmidir.
+        const map = {};
+        (data.ferdiler || []).forEach(f => { map[String(f.isciId)] = f; });
+        rows.forEach(r => {
+            const f = map[r.dataset.isci];
+            if (!f) return;
+            r.dataset.serverNet = f.net;
+            r.dataset.serverBrut = f.brut;
+            const applyNet = (root) => {
+                if (!root) return;
+                const cell = root.querySelector('[data-p="net"]');
+                if (cell) { cell.textContent = fmt(f.net); cell.className = f.net > 0 ? 'n n--au' : 'n n--d'; }
+            };
+            applyNet(r);
+            applyNet(getDetailRow(r));
+        });
+
+        if ((data.xetalar || []).length) {
+            alert('Diqqət — bəzi işçilər hesablanmadı:\n• ' + data.xetalar.join('\n• ') +
+                  '\n\nQalanları üçün davam edə bilərsiniz.');
+        }
+
+        // Hesablanacaq yeni işçi yoxdursa (hamısı artıq hesablanıb) — modalı açma.
+        if (!(data.sayi > 0)) {
+            if (!(data.xetalar || []).length)
+                alert('Bu ay üçün hesablanacaq yeni işçi yoxdur — hamısı artıq hesablanıb.');
+            return;
+        }
+
+        // Modal — SERVERin həqiqi nəticəsi (bazaya yazılacaq dəyər)
+        const bonusCemi = sel.reduce((a, r) => a + rd(r).bonus, 0);
         const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        s('mthMIsci', sel.length + ' işçi');
-        s('mthMBrut', fmt(t.brut));
-        s('mthMNet', fmt(t.net));
-        s('mthMBonus', fmt(t.bonus));
+        s('mthMIsci', (data.sayi || 0) + ' işçi');
+        s('mthMBrut', fmt(data.umumiBrut || 0));
+        s('mthMNet', fmt(data.umumiNet || 0));
+        s('mthMBonus', fmt(bonusCemi));
         overlay?.classList.add('open');
     });
 
