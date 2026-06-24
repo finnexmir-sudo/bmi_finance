@@ -186,9 +186,10 @@
         const issizlikBazasi = Math.max(0, esasBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgIss);
         const itssBazasi     = Math.max(0, esasBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgItss);
 
-        // Standart güzəşt — maaş + məz.avansı COMBINED brüt ≤ 2500 olmalıdır
-        // (FerdiHesablaAsync ilə eyni məntiq: brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu)
-        const standartGuzest = brut > 0 && (brut + mavBrut - (cfgCemi - cfgGuz)) <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
+        // Standart güzəşt — maaş + işəgötürən HYS + məz.avansı COMBINED brüt ≤ 2500 olmalıdır
+        // (FerdiHesablaAsync ilə eyni: brutMaasGuzestYoxlama = brutMaas(esasBrut + işv.HYS) + mez.avans)
+        // İşəgötürən HYS (hysIsv) işçinin gəliri sayılır → güzəşt həddinə daxildir, brüt-ə yox.
+        const standartGuzest = brut > 0 && (brut + hysIsv + mavBrut - (cfgCemi - cfgGuz)) <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
         const vergilenecek = Math.max(0, vergiBazasi - standartGuzest - isciGuzest);
 
         // NET MAAŞ — məzuniyyət avansı varsa, BIRLƏŞDİRİLMIŞ vergi əsasında hesablanır.
