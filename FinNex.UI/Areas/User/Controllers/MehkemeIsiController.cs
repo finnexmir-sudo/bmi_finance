@@ -171,7 +171,7 @@ public class MehkemeIsiController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(20_000_000)]
-    public async Task<IActionResult> Import(IFormFile? fayl)
+    public async Task<IActionResult> Import(IFormFile? fayl, bool onizleme = true)
     {
         if (fayl == null || fayl.Length == 0)
         {
@@ -225,10 +225,21 @@ public class MehkemeIsiController : Controller
         }
 
         var isciId = await CurrentIsciIdAsync() ?? 0;
-        var (isS, merheleS) = await _service.ExcelImportAsync(isler, isciId);
-        TempData[isS > 0 ? "Success" : "Error"] = isS > 0
-            ? $"İmport: {isS} yeni iş, {merheleS} iclas əlavə olundu."
-            : "Yeni iş tapılmadı — bütün sətirlər artıq mövcuddur.";
+        var (isS, merheleS) = await _service.ExcelImportAsync(isler, isciId, onizleme);
+        var movcud = isler.Count - isS;
+        if (onizleme)
+        {
+            TempData["Success"] = $"🔎 ÖNİZLƏMƏ (DB-yə yazılmadı) — {isler.Count} sətir: "
+                + $"{isS} yeni iş, {merheleS} iclas əlavə olunacaq"
+                + (movcud > 0 ? $"; {movcud} mövcud (atlanacaq)" : "") + ".";
+        }
+        else
+        {
+            TempData[isS > 0 ? "Success" : "Error"] = isS > 0
+                ? $"✅ İdxal edildi — {isS} yeni iş, {merheleS} iclas əlavə olundu"
+                  + (movcud > 0 ? $"; {movcud} mövcud (atlandı)" : "") + "."
+                : "Yeni iş tapılmadı — bütün sətirlər artıq mövcuddur.";
+        }
         return RedirectToAction(nameof(Isler));
     }
 

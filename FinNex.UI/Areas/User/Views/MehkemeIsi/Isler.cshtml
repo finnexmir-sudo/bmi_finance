@@ -53,11 +53,21 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <a asp-action="Index" class="ms-btn ms-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
-            <form asp-action="Import" method="post" enctype="multipart/form-data" class="mx-import" title="Köhnə Excel arxivini import et (təkrarlar atlanır)">
+            <form asp-action="Import" method="post" enctype="multipart/form-data" class="mx-import"
+                  title="Excel 'Məhkəmə' vərəqini idxal et (təkrarlar atlanır).">
                 @Html.AntiForgeryToken()
                 <i class="bi bi-file-earmark-excel" style="color:#15803d"></i>
                 <input type="file" name="fayl" accept=".xls,.xlsx" required class="mx-file" />
-                <button type="submit" class="ms-btn ms-btn--ghost"><i class="bi bi-upload"></i> Excel import</button>
+                <button type="submit" name="onizleme" value="true" class="ms-btn ms-btn--ghost"
+                        title="Yalnız sayır — DB-yə yazmır">
+                    <i class="bi bi-search"></i> Önizləmə
+                </button>
+                <button type="submit" name="onizleme" value="false" class="ms-btn ms-btn--primary"
+                        style="background:#15803d;border-color:#15803d"
+                        onclick="return confirm('REAL İDXAL — məlumat bazaya yazılacaq. Davam edək?');"
+                        title="Real idxal — DB-yə yazır">
+                    <i class="bi bi-database-add"></i> Real idxal
+                </button>
             </form>
             <a asp-action="IslerExcel" class="ms-btn ms-btn--primary"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
         </div>

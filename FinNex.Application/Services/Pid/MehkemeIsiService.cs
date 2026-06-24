@@ -535,7 +535,7 @@ public class MehkemeIsiService : IMehkemeIsiService
     // ── Excel "Məhkəmə" sheet → MehkemeIsi (arxiv idxalı) ──────────────────
     // Təkrar idxalı atlayır (ad + məhkəməyə verilmə tarixi açarı ilə).
     // İclas tarixləri "Məhkəmə iclası" mərhələsi kimi yazılır. Oracle yazılmır.
-    public async Task<(int isSayi, int merheleSayi)> ExcelImportAsync(IList<MehkemeCedvelImportDto> rows, int isciId)
+    public async Task<(int isSayi, int merheleSayi)> ExcelImportAsync(IList<MehkemeCedvelImportDto> rows, int isciId, bool onizleme = false)
     {
         if (rows == null || rows.Count == 0) return (0, 0);
 
@@ -558,6 +558,17 @@ public class MehkemeIsiService : IMehkemeIsiService
             var acar = ad.ToLowerInvariant() + "|" + (r.MehkemeyeVerilmeTarixi?.ToString("yyyy-MM-dd") ?? "");
             if (!acarlar.Add(acar)) continue;   // artıq var (və ya bu idxalda təkrar) — atla
 
+            isSayi++;
+
+            // Etibarlı iclaslar (tarix və ya saat olanlar) — say önizləmədə və realda EYNİdir.
+            var validIclaslar = r.Iclaslar
+                .Where(ic => !(ic.Tarix == null && string.IsNullOrWhiteSpace(ic.Saat)))
+                .ToList();
+            merheleSayi += validIclaslar.Count;
+
+            // ── ÖNİZLƏMƏ qapısı: yalnız say, DB-yə heç nə yazma ──
+            if (onizleme) continue;
+
             var isNo = string.IsNullOrWhiteSpace(r.MehkemeIsNomresi) ? null : r.MehkemeIsNomresi.Trim();
             // QeydiyyatNomresi NVARCHAR(20) NOT NULL — qısa marker saxla (truncate riski yox);
             // tam iş № onsuz da MehkemeSenedi-də qalır (nvarchar max).
@@ -579,9 +590,8 @@ public class MehkemeIsiService : IMehkemeIsiService
                 YaradilmaTarixi        = DateTime.Now
             };
 
-            foreach (var ic in r.Iclaslar)
+            foreach (var ic in validIclaslar)
             {
-                if (ic.Tarix == null && string.IsNullOrWhiteSpace(ic.Saat)) continue;
                 entity.Merheleler.Add(new MehkemeMerhelesi
                 {
                     MerheleTipi     = MerheleTipi.MehkemeIclasi,
@@ -590,14 +600,12 @@ public class MehkemeIsiService : IMehkemeIsiService
                     YaradanIcraciId = isciId,
                     YaradilmaTarixi = DateTime.Now
                 });
-                merheleSayi++;
             }
 
             await repo.YaratAsync(entity);
-            isSayi++;
         }
 
-        if (isSayi > 0) await _uow.YaddaSaxlaAsync();
+        if (!onizleme && isSayi > 0) await _uow.YaddaSaxlaAsync();
         return (isSayi, merheleSayi);
     }
 
