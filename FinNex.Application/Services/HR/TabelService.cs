@@ -36,6 +36,7 @@ namespace FinNex.Application.Services.HR
                 .Include(t => t.Departament)
                 .Include(t => t.Vezife)
                 .Where(t => !t.Silinib && t.Aktivdir &&
+                            t.Isci.Status != IsciStatus.IshtenCixib &&   // çıxmış işçilər tabeldə göstərilmir
                             t.BaslamaTarixi.Date <= ayBitis.Date &&
                             (t.BitmeTarixi == null || t.BitmeTarixi.Value.Date >= ayBaslangic.Date))
                 .ToListAsync();
@@ -147,7 +148,10 @@ namespace FinNex.Application.Services.HR
                     bool isIsGunu     = isGunuTarihleri.Contains(gun.Date);
                     bool isWorkingDay = (!isWeekend || isIsGunu) && !isBayram;
 
+                    // Jetonla ödənilmiş məzuniyyət "M" sayılmır — jeton mükafatı günü ödəyir,
+                    // ona görə adi iş günü kimi (saat yazılır) qalır. Yalnız adi məzuniyyət → "M".
                     bool hasMez = mezuniyyetler.Any(m => m.IsciId == isci.Id &&
+                        !m.JetonIleOdendi &&
                         gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
 
                     string kod;
