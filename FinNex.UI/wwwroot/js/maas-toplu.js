@@ -95,26 +95,20 @@
         const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
         const qayibGun = parseInt(row.dataset.qayibGun || 0) || 0;
         const qayibKesinti = parseFloat(row.dataset.qayibKesinti || 0) || 0;
-        // Məzuniyyət avansı vergisi (server-tərəfi hesablanmış, ödənilmiş).
-        // Faktiki ödənilmiş NET-dən (mavNet) implied cəmi vergi (mavBrut − mavNet)
-        // server-in standalone hesabladığı vergi cəmindən fərqli ola bilər
-        // (TutulmalariHesablaAsync-in im üçün standartGuzest tətbiqi səbəbiylə).
-        // Burada növ üzrə dəyərləri uyğunlaşdırırıq ki, cəm = faktiki vergi olsun.
+        // Məzuniyyət avansı vergisi — server-tərəfi (combined − maaş) inkremental dəyərlər.
+        // QEYD: əvvəl bu 4 vergi faktiki ödənilmiş net-ə uyğun gəlsin deyə proporsional
+        // SCALE olunurdu, amma scale hər vergini fərqli əyirdi: İTSS düzgün payından
+        // (İTSS(combined) − İTSS(maaş)) yuxarı qalxıb combined tavanını keçirdi
+        // (işçi 63.09 ≠ işəgötürən 62.00 — eyni baza+dərəcə olduğu halda səhv).
+        // SCALE SİLİNDİ: xam dəyərlərlə aşağıdakı combined blokda maaş payı =
+        // İTSS(combined) − avans payı çıxır → CƏM həmişə İTSS(combined)-ə bərabər
+        // (saxlanacaq FerdiHesablaAsync və işəgötürən rəqəmi ilə EYNİ — "tək mənbə").
         const mavBrut   = parseFloat(row.dataset.mavBrut   || 0) || 0;
-        let   mavGelirV = parseFloat(row.dataset.mavGelirv || 0) || 0;
-        let   mavDsmf   = parseFloat(row.dataset.mavDsmf   || 0) || 0;
-        let   mavIss    = parseFloat(row.dataset.mavIss    || 0) || 0;
-        let   mavItss   = parseFloat(row.dataset.mavItss   || 0) || 0;
+        const mavGelirV = parseFloat(row.dataset.mavGelirv || 0) || 0;
+        const mavDsmf   = parseFloat(row.dataset.mavDsmf   || 0) || 0;
+        const mavIss    = parseFloat(row.dataset.mavIss    || 0) || 0;
+        const mavItss   = parseFloat(row.dataset.mavItss   || 0) || 0;
         const mavNet    = parseFloat(row.dataset.mavNet    || 0) || 0;
-        const _mavTaxRaw     = mavGelirV + mavDsmf + mavIss + mavItss;
-        const _mavTaxImplied = Math.max(0, mavBrut - mavNet);
-        if (mavBrut > 0 && _mavTaxRaw > 0 && _mavTaxImplied > 0) {
-            const _scale = _mavTaxImplied / _mavTaxRaw;
-            mavGelirV = Math.round(mavGelirV * _scale * 100) / 100;
-            mavDsmf   = Math.round(mavDsmf   * _scale * 100) / 100;
-            mavIss    = Math.round(mavIss    * _scale * 100) / 100;
-            mavItss   = Math.round(mavItss   * _scale * 100) / 100;
-        }
         const mavTutulma = mavGelirV + mavDsmf + mavIss + mavItss;
         const chk = row.querySelector('.mth-checkbox');
         // .mth-inp--b (bonus) həmişə name atributuna malikdir;
@@ -267,7 +261,7 @@
             mavBrut, mavGelirV, mavDsmf, mavIss, mavItss, mavNet, mavTutulma,
             mavGunluk: mezGun > 0 && mavBrut > 0 ? Math.round(mavBrut / mezGun * 100) / 100 : 0,
             mavCombined, mavCVergiBazasi, mavCTaxes, mavSalaryTaxes,
-            mavTaxImplied: _mavTaxImplied,
+            mavTaxImplied: Math.max(0, mavBrut - mavNet),
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
