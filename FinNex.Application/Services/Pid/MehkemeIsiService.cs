@@ -623,13 +623,23 @@ public class MehkemeIsiService : IMehkemeIsiService
         var netice = new IcraImportNeticeDto { Onizleme = onizleme, CemQrup = isler?.Count ?? 0 };
         if (isler == null || isler.Count == 0) return netice;
 
-        var movcud = await _uow.Repository<MehkemeIsi>().Query().AsNoTracking()
-            .Where(x => !x.Silinib)
-            .Select(x => new { x.QeydiyyatNomresi, x.KreditSubHesab })
-            .ToListAsync();
-        var acarlar = new HashSet<string>(
-            movcud.Select(m => Acar(m.QeydiyyatNomresi, m.KreditSubHesab)),
-            StringComparer.OrdinalIgnoreCase);
+        // Mövcud işlər (TAM entity — yüksəltmə üçün lazımdır). Önizləmədə yazmadığımız üçün
+        // AsNoTracking kifayətdir; real idxalda tracking lazımdır ki, status/sahə dəyişikliyi saxlanılsın.
+        var bazaQ = _uow.Repository<MehkemeIsi>().Query().Where(x => !x.Silinib);
+        var movcudList = onizleme ? await bazaQ.AsNoTracking().ToListAsync()
+                                  : await bazaQ.ToListAsync();
+        var movcudDict = new Dictionary<string, MehkemeIsi>(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in movcudList)
+        {
+            var k = Acar(m.QeydiyyatNomresi, m.KreditSubHesab);
+            if (!movcudDict.ContainsKey(k)) movcudDict[k] = m;
+        }
+
+        // Artıq zamini olan işlər — yüksəltmədə təkrar zamin əlavə etməmək üçün (idempotent).
+        var zaminliIsler = onizleme
+            ? new HashSet<int>()
+            : new HashSet<int>(await _uow.Repository<MehkemeZamin>().Query().AsNoTracking()
+                .Where(z => !z.Silinib).Select(z => z.MehkemeIsiId).ToListAsync());
 
         var repo = _uow.Repository<MehkemeIsi>();
         var pending = new List<(MehkemeIsi e, List<IcraZaminImportDto> z)>();
@@ -640,55 +650,102 @@ public class MehkemeIsiService : IMehkemeIsiService
             if (d.Arxiv) netice.Arxiv++; else netice.Aktiv++;
 
             var key = Acar(d.Hesab, d.Subkod);
-            if (!acarlar.Add(key)) { netice.Atlanan++; continue; }   // DB-də və ya bu faylda artıq var
+            movcudDict.TryGetValue(key, out var mov);
 
-            netice.YeniIs++;
+            // Mövcud iş artıq icra/tamam/bağlı fazasındadırsa — toxunma (təkrar idxalda dəyişmir).
+            if (mov != null && (mov.Status == MehkemeIsiStatus.Icra
+                             || mov.Status == MehkemeIsiStatus.Tamamlandi
+                             || mov.Status == MehkemeIsiStatus.Baghlandi))
+            {
+                netice.Atlanan++;
+                continue;
+            }
+
+            // mov != null → Hazırlanır/Məhkəmədə fazasındadır → İCRAYA YÜKSƏLT (eyni iş, mərhələ irəliləyir).
+            bool yukseltme = mov != null;
+            if (yukseltme) netice.Yukseldilen++; else netice.YeniIs++;
             netice.Zamin += d.Zaminler.Count;
             if (netice.Numuneler.Count < 6)
                 netice.Numuneler.Add(
                     $"{(string.IsNullOrWhiteSpace(d.BorcluAd) ? "(adsız)" : d.BorcluAd)} " +
-                    $"[{d.Hesab}/{d.Subkod}] {(d.Arxiv ? "arxiv" : "aktiv")}, {d.Zaminler.Count} zamin");
+                    $"[{d.Hesab}/{d.Subkod}] {(yukseltme ? "yüksəldildi" : (d.Arxiv ? "arxiv" : "yeni"))}, {d.Zaminler.Count} zamin");
 
             if (onizleme) continue;
 
-            var entity = new MehkemeIsi
+            MehkemeIsi entity;
+            if (yukseltme)
             {
-                QeydiyyatNomresi  = d.Hesab,
-                KreditSubHesab    = d.Subkod,
-                KreditHesabi      = d.Hesab,
-                Subkod            = d.Subkod,
-                BorcluAd          = string.IsNullOrWhiteSpace(d.BorcluAd) ? "(naməlum)" : d.BorcluAd!.Trim(),
-                Nov               = MehkemeIsiNov.Diger,
-                Status            = d.Arxiv ? MehkemeIsiStatus.Baghlandi : MehkemeIsiStatus.Icra,
-                MehkemeStatusMetn = d.StatusMetn,
-                QalanBorc         = d.QalanBorc,
-                SonOdenisTarixi   = d.SonOdenisTarixi,
-                Qeydiyyati        = d.Qeydiyyati,
-                EmekHaqqiMelumati = d.EmekHaqqiMelumati,
-                DypSorguTarixi    = d.DypSorguTarixi,
-                AdinaSorgu        = d.AdinaSorgu,
-                EmlakaHebs        = d.EmlakaHebs,
-                Stop              = d.Stop,
-                IcraMemuru        = d.IcraMemuru,
-                IcraSonIsler      = d.IcraSonIsler,
-                DogumTarixi       = d.DogumTarixi,
-                QetnameTarixi     = d.QetnameTarixi,
-                IsYeri            = d.IsYeri,
-                IcraQeyd          = d.IcraQeyd,
-                YaradanIcraciId   = isciId,
-                YaradilmaTarixi   = DateTime.Now
-            };
-            await repo.YaratAsync(entity);
+                // Mövcud məhkəmə işini icra fazasına keçir; məhkəmə tarixçəsi (Merheleler) qalır.
+                entity = mov!;
+                entity.Status = d.Arxiv ? MehkemeIsiStatus.Baghlandi : MehkemeIsiStatus.Icra;
+                if (string.IsNullOrWhiteSpace(entity.KreditHesabi))   entity.KreditHesabi   = d.Hesab;
+                if (string.IsNullOrWhiteSpace(entity.Subkod))         entity.Subkod         = d.Subkod;
+                if (string.IsNullOrWhiteSpace(entity.KreditSubHesab)) entity.KreditSubHesab = d.Subkod;
+                if ((string.IsNullOrWhiteSpace(entity.BorcluAd) || entity.BorcluAd == "(naməlum)")
+                    && !string.IsNullOrWhiteSpace(d.BorcluAd)) entity.BorcluAd = d.BorcluAd!.Trim();
+                entity.MehkemeStatusMetn ??= d.StatusMetn;
+                entity.QalanBorc         ??= d.QalanBorc;
+                entity.SonOdenisTarixi   ??= d.SonOdenisTarixi;
+                entity.Qeydiyyati        ??= d.Qeydiyyati;
+                entity.EmekHaqqiMelumati ??= d.EmekHaqqiMelumati;
+                entity.DypSorguTarixi    ??= d.DypSorguTarixi;
+                entity.AdinaSorgu        ??= d.AdinaSorgu;
+                entity.EmlakaHebs        ??= d.EmlakaHebs;
+                entity.Stop              ??= d.Stop;
+                entity.IcraMemuru        ??= d.IcraMemuru;
+                entity.IcraSonIsler      ??= d.IcraSonIsler;
+                entity.DogumTarixi       ??= d.DogumTarixi;
+                entity.QetnameTarixi     ??= d.QetnameTarixi;
+                entity.IsYeri            ??= d.IsYeri;
+                entity.IcraQeyd          ??= d.IcraQeyd;
+                entity.YenileyenIcraciId = isciId;
+                entity.YenilenmeTarixi   = DateTime.Now;
+                await repo.YenileAsync(entity);
+            }
+            else
+            {
+                entity = new MehkemeIsi
+                {
+                    QeydiyyatNomresi  = d.Hesab,
+                    KreditSubHesab    = d.Subkod,
+                    KreditHesabi      = d.Hesab,
+                    Subkod            = d.Subkod,
+                    BorcluAd          = string.IsNullOrWhiteSpace(d.BorcluAd) ? "(naməlum)" : d.BorcluAd!.Trim(),
+                    Nov               = MehkemeIsiNov.Diger,
+                    Status            = d.Arxiv ? MehkemeIsiStatus.Baghlandi : MehkemeIsiStatus.Icra,
+                    MehkemeStatusMetn = d.StatusMetn,
+                    QalanBorc         = d.QalanBorc,
+                    SonOdenisTarixi   = d.SonOdenisTarixi,
+                    Qeydiyyati        = d.Qeydiyyati,
+                    EmekHaqqiMelumati = d.EmekHaqqiMelumati,
+                    DypSorguTarixi    = d.DypSorguTarixi,
+                    AdinaSorgu        = d.AdinaSorgu,
+                    EmlakaHebs        = d.EmlakaHebs,
+                    Stop              = d.Stop,
+                    IcraMemuru        = d.IcraMemuru,
+                    IcraSonIsler      = d.IcraSonIsler,
+                    DogumTarixi       = d.DogumTarixi,
+                    QetnameTarixi     = d.QetnameTarixi,
+                    IsYeri            = d.IsYeri,
+                    IcraQeyd          = d.IcraQeyd,
+                    YaradanIcraciId   = isciId,
+                    YaradilmaTarixi   = DateTime.Now
+                };
+                await repo.YaratAsync(entity);
+                movcudDict[key] = entity;   // eyni faylda təkrar açar olarsa bir daha yaratma
+            }
             pending.Add((entity, d.Zaminler));
         }
 
-        if (!onizleme && netice.YeniIs > 0)
+        if (!onizleme && (netice.YeniIs > 0 || netice.Yukseldilen > 0))
         {
             await _uow.YaddaSaxlaAsync();   // MehkemeIsi.Id-lər dolur
 
             var zrepo = _uow.Repository<MehkemeZamin>();
             int zCount = 0;
             foreach (var (e, zlist) in pending)
+            {
+                if (zaminliIsler.Contains(e.Id)) continue;   // bu işdə artıq zamin var — təkrar əlavə etmə
                 foreach (var z in zlist)
                 {
                     if (string.IsNullOrWhiteSpace(z.Ad)) continue;
@@ -711,6 +768,7 @@ public class MehkemeIsiService : IMehkemeIsiService
                     });
                     zCount++;
                 }
+            }
             if (zCount > 0) await _uow.YaddaSaxlaAsync();
         }
 

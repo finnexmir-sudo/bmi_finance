@@ -103,8 +103,9 @@ public class IcraImportNeticeDto
 {
     public bool Onizleme { get; set; }          // true = DB-yə yazılmadı
     public int CemQrup { get; set; }            // Excel-dəki unikal (hesab+subkod)
-    public int YeniIs  { get; set; }            // yaradılacaq / yaradılan
-    public int Atlanan { get; set; }            // artıq mövcud (dedup)
+    public int YeniIs  { get; set; }            // yaradılacaq / yaradılan (yeni icra işi)
+    public int Yukseldilen { get; set; }        // mövcud məhkəmə işi → icra fazasına yüksəldildi
+    public int Atlanan { get; set; }            // artıq icra/tamam/bağlı fazasında (toxunulmadı)
     public int Aktiv   { get; set; }
     public int Arxiv   { get; set; }
     public int Zamin   { get; set; }

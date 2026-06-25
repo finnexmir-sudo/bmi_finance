@@ -358,7 +358,7 @@ public class MehkemeIsiController : Controller
         var n = await _service.IcraCedvelImportAsync(isler, isciId, onizleme);
 
         var mesaj = (n.Onizleme ? "🔎 ÖNİZLƏMƏ (DB-yə yazılmadı) — " : "✅ İdxal edildi — ")
-            + $"{n.CemQrup} iş qrupu: {n.YeniIs} yeni, {n.Atlanan} mövcud (atlandı); "
+            + $"{n.CemQrup} iş qrupu: {n.YeniIs} yeni, {n.Yukseldilen} icraya yüksəldildi, {n.Atlanan} dəyişmədi; "
             + $"{n.Aktiv} aktiv / {n.Arxiv} arxiv; {n.Zamin} zamin"
             + (n.Xeta > 0 ? $"; {n.Xeta} hesabsız" : "") + ".";
         if (n.Numuneler.Count > 0)
