@@ -133,14 +133,25 @@
                                     }
                                     else
                                     {
-                                        <form asp-action="IsAch" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="acar.KreditHesabi" value="@x.KreditHesabi" />
-                                            <input type="hidden" name="acar.Ks" value="@x.Ks" />
-                                            <input type="hidden" name="acar.BorcluAd" value="@x.BorcluAd" />
-                                            <input type="hidden" name="zaminler" value="@zJson" />
-                                            <button type="submit" class="ms-btn-xs ms-btn-isac"><i class="bi bi-plus-lg"></i> İş aç</button>
-                                        </form>
+                                        var rowJson = System.Text.Json.JsonSerializer.Serialize(new
+                                        {
+                                            BorcluAd = Txt(x.BorcluAd), Region = Txt(x.Region), Status = x.Status,
+                                            Hesab = x.KreditHesabi, Ks = x.Ks,
+                                            TamQaliq = M(x.TamQaliq), Qaliq = M(x.Qaliq), VkQaliq = M(x.VkQaliq),
+                                            FaizMeblegi = M(x.FaizMeblegi), VkFaizMeblegi = M(x.VkFaizMeblegi),
+                                            Faiz = Txt(x.Faiz), KreditinMeblegi = M(x.KreditinMeblegi),
+                                            VerilmeTarixi = Txt(x.VerilmeTarixi), OverdueGun = Txt(x.OverdueGun),
+                                            SonEmeliyyat = Txt(x.SonEmeliyyatTarixi), SonFealiyyet = Txt(x.SonFealiyyet),
+                                            Telefon = Txt(x.Telefon), Mobil = Txt(x.Mobil), DogumTarixi = Txt(x.DogumTarixi),
+                                            KreditinNovu = Txt(x.KreditinNovu), GirovunNovu = Txt(x.GirovunNovu),
+                                            Sektor = Txt(x.Sektor), Qerardad = x.Qerardad,
+                                            AcarHesab = x.KreditHesabi, AcarKs = x.Ks, AcarAd = x.BorcluAd,
+                                            Zaminler = x.Zaminler
+                                        });
+                                        <button type="button" class="ms-btn-xs ms-btn-bax" data-row="@rowJson"
+                                                title="Yalnız bax (iş açılmır)">
+                                            <i class="bi bi-eye"></i> Bax
+                                        </button>
                                     }
                                 </td>
                                 <td class="ms-accent">@Txt(x.Region)</td>
@@ -233,8 +244,65 @@
     </div>
 </div>
 
+@* ── Yalnız baxış modalı (iş açılmamış kreditlər üçün — DB-yə yazmır) ── *@
+<div id="msBaxModal" class="ms-modal" aria-hidden="true">
+    <div class="ms-modal-card">
+        <div class="ms-modal-head">
+            <h3 id="bxTitle">—</h3>
+            <button type="button" class="ms-modal-x" data-close aria-label="Bağla">&times;</button>
+        </div>
+        <div class="ms-modal-body" id="bxBody"></div>
+        <div class="ms-modal-foot">
+            <span class="ms-muted" style="margin-right:auto;font-size:12px">
+                <i class="bi bi-eye"></i> Bu yalnız baxışdır — iş açılmayıb.
+            </span>
+            <form asp-action="IsAch" method="post" style="margin:0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="acar.KreditHesabi" id="bxHesab" />
+                <input type="hidden" name="acar.Ks" id="bxKs" />
+                <input type="hidden" name="acar.BorcluAd" id="bxBorclu" />
+                <input type="hidden" name="zaminler" id="bxZaminler" />
+                <button type="submit" class="ms-btn-xs ms-btn-isac"><i class="bi bi-plus-lg"></i> İş aç</button>
+            </form>
+            <button type="button" class="ms-btn ms-btn--ghost" data-close>Bağla</button>
+        </div>
+    </div>
+</div>
+
 @section Styles {
     <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+    <style>
+        .ms-btn-bax { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; }
+        .ms-btn-bax:hover { background:#e0e7ff; }
+
+        .ms-modal { position:fixed; inset:0; background:rgba(15,23,42,.55); display:none;
+                    align-items:flex-start; justify-content:center; z-index:1050; padding:40px 16px; overflow:auto; }
+        .ms-modal.open { display:flex; }
+        .ms-modal-card { background:#fff; border-radius:14px; width:min(780px,100%);
+                         box-shadow:0 24px 64px rgba(0,0,0,.32); }
+        .ms-modal-head { display:flex; align-items:center; justify-content:space-between;
+                         padding:15px 20px; border-bottom:1px solid #e5e7eb; }
+        .ms-modal-head h3 { margin:0; font-size:17px; color:#0f172a; }
+        .ms-modal-x { border:none; background:none; font-size:26px; line-height:1; cursor:pointer; color:#64748b; }
+        .ms-modal-x:hover { color:#0f172a; }
+        .ms-modal-body { padding:16px 20px; max-height:62vh; overflow:auto; }
+        .ms-modal-foot { display:flex; gap:10px; justify-content:flex-end; align-items:center;
+                         padding:13px 20px; border-top:1px solid #e5e7eb; }
+
+        .bx-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:2px 22px; }
+        .bx-cell { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed #eef2f7; }
+        .bx-lbl { color:#64748b; font-size:12px; font-weight:600; }
+        .bx-val { color:#0f172a; font-weight:600; font-size:13px; text-align:right; }
+        .bx-note { margin-top:12px; background:#f8fafc; border:1px solid #eef2f7; border-radius:8px; padding:8px 12px; }
+        .bx-note div { color:#0f172a; font-size:13px; margin-top:3px; white-space:pre-wrap; }
+        .bx-zwrap { margin-top:14px; }
+        .bx-zhead { font-weight:700; color:#3730a3; margin-bottom:8px; }
+        .bx-zcard { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+        .bx-zname { font-weight:700; color:#0f172a; margin-bottom:5px; }
+        .bx-zrow { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:#475569; }
+        .bx-znil { color:#94a3b8; font-style:italic; }
+        @@media (max-width:640px){ .bx-grid { grid-template-columns:1fr; } }
+    </style>
 }
 
 @section Scripts {
@@ -292,5 +360,77 @@
     }
     msFitHeight();
     window.addEventListener('resize', msFitHeight);
+
+    // ── Yalnız baxış modalı (iş açılmamış kreditlər) ──────────
+    (function () {
+        var m = document.getElementById('msBaxModal');
+        if (!m) return;
+
+        function esc(s) {
+            if (s === null || s === undefined || s === '') return '—';
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+        function close() { m.classList.remove('open'); m.setAttribute('aria-hidden', 'true'); }
+
+        function open(row) {
+            document.getElementById('bxTitle').textContent = (row.BorcluAd && row.BorcluAd !== '—') ? row.BorcluAd : 'Kredit';
+            document.getElementById('bxHesab').value   = row.AcarHesab || '';
+            document.getElementById('bxKs').value      = row.AcarKs || '';
+            document.getElementById('bxBorclu').value  = row.AcarAd || '';
+            document.getElementById('bxZaminler').value = JSON.stringify(row.Zaminler || []);
+
+            var pairs = [
+                ['Region', row.Region], ['Status', row.Status],
+                ['Hesab №', row.Hesab], ['K.S.', row.Ks],
+                ['Tam Qalıq', row.TamQaliq], ['Qalıq', row.Qaliq], ['V.K. Qalıq', row.VkQaliq],
+                ['Faiz məbləği', row.FaizMeblegi], ['V.K. faiz', row.VkFaizMeblegi], ['Faiz', row.Faiz],
+                ['Kreditin məbləği', row.KreditinMeblegi], ['Verilmə', row.VerilmeTarixi],
+                ['Overdue gün', row.OverdueGun], ['Son əməliyyat', row.SonEmeliyyat],
+                ['Doğum tarixi', row.DogumTarixi], ['Telefon', row.Telefon], ['Mobil', row.Mobil],
+                ['Kreditin növü', row.KreditinNovu], ['Girovun növü', row.GirovunNovu], ['Sektor', row.Sektor]
+            ];
+            var html = '<div class="bx-grid">' + pairs.map(function (p) {
+                return '<div class="bx-cell"><span class="bx-lbl">' + p[0] + '</span><span class="bx-val">' + esc(p[1]) + '</span></div>';
+            }).join('') + '</div>';
+
+            if (row.SonFealiyyet && row.SonFealiyyet !== '—')
+                html += '<div class="bx-note"><span class="bx-lbl">Son fəaliyyət</span><div>' + esc(row.SonFealiyyet) + '</div></div>';
+            if (row.Qerardad)
+                html += '<div class="bx-note"><span class="bx-lbl">Qətnamə</span><div>' + esc(row.Qerardad) + '</div></div>';
+
+            var z = row.Zaminler || [];
+            var zhtml;
+            if (z.length) {
+                zhtml = '<div class="bx-zhead">Zaminlər (' + z.length + ')</div>';
+                z.forEach(function (zm) {
+                    zhtml += '<div class="bx-zcard">'
+                        + '<div class="bx-zname">' + esc(zm.Ad) + '</div>'
+                        + '<div class="bx-zrow"><span>FİN: ' + esc(zm.Fin) + '</span><span>Doğum: ' + esc(zm.DogumTarixi) + '</span><span>Tel: ' + esc(zm.Telefon) + '</span></div>'
+                        + '<div class="bx-zrow"><span>Ünvan: ' + esc(zm.Unvan) + '</span></div>'
+                        + '<div class="bx-zrow"><span>Gəlir: ' + esc(zm.Gelir) + '</span><span>Borc yükü: ' + esc(zm.BorcYuku) + '</span></div>'
+                        + '</div>';
+                });
+            } else {
+                zhtml = '<div class="bx-znil">Zamin yoxdur</div>';
+            }
+            html += '<div class="bx-zwrap">' + zhtml + '</div>';
+
+            document.getElementById('bxBody').innerHTML = html;
+            m.classList.add('open');
+            m.setAttribute('aria-hidden', 'false');
+        }
+
+        document.querySelectorAll('.ms-btn-bax').forEach(function (b) {
+            b.addEventListener('click', function () {
+                try { open(JSON.parse(b.dataset.row)); }
+                catch (e) { console.error('Bax modal parse error', e); }
+            });
+        });
+        m.querySelectorAll('[data-close]').forEach(function (c) { c.addEventListener('click', close); });
+        m.addEventListener('click', function (e) { if (e.target === m) close(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    })();
 </script>
 }
