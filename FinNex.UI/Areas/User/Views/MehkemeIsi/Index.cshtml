@@ -98,10 +98,16 @@
                         <th class="ms-extra ms-num">% məbləği</th>
                         <th class="ms-extra ms-num">V.K. % məbləği</th>
                         <th class="ms-extra ms-num">Faiz</th>
+                        <th class="ms-extra ms-num">Ehtiyat</th>
                         <th class="ms-extra ms-num">Kreditin məbləği</th>
                         <th class="ms-extra">Verilmə</th>
                         <th class="ms-extra ms-num">Overdue gün</th>
                         <th class="ms-extra">Telefon</th>
+                        <th class="ms-extra">Mobil</th>
+                        <th class="ms-extra">Doğum tarixi</th>
+                        <th class="ms-extra">Girovun növü</th>
+                        <th class="ms-extra">Sektor</th>
+                        <th class="ms-extra">Item 02</th>
                         <th class="ms-primary">Son əməliyyat</th>
                         <th class="ms-primary">Status</th>
                         <th class="ms-primary">Son fəaliyyət</th>
@@ -195,10 +201,16 @@
                                 <td class="ms-extra ms-num">@M(x.FaizMeblegi)</td>
                                 <td class="ms-extra ms-num @(x.VkFaizMeblegi > 0 ? "ms-vk" : "")">@M(x.VkFaizMeblegi)</td>
                                 <td class="ms-extra ms-num">@Txt(x.Faiz)</td>
+                                <td class="ms-extra ms-num">@Txt(x.Ehtiyat)</td>
                                 <td class="ms-extra ms-num">@M(x.KreditinMeblegi)</td>
                                 <td class="ms-extra">@Txt(x.VerilmeTarixi)</td>
                                 <td class="ms-extra ms-num">@Txt(x.OverdueGun)</td>
                                 <td class="ms-extra">@Txt(x.Telefon)</td>
+                                <td class="ms-extra">@Txt(x.Mobil)</td>
+                                <td class="ms-extra">@Txt(x.DogumTarixi)</td>
+                                <td class="ms-extra ms-clip" title="@Txt(x.GirovunNovu)">@Txt(x.GirovunNovu)</td>
+                                <td class="ms-extra">@Txt(x.Sektor)</td>
+                                <td class="ms-extra ms-clip" title="@Txt(x.Item02)">@Txt(x.Item02)</td>
                                 <td>@Txt(x.SonEmeliyyatTarixi)</td>
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(x.Status))
@@ -229,7 +241,7 @@
                 {
                     <tbody>
                         <tr>
-                            <td colspan="19">
+                            <td colspan="25">
                                 <div class="ms-empty">
                                     <i class="bi bi-inbox"></i>
                                     <div>@(Model.Konfiqurasiyali ? "Siyahı boşdur" : "Sorğu seçildikdən sonra siyahı buraya gələcək")</div>
@@ -302,6 +314,11 @@
         .bx-zrow { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:#475569; }
         .bx-znil { color:#94a3b8; font-style:italic; }
         @@media (max-width:640px){ .bx-grid { grid-template-columns:1fr; } }
+
+        /* "Detallı sütunlar" açıq olanda uzun mətnlər tam görünsün (kəsilməsin) */
+        #msTable.ms-show-extra .ms-clip,
+        #msTable.ms-show-extra .ms-item10 .ms-clip,
+        #msTable.ms-show-extra .ms-item10 { max-width:340px; white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word; }
     </style>
 }
 
