@@ -85,6 +85,7 @@
     <div class="ms-filter">
         <input type="text" id="mxSearch" class="ms-input ms-grow" placeholder="🔍 Müştəri adı və ya qeydiyyat № axtar…" />
         <select id="mxStatus" class="ms-input">
+            <option value="aktiv" selected>Aktiv işlər</option>
             <option value="">Bütün statuslar</option>
             @foreach (var s in statuslar)
             {
@@ -207,13 +208,18 @@
         var st  = document.getElementById('mxStatus');
         var cnt = document.getElementById('mxCount');
         var rows = Array.prototype.slice.call(document.querySelectorAll('#mxTable tbody tr.mx-row'));
+        // "aktiv" = açıq işlər: Hazırlanır(1) + Məhkəmədə(2) + İcra(3); Tamamlandı(4)/Bağlandı(5) gizli
+        var AKTIV = { '1': true, '2': true, '3': true };
         function f() {
             var q  = s.value.trim().toLowerCase();
             var sv = st.value;
             var vis = 0;
             rows.forEach(function (r) {
-                var ok = (!q  || (r.dataset.search || '').toLowerCase().includes(q))
-                      && (!sv || r.dataset.status === sv);
+                var ds = r.dataset.status;
+                var statusOk = (sv === '') ? true
+                             : (sv === 'aktiv') ? !!AKTIV[ds]
+                             : (ds === sv);
+                var ok = (!q || (r.dataset.search || '').toLowerCase().includes(q)) && statusOk;
                 r.style.display = ok ? '' : 'none';
                 if (ok) vis++;
             });
@@ -221,6 +227,7 @@
         }
         s.addEventListener('input', f);
         st.addEventListener('change', f);
+        f();   // ilkin "Aktiv işlər" filtrini tətbiq et (Bağlandı/Tamamlandı gizlənsin)
     })();
 </script>
 }
