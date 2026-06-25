@@ -1,0 +1,56 @@
+using FinNex.Domain.Entities.Pid;
+
+namespace FinNex.Application.DTOs.Pid;
+
+// Məhkəmə işlərinin monitorinqi (dashboard) — yalnız SQL datası (Oracle çağırışı yoxdur).
+public class MehkemeMonitorDto
+{
+    // ── KPI sayğacları ──
+    public int CemIs        { get; set; }
+    public int AktivIs      { get; set; }   // Hazırlanır + Məhkəmədə + İcra
+    public int Hazirlanir   { get; set; }
+    public int Mehkemede    { get; set; }
+    public int Icrada       { get; set; }
+    public int Tamamlandi   { get; set; }
+    public int Baglandi     { get; set; }
+
+    public decimal CemQalanBorc    { get; set; }   // bütün işlər
+    public decimal AktivQalanBorc  { get; set; }   // yalnız aktiv işlər (Hazırlanır+Məhkəmədə+İcra)
+    public decimal CemMehkemeXerci { get; set; }
+
+    public int ZaminliIs        { get; set; }   // ən azı bir zamini olan iş sayı
+    public int YaxinlasanIclas7 { get; set; }   // növbəti 7 gün
+    public int YaxinlasanIclas30{ get; set; }   // növbəti 30 gün
+    public int GecikmisIclas    { get; set; }   // tarixi keçmiş, hələ açıq işdə iclas (xəbərdarlıq)
+
+    // ── Paylanmalar (qrafiklər) ──
+    public List<MonitorAdSayDto> NovUzre   { get; set; } = new();   // növ üzrə
+    public List<MonitorAdSayDto> RayonUzre { get; set; } = new();   // rayon üzrə (top)
+    public List<MonitorAySayDto> AyUzre    { get; set; } = new();   // son 12 ay üzrə yeni işlər
+
+    // ── Siyahılar ──
+    public List<YaxinlasanGorusDto> YaxinlasanIclaslar { get; set; } = new();   // növbəti 30 gün
+    public List<MonitorBorcluDto>   EnBoyukBorclu       { get; set; } = new();   // ən yüksək qalan borc (aktiv)
+}
+
+public class MonitorAdSayDto
+{
+    public string Ad  { get; set; } = "";
+    public int    Say { get; set; }
+}
+
+public class MonitorAySayDto
+{
+    public string Ay  { get; set; } = "";   // "MM/yy"
+    public int    Say { get; set; }
+}
+
+public class MonitorBorcluDto
+{
+    public int             Id               { get; set; }
+    public string          BorcluAd         { get; set; } = "";
+    public string?         QeydiyyatNomresi { get; set; }
+    public decimal?        QalanBorc        { get; set; }
+    public MehkemeIsiStatus Status          { get; set; }
+    public string?         Qeydiyyati       { get; set; }
+}

@@ -1,0 +1,313 @@
+@using FinNex.Application.DTOs.Pid
+@using FinNex.Domain.Entities.Pid
+@model MehkemeMonitorDto
+@{
+    ViewData["Title"] = "Məhkəmə işlərinin monitorinqi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    string Mq(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
+    string M(decimal v)   => v.ToString("N2") + " ₼";
+    string D(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy") : "—";
+    string Txt(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+
+    string StatusAd(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "Hazırlanır",
+        MehkemeIsiStatus.Mehkemede  => "Məhkəmədə",
+        MehkemeIsiStatus.Icra       => "İcrada",
+        MehkemeIsiStatus.Tamamlandi => "Tamamlandı",
+        MehkemeIsiStatus.Baghlandi  => "Bağlandı",
+        _                           => s.ToString()
+    };
+    string StatusClass(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "md-st-hazir",
+        MehkemeIsiStatus.Mehkemede  => "md-st-mehkeme",
+        MehkemeIsiStatus.Icra       => "md-st-icra",
+        MehkemeIsiStatus.Tamamlandi => "md-st-tamam",
+        MehkemeIsiStatus.Baghlandi  => "md-st-bagli",
+        _                           => ""
+    };
+
+    var rayonMax = Model.RayonUzre.Count > 0 ? Model.RayonUzre.Max(r => r.Say) : 1;
+}
+
+<div class="md-page">
+    <div class="md-head">
+        <div>
+            <h2 class="md-title">Məhkəmə işlərinin monitorinqi</h2>
+            <p class="md-sub">İzlənən bütün məhkəmə və icra işlərinin ümumi mənzərəsi — @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</p>
+        </div>
+        <div class="md-actions">
+            <a asp-action="Isler" class="md-btn"><i class="bi bi-bank"></i> Məhkəmə İşləri</a>
+            <a asp-action="IcraIsleri" class="md-btn"><i class="bi bi-hammer"></i> İcra işləri</a>
+            <a asp-action="Monitorinq" class="md-btn md-btn--primary"><i class="bi bi-arrow-clockwise"></i> Yenilə</a>
+        </div>
+    </div>
+
+    @* ── KPI kartları ── *@
+    <div class="md-kpis">
+        <div class="md-kpi md-kpi--indigo">
+            <div class="md-kpi-ic"><i class="bi bi-folder2-open"></i></div>
+            <div><div class="md-kpi-val">@Model.CemIs</div><div class="md-kpi-lbl">Ümumi iş</div>
+                <div class="md-kpi-sub">@Model.AktivIs aktiv</div></div>
+        </div>
+        <div class="md-kpi md-kpi--blue">
+            <div class="md-kpi-ic"><i class="bi bi-bank"></i></div>
+            <div><div class="md-kpi-val">@Model.Mehkemede</div><div class="md-kpi-lbl">Məhkəmədə</div>
+                <div class="md-kpi-sub">@Model.Hazirlanir hazırlanır</div></div>
+        </div>
+        <div class="md-kpi md-kpi--amber">
+            <div class="md-kpi-ic"><i class="bi bi-hammer"></i></div>
+            <div><div class="md-kpi-val">@Model.Icrada</div><div class="md-kpi-lbl">İcrada</div>
+                <div class="md-kpi-sub">icra fazası</div></div>
+        </div>
+        <div class="md-kpi md-kpi--rose">
+            <div class="md-kpi-ic"><i class="bi bi-check2-circle"></i></div>
+            <div><div class="md-kpi-val">@(Model.Baglandi + Model.Tamamlandi)</div><div class="md-kpi-lbl">Bağlanmış</div>
+                <div class="md-kpi-sub">@Model.Baglandi bağlandı · @Model.Tamamlandi tamam</div></div>
+        </div>
+        <div class="md-kpi md-kpi--green">
+            <div class="md-kpi-ic"><i class="bi bi-cash-coin"></i></div>
+            <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.AktivQalanBorc)</div><div class="md-kpi-lbl">Aktiv qalan borc</div>
+                <div class="md-kpi-sub">xərc: @M(Model.CemMehkemeXerci)</div></div>
+        </div>
+        <div class="md-kpi md-kpi--violet">
+            <div class="md-kpi-ic"><i class="bi bi-calendar-event"></i></div>
+            <div><div class="md-kpi-val">@Model.YaxinlasanIclas30</div><div class="md-kpi-lbl">Yaxınlaşan iclas (30g)</div>
+                <div class="md-kpi-sub">@Model.YaxinlasanIclas7 növbəti 7 gündə</div></div>
+        </div>
+    </div>
+
+    @if (Model.GecikmisIclas > 0)
+    {
+        <div class="md-warn">
+            <i class="bi bi-exclamation-triangle"></i>
+            <b>@Model.GecikmisIclas</b> açıq işdə iclas tarixi keçib, amma iş hələ məhkəmə/hazırlanır fazasındadır — yenilənmə tələb oluna bilər.
+        </div>
+    }
+
+    @* ── Qrafiklər ── *@
+    <div class="md-grid3">
+        <div class="md-panel">
+            <div class="md-panel-h"><i class="bi bi-pie-chart"></i> Status üzrə paylanma</div>
+            <div class="md-panel-b md-chartwrap"><canvas id="chStatus"></canvas></div>
+        </div>
+        <div class="md-panel">
+            <div class="md-panel-h"><i class="bi bi-diagram-3"></i> Növ üzrə paylanma</div>
+            <div class="md-panel-b md-chartwrap"><canvas id="chNov"></canvas></div>
+        </div>
+        <div class="md-panel">
+            <div class="md-panel-h"><i class="bi bi-bar-chart-line"></i> Son 12 ay — yeni işlər</div>
+            <div class="md-panel-b md-chartwrap"><canvas id="chAy"></canvas></div>
+        </div>
+    </div>
+
+    @* ── Rayon + Yaxınlaşan iclaslar ── *@
+    <div class="md-grid2">
+        <div class="md-panel">
+            <div class="md-panel-h"><i class="bi bi-geo-alt"></i> Rayon üzrə (aktiv işlər)</div>
+            <div class="md-panel-b">
+                @if (Model.RayonUzre.Any())
+                {
+                    <div class="md-bars">
+                        @foreach (var r in Model.RayonUzre)
+                        {
+                            <div class="md-bar-row">
+                                <div class="md-bar-lbl" title="@r.Ad">@r.Ad</div>
+                                <div class="md-bar-track"><div class="md-bar-fill" style="width:@(Math.Max(4, r.Say * 100 / rayonMax))%"></div></div>
+                                <div class="md-bar-val">@r.Say</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else { <div class="md-empty">Aktiv işdə rayon məlumatı yoxdur.</div> }
+            </div>
+        </div>
+
+        <div class="md-panel">
+            <div class="md-panel-h"><i class="bi bi-calendar-week"></i> Yaxınlaşan iclaslar (30 gün)</div>
+            <div class="md-panel-b md-panel-b--flush">
+                @if (Model.YaxinlasanIclaslar.Any())
+                {
+                    <table class="md-table">
+                        <thead><tr><th>Tarix</th><th>Borclu</th><th>Hakim / iş №</th></tr></thead>
+                        <tbody>
+                            @foreach (var g in Model.YaxinlasanIclaslar)
+                            {
+                                <tr onclick="location.href='@Url.Action("Detal", new { id = g.MehkemeIsiId })'" style="cursor:pointer">
+                                    <td class="md-nowrap"><b>@g.Tarix.ToString("dd.MM")</b>@(string.IsNullOrWhiteSpace(g.Saat) ? "" : " · " + g.Saat)</td>
+                                    <td>@g.BorcluAd</td>
+                                    <td class="md-muted">@Txt(g.Hakim ?? g.IsNomresi)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else { <div class="md-empty">Növbəti 30 gündə planlaşdırılmış iclas yoxdur.</div> }
+            </div>
+        </div>
+    </div>
+
+    @* ── Ən böyük qalan borc ── *@
+    <div class="md-panel">
+        <div class="md-panel-h"><i class="bi bi-graph-up-arrow"></i> Ən yüksək qalan borc (aktiv işlər)</div>
+        <div class="md-panel-b md-panel-b--flush">
+            @if (Model.EnBoyukBorclu.Any())
+            {
+                <table class="md-table">
+                    <thead><tr><th style="width:42px">№</th><th>Borclu</th><th>Qeydiyyat №</th><th>Rayon</th><th>Status</th><th class="md-num">Qalan borc</th></tr></thead>
+                    <tbody>
+                        @{ var i = 0; }
+                        @foreach (var b in Model.EnBoyukBorclu)
+                        {
+                            i++;
+                            <tr onclick="location.href='@Url.Action("Detal", new { id = b.Id })'" style="cursor:pointer">
+                                <td class="md-muted">@i</td>
+                                <td><b>@b.BorcluAd</b></td>
+                                <td class="md-mono">@Txt(b.QeydiyyatNomresi)</td>
+                                <td class="md-muted">@Txt(b.Qeydiyyati)</td>
+                                <td><span class="md-badge @StatusClass(b.Status)">@StatusAd(b.Status)</span></td>
+                                <td class="md-num md-strong">@Mq(b.QalanBorc)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else { <div class="md-empty">Qalan borcu olan aktiv iş yoxdur.</div> }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .md-page { padding: 4px 2px 24px; }
+        .md-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+        .md-title { margin:0; font-size:22px; font-weight:800; color:#0f172a; }
+        .md-sub { margin:3px 0 0; color:#64748b; font-size:13px; }
+        .md-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .md-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 13px; border-radius:9px; font-size:13px; font-weight:600;
+                  background:#fff; border:1px solid #e2e8f0; color:#334155; text-decoration:none; cursor:pointer; }
+        .md-btn:hover { background:#f1f5f9; }
+        .md-btn--primary { background:#6366f1; border-color:#6366f1; color:#fff; }
+        .md-btn--primary:hover { background:#4f46e5; }
+
+        .md-kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:14px; }
+        .md-kpi { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e9eef5; border-radius:14px;
+                  padding:14px 16px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+        .md-kpi-ic { width:44px; height:44px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+                     font-size:21px; color:#fff; flex:0 0 auto; }
+        .md-kpi-val { font-size:24px; font-weight:800; color:#0f172a; line-height:1.1; }
+        .md-kpi-val--sm { font-size:16px; }
+        .md-kpi-lbl { font-size:12px; color:#64748b; font-weight:600; margin-top:2px; }
+        .md-kpi-sub { font-size:11px; color:#94a3b8; margin-top:2px; }
+        .md-kpi--indigo .md-kpi-ic { background:#6366f1; }
+        .md-kpi--blue   .md-kpi-ic { background:#0ea5e9; }
+        .md-kpi--amber  .md-kpi-ic { background:#f59e0b; }
+        .md-kpi--rose   .md-kpi-ic { background:#f43f5e; }
+        .md-kpi--green  .md-kpi-ic { background:#10b981; }
+        .md-kpi--violet .md-kpi-ic { background:#8b5cf6; }
+
+        .md-warn { display:flex; align-items:center; gap:9px; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+                   border-radius:11px; padding:11px 15px; font-size:13px; margin-bottom:14px; }
+
+        .md-grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px; }
+        .md-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+        .md-panel { background:#fff; border:1px solid #e9eef5; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+        .md-panel-h { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid #eef2f7;
+                      font-weight:700; color:#334155; font-size:14px; background:#fbfcfe; }
+        .md-panel-b { padding:14px 16px; }
+        .md-panel-b--flush { padding:0; }
+        .md-chartwrap { height:230px; position:relative; }
+
+        .md-bars { display:flex; flex-direction:column; gap:10px; }
+        .md-bar-row { display:grid; grid-template-columns:130px 1fr 36px; align-items:center; gap:10px; }
+        .md-bar-lbl { font-size:12px; color:#475569; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .md-bar-track { background:#f1f5f9; border-radius:6px; height:18px; overflow:hidden; }
+        .md-bar-fill { height:100%; background:linear-gradient(90deg,#818cf8,#6366f1); border-radius:6px; }
+        .md-bar-val { font-size:12px; font-weight:700; color:#334155; text-align:right; }
+
+        .md-table { width:100%; border-collapse:collapse; }
+        .md-table th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:#94a3b8;
+                       padding:9px 14px; border-bottom:1px solid #eef2f7; background:#fbfcfe; }
+        .md-table td { padding:9px 14px; border-bottom:1px solid #f1f5f9; font-size:13px; color:#1e293b; }
+        .md-table tbody tr:hover td { background:#f8fafc; }
+        .md-table tbody tr:last-child td { border-bottom:none; }
+        .md-num { text-align:right; }
+        .md-strong { font-weight:800; color:#0f172a; }
+        .md-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#475569; }
+        .md-muted { color:#94a3b8; }
+        .md-nowrap { white-space:nowrap; }
+        .md-empty { padding:24px; text-align:center; color:#94a3b8; font-size:13px; }
+
+        .md-badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:700; }
+        .md-st-hazir   { background:#f1f5f9; color:#475569; }
+        .md-st-mehkeme { background:#e0f2fe; color:#0369a1; }
+        .md-st-icra    { background:#fef3c7; color:#92400e; }
+        .md-st-tamam   { background:#dcfce7; color:#166534; }
+        .md-st-bagli   { background:#ffe4e6; color:#9f1239; }
+
+        @@media (max-width:1100px){ .md-kpis { grid-template-columns:repeat(3,1fr); } .md-grid3 { grid-template-columns:1fr; } }
+        @@media (max-width:760px){ .md-kpis { grid-template-columns:repeat(2,1fr); } .md-grid2 { grid-template-columns:1fr; } }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            if (typeof Chart === 'undefined') return;   // CDN əlçatmazsa qrafiklər atlanır (KPI/siyahılar qalır)
+            Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+            Chart.defaults.font.size = 12;
+            Chart.defaults.plugins.legend.position = 'bottom';
+
+            var statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] { Model.Hazirlanir, Model.Mehkemede, Model.Icrada, Model.Tamamlandi, Model.Baglandi }));
+            var novLabels  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.NovUzre.Select(n => n.Ad)));
+            var novData    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.NovUzre.Select(n => n.Say)));
+            var ayLabels   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AyUzre.Select(a => a.Ay)));
+            var ayData     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AyUzre.Select(a => a.Say)));
+
+            // Status doughnut
+            new Chart(document.getElementById('chStatus'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hazırlanır', 'Məhkəmədə', 'İcrada', 'Tamamlandı', 'Bağlandı'],
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: ['#94a3b8', '#0ea5e9', '#f59e0b', '#10b981', '#f43f5e'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '58%' }
+            });
+
+            // Növ doughnut
+            new Chart(document.getElementById('chNov'), {
+                type: 'doughnut',
+                data: {
+                    labels: novLabels,
+                    datasets: [{
+                        data: novData,
+                        backgroundColor: ['#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#f43f5e', '#8b5cf6'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '58%' }
+            });
+
+            // Aylıq bar
+            new Chart(document.getElementById('chAy'), {
+                type: 'bar',
+                data: {
+                    labels: ayLabels,
+                    datasets: [{ label: 'Yeni iş', data: ayData, backgroundColor: '#6366f1', borderRadius: 5, maxBarThickness: 26 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+        })();
+    </script>
+}

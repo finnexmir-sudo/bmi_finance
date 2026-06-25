@@ -69,6 +69,13 @@ public class MehkemeIsiController : Controller
         return View(model);
     }
 
+    // ── Monitorinq (dashboard — KPI, paylanma, siyahılar) ──
+    public async Task<IActionResult> Monitorinq()
+    {
+        var model = await _service.MonitorGetirAsync();
+        return View(model);
+    }
+
     // ── Excel export (hər grid səhifəsi) ──────────────────────────
     // Aktiv Müştərilər — TAM Oracle sorğusu (bütün sütunlar/sətirlər), yalnız görünən cədvəl deyil.
     public async Task<IActionResult> IndexExcel()

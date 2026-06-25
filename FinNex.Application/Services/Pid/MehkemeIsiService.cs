@@ -158,6 +158,142 @@ public class MehkemeIsiService : IMehkemeIsiService
         }).ToList();
     }
 
+    public async Task<MehkemeMonitorDto> MonitorGetirAsync()
+    {
+        var bugun = DateTime.Today;
+        var d7  = bugun.AddDays(7);
+        var d30 = bugun.AddDays(30);
+        var dto = new MehkemeMonitorDto();
+
+        // Bütün işlər — yüngül proyeksiya (yalnız oxu; entity tracking yox)
+        var isler = await _uow.Repository<MehkemeIsi>().Query().AsNoTracking()
+            .Where(x => !x.Silinib)
+            .Select(x => new
+            {
+                x.Id, x.BorcluAd, x.QeydiyyatNomresi, x.Status, x.Nov,
+                x.QalanBorc, x.MehkemeXerci, x.Qeydiyyati,
+                x.BaslamaTarixi, x.YaradilmaTarixi
+            })
+            .ToListAsync();
+
+        dto.CemIs = isler.Count;
+        foreach (var x in isler)
+        {
+            switch (x.Status)
+            {
+                case MehkemeIsiStatus.Hazirlanir: dto.Hazirlanir++; break;
+                case MehkemeIsiStatus.Mehkemede:  dto.Mehkemede++;  break;
+                case MehkemeIsiStatus.Icra:       dto.Icrada++;     break;
+                case MehkemeIsiStatus.Tamamlandi: dto.Tamamlandi++; break;
+                case MehkemeIsiStatus.Baghlandi:  dto.Baglandi++;   break;
+            }
+            dto.CemQalanBorc    += x.QalanBorc ?? 0m;
+            dto.CemMehkemeXerci += x.MehkemeXerci ?? 0m;
+        }
+        dto.AktivIs = dto.Hazirlanir + dto.Mehkemede + dto.Icrada;
+
+        static bool Aktivdir(MehkemeIsiStatus s) =>
+            s == MehkemeIsiStatus.Hazirlanir || s == MehkemeIsiStatus.Mehkemede || s == MehkemeIsiStatus.Icra;
+
+        dto.AktivQalanBorc = isler.Where(x => Aktivdir(x.Status)).Sum(x => x.QalanBorc ?? 0m);
+
+        // Növ üzrə paylanma
+        dto.NovUzre = isler
+            .GroupBy(x => x.Nov)
+            .Select(g => new MonitorAdSayDto { Ad = NovAdi(g.Key), Say = g.Count() })
+            .OrderByDescending(a => a.Say)
+            .ToList();
+
+        // Rayon üzrə (aktiv işlər, top 8)
+        dto.RayonUzre = isler
+            .Where(x => Aktivdir(x.Status) && !string.IsNullOrWhiteSpace(x.Qeydiyyati))
+            .GroupBy(x => x.Qeydiyyati!.Trim())
+            .Select(g => new MonitorAdSayDto { Ad = g.Key, Say = g.Count() })
+            .OrderByDescending(a => a.Say)
+            .Take(8)
+            .ToList();
+
+        // Son 12 ay üzrə yeni işlər (məhkəməyə verilmə, yoxdursa yaradılma)
+        var ayBasla = new DateTime(bugun.Year, bugun.Month, 1).AddMonths(-11);
+        var aySaylari = isler
+            .Select(x => x.BaslamaTarixi ?? x.YaradilmaTarixi)
+            .Where(t => t >= ayBasla)
+            .GroupBy(t => t.Year * 100 + t.Month)
+            .ToDictionary(g => g.Key, g => g.Count());
+        for (int i = 0; i < 12; i++)
+        {
+            var d = ayBasla.AddMonths(i);
+            dto.AyUzre.Add(new MonitorAySayDto
+            {
+                Ay  = d.ToString("MM/yy", CultureInfo.InvariantCulture),
+                Say = aySaylari.TryGetValue(d.Year * 100 + d.Month, out var c) ? c : 0
+            });
+        }
+
+        // Ən böyük qalan borc (aktiv, top 10)
+        dto.EnBoyukBorclu = isler
+            .Where(x => Aktivdir(x.Status) && (x.QalanBorc ?? 0m) > 0m)
+            .OrderByDescending(x => x.QalanBorc)
+            .Take(10)
+            .Select(x => new MonitorBorcluDto
+            {
+                Id = x.Id, BorcluAd = x.BorcluAd, QeydiyyatNomresi = x.QeydiyyatNomresi,
+                QalanBorc = x.QalanBorc, Status = x.Status, Qeydiyyati = x.Qeydiyyati
+            })
+            .ToList();
+
+        // Zaminli iş sayı (yalnız silinməmiş işlər)
+        var idSet = isler.Select(x => x.Id).ToHashSet();
+        var zaminliIdler = await _uow.Repository<MehkemeZamin>().Query().AsNoTracking()
+            .Where(z => !z.Silinib)
+            .Select(z => z.MehkemeIsiId)
+            .Distinct()
+            .ToListAsync();
+        dto.ZaminliIs = zaminliIdler.Count(id => idSet.Contains(id));
+
+        // Məhkəmə iclasları (proyeksiya — tracking/Include tələsi yox)
+        var iclaslar = await _uow.Repository<MehkemeMerhelesi>().Query().AsNoTracking()
+            .Where(m => !m.Silinib && !m.MehkemeIsi.Silinib
+                        && m.MerheleTipi == MerheleTipi.MehkemeIclasi)
+            .Select(m => new
+            {
+                m.MehkemeIsiId, m.Tarix, m.Saat, m.Qeyd,
+                AdSoyad = m.MehkemeIsi.BorcluAd,
+                m.MehkemeIsi.QeydiyyatNomresi,
+                Hakim   = m.MehkemeIsi.Hakim,
+                IsNo    = m.MehkemeIsi.IsNomresi,
+                Status  = m.MehkemeIsi.Status
+            })
+            .ToListAsync();
+
+        dto.YaxinlasanIclas7  = iclaslar.Count(m => m.Tarix.Date >= bugun && m.Tarix.Date <= d7);
+        dto.YaxinlasanIclas30 = iclaslar.Count(m => m.Tarix.Date >= bugun && m.Tarix.Date <= d30);
+        dto.GecikmisIclas     = iclaslar.Count(m => m.Tarix.Date < bugun
+                                  && (m.Status == MehkemeIsiStatus.Mehkemede || m.Status == MehkemeIsiStatus.Hazirlanir));
+
+        dto.YaxinlasanIclaslar = iclaslar
+            .Where(m => m.Tarix.Date >= bugun && m.Tarix.Date <= d30)
+            .OrderBy(m => m.Tarix).ThenBy(m => m.Saat)
+            .Take(12)
+            .Select(m => new YaxinlasanGorusDto
+            {
+                MehkemeIsiId = m.MehkemeIsiId, BorcluAd = m.AdSoyad,
+                QeydiyyatNomresi = m.QeydiyyatNomresi, Tarix = m.Tarix, Saat = m.Saat,
+                MerheleTipi = MerheleTipi.MehkemeIclasi, IsNomresi = m.IsNo, Hakim = m.Hakim, Qeyd = m.Qeyd
+            })
+            .ToList();
+
+        return dto;
+    }
+
+    private static string NovAdi(MehkemeIsiNov n) => n switch
+    {
+        MehkemeIsiNov.Ipoteka    => "İpoteka",
+        MehkemeIsiNov.Istehlak   => "İstehlak",
+        MehkemeIsiNov.KartKredit => "Kart krediti",
+        _                        => "Digər"
+    };
+
     public async Task<MehkemeIsiDetailDto?> DetailGetirAsync(int id)
     {
         var x = await _uow.Repository<MehkemeIsi>()

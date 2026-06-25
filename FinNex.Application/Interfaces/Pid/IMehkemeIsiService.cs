@@ -11,6 +11,9 @@ public interface IMehkemeIsiService
     Task<IList<IcraIsiListDto>> IcraIsleriGetirAsync(string? status);
     Task<IList<YaxinlasanGorusDto>> YaxinlasanGoruslerAsync();
     Task<MehkemeIsiDetailDto?> DetailGetirAsync(int id);
+
+    // Monitorinq dashboard — KPI/paylanma/siyahıları yüngül SQL sorğuları ilə hesablayır (Oracle yox)
+    Task<MehkemeMonitorDto> MonitorGetirAsync();
     Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);
     Task<bool> YenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
     Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
