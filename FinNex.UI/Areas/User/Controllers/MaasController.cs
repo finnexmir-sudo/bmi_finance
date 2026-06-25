@@ -68,12 +68,25 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 etiket = ayAdlar[m.Ay] + " " + m.Il,
                 brut = m.BrutMebleg,
-                net = m.NetMebleg,
+                net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi),   // avans işçinin maaşıdır → qazanılan net
                 il = m.Il,
                 ay = m.Ay
             }).ToList();
 
             return Json(new { success = true, data });
+        }
+
+        // Avans işçinin öz maaşıdır (qabaqcadan ödənilib) — işçinin səhifəsində "tutulma" kimi
+        // göstərilmir, net də avans çıxılmadan göstərilir. (Hesablama/ödəniş/provodka dəyişmir.)
+        private static decimal AvansMebleginiTap(string? hesablamaIzahi)
+        {
+            if (string.IsNullOrEmpty(hesablamaIzahi)) return 0m;
+            try
+            {
+                var list = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(hesablamaIzahi);
+                return list?.FirstOrDefault(x => x.Addim == "Avans Kəsintisi")?.Mebleg ?? 0m;
+            }
+            catch { return 0m; }
         }
 
         // ── GET /User/Maas/GetDetay?il=2026&ay=4 ────────────
@@ -92,14 +105,22 @@ namespace FinNex.UI.Areas.User.Controllers
             if (maas == null)
                 return Json(new { success = false, message = "Məlumat tapılmadı." });
 
-            var addimlar = string.IsNullOrEmpty(maas.HesablamaIzahi)
-                ? new List<object>()
+            var tamSiyahi = string.IsNullOrEmpty(maas.HesablamaIzahi)
+                ? new List<HesablamaIzahiDto>()
                 : (JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(maas.HesablamaIzahi)
-                    ?? new List<HesablamaIzahiDto>())
-                    .Select(x => (object)new { addim = x.Addim, izah = x.Izah, mebleg = x.Mebleg, tip = x.Tip })
-                    .ToList();
+                    ?? new List<HesablamaIzahiDto>());
 
-            return Json(new { success = true, il, ay, brut = maas.BrutMebleg, net = maas.NetMebleg, addimlar });
+            // Avans işçinin öz maaşıdır (qabaqcadan ödənilib) — işçinin səhifəsində tutulma kimi
+            // göstərmirik; net da avans çıxılmadan (qazanılan net) verilir. Ödəniş/provodka dəyişmir.
+            var avansMebleg = tamSiyahi
+                .Where(x => x.Addim == "Avans Kəsintisi")
+                .Sum(x => x.Mebleg);
+            var addimlar = tamSiyahi
+                .Where(x => x.Addim != "Avans Kəsintisi")
+                .Select(x => (object)new { addim = x.Addim, izah = x.Izah, mebleg = x.Mebleg, tip = x.Tip })
+                .ToList();
+
+            return Json(new { success = true, il, ay, brut = maas.BrutMebleg, net = maas.NetMebleg + avansMebleg, addimlar });
         }
 
         // ── GET /User/Maas/HYS ─────────────────────────────────
