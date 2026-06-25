@@ -56,6 +56,20 @@
                     <i class="bi bi-database-add"></i> Real idxal
                 </button>
             </form>
+            <form asp-action="ZaminDublikatTemizle" method="post"
+                  style="display:flex;align-items:center;gap:6px;border-left:1px solid #e2e8f0;padding-left:8px"
+                  title="Eyni işdə təkrarlanan zamin qeydlərini bir qeydə birləşdirir (soft-delete).">
+                @Html.AntiForgeryToken()
+                <button type="submit" name="onizleme" value="true" class="ms-btn ms-btn--ghost"
+                        title="Yalnız sayır — DB-yə yazmır">
+                    <i class="bi bi-people"></i> Zamin təkrarları
+                </button>
+                <button type="submit" name="onizleme" value="false" class="ms-btn ms-btn--ghost"
+                        onclick="return confirm('Təkrar zamin qeydləri bir qeydə birləşdiriləcək (soft-delete). Davam edək?');"
+                        title="Təkrarları birləşdir">
+                    <i class="bi bi-magic"></i> Təmizlə
+                </button>
+            </form>
         </div>
     </div>
 

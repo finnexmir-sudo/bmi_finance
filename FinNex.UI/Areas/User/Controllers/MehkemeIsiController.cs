@@ -501,6 +501,21 @@ public class MehkemeIsiController : Controller
         catch { /* JSON səhvdirsə snapshot atlanır */ }
     }
 
+    // ── Təkrar zamin qeydlərini birləşdir (eyni iş + ad) ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminDublikatTemizle(bool onizleme = true)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var (qrup, silinen) = await _service.ZaminDublikatTemizleAsync(isciId, onizleme);
+        TempData["Success"] = (onizleme ? "🔎 ÖNİZLƏMƏ (DB-yə yazılmadı) — " : "✅ Təmizləndi — ")
+            + (qrup == 0
+                ? "təkrar zamin tapılmadı."
+                : $"{qrup} qrupda {silinen} təkrar qeyd "
+                  + (onizleme ? "birləşdiriləcək." : "birləşdirildi (soft-delete)."));
+        return RedirectToAction(nameof(IcraIsleri));
+    }
+
     // ── Yarat formu ───────────────────────────────────────
     public IActionResult Yarat() => View();
 

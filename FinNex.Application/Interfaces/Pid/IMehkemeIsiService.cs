@@ -38,6 +38,9 @@ public interface IMehkemeIsiService
     Task<int> ZaminleriOracledanYukleAsync(int mehkemeIsiId, int isciId);
     Task<int> ZaminleriSnapshotEtAsync(int mehkemeIsiId, List<MehkemeZaminDto> zaminler, int isciId);
 
+    // Təkrar zamin qeydlərini (eyni iş + ad) birləşdirir (soft-delete). onizleme=true yalnız sayır.
+    Task<(int qrup, int silinen)> ZaminDublikatTemizleAsync(int isciId, bool onizleme);
+
     // Oracle: müştərinin bütün aktiv kreditlərini qaytarır (sütun adı → dəyər)
     Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi);
 

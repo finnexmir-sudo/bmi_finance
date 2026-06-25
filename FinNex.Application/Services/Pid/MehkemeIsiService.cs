@@ -683,6 +683,65 @@ public class MehkemeIsiService : IMehkemeIsiService
         return sayi;
     }
 
+    // Təkrar zamin qeydlərini (eyni iş + eyni ad) birləşdirir: ən kiçik Id-li qeyd saxlanılır,
+    // bütün dolu sahələr ona köçürülür (doğum üstünlüklə Oracle/FİN-li qeyddən, seriya tarixə çevrilir),
+    // qalanları soft-delete olunur. onizleme=true → yalnız sayır, yazmır.
+    public async Task<(int qrup, int silinen)> ZaminDublikatTemizleAsync(int isciId, bool onizleme)
+    {
+        var q = _uow.Repository<MehkemeZamin>().Query().Where(z => !z.Silinib);
+        var hamisi = onizleme ? await q.AsNoTracking().ToListAsync() : await q.ToListAsync();
+
+        int qrup = 0, silinen = 0;
+        var repo = _uow.Repository<MehkemeZamin>();
+        var gruplar = hamisi
+            .GroupBy(z => (z.MehkemeIsiId, Ad: (z.Ad ?? "").Trim().ToLowerInvariant()))
+            .Where(g => !string.IsNullOrWhiteSpace(g.Key.Ad) && g.Count() > 1);
+
+        foreach (var g in gruplar)
+        {
+            var sirali = g.OrderBy(z => z.Id).ToList();
+            var keeper = sirali[0];
+            var others = sirali.Skip(1).ToList();
+            qrup++;
+            silinen += others.Count;
+            if (onizleme) continue;
+
+            string? Pick(Func<MehkemeZamin, string?> sel) =>
+                sirali.Select(sel).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+            var oracleZamin = sirali.FirstOrDefault(z => !string.IsNullOrWhiteSpace(z.Fin));
+            var dogumXam = (oracleZamin != null && !string.IsNullOrWhiteSpace(oracleZamin.DogumTarixi))
+                ? oracleZamin.DogumTarixi
+                : sirali.Select(z => z.DogumTarixi).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
+            keeper.Fin              = Pick(z => z.Fin);
+            keeper.DogumTarixi      = ZaminDogum(dogumXam);
+            keeper.Telefon          = Pick(z => z.Telefon);
+            keeper.Unvan            = Pick(z => z.Unvan);
+            keeper.EmekHaqqiTutulma = Pick(z => z.EmekHaqqiTutulma);
+            keeper.IsYeri           = Pick(z => z.IsYeri);
+            keeper.EmlakaHebs       = Pick(z => z.EmlakaHebs);
+            keeper.Stop             = Pick(z => z.Stop);
+            keeper.IcraMemuru       = Pick(z => z.IcraMemuru);
+            keeper.IcraSonIsler     = Pick(z => z.IcraSonIsler);
+            keeper.DypSorgu         = Pick(z => z.DypSorgu);
+            keeper.AdinaSorgu       = Pick(z => z.AdinaSorgu);
+            keeper.IcraQeyd         = Pick(z => z.IcraQeyd);
+            keeper.YenileyenIcraciId = isciId;
+            keeper.YenilenmeTarixi   = DateTime.Now;
+            await repo.YenileAsync(keeper);
+
+            foreach (var o in others)
+            {
+                o.Silinib = true;
+                o.SilinmeTarixi = DateTime.Now;
+                o.SilenIcraciId = isciId;
+                await repo.YenileAsync(o);
+            }
+        }
+        if (!onizleme && silinen > 0) await _uow.YaddaSaxlaAsync();
+        return (qrup, silinen);
+    }
+
     private static ZaminIcraDto MapZamin(MehkemeZamin z) => new()
     {
         Id               = z.Id,
