@@ -87,15 +87,24 @@ public class MehkemeIsiService : IMehkemeIsiService
             .OrderByDescending(x => x.YenilenmeTarixi ?? x.YaradilmaTarixi)
             .ToListAsync();
 
-        // Zamin sayları — yalnız ID-ləri çəkib client-side qruplaşdırırıq (EF GroupBy tələsi yox)
+        // Zaminlər — borclunun altında alt sətir kimi göstərmək üçün tam yüklənir (AsNoTracking)
         var ids = list.Select(x => x.Id).ToList();
-        var zaminIdler = ids.Count == 0
-            ? new List<int>()
+        var zaminlar = ids.Count == 0
+            ? new List<MehkemeZamin>()
             : await _uow.Repository<MehkemeZamin>().Query().AsNoTracking()
                 .Where(z => !z.Silinib && ids.Contains(z.MehkemeIsiId))
-                .Select(z => z.MehkemeIsiId)
+                .OrderBy(z => z.Id)
                 .ToListAsync();
-        var zaminDict = zaminIdler.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
+        var zaminDict = zaminlar
+            .GroupBy(z => z.MehkemeIsiId)
+            .ToDictionary(g => g.Key, g => g.Select(z => new IcraZaminSetirDto
+            {
+                Id = z.Id, Ad = z.Ad, Fin = z.Fin, DogumTarixi = z.DogumTarixi,
+                Telefon = z.Telefon, Unvan = z.Unvan, EmekHaqqiTutulma = z.EmekHaqqiTutulma,
+                AdinaSorgu = z.AdinaSorgu, DypSorgu = z.DypSorgu, EmlakaHebs = z.EmlakaHebs,
+                Stop = z.Stop, IcraMemuru = z.IcraMemuru, IcraSonIsler = z.IcraSonIsler,
+                IsYeri = z.IsYeri, IcraQeyd = z.IcraQeyd
+            }).ToList());
 
         // "Son ödəniş tarixi" = Oracle "Son əməliyyat" (Detal səhifəsi ilə eyni mənbə).
         // Canlı siyahını bir dəfə çəkib hər işə tətbiq edirik; Oracle əlçatmazsa DB snapshot qalır.
@@ -127,7 +136,8 @@ public class MehkemeIsiService : IMehkemeIsiService
             IcraSonIsler      = x.IcraSonIsler,
             DogumTarixi       = x.DogumTarixi,
             Zamin             = x.Zamin,
-            ZaminSayi         = zaminDict.TryGetValue(x.Id, out var sy) ? sy : 0,
+            ZaminSayi         = zaminDict.GetValueOrDefault(x.Id)?.Count ?? 0,
+            Zaminler          = zaminDict.GetValueOrDefault(x.Id) ?? new List<IcraZaminSetirDto>(),
             QetnameTarixi     = x.QetnameTarixi,
             IsYeri            = x.IsYeri,
             IcraQeyd          = x.IcraQeyd

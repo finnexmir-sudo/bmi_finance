@@ -46,6 +46,27 @@ public class IcraIsiListDto
     public DateTime? QetnameTarixi   { get; set; }
     public string?   IsYeri          { get; set; }
     public string?   IcraQeyd        { get; set; }
+    public List<IcraZaminSetirDto> Zaminler { get; set; } = new();   // icra subyektləri — borclunun altında alt sətir
+}
+
+// İcra grid-ində borclunun altında görünən zamin sətri (zaminin öz icra qatı)
+public class IcraZaminSetirDto
+{
+    public int     Id               { get; set; }
+    public string  Ad               { get; set; } = "";
+    public string? Fin              { get; set; }
+    public string? DogumTarixi      { get; set; }
+    public string? Telefon          { get; set; }
+    public string? Unvan            { get; set; }
+    public string? EmekHaqqiTutulma { get; set; }
+    public string? AdinaSorgu       { get; set; }
+    public string? DypSorgu         { get; set; }
+    public string? EmlakaHebs       { get; set; }
+    public string? Stop             { get; set; }
+    public string? IcraMemuru       { get; set; }
+    public string? IcraSonIsler     { get; set; }
+    public string? IsYeri           { get; set; }
+    public string? IcraQeyd         { get; set; }
 }
 
 // Yaxınlaşan görüş/iclas (bütün işlər üzrə — gündəlik səhifəsi)

@@ -354,7 +354,7 @@
                     @foreach (var z in Model.Zaminler)
                     {
                         <tbody class="dt-grp">
-                            <tr class="dt-row dt-row--zamin" onclick="dtToggle(event, this)">
+                            <tr id="z-@z.Id" class="dt-row dt-row--zamin" onclick="dtToggle(event, this)">
                                 <td><span class="dt-role dt-role--zamin">ZAMİN</span></td>
                                 <td class="dt-ad" title="@z.Ad">@z.Ad</td>
                                 <td class="dt-c" title="@z.Unvan">@V(z.Unvan)</td>
@@ -631,6 +631,11 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+    <style>
+        /* İcra siyahısından zamin linki (#z-..) ilə gələndə həmin sətri seçildiyini göstər */
+        tr[id^="z-"] { scroll-margin-top: 90px; }
+        tr[id^="z-"]:target td { background: #fef9c3 !important; transition: background .4s ease; }
+    </style>
 }
 
 @section Scripts {
