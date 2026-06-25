@@ -95,16 +95,11 @@ public class MehkemeIsiService : IMehkemeIsiService
                 .Where(z => !z.Silinib && ids.Contains(z.MehkemeIsiId))
                 .OrderBy(z => z.Id)
                 .ToListAsync();
+        // Eyni zamin həm Excel idxalından (icra sahələri, FİN yox), həm Oracle snapshot-dan
+        // (FİN/ünvan/doğum) gələ bilər → ada görə birləşdir (dublikatları aradan qaldır).
         var zaminDict = zaminlar
             .GroupBy(z => z.MehkemeIsiId)
-            .ToDictionary(g => g.Key, g => g.Select(z => new IcraZaminSetirDto
-            {
-                Id = z.Id, Ad = z.Ad, Fin = z.Fin, DogumTarixi = z.DogumTarixi,
-                Telefon = z.Telefon, Unvan = z.Unvan, EmekHaqqiTutulma = z.EmekHaqqiTutulma,
-                AdinaSorgu = z.AdinaSorgu, DypSorgu = z.DypSorgu, EmlakaHebs = z.EmlakaHebs,
-                Stop = z.Stop, IcraMemuru = z.IcraMemuru, IcraSonIsler = z.IcraSonIsler,
-                IsYeri = z.IsYeri, IcraQeyd = z.IcraQeyd
-            }).ToList());
+            .ToDictionary(g => g.Key, g => MergeZaminler(g));
 
         // "Son ödəniş tarixi" = Oracle "Son əməliyyat" (Detal səhifəsi ilə eyni mənbə).
         // Canlı siyahını bir dəfə çəkib hər işə tətbiq edirik; Oracle əlçatmazsa DB snapshot qalır.
@@ -467,6 +462,59 @@ public class MehkemeIsiService : IMehkemeIsiService
             (string.IsNullOrWhiteSpace(ks) || s.Ks.Trim() == ks));
     }
 
+    // Bir işin zaminlərini ada görə birləşdirir (Excel idxalı + Oracle snapshot dublikatlarını
+    // tək sətirdə yığır). Hər sahə üçün ilk boş olmayan dəyər götürülür; doğum tarixi
+    // üstünlüklə FİN-i olan (Oracle) qeyddən, sonra Excel seriyası tarixə çevrilir.
+    private static List<IcraZaminSetirDto> MergeZaminler(IEnumerable<MehkemeZamin> zlist)
+    {
+        var result = new List<IcraZaminSetirDto>();
+        foreach (var grup in zlist.GroupBy(z => (z.Ad ?? "").Trim().ToLowerInvariant()))
+        {
+            if (string.IsNullOrWhiteSpace(grup.Key)) continue;
+            string? Pick(Func<MehkemeZamin, string?> sel) =>
+                grup.Select(sel).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
+            var oracleZamin = grup.FirstOrDefault(z => !string.IsNullOrWhiteSpace(z.Fin));
+            var dogumXam = (oracleZamin != null && !string.IsNullOrWhiteSpace(oracleZamin.DogumTarixi))
+                ? oracleZamin.DogumTarixi
+                : grup.Select(z => z.DogumTarixi).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
+            result.Add(new IcraZaminSetirDto
+            {
+                Id               = grup.Min(z => z.Id),
+                Ad               = Pick(z => z.Ad) ?? "(naməlum)",
+                Fin              = Pick(z => z.Fin),
+                DogumTarixi      = ZaminDogum(dogumXam),
+                Telefon          = Pick(z => z.Telefon),
+                Unvan            = Pick(z => z.Unvan),
+                EmekHaqqiTutulma = Pick(z => z.EmekHaqqiTutulma),
+                AdinaSorgu       = Pick(z => z.AdinaSorgu),
+                DypSorgu         = Pick(z => z.DypSorgu),
+                EmlakaHebs       = Pick(z => z.EmlakaHebs),
+                Stop             = Pick(z => z.Stop),
+                IcraMemuru       = Pick(z => z.IcraMemuru),
+                IcraSonIsler     = Pick(z => z.IcraSonIsler),
+                IsYeri           = Pick(z => z.IsYeri),
+                IcraQeyd         = Pick(z => z.IcraQeyd)
+            });
+        }
+        return result;
+    }
+
+    // Excel doğum tarixi seriyasını (məs. "33105") oxunaqlı tarixə çevirir; mətn tarix olduğu kimi qalır.
+    private static string? ZaminDogum(string? s)
+    {
+        s = (s ?? "").Trim();
+        if (s.Length == 0) return null;
+        if (!s.Contains('.') && !s.Contains('-') && !s.Contains('/')
+            && double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var serial)
+            && serial >= 10000 && serial <= 60000)
+        {
+            try { return DateTime.FromOADate(serial).ToString("dd.MM.yyyy"); } catch { /* seriya deyil */ }
+        }
+        return s;
+    }
+
     // ── Zamin icra qatı ──────────────────────────────────
     public async Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId)
     {
@@ -591,9 +639,32 @@ public class MehkemeIsiService : IMehkemeIsiService
         int sayi = 0;
         foreach (var oz in zaminler)
         {
-            var key = (oz.Fin ?? oz.Ad ?? "").Trim().ToLowerInvariant();
-            if (string.IsNullOrWhiteSpace(key)) continue;
-            if (movcud.Any(m => ((m.Fin ?? m.Ad ?? "").Trim().ToLowerInvariant()) == key)) continue;
+            var fin = (oz.Fin ?? "").Trim().ToLowerInvariant();
+            var ad  = (oz.Ad ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(fin) && string.IsNullOrWhiteSpace(ad)) continue;
+
+            // Eyni zamin (FİN və ya ad üzrə) artıq varsa — məs. Excel idxalından gəlib —
+            // dublikat yaratma, yalnız Oracle kimliyini (FİN/ünvan/telefon/doğum) əlavə et.
+            var mz = movcud.FirstOrDefault(m =>
+                (!string.IsNullOrWhiteSpace(fin) && (m.Fin ?? "").Trim().ToLowerInvariant() == fin)
+             || (!string.IsNullOrWhiteSpace(ad)  && (m.Ad  ?? "").Trim().ToLowerInvariant() == ad));
+
+            if (mz != null)
+            {
+                bool dey = false;
+                if (string.IsNullOrWhiteSpace(mz.Fin)     && !string.IsNullOrWhiteSpace(oz.Fin))     { mz.Fin = oz.Fin.Trim();         dey = true; }
+                if (string.IsNullOrWhiteSpace(mz.Unvan)   && !string.IsNullOrWhiteSpace(oz.Unvan))   { mz.Unvan = oz.Unvan.Trim();     dey = true; }
+                if (string.IsNullOrWhiteSpace(mz.Telefon) && !string.IsNullOrWhiteSpace(oz.Telefon)) { mz.Telefon = oz.Telefon.Trim(); dey = true; }
+                if (!string.IsNullOrWhiteSpace(oz.DogumTarixi)) { mz.DogumTarixi = oz.DogumTarixi.Trim(); dey = true; }  // Oracle doğum daha etibarlı
+                if (dey)
+                {
+                    mz.YenileyenIcraciId = isciId;
+                    mz.YenilenmeTarixi   = DateTime.Now;
+                    await _uow.Repository<MehkemeZamin>().YenileAsync(mz);
+                    sayi++;
+                }
+                continue;
+            }
 
             await _uow.Repository<MehkemeZamin>().YaratAsync(new MehkemeZamin
             {

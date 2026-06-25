@@ -311,7 +311,7 @@ public class MehkemeIsiController : Controller
                     d.Zaminler.Add(new IcraZaminImportDto
                     {
                         Ad               = zaminAd.Trim(),
-                        DogumTarixi      = Metn(row, 11),
+                        DogumTarixi      = TarixMetn(row, 11),
                         EmekHaqqiTutulma = Metn(row, 4),
                         DypSorgu         = Metn(row, 5),
                         AdinaSorgu       = Metn(row, 6),
@@ -439,6 +439,14 @@ public class MehkemeIsiController : Controller
         if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt2))
             return dt2;
         return null;
+    }
+
+    // Tarix xanasını oxunaqlı mətnə çevirir: tarix formatlı seriya → "dd.MM.yyyy",
+    // mətn tarix olduğu kimi qalır. (Zamin doğum tarixi mətn saxlanılır — seriya nömrəsi yox.)
+    private static string? TarixMetn(IRow row, int c)
+    {
+        var d = Tarix(row, c);
+        return d.HasValue ? d.Value.ToString("dd.MM.yyyy") : Metn(row, c);
     }
 
     // ── Qərardad yaz (inline, AJAX — qeyd yoxdursa yaradır) ─
