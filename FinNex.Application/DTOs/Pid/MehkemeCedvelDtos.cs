@@ -24,6 +24,9 @@ public class MehkemeCedvelIclasDto
 public class MehkemeCedvelImportDto
 {
     public int? Sira { get; set; }
+    public string? Hesab { get; set; }       // kredit hesabı (Oracle linki) — "42"/boş = köhnə/arxiv
+    public string? Subkod { get; set; }      // subkod
+    public string? StatusMetn { get; set; }  // Excel status (BORC BAĞLANDI / QƏTNAMƏ GƏLDİ)
     public string BorcluAd { get; set; } = "";
     public string? GirovunNovu { get; set; }
     public DateTime? MehkemeyeVerilmeTarixi { get; set; }

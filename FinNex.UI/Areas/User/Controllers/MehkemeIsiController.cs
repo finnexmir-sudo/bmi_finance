@@ -189,26 +189,30 @@ public class MehkemeIsiController : Controller
                 : new NPOI.HSSF.UserModel.HSSFWorkbook(stream);
             var sheet = SheetTap(wb, "Məhkəmə") ?? SheetTap(wb, "hk") ?? wb.GetSheetAt(0);
 
-            // Sütun xəritəsi: 1=Sıra, 2=Ad, 6=Girovun növü, 7=Verilmə tarixi,
-            //                 8=İş №/hakim, 9-dan (tarix,saat) cütləri → iclaslar
+            // Sütun xəritəsi (0-əsaslı, "Məhkəmə" vərəqi, data sətir 4-dən):
+            // 0=status, 1=Sıra, 2=hesab, 3=subkod, 4=Ad, 8=Girovun növü,
+            // 9=Verilmə tarixi, 10=İş №/hakim, 11-dən (tarix,saat) cütləri → iclaslar.
             isler = new List<MehkemeCedvelImportDto>();
             for (int r = 3; r <= sheet.LastRowNum; r++)
             {
                 var row = sheet.GetRow(r);
                 if (row == null) continue;
 
-                var ad = Metn(row, 2);
+                var ad = Metn(row, 4);
                 if (string.IsNullOrWhiteSpace(ad)) continue;
 
                 var d = new MehkemeCedvelImportDto
                 {
                     Sira = (int?)Reqem(row, 1),
+                    StatusMetn = Metn(row, 0),
+                    Hesab = Metn(row, 2),
+                    Subkod = Metn(row, 3),
                     BorcluAd = ad.Trim(),
-                    GirovunNovu = Metn(row, 6),
-                    MehkemeyeVerilmeTarixi = Tarix(row, 7),
-                    MehkemeIsNomresi = Metn(row, 8)
+                    GirovunNovu = Metn(row, 8),
+                    MehkemeyeVerilmeTarixi = Tarix(row, 9),
+                    MehkemeIsNomresi = Metn(row, 10)
                 };
-                for (int c = 9; c <= 40; c += 2)
+                for (int c = 11; c <= 40; c += 2)
                 {
                     var t = Tarix(row, c);
                     var saat = Metn(row, c + 1);

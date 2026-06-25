@@ -570,21 +570,27 @@ public class MehkemeIsiService : IMehkemeIsiService
             if (onizleme) continue;
 
             var isNo = string.IsNullOrWhiteSpace(r.MehkemeIsNomresi) ? null : r.MehkemeIsNomresi.Trim();
-            // QeydiyyatNomresi NVARCHAR(20) NOT NULL — qısa marker saxla (truncate riski yox);
-            // tam iş № onsuz da MehkemeSenedi-də qalır (nvarchar max).
-            var qeydNo = (isNo != null && isNo.Length <= 20) ? isNo
-                       : (r.Sira.HasValue ? $"ARX-{r.Sira}" : "ARX");
+            var hesab = (r.Hesab ?? "").Trim();
+            var subkod = (r.Subkod ?? "").Trim();
+            // "42" = PID arxiv kodu (Oracle-da aktiv müştəri yoxdur). Real hesab+subkod → AKTIV:
+            // QeydiyyatNomresi+KreditSubHesab Oracle siyahısına (SiyahiGetir) linklənir →
+            // Aktiv Müştərilər səhifəsində "iş açılıb" görünür. Köhnə (42/boş) → arxiv açarı.
+            bool kohne = string.IsNullOrWhiteSpace(hesab) || hesab == "42" || subkod == "42";
             var entity = new MehkemeIsi
             {
-                QeydiyyatNomresi       = qeydNo,
+                QeydiyyatNomresi       = kohne ? (r.Sira.HasValue ? $"ARX-{r.Sira}" : "ARX") : hesab,
+                KreditSubHesab         = kohne ? null : subkod,
+                KreditHesabi           = kohne ? null : hesab,
+                Subkod                 = kohne ? null : subkod,
                 BorcluAd               = ad,
                 Sira                   = r.Sira,
+                MehkemeStatusMetn      = string.IsNullOrWhiteSpace(r.StatusMetn) ? null : r.StatusMetn.Trim(),
                 KreditNovuMetn         = string.IsNullOrWhiteSpace(r.GirovunNovu) ? null : r.GirovunNovu.Trim(),
                 MehkemeSenedi          = isNo,
                 IsNomresi              = isNo,
                 BaslamaTarixi          = r.MehkemeyeVerilmeTarixi,
                 MehkemeyeVerilmeTarixi = r.MehkemeyeVerilmeTarixi,
-                Status                 = MehkemeIsiStatus.Mehkemede,   // Excel arxivi → məhkəmə mərhələsində
+                Status                 = MehkemeIsiStatus.Mehkemede,   // Məhkəmə vərəqi → məhkəmə mərhələsi
                 Nov                    = MehkemeIsiNov.Diger,
                 YaradanIcraciId        = isciId,
                 YaradilmaTarixi        = DateTime.Now
