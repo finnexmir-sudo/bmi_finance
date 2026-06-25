@@ -134,7 +134,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             Stop              = x.Stop,
             IcraMemuru        = x.IcraMemuru,
             IcraSonIsler      = x.IcraSonIsler,
-            DogumTarixi       = x.DogumTarixi,
+            DogumTarixi       = CanliDogumTarixi(x, canli) ?? x.DogumTarixi,   // ana (Oracle) sorğudan, yoxdursa DB snapshot
             Zamin             = x.Zamin,
             ZaminSayi         = zaminDict.GetValueOrDefault(x.Id)?.Count ?? 0,
             Zaminler          = zaminDict.GetValueOrDefault(x.Id) ?? new List<IcraZaminSetirDto>(),
@@ -447,6 +447,14 @@ public class MehkemeIsiService : IMehkemeIsiService
     // İcra grid/export üçün: işin kreditini canlı Oracle siyahısında tapıb "Son əməliyyat"
     // tarixini qaytar (Detal ilə eyni hesab+K.S. açarı). Tapılmasa null → DB snapshot işlənir.
     private static DateTime? CanliSonOdenis(MehkemeIsi x, IReadOnlyList<MehkemeKreditSatirDto>? canli)
+        => ParseTarix(CanliTap(x, canli)?.SonEmeliyyatTarixi);
+
+    // İş üçün canlı Oracle siyahısındakı doğum tarixi (Aktiv Müştərilər "ana sorğu") — borclu sətrində göstərilir.
+    private static DateTime? CanliDogumTarixi(MehkemeIsi x, IReadOnlyList<MehkemeKreditSatirDto>? canli)
+        => ParseTarix(CanliTap(x, canli)?.DogumTarixi);
+
+    // İşi canlı Oracle siyahısında hesab+K.S. açarı ilə tapır (Detal ilə eyni məntiq).
+    private static MehkemeKreditSatirDto? CanliTap(MehkemeIsi x, IReadOnlyList<MehkemeKreditSatirDto>? canli)
     {
         if (canli == null || canli.Count == 0) return null;
         var hesab = !string.IsNullOrWhiteSpace(x.QeydiyyatNomresi) ? x.QeydiyyatNomresi.Trim()
@@ -454,10 +462,9 @@ public class MehkemeIsiService : IMehkemeIsiService
         var ks    = !string.IsNullOrWhiteSpace(x.KreditSubHesab) ? x.KreditSubHesab.Trim()
                   : (x.Subkod ?? "").Trim();
         if (string.IsNullOrWhiteSpace(hesab)) return null;
-        var row = canli.FirstOrDefault(s =>
+        return canli.FirstOrDefault(s =>
             s.KreditHesabi.Trim() == hesab &&
             (string.IsNullOrWhiteSpace(ks) || s.Ks.Trim() == ks));
-        return row == null ? null : ParseTarix(row.SonEmeliyyatTarixi);
     }
 
     // ── Zamin icra qatı ──────────────────────────────────

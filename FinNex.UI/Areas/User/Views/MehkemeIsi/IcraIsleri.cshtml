@@ -129,10 +129,6 @@
                                 </td>
                                 <td>
                                     <span class="mi-badge @StatusClass(x.Status)">@StatusAd(x.Status)</span>
-                                    @if (!string.IsNullOrWhiteSpace(x.MehkemeStatusMetn))
-                                    {
-                                        <div class="ic-statmetn" title="@x.MehkemeStatusMetn">@x.MehkemeStatusMetn</div>
-                                    }
                                 </td>
                                 <td class="ms-num">@M(x.QalanBorc)</td>
                                 <td class="mi-date">@D(x.SonOdenisTarixi)</td>
@@ -294,5 +290,18 @@
         }
         s.addEventListener('input', f);
     })();
+
+    // Cədvəlin hündürlüyünü ekrana uyğunlaşdır — üfüqi scroll həmişə cədvəlin
+    // altında (ekran daxilində) görünsün, səhifəni aşağı sürükləmək lazım olmasın.
+    function icFitHeight() {
+        var tw = document.querySelector('.ms-twrap');
+        if (!tw) return;
+        var top = tw.getBoundingClientRect().top;
+        var foot = document.querySelector('.ms-foot');
+        var footH = foot ? foot.offsetHeight : 0;
+        tw.style.maxHeight = Math.max(240, window.innerHeight - top - footH - 14) + 'px';
+    }
+    icFitHeight();
+    window.addEventListener('resize', icFitHeight);
 </script>
 }
