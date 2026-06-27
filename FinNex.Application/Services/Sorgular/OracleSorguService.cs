@@ -75,6 +75,7 @@ public class OracleSorguService : IOracleSorguService
             Mahiyyet = dto.Mahiyyet?.Trim(),
             SorguMetni = dto.SorguMetni.Trim(),
             Aktiv = dto.Aktiv,
+            Kataloq = dto.Kataloq,
             DepartamentId = dto.DepartamentId,
             YaradilmaTarixi = DateTime.Now
         };
@@ -97,6 +98,7 @@ public class OracleSorguService : IOracleSorguService
         entity.Mahiyyet = dto.Mahiyyet?.Trim();
         entity.SorguMetni = dto.SorguMetni.Trim();
         entity.Aktiv = dto.Aktiv;
+        entity.Kataloq = dto.Kataloq;
         entity.DepartamentId = dto.DepartamentId;
         entity.YenilenmeTarixi = DateTime.Now;
 
@@ -139,6 +141,7 @@ public class OracleSorguService : IOracleSorguService
         Mahiyyet = x.Mahiyyet,
         SorguMetni = x.SorguMetni,
         Aktiv = x.Aktiv,
+        Kataloq = x.Kataloq,
         DepartamentId = x.DepartamentId,
         DepartamentAd = x.Departament?.Ad ?? "",
         YaradilmaTarixi = x.YaradilmaTarixi

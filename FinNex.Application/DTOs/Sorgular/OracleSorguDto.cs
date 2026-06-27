@@ -6,6 +6,7 @@ public class OracleSorguDto : BaseDto
     public string? Mahiyyet { get; set; }
     public string SorguMetni { get; set; } = "";
     public bool Aktiv { get; set; }
+    public bool Kataloq { get; set; }
     public int DepartamentId { get; set; }
     public string DepartamentAd { get; set; } = "";
 }
@@ -16,6 +17,7 @@ public class OracleSorguCreateDto
     public string? Mahiyyet { get; set; }
     public string SorguMetni { get; set; } = "";
     public bool Aktiv { get; set; } = true;
+    public bool Kataloq { get; set; } = false;
     public int DepartamentId { get; set; }
 }
 
@@ -26,5 +28,6 @@ public class OracleSorguUpdateDto
     public string? Mahiyyet { get; set; }
     public string SorguMetni { get; set; } = "";
     public bool Aktiv { get; set; }
+    public bool Kataloq { get; set; }
     public int DepartamentId { get; set; }
 }
