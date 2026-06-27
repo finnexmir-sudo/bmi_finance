@@ -100,8 +100,8 @@ public class MehkemeIsiController : Controller
         try
         {
             var n = await _service.KataloqIcraEtAsync(sorguId, 100000);
-            var bytes = ExcelExportHelper.YaratXam("Kataloq", n.Sutunlar, n.Setirler);
-            return File(bytes, ExcelExportHelper.ContentType, $"Kataloq_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+            var bytes = ExcelExportHelper.YaratXam("Sorğu", n.Sutunlar, n.Setirler);
+            return File(bytes, ExcelExportHelper.ContentType, $"Sorgu_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
         }
         catch (Exception ex)
         {

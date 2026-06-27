@@ -1,7 +1,7 @@
 @using FinNex.Application.DTOs.Pid
 @model KataloqViewDto
 @{
-    ViewData["Title"] = "Ümumi Kataloq";
+    ViewData["Title"] = "Sorğular";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     // Xam Oracle dəyərini oxunaqlı mətnə çevir (böyük hesab nömrələri N2 ilə korlanmasın)
@@ -19,8 +19,8 @@
 <div class="ms-page">
     <div class="ms-head">
         <div>
-            <h2 class="ms-title">Ümumi Kataloq</h2>
-            <p class="ms-sub">PİD — Oracle kataloq sorğuları (canlı)</p>
+            <h2 class="ms-title">Sorğular</h2>
+            <p class="ms-sub">PİD — Oracle sorğuları (canlı)</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             @if (Model.SeciliId.HasValue && Model.Netice != null)
@@ -36,12 +36,12 @@
     @if (TempData["Error"] != null) { <div class="ms-alert ms-alert--error">@TempData["Error"]</div> }
 
     <div class="ms-filter">
-        <label style="font-weight:600;color:#475569;white-space:nowrap">Ümumi cari Kataloq:</label>
+        <label style="font-weight:600;color:#475569;white-space:nowrap">Sorğu:</label>
         <select id="kataloqSec" class="ms-input ms-grow"
                 onchange="if(this.value) location.href='@Url.Action("Kataloq")?sorguId='+this.value">
             @if (!Model.Kataloglar.Any())
             {
-                <option value="">— kataloq yoxdur —</option>
+                <option value="">— sorğu yoxdur —</option>
             }
             @foreach (var k in Model.Kataloglar)
             {
@@ -54,8 +54,8 @@
     {
         <div class="ms-alert ms-alert--warn">
             <i class="bi bi-exclamation-triangle"></i>
-            Hələ kataloq sorğusu yoxdur. <a asp-area="Admin" asp-controller="OracleSorgu" asp-action="Create">Admin → Oracle Sorğuları</a>
-            bölməsindən <b>PİD</b> departamenti üçün sorğu əlavə edin (məs. adı "Kataloq").
+            Hələ sorğu yoxdur. <a asp-area="Admin" asp-controller="OracleSorgu" asp-action="Create">Admin → Oracle Sorğular</a>
+            bölməsindən sorğu əlavə edib <b>"Sorğularda göstər"</b> işarələyin (məs. adı "Kataloq").
         </div>
     }
     else if (!string.IsNullOrWhiteSpace(Model.Xeta))
