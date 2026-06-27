@@ -1,4 +1,5 @@
 @inject FinNex.Application.Interfaces.IDashboardService _layoutDashSvc
+@inject FinNex.Application.Interfaces.Pid.IMehkemeIsiService _pidSorguSvc
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
@@ -545,10 +546,32 @@
                        class="fn-nav-item @(pidMonitorActive ? "active" : "")" style="margin-bottom:4px">
                         <i class="bi bi-speedometer2"></i> Monitorinq
                     </a>
-                    <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Kataloq"
-                       class="fn-nav-item @(pidKataloqActive ? "active" : "")" style="margin-bottom:4px">
-                        <i class="bi bi-card-list"></i> Sorğular
-                    </a>
+                    @{
+                        IList<FinNex.Application.DTOs.Pid.KataloqSecimDto> pidSorgular;
+                        try { pidSorgular = await _pidSorguSvc.KataloqlarAsync(); }
+                        catch { pidSorgular = new List<FinNex.Application.DTOs.Pid.KataloqSecimDto>(); }
+                        int.TryParse(Context.Request.Query["sorguId"].ToString(), out var pidSeciliSorgu);
+                        if (pidSeciliSorgu == 0 && pidSorgular.Count > 0) pidSeciliSorgu = pidSorgular[0].Id;
+                    }
+                    <div class="fn-nav-g @(pidKataloqActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Sorğular</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            @foreach (var sorgu in pidSorgular)
+                            {
+                                <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Kataloq" asp-route-sorguId="@sorgu.Id"
+                                   class="fn-nav-item @(pidKataloqActive && pidSeciliSorgu == sorgu.Id ? "active" : "")">
+                                    <i class="bi bi-table"></i> @sorgu.Ad
+                                </a>
+                            }
+                            @if (pidSorgular.Count == 0)
+                            {
+                                <span class="fn-nav-item" style="opacity:.55;cursor:default">— sorğu yoxdur —</span>
+                            }
+                        </div>
+                    </div>
 
                     <div class="fn-nav-g @(pidSmsActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">

@@ -19,8 +19,8 @@
 <div class="ms-page">
     <div class="ms-head">
         <div>
-            <h2 class="ms-title">Sorğular</h2>
-            <p class="ms-sub">PİD — Oracle sorğuları (canlı)</p>
+            <h2 class="ms-title">@(string.IsNullOrWhiteSpace(Model.SeciliAd) ? "Sorğular" : Model.SeciliAd)</h2>
+            <p class="ms-sub">PİD — Oracle sorğusu (canlı)</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             @if (Model.SeciliId.HasValue && Model.Netice != null)
@@ -34,21 +34,6 @@
     </div>
 
     @if (TempData["Error"] != null) { <div class="ms-alert ms-alert--error">@TempData["Error"]</div> }
-
-    <div class="ms-filter">
-        <label style="font-weight:600;color:#475569;white-space:nowrap">Sorğular:</label>
-        <select id="kataloqSec" class="ms-input ms-grow"
-                onchange="if(this.value) location.href='@Url.Action("Kataloq")?sorguId='+this.value">
-            @if (!Model.Kataloglar.Any())
-            {
-                <option value="">— sorğu yoxdur —</option>
-            }
-            @foreach (var k in Model.Kataloglar)
-            {
-                <option value="@k.Id" selected="@(k.Id == Model.SeciliId)">@k.Ad</option>
-            }
-        </select>
-    </div>
 
     @if (!Model.Kataloglar.Any())
     {
