@@ -31,6 +31,24 @@ public class MehkemeMonitorDto
     // ── Siyahılar ──
     public List<YaxinlasanGorusDto> YaxinlasanIclaslar { get; set; } = new();   // növbəti 30 gün
     public List<MonitorBorcluDto>   EnBoyukBorclu       { get; set; } = new();   // ən yüksək qalan borc (aktiv)
+
+    // ── Kredit portfeli (Oracle "CariKataloq" sorğusu — adi + problemli) ──
+    public bool    OracleVar       { get; set; }      // CariKataloq tapıldı və icra olundu
+    public string? OracleXeta      { get; set; }
+    public int     OracleKreditSayi{ get; set; }      // ümumi kredit sayı
+    public decimal OracleCemQaliq  { get; set; }      // Σ tam_qaliq
+    public decimal OracleVkQaliq   { get; set; }      // Σ vk_qaliq (vaxtı keçmiş)
+    public decimal OracleFaizBorcu { get; set; }      // Σ (faiz_meblegi + vk_faiz_meblegi)
+    public List<MonitorQrupDto> Item01Uzre { get; set; } = new();   // status (item_01) üzrə
+    public List<MonitorQrupDto> GirovUzre  { get; set; } = new();   // girovun növü üzrə
+}
+
+// Oracle qrup (status / girov) — say + qalıq
+public class MonitorQrupDto
+{
+    public string  Ad     { get; set; } = "";
+    public int     Say    { get; set; }
+    public decimal Mebleg { get; set; }
 }
 
 public class MonitorAdSayDto

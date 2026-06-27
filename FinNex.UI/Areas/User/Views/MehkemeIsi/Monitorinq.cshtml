@@ -177,6 +177,73 @@
             else { <div class="md-empty">Qalan borcu olan aktiv iş yoxdur.</div> }
         </div>
     </div>
+
+    @* ── Kredit portfeli (Oracle "Cari Kataloq") — adi + problemli ── *@
+    <div class="md-orcl-head"><i class="bi bi-database"></i> Kredit portfeli — Oracle (Cari Kataloq)</div>
+    @if (!Model.OracleVar)
+    {
+        <div class="md-warn" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af">
+            <i class="bi bi-info-circle"></i>
+            @(string.IsNullOrWhiteSpace(Model.OracleXeta)
+                ? "\"Cari Kataloq\" sorğusu tapılmadı. Admin → Oracle Sorğular-da adı \"Cari Kataloq\" (və ya \"CariKataloq\") olan aktiv sorğu olmalıdır."
+                : "Oracle xətası: " + Model.OracleXeta)
+        </div>
+    }
+    else
+    {
+        <div class="md-kpis" style="grid-template-columns:repeat(4,1fr)">
+            <div class="md-kpi md-kpi--indigo">
+                <div class="md-kpi-ic"><i class="bi bi-collection"></i></div>
+                <div><div class="md-kpi-val">@Model.OracleKreditSayi</div><div class="md-kpi-lbl">Ümumi kredit</div>
+                    <div class="md-kpi-sub">adi + problemli</div></div>
+            </div>
+            <div class="md-kpi md-kpi--green">
+                <div class="md-kpi-ic"><i class="bi bi-cash-stack"></i></div>
+                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleCemQaliq)</div><div class="md-kpi-lbl">Ümumi qalıq</div></div>
+            </div>
+            <div class="md-kpi md-kpi--rose">
+                <div class="md-kpi-ic"><i class="bi bi-exclamation-octagon"></i></div>
+                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleVkQaliq)</div><div class="md-kpi-lbl">Vaxtı keçmiş qalıq</div></div>
+            </div>
+            <div class="md-kpi md-kpi--amber">
+                <div class="md-kpi-ic"><i class="bi bi-percent"></i></div>
+                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleFaizBorcu)</div><div class="md-kpi-lbl">Faiz borcu</div></div>
+            </div>
+        </div>
+
+        <div class="md-grid2">
+            <div class="md-panel">
+                <div class="md-panel-h"><i class="bi bi-pie-chart"></i> Status üzrə (item_01)</div>
+                <div class="md-panel-b md-panel-b--flush">
+                    <table class="md-table">
+                        <thead><tr><th>Status</th><th class="md-num">Say</th><th class="md-num">Qalıq</th></tr></thead>
+                        <tbody>
+                            @foreach (var s in Model.Item01Uzre)
+                            {
+                                <tr><td>@s.Ad</td><td class="md-num">@s.Say</td><td class="md-num md-strong">@M(s.Mebleg)</td></tr>
+                            }
+                            @if (!Model.Item01Uzre.Any()) { <tr><td colspan="3" class="md-empty">Məlumat yoxdur.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="md-panel">
+                <div class="md-panel-h"><i class="bi bi-shield-lock"></i> Girovun növü üzrə</div>
+                <div class="md-panel-b md-panel-b--flush">
+                    <table class="md-table">
+                        <thead><tr><th>Girovun növü</th><th class="md-num">Say</th><th class="md-num">Qalıq</th></tr></thead>
+                        <tbody>
+                            @foreach (var g in Model.GirovUzre)
+                            {
+                                <tr><td>@g.Ad</td><td class="md-num">@g.Say</td><td class="md-num md-strong">@M(g.Mebleg)</td></tr>
+                            }
+                            @if (!Model.GirovUzre.Any()) { <tr><td colspan="3" class="md-empty">Məlumat yoxdur.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @section Styles {
@@ -185,6 +252,8 @@
         .md-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
         .md-title { margin:0; font-size:22px; font-weight:800; color:#0f172a; }
         .md-sub { margin:3px 0 0; color:#64748b; font-size:13px; }
+        .md-orcl-head { margin:18px 0 12px; padding-top:14px; border-top:2px solid #e9eef5;
+                        font-size:16px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px; }
         .md-actions { display:flex; gap:8px; flex-wrap:wrap; }
         .md-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 13px; border-radius:9px; font-size:13px; font-weight:600;
                   background:#fff; border:1px solid #e2e8f0; color:#334155; text-decoration:none; cursor:pointer; }

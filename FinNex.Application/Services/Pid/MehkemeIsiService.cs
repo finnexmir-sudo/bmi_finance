@@ -288,7 +288,45 @@ public class MehkemeIsiService : IMehkemeIsiService
             })
             .ToList();
 
+        // ── Kredit portfeli (Oracle "CariKataloq") — adi + problemli, item_01 və girov üzrə ──
+        var kataloqSql = await KataloqSorguMetniAsync();
+        if (!string.IsNullOrWhiteSpace(kataloqSql))
+        {
+            try
+            {
+                var rows = await _oracle.SelectAsync(kataloqSql, maxRows: 100000);
+                dto.OracleVar = true;
+                dto.OracleKreditSayi = rows.Count;
+                foreach (var r in rows)
+                {
+                    dto.OracleCemQaliq  += GetDec(r, "tam_qaliq") ?? 0m;
+                    dto.OracleVkQaliq   += GetDec(r, "vk_qaliq") ?? 0m;
+                    dto.OracleFaizBorcu += (GetDec(r, "faiz_meblegi") ?? 0m) + (GetDec(r, "vk_faiz_meblegi") ?? 0m);
+                }
+                dto.Item01Uzre = rows
+                    .GroupBy(r => { var s = (GetStr(r, "item_01") ?? "").Trim(); return string.IsNullOrEmpty(s) ? "Adi (statussuz)" : s; })
+                    .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(r => GetDec(r, "tam_qaliq") ?? 0m) })
+                    .OrderByDescending(x => x.Say).ToList();
+                dto.GirovUzre = rows
+                    .GroupBy(r => { var s = (GetStr(r, "girovun_novu") ?? "").Trim(); return string.IsNullOrEmpty(s) ? "(təyin edilməyib)" : s; })
+                    .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(r => GetDec(r, "tam_qaliq") ?? 0m) })
+                    .OrderByDescending(x => x.Say).ToList();
+            }
+            catch (Exception ex) { dto.OracleXeta = ex.Message; }
+        }
+
         return dto;
+    }
+
+    // Monitorinq üçün kredit portfeli sorğusu — adı "Cari Kataloq" olan aktiv Oracle sorğusu
+    // (boşluqdan asılı olmadan: "CariKataloq" = "Cari Kataloq").
+    private async Task<string?> KataloqSorguMetniAsync()
+    {
+        var res = await _sorguService.HamisiniGetirAsync();
+        if (!res.Success || res.Data is null) return null;
+        static string Norm(string? s) => (s ?? "").Replace(" ", "").ToLowerInvariant();
+        var q = res.Data.FirstOrDefault(x => x.Aktiv && Norm(x.SorguAdi) == "carikataloq");
+        return q?.SorguMetni;
     }
 
     // ── Kataloq (PID departamentinin Oracle sorğuları) ──
