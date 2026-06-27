@@ -2,7 +2,7 @@
 @using FinNex.Domain.Entities.Pid
 @model MehkemeMonitorDto
 @{
-    ViewData["Title"] = "Məhkəmə işlərinin monitorinqi";
+    ViewData["Title"] = "Monitorinq";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     string Mq(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
@@ -35,8 +35,8 @@
 <div class="md-page">
     <div class="md-head">
         <div>
-            <h2 class="md-title">Məhkəmə işlərinin monitorinqi</h2>
-            <p class="md-sub">İzlənən bütün məhkəmə və icra işlərinin ümumi mənzərəsi — @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</p>
+            <h2 class="md-title">Monitorinq</h2>
+            <p class="md-sub">PİD — kredit portfeli və məhkəmə/icra işlərinin ümumi mənzərəsi — @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</p>
         </div>
         <div class="md-actions">
             <a asp-action="Isler" class="md-btn"><i class="bi bi-bank"></i> Məhkəmə İşləri</a>
