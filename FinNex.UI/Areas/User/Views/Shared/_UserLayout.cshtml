@@ -540,19 +540,17 @@
                     var pidMehkActive  = (currentController == "MehkemeIsi" && currentAction != "Monitorinq" && currentAction != "Kataloq")
                                          || currentController is "OdenisNezareti" or "MehkemeCedvel";
 
+                    IList<FinNex.Application.DTOs.Pid.KataloqSecimDto> pidSorgular = new List<FinNex.Application.DTOs.Pid.KataloqSecimDto>();
+                    try { pidSorgular = await _pidSorguSvc.KataloqlarAsync(); } catch { }
+                    int.TryParse(Context.Request.Query["sorguId"].ToString(), out var pidSeciliSorgu);
+                    if (pidSeciliSorgu == 0 && pidSorgular.Count > 0) pidSeciliSorgu = pidSorgular[0].Id;
+
                     <div class="fn-nav-label">PİD</div>
 
                     <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Monitorinq"
                        class="fn-nav-item @(pidMonitorActive ? "active" : "")" style="margin-bottom:4px">
                         <i class="bi bi-speedometer2"></i> Monitorinq
                     </a>
-                    @{
-                        IList<FinNex.Application.DTOs.Pid.KataloqSecimDto> pidSorgular;
-                        try { pidSorgular = await _pidSorguSvc.KataloqlarAsync(); }
-                        catch { pidSorgular = new List<FinNex.Application.DTOs.Pid.KataloqSecimDto>(); }
-                        int.TryParse(Context.Request.Query["sorguId"].ToString(), out var pidSeciliSorgu);
-                        if (pidSeciliSorgu == 0 && pidSorgular.Count > 0) pidSeciliSorgu = pidSorgular[0].Id;
-                    }
                     <div class="fn-nav-g @(pidKataloqActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Sorğular</span>
