@@ -291,6 +291,44 @@ public class MehkemeIsiService : IMehkemeIsiService
         return dto;
     }
 
+    // ── Kataloq (PID departamentinin Oracle sorğuları) ──
+    public async Task<IList<KataloqSecimDto>> KataloqlarAsync()
+    {
+        var res = await _sorguService.HamisiniGetirAsync();
+        if (!res.Success || res.Data is null) return new List<KataloqSecimDto>();
+        var hamisi = res.Data.Where(s => s.Aktiv).ToList();
+
+        // PID departamentini mövcud konfiqurasiyalı PID sorğusundan tap (departament adının
+        // dəqiq yazılışından asılı olmasın); tapılmasa ad üzrə (PİD/Problemli) süzgəcə keç.
+        var ayar = await _sistemAyar.GetirAsync();
+        var refId = ayar?.PidMehkemeSiyahiSorguId ?? ayar?.PidMehkemeSorguId ?? ayar?.PidTopluSmsOracleSorguId;
+        int? pidDepId = refId.HasValue ? hamisi.FirstOrDefault(s => s.Id == refId.Value)?.DepartamentId : null;
+
+        var list = pidDepId.HasValue
+            ? hamisi.Where(s => s.DepartamentId == pidDepId.Value)
+            : hamisi.Where(s => PidDepartamenti(s.DepartamentAd));
+        return list.OrderBy(s => s.SorguAdi)
+                   .Select(s => new KataloqSecimDto { Id = s.Id, Ad = s.SorguAdi })
+                   .ToList();
+    }
+
+    public async Task<OracleNetice> KataloqIcraEtAsync(int sorguId, int maxRows)
+    {
+        var res = await _sorguService.IdIleGetirAsync(sorguId);
+        if (!res.Success || res.Data is null || !res.Data.Aktiv)
+            throw new InvalidOperationException("Sorğu tapılmadı və ya deaktivdir.");
+        // YalnızSelect SelectXamAsync daxilində yoxlanılır; combobox onsuz da yalnız PID sorğularını verir.
+        return await _oracle.SelectXamAsync(res.Data.SorguMetni, maxRows);
+    }
+
+    // Departament adı PID / Problemli İşlər-ə aiddirmi (kataloq sorğularını süzmək üçün)
+    private static bool PidDepartamenti(string? ad)
+    {
+        var s = ad ?? "";
+        var u = s.ToUpperInvariant();
+        return s.Contains("PİD") || u.Contains("PID") || u.Contains("PROBLEML");
+    }
+
     private static string NovAdi(MehkemeIsiNov n) => n switch
     {
         MehkemeIsiNov.Ipoteka    => "İpoteka",

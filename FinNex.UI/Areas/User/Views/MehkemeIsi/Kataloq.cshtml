@@ -1,0 +1,133 @@
+@using FinNex.Application.DTOs.Pid
+@model KataloqViewDto
+@{
+    ViewData["Title"] = "Ümumi Kataloq";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    // Xam Oracle dəyərini oxunaqlı mətnə çevir (böyük hesab nömrələri N2 ilə korlanmasın)
+    string Hucre(object? v)
+    {
+        if (v == null) return "—";
+        if (v is DateTime dt) return dt == dt.Date ? dt.ToString("dd.MM.yyyy") : dt.ToString("dd.MM.yyyy HH:mm");
+        if (v is decimal dec) return dec == Math.Truncate(dec) ? dec.ToString("0") : dec.ToString("N2");
+        if (v is double dbl)  return dbl == Math.Truncate(dbl) ? dbl.ToString("0") : dbl.ToString("N2");
+        var s = v.ToString();
+        return string.IsNullOrWhiteSpace(s) ? "—" : s;
+    }
+}
+
+<div class="ms-page">
+    <div class="ms-head">
+        <div>
+            <h2 class="ms-title">Ümumi Kataloq</h2>
+            <p class="ms-sub">PİD — Oracle kataloq sorğuları (canlı)</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            @if (Model.SeciliId.HasValue && Model.Netice != null)
+            {
+                <a asp-action="KataloqExcel" asp-route-sorguId="@Model.SeciliId" class="ms-btn ms-btn--primary">
+                    <i class="bi bi-file-earmark-excel"></i> Excelə yüklə
+                </a>
+            }
+            <a asp-action="Kataloq" asp-route-sorguId="@Model.SeciliId" class="ms-btn ms-btn--ghost"><i class="bi bi-arrow-clockwise"></i> Yenilə</a>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null) { <div class="ms-alert ms-alert--error">@TempData["Error"]</div> }
+
+    <div class="ms-filter">
+        <label style="font-weight:600;color:#475569;white-space:nowrap">Ümumi cari Kataloq:</label>
+        <select id="kataloqSec" class="ms-input ms-grow"
+                onchange="if(this.value) location.href='@Url.Action("Kataloq")?sorguId='+this.value">
+            @if (!Model.Kataloglar.Any())
+            {
+                <option value="">— kataloq yoxdur —</option>
+            }
+            @foreach (var k in Model.Kataloglar)
+            {
+                <option value="@k.Id" selected="@(k.Id == Model.SeciliId)">@k.Ad</option>
+            }
+        </select>
+    </div>
+
+    @if (!Model.Kataloglar.Any())
+    {
+        <div class="ms-alert ms-alert--warn">
+            <i class="bi bi-exclamation-triangle"></i>
+            Hələ kataloq sorğusu yoxdur. <a asp-area="Admin" asp-controller="OracleSorgu" asp-action="Create">Admin → Oracle Sorğuları</a>
+            bölməsindən <b>PİD</b> departamenti üçün sorğu əlavə edin (məs. adı "Kataloq").
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.Xeta))
+    {
+        <div class="ms-alert ms-alert--error"><i class="bi bi-x-octagon"></i> @Model.Xeta</div>
+    }
+    else if (Model.Netice != null)
+    {
+        <div class="ms-card">
+            <div class="ms-twrap">
+                <table class="ms-table" id="katTable">
+                    <thead>
+                        <tr>
+                            <th style="width:46px">№</th>
+                            @foreach (var c in Model.Netice.Sutunlar)
+                            {
+                                <th>@c</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ var i = 0; }
+                        @foreach (var row in Model.Netice.Setirler)
+                        {
+                            i++;
+                            <tr>
+                                <td class="kat-sira">@i</td>
+                                @foreach (var cell in row)
+                                {
+                                    <td title="@Hucre(cell)">@Hucre(cell)</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="ms-foot">
+                @Model.Netice.Setirler.Count sətir · @Model.Netice.Sutunlar.Count sütun
+                @if (Model.Kesildi)
+                {
+                    <span style="color:#b45309"> · ⚠ ilk @Model.Limit sətir göstərilir — tam siyahı üçün Excelə yüklə</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+    <style>
+        #katTable tbody td { padding:7px 12px; border-bottom:1px solid #e5e7eb; border-right:1px solid #e5e7eb;
+                             white-space:nowrap; max-width:280px; overflow:hidden; text-overflow:ellipsis; font-size:12.5px; }
+        #katTable tbody td:last-child { border-right:none; }
+        #katTable thead th { white-space:nowrap; }
+        #katTable tbody tr:nth-child(even) td { background:#f8fafc; }
+        #katTable tbody tr:hover td { background:#eff6ff; }
+        .kat-sira { color:#94a3b8; font-weight:700; text-align:center; }
+    </style>
+}
+
+@section Scripts {
+<script>
+    // Cədvəlin hündürlüyünü ekrana uyğunlaşdır — üfüqi scroll həmişə görünsün
+    function katFit() {
+        var tw = document.querySelector('.ms-twrap');
+        if (!tw) return;
+        var top = tw.getBoundingClientRect().top;
+        var foot = document.querySelector('.ms-foot');
+        var footH = foot ? foot.offsetHeight : 0;
+        tw.style.maxHeight = Math.max(240, window.innerHeight - top - footH - 14) + 'px';
+    }
+    katFit();
+    window.addEventListener('resize', katFit);
+</script>
+}

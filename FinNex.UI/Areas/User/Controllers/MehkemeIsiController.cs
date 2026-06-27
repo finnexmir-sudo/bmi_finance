@@ -76,6 +76,40 @@ public class MehkemeIsiController : Controller
         return View(model);
     }
 
+    // ── Kataloq (Ümumi cari Kataloq — PID Oracle sorğuları, xam nəticə) ──
+    public async Task<IActionResult> Kataloq(int? sorguId)
+    {
+        var vm = new KataloqViewDto { Limit = 5000 };
+        vm.Kataloglar = (await _service.KataloqlarAsync()).ToList();
+        vm.SeciliId = sorguId ?? vm.Kataloglar.FirstOrDefault()?.Id;
+        vm.SeciliAd = vm.Kataloglar.FirstOrDefault(k => k.Id == vm.SeciliId)?.Ad;
+        if (vm.SeciliId.HasValue)
+        {
+            try
+            {
+                vm.Netice = await _service.KataloqIcraEtAsync(vm.SeciliId.Value, vm.Limit);
+                vm.Kesildi = vm.Netice.Setirler.Count >= vm.Limit;
+            }
+            catch (Exception ex) { vm.Xeta = ex.Message; }
+        }
+        return View(vm);
+    }
+
+    public async Task<IActionResult> KataloqExcel(int sorguId)
+    {
+        try
+        {
+            var n = await _service.KataloqIcraEtAsync(sorguId, 100000);
+            var bytes = ExcelExportHelper.YaratXam("Kataloq", n.Sutunlar, n.Setirler);
+            return File(bytes, ExcelExportHelper.ContentType, $"Kataloq_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Excel alınmadı: " + ex.Message;
+            return RedirectToAction(nameof(Kataloq), new { sorguId });
+        }
+    }
+
     // ── Excel export (hər grid səhifəsi) ──────────────────────────
     // Aktiv Müştərilər — TAM Oracle sorğusu (bütün sütunlar/sətirlər), yalnız görünən cədvəl deyil.
     public async Task<IActionResult> IndexExcel()

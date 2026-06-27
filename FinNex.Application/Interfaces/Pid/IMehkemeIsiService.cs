@@ -14,6 +14,10 @@ public interface IMehkemeIsiService
 
     // Monitorinq dashboard — KPI/paylanma/siyahıları yüngül SQL sorğuları ilə hesablayır (Oracle yox)
     Task<MehkemeMonitorDto> MonitorGetirAsync();
+
+    // Kataloq — PID departamentinin aktiv Oracle sorğuları (combobox) + seçilmiş sorğunun xam icrası
+    Task<IList<KataloqSecimDto>> KataloqlarAsync();
+    Task<OracleNetice> KataloqIcraEtAsync(int sorguId, int maxRows);
     Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);
     Task<bool> YenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
     Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
