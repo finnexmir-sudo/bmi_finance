@@ -315,6 +315,21 @@ public class MehkemeIsiService : IMehkemeIsiService
                     .GroupBy(r => { var s = (GetStr(r, "girovun_novu") ?? "").Trim(); return string.IsNullOrEmpty(s) ? "(təyin edilməyib)" : s; })
                     .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(EsasBorc) })
                     .OrderByDescending(x => x.Say).ToList();
+
+                // Gecikmə zolaqları (real_overdue_day) — evristik risk proqnozu (#3a)
+                var zolaqlar = new[]
+                {
+                    new { Ad = "Cari (gecikmə yox)",         Min = int.MinValue, Max = 0 },
+                    new { Ad = "1–30 gün",                   Min = 1,  Max = 30 },
+                    new { Ad = "31–60 gün",                  Min = 31, Max = 60 },
+                    new { Ad = "61–89 gün (məhkəmə ərəfəsi)", Min = 61, Max = 89 },
+                    new { Ad = "90+ gün (məhkəmə/icra)",     Min = 90, Max = int.MaxValue },
+                };
+                dto.GecikmeZolaqlari = zolaqlar.Select(z =>
+                {
+                    var grup = rows.Where(r => { var d = (int)(GetDec(r, "real_overdue_day") ?? 0m); return d >= z.Min && d <= z.Max; }).ToList();
+                    return new MonitorQrupDto { Ad = z.Ad, Say = grup.Count, Mebleg = grup.Sum(EsasBorc) };
+                }).ToList();
             }
             catch (Exception ex) { dto.OracleXeta = ex.Message; }
         }
