@@ -63,12 +63,12 @@
         <div class="ms-card kat-risk-card" id="katRiskCard" style="display:none; margin-bottom:12px">
             <div class="kat-risk-head">
                 <i class="bi bi-flag-fill"></i> Riskli Zaminlər
-                <span class="kat-risk-rule">(≥2 kreditə zamin <b>və ya</b> ümumi yük &gt; 5.000 ₼)</span>
+                <span class="kat-risk-rule">(1-dən çox kreditə zamin)</span>
                 <span id="katRiskCount" class="kat-risk-badge">0</span>
             </div>
             <div class="ms-twrap" style="max-height:240px">
                 <table class="ms-table" id="katRiskTable">
-                    <thead><tr><th style="width:46px">№</th><th>Zamin</th><th>FİN</th><th class="ms-num">Kredit sayı</th><th class="ms-num">Ümumi yük</th></tr></thead>
+                    <thead><tr><th style="width:46px">№</th><th>Zamin</th><th>FİN</th><th class="ms-num">Kredit sayı</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -182,7 +182,7 @@
         function esc(s){ return (s == null ? '' : s.toString()).replace(/[&<>"']/g, function (c) {
             return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
 
-        // ── Riskli zamin: ≥2 kreditə zamin VƏ YA ümumi yük > 5000 ──
+        // ── Riskli zamin: 1-dən çox kreditə zamin (yalnız say — məbləğ/ödəniş vəziyyətindən asılı deyil) ──
         var slots = [];
         for (var x = 1; x <= 5; x++) {
             var fi = colIndex('zamin_' + x + '_fin'), ai = colIndex('zamin_' + x + '_ad'), yi = colIndex('zamin_' + x + '_borc_yuku');
@@ -207,7 +207,7 @@
         var riskySet = {};
         Object.keys(zaminMap).forEach(function (k) {
             var z = zaminMap[k];
-            if (z.kredit >= 2 || z.yuk > 5000) riskySet[k] = z;
+            if (z.kredit >= 2) riskySet[k] = z;   // 1-dən çox kreditə zamin (yalnız say)
         });
         rows.forEach(function (r) {
             var has = false;
@@ -218,7 +218,7 @@
             r.dataset.riskzamin = has ? '1' : '0';
         });
         var riskArr = Object.keys(riskySet).map(function (k) { return riskySet[k]; })
-            .sort(function (a, b) { return b.yuk - a.yuk || b.kredit - a.kredit; });
+            .sort(function (a, b) { return b.kredit - a.kredit; });
         var riskCard = document.getElementById('katRiskCard');
         if (riskCard && riskArr.length) {
             var rtb = riskCard.querySelector('tbody'), h = '';
@@ -226,8 +226,7 @@
                 h += '<tr><td class="kat-sira">' + (idx + 1) + '</td>'
                    + '<td class="kat-risk">' + esc(z.ad || '—') + '</td>'
                    + '<td class="md-mono">' + esc(z.fin) + '</td>'
-                   + '<td class="ms-num">' + z.kredit + '</td>'
-                   + '<td class="ms-num"><b>' + z.yuk.toFixed(2) + ' ₼</b></td></tr>';
+                   + '<td class="ms-num">' + z.kredit + '</td></tr>';
             });
             rtb.innerHTML = h;
             document.getElementById('katRiskCount').textContent = riskArr.length;
