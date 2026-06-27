@@ -255,13 +255,13 @@
                     <tbody>
                         @foreach (var z in Model.GecikmeZolaqlari)
                         {
-                            <tr class="@(z.Ad.Contains("ərəfəsi") ? "md-zwarn" : (z.Ad.StartsWith("90") ? "md-zdang" : ""))">
+                            <tr class="@(z.Ad.StartsWith("61") ? "md-zwarn" : (z.Ad.StartsWith("90") ? "md-zdang" : ""))">
                                 <td>@z.Ad</td><td class="md-num">@z.Say</td><td class="md-num md-strong">@M(z.Mebleg)</td>
                             </tr>
                         }
                     </tbody>
                 </table>
-                <div class="md-zhint"><i class="bi bi-info-circle"></i> "61–89 gün" zolağı növbəti ay 90 günü keçib məhkəmə/icraya düşə bilər (cari gecikməyə əsaslanan evristik). Real trend üçün aylıq snapshot (#3b) lazımdır.</div>
+                <div class="md-zhint"><i class="bi bi-info-circle"></i> Zolaqlar yalnız gecikmə günü (real_overdue_day) üzrə bölünür — kreditin statusu nəzərə alınmır. Real trend üçün aylıq snapshot (#3b) lazımdır.</div>
             </div>
         </div>
     }

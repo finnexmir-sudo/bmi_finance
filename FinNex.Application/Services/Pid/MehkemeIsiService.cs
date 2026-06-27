@@ -322,8 +322,8 @@ public class MehkemeIsiService : IMehkemeIsiService
                     new { Ad = "Cari (gecikmə yox)",         Min = int.MinValue, Max = 0 },
                     new { Ad = "1–30 gün",                   Min = 1,  Max = 30 },
                     new { Ad = "31–60 gün",                  Min = 31, Max = 60 },
-                    new { Ad = "61–89 gün (məhkəmə ərəfəsi)", Min = 61, Max = 89 },
-                    new { Ad = "90+ gün (məhkəmə/icra)",     Min = 90, Max = int.MaxValue },
+                    new { Ad = "61–89 gün", Min = 61, Max = 89 },
+                    new { Ad = "90+ gün",   Min = 90, Max = int.MaxValue },
                 };
                 dto.GecikmeZolaqlari = zolaqlar.Select(z =>
                 {
