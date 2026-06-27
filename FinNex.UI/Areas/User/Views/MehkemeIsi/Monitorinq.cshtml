@@ -46,6 +46,7 @@
     </div>
 
     @* ── KPI kartları ── *@
+    <div class="md-orcl-head md-sec-mehkeme"><i class="bi bi-bank"></i> Məhkəmə / İcra işləri</div>
     <div class="md-kpis">
         <div class="md-kpi md-kpi--indigo">
             <div class="md-kpi-ic"><i class="bi bi-folder2-open"></i></div>
@@ -178,6 +179,7 @@
         </div>
     </div>
 
+    <div class="md-sec-first">
     @* ── Kredit portfeli (Oracle "Cari Kataloq") — adi + problemli ── *@
     <div class="md-orcl-head"><i class="bi bi-database"></i> Kredit portfeli — Oracle (Cari Kataloq)</div>
     @if (!Model.OracleVar)
@@ -244,11 +246,16 @@
             </div>
         </div>
     }
+    </div>
 </div>
 
 @section Styles {
     <style>
-        .md-page { padding: 4px 2px 24px; }
+        .md-page { padding: 4px 2px 24px; display:flex; flex-direction:column; }
+        .md-head { order:-2; }
+        .md-sec-first { order:-1; }                                  /* Kredit portfeli — birinci */
+        .md-sec-first .md-orcl-head { border-top:none; padding-top:0; }
+        .md-sec-mehkeme { margin-top:6px; }
         .md-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
         .md-title { margin:0; font-size:22px; font-weight:800; color:#0f172a; }
         .md-sub { margin:3px 0 0; color:#64748b; font-size:13px; }
