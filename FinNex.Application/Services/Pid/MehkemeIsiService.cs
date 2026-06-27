@@ -297,19 +297,23 @@ public class MehkemeIsiService : IMehkemeIsiService
                 var rows = await _oracle.SelectAsync(kataloqSql, maxRows: 100000);
                 dto.OracleVar = true;
                 dto.OracleKreditSayi = rows.Count;
+                // Qalıq = ƏSAS BORC (qaliq + vk_qaliq); faiz ayrıca (yalnız məlumat). tam_qaliq istifadə olunmur.
+                static decimal EsasBorc(Dictionary<string, object?> r) =>
+                    (GetDec(r, "qaliq") ?? 0m) + (GetDec(r, "vk_qaliq") ?? 0m);
+
                 foreach (var r in rows)
                 {
-                    dto.OracleCemQaliq  += GetDec(r, "tam_qaliq") ?? 0m;
+                    dto.OracleEsasBorc  += EsasBorc(r);
                     dto.OracleVkQaliq   += GetDec(r, "vk_qaliq") ?? 0m;
                     dto.OracleFaizBorcu += (GetDec(r, "faiz_meblegi") ?? 0m) + (GetDec(r, "vk_faiz_meblegi") ?? 0m);
                 }
                 dto.Item01Uzre = rows
                     .GroupBy(r => { var s = (GetStr(r, "item_01") ?? "").Trim(); return string.IsNullOrEmpty(s) ? "Adi (statussuz)" : s; })
-                    .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(r => GetDec(r, "tam_qaliq") ?? 0m) })
+                    .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(EsasBorc) })
                     .OrderByDescending(x => x.Say).ToList();
                 dto.GirovUzre = rows
                     .GroupBy(r => { var s = (GetStr(r, "girovun_novu") ?? "").Trim(); return string.IsNullOrEmpty(s) ? "(təyin edilməyib)" : s; })
-                    .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(r => GetDec(r, "tam_qaliq") ?? 0m) })
+                    .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(EsasBorc) })
                     .OrderByDescending(x => x.Say).ToList();
             }
             catch (Exception ex) { dto.OracleXeta = ex.Message; }

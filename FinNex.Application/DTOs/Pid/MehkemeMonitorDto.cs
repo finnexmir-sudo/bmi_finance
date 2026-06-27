@@ -36,9 +36,9 @@ public class MehkemeMonitorDto
     public bool    OracleVar       { get; set; }      // CariKataloq tapıldı və icra olundu
     public string? OracleXeta      { get; set; }
     public int     OracleKreditSayi{ get; set; }      // ümumi kredit sayı
-    public decimal OracleCemQaliq  { get; set; }      // Σ tam_qaliq
-    public decimal OracleVkQaliq   { get; set; }      // Σ vk_qaliq (vaxtı keçmiş)
-    public decimal OracleFaizBorcu { get; set; }      // Σ (faiz_meblegi + vk_faiz_meblegi)
+    public decimal OracleEsasBorc  { get; set; }      // Σ (qaliq + vk_qaliq) — əsas borc qalığı (ƏSAS göstərici)
+    public decimal OracleVkQaliq   { get; set; }      // Σ vk_qaliq — vaxtı keçmiş əsas borc
+    public decimal OracleFaizBorcu { get; set; }      // Σ (faiz_meblegi + vk_faiz_meblegi) — faiz qalığı (yalnız məlumat)
     public List<MonitorQrupDto> Item01Uzre { get; set; } = new();   // status (item_01) üzrə
     public List<MonitorQrupDto> GirovUzre  { get; set; } = new();   // girovun növü üzrə
 }

@@ -201,15 +201,16 @@
             </div>
             <div class="md-kpi md-kpi--green">
                 <div class="md-kpi-ic"><i class="bi bi-cash-stack"></i></div>
-                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleCemQaliq)</div><div class="md-kpi-lbl">Ümumi qalıq</div></div>
+                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleEsasBorc)</div><div class="md-kpi-lbl">Əsas borc qalığı</div>
+                    <div class="md-kpi-sub">cari + vaxtı keçmiş</div></div>
             </div>
             <div class="md-kpi md-kpi--rose">
                 <div class="md-kpi-ic"><i class="bi bi-exclamation-octagon"></i></div>
-                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleVkQaliq)</div><div class="md-kpi-lbl">Vaxtı keçmiş qalıq</div></div>
+                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleVkQaliq)</div><div class="md-kpi-lbl">Vaxtı keçmiş əsas borc</div></div>
             </div>
             <div class="md-kpi md-kpi--amber">
                 <div class="md-kpi-ic"><i class="bi bi-percent"></i></div>
-                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleFaizBorcu)</div><div class="md-kpi-lbl">Faiz borcu</div></div>
+                <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.OracleFaizBorcu)</div><div class="md-kpi-lbl">Faiz qalığı <span style="font-weight:400;opacity:.65">(məlumat)</span></div></div>
             </div>
         </div>
 
@@ -218,7 +219,7 @@
                 <div class="md-panel-h"><i class="bi bi-pie-chart"></i> Status üzrə (item_01)</div>
                 <div class="md-panel-b md-panel-b--flush">
                     <table class="md-table">
-                        <thead><tr><th>Status</th><th class="md-num">Say</th><th class="md-num">Qalıq</th></tr></thead>
+                        <thead><tr><th>Status</th><th class="md-num">Say</th><th class="md-num">Əsas borc</th></tr></thead>
                         <tbody>
                             @foreach (var s in Model.Item01Uzre)
                             {
@@ -233,7 +234,7 @@
                 <div class="md-panel-h"><i class="bi bi-shield-lock"></i> Girovun növü üzrə</div>
                 <div class="md-panel-b md-panel-b--flush">
                     <table class="md-table">
-                        <thead><tr><th>Girovun növü</th><th class="md-num">Say</th><th class="md-num">Qalıq</th></tr></thead>
+                        <thead><tr><th>Girovun növü</th><th class="md-num">Say</th><th class="md-num">Əsas borc</th></tr></thead>
                         <tbody>
                             @foreach (var g in Model.GirovUzre)
                             {
