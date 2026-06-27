@@ -56,8 +56,24 @@
                 <button type="button" class="kat-chip" data-f="overdue" data-col="real_overdue_day" data-op="gt" data-val="90"><i class="bi bi-clock-history"></i> Gecikmə 90+</button>
                 <button type="button" class="kat-chip" data-f="mehkeme" data-col="item_01" data-op="contains" data-val="məhk"><i class="bi bi-bank"></i> Məhkəmədə</button>
                 <button type="button" class="kat-chip" data-f="zaminsiz" data-col="zamin_sayi" data-op="empty0"><i class="bi bi-person-x"></i> Zaminsiz</button>
+                <button type="button" class="kat-chip kat-chip--risk" data-f="riskzamin"><i class="bi bi-flag-fill"></i> Riskli zamin</button>
             </div>
         </div>
+
+        <div class="ms-card kat-risk-card" id="katRiskCard" style="display:none; margin-bottom:12px">
+            <div class="kat-risk-head">
+                <i class="bi bi-flag-fill"></i> Riskli Zaminlər
+                <span class="kat-risk-rule">(≥2 kreditə zamin <b>və ya</b> ümumi yük &gt; 5.000 ₼)</span>
+                <span id="katRiskCount" class="kat-risk-badge">0</span>
+            </div>
+            <div class="ms-twrap" style="max-height:240px">
+                <table class="ms-table" id="katRiskTable">
+                    <thead><tr><th style="width:46px">№</th><th>Zamin</th><th>FİN</th><th class="ms-num">Kredit sayı</th><th class="ms-num">Ümumi yük</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="ms-card">
             <div class="ms-twrap">
                 <table class="ms-table" id="katTable">
@@ -113,6 +129,15 @@
                     border:1.5px solid #e2e8f0; background:#fff; color:#475569; font-size:13px; font-weight:600; cursor:pointer; }
         .kat-chip:hover { background:#f1f5f9; }
         .kat-chip.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+        .kat-chip--risk.active { background:#dc2626; border-color:#dc2626; }
+        /* riskli zaminin adı qırmızı */
+        #katTable td.kat-risk, #katRiskTable td.kat-risk { color:#dc2626 !important; font-weight:800; }
+        .kat-risk-card { border:1.5px solid #fecaca; }
+        .kat-risk-head { display:flex; align-items:center; gap:8px; padding:11px 16px; border-bottom:1px solid #fee2e2;
+                         background:#fef2f2; color:#b91c1c; font-weight:700; }
+        .kat-risk-rule { font-weight:400; color:#9ca3af; font-size:12px; }
+        .kat-risk-badge { margin-left:auto; background:#dc2626; color:#fff; border-radius:999px; padding:1px 10px; font-size:12px; font-weight:700; }
+        .md-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#475569; }
     </style>
 }
 
@@ -154,8 +179,64 @@
             if (c.dataset.col && colIndex(c.dataset.col) === -1) c.style.display = 'none';
         });
 
+        function esc(s){ return (s == null ? '' : s.toString()).replace(/[&<>"']/g, function (c) {
+            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+
+        // ── Riskli zamin: ≥2 kreditə zamin VƏ YA ümumi yük > 5000 ──
+        var slots = [];
+        for (var x = 1; x <= 5; x++) {
+            var fi = colIndex('zamin_' + x + '_fin'), ai = colIndex('zamin_' + x + '_ad'), yi = colIndex('zamin_' + x + '_borc_yuku');
+            if (fi !== -1 && ai !== -1) slots.push({ fi: fi, ai: ai, yi: yi });
+        }
+        var riskzaminChip = chips.filter(function (c) { return c.dataset.f === 'riskzamin'; })[0];
+        if (slots.length === 0 && riskzaminChip) riskzaminChip.style.display = 'none';
+
+        var zaminMap = {};
+        rows.forEach(function (r) {
+            slots.forEach(function (s) {
+                var fin = r.cells[s.fi] ? r.cells[s.fi].textContent.trim() : '';
+                if (!fin || fin === '—') return;
+                var key = fin.toLowerCase();
+                if (!zaminMap[key]) zaminMap[key] = { fin: fin, ad: '', kredit: 0, yuk: 0 };
+                zaminMap[key].kredit += 1;
+                if (s.yi !== -1) zaminMap[key].yuk += (num(r.cells[s.yi] ? r.cells[s.yi].textContent : '') || 0);
+                var ad = r.cells[s.ai] ? r.cells[s.ai].textContent.trim() : '';
+                if (ad && ad !== '—' && !zaminMap[key].ad) zaminMap[key].ad = ad;
+            });
+        });
+        var riskySet = {};
+        Object.keys(zaminMap).forEach(function (k) {
+            var z = zaminMap[k];
+            if (z.kredit >= 2 || z.yuk > 5000) riskySet[k] = z;
+        });
+        rows.forEach(function (r) {
+            var has = false;
+            slots.forEach(function (s) {
+                var fin = r.cells[s.fi] ? r.cells[s.fi].textContent.trim().toLowerCase() : '';
+                if (fin && riskySet[fin]) { if (r.cells[s.ai]) r.cells[s.ai].classList.add('kat-risk'); has = true; }
+            });
+            r.dataset.riskzamin = has ? '1' : '0';
+        });
+        var riskArr = Object.keys(riskySet).map(function (k) { return riskySet[k]; })
+            .sort(function (a, b) { return b.yuk - a.yuk || b.kredit - a.kredit; });
+        var riskCard = document.getElementById('katRiskCard');
+        if (riskCard && riskArr.length) {
+            var rtb = riskCard.querySelector('tbody'), h = '';
+            riskArr.forEach(function (z, idx) {
+                h += '<tr><td class="kat-sira">' + (idx + 1) + '</td>'
+                   + '<td class="kat-risk">' + esc(z.ad || '—') + '</td>'
+                   + '<td class="md-mono">' + esc(z.fin) + '</td>'
+                   + '<td class="ms-num">' + z.kredit + '</td>'
+                   + '<td class="ms-num"><b>' + z.yuk.toFixed(2) + ' ₼</b></td></tr>';
+            });
+            rtb.innerHTML = h;
+            document.getElementById('katRiskCount').textContent = riskArr.length;
+            riskCard.style.display = '';
+        }
+
         function chipOk(row, key){
             if (key === 'hami') return true;
+            if (key === 'riskzamin') return row.dataset.riskzamin === '1';
             var c = chips.filter(function (x) { return x.dataset.f === key; })[0];
             if (!c) return true;
             var ci = colIndex(c.dataset.col);
