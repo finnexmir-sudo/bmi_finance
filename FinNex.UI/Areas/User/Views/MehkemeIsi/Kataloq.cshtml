@@ -49,6 +49,15 @@
     }
     else if (Model.Netice != null)
     {
+        <div class="kat-filter">
+            <input type="text" id="katSearch" class="ms-input ms-grow" placeholder="🔍 Cədvəldə axtar (ad, hesab, rayon…)" />
+            <div class="kat-chips" id="katChips">
+                <button type="button" class="kat-chip active" data-f="hami">Hamısı</button>
+                <button type="button" class="kat-chip" data-f="overdue" data-col="real_overdue_day" data-op="gt" data-val="90"><i class="bi bi-clock-history"></i> Gecikmə 90+</button>
+                <button type="button" class="kat-chip" data-f="mehkeme" data-col="item_01" data-op="contains" data-val="məhk"><i class="bi bi-bank"></i> Məhkəmədə</button>
+                <button type="button" class="kat-chip" data-f="zaminsiz" data-col="zamin_sayi" data-op="empty0"><i class="bi bi-person-x"></i> Zaminsiz</button>
+            </div>
+        </div>
         <div class="ms-card">
             <div class="ms-twrap">
                 <table class="ms-table" id="katTable">
@@ -78,7 +87,7 @@
                 </table>
             </div>
             <div class="ms-foot">
-                @Model.Netice.Setirler.Count sətir · @Model.Netice.Sutunlar.Count sütun
+                <span id="katCount">@Model.Netice.Setirler.Count</span> / @Model.Netice.Setirler.Count sətir · @Model.Netice.Sutunlar.Count sütun
                 @if (Model.Kesildi)
                 {
                     <span style="color:#b45309"> · ⚠ ilk @Model.Limit sətir göstərilir — tam siyahı üçün Excelə yüklə</span>
@@ -98,6 +107,12 @@
         #katTable tbody tr:nth-child(even) td { background:#f8fafc; }
         #katTable tbody tr:hover td { background:#eff6ff; }
         .kat-sira { color:#94a3b8; font-weight:700; text-align:center; }
+        .kat-filter { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+        .kat-chips { display:flex; gap:6px; flex-wrap:wrap; }
+        .kat-chip { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border-radius:999px;
+                    border:1.5px solid #e2e8f0; background:#fff; color:#475569; font-size:13px; font-weight:600; cursor:pointer; }
+        .kat-chip:hover { background:#f1f5f9; }
+        .kat-chip.active { background:#6366f1; border-color:#6366f1; color:#fff; }
     </style>
 }
 
@@ -114,5 +129,61 @@
     }
     katFit();
     window.addEventListener('resize', katFit);
+
+    // ── Sürətli filtrlər + axtarış ──
+    (function () {
+        var table = document.getElementById('katTable');
+        if (!table) return;
+        var rows   = Array.prototype.slice.call(table.querySelectorAll('tbody tr'));
+        var ths    = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+        var chips  = Array.prototype.slice.call(document.querySelectorAll('#katChips .kat-chip'));
+        var search = document.getElementById('katSearch');
+        var countEl= document.getElementById('katCount');
+        var active = 'hami';
+
+        function norm(s){ return (s == null ? '' : s.toString()).trim().toLowerCase(); }
+        function colIndex(name){
+            name = norm(name);
+            for (var k = 0; k < ths.length; k++) { if (norm(ths[k].textContent).indexOf(name) !== -1) return k; }
+            return -1;
+        }
+        function num(s){ var n = parseFloat((s || '').toString().replace(/[^\d.\-]/g, '')); return isNaN(n) ? null : n; }
+
+        // Sütunu olmayan çipi gizlət
+        chips.forEach(function (c) {
+            if (c.dataset.col && colIndex(c.dataset.col) === -1) c.style.display = 'none';
+        });
+
+        function chipOk(row, key){
+            if (key === 'hami') return true;
+            var c = chips.filter(function (x) { return x.dataset.f === key; })[0];
+            if (!c) return true;
+            var ci = colIndex(c.dataset.col);
+            if (ci === -1) return true;
+            var v = row.cells[ci] ? row.cells[ci].textContent.trim() : '';
+            if (c.dataset.op === 'gt')       { var n = num(v); return n !== null && n > parseFloat(c.dataset.val); }
+            if (c.dataset.op === 'contains') { return norm(v).indexOf(norm(c.dataset.val)) !== -1; }
+            if (c.dataset.op === 'empty0')   { return v === '' || v === '0' || v === '—'; }
+            return true;
+        }
+        function apply(){
+            var q = norm(search.value), vis = 0;
+            rows.forEach(function (r) {
+                var ok = (!q || norm(r.textContent).indexOf(q) !== -1) && chipOk(r, active);
+                r.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+            if (countEl) countEl.textContent = vis;
+        }
+        chips.forEach(function (c) {
+            c.addEventListener('click', function () {
+                chips.forEach(function (x) { x.classList.remove('active'); });
+                c.classList.add('active');
+                active = c.dataset.f;
+                apply();
+            });
+        });
+        search.addEventListener('input', apply);
+    })();
 </script>
 }
