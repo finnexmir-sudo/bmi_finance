@@ -34,13 +34,34 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
 
         public bool TamGun => BaslamaSaati == null && BitisSaati == null;
 
-        // Faktiki cihaz müddəti (saat) — yalnız EYNİ gün çıxış+qayıdış olduqda hesablanır.
+        // Planlaşdırılan bitiş anı (yalnız saatlı səfər üçün): tarix + BitisSaati ("iş sonu").
+        private DateTime? PlanlananBitis =>
+            (!TamGun && BitisSaati.HasValue)
+                ? BitmeTarixi.Date + BitisSaati.Value
+                : (DateTime?)null;
+
+        // Cihaz qayıdışı YOXDURSA, amma işçi çıxıb (real çıxış var) və planlaşdırılan bitiş
+        // (iş sonu) artıq keçibsə — işçi geri qayıtmadığı üçün qayıdış kimi planlaşdırılan
+        // bitişi götürürük. (Eyni gün, çıxışdan sonra, keçmiş vaxt.)
+        public bool QayidisTaxminidir =>
+            CihazCixisVaxti.HasValue
+            && !CihazQayidisVaxti.HasValue
+            && PlanlananBitis.HasValue
+            && PlanlananBitis.Value > CihazCixisVaxti.Value
+            && PlanlananBitis.Value.Date == CihazCixisVaxti.Value.Date
+            && PlanlananBitis.Value <= DateTime.Now;
+
+        // Effektiv qayıdış: real cihaz qayıdışı varsa odur, yoxdursa təxmini (planlaşdırılan bitiş).
+        public DateTime? FaktikiQayidisEffektiv =>
+            CihazQayidisVaxti ?? (QayidisTaxminidir ? PlanlananBitis : null);
+
+        // Faktiki cihaz müddəti (saat) — yalnız EYNİ gün çıxış + (real və ya təxmini) qayıdış olduqda.
         // Çoxgünlük səfərlərdə saat metrikası mənasızdır (gün ilə ölçülür) → null.
         public double? FaktikiSaat =>
-            (CihazCixisVaxti.HasValue && CihazQayidisVaxti.HasValue
-             && CihazQayidisVaxti.Value > CihazCixisVaxti.Value
-             && CihazQayidisVaxti.Value.Date == CihazCixisVaxti.Value.Date)
-                ? Math.Round((CihazQayidisVaxti.Value - CihazCixisVaxti.Value).TotalHours, 2)
+            (CihazCixisVaxti.HasValue && FaktikiQayidisEffektiv.HasValue
+             && FaktikiQayidisEffektiv.Value > CihazCixisVaxti.Value
+             && FaktikiQayidisEffektiv.Value.Date == CihazCixisVaxti.Value.Date)
+                ? Math.Round((FaktikiQayidisEffektiv.Value - CihazCixisVaxti.Value).TotalHours, 2)
                 : (double?)null;
     }
 

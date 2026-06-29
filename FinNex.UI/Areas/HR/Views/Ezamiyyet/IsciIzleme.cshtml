@@ -310,7 +310,20 @@
                                                                 }
                                                             </td>
                                                             <td>@(ez.CihazCixisVaxti.HasValue ? ez.CihazCixisVaxti.Value.ToString("dd.MM HH:mm") : "—")</td>
-                                                            <td>@(ez.CihazQayidisVaxti.HasValue ? ez.CihazQayidisVaxti.Value.ToString("dd.MM HH:mm") : "—")</td>
+                                                            <td>
+                                                                @if (ez.CihazQayidisVaxti.HasValue)
+                                                                {
+                                                                    @ez.CihazQayidisVaxti.Value.ToString("dd.MM HH:mm")
+                                                                }
+                                                                else if (ez.QayidisTaxminidir && ez.FaktikiQayidisEffektiv.HasValue)
+                                                                {
+                                                                    <span title="Cihaz qayıdışı yoxdur — işçi iş sonu çıxıb qayıtmayıb, planlaşdırılan bitiş götürülüb">@ez.FaktikiQayidisEffektiv.Value.ToString("dd.MM HH:mm") <span style="font-size:10px;color:#b08900">(iş sonu)</span></span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span style="color:#8590a6">—</span>
+                                                                }
+                                                            </td>
                                                             <td>
                                                                 @if (ez.FaktikiSaat.HasValue)
                                                                 {
