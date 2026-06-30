@@ -847,7 +847,8 @@ document.addEventListener('DOMContentLoaded', function () {
             case 1: return '<span class="hrd-badge hrd-badge--isde"><span class="hrd-badge-dot"></span>İşdə</span>';
             case 2: return '<span class="hrd-badge hrd-badge--gecikme"><span class="hrd-badge-dot"></span>Gecikmə</span>';
             case 3: return '<span class="hrd-badge hrd-badge--qayib"><span class="hrd-badge-dot"></span>Qayıb</span>';
-            case 4: return '<span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>';
+            case 4:
+            case 7: return '<span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>';  // 7 = Dövlət vəzifəsi → məzuniyyət (İcazəli) kimi göstərilir
             case 5: return '<span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>';
             case 6: return '<span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(13,148,136,.1);color:#0d9488;"><span class="hrd-badge-dot" style="background:#0d9488;"></span>Ezamiyyət</span>';
             default: return '<span class="hrd-badge">Naməlum</span>';
