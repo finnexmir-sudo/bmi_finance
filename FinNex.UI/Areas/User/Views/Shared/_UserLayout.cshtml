@@ -627,7 +627,7 @@
                                   || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye")
                                   || (currentArea == "HR" && currentController == "Ezamiyyet");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
-                    var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
+                    var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan" or "Sistem";
                     var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi" || currentController == "JetonTeyinati");
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive || hrMotivActive;
 
@@ -853,6 +853,10 @@
                             <a asp-area="HR" asp-controller="Elan" asp-action="Index"
                                class="fn-nav-item @(currentArea == "HR" && currentController == "Elan" ? "active" : "")">
                                 <i class="bi bi-megaphone"></i> Elan İdarəetmə
+                            </a>
+                            <a asp-area="HR" asp-controller="Sistem" asp-action="NeceIsleyir"
+                               class="fn-nav-item @(currentArea == "HR" && currentController == "Sistem" ? "active" : "")">
+                                <i class="bi bi-journal-bookmark"></i> Sistem necə işləyir
                             </a>
                         </div>
                     </div>
