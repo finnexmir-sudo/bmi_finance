@@ -2042,10 +2042,19 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
                     if (mevcud != null)
                     {
-                        // Qayib idisə icazəliyə çevir — digər statuslara toxunma
-                        if (mevcud.Status == DavamiyyetStatus.Qayib)
+                        // Qayıb VƏ YA səhvən vurulmuş cihaz girişi (İşdə/Gecikmə) → məzuniyyət
+                        // statusuna çevir. Səbəb: işçi cihaza basıbsa davamiyyət real-vaxtda
+                        // "İşdə"/"Gecikmə" olur; HR sonradan geriyə məzuniyyət yazanda həmin gün
+                        // də düzəlməlidir (köhnə kod yalnız "Qayıb"-ı çevirirdi, "İşdə" qalırdı).
+                        // Qəsdən qoyulmuş leave-tipli statuslara (İcazəli/Xəstəlik/Ezamiyyət/
+                        // Dövlət vəzifəsi) toxunmuruq — onları yuxarıdakı konflikt yoxlaması tutur.
+                        if (mevcud.Status == DavamiyyetStatus.Qayib
+                            || mevcud.Status == DavamiyyetStatus.Isde
+                            || mevcud.Status == DavamiyyetStatus.Gecikme)
                         {
-                            mevcud.Status = yeniStatus;
+                            mevcud.Status     = yeniStatus;
+                            mevcud.GirisVaxti = null;   // səhv giriş/çıxış təmizlənir — məzuniyyət günüdür
+                            mevcud.CixisVaxti = null;   // (xam punch CihazOxuma cədvəlində audit üçün qalır)
                             await _unitOfWork.Repository<Davamiyyet>().YenileAsync(mevcud);
                             duzeldilenQaib++;
                         }
