@@ -377,8 +377,10 @@ public class MehkemeIsiService : IMehkemeIsiService
     {
         var res = await _sorguService.HamisiniGetirAsync();
         if (!res.Success || res.Data is null) return null;
-        static string Norm(string? s) => (s ?? "").Replace(" ", "")
-            .Replace("ə", "e").Replace("Ə", "e").ToLowerInvariant();
+        // Azərbaycan hərflərini ASCII-yə sal (ş→s, ə→e, ü→u ...) + boşluqları at.
+        static string Norm(string? s) => (s ?? "").ToLowerInvariant()
+            .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
+            .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
         var q = res.Data.FirstOrDefault(x => x.Aktiv
             && Norm(x.SorguAdi).Contains("bildiris") && Norm(x.SorguAdi).Contains("dusen"));
         return q?.SorguMetni;
