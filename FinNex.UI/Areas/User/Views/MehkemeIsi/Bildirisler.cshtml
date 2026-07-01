@@ -173,6 +173,20 @@
         #bdTable tbody tr.ic-zrow td:last-child { background: #fbfaff; }
         #bdTable tbody tr.ic-zrow:hover td:last-child { background: #f1ecff; }
 
+        /* Sol tərəf: № + Ad sütunları sabit qalsın (üfüqi scroll-da donur) */
+        #bdTable th:nth-child(1), #bdTable td:nth-child(1) {
+            position: sticky; left: 0; box-sizing: border-box; width: 50px; min-width: 50px; max-width: 50px;
+        }
+        #bdTable th:nth-child(2), #bdTable td:nth-child(2) {
+            position: sticky; left: 50px; box-shadow: 7px 0 10px -8px rgba(15,23,42,.22);
+        }
+        #bdTable thead th:nth-child(1), #bdTable thead th:nth-child(2) { z-index: 5; background: #eef2f6; }
+        #bdTable tbody td:nth-child(1), #bdTable tbody td:nth-child(2) { z-index: 2; }
+        #bdTable tbody tr.ic-row td:nth-child(1), #bdTable tbody tr.ic-row td:nth-child(2) { background: #fff; }
+        #bdTable tbody tr.ic-row:hover td:nth-child(1), #bdTable tbody tr.ic-row:hover td:nth-child(2) { background: #eff6ff; }
+        #bdTable tbody tr.ic-zrow td:nth-child(1), #bdTable tbody tr.ic-zrow td:nth-child(2) { background: #fbfaff; }
+        #bdTable tbody tr.ic-zrow:hover td:nth-child(1), #bdTable tbody tr.ic-zrow:hover td:nth-child(2) { background: #f1ecff; }
+
         /* Konteyner hündürlüyünü məhdudlaşdır — üfüqi scroll səhifəni aşağı sürüşdürmədən görünsün */
         .ms-twrap { max-height: calc(100vh - 300px); }
 
