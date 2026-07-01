@@ -52,7 +52,8 @@
                         <th>Ünvan</th>
                         <th>Hesab</th>
                         <th>Status</th>
-                        <th>V.tarix</th>
+                        <th>Son bildiriş tarixi</th>
+                        <th>Kr verilmə tarixi</th>
                         <th class="bd-num">Ay</th>
                         <th class="bd-num">Ver.kredit</th>
                         <th class="bd-num">Əsas</th>
@@ -63,7 +64,6 @@
                         <th class="bd-num">Ümumi borc</th>
                         <th class="bd-num">Aylıq</th>
                         <th class="bd-num">×1.5</th>
-                        <th>item_02</th>
                         <th>Son ödəniş</th>
                         <th>Əməliyyat</th>
                     </tr>
@@ -86,6 +86,7 @@
                                 <td class="ic-clip ic-clip--wide" title="@s.BorcUnvan">@T(s.BorcUnvan)</td>
                                 <td class="bd-mono">@T(s.Hes)</td>
                                 <td>@if (!string.IsNullOrWhiteSpace(s.Item01)) { <span class="bd-stat">@s.Item01</span> } else { <span>—</span> }</td>
+                                <td class="ic-clip">@T(s.Item02)</td>
                                 <td>@D(s.VTar)</td>
                                 <td class="bd-num">@(s.MuddedAy?.ToString() ?? "—")</td>
                                 <td class="bd-num">@M(s.VerKr)</td>
@@ -97,7 +98,6 @@
                                 <td class="bd-num">@M(s.UmumiBorc)</td>
                                 <td class="bd-num">@M(s.Ayliq)</td>
                                 <td class="bd-num">@M(s.Nisbet)</td>
-                                <td class="ic-clip">@T(s.Item02)</td>
                                 <td>@D(s.SonOdTar)@(s.SonOdMeb.HasValue ? $" · {M(s.SonOdMeb)}" : "")</td>
                                 <td>
                                     <a asp-action="BildirisWord" asp-route-sk="@s.Sk" asp-route-hes="@s.Hes"
@@ -172,6 +172,9 @@
         #bdTable tbody tr.ic-row:hover td:last-child { background: #eff6ff; }
         #bdTable tbody tr.ic-zrow td:last-child { background: #fbfaff; }
         #bdTable tbody tr.ic-zrow:hover td:last-child { background: #f1ecff; }
+
+        /* Konteyner hündürlüyünü məhdudlaşdır — üfüqi scroll səhifəni aşağı sürüşdürmədən görünsün */
+        .ms-twrap { max-height: calc(100vh - 300px); }
 
         /* Üfüqi scroll aydın görünsün */
         .ms-twrap::-webkit-scrollbar { height: 13px; width: 13px; }

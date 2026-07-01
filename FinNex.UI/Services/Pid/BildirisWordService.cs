@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FinNex.Application.DTOs.Pid;
@@ -12,6 +13,12 @@ public static class BildirisWordService
 {
     private const string Valyuta = "AZN";
 
+    // Şablonda tarix placeholder-indən sonra SABİT yazılmış il sıra şəkilçisi ("ci il", "cu il",
+    // "c i il" — istənilən boşluq/tab ilə). DAz düzgün şəkilçini onsuz da verir, ona görə silirik.
+    // "sssss1 il tarixə" kimi şəkilçisiz hallar toxunulmur.
+    private static readonly Regex IlSekilRe =
+        new(@"(sssss1|sssssac)\s+c\s*[ıiuü]\s+il\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     // Məbləğ formatı: "606.472,20" (nöqtə minlik, vergül onluq) — Monitorinq ilə eyni.
     private static readonly CultureInfo Fmt = YaratFmt();
     private static CultureInfo YaratFmt()
@@ -21,7 +28,12 @@ public static class BildirisWordService
         c.NumberFormat.NumberDecimalSeparator = ",";
         return c;
     }
-    private static string M(decimal? v) => (v ?? 0m).ToString("#,##0.00", Fmt);
+    // Tam ədəd → onluqsuz (16.000); kəsrli → 2 onluq (794,40 / 8.907,81).
+    private static string M(decimal? v)
+    {
+        var d = v ?? 0m;
+        return d == Math.Truncate(d) ? d.ToString("#,##0", Fmt) : d.ToString("#,##0.00", Fmt);
+    }
     private static string Rate(decimal? v) => v.HasValue ? v.Value.ToString("0.##", Fmt) : "____";
 
     private static readonly string[] Aylar =
@@ -90,12 +102,10 @@ public static class BildirisWordService
         {
             var body = doc.MainDocumentPart!.Document.Body!;
             MergeRuns(body);
-            // Şablonda tarix placeholder-indən sonra SABİT yazılmış "ci/cu il" şəkilçisini sil —
-            // DAz onsuz da ilə düzgün sıra şəkilçisi verir (qoşa şəkilçi olmasın).
-            // "sssss1 il tarixə" kimi şəkilçisiz hallar toxunulmur.
-            foreach (var t in new[] { "sssss1", "sssssac" })
-                foreach (var suf in new[] { "cı", "ci", "cu", "cü", "c ı", "c i", "c u", "c ü" })
-                    Replace(body, $"{t} {suf} il", $"{t} il");
+            // Şablondakı sabit il şəkilçisini sil (regex — istənilən boşluq/tab ilə işləyir).
+            foreach (var text in body.Descendants<Text>())
+                if (text.Text.Contains("sssss"))
+                    text.Text = IlSekilRe.Replace(text.Text, "$1 il");
             // uzun tokenlər əvvəl (prefiks toqquşması yoxdur, amma zəmanət üçün)
             foreach (var kv in map.OrderByDescending(k => k.Key.Length))
                 Replace(body, kv.Key, kv.Value);
