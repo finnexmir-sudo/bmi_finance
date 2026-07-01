@@ -464,6 +464,76 @@ public class MehkemeIsiService : IMehkemeIsiService
         return null;
     }
 
+    // ── Məhkəməyə hazırlıq ─────────────────────────────────────────
+    // Sorğu Admin → Oracle Sorğular-da, adına görə tapılır ("məhkəmə"+"hazırlıq").
+    private async Task<string?> MehkemeHazirliqSorguMetniAsync()
+    {
+        var res = await _sorguService.HamisiniGetirAsync();
+        if (!res.Success || res.Data is null) return null;
+        static string Norm(string? s) => (s ?? "").ToLowerInvariant()
+            .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
+            .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
+        var q = res.Data.FirstOrDefault(x => x.Aktiv
+            && Norm(x.SorguAdi).Contains("mehkeme") && Norm(x.SorguAdi).Contains("hazirliq"));
+        return q?.SorguMetni;
+    }
+
+    public async Task<MehkemeHazirliqViewDto> MehkemeHazirliqSiyahiAsync()
+    {
+        var vm = new MehkemeHazirliqViewDto();
+        var sql = await MehkemeHazirliqSorguMetniAsync();
+        if (string.IsNullOrWhiteSpace(sql)) { vm.SorguTapildi = false; return vm; }
+        vm.SorguTapildi = true;
+        try
+        {
+            var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+            vm.Setirler = rows.Select(MapMehkemeHazirliq).OrderBy(x => x.Ad).ToList();
+        }
+        catch (Exception ex) { vm.Xeta = ex.Message; }
+        return vm;
+    }
+
+    private static MehkemeHazirliqSetirDto MapMehkemeHazirliq(Dictionary<string, object?> row)
+    {
+        var dto = new MehkemeHazirliqSetirDto
+        {
+            Sk           = GetStr(row, "sk"),
+            Hes          = GetStr(row, "hes"),
+            Ad           = GetStr(row, "ad") ?? "(naməlum)",
+            VTar         = GetDate(row, "v_tar"),
+            VerKr        = GetDec(row, "ver_kr"),
+            Esas         = GetDec(row, "esas"),
+            Vk           = GetDec(row, "vk"),
+            Faiz         = GetDec(row, "faiz"),
+            VkFaiz       = GetDec(row, "vk_faiz"),
+            ToplamVkBorc = GetDec(row, "toplam_vk_borc"),
+            Ayliq        = GetDec(row, "ayliq"),
+            UcAyliqCemi  = GetDec(row, "uc_ayliq_cemi"),
+            SonOdTar     = GetDate(row, "son_od_tar"),
+            Item01       = GetStr(row, "item_01"),
+            Item02       = GetStr(row, "item_02"),
+        };
+        for (int i = 1; i <= 5; i++)
+        {
+            var zad = GetStr(row, $"zamin_{i}_ad");
+            if (string.IsNullOrWhiteSpace(zad)) continue;
+            dto.Zaminlar.Add(new MehkemeHazirliqZaminDto
+            {
+                Sira        = i,
+                Ad          = zad,
+                Fin         = GetStr(row, $"zamin_{i}_fin"),
+                Olke        = GetStr(row, $"zamin_{i}_olke"),
+                DogumTarixi = GetDate(row, $"zamin_{i}_dogum_tarixi"),
+                DogumYeri   = GetStr(row, $"zamin_{i}_dogum_yeri"),
+                Unvan       = GetStr(row, $"zamin_{i}_unvan"),
+                Telefon     = GetStr(row, $"zamin_{i}_telefon"),
+                BorcYuku    = GetDec(row, $"zamin_{i}_borc_yuku"),
+                Gelir       = GetDec(row, $"zamin_{i}_gelir"),
+            });
+        }
+        return dto;
+    }
+
     private static string NovAdi(MehkemeIsiNov n) => n switch
     {
         MehkemeIsiNov.Ipoteka    => "İpoteka",

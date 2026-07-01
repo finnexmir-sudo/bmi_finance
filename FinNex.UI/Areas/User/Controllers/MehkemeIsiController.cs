@@ -144,6 +144,13 @@ public class MehkemeIsiController : Controller
         return s.Length > 40 ? s[..40] : s;
     }
 
+    // ── Məhkəməyə hazırlıq (Oracle → borcalan + zaminlərin ətraflı məlumatı) ──
+    public async Task<IActionResult> MehkemeHazirliq()
+    {
+        var vm = await _service.MehkemeHazirliqSiyahiAsync();
+        return View(vm);
+    }
+
     // ── Kataloq (Ümumi cari Kataloq — PID Oracle sorğuları, xam nəticə) ──
     public async Task<IActionResult> Kataloq(int? sorguId)
     {

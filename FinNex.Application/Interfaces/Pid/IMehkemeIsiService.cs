@@ -22,6 +22,9 @@ public interface IMehkemeIsiService
     // ── Bildirişə düşənlər (Oracle sorğusu → borcalan + zaminlər) ──
     Task<BildirisViewDto> BildirisSiyahiAsync();
     Task<BildirisSetirDto?> BildirisSetirTapAsync(string sk, string hes);
+
+    // ── Məhkəməyə hazırlıq (Oracle sorğusu → borcalan + zaminlərin ətraflı məlumatı) ──
+    Task<MehkemeHazirliqViewDto> MehkemeHazirliqSiyahiAsync();
     Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);
     Task<bool> YenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
     Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
