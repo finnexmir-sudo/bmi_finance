@@ -4,7 +4,9 @@ using FinNex.Application.Interfaces.Pid;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Pid;
 using FinNex.UI.Helpers;
+using FinNex.UI.Services.Pid;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -20,15 +22,18 @@ public class MehkemeIsiController : Controller
     private readonly IMehkemeIsiService _service;
     private readonly UserManager<AppUser> _userManager;
     private readonly IConfiguration _config;
+    private readonly IWebHostEnvironment _env;
 
     public MehkemeIsiController(
         IMehkemeIsiService service,
         UserManager<AppUser> userManager,
-        IConfiguration config)
+        IConfiguration config,
+        IWebHostEnvironment env)
     {
         _service = service;
         _userManager = userManager;
         _config = config;
+        _env = env;
     }
 
     private async Task<int?> CurrentIsciIdAsync()
@@ -74,6 +79,69 @@ public class MehkemeIsiController : Controller
     {
         var model = await _service.MonitorGetirAsync();
         return View(model);
+    }
+
+    // ── Bildirişə düşənlər (Oracle → borcalan + zaminlər, Word bildiriş) ──
+    public async Task<IActionResult> Bildirisler()
+    {
+        var vm = await _service.BildirisSiyahiAsync();
+        return View(vm);
+    }
+
+    // Word bildiriş: zaminIndex boşdursa borcalana, doludursa həmin zaminə
+    public async Task<IActionResult> BildirisWord(string? sk, string? hes, int? zaminIndex)
+    {
+        if (string.IsNullOrWhiteSpace(sk) || string.IsNullOrWhiteSpace(hes))
+        {
+            TempData["Error"] = "Açar məlumatı çatışmır.";
+            return RedirectToAction(nameof(Bildirisler));
+        }
+
+        var s = await _service.BildirisSetirTapAsync(sk, hes);
+        if (s == null)
+        {
+            TempData["Error"] = "Sətir tapılmadı (sorğu nəticəsi dəyişmiş ola bilər).";
+            return RedirectToAction(nameof(Bildirisler));
+        }
+
+        var wordRoot = Path.Combine(_env.WebRootPath, "Files", "Word");
+        const string ct = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        byte[] bytes;
+        string fileName;
+
+        try
+        {
+            if (zaminIndex is int zi && zi >= 1)
+            {
+                var z = s.Zaminlar.FirstOrDefault(x => x.Sira == zi);
+                if (z == null) { TempData["Error"] = "Zamin tapılmadı."; return RedirectToAction(nameof(Bildirisler)); }
+                var tpl = Path.Combine(wordRoot, "Bildir_zam_LATIN.docx");
+                if (!System.IO.File.Exists(tpl)) { TempData["Error"] = "Zamin şablonu tapılmadı: " + tpl; return RedirectToAction(nameof(Bildirisler)); }
+                bytes = BildirisWordService.Zamin(tpl, s, z, DateTime.Today);
+                fileName = $"Bildiris_zamin_{Faylad(z.Ad)}.docx";
+            }
+            else
+            {
+                var tpl = Path.Combine(wordRoot, "Bildirish_LATIN.docx");
+                if (!System.IO.File.Exists(tpl)) { TempData["Error"] = "Şablon tapılmadı: " + tpl; return RedirectToAction(nameof(Bildirisler)); }
+                bytes = BildirisWordService.Borclu(tpl, s, DateTime.Today);
+                fileName = $"Bildiris_{Faylad(s.Ad)}.docx";
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Word yaradılmadı: " + ex.Message;
+            return RedirectToAction(nameof(Bildirisler));
+        }
+
+        return File(bytes, ct, fileName);
+    }
+
+    private static string Faylad(string? ad)
+    {
+        var s = (ad ?? "senedsiz").Trim();
+        foreach (var c in Path.GetInvalidFileNameChars()) s = s.Replace(c, '_');
+        return s.Length > 40 ? s[..40] : s;
     }
 
     // ── Kataloq (Ümumi cari Kataloq — PID Oracle sorğuları, xam nəticə) ──

@@ -1,0 +1,157 @@
+@using FinNex.Application.DTOs.Pid
+@model BildirisViewDto
+@{
+    ViewData["Title"] = "Bildirişə düşənlər";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var az = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
+    az.NumberFormat.NumberGroupSeparator = ".";
+    az.NumberFormat.NumberDecimalSeparator = ",";
+    string M(decimal? v) => v.HasValue ? v.Value.ToString("#,##0.00", az) : "—";
+    string D(DateTime? v) => v?.ToString("dd.MM.yyyy") ?? "—";
+    string T(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
+}
+
+<div class="bd-page">
+
+    <div class="bd-head">
+        <div>
+            <h2 class="bd-title"><i class="bi bi-envelope-paper"></i> Bildirişə düşənlər</h2>
+            <p class="bd-sub">Müştəriyə/zaminə bildiriş məktubu (Word) hazırlamaq üçün — @Model.Setirler.Count kredit</p>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="bd-alert bd-alert-err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    @if (!Model.SorguTapildi)
+    {
+        <div class="bd-alert bd-alert-warn">
+            <i class="bi bi-exclamation-triangle"></i>
+            <b>Sorğu tapılmadı.</b> Admin → Oracle Sorğular bölməsinə bu SQL-i əlavə edin və adını
+            <b>"Bildirişə düşənlər"</b> qoyub aktiv edin (ad "Bildiriş" + "düşən" sözlərini saxlamalıdır).
+        </div>
+    }
+    else if (Model.Xeta != null)
+    {
+        <div class="bd-alert bd-alert-err"><i class="bi bi-x-octagon"></i> Oracle xətası: @Model.Xeta</div>
+    }
+    else if (Model.Setirler.Count == 0)
+    {
+        <div class="bd-alert bd-alert-info"><i class="bi bi-inbox"></i> Bildirişə düşən kredit yoxdur.</div>
+    }
+    else
+    {
+        <div class="bd-twrap">
+            <table class="bd-table">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Borcalan / Zamin</th>
+                        <th>Ünvan</th>
+                        <th>SK</th>
+                        <th>Hesab</th>
+                        <th>V.tarix</th>
+                        <th class="bd-num">Ay</th>
+                        <th class="bd-num">Ver.kredit</th>
+                        <th class="bd-num">Əsas</th>
+                        <th class="bd-num">VK</th>
+                        <th class="bd-num">Faiz</th>
+                        <th class="bd-num">VK faiz</th>
+                        <th class="bd-num">Toplam VK</th>
+                        <th class="bd-num">Ümumi borc</th>
+                        <th class="bd-num">Aylıq</th>
+                        <th class="bd-num">×1.5</th>
+                        <th>Status</th>
+                        <th>item_02</th>
+                        <th>Son ödəniş</th>
+                        <th>Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var sira = 0; }
+                    @foreach (var s in Model.Setirler)
+                    {
+                        sira++;
+                        <tr class="bd-borclu">
+                            <td>@sira</td>
+                            <td class="bd-ad"><b>@T(s.Ad)</b></td>
+                            <td class="bd-unvan" title="@s.BorcUnvan">@T(s.BorcUnvan)</td>
+                            <td class="bd-mono">@T(s.Sk)</td>
+                            <td class="bd-mono">@T(s.Hes)</td>
+                            <td>@D(s.VTar)</td>
+                            <td class="bd-num">@(s.MuddedAy?.ToString() ?? "—")</td>
+                            <td class="bd-num">@M(s.VerKr)</td>
+                            <td class="bd-num">@M(s.Esas)</td>
+                            <td class="bd-num">@M(s.Vk)</td>
+                            <td class="bd-num">@M(s.Faiz)</td>
+                            <td class="bd-num">@M(s.VkFaiz)</td>
+                            <td class="bd-num"><b>@M(s.ToplamVkBorc)</b></td>
+                            <td class="bd-num">@M(s.UmumiBorc)</td>
+                            <td class="bd-num">@M(s.Ayliq)</td>
+                            <td class="bd-num">@M(s.Nisbet)</td>
+                            <td>@T(s.Item01)</td>
+                            <td>@T(s.Item02)</td>
+                            <td>@D(s.SonOdTar)@(s.SonOdMeb.HasValue ? $" · {M(s.SonOdMeb)}" : "")</td>
+                            <td>
+                                <a asp-action="BildirisWord" asp-route-sk="@s.Sk" asp-route-hes="@s.Hes"
+                                   class="bd-btn"><i class="bi bi-file-earmark-word"></i> Bildiriş</a>
+                            </td>
+                        </tr>
+                        @foreach (var z in s.Zaminlar)
+                        {
+                            <tr class="bd-zamin">
+                                <td></td>
+                                <td class="bd-ad">↳ <span title="Zamin">Zamin:</span> @T(z.Ad)</td>
+                                <td class="bd-unvan" title="@z.Unvan">@T(z.Unvan)</td>
+                                <td colspan="16" class="bd-zamin-bos"></td>
+                                <td>
+                                    <a asp-action="BildirisWord" asp-route-sk="@s.Sk" asp-route-hes="@s.Hes"
+                                       asp-route-zaminIndex="@z.Sira"
+                                       class="bd-btn bd-btn-z"><i class="bi bi-file-earmark-word"></i> Zaminə</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .bd-page { padding:6px 2px 40px; }
+        .bd-head { margin-bottom:14px; }
+        .bd-title { font-size:20px; font-weight:800; color:#0f172a; margin:0 0 3px; display:flex; align-items:center; gap:9px; }
+        .bd-sub { color:#64748b; font-size:13px; margin:0; }
+
+        .bd-alert { display:flex; align-items:flex-start; gap:9px; padding:12px 16px; border-radius:12px; font-size:14px; margin-bottom:14px; line-height:1.5; }
+        .bd-alert-warn { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; }
+        .bd-alert-err  { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+        .bd-alert-info { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
+
+        .bd-twrap { overflow-x:auto; border:1px solid #e9eef5; border-radius:14px; background:#fff; }
+        .bd-table { width:100%; border-collapse:collapse; font-size:12.5px; white-space:nowrap; }
+        .bd-table th { text-align:left; background:#fbfcfe; color:#64748b; font-size:10.5px; text-transform:uppercase;
+                       letter-spacing:.03em; padding:9px 10px; border-bottom:1px solid #eef2f7; position:sticky; top:0; }
+        .bd-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; color:#1e293b; }
+        .bd-num { text-align:right; }
+        .bd-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:#475569; }
+        .bd-ad { max-width:230px; white-space:normal; }
+        .bd-unvan { max-width:220px; white-space:normal; color:#64748b; font-size:11.5px; }
+
+        .bd-borclu td { border-top:2px solid #eef2f7; }
+        .bd-zamin td { background:#fafbfe; color:#475569; }
+        .bd-zamin .bd-ad { padding-left:16px; }
+        .bd-zamin-bos { background:#fafbfe !important; }
+
+        .bd-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:8px; font-size:12px;
+                  font-weight:700; text-decoration:none; background:#2563eb; color:#fff; white-space:nowrap; }
+        .bd-btn:hover { background:#1d4ed8; }
+        .bd-btn-z { background:#0d9488; }
+        .bd-btn-z:hover { background:#0f766e; }
+    </style>
+}

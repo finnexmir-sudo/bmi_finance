@@ -370,6 +370,96 @@ public class MehkemeIsiService : IMehkemeIsiService
         return await _oracle.SelectXamAsync(res.Data.SorguMetni, maxRows);
     }
 
+    // ── Bildirişə düşənlər ─────────────────────────────────────────
+    // Sorğu Admin → Oracle Sorğular-da saxlanılır, adına görə tapılır
+    // (normalizasiya: boşluq silinir, ə→e). Ad "Bildiriş" + "düşən" saxlamalıdır.
+    private async Task<string?> BildirisSorguMetniAsync()
+    {
+        var res = await _sorguService.HamisiniGetirAsync();
+        if (!res.Success || res.Data is null) return null;
+        static string Norm(string? s) => (s ?? "").Replace(" ", "")
+            .Replace("ə", "e").Replace("Ə", "e").ToLowerInvariant();
+        var q = res.Data.FirstOrDefault(x => x.Aktiv
+            && Norm(x.SorguAdi).Contains("bildiris") && Norm(x.SorguAdi).Contains("dusen"));
+        return q?.SorguMetni;
+    }
+
+    public async Task<BildirisViewDto> BildirisSiyahiAsync()
+    {
+        var vm = new BildirisViewDto();
+        var sql = await BildirisSorguMetniAsync();
+        if (string.IsNullOrWhiteSpace(sql)) { vm.SorguTapildi = false; return vm; }
+        vm.SorguTapildi = true;
+        try
+        {
+            var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+            vm.Setirler = rows.Select(MapBildirisSetir).OrderBy(x => x.Ad).ToList();
+        }
+        catch (Exception ex) { vm.Xeta = ex.Message; }
+        return vm;
+    }
+
+    public async Task<BildirisSetirDto?> BildirisSetirTapAsync(string sk, string hes)
+    {
+        var sql = await BildirisSorguMetniAsync();
+        if (string.IsNullOrWhiteSpace(sql)) return null;
+        var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+        var row = rows.FirstOrDefault(r =>
+            string.Equals(GetStr(r, "sk"), sk?.Trim(), StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(GetStr(r, "hes"), hes?.Trim(), StringComparison.OrdinalIgnoreCase));
+        return row == null ? null : MapBildirisSetir(row);
+    }
+
+    private static BildirisSetirDto MapBildirisSetir(Dictionary<string, object?> row)
+    {
+        var dto = new BildirisSetirDto
+        {
+            Sk           = GetStr(row, "sk"),
+            Hes          = GetStr(row, "hes"),
+            Ad           = GetStr(row, "ad") ?? "(naməlum)",
+            BorcUnvan    = GetStr(row, "borc_unvan"),
+            VTar         = GetDate(row, "v_tar"),
+            MuddedAy     = GetDec(row, "mudded_ay") is decimal _ma ? (int)Math.Round(_ma) : (int?)null,
+            VerKr        = GetDec(row, "ver_kr"),
+            Esas         = GetDec(row, "esas"),
+            Vk           = GetDec(row, "vk"),
+            Faiz         = GetDec(row, "faiz"),
+            VkFaiz       = GetDec(row, "vk_faiz"),
+            ToplamVkBorc = GetDec(row, "toplam_vk_borc"),
+            UmumiBorc    = GetDec(row, "umumi_borc"),
+            Ayliq        = GetDec(row, "ayliq"),
+            Nisbet       = GetDec(row, "nisbet_1_5"),
+            Item01       = GetStr(row, "item_01"),
+            Item02       = GetStr(row, "item_02"),
+            SonOdTar     = GetDate(row, "son_od_tar"),
+            SonOdMeb     = GetDec(row, "son_od_meb"),
+        };
+        for (int i = 1; i <= 5; i++)
+        {
+            var zad = GetStr(row, $"zamin_{i}_ad");
+            if (string.IsNullOrWhiteSpace(zad)) continue;
+            dto.Zaminlar.Add(new BildirisZaminDto
+            {
+                Sira  = i,
+                Ad    = zad,
+                Unvan = GetStr(row, $"zamin_{i}_unvan")
+            });
+        }
+        return dto;
+    }
+
+    private static DateTime? GetDate(Dictionary<string, object?> row, params string[] keys)
+    {
+        foreach (var key in keys)
+            foreach (var kv in row)
+                if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase) && kv.Value != null)
+                {
+                    if (kv.Value is DateTime dt) return dt;
+                    if (DateTime.TryParse(kv.Value.ToString(), out var p)) return p;
+                }
+        return null;
+    }
+
     private static string NovAdi(MehkemeIsiNov n) => n switch
     {
         MehkemeIsiNov.Ipoteka    => "İpoteka",

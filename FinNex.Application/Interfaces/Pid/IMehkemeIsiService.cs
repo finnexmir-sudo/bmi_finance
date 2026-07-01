@@ -18,6 +18,10 @@ public interface IMehkemeIsiService
     // Kataloq — PID departamentinin aktiv Oracle sorğuları (combobox) + seçilmiş sorğunun xam icrası
     Task<IList<KataloqSecimDto>> KataloqlarAsync();
     Task<OracleNetice> KataloqIcraEtAsync(int sorguId, int maxRows);
+
+    // ── Bildirişə düşənlər (Oracle sorğusu → borcalan + zaminlər) ──
+    Task<BildirisViewDto> BildirisSiyahiAsync();
+    Task<BildirisSetirDto?> BildirisSetirTapAsync(string sk, string hes);
     Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);
     Task<bool> YenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
     Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
