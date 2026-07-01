@@ -22,7 +22,29 @@ public static class BildirisWordService
         return c;
     }
     private static string M(decimal? v) => (v ?? 0m).ToString("#,##0.00", Fmt);
-    private static string D(DateTime? v) => v?.ToString("dd.MM.yyyy") ?? "";
+    private static string Rate(decimal? v) => v.HasValue ? v.Value.ToString("0.##", Fmt) : "____";
+
+    private static readonly string[] Aylar =
+        { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+          "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
+
+    // Tarixi Azərbaycan sözü ilə: "01 iyul 2026-cı" (il şəkilçisiz — şablonda "il" qalır).
+    private static string DAz(DateTime? v)
+    {
+        if (!v.HasValue) return "";
+        var d = v.Value;
+        return $"{d.Day:00} {Aylar[d.Month]} {d.Year}-{IlSonluq(d.Year)}";
+    }
+
+    // İlin sıra sonluğu (vurğu harmoniyası ilə): son rəqəmin sözünə görə.
+    private static string IlSonluq(int il)
+    {
+        int tek = il % 10, on = (il / 10) % 10;
+        //                    0     1     2     3     4     5     6     7     8     9
+        string[] tekS = { "cı", "ci", "ci", "cü", "cü", "ci", "cı", "ci", "ci", "cu" };
+        string[] onS  = { "ci", "cu", "ci", "cu", "cı", "ci", "cı", "ci", "ci", "cı" };
+        return tek != 0 ? tekS[tek] : onS[on];
+    }
 
     // Borcalana bildiriş
     public static byte[] Borclu(string templatePath, BildirisSetirDto s, DateTime tarix)
@@ -45,10 +67,10 @@ public static class BildirisWordService
 
     private static Dictionary<string, string> OrtakSaheler(BildirisSetirDto s, DateTime tarix) => new()
     {
-        ["sssss1"]  = D(tarix),                // bildiriş tarixi
-        ["sssssac"] = D(s.VTar),               // müqavilə tarixi (date_open)
+        ["sssss1"]  = DAz(tarix),              // bildiriş tarixi (söz ilə, il şəkilçili)
+        ["sssssac"] = DAz(s.VTar),             // müqavilə tarixi (date_open)
         ["sssssay"] = s.MuddedAy?.ToString() ?? "",
-        ["sssss9"]  = "____",                  // ⚠ illik faiz dərəcəsi sorğuda yoxdur — əl ilə doldurulur
+        ["sssss9"]  = Rate(s.FaizDerecesi),    // illik faiz dərəcəsi (%) — yoxdursa "____"
         ["sssss4"]  = M(s.VerKr),              // verilmiş kredit
         ["sssss8"]  = " " + Valyuta,           // valyuta (öndə boşluq — şablonda məbləğə bitişikdir)
         ["ssssscm"] = M(s.UmumiBorc),          // ümumi borc
@@ -68,6 +90,12 @@ public static class BildirisWordService
         {
             var body = doc.MainDocumentPart!.Document.Body!;
             MergeRuns(body);
+            // Şablonda tarix placeholder-indən sonra SABİT yazılmış "ci/cu il" şəkilçisini sil —
+            // DAz onsuz da ilə düzgün sıra şəkilçisi verir (qoşa şəkilçi olmasın).
+            // "sssss1 il tarixə" kimi şəkilçisiz hallar toxunulmur.
+            foreach (var t in new[] { "sssss1", "sssssac" })
+                foreach (var suf in new[] { "cı", "ci", "cu", "cü", "c ı", "c i", "c u", "c ü" })
+                    Replace(body, $"{t} {suf} il", $"{t} il");
             // uzun tokenlər əvvəl (prefiks toqquşması yoxdur, amma zəmanət üçün)
             foreach (var kv in map.OrderByDescending(k => k.Key.Length))
                 Replace(body, kv.Key, kv.Value);

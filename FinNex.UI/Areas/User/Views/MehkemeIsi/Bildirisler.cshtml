@@ -163,7 +163,20 @@
 
         .bd-btn { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
         .bd-btn-z { background: #0d9488; border-color: #0d9488; color: #fff; }
-        .bd-btn-z:hover { background: #0f766e; }
+        .bd-btn-z:hover { background: #0f766e; color: #fff; }
+
+        /* Əməliyyat sütununu sağa sabitlə — düymə həmişə görünür */
+        #bdTable thead th:last-child { position: sticky; right: 0; z-index: 5; background: #eef2f6; }
+        #bdTable tbody td:last-child { position: sticky; right: 0; z-index: 2; box-shadow: -7px 0 10px -8px rgba(15,23,42,.22); }
+        #bdTable tbody tr.ic-row td:last-child { background: #fff; }
+        #bdTable tbody tr.ic-row:hover td:last-child { background: #eff6ff; }
+        #bdTable tbody tr.ic-zrow td:last-child { background: #fbfaff; }
+        #bdTable tbody tr.ic-zrow:hover td:last-child { background: #f1ecff; }
+
+        /* Üfüqi scroll aydın görünsün */
+        .ms-twrap::-webkit-scrollbar { height: 13px; width: 13px; }
+        .ms-twrap::-webkit-scrollbar-thumb { background: #b6c2d4; border-radius: 7px; border: 3px solid #f1f5f9; }
+        .ms-twrap::-webkit-scrollbar-track { background: #f1f5f9; }
 
         .ms-search { position: relative; max-width: 420px; }
         .ms-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }

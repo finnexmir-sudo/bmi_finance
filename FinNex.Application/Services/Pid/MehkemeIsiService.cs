@@ -423,6 +423,8 @@ public class MehkemeIsiService : IMehkemeIsiService
             VTar         = GetDate(row, "v_tar"),
             MuddedAy     = GetDec(row, "mudded_ay") is decimal _ma ? (int)Math.Round(_ma) : (int?)null,
             VerKr        = GetDec(row, "ver_kr"),
+            FaizDerecesi = GetDec(row, "faiz_derece", "faiz_derecesi", "illik_faiz", "illikfaiz",
+                                        "faiz_pro", "faizpro", "faiz_stavka", "stavka", "derece", "procent"),
             Esas         = GetDec(row, "esas"),
             Vk           = GetDec(row, "vk"),
             Faiz         = GetDec(row, "faiz"),

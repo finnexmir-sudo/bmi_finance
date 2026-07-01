@@ -24,6 +24,7 @@ public class BildirisSetirDto
     public DateTime? VTar         { get; set; }   // v_tar (date_open)
     public int?      MuddedAy     { get; set; }   // mudded_ay
     public decimal?  VerKr        { get; set; }   // ver_kr (verilmiş kredit)
+    public decimal?  FaizDerecesi { get; set; }   // illik faiz dərəcəsi (%) — Word sssss9
     public decimal?  Esas         { get; set; }   // esas
     public decimal?  Vk           { get; set; }   // vk (vaxtı keçmiş əsas)
     public decimal?  Faiz         { get; set; }   // faiz
