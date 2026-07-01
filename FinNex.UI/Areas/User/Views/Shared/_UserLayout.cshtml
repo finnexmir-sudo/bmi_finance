@@ -873,7 +873,7 @@
                     var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc" or "AyliqElave"
                                        || (currentController == "Avans" && currentArea == "HR")
                                        || (currentController == "Muhasibat" && currentArea == "HR");
-                    var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
+                    var mhParamActive = currentController is "Guzest" or "IsciGuzest" or "IsciHYS";
                     var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat" || currentController == "DovriOdenis" || currentController == "GozlenilenXerc" || currentController == "MaliyyeDashboard"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
 
@@ -922,10 +922,6 @@
                                 <i class="bi bi-chevron-down"></i>
                             </button>
                             <div class="fn-nav-g-body">
-                                <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
-                                   class="fn-nav-item @(currentController == "MaasParametri" ? "active" : "")">
-                                    <i class="bi bi-sliders"></i> Əmək haqqı parametrləri
-                                </a>
                                 <a asp-area="HR" asp-controller="Guzest" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Guzest" ? "active" : "")">
                                     <i class="bi bi-gift"></i> Güzəşt kataloqu
@@ -977,6 +973,15 @@
                                 </a>
                             </div>
                         </div>
+                    }
+
+                    @if (isAdmin)
+                    {
+                        <div class="fn-nav-label" style="margin-top:12px">Admin</div>
+                        <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
+                           class="fn-nav-item @(currentController == "MaasParametri" ? "active" : "")">
+                            <i class="bi bi-sliders"></i> Əmək haqqı parametrləri
+                        </a>
                     }
                 }
                 break;

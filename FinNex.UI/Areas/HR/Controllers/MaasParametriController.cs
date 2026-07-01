@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
+    [Authorize(Roles = RoleNames.Admin)]   // yalnız Admin — əmək haqqı parametrləri
     public class MaasParametriController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
