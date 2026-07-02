@@ -40,9 +40,14 @@ namespace FinNex.Application.Services.HR
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
-            // Eyni mənbədən (işçi + növ + əlavə məlumat) yaranan dublikatları göstərmə.
+            // Eyni işçi + növ + eyni mətnli təkliflər bir dəfə göstərilsin.
+            // Mənbədə dublikat yaransa belə (məs. eyni adamı əvəz etmə üçün iki
+            // əvəzedici-təsdiq, və ya köhnə ikiqat çağırışdan qalma sətirlər)
+            // istifadəçi eyni təklifi iki dəfə görməsin. Mətn məzmunu daşıyır —
+            // ElaveMelumat (tesdiqId/davamiyyetId) fərqli olsa da eyni mənalı
+            // təkliflər birləşir.
             var dedup = list
-                .GroupBy(x => $"{x.IsciId}|{(int)x.TeklifNovu}|{(string.IsNullOrEmpty(x.ElaveMelumat) ? x.Id.ToString() : x.ElaveMelumat)}")
+                .GroupBy(x => $"{x.IsciId}|{(int)x.TeklifNovu}|{x.Metn}")
                 .Select(g => g.First())
                 .ToList();
 
@@ -70,6 +75,12 @@ namespace FinNex.Application.Services.HR
             teklif.IslemEdenUserId = verenUserId;
             teklif.IslemTarixi = DateTime.Now;
             await _uow.Repository<JetonTeklifi>().YenileAsync(teklif);
+
+            // Eyni işçi üçün eyni mətnli digər gözləyən təkliflər (dublikat
+            // mənbədən) də bağlanır — jeton bir dəfə verilir, təkrar təkliflər
+            // növbəti yükləmədə yenidən görünməsin.
+            await DublikatTeklifleriBaglaAsync(teklif, JetonTeklifinStatusu.JetonVerildi, verenUserId);
+
             await _uow.YaddaSaxlaAsync();
             return Result.Ok("Jeton verildi.");
         }
@@ -84,6 +95,10 @@ namespace FinNex.Application.Services.HR
             teklif.IslemEdenUserId = userId;
             teklif.IslemTarixi = DateTime.Now;
             await _uow.Repository<JetonTeklifi>().YenileAsync(teklif);
+
+            // Eyni mətnli digər gözləyən dublikat təkliflər də rədd edilir.
+            await DublikatTeklifleriBaglaAsync(teklif, JetonTeklifinStatusu.Reddi, userId);
+
             await _uow.YaddaSaxlaAsync();
             return Result.Ok("Rədd edildi.");
         }
@@ -220,6 +235,29 @@ namespace FinNex.Application.Services.HR
         {
             await _uow.Repository<JetonTeklifi>().YaratAsync(teklif);
             await _uow.YaddaSaxlaAsync();
+        }
+
+        // Verilən təklifin eyni işçi + növ + mətnli digər GÖZLƏYƏN dublikatlarını
+        // eyni statusla bağlayır (SaveChanges çağıran metod tərəfindən edilir).
+        private async Task DublikatTeklifleriBaglaAsync(
+            JetonTeklifi teklif, JetonTeklifinStatusu status, int userId)
+        {
+            var qohsanlar = await _uow.Repository<JetonTeklifi>()
+                .Query()
+                .Where(x => x.Id != teklif.Id
+                    && x.IsciId == teklif.IsciId
+                    && x.TeklifNovu == teklif.TeklifNovu
+                    && x.Metn == teklif.Metn
+                    && x.Status == JetonTeklifinStatusu.Gozlenir)
+                .ToListAsync();
+
+            foreach (var q in qohsanlar)
+            {
+                q.Status = status;
+                q.IslemEdenUserId = userId;
+                q.IslemTarixi = teklif.IslemTarixi;
+                await _uow.Repository<JetonTeklifi>().YenileAsync(q);
+            }
         }
 
         private static JetonTeklifiDto MapDto(JetonTeklifi x)
