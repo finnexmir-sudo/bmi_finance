@@ -1870,6 +1870,20 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (dto.BaslamaTarixi.Date < minTarix)
                     return Result<MezuniyyetDto>.Fail($"Keçmiş tarixlər üçün maksimum {GeriyeQeydMaxGun} gün əvvələ qədər qeyd etmək olar.");
 
+                // ── 1b. Maaşı ödənilmiş aya geriyə məzuniyyət YAZILA BİLMƏZ ──
+                // O günlərin maaşı artıq verilib; sonradan məzuniyyət yazmaq düzgün deyil.
+                var yoxlananAylar = new HashSet<(int Il, int Ay)>();
+                for (var g = dto.BaslamaTarixi.Date; g <= dto.BitmeTarixi.Date; g = g.AddDays(1))
+                    yoxlananAylar.Add((g.Year, g.Month));
+                foreach (var (il, ay) in yoxlananAylar)
+                {
+                    var maasOdenilib = await _unitOfWork.Repository<Maas>()
+                        .MovcuddurmuAsync(m => !m.Silinib && m.IsciId == dto.IsciId
+                            && m.Il == il && m.Ay == ay && m.Status == MaasStatus.Odenildi);
+                    if (maasOdenilib)
+                        return Result<MezuniyyetDto>.Fail($"{ay:00}.{il} ayının maaşı artıq ödənilib — həmin aya geriyə məzuniyyət yazmaq olmaz.");
+                }
+
                 // ── 2. Eyni tarix aralığında mövcud məzuniyyət yoxlanışı ──
                 var aktivStatuslar = new[]
                 {

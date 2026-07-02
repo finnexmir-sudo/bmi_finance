@@ -83,7 +83,7 @@
                 <h3 class="sd-h3">1.4. Geriyə Məzuniyyət (HR birbaşa qeyd)</h3>
                 <p>HR işçi əvəzinə məzuniyyəti birbaşa qeyd edir — <b>təsdiq axını atlanır</b>, müraciət dərhal “Təsdiqlənib” olur.</p>
                 <ul class="sd-list">
-                    <li><b>Tarix:</b> keçmiş üçün <b>maksimum 90 gün</b> əvvələ qədər. <b>Bugün</b> və <b>gələcək</b> də olar.</li>
+                    <li><b>Tarix:</b> keçmiş, bugün və gələcək olar (texniki limit 90 gün) — <b>lakin maaşı ödənilmiş aya YAZILA BİLMƏZ</b> (sistem blok edir: “bu ayın maaşı artıq ödənilib”).</li>
                     <li><b>Balans:</b> əmək məzuniyyətində illik balans, yoxsa jeton balansı yoxlanılır — çatmırsa qeyd alınmır.</li>
                     <li>Eyni aralıqda artıq aktiv məzuniyyət varsa — qeyd alınmır (təkrarın qarşısı).</li>
                     <li>Qeyd alınanda balans azalır, “[Geriyə qeyd — HR]” taqı ilə audit saxlanılır.</li>
@@ -209,10 +209,11 @@
             <div class="sd-card">
                 <h3 class="sd-h3">3.3. Geriyə Məzuniyyət</h3>
                 <ul class="sd-list">
-                    <li>Keçmiş (max 90 gün), bugün və gələcək tarix — hamısı olar.</li>
+                    <li>Keçmiş, bugün və gələcək — texniki limit 90 gün.</li>
                     <li>Təsdiq axını atlanır (dərhal Təsdiqlənib), <b>yeni əmr</b> yaranır.</li>
                     <li>Keçmiş günün Qayıb/İşdə/Gecikmə davamiyyəti İcazəli-yə çevrilir.</li>
                 </ul>
+                <div class="sd-warn"><i class="bi bi-exclamation-triangle"></i> <b>Maaşı ödənilmiş aya geriyə məzuniyyət YAZILA BİLMƏZ</b> — o günlərin maaşı artıq verilib, sistem blok edir (“bu ayın maaşı artıq ödənilib”).</div>
             </div>
 
         </div>
