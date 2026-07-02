@@ -902,7 +902,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
-                var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId));
+                // İcazəli = fiziki icazədə + təsdiqlənmiş icazəsi olan, hələ qeydə düşməyənlər (səhər/gözləyən).
+                var hedefTarixKpi = (tarix ?? baslangic ?? DateTime.Today).Date;
+                var qeydliIdsKpi = new HashSet<int>(umumi.Where(x => x.Tarix.Date == hedefTarixKpi).Select(x => x.IsciId));
+                var icazeGozleyenSayi = icazeListW
+                    .Where(i => i.Tarix == hedefTarixKpi && !qeydliIdsKpi.Contains(i.IsciId) && !mezuniyyetIsciIds.Contains(i.IsciId))
+                    .Select(i => i.IsciId).Distinct().Count();
+                var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)) + icazeGozleyenSayi;
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 
@@ -1019,10 +1025,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .OrderBy(x => x.isciTamAd)
                 .ToList();
 
+            // İcazəli (status 4) "gözlənilir" sayılmır — İcazəli KPI-də sayılır.
+            var yalnizGozleyen = gozlenilenler.Where(x => x.status != 4).ToList();
+
             return Json(new
             {
-                records = gozlenilenler,
-                count = gozlenilenler.Count,
+                records = yalnizGozleyen,
+                count = yalnizGozleyen.Count,
                 tarix = hedef
             });
         }
