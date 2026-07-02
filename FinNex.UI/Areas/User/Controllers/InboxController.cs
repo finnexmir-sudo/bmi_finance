@@ -301,8 +301,8 @@ namespace FinNex.UI.Areas.User.Controllers
             if (isciId == null) return RedirectToLogin();
 
             var result = await _evezediciTesdiqService.QebulEtAsync(id, isciId.Value);
-            if (result.Success)
-                await _teklifService.EvezediciQebulEdildiAsync(id);
+            // Qeyd: jeton təklifi QebulEtAsync-in içində yaradılır — buradakı təkrar çağırış
+            // silindi (işçi eyni əvəzedicilik üçün iki dəfə təklif olunurdu — dublikat).
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index), new { tab = "sorgular" });
         }

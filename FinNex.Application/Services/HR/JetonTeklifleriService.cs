@@ -40,7 +40,13 @@ namespace FinNex.Application.Services.HR
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
-            return list.Select(MapDto).ToList();
+            // Eyni mənbədən (işçi + növ + əlavə məlumat) yaranan dublikatları göstərmə.
+            var dedup = list
+                .GroupBy(x => $"{x.IsciId}|{(int)x.TeklifNovu}|{(string.IsNullOrEmpty(x.ElaveMelumat) ? x.Id.ToString() : x.ElaveMelumat)}")
+                .Select(g => g.First())
+                .ToList();
+
+            return dedup.Select(MapDto).ToList();
         }
 
         public async Task<Result> JetonVerAsync(JetonTeklifiVerDto dto, int verenUserId)
@@ -156,7 +162,9 @@ namespace FinNex.Application.Services.HR
                 var standartDaqiqe = (parametri.StandartCixisVaxti - parametri.StandartGirisVaxti).TotalMinutes;
                 var faktikiDaqiqe = (d.CixisVaxti.Value - d.GirisVaxti.Value).TotalMinutes - NaharAraSiDeqiqe;
 
-                if (faktikiDaqiqe > standartDaqiqe)
+                var artiqIshle = (int)(faktikiDaqiqe - standartDaqiqe);
+                // 0 (kəsr dəqiqə → yuvarlaqda 0) üçün jeton təklifi yaradılmır.
+                if (artiqIshle > 0)
                 {
                     var artiqVar = await _uow.Repository<JetonTeklifi>()
                         .Query()
@@ -166,7 +174,6 @@ namespace FinNex.Application.Services.HR
                             && x.Status == JetonTeklifinStatusu.Gozlenir);
                     if (!artiqVar)
                     {
-                        var artiqIshle = (int)(faktikiDaqiqe - standartDaqiqe);
                         await YaratAsync(new JetonTeklifi
                         {
                             IsciId = d.IsciId,
