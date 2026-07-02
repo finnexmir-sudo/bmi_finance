@@ -336,7 +336,7 @@
          && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
          && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
     {
-        var minTarix = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+        var minTarix = DateTime.Today.ToString("yyyy-MM-dd");   // bugünü də seçmək olar (məzuniyyəti geriyə bugünə uzatmaq üçün)
 
         <div id="tarixModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
             <div style="background:#fff;border-radius:12px;width:100%;max-width:480px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">

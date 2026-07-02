@@ -651,8 +651,8 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         if (yeniBitme < yeniBaslama)
             return Result.Fail("Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
-        if (yeniBaslama <= DateTime.Today)
-            return Result.Fail("Yeni başlama tarixi bu gündən sonra olmalıdır.");
+        if (yeniBaslama < DateTime.Today)
+            return Result.Fail("Yeni başlama tarixi keçmişdə ola bilməz (bu gün və ya sonra olmalıdır).");
 
         var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
@@ -782,9 +782,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             .GetirAsync(x => x.IsciId == isciId && x.Tarix.Date == gun.Date);
         if (aktiv != null)
         {
-            if (aktiv.Status == DavamiyyetStatus.Qayib)
+            // Qayıb VƏ səhvən vurulmuş cihaz girişi (İşdə/Gecikmə) → məzuniyyət statusuna çevir
+            // (bugünə/keçmişə uzadılanda işçi cihaza basmış ola bilər). Qəsdən qoyulmuş leave
+            // statuslarına (İcazəli/Xəstəlik/Ezamiyyət/Dövlət vəzifəsi) toxunmuruq.
+            if (aktiv.Status == DavamiyyetStatus.Qayib ||
+                aktiv.Status == DavamiyyetStatus.Isde ||
+                aktiv.Status == DavamiyyetStatus.Gecikme)
             {
-                aktiv.Status = status;
+                aktiv.Status     = status;
+                aktiv.GirisVaxti = null;
+                aktiv.CixisVaxti = null;
                 await _unitOfWork.Repository<Davamiyyet>().YenileAsync(aktiv);
             }
             return;
