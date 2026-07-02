@@ -5,11 +5,13 @@
 
 @*
    ──────────────────────────────────────────────────────────────────────────
-   SİSTEM BƏLƏDÇİSİ — daxili bilik bazası.
+   SİSTEM BƏLƏDÇİSİ — daxili bilik bazası (akkordeon).
    Yeni bölmə əlavə etmək üçün:
-     1) Aşağıdakı "sd-toc" siyahısına bir <a href="#bolme-ID"> əlavə et.
-     2) Eyni ID ilə yeni <section class="sd-sec" id="bolme-ID"> ... </section> yaz.
-   Strukturu (sd-h2 başlıq, sd-card, sd-note/sd-warn callout, sd-table) təkrarla.
+     1) "sd-toc" siyahısına bir <a href="#bolme-ID"> əlavə et.
+     2) Eyni ID ilə yeni <section class="sd-sec" id="bolme-ID"> yaz:
+          <button class="sd-acc-head"><span>N. Başlıq</span><i class="bi bi-chevron-down sd-acc-chev"></i></button>
+          <div class="sd-acc-body"> ...sd-card-lar... </div>
+   Başlığa klik → açılır/bağlanır (JS aşağıda).
    ──────────────────────────────────────────────────────────────────────────
 *@
 
@@ -18,124 +20,239 @@
     <div class="sd-head">
         <div>
             <h1 class="sd-title"><i class="bi bi-journal-bookmark"></i> Sistem necə işləyir</h1>
-            <p class="sd-sub">Daxili bələdçi — sistemin modullarının real davranışı. Lazım olanda buradan oxuyun.</p>
+            <p class="sd-sub">Daxili bələdçi — sistemin modullarının real davranışı. Başlığa klik edin, ətraflı açılsın.</p>
         </div>
-        <div class="sd-updated">Son yenilənmə: 30.06.2026</div>
+        <div class="sd-updated">Son yenilənmə: 02.07.2026</div>
     </div>
 
     @* ── Mündəricat ── *@
     <nav class="sd-toc">
         <div class="sd-toc-h">Mündəricat</div>
         <a href="#davamiyyet">1. Davamiyyət — cihaz, məzuniyyət və geriyə qeyd</a>
+        <a href="#tesdiq">2. Təsdiq axını — məzuniyyət və icazə</a>
+        <a href="#tarix">3. Məzuniyyət tarixini dəyişmək (Tarix dəyiş / Geriyə qeyd)</a>
+        <a href="#maas">4. Maaş və məzuniyyət / icazə</a>
     </nav>
 
-    @* ════════════════════════════════════════════════════════════════════
-       BÖLMƏ 1 — DAVAMİYYƏT
-       ════════════════════════════════════════════════════════════════════ *@
-    <section class="sd-sec" id="davamiyyet">
-        <h2 class="sd-h2">1. Davamiyyət — cihaz, məzuniyyət və geriyə qeyd</h2>
+    @* ════════════════ BÖLMƏ 1 — DAVAMİYYƏT ════════════════ *@
+    <section class="sd-sec open" id="davamiyyet">
+        <button type="button" class="sd-acc-head">
+            <span>1. Davamiyyət — cihaz, məzuniyyət və geriyə qeyd</span>
+            <i class="bi bi-chevron-down sd-acc-chev"></i>
+        </button>
+        <div class="sd-acc-body">
 
-        <!-- 1.1 Statuslar -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.1. Davamiyyət statusları</h3>
-            <p>Hər işçinin hər iş günü üçün bir davamiyyət qeydi olur. Mümkün statuslar:</p>
-            <table class="sd-table">
-                <thead><tr><th>Status</th><th>Mənası</th><th>Mənbə</th></tr></thead>
-                <tbody>
-                    <tr><td><span class="sd-tag sd-tag-green">İşdə</span></td><td>İşçi gəlib (vaxtında)</td><td>Cihaz girişi</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-amber">Gecikmə</span></td><td>İşçi gəlib, amma 9:05-dən sonra</td><td>Cihaz girişi</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-red">Qayıb</span></td><td>İşçi gəlməyib, üzrlü səbəb yoxdur</td><td>Avtomatik (gün sonu)</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-blue">İcazəli</span></td><td>Məzuniyyət / icazə (ödənişli)</td><td>Məzuniyyət / İcazə</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-blue">Xəstəlik</span></td><td>Xəstəlik məzuniyyəti</td><td>Məzuniyyət (Nov=Xəstəlik)</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-blue">Ezamiyyət</span></td><td>Ezamiyyətdə</td><td>Ezamiyyət modulu</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-gray">Dövlət vəzifəsi</span></td><td>Hərbi çağırış / dövlət vəzifəsi (ödənişli, balansdan düşmür)</td><td>Məzuniyyət</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="sd-card">
+                <h3 class="sd-h3">1.1. Davamiyyət statusları</h3>
+                <p>Hər işçinin hər iş günü üçün bir davamiyyət qeydi olur. Mümkün statuslar:</p>
+                <table class="sd-table">
+                    <thead><tr><th>Status</th><th>Mənası</th><th>Mənbə</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="sd-tag sd-tag-green">İşdə</span></td><td>İşçi gəlib (vaxtında)</td><td>Cihaz girişi</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-amber">Gecikmə</span></td><td>İşçi gəlib, amma 9:05-dən sonra</td><td>Cihaz girişi</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-red">Qayıb</span></td><td>İşçi gəlməyib, üzrlü səbəb yoxdur</td><td>Avtomatik (gün sonu)</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-blue">İcazəli</span></td><td>Məzuniyyət / icazə (ödənişli)</td><td>Məzuniyyət / İcazə</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-blue">Xəstəlik</span></td><td>Xəstəlik məzuniyyəti</td><td>Məzuniyyət (Nov=Xəstəlik)</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-blue">Ezamiyyət</span></td><td>Ezamiyyətdə</td><td>Ezamiyyət modulu</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-gray">Dövlət vəzifəsi</span></td><td>Hərbi çağırış / dövlət vəzifəsi (ödənişli, balansdan düşmür)</td><td>Məzuniyyət</td></tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <!-- 1.2 Cihaz -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.2. Cihaz girişi necə davamiyyətə çevrilir (ADMS)</h3>
-            <ul class="sd-list">
-                <li>İşçi barmağını cihaza basanda, qurğu məlumatı <b>real-vaxtda</b> sistemə göndərir. Hər xam keçid <code>CihazOxuma</code> cədvəlində (audit üçün) saxlanılır.</li>
-                <li>İlk giriş <b>9:05-ə qədər</b> → <span class="sd-tag sd-tag-green">İşdə</span>, <b>9:05-dən sonra</b> → <span class="sd-tag sd-tag-amber">Gecikmə</span>.</li>
-                <li>Günün <b>ilk</b> oxuması saat <b>13:00-dan sonradırsa</b>, sistem bunu çıxış kimi qəbul edir (işçi səhər keçməyib, getməyə yaxın basıb) — giriş boş qalır.</li>
-                <li><b>Məzuniyyət günü</b> cihaza basılsa, oxuma <b>davamiyyətə təsir etmir</b> (status dəyişmir) — xam keçid yenə də audit üçün saxlanılır.</li>
-            </ul>
-        </div>
+            <div class="sd-card">
+                <h3 class="sd-h3">1.2. Cihaz girişi necə davamiyyətə çevrilir (ADMS)</h3>
+                <ul class="sd-list">
+                    <li>İşçi barmağını cihaza basanda, qurğu məlumatı <b>real-vaxtda</b> sistemə göndərir. Hər xam keçid <code>CihazOxuma</code> cədvəlində (audit üçün) saxlanılır.</li>
+                    <li>İlk giriş <b>9:05-ə qədər</b> → <span class="sd-tag sd-tag-green">İşdə</span>, <b>9:05-dən sonra</b> → <span class="sd-tag sd-tag-amber">Gecikmə</span>.</li>
+                    <li>Günün <b>ilk</b> oxuması saat <b>13:00-dan sonradırsa</b>, sistem bunu çıxış kimi qəbul edir (işçi səhər keçməyib, getməyə yaxın basıb) — giriş boş qalır.</li>
+                    <li><b>Məzuniyyət günü</b> cihaza basılsa, oxuma <b>davamiyyətə təsir etmir</b> (status dəyişmir) — xam keçid yenə də audit üçün saxlanılır.</li>
+                </ul>
+            </div>
 
-        <!-- 1.3 Qayıb avtomatik -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.3. Qayıb avtomatik işarələnməsi (gün sonu)</h3>
-            <ul class="sd-list">
-                <li>Hər gün <b>23:00-dan sonra</b> sistem gün ərzində gəlməyən aktiv işçilərə <span class="sd-tag sd-tag-red">Qayıb</span> yazır.</li>
-                <li><b>Son 7 günü</b> də yoxlayır (server söndürülübsə də qeydlər tutulsun).</li>
-                <li>Həmin gün təsdiqlənmiş <b>icazə</b> və ya offline <b>görüş</b> varsa — Qayıb yerinə <span class="sd-tag sd-tag-blue">İcazəli</span> yazılır.</li>
-                <li>Həftəsonu və bayram günləri (Bayram cədvəlinə görə) Qayıb yazılmır.</li>
-            </ul>
-        </div>
+            <div class="sd-card">
+                <h3 class="sd-h3">1.3. Qayıb avtomatik işarələnməsi (gün sonu)</h3>
+                <ul class="sd-list">
+                    <li>Hər gün <b>23:00-dan sonra</b> sistem gün ərzində gəlməyən aktiv işçilərə <span class="sd-tag sd-tag-red">Qayıb</span> yazır.</li>
+                    <li><b>Son 7 günü</b> də yoxlayır (server söndürülübsə də qeydlər tutulsun).</li>
+                    <li>Həmin gün təsdiqlənmiş <b>icazə</b> və ya offline <b>görüş</b> varsa — Qayıb yerinə <span class="sd-tag sd-tag-blue">İcazəli</span> yazılır.</li>
+                    <li>Həftəsonu və bayram günləri (Bayram cədvəlinə görə) Qayıb yazılmır.</li>
+                </ul>
+            </div>
 
-        <!-- 1.4 Geriyə məzuniyyət -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.4. Geriyə Məzuniyyət (HR birbaşa qeyd)</h3>
-            <p>HR işçi əvəzinə məzuniyyəti birbaşa qeyd edir — <b>təsdiq axını atlanır</b>, müraciət dərhal “Təsdiqlənib” olur.</p>
-            <ul class="sd-list">
-                <li><b>Tarix:</b> keçmiş tarix üçün <b>maksimum 90 gün</b> əvvələ qədər. <b>Bugün</b> və <b>gələcək</b> tarix də qeyd oluna bilər (yalnız keçmişlə məhdud deyil).</li>
-                <li><b>Balans:</b> əmək məzuniyyətində illik balans, yoxsa jeton balansı yoxlanılır — çatmırsa qeyd alınmır.</li>
-                <li>Eyni aralıqda artıq aktiv məzuniyyət varsa — qeyd alınmır (təkrarın qarşısı).</li>
-                <li>Qeyd alınanda balans azalır və “[Geriyə qeyd — HR]” taqı ilə audit saxlanılır.</li>
-            </ul>
-        </div>
+            <div class="sd-card">
+                <h3 class="sd-h3">1.4. Geriyə Məzuniyyət (HR birbaşa qeyd)</h3>
+                <p>HR işçi əvəzinə məzuniyyəti birbaşa qeyd edir — <b>təsdiq axını atlanır</b>, müraciət dərhal “Təsdiqlənib” olur.</p>
+                <ul class="sd-list">
+                    <li><b>Tarix:</b> keçmiş üçün <b>maksimum 90 gün</b> əvvələ qədər. <b>Bugün</b> və <b>gələcək</b> də olar.</li>
+                    <li><b>Balans:</b> əmək məzuniyyətində illik balans, yoxsa jeton balansı yoxlanılır — çatmırsa qeyd alınmır.</li>
+                    <li>Eyni aralıqda artıq aktiv məzuniyyət varsa — qeyd alınmır (təkrarın qarşısı).</li>
+                    <li>Qeyd alınanda balans azalır, “[Geriyə qeyd — HR]” taqı ilə audit saxlanılır.</li>
+                </ul>
+            </div>
 
-        <!-- 1.5 Davamiyyət düzəlişi -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.5. Məzuniyyət yazılanda davamiyyət necə düzəlir</h3>
-            <p>Məzuniyyət (geriyə qeyd) yazılanda, aralıqdakı hər gün üçün davamiyyət belə nizamlanır:</p>
-            <table class="sd-table">
-                <thead><tr><th>Günün əvvəlki vəziyyəti</th><th>Nəticə</th></tr></thead>
-                <tbody>
-                    <tr><td>Qeyd yoxdur</td><td>Yeni <span class="sd-tag sd-tag-blue">İcazəli</span> yaradılır</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-red">Qayıb</span></td><td><span class="sd-tag sd-tag-blue">İcazəli</span>-yə çevrilir</td></tr>
-                    <tr><td><span class="sd-tag sd-tag-green">İşdə</span> / <span class="sd-tag sd-tag-amber">Gecikmə</span> (səhv cihaz girişi)</td><td><span class="sd-tag sd-tag-blue">İcazəli</span>-yə çevrilir, giriş/çıxış təmizlənir</td></tr>
-                    <tr><td>Xəstəlik / Ezamiyyət / İcazəli / Dövlət vəzifəsi</td><td>Toxunulmur (qəsdən qoyulub — ayrıca rəsmiləşdirmə tələb edir)</td></tr>
-                </tbody>
-            </table>
-            <div class="sd-note"><i class="bi bi-info-circle"></i> Səhv cihaz girişi “İcazəli”yə çevriləndə xam keçid yenə də <code>CihazOxuma</code>-da qalır — audit izi itmir.</div>
-        </div>
+            <div class="sd-card">
+                <h3 class="sd-h3">1.5. Məzuniyyət yazılanda davamiyyət necə düzəlir</h3>
+                <table class="sd-table">
+                    <thead><tr><th>Günün əvvəlki vəziyyəti</th><th>Nəticə</th></tr></thead>
+                    <tbody>
+                        <tr><td>Qeyd yoxdur</td><td>Yeni <span class="sd-tag sd-tag-blue">İcazəli</span> yaradılır</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-red">Qayıb</span></td><td><span class="sd-tag sd-tag-blue">İcazəli</span>-yə çevrilir</td></tr>
+                        <tr><td><span class="sd-tag sd-tag-green">İşdə</span> / <span class="sd-tag sd-tag-amber">Gecikmə</span> (səhv cihaz girişi)</td><td><span class="sd-tag sd-tag-blue">İcazəli</span>-yə çevrilir, giriş/çıxış təmizlənir</td></tr>
+                        <tr><td>Xəstəlik / Ezamiyyət / İcazəli / Dövlət vəzifəsi</td><td>Toxunulmur (qəsdən qoyulub)</td></tr>
+                    </tbody>
+                </table>
+                <div class="sd-note"><i class="bi bi-info-circle"></i> Səhv cihaz girişi “İcazəli”yə çevriləndə xam keçid yenə də <code>CihazOxuma</code>-da qalır — audit izi itmir.</div>
+            </div>
 
-        <!-- 1.6 Sıra -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.6. Sıranın əhəmiyyəti (vacib)</h3>
-            <div class="sd-flow">
-                <div class="sd-flow-row">
-                    <div class="sd-flow-step">Məzuniyyət <b>ƏVVƏL</b> yazılıb</div>
-                    <i class="bi bi-arrow-right"></i>
-                    <div class="sd-flow-step">İşçi sonra cihaza basır</div>
-                    <i class="bi bi-arrow-right"></i>
-                    <div class="sd-flow-res sd-ok">Oxuma ignor olunur → gün <b>İcazəli</b> qalır ✓</div>
-                </div>
-                <div class="sd-flow-row">
-                    <div class="sd-flow-step">İşçi <b>ƏVVƏL</b> cihaza basır</div>
-                    <i class="bi bi-arrow-right"></i>
-                    <div class="sd-flow-step">HR sonra geriyə məzuniyyət yazır</div>
-                    <i class="bi bi-arrow-right"></i>
-                    <div class="sd-flow-res sd-ok">Gün <b>İşdə</b>-dən <b>İcazəli</b>-yə çevrilir ✓</div>
+            <div class="sd-card">
+                <h3 class="sd-h3">1.6. Sıranın əhəmiyyəti</h3>
+                <div class="sd-flow">
+                    <div class="sd-flow-row">
+                        <div class="sd-flow-step">Məzuniyyət <b>ƏVVƏL</b> yazılıb</div>
+                        <i class="bi bi-arrow-right"></i>
+                        <div class="sd-flow-step">İşçi sonra cihaza basır</div>
+                        <i class="bi bi-arrow-right"></i>
+                        <div class="sd-flow-res sd-ok">Oxuma ignor olunur → <b>İcazəli</b> qalır ✓</div>
+                    </div>
+                    <div class="sd-flow-row">
+                        <div class="sd-flow-step">İşçi <b>ƏVVƏL</b> cihaza basır</div>
+                        <i class="bi bi-arrow-right"></i>
+                        <div class="sd-flow-step">HR sonra geriyə məzuniyyət yazır</div>
+                        <i class="bi bi-arrow-right"></i>
+                        <div class="sd-flow-res sd-ok"><b>İşdə</b> → <b>İcazəli</b>-yə çevrilir ✓</div>
+                    </div>
                 </div>
             </div>
-            <div class="sd-warn"><i class="bi bi-exclamation-triangle"></i> Hər iki halda nəticə eynidir — gün düzgün <b>İcazəli</b> olur. (Əvvəllər “punch əvvəl” halında gün səhvən “İşdə” qalırdı; bu düzəldilib.)</div>
-        </div>
 
-        <!-- 1.7 Nümunə -->
-        <div class="sd-card">
-            <h3 class="sd-h3">1.7. Praktiki nümunə</h3>
-            <p><i>İşçi səhvən bugün cihaza girib, amma əslində bugün məzuniyyətdə olmalıdır.</i></p>
-            <ol class="sd-list">
-                <li>Səhər cihaz girişi olub → bugün <span class="sd-tag sd-tag-green">İşdə</span> görünür.</li>
-                <li>HR → <b>Geriyə Məzuniyyət</b> → işçini seçir, tarix = bugün, qeyd edir.</li>
-                <li>Nəticə: bugün <span class="sd-tag sd-tag-blue">İcazəli</span> olur, balans azalır, səhv giriş təmizlənir (xam keçid audit üçün qalır).</li>
-            </ol>
         </div>
+    </section>
 
+    @* ════════════════ BÖLMƏ 2 — TƏSDİQ AXINI ════════════════ *@
+    <section class="sd-sec" id="tesdiq">
+        <button type="button" class="sd-acc-head">
+            <span>2. Təsdiq axını — məzuniyyət və icazə</span>
+            <i class="bi bi-chevron-down sd-acc-chev"></i>
+        </button>
+        <div class="sd-acc-body">
+
+            <div class="sd-card">
+                <h3 class="sd-h3">2.1. Mərhələlər</h3>
+                <ul class="sd-list">
+                    <li><b>Məzuniyyət:</b> (Gözləmədə — əvəzedici qəbul edənədək) → <b>Şöbə rəisi</b> → <b>Rəhbər</b> → <b>HR</b> → Təsdiqlənib.</li>
+                    <li><b>İcazə:</b> praktikada yalnız <b>Rəhbər</b> təsdiqidir (şöbə rəisi və HR addımı normal axından çıxarılıb).</li>
+                    <li>Müraciəti kim yazırsa, onun rolu mərhələləri atlayır (məs. rəhbər özü yazsa, rəhbər addımı atlanır).</li>
+                </ul>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">2.2. Hər mərhələni kim təsdiqləyir</h3>
+                <table class="sd-table">
+                    <thead><tr><th>Mərhələ</th><th>Kim təsdiqləyir</th></tr></thead>
+                    <tbody>
+                        <tr><td>Şöbə rəisi</td><td>İşçinin <b>departamentinin</b> şöbə rəisi (konkret şəxs)</td></tr>
+                        <tr><td>Rəhbər</td><td><b>Rəhbər</b> rolunda olan <b>istənilən</b> istifadəçi (+ Admin)</td></tr>
+                        <tr><td>HR</td><td><b>HR</b> rolunda olan <b>istənilən</b> istifadəçi (+ Admin)</td></tr>
+                    </tbody>
+                </table>
+                <div class="sd-note"><i class="bi bi-info-circle"></i> Rəhbər/HR təsdiqi konkret şəxsə bağlı deyil — həmin rolda olan hər kəs təsdiqləyə bilər. Kim təsdiqlədisə, audit üçün yazılır.</div>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">2.3. HR / Rəhbər məzuniyyətdədirsə</h3>
+                <ul class="sd-list">
+                    <li>Sistem <b>təsdiqçinin öz məzuniyyətinə baxmır</b> (yeganə istisna: məzuniyyət yaradılanda şöbə rəisi bugün məzuniyyətdədirsə, o mərhələ atlanır).</li>
+                    <li>Tək HR/Rəhbər məzuniyyətdədirsə müraciət <b>gözləyir</b> → başqa HR/Rəhbər və ya <b>Admin</b> təsdiqləyə bilər.</li>
+                    <li><b>Admin</b> bütün mərhələləri keçir — son çıxış yoludur.</li>
+                    <li>Bir nəfər həm Rəhbər həm HR olsa, hər iki mərhələni təsdiqləyə bilir (işləyir, amma iki nəzarət bir adama düşür — siyasətlə idarə et).</li>
+                </ul>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">2.4. Əvəzedici</h3>
+                <p><b>Əvəzedici = işçinin İŞ əvəzedicisidir</b> (təsdiqçi deyil). İşçi məzuniyyət yazanda kimi əvəzedici seçir, o <b>qəbul etməlidir</b> — yalnız bundan sonra müraciət təsdiq axınına düşür.</p>
+            </div>
+
+        </div>
+    </section>
+
+    @* ════════════════ BÖLMƏ 3 — TARİX DƏYİŞ / GERİYƏ ════════════════ *@
+    <section class="sd-sec" id="tarix">
+        <button type="button" class="sd-acc-head">
+            <span>3. Məzuniyyət tarixini dəyişmək</span>
+            <i class="bi bi-chevron-down sd-acc-chev"></i>
+        </button>
+        <div class="sd-acc-body">
+
+            <div class="sd-card">
+                <h3 class="sd-h3">3.1. Hansı halda hansı alət</h3>
+                <table class="sd-table">
+                    <thead><tr><th>Nə istəyirsən</th><th>Alət</th></tr></thead>
+                    <tbody>
+                        <tr><td>Mövcud məzuniyyəti başqa <b>bugün / gələcək</b> tarixə çəkmək və ya uzatmaq</td><td><b>Tarix dəyiş</b> (eyni əmr)</td></tr>
+                        <tr><td><b>Keçmiş</b> günə məzuniyyət yazmaq</td><td><b>Geriyə Məzuniyyət</b> (yeni əmr)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">3.2. Tarix dəyiş</h3>
+                <ul class="sd-list">
+                    <li>Yalnız <b>təsdiqlənmiş</b>, <b>başlamamış</b> məzuniyyət üçün.</li>
+                    <li>Yeni başlama <b>bugün və ya sonra</b> ola bilər (keçmiş yox).</li>
+                    <li>Balans və davamiyyət <b>avtomatik uzlaşır</b>, <b>eyni əmr</b> saxlanılır.</li>
+                    <li>Bugünə uzadılanda o günün davamiyyəti (səhv cihaz girişi olsa da) İcazəli olur.</li>
+                    <li>Avans (qabaqcadan ödəniş) artıq icra olunubsa — dəyişmək olmaz (əvvəlcə ləğv et).</li>
+                </ul>
+                <div class="sd-note"><i class="bi bi-info-circle"></i> Nümunə: 7–20 məzuniyyəti 3–16-ya çəkmək — ləğv etməyə ehtiyac yoxdur, sadəcə Tarix dəyiş (tarixlər bugündən əvvəl olmasın).</div>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">3.3. Geriyə Məzuniyyət</h3>
+                <ul class="sd-list">
+                    <li>Keçmiş (max 90 gün), bugün və gələcək tarix — hamısı olar.</li>
+                    <li>Təsdiq axını atlanır (dərhal Təsdiqlənib), <b>yeni əmr</b> yaranır.</li>
+                    <li>Keçmiş günün Qayıb/İşdə/Gecikmə davamiyyəti İcazəli-yə çevrilir.</li>
+                </ul>
+            </div>
+
+        </div>
+    </section>
+
+    @* ════════════════ BÖLMƏ 4 — MAAŞ VƏ MƏZUNİYYƏT ════════════════ *@
+    <section class="sd-sec" id="maas">
+        <button type="button" class="sd-acc-head">
+            <span>4. Maaş və məzuniyyət / icazə</span>
+            <i class="bi bi-chevron-down sd-acc-chev"></i>
+        </button>
+        <div class="sd-acc-body">
+
+            <div class="sd-card">
+                <h3 class="sd-h3">4.1. Leave maaşa necə təsir edir</h3>
+                <ul class="sd-list">
+                    <li>Baza maaş <b>tam aydır</b> (ödəniş tarixinə görə bölünmür).</li>
+                    <li><span class="sd-tag sd-tag-red">Qayıb</span> (MaasdanKes) → prorata <b>çıxılır</b>.</li>
+                    <li>Məzuniyyət (ay-sonu ödəniş) → həmin günlərin baza haqqı <b>çıxılır</b>, əvəzinə <b>məzuniyyət haqqı ödənilir</b>.</li>
+                    <li>Xəstəlik → çıxılır + şirkət xəstəlik haqqı.</li>
+                    <li><span class="sd-tag sd-tag-blue">İcazəli</span> / <span class="sd-tag sd-tag-blue">Ezamiyyət</span> → maaşdan <b>çıxılmır</b>.</li>
+                </ul>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">4.2. Ödənilmiş ay dondurulur</h3>
+                <p>Maaş <b>“Ödənildi”</b> statusuna keçəndən sonra <b>yenidən hesablanmır / dəyişdirilmir</b>. Yenidən hesablama yalnız “Layihə”də mümkündür.</p>
+            </div>
+
+            <div class="sd-card">
+                <h3 class="sd-h3">4.3. Ödənişdən sonra məzuniyyət</h3>
+                <p>Maaş ödəniləndən sonra o aya məzuniyyət yazılsa (məs. 28-də ödənildi, 29–30 sonra yazıldı):</p>
+                <ul class="sd-list">
+                    <li>Ödənilmiş ay toxunulmaz qalır; düzəliş <b>növbəti ayın maaşında</b> avtomatik aparılır — artıq ödənilmiş 2 günün haqqı <b>geri tutulur</b>, məzuniyyət haqqı əlavə olunur.</li>
+                    <li><b>Şərt:</b> növbəti ay maaşı işə düşməlidir və məzuniyyət 1 ay içində yazılmalıdır.</li>
+                </ul>
+                <div class="sd-note"><i class="bi bi-info-circle"></i> Praktikada məzuniyyət maaşdan əvvəl təsdiqlənirsə, maaş onsuz da düzgün hesablanır — korreksiyaya ehtiyac qalmır.</div>
+            </div>
+
+        </div>
     </section>
 
 </div>
@@ -148,16 +265,27 @@
         .sd-sub { color:#64748b; font-size:14px; margin:0; }
         .sd-updated { font-size:12px; color:#94a3b8; white-space:nowrap; padding-top:6px; }
 
-        .sd-toc { background:#f8fafc; border:1px solid #e9eef5; border-radius:12px; padding:14px 16px; margin-bottom:24px; }
+        .sd-toc { background:#f8fafc; border:1px solid #e9eef5; border-radius:12px; padding:14px 16px; margin-bottom:20px; }
         .sd-toc-h { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8; margin-bottom:8px; }
         .sd-toc a { display:block; color:#2563eb; text-decoration:none; font-size:14px; font-weight:600; padding:4px 0; }
         .sd-toc a:hover { text-decoration:underline; }
 
-        .sd-sec { margin-bottom:36px; scroll-margin-top:80px; }
-        .sd-h2 { font-size:19px; font-weight:800; color:#0f172a; border-bottom:2px solid #6366f1; padding-bottom:8px; margin:0 0 16px; }
+        /* Akkordeon bölmə */
+        .sd-sec { margin-bottom:10px; scroll-margin-top:80px; }
+        .sd-acc-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px;
+                       padding:15px 18px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:12px;
+                       cursor:pointer; text-align:left; font-size:16px; font-weight:800; color:#0f172a; transition:background .12s; }
+        .sd-acc-head:hover { background:#e9eef5; }
+        .sd-sec.open .sd-acc-head { background:#eef2ff; border-color:#c7d2fe; border-radius:12px 12px 0 0; }
+        .sd-acc-chev { color:#94a3b8; transition:transform .18s; flex-shrink:0; }
+        .sd-sec.open .sd-acc-chev { transform:rotate(180deg); color:#4338ca; }
+        .sd-acc-body { display:none; padding:14px 14px 6px; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 12px 12px; }
+        .sd-sec.open .sd-acc-body { display:block; }
+
         .sd-h3 { font-size:15px; font-weight:700; color:#334155; margin:0 0 10px; }
 
-        .sd-card { background:#fff; border:1px solid #e9eef5; border-radius:14px; padding:18px 20px; margin-bottom:14px; box-shadow:0 1px 3px rgba(15,23,42,.04); }
+        .sd-card { background:#fff; border:1px solid #eef2f7; border-radius:12px; padding:16px 18px; margin-bottom:12px; }
+        .sd-card:last-child { margin-bottom:2px; }
         .sd-card p { font-size:14px; line-height:1.6; margin:0 0 10px; }
         .sd-list { margin:0; padding-left:20px; }
         .sd-list li { font-size:14px; line-height:1.7; }
@@ -186,4 +314,25 @@
 
         code { background:#f1f5f9; padding:1px 6px; border-radius:5px; font-size:12.5px; color:#be123c; }
     </style>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            // Başlığa klik → bölməni aç/bağla
+            document.querySelectorAll('.sd-sec .sd-acc-head').forEach(function (h) {
+                h.addEventListener('click', function () {
+                    h.closest('.sd-sec').classList.toggle('open');
+                });
+            });
+            // Mündəricat linki → hədəf bölməni aç + ora keç
+            document.querySelectorAll('.sd-toc a').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    var id = (a.getAttribute('href') || '').replace('#', '');
+                    var sec = document.getElementById(id);
+                    if (sec) sec.classList.add('open');
+                });
+            });
+        })();
+    </script>
 }
