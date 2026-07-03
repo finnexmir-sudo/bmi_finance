@@ -379,6 +379,14 @@
                                 { qayibGun = qayibVal.gun; qayibKesinti = qayibVal.kesinti; }
                                 var qayibKesintiStr = qayibKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // Öz hesabına (ödənişsiz) məzuniyyət kəsintisi preview — Ə.M. 129
+                                var ozHesMap = ViewBag.IsciOzHesabinaMap as Dictionary<int, (int gun, decimal kesinti)>
+                                               ?? new Dictionary<int, (int gun, decimal kesinti)>();
+                                int ozHesGun = 0; decimal ozHesKesinti = 0m;
+                                if (ozHesMap.TryGetValue(isci.Id, out var ozHesVal))
+                                { ozHesGun = ozHesVal.gun; ozHesKesinti = ozHesVal.kesinti; }
+                                var ozHesKesintiStr = ozHesKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 // Əvvəlki ay korreksiyası (post-maaş daxil edilmiş xəstəlik/məzuniyyət)
                                 var korrMap = ViewBag.IsciKorreksiyaMap as Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>
                                               ?? new Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>();
@@ -421,6 +429,8 @@
                                     data-xes-kesinti="@xKesintiStr"
                                     data-qayib-gun="@qayibGun"
                                     data-qayib-kesinti="@qayibKesintiStr"
+                                    data-ozhes-gun="@ozHesGun"
+                                    data-ozhes-kesinti="@ozHesKesintiStr"
                                     data-mav-brut="@mavBrutStr"
                                     data-mav-gelirv="@mavGelirVStr"
                                     data-mav-dsmf="@mavDsmfStr"
@@ -503,11 +513,15 @@
                                         </div>
                                     </td>
 
-                                    @* Davamiyyət kəsintisi *@
+                                    @* Davamiyyət kəsintisi (qayıb + ödənişsiz məzuniyyət) *@
                                     <td class="col-davam">
-                                        @if (qayibGun > 0)
+                                        @{ var davamKesToplam = qayibKesinti + ozHesKesinti; }
+                                        @if (davamKesToplam > 0)
                                         {
-                                            <span class="n n--r" title="@qayibGun qayıb gün">−@Fmt(qayibKesinti)</span>
+                                            var davamTip = (qayibGun > 0 && ozHesGun > 0)
+                                                ? $"{qayibGun} qayıb + {ozHesGun} ödənişsiz gün"
+                                                : (qayibGun > 0 ? $"{qayibGun} qayıb gün" : $"{ozHesGun} ödənişsiz gün");
+                                            <span class="n n--r" title="@davamTip">−@Fmt(davamKesToplam)</span>
                                         }
                                         else
                                         {
@@ -630,6 +644,14 @@
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">Kəsinti</span>
                                                             <span class="n n--d" data-p="qayibkes">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Ödənişsiz məz. gün</span>
+                                                            <span class="n n--d" data-p="ozhesgun">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Ödənişsiz kəsinti</span>
+                                                            <span class="n n--d" data-p="ozheskes">—</span>
                                                         </div>
                                                     </div>
                                                 </div>

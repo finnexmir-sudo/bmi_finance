@@ -74,6 +74,14 @@ namespace FinNex.Application.Interfaces.Maas_If
         Task<int> AyIsGunSayiniHesablaAsync(int il, int ay);
 
         /// <summary>
+        /// Öz hesabına (ödənişsiz) məzuniyyətin bu aydakı REAL İŞ GÜNLƏRİ sayı — Ə.M. 129.
+        /// Yalnız baza maaş KƏSİNTİSİ üçün (məzuniyyət haqqı ÖDƏNMİR). Toplu hesablama
+        /// preview-ı bu rəqəmi FerdiHesablaAsync-ın saxladığı kəsinti ilə eyni etmək
+        /// üçün istifadə edir. Həftəsonu və hesablanmayan bayramlar çıxılır.
+        /// </summary>
+        Task<int> OzHesabinaIsGunuSayAsync(int isciId, int il, int ay);
+
+        /// <summary>
         /// Toplu hesablama preview üçün — əvvəlki ayın maaşı hesablandıqdan
         /// sonra yaradılan xəstəlik/məzuniyyət qeydləri əsasında cari ayın maaşına
         /// tətbiq olunacaq korreksiyanı qaytarır.

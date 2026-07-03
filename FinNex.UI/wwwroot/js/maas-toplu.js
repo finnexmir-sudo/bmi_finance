@@ -95,6 +95,10 @@
         const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
         const qayibGun = parseInt(row.dataset.qayibGun || 0) || 0;
         const qayibKesinti = parseFloat(row.dataset.qayibKesinti || 0) || 0;
+        // Öz hesabına (ödənişsiz) məzuniyyət — Ə.M. 129. Məzuniyyət haqqı ÖDƏNMİR;
+        // yalnız baza maaşdan real iş günləri kəsilir (server FerdiHesablaAsync ilə eyni).
+        const ozhesGun = parseInt(row.dataset.ozhesGun || 0) || 0;
+        const ozhesKesinti = parseFloat(row.dataset.ozhesKesinti || 0) || 0;
         // Məzuniyyət avansı vergisi — server-tərəfi (combined − maaş) inkremental dəyərlər.
         // QEYD: əvvəl bu 4 vergi faktiki ödənilmiş net-ə uyğun gəlsin deyə proporsional
         // SCALE olunurdu, amma scale hər vergini fərqli əyirdi: İTSS düzgün payından
@@ -157,7 +161,7 @@
         const esasBrut = Math.max(
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
-                 - qayibKesinti
+                 - qayibKesinti - ozhesKesinti
                  + bonus + overtime + ferqliGelir + cfgCemi + kompensasiya - cerime,
             0);
         const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
@@ -258,6 +262,7 @@
             mezGun, mezOdenis, mezKesinti,
             xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis, xesKesinti,
             qayibGun, qayibKesinti,
+            ozhesGun, ozhesKesinti,
             mavBrut, mavGelirV, mavDsmf, mavIss, mavItss, mavNet, mavTutulma,
             mavGunluk: mezGun > 0 && mavBrut > 0 ? Math.round(mavBrut / mezGun * 100) / 100 : 0,
             mavCombined, mavCVergiBazasi, mavCTaxes, mavSalaryTaxes,
@@ -311,6 +316,8 @@
         set('[data-p="mezkes"]', fmt(d.mezKesinti), d.mezKesinti > 0 ? 'n n--r' : 'n n--d');
         set('[data-p="qayibgun"]', d.qayibGun > 0 ? d.qayibGun + ' gün' : '—', d.qayibGun > 0 ? 'n n--r' : 'n n--d');
         set('[data-p="qayibkes"]', fmt(d.qayibKesinti), d.qayibKesinti > 0 ? 'n n--r' : 'n n--d');
+        set('[data-p="ozhesgun"]', d.ozhesGun > 0 ? d.ozhesGun + ' gün' : '—', d.ozhesGun > 0 ? 'n n--r' : 'n n--d');
+        set('[data-p="ozheskes"]', fmt(d.ozhesKesinti), d.ozhesKesinti > 0 ? 'n n--r' : 'n n--d');
 
         // Xəstəlik
         const xesSirketText = d.xesSirketGun > 0
@@ -568,7 +575,7 @@
             const gross = d.brut + d.mavBrut;   // cəmi hesablanmış (məzuniyyət avansı brütü daxil)
             const v = new Array(COLS).fill(0);
             v[3]  = d.esas;                                                 // Müqavilə üzrə
-            v[4]  = d.esas - d.mezKesinti - d.xesKesinti - d.qayibKesinti;  // Hesablanmış (işlənmiş)
+            v[4]  = d.esas - d.mezKesinti - d.xesKesinti - d.qayibKesinti - d.ozhesKesinti;  // Hesablanmış (işlənmiş)
             v[5]  = ih07;                                                   // IH-07
             v[6]  = d.kompensasiya;                                         // İstifadə edilməmiş məzuniyyət kompensasiyası
             v[8]  = d.mezOdenis + d.mavBrut;                               // Məzuniyyət haqqı (+ avans brütü)

@@ -1217,6 +1217,20 @@ namespace FinNex.UI.Areas.HR.Controllers
                     return (gun, kesinti);
                 });
 
+            // Öz hesabına (ödənişsiz) məzuniyyət kəsintisi preview — Ə.M. 129.
+            // Məzuniyyət haqqı ÖDƏNMİR; yalnız baza maaşdan real iş günləri kəsilir.
+            // FerdiHesablaAsync-ın saxladığı kəsinti ilə EYNİ düstur:
+            //   esas / ayIsGunu × ödənişsiz iş günü (həftəsonu/bayram çıxılmış).
+            var isciOzHesabinaMap = new Dictionary<int, (int gun, decimal kesinti)>();
+            foreach (var id in isciIdler)
+            {
+                int ozHesGun = await _hesablamaService.OzHesabinaIsGunuSayAsync(id, cIl, cAy);
+                if (ozHesGun <= 0) continue;
+                decimal esasM = cariMaasMap.TryGetValue(id, out var m) ? m : 0m;
+                decimal kesinti = ayIsGunu > 0 ? Math.Round(esasM / ayIsGunu * ozHesGun, 2) : 0m;
+                isciOzHesabinaMap[id] = (ozHesGun, kesinti);
+            }
+
             // Məzuniyyət avansı (QabaqcadanOdenis, ödənilmiş) — vergi dağılımı ilə birlikdə
             var mezuniyyetAvanslar = await _unitOfWork.Repository<Mezuniyyet>()
                 .Query()
@@ -1319,6 +1333,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IsciMezuniyyetMap = isciMezuniyyetMap;
             ViewBag.IsciXestelikMap = isciXestelikMap;
             ViewBag.IsciQayibMap = isciQayibMap;
+            ViewBag.IsciOzHesabinaMap = isciOzHesabinaMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 
