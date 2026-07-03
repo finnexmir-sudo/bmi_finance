@@ -13,7 +13,7 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Geriyə Əmək Məzuniyyəti Qeyd et</div>
-            <div class="fn-page-sub">İşçi əmək məzuniyyətinə çıxıbsa və Qayıb kimi qeyd olunubsa — HR sonradan yaza, Qayıbı avtomatik İcazəli-yə çevirə bilər. (Xəstəlik / Ezamiyyət üçün sidebar-da ayrıca səhifələr var.)</div>
+            <div class="fn-page-sub">HR birbaşa qeyd — dərhal təsdiqlənir. <b>Əmək məzuniyyəti</b> (balansdan çıxılır) və ya <b>öz hesabına / ödənişsiz</b> (Ə.M. 129 — balansa dəymir, maaşdan çıxılır) növünü seç. Keçmiş, bugün və gələcək tarix olar. (Xəstəlik / Ezamiyyət üçün ayrıca səhifələr var.)</div>
         </div>
         <a asp-action="Hr" class="fn-btn fn-btn--outline">← Geri</a>
     </div>
@@ -60,8 +60,20 @@
                         <span asp-validation-for="IsciId" class="fn-val-msg"></span>
                     </div>
 
-                    @* Növ: yalnız İllik *@
-                    <input type="hidden" name="Nov" value="@((int)MezuniyyetNovu.Illik)" />
+                    @* ── Növ: İllik və ya Öz hesabına (ödənişsiz) ── *@
+                    <div class="fn-form-group">
+                        <label class="fn-label">Məzuniyyət növü <span class="fn-required">*</span></label>
+                        <select name="Nov" id="novSelect" class="fn-select">
+                            <option value="@((int)MezuniyyetNovu.Illik)">Əmək məzuniyyəti (illik)</option>
+                            <option value="@((int)MezuniyyetNovu.OzHesabina)">Öz hesabına (ödənişsiz) — Ə.M. 129</option>
+                        </select>
+                        <span class="fn-label-hint" style="display:block;margin-top:5px;font-size:12px;color:#8a93a8" id="ozHesabinaHint">
+                            <span id="illikHintTxt">İllik: balansdan çıxılır, davamiyyət İcazəli olur.</span>
+                            <span id="ozHesHintTxt" style="display:none;color:#92400e">
+                                Öz hesabına: balansa <b>dəymir</b>, əvəzedici tələb olunmur, həmin günlərin maaşı <b>çıxılır</b> (ödəniş yoxdur). Gələcək/açıq müddət də olar.
+                            </span>
+                        </span>
+                    </div>
 
                     @* ── Jeton ilə əvəzləşdirmə ── *@
                     <div id="jetonBlok" style="display:none;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #16a34a;border-radius:8px;margin-bottom:18px">
@@ -241,6 +253,14 @@
             var cbJeton      = document.getElementById('cbJetonIle');
             document.getElementById('jetonXeberdarliq').style.display = 'none';
 
+            // Öz hesabına (ödənişsiz) məzuniyyətdə jeton/balans aktual deyil.
+            if (novOzHesabinami()) {
+                jetonBlok.style.display    = 'none';
+                jetonYoxBlok.style.display = 'none';
+                cbJeton.checked            = false;
+                return;
+            }
+
             if (!isciId) {
                 jetonBlok.style.display    = 'none';
                 jetonYoxBlok.style.display = 'none';
@@ -270,6 +290,27 @@
                 jetonYoxBlok.style.display = 'none';
             }
         }
+
+        function novOzHesabinami() {
+            var s = document.getElementById('novSelect');
+            return s && parseInt(s.value) === @((int)MezuniyyetNovu.OzHesabina);
+        }
+
+        function novDeyisdi() {
+            var ozHes = novOzHesabinami();
+            var ih = document.getElementById('illikHintTxt');
+            var oh = document.getElementById('ozHesHintTxt');
+            if (ih) ih.style.display = ozHes ? 'none' : '';
+            if (oh) oh.style.display = ozHes ? 'inline' : 'none';
+            var isci = document.querySelector('[name="IsciId"]');
+            isciSecildi(isci ? isci.value : '');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var s = document.getElementById('novSelect');
+            if (s) s.addEventListener('change', novDeyisdi);
+            novDeyisdi();
+        });
 
         function jetonCheckboxDeyisdi(cb) {
             var xbr = document.getElementById('jetonXeberdarliq');
