@@ -38,6 +38,16 @@
                 <span asp-validation-for="Madde" class="gz-err"></span>
             </div>
 
+            <div class="gz-form-group">
+                <label asp-for="Novu" class="gz-label">Güzəşt növü</label>
+                <select asp-for="Novu" class="gz-input">
+                    <option value="0">Adi (məzuniyyətə təsir etmir)</option>
+                    <option value="1">Əlillik (məzuniyyət balansı 42 gün)</option>
+                    <option value="2">Məcburi köçkün</option>
+                </select>
+                <span class="gz-hint">Əlillik seçilsə, məzuniyyət balansı bu işçilərə əsas 42 gün hesablayacaq (M.119).</span>
+            </div>
+
             <div class="gz-form-group gz-form-check">
                 <label class="gz-check-label">
                     <input asp-for="Aktivdir" type="checkbox" />

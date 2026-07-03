@@ -52,7 +52,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Ad = model.Ad.Trim(),
                 Mebleg = Math.Round(model.Mebleg, 2),
                 Madde = string.IsNullOrWhiteSpace(model.Madde) ? null : model.Madde.Trim(),
-                Aktivdir = model.Aktivdir
+                Aktivdir = model.Aktivdir,
+                Novu = model.Novu
             };
             await _unitOfWork.Repository<Guzest>().YaratAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
@@ -86,6 +87,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             entity.Mebleg = Math.Round(model.Mebleg, 2);
             entity.Madde = string.IsNullOrWhiteSpace(model.Madde) ? null : model.Madde.Trim();
             entity.Aktivdir = model.Aktivdir;
+            entity.Novu = model.Novu;
             entity.YenilenmeTarixi = DateTime.Now;
 
             await _unitOfWork.Repository<Guzest>().YenileAsync(entity);

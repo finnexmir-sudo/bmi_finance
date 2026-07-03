@@ -196,7 +196,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Cins = (Cins)vm.CinsId,
                 UserId = user.Id,
                 BaslangicMaas = vm.BaslangicMaas,
-                BaslangicMezuniyyet = vm.BaslangicMezuniyyet
+                BaslangicMezuniyyet = vm.BaslangicMezuniyyet,
+                UsaqSayi = vm.UsaqSayi,
+                EngelliUsaqVar = vm.EngelliUsaqVar,
+                TekValideyn = vm.TekValideyn
             };
 
             var resultIsci = await _isciService.YaratAsync(dto);
@@ -256,6 +259,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Telefon = isci.Telefon,
                 Email = isci.Email,
                 Unvan = isci.Unvan,
+                UsaqSayi = isci.UsaqSayi,
+                EngelliUsaqVar = isci.EngelliUsaqVar,
+                TekValideyn = isci.TekValideyn,
                 IsheQebulTarixi = isci.IsheQebulTarixi,
                 IsdenAyrilmaTarixi = isci.IsdenAyrilmaTarixi,
                 Status = isci.Status,
@@ -288,6 +294,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Telefon = vm.Telefon,
                 Email = vm.Email,
                 Unvan = vm.Unvan,
+                UsaqSayi = vm.UsaqSayi,
+                EngelliUsaqVar = vm.EngelliUsaqVar,
+                TekValideyn = vm.TekValideyn,
                 IsheQebulTarixi = vm.IsheQebulTarixi,
                 IsdenAyrilmaTarixi = vm.IsdenAyrilmaTarixi,
                 Status = vm.Status

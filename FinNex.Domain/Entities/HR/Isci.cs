@@ -14,6 +14,14 @@
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
+        // ── Məzuniyyət üçün şəxsi faktlar (Ə.M. 117) — HR əl ilə doldurur ──
+        /// <summary>14 yaşınadək uşaqların sayı (M.117 əlavə məzuniyyəti üçün).</summary>
+        public int UsaqSayi { get; set; } = 0;
+        /// <summary>18 yaşınadək əlilliyi olan uşağı var (M.117 → +5 gün).</summary>
+        public bool EngelliUsaqVar { get; set; } = false;
+        /// <summary>Tək valideyn — M.117 əlavəsini ataya da açır.</summary>
+        public bool TekValideyn { get; set; } = false;
+
         // İşçi statusu
         public DateTime IsheQebulTarixi { get; set; }
         public DateTime? IsdenAyrilmaTarixi { get; set; }

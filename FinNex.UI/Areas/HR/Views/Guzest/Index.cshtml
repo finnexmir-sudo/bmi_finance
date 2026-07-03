@@ -50,6 +50,7 @@
                         <th>Ad</th>
                         <th class="gz-num">Məbləğ</th>
                         <th>Maddə</th>
+                        <th>Növ</th>
                         <th>Status</th>
                         <th class="gz-act">Əməliyyat</th>
                     </tr>
@@ -61,6 +62,20 @@
                             <td><strong>@g.Ad</strong></td>
                             <td class="gz-num">@g.Mebleg.ToString("N2") ₼</td>
                             <td>@(g.Madde ?? "—")</td>
+                            <td>
+                                @if (g.Novu == FinNex.Domain.Entities.HR.GuzestNovu.Elillik)
+                                {
+                                    <span class="gz-status gz-status--ok">Əlillik</span>
+                                }
+                                else if (g.Novu == FinNex.Domain.Entities.HR.GuzestNovu.MecburiKockun)
+                                {
+                                    <span>Məcburi köçkün</span>
+                                }
+                                else
+                                {
+                                    <span>Adi</span>
+                                }
+                            </td>
                             <td>
                                 @if (g.Aktivdir)
                                 {

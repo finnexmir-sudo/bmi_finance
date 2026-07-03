@@ -14,6 +14,12 @@ namespace FinNex.Domain.Entities.HR
         public string? Madde { get; set; } // Məs: "Vergi Məcəlləsi, maddə 102.1.6"
         public bool Aktivdir { get; set; } = true;
 
+        /// <summary>
+        /// Güzəştin növü — məzuniyyət modulu əlilliyi bu tiplə tanıyır (adla yox).
+        /// Vergi hesablamasına təsir etmir; yalnız məzuniyyət balansı üçün istifadə olunur.
+        /// </summary>
+        public GuzestNovu Novu { get; set; } = GuzestNovu.Diger;
+
         public ICollection<IsciGuzest> IsciGuzestler { get; set; } = new List<IsciGuzest>();
     }
 }

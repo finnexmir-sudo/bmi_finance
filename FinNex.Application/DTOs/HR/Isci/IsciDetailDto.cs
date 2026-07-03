@@ -20,6 +20,11 @@ namespace FinNex.Application.DTOs.HR.Isci
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
+        // Məzuniyyət üçün şəxsi faktlar (M.117)
+        public int UsaqSayi { get; set; }
+        public bool EngelliUsaqVar { get; set; }
+        public bool TekValideyn { get; set; }
+
         public DateTime IsheQebulTarixi { get; set; }
         public DateTime? IsdenAyrilmaTarixi { get; set; }
 

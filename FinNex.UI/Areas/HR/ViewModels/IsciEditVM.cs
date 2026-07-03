@@ -49,6 +49,17 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Display(Name = "Ünvan")]
         public string? Unvan { get; set; }
 
+        // Məzuniyyət üçün şəxsi faktlar (M.117)
+        [Display(Name = "14 yaşınadək uşaq sayı")]
+        [Range(0, 20, ErrorMessage = "Uşaq sayı 0-20 aralığında olmalıdır")]
+        public int UsaqSayi { get; set; } = 0;
+
+        [Display(Name = "Əlil uşağı var (18 yaşınadək)")]
+        public bool EngelliUsaqVar { get; set; }
+
+        [Display(Name = "Tək valideyn")]
+        public bool TekValideyn { get; set; }
+
         [Required(ErrorMessage = "İşə qəbul tarixi mütləqdir")]
         [Display(Name = "İşə Qəbul Tarixi")]
         public DateTime IsheQebulTarixi { get; set; }

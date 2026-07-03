@@ -103,6 +103,30 @@
                         </div>
                     </div>
 
+                    <!-- Məzuniyyət Məlumatları (Ə.M. 117) -->
+                    <div>
+                        <div class="isci-section-label">Məzuniyyət Məlumatları</div>
+                        <div class="isci-form-grid-3" style="margin-top:12px;">
+                            <div class="isci-field">
+                                <label class="isci-label">14 yaşınadək uşaq sayı</label>
+                                <input asp-for="UsaqSayi" type="number" min="0" max="20" class="isci-input" placeholder="0" />
+                                <span asp-validation-for="UsaqSayi" class="isci-error"></span>
+                            </div>
+                            <div class="isci-field">
+                                <label class="isci-label" style="display:flex;align-items:center;gap:8px;margin-top:24px;">
+                                    <input asp-for="EngelliUsaqVar" type="checkbox" style="width:16px;height:16px;" />
+                                    Əlil uşağı var (18 yaşınadək)
+                                </label>
+                            </div>
+                            <div class="isci-field">
+                                <label class="isci-label" style="display:flex;align-items:center;gap:8px;margin-top:24px;">
+                                    <input asp-for="TekValideyn" type="checkbox" style="width:16px;height:16px;" />
+                                    Tək valideyn
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Hesab Məlumatları -->
                     <div>
                         <div class="isci-section-label">Hesab Məlumatları</div>
