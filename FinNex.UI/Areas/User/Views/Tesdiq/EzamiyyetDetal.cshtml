@@ -1,0 +1,290 @@
+@model FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMuracietListDto
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Ezamiyyət Detalı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var rol = ViewBag.Rol as string ?? "Hr";
+
+    string backLabel = rol switch {
+        "SobeReisi" => "Şöbə Rəhbəri Paneli",
+        "Rehber"    => "Rəhbər Paneli",
+        "Hr"        => "HR Paneli",
+        _           => "Panel"
+    };
+
+    string statusText = Model.Status switch {
+        EzamiyyetStatus.Gozleyir    => "Gözləyir",
+        EzamiyyetStatus.Tesdiqlendi => "Təsdiqləndi",
+        EzamiyyetStatus.Reddedildi  => "Rədd edildi",
+        EzamiyyetStatus.Legvedildi  => "Ləğv edildi",
+        _                           => Model.Status.ToString()
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/tesdiq.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    @* ── Back link ── *@
+    <div style="margin-bottom:16px">
+        <a asp-area="User" asp-controller="Tesdiq" asp-action="@rol"
+           class="tsd-btn tsd-btn--ghost" style="width:fit-content">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            @backLabel-ə qayıt
+        </a>
+    </div>
+
+    <div class="tsd-detal-grid">
+
+        @* ── Left: Info ── *@
+        <div>
+            @* Employee Info *@
+            <div class="tsd-info-card">
+                <div class="tsd-info-card-title">İşçi Məlumatları</div>
+                <div class="tsd-info-row">
+                    <span class="tsd-info-lbl">Ad Soyad</span>
+                    <span class="tsd-info-val">@Model.IsciTamAd</span>
+                </div>
+                <div class="tsd-info-row">
+                    <span class="tsd-info-lbl">Şöbə</span>
+                    <span class="tsd-info-val">@(Model.IsciSobe ?? "-")</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.IsciVezife))
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Vəzifə</span>
+                        <span class="tsd-info-val">@Model.IsciVezife</span>
+                    </div>
+                }
+            </div>
+
+            @* Ezamiyyet Info *@
+            <div class="tsd-info-card">
+                <div class="tsd-info-card-title">Ezamiyyət Məlumatları</div>
+                <div class="tsd-info-row">
+                    <span class="tsd-info-lbl">Başlıq</span>
+                    <span class="tsd-info-val">@Model.Baslig</span>
+                </div>
+                <div class="tsd-info-row">
+                    <span class="tsd-info-lbl">Məkan</span>
+                    <span class="tsd-info-val">@Model.MekanAd</span>
+                </div>
+                <div class="tsd-info-row">
+                    <span class="tsd-info-lbl">Tarix</span>
+                    <span class="tsd-info-val">
+                        @Model.BaslamaTarixi.ToString("dd.MM.yyyy") — @Model.BitmeTarixi.ToString("dd.MM.yyyy")
+                        <span style="color:#8a93a8">· @Model.GunSayi gün</span>
+                    </span>
+                </div>
+                @if (!Model.TamGun && Model.BaslamaSaati.HasValue && Model.BitisSaati.HasValue)
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Saat aralığı</span>
+                        <span class="tsd-info-val">@Model.BaslamaSaati.Value.ToString(@"hh\:mm") — @Model.BitisSaati.Value.ToString(@"hh\:mm")</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Müddət</span>
+                        <span class="tsd-info-val">Tam gün</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Qeyd))
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Qeyd</span>
+                        <span class="tsd-info-val">@Model.Qeyd</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.SenedYolu))
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Sənəd</span>
+                        <span class="tsd-info-val">
+                            <a href="/dms/@Model.SenedYolu" download="@(Model.SenedAd ?? "sened")"
+                               style="color:#6366f1;display:inline-flex;align-items:center;gap:5px">
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                    <path d="M6.5 1v7M6.5 8L4 5.5M6.5 8L9 5.5M2 10.5h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                @(Model.SenedAd ?? "Sənədi yüklə")
+                            </a>
+                        </span>
+                    </div>
+                }
+                <div class="tsd-info-row">
+                    <span class="tsd-info-lbl">Status</span>
+                    <span class="tsd-info-val">
+                        <span class="tsd-badge tsd-badge--wait">@statusText</span>
+                    </span>
+                </div>
+                @if (Model.Status == EzamiyyetStatus.Reddedildi && !string.IsNullOrEmpty(Model.RehberQeydi))
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">İmtina səbəbi</span>
+                        <span class="tsd-info-val" style="color:#c0392b">@Model.RehberQeydi</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ── Right: Workflow + Approval ── *@
+        <div>
+            @* Workflow Tracker — ezamiyyət tək mərhələlidir *@
+            <div class="tsd-workflow">
+                <div class="tsd-workflow-title">Təsdiq Axını</div>
+                <div class="tsd-wf-steps">
+
+                    @* Step 0: Müraciət *@
+                    <div class="tsd-wf-step done">
+                        <div class="tsd-wf-dot">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2.5 6l2.5 2.5 4.5-5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="tsd-wf-info">
+                            <div class="tsd-wf-role">Müraciət göndərildi</div>
+                            <div class="tsd-wf-date">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                            <div class="tsd-wf-result tsd-wf-result--ok">Göndərildi</div>
+                        </div>
+                    </div>
+
+                    @* Step 1: Rəhbər təsdiqi *@
+                    @{
+                        var s1Class = Model.Status == EzamiyyetStatus.Tesdiqlendi ? "done"
+                            : Model.Status == EzamiyyetStatus.Reddedildi ? "rejected"
+                            : Model.Status == EzamiyyetStatus.Gozleyir ? "active" : "";
+                    }
+                    <div class="tsd-wf-step @s1Class">
+                        <div class="tsd-wf-dot">
+                            @if (Model.Status == EzamiyyetStatus.Tesdiqlendi)
+                            {
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2.5 6l2.5 2.5 4.5-5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            }
+                            else if (Model.Status == EzamiyyetStatus.Reddedildi)
+                            {
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                    <path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="1.3" stroke-linecap="round" />
+                                </svg>
+                            }
+                            else { <text>1</text> }
+                        </div>
+                        <div class="tsd-wf-info">
+                            <div class="tsd-wf-role">Rəhbər Təsdiqi</div>
+                            @if (Model.RehberTesdiqTarixi.HasValue)
+                            {
+                                <div class="tsd-wf-date">@Model.RehberTesdiqTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                            }
+                            @if (Model.Status == EzamiyyetStatus.Tesdiqlendi) { <div class="tsd-wf-result tsd-wf-result--ok">Təsdiqləndi</div> }
+                            else if (Model.Status == EzamiyyetStatus.Reddedildi) { <div class="tsd-wf-result tsd-wf-result--reject">İmtina edildi</div> }
+                            else { <div class="tsd-wf-result tsd-wf-result--wait">Gözləyir</div> }
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            @* Approval Panel — yalnız gözləyirsə *@
+            @if (Model.Status == EzamiyyetStatus.Gozleyir)
+            {
+                <div class="tsd-approve-panel">
+                    <div class="tsd-approve-title">Qərar Ver</div>
+
+                    <form asp-area="User" asp-controller="Tesdiq" asp-action="EzamiyyetTesdiq"
+                          method="post" id="tsdForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="rol" value="@rol" />
+                        <input type="hidden" name="status" id="formStatus" value="true" />
+
+                        <label style="font-size:12px;color:#8a93a8;display:block;margin-bottom:6px">İmtina səbəbi (ixtiyari)</label>
+                        <textarea name="qeyd" class="tsd-approve-reason"
+                                  placeholder="İmtina etdikdə səbəbi qeyd edin..."></textarea>
+
+                        <div class="tsd-approve-btns">
+                            <button type="button" class="tsd-btn tsd-btn--approve"
+                                    data-tesdiq-approve="tsdForm">
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                    <path d="M2 6.5l3.5 3.5 5.5-6.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                Təsdiqlə
+                            </button>
+                            <button type="button" class="tsd-btn tsd-btn--reject"
+                                    data-tesdiq-reject="tsdForm">
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                    <path d="M2.5 2.5l8 8M10.5 2.5l-8 8" stroke="#fff" stroke-width="1.4" stroke-linecap="round" />
+                                </svg>
+                                İmtina et
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            }
+            else if (Model.Status == EzamiyyetStatus.Tesdiqlendi)
+            {
+                <div class="tsd-approve-panel" style="background:#f0faf5;border-color:#a7e3c5">
+                    <div style="display:flex;align-items:center;gap:10px;color:#1e9b6b;font-weight:600">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9" stroke="#1e9b6b" stroke-width="1.5" />
+                            <path d="M6 10l2.5 2.5 5.5-5.5" stroke="#1e9b6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Ezamiyyət təsdiqləndi
+                    </div>
+                </div>
+            }
+            else if (Model.Status == EzamiyyetStatus.Reddedildi)
+            {
+                <div class="tsd-approve-panel" style="background:#fff5f5;border-color:#fca5a5">
+                    <div style="display:flex;align-items:center;gap:10px;color:#c0392b;font-weight:600">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9" stroke="#c0392b" stroke-width="1.5" />
+                            <path d="M7 7l6 6M13 7l-6 6" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Rədd edilib
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="tsd-approve-panel" style="background:#f8f9fb;border-color:#d8dce6">
+                    <div style="display:flex;align-items:center;gap:10px;color:#6b7280;font-weight:600">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9" stroke="#9ca3af" stroke-width="1.5" />
+                            <path d="M6.5 10h7" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Ləğv edilib
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@* Confirm Modal *@
+<div class="tsd-modal-overlay" id="tsd-confirm-overlay">
+    <div class="tsd-modal">
+        <div class="tsd-modal-icon tsd-modal-icon--approve" id="tsd-modal-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12l5 5 9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </div>
+        <div class="tsd-modal-title" id="tsd-modal-title">Təsdiqlə</div>
+        <div class="tsd-modal-sub" id="tsd-modal-sub">Əminsiniz?</div>
+        <div class="tsd-modal-footer">
+            <button class="tsd-btn tsd-btn--ghost" id="tsd-modal-cancel">Ləğv et</button>
+            <button class="tsd-btn tsd-btn--approve" id="tsd-modal-confirm">Bəli</button>
+        </div>
+        <input type="hidden" id="tsd-modal-status" />
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/User/tesdiq.js" asp-append-version="true"></script>
+}

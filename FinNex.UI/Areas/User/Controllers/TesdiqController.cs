@@ -2,7 +2,10 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.User.ViewModels.Tesdiq;
@@ -19,24 +22,30 @@ namespace FinNex.UI.Areas.User.Controllers
     {
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IIcazeService _icazeService;
+        private readonly IEzamiyyetService _ezamiyyetService;
         private readonly IIsciStrukturRoluService _strukturRoluService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IJetonService _jetonService;
+        private readonly IBildirisRouter _bildirisRouter;
         private readonly IUnitOfWork _unitOfWork;
 
         public TesdiqController(
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
+            IEzamiyyetService ezamiyyetService,
             IIsciStrukturRoluService strukturRoluService,
             UserManager<AppUser> userManager,
             IJetonService jetonService,
+            IBildirisRouter bildirisRouter,
             IUnitOfWork unitOfWork)
         {
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
+            _ezamiyyetService = ezamiyyetService;
             _strukturRoluService = strukturRoluService;
             _userManager = userManager;
             _jetonService = jetonService;
+            _bildirisRouter = bildirisRouter;
             _unitOfWork = unitOfWork;
         }
 
@@ -99,11 +108,14 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var mezResult = await _mezuniyyetService.GetRehberTesdiqindeAsync();
             var icazeResult = await _icazeService.GetRehberTesdiqindeAsync();
+            // Ezamiyyət tək mərhələlidir (Rəhbər təsdiqləyir) — gözləyənlərin hamısı burada.
+            var ezamlar = await _ezamiyyetService.GozleyenlerAsync();
 
             var vm = new TesdiqIndexVM
             {
                 Mezuniyyetler = mezResult.Success ? mezResult.Data!.ToList() : new(),
                 Icazeler = icazeResult.Success ? icazeResult.Data!.ToList() : new(),
+                Ezamiyyetler = ezamlar.ToList(),
                 RolBasliq = "Rəhbər Paneli",
                 RolAciqlamasi = "Şöbə rəhbəri tərəfindən təsdiqlənmiş müraciətləri nəzərdən keçirin",
                 Rol = StrukturRolTipi.Rehber
@@ -124,11 +136,14 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var mezResult = await _mezuniyyetService.GetHrTesdiqindeAsync();
             var icazeResult = await _icazeService.GetHrTesdiqindeAsync();
+            // Ezamiyyət tək mərhələlidir — gözləyənlər HR panelində də görünsün.
+            var ezamlar = await _ezamiyyetService.GozleyenlerAsync();
 
             var vm = new TesdiqIndexVM
             {
                 Mezuniyyetler = mezResult.Success ? mezResult.Data!.ToList() : new(),
                 Icazeler = icazeResult.Success ? icazeResult.Data!.ToList() : new(),
+                Ezamiyyetler = ezamlar.ToList(),
                 RolBasliq = "HR Paneli",
                 RolAciqlamasi = "Son mərhələ — müraciətləri rəsmiləşdirin",
                 Rol = StrukturRolTipi.Hr
@@ -352,6 +367,56 @@ namespace FinNex.UI.Areas.User.Controllers
 
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(rol);
+        }
+
+        // GET /User/Tesdiq/EzamiyyetDetal/5?rol=Rehber
+        public async Task<IActionResult> EzamiyyetDetal(int id, string rol)
+        {
+            var dto = await _ezamiyyetService.DetayAsync(id);
+            if (dto == null)
+            {
+                TempData["Error"] = "Ezamiyyət müraciəti tapılmadı.";
+                return RedirectToAction(string.IsNullOrEmpty(rol) ? nameof(Hr) : rol);
+            }
+
+            ViewBag.Rol = rol;
+            ViewData["Title"] = "Ezamiyyət Detalı";
+            ViewData["TopbarTarix"] = dto.BaslamaTarixi
+                .ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
+            return View(dto);
+        }
+
+        // POST /User/Tesdiq/EzamiyyetTesdiq
+        // Ezamiyyət tək mərhələlidir — Rəhbər/HR təsdiqi birbaşa RehberTesdiqAsync-ə düşür.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EzamiyyetTesdiq(int id, bool status, string? qeyd, string rol)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            var tesdiqciIsciId = appUser?.IsciId ?? 0;
+
+            // Bildiriş üçün işçini əməliyyatdan öncə götür
+            var detay = await _ezamiyyetService.DetayAsync(id);
+
+            var (ok, error) = await _ezamiyyetService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
+
+            if (ok && detay != null)
+            {
+                var nov = status ? BildirisNovu.EzamiyyetTesdiq : BildirisNovu.EzamiyyetImtina;
+                var metn = status
+                    ? $"Ezamiyyət müraciətiniz ({detay.BaslamaTarixi:dd.MM.yyyy} – {detay.BitmeTarixi:dd.MM.yyyy}) təsdiqləndi."
+                    : $"Ezamiyyət müraciətiniz ({detay.BaslamaTarixi:dd.MM.yyyy} – {detay.BitmeTarixi:dd.MM.yyyy}) rədd edildi.{(string.IsNullOrWhiteSpace(qeyd) ? "" : " Səbəb: " + qeyd)}";
+
+                await _bildirisRouter.NotifyIsciAsync(
+                    detay.IsciId, nov,
+                    status ? "Ezamiyyət təsdiqləndi" : "Ezamiyyət rədd edildi",
+                    metn,
+                    redirectUrl: Url.Action("Index", "EzamiyyetMuraciet", new { area = "User" }));
+            }
+
+            TempData[ok ? "Success" : "Error"] =
+                ok ? (status ? "Ezamiyyət təsdiqləndi." : "Ezamiyyət rədd edildi.") : error;
+            return RedirectToAction(string.IsNullOrEmpty(rol) ? nameof(Hr) : rol);
         }
 
         private async Task<bool> HasRolAsync(StrukturRolTipi rolTipi)

@@ -163,6 +163,8 @@ namespace FinNex.Application.Services.HR
                 .HamisiniGetirAsync(
                     x => !x.Silinib && x.Status == EzamiyyetStatus.Gozleyir,
                     include: q => q.Include(x => x.Isci)
+                                       .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                                       .ThenInclude(t => t.Departament)
                                    .Include(x => x.Mekan),
                     izlemeden: true);
             return list.OrderBy(x => x.BaslamaTarixi).Select(Map).ToList();
@@ -174,6 +176,8 @@ namespace FinNex.Application.Services.HR
                 .Query()
                 .AsNoTracking()
                 .Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                    .ThenInclude(t => t.Departament)
                 .Include(x => x.Mekan)
                 .Include(x => x.Rehber)
                 .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
