@@ -433,6 +433,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             {
                 MezuniyyetNovu.Xestelik => DavamiyyetStatus.Xestelik,
                 MezuniyyetNovu.Ezamiyyet => DavamiyyetStatus.Ezamiyyet,
+                MezuniyyetNovu.OzHesabina => DavamiyyetStatus.OdenissizMezuniyyet,
                 _ => DavamiyyetStatus.Icazeli
             };
 
@@ -717,6 +718,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             {
                 MezuniyyetNovu.Xestelik => DavamiyyetStatus.Xestelik,
                 MezuniyyetNovu.Ezamiyyet => DavamiyyetStatus.Ezamiyyet,
+                MezuniyyetNovu.OzHesabina => DavamiyyetStatus.OdenissizMezuniyyet,
                 _ => DavamiyyetStatus.Icazeli
             };
             // 4a) Yeni aralıqdakı hesablanan günləri təmin et (upsert — unikal index təhlükəsiz)
@@ -1805,6 +1807,8 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     private async Task BalansiFifoKesAsync(int isciId, MezuniyyetNovu nov, int gunu)
     {
         if (gunu <= 0) return;
+        // Öz hesabına (ödənişsiz) məzuniyyət illik balansa DƏYMİR (Ə.M. 129).
+        if (nov == MezuniyyetNovu.OzHesabina) return;
 
         var repo = _unitOfWork.Repository<MezuniyyetBalans>();
 
@@ -2044,6 +2048,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 {
                     MezuniyyetNovu.Xestelik  => DavamiyyetStatus.Xestelik,
                     MezuniyyetNovu.Ezamiyyet => DavamiyyetStatus.Ezamiyyet,
+                    MezuniyyetNovu.OzHesabina => DavamiyyetStatus.OdenissizMezuniyyet,
                     _ => DavamiyyetStatus.Icazeli
                 };
 
