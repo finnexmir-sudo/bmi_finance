@@ -12,7 +12,14 @@
         /// Hərbi çağırış / dövlət vəzifəsi — ödənişli, balansdan düşmür,
         /// maaş modulunda MaasdanKes=false saxlanılır.
         /// </summary>
-        OdenisDovletVezifesi = 7
+        OdenisDovletVezifesi = 7,
+
+        /// <summary>
+        /// Öz hesabına (ödənişsiz) məzuniyyət. Qayıb DEYİL (cəza/jeton yox).
+        /// Maaşda həmin günlərin baza haqqı çıxılır, əvəzinə heç bir ödəniş
+        /// (məzuniyyət/xəstəlik haqqı) əlavə olunmur.
+        /// </summary>
+        OdenissizMezuniyyet = 8
     }
 
 }
