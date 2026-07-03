@@ -28,12 +28,21 @@
 <div class="fn-page">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Məzuniyyət Kompensasiyası</div>
-            <div class="fn-page-sub">İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya hesablamaları</div>
+            <div class="fn-page-title">
+                Məzuniyyət Kompensasiyası
+                <span style="font-size:13px;font-weight:600;color:#64748b">(Ə.M. 135)</span>
+            </div>
+            <div class="fn-page-sub">İş ili üçün istifadə edilməmiş məzuniyyət günlərinə görə kompensasiya — balansdakı qalıq üzrə (əsas + əlavə birlikdə).</div>
         </div>
         <a asp-action="Yarat" class="fn-btn fn-btn--primary">
             <i class="bi bi-plus-lg"></i> Yeni Kompensasiya
         </a>
+    </div>
+
+    <div style="background:#fff7ed;border-left:3px solid #f59e0b;color:#9a3412;padding:11px 14px;border-radius:8px;font-size:13px;line-height:1.6;margin-bottom:14px">
+        <b>Bu hesablama Ə.M. 135-ə uyğundur</b> — işçi işləyərkən iş ili üçün istifadə edilməmiş məzuniyyətin balansdakı qalığa görə kompensasiyası (əsas + əlavə birlikdə).
+        <br />
+        <b>İşdən çıxarkən Ə.M. 144 ayrı qaydadır:</b> bütün iş illərinin <b>əsas</b> məzuniyyətinə görə, limitsiz — <b>əlavələr (staj, uşaq) daxil deyil</b> (M.144.3). Bu, ayrıca hesablama kimi sonra hazırlanacaq.
     </div>
 
     @if (TempData["Success"] != null)
