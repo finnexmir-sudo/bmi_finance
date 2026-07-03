@@ -68,6 +68,16 @@
                     </div>
 
                     <div class="isci-field">
+                        <label class="isci-label">Əsas məzuniyyət günü <span class="isci-required">*</span></label>
+                        <select asp-for="EsasMezuniyyetGunu" class="isci-input">
+                            <option value="21">21 gün — adi işçi</option>
+                            <option value="30">30 gün — mütəxəssis / rəhbər</option>
+                        </select>
+                        <span class="str-label-hint">Əlil işçi üçün balansda avtomatik 42 gün tətbiq olunur.</span>
+                        <span asp-validation-for="EsasMezuniyyetGunu" class="isci-error"></span>
+                    </div>
+
+                    <div class="isci-field">
                         <label class="isci-label">
                             Təsvir
                             <span class="str-label-hint">(istəyə bağlı)</span>

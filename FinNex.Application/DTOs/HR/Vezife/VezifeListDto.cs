@@ -8,6 +8,7 @@
         public string DepartamentAd { get; set; } = null!;
         public int IsciSayi { get; set; }
         public bool IsActive { get; set; } = true;
+        public int EsasMezuniyyetGunu { get; set; } = 21;
     }
 
 }

@@ -106,6 +106,7 @@ public class VezifeService
                 DepartamentId = v.DepartamentId,
                 DepartamentAd = v.Departament != null ? v.Departament.Ad : "—",
                 IsActive = v.Aktivdir,
+                EsasMezuniyyetGunu = v.EsasMezuniyyetGunu,
                 IsciSayi = v.IsciTeyinatlar
                     .Count(t => t.BitmeTarixi == null &&
                                 t.Isci.Status == IsciStatus.Aktiv)

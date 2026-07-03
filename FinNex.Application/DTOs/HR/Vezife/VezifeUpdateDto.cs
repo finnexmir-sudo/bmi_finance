@@ -7,6 +7,7 @@
         public int DepartamentId { get; set; }
         public string? Tesvir { get; set; }
         public bool Aktivdir { get; set; }
+        public int EsasMezuniyyetGunu { get; set; } = 21;
     }
 
 }

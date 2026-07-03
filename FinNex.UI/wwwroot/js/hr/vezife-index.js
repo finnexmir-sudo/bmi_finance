@@ -11,6 +11,11 @@ document.querySelectorAll('[data-action="vezife-edit"]').forEach(function (btn) 
             deptSel.value = btn.dataset.deptid;
         }
 
+        var mezSel = document.getElementById('vezifeEditMezGun');
+        if (mezSel) {
+            mezSel.value = btn.dataset.mezgun === '30' ? '30' : '21';
+        }
+
         document.getElementById('vezifeEditModal').style.display = 'flex';
     });
 });

@@ -6,6 +6,7 @@
         public string Ad { get; set; } = null!;
         public string? Tesvir { get; set; }
         public bool Aktivdir { get; set; }
+        public int EsasMezuniyyetGunu { get; set; } = 21;
     }
 
 }

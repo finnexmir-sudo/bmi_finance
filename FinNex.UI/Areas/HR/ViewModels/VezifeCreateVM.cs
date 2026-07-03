@@ -22,6 +22,11 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Display(Name = "Təsvir")]
         public string? Tesvir { get; set; }
 
+        // Əsas əmək məzuniyyəti günü (M.114): 21 — adi işçi, 30 — mütəxəssis/rəhbər.
+        [Display(Name = "Əsas məzuniyyət günü")]
+        [Range(21, 30, ErrorMessage = "21 və ya 30 seçilməlidir")]
+        public int EsasMezuniyyetGunu { get; set; } = 21;
+
         [Display(Name = "Aktiv")]
         public bool IsActive { get; set; } = true;
 
