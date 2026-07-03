@@ -130,6 +130,7 @@
             if (this.isOpen) return;
             this.isOpen = true;
             this.viewMonth = parseISO(this.input.value) || new Date();
+            this.mode = 'days';
             this._render();
             setTimeout(() => document.addEventListener('click', this._onOutsideClick), 0);
         }
@@ -164,10 +165,13 @@
             // Header
             const head = document.createElement('div');
             head.className = 'fn-dp-head';
-            const prev = this._makeNav('‹', () => { this.viewMonth.setMonth(this.viewMonth.getMonth() - 1); this._renderMonth(); });
-            const next = this._makeNav('›', () => { this.viewMonth.setMonth(this.viewMonth.getMonth() + 1); this._renderMonth(); });
+            const prev = this._makeNav('‹', () => this._nav(-1));
+            const next = this._makeNav('›', () => this._nav(1));
             this.titleEl = document.createElement('div');
             this.titleEl.className = 'fn-dp-title';
+            this.titleEl.style.cursor = 'pointer';
+            this.titleEl.title = 'İl seçmək üçün klikləyin';
+            this.titleEl.onclick = () => this._toggleMode();
             head.appendChild(prev);
             head.appendChild(this.titleEl);
             head.appendChild(next);
@@ -176,6 +180,7 @@
             // Days of week header
             const daysHead = document.createElement('div');
             daysHead.className = 'fn-dp-days-head';
+            this.daysHeadEl = daysHead;
             DAYS_AZ.forEach((d, i) => {
                 const el = document.createElement('div');
                 el.className = 'fn-dp-day-name' + (i >= 5 ? ' fn-dp-weekend' : '');
@@ -250,6 +255,9 @@
 
         _renderMonth() {
             if (!this.titleEl || !this.gridEl) return;
+            this.mode = 'days';
+            if (this.daysHeadEl) this.daysHeadEl.style.display = '';
+            this.gridEl.style.gridTemplateColumns = '';
 
             this.titleEl.textContent = `${MONTHS_AZ[this.viewMonth.getMonth()]} ${this.viewMonth.getFullYear()}`;
             this.gridEl.innerHTML = '';
@@ -309,6 +317,52 @@
                 const cell = document.createElement('div');
                 cell.className = 'fn-dp-cell fn-dp-cell--other';
                 cell.textContent = i;
+                this.gridEl.appendChild(cell);
+            }
+        }
+
+        // ‹ / › — gün rejimində ay, il rejimində 12 il irəli/geri gedir.
+        _nav(dir) {
+            if (this.mode === 'years') {
+                this.yearBase += dir * 12;
+                this._renderYears();
+            } else {
+                this.viewMonth.setMonth(this.viewMonth.getMonth() + dir);
+                this._renderMonth();
+            }
+        }
+
+        // Başlığa klik — il şəbəkəsi ⇄ gün şəbəkəsi (köhnə illərə tez keçid).
+        _toggleMode() {
+            if (this.mode === 'years') {
+                this._renderMonth();
+            } else {
+                this.mode = 'years';
+                this.yearBase = this.viewMonth.getFullYear() - 7;
+                this._renderYears();
+            }
+        }
+
+        _renderYears() {
+            if (!this.titleEl || !this.gridEl) return;
+            this.mode = 'years';
+            if (this.daysHeadEl) this.daysHeadEl.style.display = 'none';
+            this.titleEl.textContent = `${this.yearBase} – ${this.yearBase + 11}`;
+            this.gridEl.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            this.gridEl.innerHTML = '';
+
+            const curYear = this.viewMonth.getFullYear();
+            for (let i = 0; i < 12; i++) {
+                const y = this.yearBase + i;
+                const cell = document.createElement('div');
+                cell.className = 'fn-dp-cell';
+                cell.style.padding = '10px 0';
+                cell.textContent = y;
+                if (y === curYear) cell.classList.add('fn-dp-selected');
+                cell.addEventListener('click', () => {
+                    this.viewMonth.setFullYear(y);
+                    this._renderMonth();
+                });
                 this.gridEl.appendChild(cell);
             }
         }

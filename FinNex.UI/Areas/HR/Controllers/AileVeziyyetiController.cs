@@ -39,7 +39,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 q = q.Where(x => (x.Ad + " " + x.Soyad).Contains(a));
             }
 
-            var list = await q.OrderBy(x => x.Soyad).ThenBy(x => x.Ad).ToListAsync();
+            // İşçi Sıralaması (Sira) — Maaş/Bonus və digər siyahılarla eyni sıra.
+            var list = await q.OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad).ToListAsync();
             ViewBag.Axtaris = axtaris;
             ViewData["Title"] = "İşçi ailə vəziyyəti";
             return View(list);
