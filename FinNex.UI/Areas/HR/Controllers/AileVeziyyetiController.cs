@@ -25,7 +25,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // GET /HR/AileVeziyyeti
         public async Task<IActionResult> Index(string? axtaris)
         {
-            var q = _uow.Repository<Isci>()
+            IQueryable<Isci> q = _uow.Repository<Isci>()
                 .Query()
                 .AsNoTracking()
                 .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
