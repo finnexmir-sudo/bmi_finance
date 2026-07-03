@@ -29,6 +29,10 @@
         }
         return buIl;
     }
+
+    // İş ili tək təqvim ilini yox, işə qəbul dönümündən növbəti ilə keçən dövrü
+    // əhatə edir — ona görə "2026" yox, "2026–2027" göstərilir.
+    static string IlAralik(int il) => $"{il}–{il + 1}";
 }
 
 @section Styles {
@@ -133,7 +137,7 @@
         <div>
             <h2 style="margin-bottom:4px">Məzuniyyət Balansı</h2>
             <div style="font-size:13px;color:#64748b">
-                @secilmisIl-ci il üçün işçilərin məzuniyyət balansları
+                @IlAralik(secilmisIl) iş ili üçün işçilərin məzuniyyət balansları
             </div>
         </div>
         <div class="mb-controls">
@@ -143,7 +147,7 @@
             <select id="mbYearSelect" class="mb-year-select">
                 @foreach (var il in iller)
                 {
-                    <option value="@il" selected="@(il == secilmisIl)">@il</option>
+                    <option value="@il" selected="@(il == secilmisIl)">@IlAralik(il)</option>
                 }
             </select>
         </div>
@@ -153,7 +157,7 @@
     <div class="mb-card">
         <div class="mb-card__header">
             <h3 class="mb-card__title">İşçilər (<span id="mbVisibleCount">@Model.Count</span> nəfər)</h3>
-            <span class="mb-card__badge">@secilmisIl</span>
+            <span class="mb-card__badge">@IlAralik(secilmisIl)</span>
         </div>
 
         @* ── Axtarış + departament filtri ── *@
@@ -247,7 +251,7 @@
                                     @if (umumiQaliq <= 0 && illik == null)
                                     {
                                         <div class="mb-no-balance">
-                                            <i class="bi bi-hourglass-split"></i> @secilmisIl-ci il məzuniyyəti təyin edilməyib
+                                            <i class="bi bi-hourglass-split"></i> @IlAralik(secilmisIl) iş ili məzuniyyəti təyin edilməyib
                                         </div>
                                     }
                                     else
@@ -270,7 +274,7 @@
                                             <div class="mb-istifade-info">
                                                 @if (illik != null)
                                                 {
-                                                    <span>Cari il (@secilmisIl): <strong>@cariQaliq</strong> gün</span>
+                                                    <span>Cari iş ili (@IlAralik(secilmisIl)): <strong>@cariQaliq</strong> gün</span>
                                                     @if (kecmisQaliqSum > 0)
                                                     {
                                                         <span> · keçmiş illər: <strong>@kecmisQaliqSum</strong> gün</span>
@@ -296,7 +300,7 @@
                                         @if (illik != null)
                                         {
                                             <div class="mb-prev-year-row mb-year-current">
-                                                <span class="il">@secilmisIl (cari)</span>
+                                                <span class="il">@IlAralik(secilmisIl) (cari)</span>
                                                 <span class="gun">@illik.QaliqGun gün</span>
                                             </div>
                                             // Növbəti yenilənmə = işə qəbul ildönümü əsasında (yuxarıda hesablanıb)
@@ -322,7 +326,7 @@
                                         else
                                         {
                                             <div class="mb-prev-year-row mb-year-pending">
-                                                <span class="il">@secilmisIl (cari)</span>
+                                                <span class="il">@IlAralik(secilmisIl) (cari)</span>
                                                 <span class="gun-pending">
                                                     <i class="bi bi-hourglass-split"></i> təyin edilməyib
                                                 </span>
@@ -333,7 +337,7 @@
                                         @foreach (var y in kecmisIller)
                                         {
                                             <div class="mb-prev-year-row">
-                                                <span class="il">@y.Il</span>
+                                                <span class="il">@IlAralik(y.Il)</span>
                                                 <span class="gun">@y.Qaliq gün</span>
                                             </div>
                                         }
@@ -364,7 +368,7 @@
         {
             <div class="mb-empty">
                 <i class="bi bi-calendar-x"></i>
-                <p>@secilmisIl-ci il üçün heç bir məlumat tapılmadı.</p>
+                <p>@IlAralik(secilmisIl) iş ili üçün heç bir məlumat tapılmadı.</p>
             </div>
         }
     </div>
