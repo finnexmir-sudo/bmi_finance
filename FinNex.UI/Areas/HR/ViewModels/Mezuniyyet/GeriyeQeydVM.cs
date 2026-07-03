@@ -64,6 +64,12 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
 
         public int MaksimumKohneGun { get; set; } = 90;
 
+        /// <summary>
+        /// Öz hesabına (ödənişsiz) üçün geriyə həddi — daha geniş (1 il).
+        /// Uzunmüddətli/açıq məzuniyyət başlanğıcı 90 gündən köhnə ola bilər.
+        /// </summary>
+        public int MaksimumKohneGunOzHesabina { get; set; } = 365;
+
         /// <summary>İllik balans yerinə jeton xərclənsin.</summary>
         public bool JetonIleEvezlesdir { get; set; } = false;
 

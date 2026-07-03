@@ -1,7 +1,7 @@
 @model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.GeriyeQeydVM
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Geriyə Məzuniyyət Qeyd et";
+    ViewData["Title"] = "Birbaşa Məzuniyyət Qeydi";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     var minTarix = DateTime.Today.AddDays(-Model.MaksimumKohneGun).ToString("yyyy-MM-dd");
@@ -12,8 +12,8 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Geriyə Əmək Məzuniyyəti Qeyd et</div>
-            <div class="fn-page-sub">HR birbaşa qeyd — dərhal təsdiqlənir. <b>Əmək məzuniyyəti</b> (balansdan çıxılır) və ya <b>öz hesabına / ödənişsiz</b> (Ə.M. 129 — balansa dəymir, maaşdan çıxılır) növünü seç. Keçmiş, bugün və gələcək tarix olar. (Xəstəlik / Ezamiyyət üçün ayrıca səhifələr var.)</div>
+            <div class="fn-page-title">Birbaşa Məzuniyyət Qeydi</div>
+            <div class="fn-page-sub">İşçi özü müraciət edə bilmədikdə HR onun yerinə birbaşa qeyd edir — <b>dərhal təsdiqlənir</b>. <b>Əmək məzuniyyəti</b> (balansdan çıxılır) və ya <b>öz hesabına / ödənişsiz</b> (Ə.M. 129 — balansa dəymir, maaşdan çıxılır) növünü seç. Keçmiş, bugün və gələcək tarix olar. (Xəstəlik / Ezamiyyət üçün ayrıca səhifələr var.)</div>
         </div>
         <a asp-action="Hr" class="fn-btn fn-btn--outline">← Geri</a>
     </div>
@@ -36,13 +36,26 @@
                     <div style="display:flex;gap:10px;padding:12px 14px;background:#fffbea;border:1px solid #fde68a;border-left:4px solid #c9900a;border-radius:8px;margin-bottom:18px">
                         <div style="font-size:18px;line-height:1">⚠</div>
                         <div style="font-size:12.5px;color:#7a5a10;line-height:1.55">
-                            <strong>Diqqət:</strong> Bu səhifə təsdiq axınını atlayır — müraciət dərhal
-                            <strong>"Təsdiqlənib"</strong> statusunda yaranır. Həm <strong>keçmiş</strong>,
-                            həm də <strong>gələcək</strong> tarixlər üçün qeyd etmək olar (keçmiş tarixlər
-                            üçün maksimum <strong>@Model.MaksimumKohneGun gün</strong> əvvələ qədər).
-                            Keçmiş tarixlərdə işçinin davamiyyətindəki <strong>"Qayıb"</strong> qeydləri
-                            avtomatik <strong>"İcazəli"</strong>-yə çevriləcək. Əmək məzuniyyəti balansı
-                            azalacaq.
+                            @* İllik (əmək məzuniyyəti) *@
+                            <span id="xebIllik">
+                                <strong>Diqqət:</strong> Bu səhifə təsdiq axınını atlayır — müraciət dərhal
+                                <strong>"Təsdiqlənib"</strong> statusunda yaranır. Həm <strong>keçmiş</strong>,
+                                həm də <strong>gələcək</strong> tarixlər üçün qeyd etmək olar (keçmiş tarixlər
+                                üçün maksimum <strong>@Model.MaksimumKohneGun gün</strong> əvvələ qədər).
+                                Keçmiş tarixlərdə işçinin davamiyyətindəki <strong>"Qayıb"</strong> qeydləri
+                                avtomatik <strong>"İcazəli"</strong>-yə çevriləcək. Əmək məzuniyyəti balansı
+                                <strong>azalacaq</strong>.
+                            </span>
+                            @* Öz hesabına (ödənişsiz) — Ə.M. 129 *@
+                            <span id="xebOzHes" style="display:none">
+                                <strong>Diqqət:</strong> Bu səhifə təsdiq axınını atlayır — qeyd dərhal
+                                <strong>"Təsdiqlənib"</strong> statusunda yaranır. Keçmiş, bugün və gələcək
+                                (açıq müddət) tarix olar; keçmiş üçün maksimum <strong>1 il</strong> əvvələ qədər.
+                                Keçmiş tarixlərdə işçinin davamiyyətindəki <strong>"Qayıb"</strong> qeydləri
+                                avtomatik <strong>"Ödənişsiz məzuniyyət"</strong>-ə çevriləcək. Balans
+                                <strong>dəyişmir</strong> — həmin günlərin maaşı <strong>çıxılır</strong>
+                                (Ə.M. 129, ödəniş yoxdur).
+                            </span>
                         </div>
                     </div>
 
@@ -131,7 +144,7 @@
                             Səbəb <span class="fn-label-hint">(ixtiyari)</span>
                         </label>
                         <textarea asp-for="Sebeb" rows="3" class="fn-textarea"
-                                  placeholder="Nəyə görə geriyə qeyd olunur? (məs: 'işçi xəstə idi, sənədləri sonradan gətirdi')"></textarea>
+                                  placeholder="Nəyə görə birbaşa qeyd olunur? (məs: 'işçi xəstə idi, sənədləri sonradan gətirdi' və ya 'bank uzunmüddətli öz hesabına məzuniyyətə göndərib')"></textarea>
                         <span asp-validation-for="Sebeb" class="fn-val-msg"></span>
                         <small style="font-size:11px;color:#94a3b8;margin-top:4px;display:block">Verilərsə, audit üçün qeydə alınır</small>
                     </div>
@@ -210,14 +223,14 @@
                     <div class="fn-wi-step">
                         <div class="fn-wi-num"><i class="bi bi-calendar-x" style="font-size:11px"></i></div>
                         <div class="fn-wi-text">
-                            <strong>Maks @Model.MaksimumKohneGun gün</strong>
+                            <strong><span id="maksGunTxt">Maks @Model.MaksimumKohneGun gün</span></strong>
                             <span>Daha əvvələ qeyd etmək olmur</span>
                         </div>
                     </div>
                     <div class="fn-wi-step">
                         <div class="fn-wi-num"><i class="bi bi-arrow-repeat" style="font-size:11px"></i></div>
                         <div class="fn-wi-text">
-                            <strong>Qayıb → İcazəli</strong>
+                            <strong><span id="qayibCevrilme">Qayıb → İcazəli</span></strong>
                             <span>Davamiyyətdəki qeydlər avtomatik çevrilir</span>
                         </div>
                     </div>
@@ -232,7 +245,7 @@
                         <div class="fn-wi-num"><i class="bi bi-file-earmark-text" style="font-size:11px"></i></div>
                         <div class="fn-wi-text">
                             <strong>Audit</strong>
-                            <span>Bütün geriyə qeydlər log-a düşür</span>
+                            <span>Bütün birbaşa qeydlər log-a düşür</span>
                         </div>
                     </div>
                 </div>
@@ -296,12 +309,43 @@
             return s && parseInt(s.value) === @((int)MezuniyyetNovu.OzHesabina);
         }
 
+        // Geriyə tarix həddi (gün) — növə görə. Öz hesabına uzunmüddətli → 1 il.
+        var maxKohneIllik = @Model.MaksimumKohneGun;
+        var maxKohneOzHes = @Model.MaksimumKohneGunOzHesabina;
+        function minTarixHesabla(gun) {
+            var d = new Date();
+            d.setDate(d.getDate() - gun);
+            var ay = String(d.getMonth() + 1).padStart(2, '0');
+            var g  = String(d.getDate()).padStart(2, '0');
+            return d.getFullYear() + '-' + ay + '-' + g;
+        }
+
         function novDeyisdi() {
             var ozHes = novOzHesabinami();
             var ih = document.getElementById('illikHintTxt');
             var oh = document.getElementById('ozHesHintTxt');
             if (ih) ih.style.display = ozHes ? 'none' : '';
             if (oh) oh.style.display = ozHes ? 'inline' : 'none';
+
+            // Xəbərdarlıq mətni növə görə
+            var xi = document.getElementById('xebIllik');
+            var xo = document.getElementById('xebOzHes');
+            if (xi) xi.style.display = ozHes ? 'none' : '';
+            if (xo) xo.style.display = ozHes ? 'inline' : 'none';
+
+            // Geriyə tarix həddi növə görə (illik 90 gün, öz hesabına 1 il)
+            var yeniMin = minTarixHesabla(ozHes ? maxKohneOzHes : maxKohneIllik);
+            var bas = document.querySelector('[name="BaslamaTarixi"]');
+            var bit = document.querySelector('[name="BitmeTarixi"]');
+            if (bas) bas.min = yeniMin;
+            if (bit) bit.min = yeniMin;
+
+            // Sağ panel mətnləri
+            var mg = document.getElementById('maksGunTxt');
+            if (mg) mg.textContent = ozHes ? 'Maks 1 il' : ('Maks ' + maxKohneIllik + ' gün');
+            var qc = document.getElementById('qayibCevrilme');
+            if (qc) qc.textContent = ozHes ? 'Qayıb → Ödənişsiz' : 'Qayıb → İcazəli';
+
             var isci = document.querySelector('[name="IsciId"]');
             isciSecildi(isci ? isci.value : '');
         }

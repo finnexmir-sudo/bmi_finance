@@ -1852,9 +1852,14 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     }
 
     // ════════════════════════════════════════════════════════════
-    // GERİYƏ QEYD — HR tərəfindən keçmiş tarixlərə məzuniyyət
+    // BİRBAŞA QEYD — HR işçinin yerinə birbaşa məzuniyyət (keçmiş/gələcək)
     // ════════════════════════════════════════════════════════════
+    // İllik/absent düzəlişi keçmişə baxır — 90 gün həddi məntiqlidir.
     private const int GeriyeQeydMaxGun = 90;
+    // Öz hesabına (ödənişsiz) uzunmüddətli/açıq ola bilər və başlanğıcı 90 gündən
+    // köhnə düşə bilər (bank işçini əvvəl göndərib). Ona görə geriyə həddi geniş —
+    // 1 il. Pulu onsuz da aşağıdakı "ödənilmiş ay" bloku (1b) qoruyur.
+    private const int GeriyeQeydOzHesabinaMaxGun = 365;
 
     public async Task<Result<MezuniyyetDto>> GeriyeQeydEtAsync(GeriyeMezuniyyetCreateDto dto, int hrIsciId)
     {
@@ -1870,9 +1875,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     return Result<MezuniyyetDto>.Fail("Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
 
                 var bugun = DateTime.Today;
-                var minTarix = bugun.AddDays(-GeriyeQeydMaxGun);
+                // Geriyə həddi növə görə: öz hesabına 1 il, digərləri 90 gün.
+                int maxKohneGun = dto.Nov == MezuniyyetNovu.OzHesabina
+                    ? GeriyeQeydOzHesabinaMaxGun
+                    : GeriyeQeydMaxGun;
+                var minTarix = bugun.AddDays(-maxKohneGun);
                 if (dto.BaslamaTarixi.Date < minTarix)
-                    return Result<MezuniyyetDto>.Fail($"Keçmiş tarixlər üçün maksimum {GeriyeQeydMaxGun} gün əvvələ qədər qeyd etmək olar.");
+                    return Result<MezuniyyetDto>.Fail($"Keçmiş tarixlər üçün maksimum {maxKohneGun} gün əvvələ qədər qeyd etmək olar.");
 
                 // ── 1b. Maaşı ödənilmiş aya geriyə məzuniyyət YAZILA BİLMƏZ ──
                 // O günlərin maaşı artıq verilib; sonradan məzuniyyət yazmaq düzgün deyil.

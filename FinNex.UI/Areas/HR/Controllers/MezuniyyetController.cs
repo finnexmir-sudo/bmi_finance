@@ -238,7 +238,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 Isciler = await GetAktivIsciSelectListAsync()
             };
-            ViewData["Title"] = "Geriyə Məzuniyyət Qeyd et";
+            ViewData["Title"] = "Birbaşa Məzuniyyət Qeydi";
             return View(vm);
         }
 
@@ -572,7 +572,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            TempData["Success"] = result.Message ?? "Geriyə qeyd uğurla rəsmiləşdirildi.";
+            TempData["Success"] = result.Message ?? "Birbaşa qeyd uğurla rəsmiləşdirildi.";
             return RedirectToAction(nameof(Hr));
         }
 
