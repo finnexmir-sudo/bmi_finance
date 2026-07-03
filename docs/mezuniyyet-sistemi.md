@@ -86,13 +86,14 @@ qalıq       = qazanılan − istifadə + köçürülən
 ## 5. Ssenari (fazalar)
 
 ### Faza 1 — Balans avtomatlaşdırması
-- **Addım 0** — bu spesifikasiya.
-- **Addım 1 (additive, heç nə sınmır):**
-  - 1a. Vəzifəyə `EsasMezuniyyetGunu` (21/30) + form + mövcudlara ad üzrə ilkin təklif.
-  - 1b. Güzəştə `Novu` markeri (əlillik tiplə tanınsın).
-  - 1c. İşçiyə uşaq sayı, əlil uşaq, tək valideyn.
-- **Addım 2** — hesablama mühərriki (yalnız oxuma) + yoxlama səhifəsi.
-- **Addım 3** — iş ili + balans (canlı).
+- ✅ **Addım 0** — bu spesifikasiya.
+- ✅ **Addım 1 (additive):**
+  - ✅ 1a. Vəzifəyə `EsasMezuniyyetGunu` (21/30) + form. (Qeyd: EF köhnə sətirlərə 0 qoyur — vəzifədə 0 → balansda 21 kimi işlənir.)
+  - ✅ 1b. Güzəştə `GuzestNovu` markeri (əlillik tiplə tanınır). HR "Əlillik" güzəştini Növ=Əlillik ilə işarələməlidir.
+  - ✅ 1c. İşçiyə `UsaqSayi`, `EngelliUsaqVar`, `TekValideyn`.
+- ✅ **Staj-itmə fix** — İşçi redaktəsi artıq load-then-map (staj/sıra silinmir).
+- ✅ **Addım 2** — `MezuniyyetHuquqService` (yalnız oxuma) + `/HR/MezuniyyetBalans/Yoxlama` yoxlama səhifəsi. **← burada HR rəqəmləri təsdiqləyir.**
+- **Addım 3** — iş ili + balans (canlı). *(növbəti)*
 - **Addım 4** — il dönümü + köçürmə (Qərar 4 lazımdır).
 - **Addım 5** — miqrasiya + canlıya keçid.
 
