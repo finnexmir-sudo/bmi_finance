@@ -220,6 +220,24 @@ namespace FinNex.Application.Services.HR
                 });
             }
 
+            // 5b. Ödənişsiz (öz hesabına) məzuniyyət kəsintisi — Ə.M. 129.
+            //     Həmin real iş günlərinin baza haqqı çıxılır; əvəzinə HEÇ BİR ödəniş
+            //     (məzuniyyət/xəstəlik haqqı) əlavə olunmur. İşçi cədvəldə qalır,
+            //     tam ay ödənişsizdirsə maaş 0-a enir.
+            int odenissizGun = await OzHesabinaIsGunuSayAsync(input.IsciId, input.Il, input.Ay);
+            decimal odenissizKesinti = 0;
+            if (odenissizGun > 0 && ayIsGunu > 0)
+            {
+                odenissizKesinti = Math.Round(esasMaas / ayIsGunu * odenissizGun, 2);
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "Ödənişsiz Məzuniyyət Kəsintisi",
+                    Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {odenissizGun} ödənişsiz gün (Ə.M. 129 — məzuniyyət haqqı yoxdur)",
+                    Mebleg = odenissizKesinti,
+                    Tip = "kesinti"
+                });
+            }
+
             // 5a. MƏZUNIYYƏT KOMPENSASİYASI (varsa) — istifadə edilməmiş əmək məzuniyyəti
             //     günlərinə görə kompensasiya /HR/Kompensasiya səhifəsində hesablanıb
             //     Layihe/Tesdiqlenib statusunda saxlanılır. Maaş hesablananda gəlir kimi
@@ -543,6 +561,7 @@ namespace FinNex.Application.Services.HR
                                 // Korreksiya qeydləri mövcud Illik məzuniyyətin üzərindədir;
                                 // ayrıca ödəniş tələb etmir, post-korreksiyaya daxil edilməməlidir.
                                 && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
+                                && x.Nov != MezuniyyetNovu.OzHesabina   // ödənişsiz — məzuniyyət haqqı yoxdur
                                 && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                                 && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                                 && x.BaslamaTarixi <= prevAyBitis
@@ -760,6 +779,7 @@ namespace FinNex.Application.Services.HR
                 + xestelikSirketOdenis
                 - xestelikKesinti
                 - qayibKesinti
+                - odenissizKesinti
                 + input.BonusMeblegi
                 + overtimeMebleg
                 + input.IH07Meblegi
@@ -1054,11 +1074,12 @@ namespace FinNex.Application.Services.HR
             // Seed-də "Məzuniyyət Kəsintisi" və "Xəstəlik Kəsintisi" yoxdur —
             // məzuniyyət və xəstəlik günləri də "Davamiyyət Kəsintisi" altında birləşdirilir
             int xestelikUmumiGun = xestelikSirketGun + xestelikDsmfGun;
-            decimal umumiDavamKesinti = qayibKesinti + mezKesinti + xestelikKesinti;
+            decimal umumiDavamKesinti = qayibKesinti + mezKesinti + xestelikKesinti + odenissizKesinti;
             var davamHisseleri = new List<string>();
             if (qayibGun > 0) davamHisseleri.Add($"{qayibGun} qayıb");
             if (mezGun > 0) davamHisseleri.Add($"{mezGun} məz.");
             if (xestelikUmumiGun > 0) davamHisseleri.Add($"{xestelikUmumiGun} xəstəlik");
+            if (odenissizGun > 0) davamHisseleri.Add($"{odenissizGun} ödənişsiz");
             string? davamAciq = davamHisseleri.Count > 0
                 ? $"{string.Join(" + ", davamHisseleri)} gün / {ayIsGunu} iş günü"
                 : null;
@@ -1279,6 +1300,51 @@ namespace FinNex.Application.Services.HR
             return (tg, ig);
         }
 
+        // Ödənişsiz (öz hesabına) məzuniyyətin bu aydakı REAL İŞ GÜNLƏRİ sayı — Ə.M. 129.
+        // Yalnız baza maaş KƏSİNTİSİ üçün (məzuniyyət haqqı ÖDƏNMİR). Həftəsonu və
+        // hesablanmayan bayramlar çıxılır — məzuniyyət kəsintisi (HaqiqiIsGunu) ilə eyni məntiq.
+        // Üst-üstə düşən qeydlərdə gün ikiqat sayılmasın deyə HashSet istifadə olunur.
+        public async Task<int> OzHesabinaIsGunuSayAsync(int isciId, int il, int ay)
+        {
+            var ayBaslangic = new DateTime(il, ay, 1);
+            var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+            var qeydler = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => x.IsciId == isciId && !x.Silinib
+                         && x.Status == MezuniyyetStatus.Tesdiqlenib
+                         && x.Nov == MezuniyyetNovu.OzHesabina
+                         && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
+                         && x.BaslamaTarixi <= ayBitis
+                         && x.BitmeTarixi >= ayBaslangic)
+                .ToListAsync();
+
+            if (!qeydler.Any()) return 0;
+
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= ayBaslangic && x.Tarix <= ayBitis && !x.Silinib);
+            var ozelTipDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
+
+            var isGunleri = new HashSet<DateTime>();
+            foreach (var m in qeydler)
+            {
+                var baslama = m.BaslamaTarixi < ayBaslangic ? ayBaslangic : m.BaslamaTarixi;
+                var bitis = m.BitmeTarixi > ayBitis ? ayBitis : m.BitmeTarixi;
+                for (var t = baslama.Date; t <= bitis.Date; t = t.AddDays(1))
+                {
+                    bool realIsGunu;
+                    if (ozelTipDict.TryGetValue(t.Date, out var tip))
+                        realIsGunu = tip == GunTipi.IsGunu;
+                    else
+                        realIsGunu = t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
+                    if (realIsGunu) isGunleri.Add(t.Date);
+                }
+            }
+            return isGunleri.Count;
+        }
+
         /// <summary>
         /// Verilmiş ay üçün məzuniyyət günlərini sayır. Əgər <paramref name="odenisTipi"/>
         /// verilibsə, yalnız həmin ödəniş tipinə sahib qeydlər sayılır.
@@ -1306,6 +1372,9 @@ namespace FinNex.Application.Services.HR
                     // üzərindəki korreksiya kimi yaranır — həmin günlər artıq Illik qeyd
                     // tərəfindən sayılır, ikiqat saymamaq üçün burada çıxarılır.
                     x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi &&
+                    // Öz hesabına (ödənişsiz) məzuniyyət — məzuniyyət haqqı ÖDƏNMİR;
+                    // baza kəsintisi ayrıca (OzHesabinaIsGunuSayAsync) aparılır.
+                    x.Nov != MezuniyyetNovu.OzHesabina &&
                     !x.JetonIleOdendi &&
                     (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0 &&
                     x.BaslamaTarixi <= ayBitis &&
@@ -2064,6 +2133,7 @@ namespace FinNex.Application.Services.HR
                         && x.Status == MezuniyyetStatus.Tesdiqlenib
                         && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
                         && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
+                        && x.Nov != MezuniyyetNovu.OzHesabina   // ödənişsiz — məzuniyyət haqqı yoxdur
                         && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                         && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                         && x.BaslamaTarixi <= prevAyBitis
