@@ -177,6 +177,30 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         }
     }
 
+    // İşçi redaktəsi — mövcud entity-ni yükləyib DTO-nu ONUN ÜZƏRİNƏ map edirik.
+    // Base YenileAsync boş yeni entity yaradıb bütün sətri overwrite edirdi; bu isə
+    // formada olmayan sahələri (EvvelkiStajPeriodlari — ümumi staj, Sira, YaradilmaTarixi)
+    // silirdi. Load-then-map ilə həmin sahələr toxunulmaz qalır.
+    public new async Task<Result> YenileAsync(IsciUpdateDto dto)
+    {
+        try
+        {
+            var entity = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(dto.Id);
+            if (entity == null)
+                return Result.Fail("İşçi tapılmadı.");
+
+            _mapper.Map(dto, entity);
+
+            await _unitOfWork.Repository<Isci>().YenileAsync(entity);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("İşçi məlumatları yeniləndi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"İşçi yenilənərkən xəta baş verdi: {ex.Message}");
+        }
+    }
+
     public async Task<IsciDetailDto?> GetIsciDetailsAsync(int id)
     {
         var entity = await _unitOfWork.Repository<Isci>().GetirAsync(
