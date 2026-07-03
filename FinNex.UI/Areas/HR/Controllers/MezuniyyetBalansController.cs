@@ -1,3 +1,4 @@
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -12,10 +13,24 @@ namespace FinNex.UI.Areas.HR.Controllers
     public class MezuniyyetBalansController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMezuniyyetHuquqService _huquqService;
 
-        public MezuniyyetBalansController(IUnitOfWork unitOfWork)
+        public MezuniyyetBalansController(IUnitOfWork unitOfWork, IMezuniyyetHuquqService huquqService)
         {
             _unitOfWork = unitOfWork;
+            _huquqService = huquqService;
+        }
+
+        // GET /HR/MezuniyyetBalans/Yoxlama?tarix=2026-07-03
+        // Sistemin hesabladığı illik hüquq (əsas + staj + uşaq) — YALNIZ OXUMA.
+        // Bazaya yazmır; HR rəqəmləri real data ilə tutuşdurur (Addım 2 yoxlaması).
+        public async Task<IActionResult> Yoxlama(DateTime? tarix)
+        {
+            var refTarix = (tarix ?? DateTime.Today).Date;
+            ViewBag.Tarix = refTarix;
+            var data = await _huquqService.HesablaAsync(refTarix);
+            ViewData["Title"] = "Məzuniyyət hüququ — yoxlama";
+            return View(data);
         }
 
         // GET /HR/MezuniyyetBalans?il=2026

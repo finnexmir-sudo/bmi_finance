@@ -1,0 +1,82 @@
+@model IList<FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetHuquqDto>
+@{
+    ViewData["Title"] = "Məzuniyyət hüququ — yoxlama";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var tarix = ViewBag.Tarix is DateTime dt ? dt : DateTime.Today;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Məzuniyyət hüququ — yoxlama</div>
+            <div class="fn-page-sub">Sistemin avtomatik hesabladığı illik hüquq. <strong>Yalnız oxuma</strong> — bazaya yazılmır.</div>
+        </div>
+        <form method="get" style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;color:#6b7280">Tarixə görə:</label>
+            <input type="date" name="tarix" value="@tarix.ToString("yyyy-MM-dd")"
+                   style="padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px" />
+            <button type="submit" class="fn-btn fn-btn--primary">Hesabla</button>
+        </form>
+    </div>
+
+    <div class="fn-card" style="padding:12px 14px;margin-bottom:14px;background:#f0f9ff;border:1px solid #bae6fd;font-size:12px;color:#0c4a6e;line-height:1.7">
+        <strong>Düstur:</strong> əsas (əlil <b>42</b> · mütəxəssis/rəhbər <b>30</b> · adi <b>21</b>)
+        + staj (5–10 il <b>+2</b> · 10–15 <b>+4</b> · 15+ <b>+6</b>)
+        + uşaq (2 uşaq <b>+2</b> · 3+ və ya əlil uşaq <b>+5</b>).<br />
+        <strong>Qeyd:</strong> əlildə staj əlavəsi verilmir (M.116.3). Əlillik <em>güzəşt</em> təyinatından (Növ = Əlillik) oxunur; staj <em>ümumidir</em> (əvvəlki iş yerləri + bank). Vəzifədə gün təyin olunmayıbsa (0) → <b>21</b> kimi işlənir.
+    </div>
+
+    <div class="fn-card" style="padding:0;overflow:auto">
+        <table class="isci-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>İşçi</th>
+                    <th>Şöbə</th>
+                    <th>Vəzifə</th>
+                    <th>İşə qəbul</th>
+                    <th style="text-align:center">Əlil</th>
+                    <th style="text-align:right">Əsas</th>
+                    <th style="text-align:right">Staj</th>
+                    <th style="text-align:right">Uşaq</th>
+                    <th style="text-align:right">İllik hüquq</th>
+                    <th>İzah</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="10" style="text-align:center;padding:20px;color:#9ca3af">Aktiv işçi tapılmadı</td></tr>
+                }
+                else
+                {
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td><strong>@r.IsciAdSoyad</strong></td>
+                            <td>@r.SobeAdi</td>
+                            <td>@r.VezifeAdi</td>
+                            <td>@r.IsheQebulTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="text-align:center">
+                                @if (r.Elildir)
+                                {
+                                    <span class="fn-badge fn-badge--done">Bəli</span>
+                                }
+                            </td>
+                            <td style="text-align:right">@r.EsasGun</td>
+                            <td style="text-align:right" title="@r.StajIl il">@r.StajGun</td>
+                            <td style="text-align:right" title="@r.UsaqSayi uşaq@(r.EngelliUsaqVar ? ", əlil uşaq" : "")">@r.UsaqGun</td>
+                            <td style="text-align:right;font-weight:700;color:#1a2332">@r.IllikHuquq</td>
+                            <td style="color:#6b7280;font-size:12px">@r.Izah</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>
