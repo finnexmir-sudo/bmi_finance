@@ -14,13 +14,19 @@
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
-        // ── Məzuniyyət üçün şəxsi faktlar (Ə.M. 117) — HR əl ilə doldurur ──
-        /// <summary>14 yaşınadək uşaqların sayı (M.117 əlavə məzuniyyəti üçün).</summary>
-        public int UsaqSayi { get; set; } = 0;
-        /// <summary>18 yaşınadək əlilliyi olan uşağı var (M.117 → +5 gün).</summary>
-        public bool EngelliUsaqVar { get; set; } = false;
+        // ── Məzuniyyət üçün şəxsi faktlar (Ə.M. 117) — İşçi ailə vəziyyəti səhifəsində doldurulur ──
+        /// <summary>Ailə vəziyyəti (məlumat üçün).</summary>
+        public AileVeziyyeti AileVeziyyeti { get; set; } = AileVeziyyeti.Subay;
         /// <summary>Tək valideyn — M.117 əlavəsini ataya da açır.</summary>
         public bool TekValideyn { get; set; } = false;
+        /// <summary>Uşaqlar (doğum tarixi ilə) — M.117 hesablaması bunlardan aparılır.</summary>
+        public ICollection<IsciUsaq> Usaqlar { get; set; } = new List<IsciUsaq>();
+
+        // LEGACY (Qərar 3 — saxlanılır, istifadə olunmur; hesablama artıq Usaqlar-dan gedir).
+        /// <summary>KÖHNƏ — 14 yaşınadək uşaq sayı. İşlənmir.</summary>
+        public int UsaqSayi { get; set; } = 0;
+        /// <summary>KÖHNƏ — əlil uşaq bayrağı. İşlənmir.</summary>
+        public bool EngelliUsaqVar { get; set; } = false;
 
         // İşçi statusu
         public DateTime IsheQebulTarixi { get; set; }

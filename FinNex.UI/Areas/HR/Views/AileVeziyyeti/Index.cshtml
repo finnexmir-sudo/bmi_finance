@@ -1,0 +1,70 @@
+@model IEnumerable<FinNex.Domain.Entities.HR.Isci>
+@{
+    ViewData["Title"] = "İşçi ailə vəziyyəti";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var yearStart = new DateTime(DateTime.Today.Year, 1, 1);
+    var axtaris = ViewBag.Axtaris as string;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İşçi ailə vəziyyəti</div>
+            <div class="fn-page-sub">Ailə vəziyyəti, tək valideyn və uşaqlar (doğum tarixi ilə). Məzuniyyət M.117 əlavəsi buradan hesablanır.</div>
+        </div>
+        <form method="get" style="display:flex;gap:8px;align-items:center">
+            <input type="text" name="axtaris" value="@axtaris" placeholder="İşçi adı..."
+                   style="padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:13px" />
+            <button type="submit" class="fn-btn fn-btn--primary">Axtar</button>
+        </form>
+    </div>
+
+    <div class="fn-card" style="padding:0;overflow:auto">
+        <table class="isci-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>İşçi</th>
+                    <th>Şöbə</th>
+                    <th>Ailə vəziyyəti</th>
+                    <th style="text-align:center">Uşaq (cəmi)</th>
+                    <th style="text-align:center">14-dək</th>
+                    <th style="text-align:center">Tək valideyn</th>
+                    <th class="isci-th-right">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7" class="isci-table-empty">İşçi tapılmadı</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        var teyinat = item.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir && !t.Silinib);
+                        var cemi = item.Usaqlar.Count(u => !u.Silinib);
+                        var under14 = item.Usaqlar.Count(u => !u.Silinib && u.DogumTarixi.AddYears(14) >= yearStart);
+                        <tr>
+                            <td><div class="isci-name">@item.Ad @item.Soyad</div></td>
+                            <td><span class="str-dept-tag">@(teyinat?.Departament?.Ad ?? "-")</span></td>
+                            <td>@(item.AileVeziyyeti == FinNex.Domain.Entities.HR.AileVeziyyeti.Evli ? "Evli" : "Subay")</td>
+                            <td style="text-align:center">@cemi</td>
+                            <td style="text-align:center">@under14</td>
+                            <td style="text-align:center">@(item.TekValideyn ? "Bəli" : "")</td>
+                            <td class="isci-td-actions">
+                                <a asp-action="Detay" asp-route-id="@item.Id" class="fn-btn fn-btn--outline">Detay</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>

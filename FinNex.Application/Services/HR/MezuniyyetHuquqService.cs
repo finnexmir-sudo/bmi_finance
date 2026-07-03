@@ -29,6 +29,7 @@ namespace FinNex.Application.Services.HR
                     .ThenInclude(t => t.Vezife)
                 .Include(x => x.IsciTeyinatlari.Where(t => t.Aktivdir && !t.Silinib))
                     .ThenInclude(t => t.Departament)
+                .Include(x => x.Usaqlar.Where(u => !u.Silinib))
                 .ToListAsync();
 
             // Əlil işçilər: güzəşt təyinatı (Novu = Elillik), refTarix-də aktiv.
@@ -62,13 +63,24 @@ namespace FinNex.Application.Services.HR
                 int stajGun = elil ? 0
                             : (stajIl >= 15 ? 6 : stajIl >= 10 ? 4 : stajIl >= 5 ? 2 : 0);
 
-                // Uşaq (M.117): yalnız QADIN, ya da TƏK VALİDEYN ata alır (M.117.1–2).
+                // Uşaq (M.117): uşaqlar doğum tarixi ilə (IsciUsaq). Yaş avtomatik.
+                // İl-sonu qoruma (M.117.3): uşaq il ərzində 14 (əlildə 18) yaşayanda,
+                // 14/18 yaş günü cari ilin 1 yanvarından ≥ olarsa hələ də sayılır.
+                var ilBasi = new DateTime(refTarix.Year, 1, 1);
+                int under14 = isci.Usaqlar.Count(u => !u.Silinib
+                    && u.DogumTarixi.Date <= refTarix
+                    && u.DogumTarixi.AddYears(14) >= ilBasi);
+                bool engelliUsaq = isci.Usaqlar.Any(u => !u.Silinib
+                    && u.Elillidir
+                    && u.DogumTarixi.Date <= refTarix
+                    && u.DogumTarixi.AddYears(18) >= ilBasi);
+
+                // Yalnız QADIN, ya da TƏK VALİDEYN ata alır (M.117.1–2).
                 // Əlil işçi (119) uşaq əlavəsini də ALMIR (M.117.4).
-                // 3+ uşaq və ya əlil uşaq → 5; 2 uşaq → 2; başqa → 0.
                 bool uygunSexs = isci.Cins != Cins.Kisi || isci.TekValideyn;
                 int usaqGun = (elil || !uygunSexs) ? 0
-                            : (isci.UsaqSayi >= 3 || isci.EngelliUsaqVar) ? 5
-                            : (isci.UsaqSayi == 2 ? 2 : 0);
+                            : (under14 >= 3 || engelliUsaq) ? 5
+                            : (under14 == 2 ? 2 : 0);
 
                 netice.Add(new MezuniyyetHuquqDto
                 {
@@ -81,8 +93,8 @@ namespace FinNex.Application.Services.HR
                     EsasGun         = esas,
                     StajIl          = Math.Round(stajIl, 1),
                     StajGun         = stajGun,
-                    UsaqSayi        = isci.UsaqSayi,
-                    EngelliUsaqVar  = isci.EngelliUsaqVar,
+                    UsaqSayi        = under14,
+                    EngelliUsaqVar  = engelliUsaq,
                     UsaqGun         = usaqGun,
                     IllikHuquq      = esas + stajGun + usaqGun,
                     IsheQebulTarixi = isci.IsheQebulTarixi

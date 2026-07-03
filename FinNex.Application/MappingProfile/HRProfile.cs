@@ -40,6 +40,7 @@ public class HRProfile : Profile
             .ForMember(dest => dest.MezuniyyetBalanslari, opt => opt.Ignore())
             .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
             .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
+            .ForMember(dest => dest.Usaqlar, opt => opt.Ignore())
             .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
 
         CreateMap<IsciUpdateDto, Isci>()
@@ -48,6 +49,7 @@ public class HRProfile : Profile
             .ForMember(dest => dest.MezuniyyetBalanslari, opt => opt.Ignore())
             .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
             .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
+            .ForMember(dest => dest.Usaqlar, opt => opt.Ignore())
             .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
 
         CreateMap<Isci, IsciListDto>()

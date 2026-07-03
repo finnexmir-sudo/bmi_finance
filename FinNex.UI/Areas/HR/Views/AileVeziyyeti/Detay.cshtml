@@ -1,0 +1,118 @@
+@model FinNex.Domain.Entities.HR.Isci
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = $"Ailə vəziyyəti — {Model.Ad} {Model.Soyad}";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var teyinat = Model.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir && !t.Silinib);
+    var usaqlar = Model.Usaqlar.Where(u => !u.Silinib).OrderByDescending(u => u.DogumTarixi).ToList();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div style="margin-bottom:14px">
+        <a asp-action="Index" class="fn-btn fn-btn--outline" style="width:fit-content">← Ailə vəziyyəti siyahısı</a>
+    </div>
+
+    @* ── Ailə vəziyyəti ── *@
+    <div class="fn-card" style="padding:18px 20px;margin-bottom:14px">
+        <h3 style="margin:0 0 4px">@Model.Ad @Model.Soyad</h3>
+        <div style="color:#64748b;font-size:13px;margin-bottom:16px">@(teyinat?.Departament?.Ad ?? "-") · @(teyinat?.Vezife?.Ad ?? "-")</div>
+
+        <form asp-action="SaveAile" method="post" style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="isci-field">
+                <label class="isci-label">Ailə vəziyyəti</label>
+                <select name="aileVeziyyeti" class="isci-input" style="min-width:150px">
+                    <option value="0" selected="@(Model.AileVeziyyeti == AileVeziyyeti.Subay ? "selected" : null)">Subay</option>
+                    <option value="1" selected="@(Model.AileVeziyyeti == AileVeziyyeti.Evli ? "selected" : null)">Evli</option>
+                </select>
+            </div>
+            <div class="isci-field">
+                <label class="isci-label" style="display:flex;align-items:center;gap:8px;margin-top:24px">
+                    <input type="checkbox" name="tekValideyn" value="true"
+                           checked="@(Model.TekValideyn ? "checked" : null)" style="width:16px;height:16px" />
+                    Tək valideyn
+                </label>
+            </div>
+            <button type="submit" class="fn-btn fn-btn--primary">Saxla</button>
+        </form>
+        <div style="font-size:12px;color:#94a3b8;margin-top:8px">
+            Tək valideyn: M.117 uşaq əlavəsini <b>ataya</b> da açır (ana onsuz da alır).
+        </div>
+    </div>
+
+    @* ── Uşaqlar ── *@
+    <div class="fn-card" style="padding:18px 20px">
+        <h3 style="margin:0 0 12px">Uşaqlar</h3>
+
+        <table class="isci-table" style="width:100%;margin-bottom:16px">
+            <thead>
+                <tr>
+                    <th>Ad</th>
+                    <th>Doğum tarixi</th>
+                    <th style="text-align:center">Yaş</th>
+                    <th style="text-align:center">Əlil</th>
+                    <th class="isci-th-right"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!usaqlar.Any())
+                {
+                    <tr><td colspan="5" class="isci-table-empty">Uşaq əlavə olunmayıb</td></tr>
+                }
+                else
+                {
+                    @foreach (var u in usaqlar)
+                    {
+                        var yas = (int)((DateTime.Today - u.DogumTarixi).TotalDays / 365.25);
+                        <tr>
+                            <td>@(string.IsNullOrEmpty(u.Ad) ? "—" : u.Ad)</td>
+                            <td>@u.DogumTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="text-align:center">@yas</td>
+                            <td style="text-align:center">@(u.Elillidir ? "Bəli" : "")</td>
+                            <td class="isci-td-actions">
+                                <form asp-action="UsaqSil" method="post" onsubmit="return confirm('Uşaq silinsin?');" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@u.Id" />
+                                    <input type="hidden" name="isciId" value="@Model.Id" />
+                                    <button type="submit" class="fn-btn fn-btn--outline" style="color:#dc2626;border-color:#fca5a5">Sil</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <form asp-action="UsaqElaveEt" method="post"
+              style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid #eef2f7;padding-top:14px">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="isciId" value="@Model.Id" />
+            <div class="isci-field">
+                <label class="isci-label">Ad (opsional)</label>
+                <input type="text" name="ad" class="isci-input" placeholder="Uşağın adı" />
+            </div>
+            <div class="isci-field">
+                <label class="isci-label">Doğum tarixi <span class="isci-required">*</span></label>
+                <input type="date" name="dogumTarixi" class="isci-input" required />
+            </div>
+            <div class="isci-field">
+                <label class="isci-label" style="display:flex;align-items:center;gap:8px;margin-top:24px">
+                    <input type="checkbox" name="elillidir" value="true" style="width:16px;height:16px" />
+                    Əlil uşaq
+                </label>
+            </div>
+            <button type="submit" class="fn-btn fn-btn--primary">Uşaq əlavə et</button>
+        </form>
+        <div style="font-size:12px;color:#94a3b8;margin-top:8px">
+            Yaş doğum tarixindən avtomatik hesablanır — 14 (əlil üçün 18) yaşı sistem özü izləyir.
+        </div>
+    </div>
+
+</div>
