@@ -62,8 +62,12 @@ namespace FinNex.Application.Services.HR
                 int stajGun = elil ? 0
                             : (stajIl >= 15 ? 6 : stajIl >= 10 ? 4 : stajIl >= 5 ? 2 : 0);
 
-                // Uşaq (M.117): 3+ uşaq və ya əlil uşaq → 5; 2 uşaq → 2; başqa → 0.
-                int usaqGun = (isci.UsaqSayi >= 3 || isci.EngelliUsaqVar) ? 5
+                // Uşaq (M.117): yalnız QADIN, ya da TƏK VALİDEYN ata alır (M.117.1–2).
+                // Əlil işçi (119) uşaq əlavəsini də ALMIR (M.117.4).
+                // 3+ uşaq və ya əlil uşaq → 5; 2 uşaq → 2; başqa → 0.
+                bool uygunSexs = isci.Cins != Cins.Kisi || isci.TekValideyn;
+                int usaqGun = (elil || !uygunSexs) ? 0
+                            : (isci.UsaqSayi >= 3 || isci.EngelliUsaqVar) ? 5
                             : (isci.UsaqSayi == 2 ? 2 : 0);
 
                 netice.Add(new MezuniyyetHuquqDto
