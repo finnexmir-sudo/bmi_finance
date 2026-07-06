@@ -7,13 +7,23 @@
     string M(decimal? v) => v.HasValue ? v.Value.ToString("N2") : "—";
     string D(DateTime? v) => v?.ToString("dd.MM.yyyy") ?? "—";
     string T(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
+
+    // Pul sütunları üzrə cəmlər (ümumi borc = Toplam VK cəmi)
+    var cemVerKr    = Model.Setirler.Sum(s => s.VerKr        ?? 0m);
+    var cemEsas     = Model.Setirler.Sum(s => s.Esas         ?? 0m);
+    var cemVk       = Model.Setirler.Sum(s => s.Vk           ?? 0m);
+    var cemFaiz     = Model.Setirler.Sum(s => s.Faiz         ?? 0m);
+    var cemVkFaiz   = Model.Setirler.Sum(s => s.VkFaiz       ?? 0m);
+    var cemToplamVk = Model.Setirler.Sum(s => s.ToplamVkBorc ?? 0m);
+    var cemAyliq    = Model.Setirler.Sum(s => s.Ayliq        ?? 0m);
+    var cemUcAyliq  = Model.Setirler.Sum(s => s.UcAyliqCemi  ?? 0m);
 }
 
 <div class="ms-page">
     <div class="ms-head">
         <div>
             <h2 class="ms-title">Məhkəməyə hazırlıq</h2>
-            <p class="ms-sub">Məhkəmə/iddia üçün — borcalan + zaminlərin ətraflı məlumatı — @Model.Setirler.Count kredit</p>
+            <p class="ms-sub">Məhkəmə/iddia üçün — borcalan + zaminlərin ətraflı məlumatı — <b>@Model.Setirler.Count</b> kredit@if (Model.Setirler.Any()) {<text> · Ümumi borc: <b class="mh-sub-total">@M(cemToplamVk) ₼</b></text>}</p>
         </div>
     </div>
 
@@ -37,6 +47,9 @@
                 <input type="text" id="mhSearch" placeholder="Borcalan / zamin adı, hesab axtar..." autocomplete="off" />
             </div>
             <span class="mh-hint"><i class="bi bi-info-circle"></i> Zaminləri görmək üçün sətrə klik edin</span>
+            <a asp-action="MehkemeHazirliqExcel" class="mh-excel-btn" style="margin-left:auto">
+                <i class="bi bi-file-earmark-excel"></i> Excel-ə çıxart
+            </a>
         </div>
 
         <div class="ms-twrap">
@@ -114,6 +127,25 @@
                         }
                     </tbody>
                 }
+                <tfoot>
+                    <tr class="mh-total">
+                        <td></td>
+                        <td>CƏMİ</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="bd-num">@M(cemVerKr)</td>
+                        <td class="bd-num">@M(cemEsas)</td>
+                        <td class="bd-num">@M(cemVk)</td>
+                        <td class="bd-num">@M(cemFaiz)</td>
+                        <td class="bd-num">@M(cemVkFaiz)</td>
+                        <td class="bd-num mh-total-hl">@M(cemToplamVk)</td>
+                        <td class="bd-num">@M(cemAyliq)</td>
+                        <td class="bd-num">@M(cemUcAyliq)</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         @if (Model.Setirler.Count == 0)
@@ -169,9 +201,23 @@
         #mhTable tbody tr.mh-zrow td:nth-child(1), #mhTable tbody tr.mh-zrow td:nth-child(2) { background: #fbfaff; }
 
         .ms-twrap { max-height: calc(100vh - 300px); }
-        .ms-twrap::-webkit-scrollbar { height: 13px; width: 13px; }
-        .ms-twrap::-webkit-scrollbar-thumb { background: #b6c2d4; border-radius: 7px; border: 3px solid #f1f5f9; }
-        .ms-twrap::-webkit-scrollbar-track { background: #f1f5f9; }
+        /* Aşağı üfüqi scroll — tutub çəkmək asan olsun deyə hündür + tünd thumb */
+        .ms-twrap::-webkit-scrollbar { height: 18px; width: 14px; }
+        .ms-twrap::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; border: 3px solid #eef2f6; }
+        .ms-twrap::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .ms-twrap::-webkit-scrollbar-track { background: #eef2f6; }
+        .ms-twrap { scrollbar-color: #94a3b8 #eef2f6; }
+
+        /* CƏMİ sətri (tfoot) */
+        #mhTable tfoot td { background: #eef2f6; font-weight: 700; border-top: 2px solid #cbd5e1; padding: 10px 12px; font-size: 12.5px; white-space: nowrap; }
+        #mhTable tfoot td.bd-num { text-align: right; }
+        #mhTable tfoot td:nth-child(1), #mhTable tfoot td:nth-child(2) { z-index: 2; background: #eef2f6; }
+        .mh-total-hl { color: #b91c1c; font-weight: 800; font-size: 13px; }
+        .mh-sub-total { color: #b91c1c; }
+
+        /* Excel düyməsi */
+        .mh-excel-btn { display: inline-flex; align-items: center; gap: 6px; background: #0f766e; color: #fff; border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+        .mh-excel-btn:hover { background: #0d5c56; color: #fff; }
 
         .ms-toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
         .ms-search { position: relative; max-width: 420px; flex: 1; min-width: 240px; }
