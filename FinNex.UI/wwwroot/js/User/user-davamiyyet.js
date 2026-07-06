@@ -83,7 +83,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (filterTezCixan) {
                     records = applyTezCixanFilter(records);
                 } else if (filterCixisYox) {
-                    records = records.filter(function (r) { return r.girisVaxti && !r.cixisVaxti; });
+                    // Bugünü sayma — gün hələ bitməyib, çıxış olmaması normaldır (yalnız keçmiş günlər)
+                    var bugun0 = new Date(); bugun0.setHours(0, 0, 0, 0);
+                    records = records.filter(function (r) {
+                        return r.girisVaxti && !r.cixisVaxti && new Date(r.tarix) < bugun0;
+                    });
                 }
 
                 updateKPI(data.stats);

@@ -314,7 +314,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 Xestelik  = records.Count(x => x.Status == DavamiyyetStatus.Xestelik),
                 Ezamiyyet = records.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet),
                 TezCixan  = netice.TezCixanIds.Count,
-                CixisYox  = intizamResult.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue),
+                // Bugün hələ bitməyib — çıxış vurulmaması normaldır; yalnız KEÇMİŞ günləri say.
+                CixisYox  = intizamResult.Count(x => x.Tarix.Date < DateTime.Today && x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue),
                 Cemi      = records.Count
             };
 
