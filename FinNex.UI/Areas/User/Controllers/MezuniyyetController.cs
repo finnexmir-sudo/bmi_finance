@@ -311,7 +311,11 @@ namespace FinNex.UI.Areas.User.Controllers
             if (isciId == null) return RedirectToLogin();
 
             vm.IsciId = isciId.Value;
-            vm.Nov = 1; // İşçi yalnız Əmək məzuniyyəti müraciəti edə bilər
+            // İşçi yalnız Əmək məzuniyyəti (Illik) və ya Öz hesabına (ödənişsiz, Ə.M. 129)
+            // müraciət edə bilər. Xəstəlik/Ezamiyyət yalnız HR tərəfindən qeyd olunur —
+            // icazəsiz növ gələrsə təhlükəsizlik üçün Illik-ə düşür.
+            if (vm.Nov != (int)MezuniyyetNovu.Illik && vm.Nov != (int)MezuniyyetNovu.OzHesabina)
+                vm.Nov = (int)MezuniyyetNovu.Illik;
 
             if (vm.BitmeTarixi < vm.BaslamaTarixi)
                 ModelState.AddModelError("BitmeTarixi", "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");

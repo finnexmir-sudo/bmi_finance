@@ -26,14 +26,28 @@
 
                 <div class="fn-card fn-card--form">
 
-                    @* ── Məzuniyyət növü (İşçi yalnız Əmək məzuniyyəti seçə bilər) ── *@
-                    <input type="hidden" name="Nov" value="1" />
-                    <div class="fn-info-box" style="background:#f0f7ff;border-color:#d0e2ff;margin-bottom:16px">
+                    @* ── Məzuniyyət növü: Əmək (illik) və ya Öz hesabına (ödənişsiz) ── *@
+                    <div class="fn-form-group">
+                        <label class="fn-label">Məzuniyyət növü <span class="fn-required">*</span></label>
+                        <select asp-for="Nov" asp-items="Model.NovList" id="novSelect" class="fn-select"></select>
+                    </div>
+
+                    @* İllik: balans qalığı *@
+                    <div class="fn-info-box" id="illikBalansBox" style="background:#f0f7ff;border-color:#d0e2ff;margin-bottom:16px">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <rect x="1" y="1.5" width="12" height="11" rx="2" stroke="#2d6cdf" stroke-width="1.2" />
                             <path d="M1 5h12" stroke="#2d6cdf" stroke-width="1.2" />
                         </svg>
                         <strong>Əmək məzuniyyəti</strong> — Qalıq: <strong>@Model.IllikQaligGun</strong> gün
+                    </div>
+
+                    @* Öz hesabına: ödənişsiz qeyd *@
+                    <div class="fn-info-box" id="ozHesInfoBox" style="display:none;background:#fffbea;border-color:#fde68a;margin-bottom:16px">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="5.5" stroke="#c9900a" stroke-width="1.2" />
+                            <path d="M7 4.5v3.5M7 9.5v.5" stroke="#c9900a" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                        <span><strong>Öz hesabına (ödənişsiz)</strong> — illik balansa dəymir, həmin günlərin maaşı çıxılır (Ə.M. 129, ödəniş yoxdur). Əvəzedici istəyə bağlıdır.</span>
                     </div>
 
                     @* ── Tarixlər ── *@
@@ -67,8 +81,8 @@
                         Seçilmiş müddət: <strong id="durationText"></strong>
                     </div>
 
-                    @* ── Ödəniş vaxtı seçimi ── *@
-                    <div class="fn-form-group mez-odenis-tipi">
+                    @* ── Ödəniş vaxtı seçimi (yalnız illik — öz hesabına-da ödəniş yoxdur) ── *@
+                    <div class="fn-form-group mez-odenis-tipi" id="odenisTipiBox">
                         <label class="fn-label">Məzuniyyət ödənişinin vaxtı <span class="fn-required">*</span></label>
                         <div class="mez-odenis-options">
                             <label class="mez-odenis-card">
@@ -573,7 +587,7 @@
 
         @* ── Sağ panel: qalıq info ── *@
         <div class="fn-side-info">
-            <div class="fn-card">
+            <div class="fn-card" id="sideBalansCard">
                 <div class="fn-card-title" style="margin-bottom:12px">Əmək məzuniyyəti balansı</div>
 
                 <div class="fn-side-balance-item">
@@ -635,6 +649,9 @@
             const bitmeInp   = document.getElementById('bitmeTarixi');
             const previewBox = document.getElementById('mezPreviewBox');
             const odenisTipiRadios = document.querySelectorAll('input[name="OdenisTipi"]');
+            const novSelect  = document.getElementById('novSelect') || document.querySelector('select[name="Nov"]');
+            const OZ_HESABINA = 5;
+            const novOzHesabinami = () => novSelect && parseInt(novSelect.value) === OZ_HESABINA;
 
             const fmt = v => (v && v > 0)
                 ? v.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₼'
@@ -648,6 +665,8 @@
             }
 
             function refreshPreview(force) {
+                // Öz hesabına (ödənişsiz) — ödəniş yoxdur, ödəniş preview-u göstərilmir.
+                if (novOzHesabinami()) { previewBox.style.display = 'none'; return; }
                 const baslama = baslamaInp?.value;
                 const bitme   = bitmeInp?.value;
                 const tipi    = getOdenisTipi();
@@ -869,12 +888,28 @@
                     .catch(() => { previewBox.style.display = 'none'; });
             }
 
+            // Növə görə UI: öz hesabına-da balans/ödəniş/preview gizlənir.
+            function novToggle() {
+                const ozHes = novOzHesabinami();
+                const illikBox  = document.getElementById('illikBalansBox');
+                const ozBox     = document.getElementById('ozHesInfoBox');
+                const odenisBox = document.getElementById('odenisTipiBox');
+                const sideBalans = document.getElementById('sideBalansCard');
+                if (illikBox)   illikBox.style.display   = ozHes ? 'none' : '';
+                if (ozBox)      ozBox.style.display      = ozHes ? '' : 'none';
+                if (odenisBox)  odenisBox.style.display  = ozHes ? 'none' : '';
+                if (sideBalans) sideBalans.style.display = ozHes ? 'none' : '';
+                if (ozHes) previewBox.style.display = 'none';
+                else refreshPreview(true);
+            }
+
             baslamaInp?.addEventListener('change', () => refreshPreview(false));
             bitmeInp?.addEventListener('change', () => refreshPreview(false));
             odenisTipiRadios.forEach(r => r.addEventListener('change', () => refreshPreview(true)));
+            novSelect?.addEventListener('change', novToggle);
 
-            // Səhifə yüklənəndə də yoxla
-            setTimeout(() => refreshPreview(true), 200);
+            // Səhifə yüklənəndə də yoxla — növə görə UI qurulur
+            setTimeout(novToggle, 200);
         })();
     </script>
 }
