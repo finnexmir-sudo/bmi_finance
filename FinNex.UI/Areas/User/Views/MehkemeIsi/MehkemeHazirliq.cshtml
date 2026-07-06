@@ -23,7 +23,13 @@
     <div class="ms-head">
         <div>
             <h2 class="ms-title">Məhkəməyə hazırlıq</h2>
-            <p class="ms-sub">Məhkəmə/iddia üçün — borcalan + zaminlərin ətraflı məlumatı — <b>@Model.Setirler.Count</b> kredit@if (Model.Setirler.Any()) {<text> · Ümumi borc: <b class="mh-sub-total">@M(cemToplamVk) ₼</b></text>}</p>
+            <p class="ms-sub">
+                Məhkəmə/iddia üçün — borcalan + zaminlərin ətraflı məlumatı — <b>@Model.Setirler.Count</b> kredit
+                @if (Model.Setirler.Any())
+                {
+                    <span>· Toplam VK: <b class="mh-sub-total">@M(cemToplamVk) ₼</b></span>
+                }
+            </p>
         </div>
     </div>
 
