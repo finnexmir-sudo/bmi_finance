@@ -156,8 +156,12 @@ public class MehkemeIsiController : Controller
     {
         var vm = await _service.MehkemeHazirliqSiyahiAsync();
         var basliqlar = new[] { "№", "Borcalan", "Hesab", "Status", "Son bildiriş tarixi",
-            "Kr verilmə tarixi", "Ver.kredit", "Əsas", "VK", "Faiz", "VK faiz",
-            "Toplam VK (ümumi borc)", "Aylıq", "3× aylıq", "Son ödəniş", "Zamin sayı", "Zaminlər" };
+            "Kr verilmə tarixi", "Ver.kredit", "Ümumi borc", "Əsas", "VK", "Faiz", "VK faiz",
+            "Toplam VK", "Aylıq", "3× aylıq", "Son ödəniş", "Zamin sayı", "Zaminlər" };
+
+        // Ümumi borc = Əsas + VK + Faiz + VK faiz (cari + vaxtı keçmiş, əsas + faiz)
+        static decimal UmumiBorc(MehkemeHazirliqSetirDto x) =>
+            (x.Esas ?? 0m) + (x.Vk ?? 0m) + (x.Faiz ?? 0m) + (x.VkFaiz ?? 0m);
 
         var setirler = new List<object?[]>();
         var idx = 0;
@@ -169,16 +173,17 @@ public class MehkemeIsiController : Controller
             setirler.Add(new object?[]
             {
                 idx, s.Ad, s.Hes, s.Item01, s.Item02, s.VTar,
-                s.VerKr, s.Esas, s.Vk, s.Faiz, s.VkFaiz, s.ToplamVkBorc,
+                s.VerKr, UmumiBorc(s), s.Esas, s.Vk, s.Faiz, s.VkFaiz, s.ToplamVkBorc,
                 s.Ayliq, s.UcAyliqCemi, s.SonOdTar, s.Zaminlar.Count, zaminAdlar
             });
         }
 
-        // CƏMİ — bütün pul sütunlarının toplamı (ümumi borc = Toplam VK cəmi)
+        // CƏMİ — bütün pul sütunlarının toplamı
         setirler.Add(new object?[]
         {
             "", "CƏMİ", "", "", "", null,
             vm.Setirler.Sum(x => x.VerKr        ?? 0m),
+            vm.Setirler.Sum(UmumiBorc),
             vm.Setirler.Sum(x => x.Esas         ?? 0m),
             vm.Setirler.Sum(x => x.Vk           ?? 0m),
             vm.Setirler.Sum(x => x.Faiz         ?? 0m),

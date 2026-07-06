@@ -17,6 +17,9 @@
     var cemToplamVk = Model.Setirler.Sum(s => s.ToplamVkBorc ?? 0m);
     var cemAyliq    = Model.Setirler.Sum(s => s.Ayliq        ?? 0m);
     var cemUcAyliq  = Model.Setirler.Sum(s => s.UcAyliqCemi  ?? 0m);
+    // Ümumi borc = Əsas + VK + Faiz + VK faiz (cari + vaxtı keçmiş, əsas + faiz)
+    decimal UmumiBorc(MehkemeHazirliqSetirDto x) => (x.Esas ?? 0m) + (x.Vk ?? 0m) + (x.Faiz ?? 0m) + (x.VkFaiz ?? 0m);
+    var cemUmumiBorc = Model.Setirler.Sum(UmumiBorc);
 }
 
 <div class="ms-page">
@@ -27,7 +30,7 @@
                 Məhkəmə/iddia üçün — borcalan + zaminlərin ətraflı məlumatı — <b>@Model.Setirler.Count</b> kredit
                 @if (Model.Setirler.Any())
                 {
-                    <span>· Toplam VK: <b class="mh-sub-total">@M(cemToplamVk) ₼</b></span>
+                    <span>· Ümumi borc: <b class="mh-sub-total">@M(cemUmumiBorc) ₼</b></span>
                 }
             </p>
         </div>
@@ -69,6 +72,7 @@
                         <th>Son bildiriş tarixi</th>
                         <th>Kr verilmə tarixi</th>
                         <th class="bd-num">Ver.kredit</th>
+                        <th class="bd-num">Ümumi borc</th>
                         <th class="bd-num">Əsas</th>
                         <th class="bd-num">VK</th>
                         <th class="bd-num">Faiz</th>
@@ -101,6 +105,7 @@
                             <td>@T(s.Item02)</td>
                             <td>@D(s.VTar)</td>
                             <td class="bd-num">@M(s.VerKr)</td>
+                            <td class="bd-num"><b>@M(UmumiBorc(s))</b></td>
                             <td class="bd-num">@M(s.Esas)</td>
                             <td class="bd-num">@M(s.Vk)</td>
                             <td class="bd-num">@M(s.Faiz)</td>
@@ -119,7 +124,7 @@
                                     <span class="ic-zrole">ZAMİN</span>
                                     <span class="ic-zad">@T(z.Ad)</span>
                                 </td>
-                                <td colspan="13" class="mh-zcell">
+                                <td colspan="14" class="mh-zcell">
                                     <div class="mh-zdetal">
                                         <span><b>FİN:</b> @T(z.Fin)</span>
                                         <span><b>Doğum:</b> @D(z.DogumTarixi)@(string.IsNullOrWhiteSpace(z.DogumYeri) ? "" : " · " + z.DogumYeri)@(string.IsNullOrWhiteSpace(z.Olke) ? "" : " · " + z.Olke)</span>
@@ -142,11 +147,12 @@
                         <td></td>
                         <td></td>
                         <td class="bd-num">@M(cemVerKr)</td>
+                        <td class="bd-num mh-total-hl">@M(cemUmumiBorc)</td>
                         <td class="bd-num">@M(cemEsas)</td>
                         <td class="bd-num">@M(cemVk)</td>
                         <td class="bd-num">@M(cemFaiz)</td>
                         <td class="bd-num">@M(cemVkFaiz)</td>
-                        <td class="bd-num mh-total-hl">@M(cemToplamVk)</td>
+                        <td class="bd-num">@M(cemToplamVk)</td>
                         <td class="bd-num">@M(cemAyliq)</td>
                         <td class="bd-num">@M(cemUcAyliq)</td>
                         <td></td>
