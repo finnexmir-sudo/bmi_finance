@@ -1,5 +1,6 @@
 @model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.HrMezuniyyetIndexVM
 @using FinNex.Domain.Entities.HR
+@using FinNex.Application.Common.Extensions
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
@@ -45,7 +46,8 @@
         MezuniyyetNovu.Xestelik               => "Xəstəlik",
         MezuniyyetNovu.Ezamiyyet               => "Ezamiyyət",
         MezuniyyetNovu.DovletVezifelerininIcrasi => "Dövlət Vəzifəsi",
-        _                                      => "Əmək məzuniyyəti"
+        MezuniyyetNovu.Illik                   => "Əmək məzuniyyəti",
+        _                                      => n.Adi()
     };
 
     string NovIcon(MezuniyyetNovu n) => n switch

@@ -5,6 +5,7 @@ using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
+using FinNex.Application.Common.Extensions;
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Maas_If;
@@ -153,14 +154,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(t => t.Departament?.Ad)
                 .FirstOrDefault(s => !string.IsNullOrEmpty(s)) ?? "—";
 
-            string NovText(MezuniyyetNovu n) => n switch
-            {
-                MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
-                MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
-                MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-                _ => n.ToString()
-            };
-
             var mezler = mezEntities.Select(m => new
             {
                 m.Id,
@@ -171,7 +164,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 m.IsGunlerininSayi,
                 IsciAdSoyad = m.Isci?.TamAd ?? "—",
                 SobeAdi = SobeAd(m),
-                NovText = NovText(m.Nov)
+                NovText = m.Nov.Adi()
             }).ToList();
 
             // Bu gün məzuniyyətdə olanlar

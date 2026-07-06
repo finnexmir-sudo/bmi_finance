@@ -1,5 +1,6 @@
 @model FinNex.UI.Areas.User.ViewModels.Tesdiq.TesdiqDetalVM
 @using FinNex.Domain.Entities.HR
+@using FinNex.Application.Common.Extensions
 @{
     ViewData["Title"] = "Məzuniyyət Detalı";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -22,13 +23,6 @@
         _ => s.ToString()
     };
 
-    static string OverlapNovText(MezuniyyetNovu n) => n switch
-    {
-        MezuniyyetNovu.Xestelik => "Xəstəlik",
-        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-        MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
-        _ => n.ToString()
-    };
 }
 
 @section Styles {
@@ -95,7 +89,7 @@
                                 }
                             </div>
                             <div style="font-size:11px;color:#6b7280;margin-top:2px;">
-                                @o.SobeAdi · @OverlapNovText(o.Nov) · @o.IsGunlerininSayi gün
+                                @o.SobeAdi · @o.Nov.Adi() · @o.IsGunlerininSayi gün
                             </div>
                         </div>
                         <div style="font-size:11.5px;color:#1a2332;text-align:right;">

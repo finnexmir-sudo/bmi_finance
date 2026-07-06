@@ -1,6 +1,7 @@
 @model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.HrMezuniyyetDetalVM
 @using FinNex.Domain.Entities.HR
 @using FinNex.Domain
+@using FinNex.Application.Common.Extensions
 @{
     ViewData["Title"] = "Qeyd Detalı";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -28,7 +29,7 @@
         MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
         MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
         MezuniyyetNovu.DovletVezifelerininIcrasi => "Dövlət Vəzifəsi",
-        _ => n.ToString()
+        _ => n.Adi()
     };
 
     static string NovColor(MezuniyyetNovu n) => n switch

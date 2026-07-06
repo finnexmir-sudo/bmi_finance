@@ -1,4 +1,5 @@
 ﻿// FinNex.Application.Services.Communication/EvezediciTesdiqService.cs
+using FinNex.Application.Common.Extensions;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
@@ -252,7 +253,7 @@ namespace FinNex.Application.Services.Communication
             Id = e.Id,
             MezuniyyetId = e.MezuniyyetId,
             MezuniyyetIsciAd = e.Mezuniyyet?.Isci?.TamAd ?? "",
-            MezuniyyetNov = e.Mezuniyyet?.Nov.ToString() ?? "",
+            MezuniyyetNov = e.Mezuniyyet != null ? e.Mezuniyyet.Nov.Adi() : "",
             BaslamaTarixi = e.Mezuniyyet?.BaslamaTarixi ?? DateTime.MinValue,
             BitmeTarixi = e.Mezuniyyet?.BitmeTarixi ?? DateTime.MinValue,
             IsGunu = e.Mezuniyyet?.IsGunlerininSayi ?? 0,

@@ -1,3 +1,4 @@
+using FinNex.Application.Common.Extensions;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 
 namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
@@ -58,13 +59,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
             EvezEdenIsciAdSoyad = dto.EvezEdenIsciAdSoyad,
             EvezediciSecildi = !string.IsNullOrEmpty(dto.EvezEdenIsciAdSoyad),
 
-            NovText = (int)dto.Nov switch
-            {
-                1 => "Əmək məzuniyyəti",
-                2 => "Xəstəlik məzuniyyəti",
-                3 => "Ezamiyyət",
-                _ => dto.Nov.ToString()
-            },
+            NovText = dto.Nov.Adi(),
             StatusText = (int)dto.Status switch
             {
                 1 => "Gözləmədə",

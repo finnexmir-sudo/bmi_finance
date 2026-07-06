@@ -1,4 +1,5 @@
 ﻿using FinNex.Domain.Entities.HR;
+using FinNex.Application.Common.Extensions;
 
 namespace FinNex.Application.DTOs.HR.Mezuniyyet
 {
@@ -13,14 +14,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public bool EvezediciSecildi => !string.IsNullOrEmpty(EvezEdenIsciAdSoyad);
         public bool? EvezediciTesdiqlenib { get; set; } // null=gözlənilir, true=qəbul, false=rədd
 
-        public string NovText => Nov switch
-        {
-            MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
-            MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
-            MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-            MezuniyyetNovu.DovletVezifelerininIcrasi => "Dövlət Vəzifəsi",
-            _ => Nov.ToString()
-        };
+        public string NovText => Nov.Adi();
 
         public MezuniyyetNovu Nov { get; set; }
         public MezuniyyetStatus Status { get; set; }

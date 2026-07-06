@@ -1,5 +1,6 @@
 @model List<FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetListDto>
 @using FinNex.Domain.Entities.HR
+@using FinNex.Application.Common.Extensions
 @{
     ViewData["Title"] = "Aktiv Məzuniyyətlər";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -29,7 +30,7 @@
         MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
         MezuniyyetNovu.Xestelik => "Xəstəlik",
         MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-        _ => n.ToString()
+        _ => n.Adi()
     };
 
     int GunHesabla(DateTime from, DateTime to) => Math.Max(0, (to.Date - from.Date).Days);

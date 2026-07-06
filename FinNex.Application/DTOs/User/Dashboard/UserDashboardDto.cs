@@ -1,4 +1,5 @@
 ﻿using FinNex.Domain.Entities.HR;
+using FinNex.Application.Common.Extensions;
 
 namespace FinNex.Application.DTOs.HR.Dashboard
 {
@@ -102,13 +103,7 @@ namespace FinNex.Application.DTOs.HR.Dashboard
             _ => "Naməlum"
         };
 
-        public string NovAd => Nov switch
-        {
-            MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
-            MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
-            MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-            _ => "Digər"
-        };
+        public string NovAd => Nov.Adi();
     }
 
     // ── Bildiriş sətri ───────────────────────────────────────

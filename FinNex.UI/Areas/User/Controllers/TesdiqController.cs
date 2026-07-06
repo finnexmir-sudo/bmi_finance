@@ -1,3 +1,4 @@
+using FinNex.Application.Common.Extensions;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
@@ -178,13 +179,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 IsMezuniyyet = true,
                 OverlapMezuniyyetler = overlap.Success ? overlap.Data!.ToList() : new(),
                 EvezediciKonfliktleri = konflikt.Success ? konflikt.Data!.ToList() : new(),
-                NovText = (int)dto.Nov switch
-                {
-                    1 => "Əmək məzuniyyəti",
-                    2 => "Xəstəlik məzuniyyəti",
-                    3 => "Ezamiyyət",
-                    _ => dto.Nov.ToString()
-                },
+                NovText = dto.Nov.Adi(),
                 BaslamaTarixi = dto.BaslamaTarixi,
                 BitmeTarixi = dto.BitmeTarixi,
                 IsGunlerininSayi = dto.IsGunlerininSayi,
