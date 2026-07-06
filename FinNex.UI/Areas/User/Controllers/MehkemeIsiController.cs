@@ -296,8 +296,8 @@ public class MehkemeIsiController : Controller
             idx + 1, x.BorcluAd, x.QeydiyyatNomresi, x.Tarix, x.Saat, MerheleTipiAd(x.MerheleTipi),
             x.IsNomresi, x.Hakim, x.Qeyd
         });
-        var bytes = ExcelExportHelper.Yarat("Yaxınlaşan görüşlər", basliqlar, setirler);
-        return File(bytes, ExcelExportHelper.ContentType, $"Yaxinlasan_Goruslar_{DateTime.Now:yyyyMMdd}.xlsx");
+        var bytes = ExcelExportHelper.Yarat("Məhkəmə baxış", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Mehkeme_Baxis_{DateTime.Now:yyyyMMdd}.xlsx");
     }
 
     // ── Enum → mətn (export üçün) ──

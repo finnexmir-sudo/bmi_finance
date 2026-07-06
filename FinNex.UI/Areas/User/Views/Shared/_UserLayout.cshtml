@@ -539,7 +539,7 @@
                     var pidKataloqActive = currentController == "MehkemeIsi" && currentAction == "Kataloq";
                     var pidBildirisActive = currentController == "MehkemeIsi" && currentAction is "Bildirisler" or "BildirisWord";
                     var pidMehkHazirActive = currentController == "MehkemeIsi" && currentAction == "MehkemeHazirliq";
-                    var pidMehkActive  = (currentController == "MehkemeIsi" && currentAction != "Monitorinq" && currentAction != "Kataloq" && currentAction != "Bildirisler" && currentAction != "BildirisWord" && currentAction != "MehkemeHazirliq")
+                    var pidMehkActive  = (currentController == "MehkemeIsi" && currentAction != "Monitorinq" && currentAction != "Kataloq" && currentAction != "Bildirisler" && currentAction != "BildirisWord")
                                          || currentController is "OdenisNezareti" or "MehkemeCedvel";
 
                     IList<FinNex.Application.DTOs.Pid.KataloqSecimDto> pidSorgular = new List<FinNex.Application.DTOs.Pid.KataloqSecimDto>();
@@ -553,7 +553,7 @@
                        class="fn-nav-item @(pidMonitorActive ? "active" : "")" style="margin-bottom:4px">
                         <i class="bi bi-speedometer2"></i> Monitorinq
                     </a>
-                    <div class="fn-nav-g @((pidKataloqActive || pidBildirisActive || pidMehkHazirActive) ? "open" : "")">
+                    <div class="fn-nav-g @((pidKataloqActive || pidBildirisActive) ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Sorğular</span>
                             <i class="bi bi-chevron-down"></i>
@@ -563,20 +563,12 @@
                                class="fn-nav-item @(pidBildirisActive ? "active" : "")">
                                 <i class="bi bi-envelope-paper"></i> Bildirişə düşənlər
                             </a>
-                            <a asp-area="User" asp-controller="MehkemeIsi" asp-action="MehkemeHazirliq"
-                               class="fn-nav-item @(pidMehkHazirActive ? "active" : "")">
-                                <i class="bi bi-briefcase"></i> Məhkəməyə hazırlıq
-                            </a>
                             @foreach (var sorgu in pidSorgular)
                             {
                                 <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Kataloq" asp-route-sorguId="@sorgu.Id"
                                    class="fn-nav-item @(pidKataloqActive && pidSeciliSorgu == sorgu.Id ? "active" : "")">
                                     <i class="bi bi-table"></i> @sorgu.Ad
                                 </a>
-                            }
-                            @if (pidSorgular.Count == 0)
-                            {
-                                <span class="fn-nav-item" style="opacity:.55;cursor:default">— sorğu yoxdur —</span>
                             }
                         </div>
                     </div>
@@ -608,6 +600,10 @@
                                class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Index" ? "active" : "")">
                                 <i class="bi bi-people"></i> Aktiv Müştərilər
                             </a>
+                            <a asp-area="User" asp-controller="MehkemeIsi" asp-action="MehkemeHazirliq"
+                               class="fn-nav-item @(pidMehkHazirActive ? "active" : "")">
+                                <i class="bi bi-briefcase"></i> Məhkəməyə hazırlıq
+                            </a>
                             <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Isler"
                                class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Isler" ? "active" : "")">
                                 <i class="bi bi-bank"></i> Məhkəmə İşləri
@@ -618,7 +614,7 @@
                             </a>
                             <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Gorusler"
                                class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Gorusler" ? "active" : "")">
-                                <i class="bi bi-calendar-event"></i> Yaxınlaşan görüşlər
+                                <i class="bi bi-calendar-event"></i> Məhkəmə baxış
                             </a>
                             <a asp-area="User" asp-controller="OdenisNezareti" asp-action="Index"
                                class="fn-nav-item @(currentController == "OdenisNezareti" ? "active" : "")">
