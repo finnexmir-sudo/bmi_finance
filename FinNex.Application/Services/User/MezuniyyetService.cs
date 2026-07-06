@@ -497,14 +497,19 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         {
             await NotifyIsciFinalApproveAsync(m);
 
-            // Ödəniş tipinə görə Mühasibi məlumatlandır.
-            if (m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+            // Ödəniş tipinə görə Mühasibi məlumatlandır — YALNIZ ödənişli məzuniyyətdə.
+            // Öz hesabına (ödənişsiz, Ə.M. 129) məzuniyyət haqqı YOXDUR → Mühasibə
+            // ödəniş bildirişi getməməlidir (real ödəniş 0-dır, yanıldıcı olardı).
+            if (m.Nov != MezuniyyetNovu.OzHesabina)
             {
-                await NotifyMuhasibForAdvancePaymentAsync(m);
-            }
-            else if (m.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis)
-            {
-                await NotifyMuhasibForMonthEndPaymentAsync(m);
+                if (m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+                {
+                    await NotifyMuhasibForAdvancePaymentAsync(m);
+                }
+                else if (m.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis)
+                {
+                    await NotifyMuhasibForMonthEndPaymentAsync(m);
+                }
             }
         }
         else
