@@ -11,6 +11,7 @@ using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, MezuniyyetCreateDto, MezuniyyetUpdateDto>, IMezuniyyetService
@@ -20,6 +21,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     private readonly IBildirisRouter _bildirisRouter;
     private readonly IJetonService _jetonService;
     private readonly IEmrService _emrService;
+    private readonly UserManager<AppUser> _userManager;
 
     public MezuniyyetService(
         IUnitOfWork unitOfWork,
@@ -28,7 +30,8 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         IMaasHesablamaService maasHesablamaService,
         IBildirisRouter bildirisRouter,
         IJetonService jetonService,
-        IEmrService emrService)
+        IEmrService emrService,
+        UserManager<AppUser> userManager)
         : base(unitOfWork, mapper)
     {
         _evezediciTesdiqService = evezediciTesdiqService;
@@ -36,6 +39,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         _bildirisRouter = bildirisRouter;
         _jetonService = jetonService;
         _emrService = emrService;
+        _userManager = userManager;
     }
 
     
@@ -304,39 +308,46 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         m.RehberId = rehberId;
         m.RehberTesdiqTarixi = DateTime.Now;
 
+        // ── İMTİNA ──────────────────────────────────────────────
         if (!status)
         {
             m.Status = MezuniyyetStatus.ImtinaEdildi;
             m.ImtinaSebebi = qeyd;
-        }
-        else
-        {
-            // Müraciəti edən işçinin HR rolu olub-olmadığını yoxla — varsa HR step atlanır
-            var muracietciHrdir = await _unitOfWork.Repository<IsciStrukturRolu>()
-                .MovcuddurmuAsync(x =>
-                    x.IsciId == m.IsciId &&
-                    x.RolTipi == StrukturRolTipi.Hr &&
-                    x.Aktivdir);
-
-            m.Status = muracietciHrdir
-                ? MezuniyyetStatus.Tesdiqlenib
-                : MezuniyyetStatus.HrTesdiqinde;
+            await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+            await _unitOfWork.YaddaSaxlaAsync();
+            await NotifyIsciProgressAsync(m, "Rəhbər", false, qeyd);
+            return Result.Ok("Rəhbər qərarı qeydə alındı.");
         }
 
-        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m); // ← explicit update
+        // ── TƏSDİQ ──────────────────────────────────────────────
+        // Növbəti mərhələ HR-dır. LAKİN müraciəti edən özü HR-dırsa HR mərhələsi
+        // atlanır (öz müraciətini təsdiqləməsin). HR təyini bütün sistemlə EYNİ
+        // mənbədən — Identity rolu (RoleNames.HR) — götürülür. (Əvvəl IsciStrukturRolu
+        // yoxlanırdı; Identity-HR olan, amma struktur qeydi olmayan işçidə atlama
+        // işləmir, müraciət HR mərhələsində ilişir və HR-a bildiriş getmirdi.)
+        var muracietciAppUser = await _userManager.Users
+            .FirstOrDefaultAsync(u => u.IsciId == m.IsciId);
+        var muracietciHrdir = muracietciAppUser != null
+            && await _userManager.IsInRoleAsync(muracietciAppUser, RoleNames.HR);
+
+        m.Status = MezuniyyetStatus.HrTesdiqinde;
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        if (status)
+        await NotifyIsciProgressAsync(m, "Rəhbər", true, qeyd);
+
+        if (muracietciHrdir)
         {
-            await NotifyIsciProgressAsync(m, "Rəhbər", true, qeyd);
-            if (m.Status == MezuniyyetStatus.HrTesdiqinde)
-                await NotifyAllHrAsync(m);
-        }
-        else
-        {
-            await NotifyIsciProgressAsync(m, "Rəhbər", false, qeyd);
+            // HR müraciətçidir → HR mərhələsi atlanır və dərhal YEKUN rəsmiləşdirilir.
+            // Finalizasiya (əmr, balans, davamiyyət, ödəniş bildirişi) TAM getsin deyə
+            // HrTesdiqAsync-ə deleqasiya olunur — inline "Təsdiqlənib" qoymaq bu addımları
+            // buraxardı və yarımçıq təsdiq yaradardı (əmrsiz, davamiyyətsiz).
+            // verenId = müraciətçinin özü (o, HR-dır; məzuniyyət əmrini HR verir).
+            return await HrTesdiqAsync(m.Id, true, qeyd, m.IsciId);
         }
 
+        // Adi işçi — HR mərhələsində qalır, HR-lara bildiriş gedir.
+        await NotifyAllHrAsync(m);
         return Result.Ok("Rəhbər qərarı qeydə alındı.");
     }
     // HrTesdiqAsync metodu
