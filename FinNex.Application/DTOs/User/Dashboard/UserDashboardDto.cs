@@ -45,6 +45,11 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public double IcazeIstifadeSaat { get; set; }
         public double IcazeQaligSaat => IcazeSaatLimiti - IcazeIstifadeSaat;
 
+        // ── Gecikmə (cari il) ────────────────────────────────
+        // Gün sayı = Status==Gecikme; toplam saat = (giriş − standart giriş) cəmi.
+        public int GecikmeGunSayi { get; set; }
+        public double GecikmeToplamSaat { get; set; }
+
         // ── Davamiyyət təqvimi (cari ay günlər) ──────────────
         public List<DashboardDavamiyyetGunDto> DavamiyyetTakvim { get; set; } = new();
 

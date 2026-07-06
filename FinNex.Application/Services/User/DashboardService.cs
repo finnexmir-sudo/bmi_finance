@@ -237,6 +237,22 @@ namespace FinNex.Application.Services
                         - (double)x.JetonOdenenSaat
                         - (x.NaharNezereAlinmasin ? naharSaat : 0))), 2);
 
+                // ── 6d. Gecikmə balansı (cari il) ────────────────────────
+                // Gün = Status==Gecikme; toplam saat = (faktiki giriş − standart giriş) cəmi.
+                var standartGiris = izParam?.StandartGirisVaxti ?? new TimeSpan(9, 0, 0);
+                var ilinGecikmeleri = await _unitOfWork.Repository<Davamiyyet>()
+                    .HamisiniGetirAsync(
+                        x => x.IsciId == isci.Id && !x.Silinib
+                          && x.Status == DavamiyyetStatus.Gecikme
+                          && x.Tarix.Year == cariIl,
+                        izlemeden: true);
+
+                dto.GecikmeGunSayi = ilinGecikmeleri.Count;
+                dto.GecikmeToplamSaat = Math.Round(
+                    ilinGecikmeleri
+                        .Where(x => x.GirisVaxti.HasValue)
+                        .Sum(x => Math.Max(0, (x.GirisVaxti!.Value.TimeOfDay - standartGiris).TotalHours)), 2);
+
                 // ── 7. Bildirişlər ────────────────────────────────────────
                 // Sadə qaydalar: son maaş, imtina, workflow dəyişikliyi
                 dto.Bildiriler = BuildBildiriler(dto);

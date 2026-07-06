@@ -43,6 +43,10 @@ namespace FinNex.UI.Areas.User.Models
         public double IcazeFaizi => IcazeSaatLimiti > 0
             ? Math.Min(100, Math.Round(IcazeIstifadeSaat / IcazeSaatLimiti * 100)) : 0;
 
+        // ── Gecikmə (cari il) ───────────────────────────────────
+        public int GecikmeGunSayi { get; set; }
+        public double GecikmeToplamSaat { get; set; }
+
         // ── Siyahılar (string-based VM sinifləri) ───────────────
         public List<DavamiyyetGunVM> DavamiyyetTakvim { get; set; } = new();
         public List<MaasVM> SonOdenisler { get; set; } = new();
@@ -73,6 +77,8 @@ namespace FinNex.UI.Areas.User.Models
 
             IcazeSaatLimiti = dto.IcazeSaatLimiti,
             IcazeIstifadeSaat = dto.IcazeIstifadeSaat,
+            GecikmeGunSayi = dto.GecikmeGunSayi,
+            GecikmeToplamSaat = dto.GecikmeToplamSaat,
 
             DavamiyyetTakvim = dto.DavamiyyetTakvim
                 .Select(g => new DavamiyyetGunVM

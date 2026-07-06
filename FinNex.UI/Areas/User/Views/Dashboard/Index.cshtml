@@ -81,43 +81,57 @@
         @* ── 2 sütunlu grid ── *@
         <div class="fn-grid2">
 
-            @* ── İcazə saatı (illik) — yuxarıda, tam en, gözə girən ── *@
-            <div class="fn-card fn-card--full" style="border-left:4px solid @(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")">
-                <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
-                    <div style="min-width:170px">
-                        <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.3px">
-                            İcazə saatı — illik
-                        </div>
-                        <div style="font-size:24px;font-weight:800;color:#1a2332;margin-top:2px">
-                            @Model.IcazeIstifadeSaat.ToString("0.##")
-                            <span style="font-size:14px;color:#94a3b8;font-weight:600">/ @Model.IcazeSaatLimiti.ToString("0.##") saat</span>
-                        </div>
-                    </div>
-
-                    <div style="flex:1;min-width:200px">
-                        <div class="fn-lb-track" style="height:14px">
-                            <div class="fn-lb-fill"
-                                 style="width:@(Model.IcazeFaizi)%;background:@(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")"></div>
-                        </div>
-                    </div>
-
-                    <div style="text-align:right;min-width:150px;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            @* ── İcazə saatı (bu il) — yuxarıda, gözə girən ── *@
+            <div class="fn-card" style="border-left:4px solid @(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">İcazə saatı — bu il</div>
+                    <a asp-area="User" asp-controller="Icaze" asp-action="Index" class="fn-card-link">Hamısı →</a>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin:8px 0 12px">
+                    <span style="font-size:28px;font-weight:800;color:#1a2332">@Model.IcazeIstifadeSaat.ToString("0.##")</span>
+                    <span style="font-size:14px;color:#94a3b8;font-weight:600">/ @Model.IcazeSaatLimiti.ToString("0.##") saat</span>
+                </div>
+                <div class="fn-lb-track" style="height:12px">
+                    <div class="fn-lb-fill" style="width:@(Model.IcazeFaizi)%;background:@(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")"></div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px">
+                    <span style="font-weight:800;color:@(Model.IcazeAsib ? "#dc2626" : "#1e9b6b")">
                         @if (Model.IcazeAsib)
                         {
-                            <span style="font-size:16px;font-weight:800;color:#dc2626">
-                                +@((Model.IcazeIstifadeSaat - Model.IcazeSaatLimiti).ToString("0.##")) saat aşıb
-                            </span>
+                            <text>+@((Model.IcazeIstifadeSaat - Model.IcazeSaatLimiti).ToString("0.##")) saat aşıb</text>
                         }
                         else
                         {
-                            <span style="font-size:16px;font-weight:800;color:#1e9b6b">
-                                @Model.IcazeQaligSaat.ToString("0.##") saat qalıb
-                            </span>
+                            <text>@Model.IcazeQaligSaat.ToString("0.##") saat qalıb</text>
                         }
-                        <a asp-area="User" asp-controller="Icaze" asp-action="Create"
-                           class="fn-btn fn-btn--primary fn-btn--sm">+ İcazə istə</a>
+                    </span>
+                    <a asp-area="User" asp-controller="Icaze" asp-action="Create"
+                       class="fn-btn fn-btn--primary fn-btn--sm">+ İcazə istə</a>
+                </div>
+            </div>
+
+            @* ── Gecikmə (bu il) — İcazə card-ının yanında ── *@
+            <div class="fn-card" style="border-left:4px solid #f59e0b">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">Gecikmə — bu il</div>
+                    <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index" class="fn-card-link">Hamısı →</a>
+                </div>
+                <div style="display:flex;gap:28px;margin-top:14px">
+                    <div>
+                        <div style="font-size:28px;font-weight:800;color:#d97706">@Model.GecikmeGunSayi</div>
+                        <div style="font-size:12px;color:#64748b;font-weight:600">gün gecikib</div>
+                    </div>
+                    <div style="border-left:1px solid #e2e8f0;padding-left:24px">
+                        <div style="font-size:28px;font-weight:800;color:#d97706">@Model.GecikmeToplamSaat.ToString("0.##")</div>
+                        <div style="font-size:12px;color:#64748b;font-weight:600">toplam saat</div>
                     </div>
                 </div>
+                @if (Model.GecikmeGunSayi == 0)
+                {
+                    <div style="margin-top:12px;font-size:12.5px;color:#1e9b6b;font-weight:600">
+                        <i class="bi bi-check-circle"></i> Bu il gecikmə yoxdur
+                    </div>
+                }
             </div>
 
             @* ── Davamiyyət təqvimi ── *@
