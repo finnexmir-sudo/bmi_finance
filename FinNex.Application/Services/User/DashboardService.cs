@@ -252,6 +252,9 @@ namespace FinNex.Application.Services
                     ilinGecikmeleri
                         .Where(x => x.GirisVaxti.HasValue)
                         .Sum(x => Math.Max(0, (x.GirisVaxti!.Value.TimeOfDay - standartGiris).TotalHours)), 2);
+                dto.GecikmeSonTarix = ilinGecikmeleri.Count > 0
+                    ? ilinGecikmeleri.Max(x => x.Tarix)
+                    : (DateTime?)null;
 
                 // ── 7. Bildirişlər ────────────────────────────────────────
                 // Sadə qaydalar: son maaş, imtina, workflow dəyişikliyi

@@ -46,6 +46,7 @@ namespace FinNex.UI.Areas.User.Models
         // ── Gecikmə (cari il) ───────────────────────────────────
         public int GecikmeGunSayi { get; set; }
         public double GecikmeToplamSaat { get; set; }
+        public DateTime? GecikmeSonTarix { get; set; }
 
         // ── Siyahılar (string-based VM sinifləri) ───────────────
         public List<DavamiyyetGunVM> DavamiyyetTakvim { get; set; } = new();
@@ -79,6 +80,7 @@ namespace FinNex.UI.Areas.User.Models
             IcazeIstifadeSaat = dto.IcazeIstifadeSaat,
             GecikmeGunSayi = dto.GecikmeGunSayi,
             GecikmeToplamSaat = dto.GecikmeToplamSaat,
+            GecikmeSonTarix = dto.GecikmeSonTarix,
 
             DavamiyyetTakvim = dto.DavamiyyetTakvim
                 .Select(g => new DavamiyyetGunVM

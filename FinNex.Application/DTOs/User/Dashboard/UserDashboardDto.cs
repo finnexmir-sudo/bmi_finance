@@ -49,6 +49,7 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         // Gün sayı = Status==Gecikme; toplam saat = (giriş − standart giriş) cəmi.
         public int GecikmeGunSayi { get; set; }
         public double GecikmeToplamSaat { get; set; }
+        public DateTime? GecikmeSonTarix { get; set; }
 
         // ── Davamiyyət təqvimi (cari ay günlər) ──────────────
         public List<DashboardDavamiyyetGunDto> DavamiyyetTakvim { get; set; } = new();
