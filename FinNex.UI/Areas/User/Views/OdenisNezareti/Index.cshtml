@@ -1,215 +1,201 @@
 @using FinNex.Application.DTOs.Pid
-@using FinNex.Domain.Entities.Pid
-@model IList<OdenisNezaretiDto>
+@model OdenisNezaretSiyahiDto
 @{
     ViewData["Title"] = "Ödənişə Nəzarət";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    var balansFiltri = ViewData["BalansFiltri"] as BalansNovu?;
-    var axtaris = ViewData["Axtaris"] as string;
+
+    Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
+    Func<int?, string> GunCls = g => g == null ? "" : g <= 30 ? "on-gun--yeni" : g <= 90 ? "on-gun--orta" : "on-gun--kohne";
 }
 
 <style>
     .on-wrap { padding: 4px 0; }
+    .on-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .on-stat { flex: 1 1 150px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; }
+    .on-stat-num { font-size: 22px; font-weight: 800; line-height: 1.1; }
+    .on-stat-lbl { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .on-stat--all .on-stat-num { color: #334155; }
+    .on-stat--ok .on-stat-num { color: #16a34a; }
+    .on-stat--no .on-stat-num { color: #dc2626; }
     .on-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
     .on-inp { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; }
     .on-inp:focus { border-color: #6366f1; }
     .on-grow { flex: 1 1 260px; }
+    .on-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #334155; cursor: pointer; user-select: none;
+              padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .on-chk input { accent-color: #dc2626; }
     .on-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; }
-    .on-btn--p { background: #6366f1; color: #fff; }
     .on-btn--g { background: #fff; color: #334155; border: 1.5px solid #e2e8f0; }
     .on-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-    .on-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .on-table thead th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+    .on-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+    .on-table thead th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; }
     .on-table td { padding: 9px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }
     .on-table tbody tr:hover { background: #fafbff; }
-    .on-bal { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; white-space: nowrap; }
-    .on-bal--b { background: #dbeafe; color: #1d4ed8; }
-    .on-bal--bk { background: #fef3c7; color: #b45309; }
+    .on-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .on-col-odenis { background: #fffdf5; }
+    .on-table thead th.on-col-odenis { background: #fef9ec; }
+    .on-mono { font-family: ui-monospace, monospace; }
+    .on-ks { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #eef2ff; color: #4338ca; font-size: 11px; font-weight: 800; margin-left: 4px; }
+    .on-status { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; background: #f1f5f9; color: #475569; white-space: nowrap; }
+    .on-odate { font-weight: 700; color: #0f172a; }
+    .on-gun { display: block; font-size: 11px; margin-top: 1px; }
+    .on-gun--yeni { color: #16a34a; }
+    .on-gun--orta { color: #b45309; }
+    .on-gun--kohne { color: #dc2626; }
+    .on-noodenis { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; background: #fee2e2; color: #b91c1c; }
     .on-muted { color: #cbd5e1; }
-    .on-act { display: inline-flex; gap: 5px; }
-    .on-iconbtn { border: 1.5px solid #e2e8f0; background: #fff; border-radius: 7px; padding: 4px 9px; cursor: pointer; font-size: 12px; color: #334155; }
-    .on-iconbtn--del { color: #b91c1c; border-color: #fecaca; }
+    .on-sub { font-size: 11px; color: #94a3b8; }
     .on-empty { text-align: center; padding: 40px; color: #94a3b8; }
     .on-foot { padding: 10px 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; }
+    .on-notice { background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 28px; color: #64748b; text-align: center; }
+    .on-notice code { background: #f1f5f9; padding: 2px 6px; border-radius: 5px; color: #334155; }
 </style>
 
 <div class="on-wrap">
 
-    @if (TempData["Success"] != null)
+    @if (!Model.SorguTapildi)
     {
-        <div class="alert alert-success py-2">@TempData["Success"]</div>
+        <div class="on-notice">
+            <i class="bi bi-database-x" style="font-size:2rem;display:block;margin-bottom:10px"></i>
+            <div style="font-weight:700;color:#334155;margin-bottom:6px">Oracle sorğusu tapılmadı</div>
+            <div>Admin → <b>Oracle Sorğular</b> bölməsində adında <code>Ödəniş</code> və <code>Nəzarət</code> olan
+                 <b>aktiv</b> sorğu yaradın (məs. <code>PID Ödənişə Nəzarət</code>).</div>
+        </div>
     }
-    @if (TempData["Error"] != null)
+    else if (Model.Xeta != null)
     {
-        <div class="alert alert-danger py-2">@TempData["Error"]</div>
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Oracle sorğusu icra olunmadı:<br />
+            <small style="font-family:ui-monospace,monospace">@Model.Xeta</small>
+        </div>
     }
+    else
+    {
+        <div class="on-stats">
+            <div class="on-stat on-stat--all">
+                <div class="on-stat-num">@Model.CemMusteri</div>
+                <div class="on-stat-lbl">Cəmi aktiv müştəri</div>
+            </div>
+            <div class="on-stat on-stat--ok">
+                <div class="on-stat-num">@Model.OdenisEdenSay</div>
+                <div class="on-stat-lbl">Ödənişi olan</div>
+            </div>
+            <div class="on-stat on-stat--no">
+                <div class="on-stat-num">@Model.OdenisEtmeyenSay</div>
+                <div class="on-stat-lbl">Ödənişi olmayan</div>
+            </div>
+        </div>
 
-    <form method="get" class="on-bar">
-        <input type="text" name="axtaris" value="@axtaris" class="on-inp on-grow" placeholder="🔍 Müştəri adı və ya hesab № axtar…" />
-        <select name="balans" class="on-inp">
-            <option value="">Hamısı (balans + b-k)</option>
-            <option value="Balans" selected="@(balansFiltri == BalansNovu.Balans)">Yalnız Balans</option>
-            <option value="BalansdanKenar" selected="@(balansFiltri == BalansNovu.BalansdanKenar)">Yalnız Balansdan kənar</option>
-        </select>
-        <button type="submit" class="on-btn on-btn--g"><i class="bi bi-funnel"></i> Filtr</button>
-        <a asp-action="IndexExcel" asp-route-balans="@balansFiltri" asp-route-axtaris="@axtaris" class="on-btn on-btn--g"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
-        <button type="button" class="on-btn on-btn--p" style="margin-left:auto" onclick="onOpenAdd()">
-            <i class="bi bi-plus-lg"></i> Yeni qeyd
-        </button>
-    </form>
+        <div class="on-bar">
+            <input type="text" id="onAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, kredit hesabı və ya status axtar…" />
+            <label class="on-chk">
+                <input type="checkbox" id="onYalnizNo" /> Yalnız ödənişi olmayanlar
+            </label>
+            <a asp-action="IndexExcel" class="on-btn on-btn--g" style="margin-left:auto"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
+        </div>
 
-    <div class="on-card">
-        <div style="overflow-x:auto">
-            <table class="on-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Balans / B-K</th>
-                        <th>Müştəri</th>
-                        <th>Hesab №</th>
-                        <th>Təyinat</th>
-                        <th>Gələn pulun son tarixi</th>
-                        <th>Ödənişin vəziyyəti</th>
-                        <th>Qeyd</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Any())
-                    {
-                        var i = 1;
-                        @foreach (var x in Model)
+        <div class="on-card">
+            <div style="overflow-x:auto;max-height:70vh;overflow-y:auto">
+                <table class="on-table" id="onTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Region</th>
+                            <th>Müştəri</th>
+                            <th>Kredit hesabı</th>
+                            <th>Kreditin növü</th>
+                            <th class="on-num">Tam qalıq</th>
+                            <th class="on-num">Qalıq</th>
+                            <th class="on-num">V/K qalıq</th>
+                            <th>Status</th>
+                            <th class="on-col-odenis">Son ödəniş tarixi</th>
+                            <th class="on-num on-col-odenis">Ödəniş cəmi</th>
+                            <th class="on-num on-col-odenis">Sayı</th>
+                        </tr>
+                    </thead>
+                    <tbody id="onBody">
+                        @if (Model.Setirler.Any())
                         {
-                            <tr>
-                                <td>@(i++)</td>
-                                <td>
-                                    <span class="on-bal @(x.BalansNovu == BalansNovu.BalansdanKenar ? "on-bal--bk" : "on-bal--b")">
-                                        @x.BalansNovuAd
-                                    </span>
-                                </td>
-                                <td style="font-weight:600">@x.MusteriAdi</td>
-                                <td style="font-family:ui-monospace,monospace">@(string.IsNullOrWhiteSpace(x.HesabNomresi) ? "—" : x.HesabNomresi)</td>
-                                <td>@(string.IsNullOrWhiteSpace(x.Teyinat) ? "—" : x.Teyinat)</td>
-                                <td>@(x.SonOdenisTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
-                                <td>@(string.IsNullOrWhiteSpace(x.OdenisVeziyyeti) ? "—" : x.OdenisVeziyyeti)</td>
-                                <td style="max-width:220px;white-space:normal">@(string.IsNullOrWhiteSpace(x.Qeyd) ? "—" : x.Qeyd)</td>
-                                <td>
-                                    <div class="on-act">
-                                        <button type="button" class="on-iconbtn"
-                                                data-id="@x.Id"
-                                                data-balans="@((int)x.BalansNovu)"
-                                                data-ad="@x.MusteriAdi"
-                                                data-hesab="@x.HesabNomresi"
-                                                data-teyinat="@x.Teyinat"
-                                                data-tarix="@(x.SonOdenisTarixi?.ToString("yyyy-MM-dd"))"
-                                                data-veziyyet="@x.OdenisVeziyyeti"
-                                                data-qeyd="@x.Qeyd"
-                                                onclick="onOpenEdit(this)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <form asp-action="Sil" method="post" onsubmit="return confirm('Bu qeyd silinsin?');" style="display:inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@x.Id" />
-                                            <button type="submit" class="on-iconbtn on-iconbtn--del"><i class="bi bi-trash"></i></button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
+                            var i = 1;
+                            @foreach (var x in Model.Setirler)
+                            {
+                                <tr data-search="@((x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "")).ToLowerInvariant())"
+                                    data-noodenis="@(x.OdenisYox ? "1" : "0")">
+                                    <td>@(i++)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(x.Region) ? "—" : x.Region)</td>
+                                    <td style="font-weight:600">@x.Musteri</td>
+                                    <td class="on-mono">
+                                        @(string.IsNullOrWhiteSpace(x.KreditHesabi) ? "—" : x.KreditHesabi)
+                                        @if (!string.IsNullOrWhiteSpace(x.Ks)) { <span class="on-ks">@x.Ks</span> }
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(x.KreditinNovu) ? "—" : x.KreditinNovu)</td>
+                                    <td class="on-num">@Pul(x.TamQaliq)</td>
+                                    <td class="on-num">@Pul(x.Qaliq)</td>
+                                    <td class="on-num">@Pul(x.VkQaliq)</td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(x.Status))
+                                        {
+                                            <span class="on-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="on-status">@x.Status</span>
+                                        }
+                                    </td>
+                                    <td class="on-col-odenis">
+                                        @if (x.OdenisYox)
+                                        {
+                                            <span class="on-noodenis">Ödəniş yoxdur</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="on-odate">@x.SonOdenisTarixi</span>
+                                            <span class="on-gun @GunCls(x.GunEvvel)">@x.GunEvvel gün əvvəl</span>
+                                        }
+                                    </td>
+                                    <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
+                                    <td class="on-num on-col-odenis">@(x.OdenisSayi?.ToString() ?? "—")</td>
+                                </tr>
+                            }
                         }
-                    }
-                    else
-                    {
-                        <tr><td colspan="9"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Hələ qeyd yoxdur. "Yeni qeyd" ilə əlavə edin.</div></td></tr>
-                    }
-                </tbody>
-            </table>
+                        else
+                        {
+                            <tr><td colspan="12"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="on-foot"><span id="onCount">@Model.CemMusteri</span> müştəri</div>
         </div>
-        <div class="on-foot">@Model.Count qeyd</div>
-    </div>
-</div>
-
-<!-- Əlavə / Redaktə modal -->
-<div class="modal fade" id="onModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form id="onForm" method="post" action="@Url.Action("Yarat")"
-                  data-yarat="@Url.Action("Yarat")" data-yenile="@Url.Action("Yenile")">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="Id" id="onId" />
-                <div class="modal-header">
-                    <h5 class="modal-title" id="onModalTitle">Yeni qeyd</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Balans / B-K</label>
-                            <select name="BalansNovu" class="form-select">
-                                <option value="0">Balans</option>
-                                <option value="1">Balansdan kənar</option>
-                            </select>
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label fw-semibold">Müştəri adı və soyadı *</label>
-                            <input type="text" name="MusteriAdi" class="form-control" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Hesab №</label>
-                            <input type="text" name="HesabNomresi" class="form-control" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Təyinat</label>
-                            <input type="text" name="Teyinat" class="form-control" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Gələn pulun son tarixi</label>
-                            <input type="date" name="SonOdenisTarixi" class="form-control" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ödənişin vəziyyəti</label>
-                            <input type="text" name="OdenisVeziyyeti" class="form-control" placeholder="məs. Ödənilir / Dayanıb / Tam ödənildi" />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Qeyd</label>
-                            <textarea name="Qeyd" class="form-control" rows="2"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bağla</button>
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-floppy"></i> Saxla</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    }
 </div>
 
 @section Scripts {
 <script>
-    var onModalEl = document.getElementById('onModal');
-    var onBsModal = new bootstrap.Modal(onModalEl);
-    var onForm = document.getElementById('onForm');
+    (function () {
+        var axtar = document.getElementById('onAxtar');
+        var yalnizNo = document.getElementById('onYalnizNo');
+        var body = document.getElementById('onBody');
+        var count = document.getElementById('onCount');
+        if (!body) return;
 
-    function onOpenAdd() {
-        onForm.action = onForm.dataset.yarat;
-        onForm.reset();
-        document.getElementById('onId').value = '';
-        document.getElementById('onModalTitle').textContent = 'Yeni qeyd';
-        onBsModal.show();
-    }
+        function suz() {
+            var q = (axtar.value || '').trim().toLowerCase();
+            var onlyNo = yalnizNo.checked;
+            var rows = body.querySelectorAll('tr[data-search]');
+            var gorunen = 0;
+            rows.forEach(function (r) {
+                var okText = !q || r.getAttribute('data-search').indexOf(q) !== -1;
+                var okNo = !onlyNo || r.getAttribute('data-noodenis') === '1';
+                var show = okText && okNo;
+                r.style.display = show ? '' : 'none';
+                if (show) gorunen++;
+            });
+            count.textContent = gorunen;
+        }
 
-    function onOpenEdit(btn) {
-        onForm.action = onForm.dataset.yenile;
-        document.getElementById('onId').value = btn.dataset.id;
-        onForm.BalansNovu.value = btn.dataset.balans || '0';
-        onForm.MusteriAdi.value = btn.dataset.ad || '';
-        onForm.HesabNomresi.value = btn.dataset.hesab || '';
-        onForm.Teyinat.value = btn.dataset.teyinat || '';
-        onForm.SonOdenisTarixi.value = btn.dataset.tarix || '';
-        onForm.OdenisVeziyyeti.value = btn.dataset.veziyyet || '';
-        onForm.Qeyd.value = btn.dataset.qeyd || '';
-        document.getElementById('onModalTitle').textContent = 'Qeydi redaktə et';
-        onBsModal.show();
-    }
+        axtar.addEventListener('input', suz);
+        yalnizNo.addEventListener('change', suz);
+    })();
 </script>
 }

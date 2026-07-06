@@ -28,24 +28,25 @@ public class OdenisNezaretiController : Controller
         return u?.IsciId ?? 0;
     }
 
-    public async Task<IActionResult> Index(BalansNovu? balans, string? axtaris)
+    // Oracle canlı siyahı — Aktiv Müştərilər + ARH_DD son ödəniş (yalnız oxuma)
+    public async Task<IActionResult> Index()
     {
-        var list = await _service.HamisiniGetirAsync(balans, axtaris);
-        ViewData["BalansFiltri"] = balans;
-        ViewData["Axtaris"] = axtaris;
-        return View(list);
+        var vm = await _service.OracleSiyahiAsync();
+        return View(vm);
     }
 
-    // ── Excel export ──────────────────────────────────────────────
-    public async Task<IActionResult> IndexExcel(BalansNovu? balans, string? axtaris)
+    // ── Excel export (Oracle canlı siyahı) ────────────────────────
+    public async Task<IActionResult> IndexExcel()
     {
-        var list = await _service.HamisiniGetirAsync(balans, axtaris);
-        var basliqlar = new[] { "№", "Balans / B-K", "Müştəri", "Hesab №", "Təyinat",
-            "Son ödəniş tarixi", "Ödənişin vəziyyəti", "Qeyd" };
-        var setirler = list.Select((x, idx) => new object?[]
+        var vm = await _service.OracleSiyahiAsync();
+        var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
+            "Tam qalıq", "Qalıq", "V/K qalıq", "Status", "Sistem son əməliyyat",
+            "Son ödəniş tarixi", "Ödəniş cəmi", "Ödəniş sayı" };
+        var setirler = vm.Setirler.Select((x, idx) => new object?[]
         {
-            idx + 1, x.BalansNovuAd, x.MusteriAdi, x.HesabNomresi, x.Teyinat,
-            x.SonOdenisTarixi, x.OdenisVeziyyeti, x.Qeyd
+            idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
+            x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.SistemSonEmel,
+            x.SonOdenisTarixi, x.OdenisCemi, x.OdenisSayi
         });
         var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);
         return File(bytes, ExcelExportHelper.ContentType, $"Odenise_Nezaret_{DateTime.Now:yyyyMMdd}.xlsx");
