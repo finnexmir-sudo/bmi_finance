@@ -128,6 +128,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IKreditZaminService, KreditZaminService>();
         services.AddScoped<IKreditRandevuService, KreditRandevuService>();
         services.AddScoped<IKreditSmsService, KreditSmsService>();
+        services.AddScoped<IKreditMuqavileService, KreditMuqavileService>();
 
         // ── PİD (Problemli İşlər Departamenti) ─────────────────
         services.AddScoped<FinNex.Application.Interfaces.Pid.IPidSmsSablonService,
