@@ -215,6 +215,28 @@ namespace FinNex.Application.Services
                         Status = i.Status
                     }).ToList();
 
+                // ── 6c. İcazə saat balansı (illik 36 saat) ───────────────
+                // İstifadə = cari təqvim ilində təsdiqlənmiş adi icazə saatları.
+                // Jeton ödənən saat (bonus, sayılmır) və istifadə edilməyən nahar
+                // çıxılır — IcazeService.EfektivSaat ilə EYNİ qayda.
+                var izParam = await _unitOfWork.Repository<IsParametri>()
+                    .GetirAsync(x => !x.Silinib);
+                double naharSaat = (izParam?.NaharMuddetDeqiqe ?? 45) / 60.0;
+                var cariIl = DateTime.Today.Year;
+
+                var ilinIcazeleri = await _unitOfWork.Repository<Icaze>()
+                    .HamisiniGetirAsync(
+                        x => x.IsciId == isci.Id && !x.Silinib
+                          && x.Status == IcazeStatus.Tesdiqlenib
+                          && x.IcazeTarixi.Year == cariIl,
+                        izlemeden: true);
+
+                dto.IcazeIstifadeSaat = Math.Round(
+                    ilinIcazeleri.Sum(x => Math.Max(0,
+                        x.IcazeSaati
+                        - (double)x.JetonOdenenSaat
+                        - (x.NaharNezereAlinmasin ? naharSaat : 0))), 2);
+
                 // ── 7. Bildirişlər ────────────────────────────────────────
                 // Sadə qaydalar: son maaş, imtina, workflow dəyişikliyi
                 dto.Bildiriler = BuildBildiriler(dto);

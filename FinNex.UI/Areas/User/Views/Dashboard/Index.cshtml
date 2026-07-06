@@ -255,6 +255,56 @@
                 </div>
             </div>
 
+            @* ── İcazə saatı (illik 36 saat) ── *@
+            <div class="fn-card">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">İcazə saatı</div>
+                    <a asp-area="User" asp-controller="Icaze" asp-action="Index"
+                       class="fn-card-link">Hamısı →</a>
+                </div>
+
+                <div class="fn-lb-list">
+                    <div class="fn-lb">
+                        <div class="fn-lb-top">
+                            <span class="fn-lb-name">İllik istifadə</span>
+                            <span class="fn-lb-val">
+                                <b>@Model.IcazeIstifadeSaat.ToString("0.##")</b> / @Model.IcazeSaatLimiti.ToString("0.##") saat
+                            </span>
+                        </div>
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill"
+                                 style="width:@(Model.IcazeFaizi)%;background:@(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fn-lb">
+                        <div class="fn-lb-top">
+                            <span class="fn-lb-name">@(Model.IcazeAsib ? "Limit aşılıb" : "Qalıq")</span>
+                            @if (Model.IcazeAsib)
+                            {
+                                <span class="fn-lb-val" style="color:#dc2626;font-weight:700">
+                                    +@((Model.IcazeIstifadeSaat - Model.IcazeSaatLimiti).ToString("0.##")) saat artıq
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="fn-lb-val" style="color:#1e9b6b;font-weight:700">
+                                    @Model.IcazeQaligSaat.ToString("0.##") saat qalıb
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fn-lb-actions">
+                    <a asp-area="User" asp-controller="Icaze" asp-action="Create"
+                       class="fn-btn fn-btn--primary fn-btn--sm">+ İcazə istə</a>
+                    <a asp-area="User" asp-controller="Icaze" asp-action="Index"
+                       class="fn-btn fn-btn--outline fn-btn--sm">Bütün icazələr</a>
+                </div>
+            </div>
+
             @* ── Aktiv müraciətlər (tam en) ── *@
             <div class="fn-card fn-card--full">
                 <div class="fn-card-head">

@@ -35,6 +35,14 @@ namespace FinNex.UI.Areas.User.Models
         public int EzamiyyetIstifadeGun { get; set; }
         public int EzamiyyetQaligGun => EzamiyyetToplamGun - EzamiyyetIstifadeGun;
 
+        // ── İcazə saat balansı (illik) ──────────────────────────
+        public double IcazeSaatLimiti { get; set; } = 36;
+        public double IcazeIstifadeSaat { get; set; }
+        public double IcazeQaligSaat => IcazeSaatLimiti - IcazeIstifadeSaat;
+        public bool IcazeAsib => IcazeIstifadeSaat > IcazeSaatLimiti;
+        public double IcazeFaizi => IcazeSaatLimiti > 0
+            ? Math.Min(100, Math.Round(IcazeIstifadeSaat / IcazeSaatLimiti * 100)) : 0;
+
         // ── Siyahılar (string-based VM sinifləri) ───────────────
         public List<DavamiyyetGunVM> DavamiyyetTakvim { get; set; } = new();
         public List<MaasVM> SonOdenisler { get; set; } = new();
@@ -62,6 +70,9 @@ namespace FinNex.UI.Areas.User.Models
             XestelikIstifadeGun = dto.XestelikIstifadeGun,
             EzamiyyetToplamGun = dto.EzamiyyetToplamGun,
             EzamiyyetIstifadeGun = dto.EzamiyyetIstifadeGun,
+
+            IcazeSaatLimiti = dto.IcazeSaatLimiti,
+            IcazeIstifadeSaat = dto.IcazeIstifadeSaat,
 
             DavamiyyetTakvim = dto.DavamiyyetTakvim
                 .Select(g => new DavamiyyetGunVM

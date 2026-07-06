@@ -37,6 +37,14 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public int EzamiyyetToplamGun { get; set; } = 0; // limitsiz
         public int EzamiyyetQaligGun => 0; // limitsiz — qalıq yoxdur
 
+        // ── İcazə saat balansı (illik allowance) ─────────────
+        // İstifadə = təsdiqlənmiş adi icazə saatları (jeton və istifadə edilməyən
+        // nahar çıxılmış — IcazeService.EfektivSaat ilə eyni qayda), cari təqvim ili.
+        // Qalıq mənfi ola bilər (limiti aşıb → gələcəkdə tutulmaya yönləndirmə).
+        public double IcazeSaatLimiti { get; set; } = 36;
+        public double IcazeIstifadeSaat { get; set; }
+        public double IcazeQaligSaat => IcazeSaatLimiti - IcazeIstifadeSaat;
+
         // ── Davamiyyət təqvimi (cari ay günlər) ──────────────
         public List<DashboardDavamiyyetGunDto> DavamiyyetTakvim { get; set; } = new();
 
