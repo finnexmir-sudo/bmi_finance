@@ -187,11 +187,44 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
+                // ── Tədbir (offline görüş) səbəbli gecikmə bağışlanması ──────────────
+                // İşçi həmin gün offline tədbir iştirakçısıdırsa və girişi tədbirin bitmə
+                // saatı + tolerans içindədirsə Gecikmə → İşdə (ADMS mənbə qaydası ilə eyni;
+                // mövcud qeydlərə də tətbiq olunur, çünki onlar artıq Gecikmə saxlanılıb).
+                var gorushBitisDict = new Dictionary<(int, DateTime), TimeSpan>();
+                try
+                {
+                    var gGorushB = (baslangic ?? tarix ?? DateTime.Today).Date;
+                    var gGorushS = (son ?? tarix ?? DateTime.Today).Date;
+                    var gorushlar = await _unitOfWork.Repository<GorushIshtirakci>().Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Gorush.Nov == GorushNovu.Offline
+                                 && x.Gorush.Status != GorushStatus.LegvEdildi
+                                 && x.Gorush.Tarix.Date >= gGorushB && x.Gorush.Tarix.Date <= gGorushS
+                                 && x.Status != IshtirakciStatus.Redd
+                                 && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
+                                 && x.Gorush.BitisSaati != null)
+                        .Select(x => new { x.IsciId, Tarix = x.Gorush.Tarix.Date, Bitis = x.Gorush.BitisSaati!.Value })
+                        .ToListAsync();
+                    foreach (var g in gorushlar)
+                    {
+                        var k = (g.IsciId, g.Tarix);
+                        if (!gorushBitisDict.TryGetValue(k, out var cur) || g.Bitis > cur)
+                            gorushBitisDict[k] = g.Bitis;
+                    }
+                }
+                catch { /* Görüş cədvəli yoxdursa keç */ }
+                var gorushGecikTolerans = TimeSpan.FromMinutes(parametri.GecikmeToleransDeqiqe);
+                bool TedbirBagislanir(Application.DTOs.HR.Davamiyyet.DavamiyyetListDto rec) =>
+                    rec.Status == DavamiyyetStatus.Gecikme
+                    && rec.GirisVaxti.HasValue
+                    && gorushBitisDict.TryGetValue((rec.IsciId, rec.Tarix.Date), out var b)
+                    && rec.GirisVaxti.Value.TimeOfDay <= b + gorushGecikTolerans;
+
                 // status=4 (İcazəli) → "indi icazədə" canlı siyahısı; digər statuslar adi filtr
                 var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
                     ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)).ToList()
                     : status.HasValue
-                        ? umumi.Where(x => (int)x.Status == status.Value).ToList()
+                        ? umumi.Where(x => (int)x.Status == status.Value && !TedbirBagislanir(x)).ToList()
                         : umumi;
 
                 // Nəticədəki bütün tarixlər üçün BayramGunu xüsusi bitmə vaxtlarını toplu çək
@@ -283,7 +316,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         tarix = x.Tarix,
                         girisVaxti = x.GirisVaxti,
                         cixisVaxti = x.CixisVaxti,
-                        status = (int)x.Status,
+                        status = TedbirBagislanir(x) ? (int)DavamiyyetStatus.Isde : (int)x.Status,
                         maasdanKes = x.MaasdanKes,
                         qayibSebebi = x.QayibSebebi ?? "",
                         tezCixan = tezCixanFlag,
@@ -297,7 +330,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 // Stats — umumi üzərindən (məzuniyyətdəkilər İcazəli-dən çıxarılır)
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
-                var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
+                var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme && !TedbirBagislanir(x));
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
                 // İcazəli = (indi fiziki icazədə olanlar) + (təsdiqlənmiş icazəsi olan, amma hələ
                 // qeydə düşməyənlər — səhər/gözləyən icazə). Belə, kart gözlənilən siyahısındakı
@@ -324,7 +357,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
 
                 var enCoxGecikenDept = umumi
-                    .Where(x => x.Status == DavamiyyetStatus.Gecikme)
+                    .Where(x => x.Status == DavamiyyetStatus.Gecikme && !TedbirBagislanir(x))
                     .GroupBy(x => x.DepartamentAd ?? "-")
                     .OrderByDescending(g => g.Count())
                     .Select(g => new { ad = g.Key, say = g.Count() })
