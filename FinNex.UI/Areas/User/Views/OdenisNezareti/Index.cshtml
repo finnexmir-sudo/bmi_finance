@@ -46,6 +46,7 @@
     .on-inp { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; }
     .on-inp:focus { border-color: #6366f1; }
     .on-grow { flex: 1 1 260px; }
+    .on-flt-lbl { font-size: 12px; color: #64748b; white-space: nowrap; font-weight: 600; }
     .on-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #334155; cursor: pointer; user-select: none;
               padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; }
     .on-chk input { accent-color: #dc2626; }
@@ -118,37 +119,43 @@
 
         <div class="on-bar">
             <input type="text" id="onAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, kredit hesabı və ya Item 01 axtar…" />
+
+            <span class="on-flt-lbl">Item 01:</span>
             <select id="onStatus" class="on-inp">
-                <option value="">Bütün Item 01</option>
+                <option value="">hamısı</option>
                 @foreach (var st in statuslar)
                 {
                     <option value="@st.ToLowerInvariant()">@st</option>
                 }
             </select>
-            <select id="onItem10" class="on-inp" title="Item 10 üzrə süz">
-                <option value="">Bütün Item 10</option>
+
+            <span class="on-flt-lbl">Item 10:</span>
+            <select id="onItem10" class="on-inp">
+                <option value="">hamısı</option>
                 @foreach (var it in item10lar)
                 {
                     <option value="@it.ToLowerInvariant()">@it</option>
                 }
             </select>
-            <span style="font-size:12px;color:#94a3b8;white-space:nowrap;">Son ödəniş:</span>
+
+            <span class="on-flt-lbl">Son ödəniş:</span>
             <select id="onIl" class="on-inp" title="Son ödəniş ili">
-                <option value="">Bütün illər</option>
+                <option value="">bütün illər</option>
                 @foreach (var il in iller)
                 {
                     <option value="@il">@il</option>
                 }
             </select>
             <select id="onAy" class="on-inp" title="Son ödəniş ayı">
-                <option value="">Bütün aylar</option>
+                <option value="">bütün aylar</option>
                 @for (int m = 1; m <= 12; m++)
                 {
                     <option value="@m">@ayAdlari[m]</option>
                 }
             </select>
-            <label class="on-chk">
-                <input type="checkbox" id="onYalnizNo" /> Yalnız ödənişi olmayanlar
+
+            <label class="on-chk" title="İl + ay seçiləndə: seçilən ayda ödənişi olmayanları göstərir">
+                <input type="checkbox" id="onYalnizNo" /> Ödənişi olmayanlar
             </label>
             <button type="button" id="onTemizle" class="on-btn on-btn--g"><i class="bi bi-x-circle"></i> Təmizlə</button>
             <a id="onExcel" href="@Url.Action("IndexExcel")" class="on-btn on-btn--g" style="margin-left:auto"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
@@ -172,7 +179,6 @@
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis">Ödəniş cəmi</th>
-                            <th class="on-num on-col-odenis">Sayı</th>
                         </tr>
                     </thead>
                     <tbody id="onBody">
@@ -231,13 +237,12 @@
                                     </td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
-                                    <td class="on-num on-col-odenis">@(x.OdenisSayi?.ToString() ?? "—")</td>
                                 </tr>
                             }
                         }
                         else
                         {
-                            <tr><td colspan="14"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
+                            <tr><td colspan="13"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
                         }
                     </tbody>
                 </table>
@@ -280,15 +285,35 @@
 
         function q() { return (axtar.value || '').trim().toLowerCase(); }
 
-        // Sətir filtrlərə uyğundur? exclude — həmin dropdown-un öz dəyərini nəzərə alma
+        // Kaskad (dropdown opsiyaları) üçün — checkbox nəzərə ALINMIR (o yalnız sətir filtridir)
         function uygun(r, exclude) {
             var s = q();
             if (s && r.search.indexOf(s) === -1) return false;
-            if (yalnizNo.checked && r.noodenis !== '1') return false;
             if (exclude !== 'status' && statusSel.value && r.status !== statusSel.value) return false;
             if (exclude !== 'item10' && item10Sel.value && r.item10 !== item10Sel.value) return false;
             if (exclude !== 'il' && ilSel.value && r.il !== ilSel.value) return false;
             if (exclude !== 'ay' && aySel.value && r.ay !== aySel.value) return false;
+            return true;
+        }
+
+        // Sətir göstərilsin? — "Ödənişi olmayanlar" + il/ay birlikdə seçiləndə: SEÇİLƏN AYDA
+        // ödəniş etməyənlər (son ödəniş həmin aydan ƏVVƏL, ya da heç ödəniş yox). Əks halda adi.
+        function setirGoster(r) {
+            var s = q();
+            if (s && r.search.indexOf(s) === -1) return false;
+            if (statusSel.value && r.status !== statusSel.value) return false;
+            if (item10Sel.value && r.item10 !== item10Sel.value) return false;
+            var ilV = ilSel.value, ayV = aySel.value;
+            if (yalnizNo.checked && ilV && ayV) {
+                if (r.noodenis === '1') return true;            // heç ödəniş yox
+                var rIl = parseInt(r.il, 10);
+                if (isNaN(rIl)) return false;
+                var rAy = parseInt(r.ay, 10), sIl = parseInt(ilV, 10), sAy = parseInt(ayV, 10);
+                return (rIl < sIl) || (rIl === sIl && rAy < sAy); // seçilən aydan əvvəl
+            }
+            if (yalnizNo.checked && r.noodenis !== '1') return false;
+            if (ilV && r.il !== ilV) return false;
+            if (ayV && r.ay !== ayV) return false;
             return true;
         }
 
@@ -314,7 +339,7 @@
 
             var gorunen = 0;
             allRows.forEach(function (r) {
-                var show = uygun(r, null);
+                var show = setirGoster(r);
                 r.el.style.display = show ? '' : 'none';
                 if (show) gorunen++;
             });

@@ -44,16 +44,28 @@ public class OdenisNezaretiController : Controller
         var vm = await _service.OracleSiyahiAsync();
         var setirlerF = vm.Setirler.AsEnumerable();
 
-        if (onlyNo)
-            setirlerF = setirlerF.Where(x => x.OdenisYox);
         if (!string.IsNullOrWhiteSpace(status))
             setirlerF = setirlerF.Where(x => (x.Status ?? "").Trim().ToLowerInvariant() == status.Trim().ToLowerInvariant());
         if (!string.IsNullOrWhiteSpace(item10))
             setirlerF = setirlerF.Where(x => (x.Item10 ?? "").Trim().ToLowerInvariant() == item10.Trim().ToLowerInvariant());
-        if (il.HasValue)
-            setirlerF = setirlerF.Where(x => x.SonOdenisIl == il.Value);
-        if (ay.HasValue)
-            setirlerF = setirlerF.Where(x => x.SonOdenisAy == ay.Value);
+        // "Ödənişi olmayanlar" + il/ay birlikdə → seçilən ayda ödəniş etməyənlər
+        // (son ödəniş həmin aydan əvvəl, ya da heç ödəniş yox). Əks halda adi filtrlər (səhifə JS ilə eyni).
+        if (onlyNo && il.HasValue && ay.HasValue)
+        {
+            var sIl = il.Value; var sAy = ay.Value;
+            setirlerF = setirlerF.Where(x => x.OdenisYox
+                || (x.SonOdenisIl.HasValue && (x.SonOdenisIl.Value < sIl
+                    || (x.SonOdenisIl.Value == sIl && x.SonOdenisAy < sAy))));
+        }
+        else
+        {
+            if (onlyNo)
+                setirlerF = setirlerF.Where(x => x.OdenisYox);
+            if (il.HasValue)
+                setirlerF = setirlerF.Where(x => x.SonOdenisIl == il.Value);
+            if (ay.HasValue)
+                setirlerF = setirlerF.Where(x => x.SonOdenisAy == ay.Value);
+        }
         if (!string.IsNullOrWhiteSpace(axtaris))
         {
             var q = axtaris.Trim().ToLowerInvariant();
