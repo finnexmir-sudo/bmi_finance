@@ -145,11 +145,12 @@
             <label class="on-chk">
                 <input type="checkbox" id="onYalnizNo" /> Yalnız ödənişi olmayanlar
             </label>
-            <a asp-action="IndexExcel" class="on-btn on-btn--g" style="margin-left:auto"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
+            <button type="button" id="onTemizle" class="on-btn on-btn--g"><i class="bi bi-x-circle"></i> Təmizlə</button>
+            <a id="onExcel" href="@Url.Action("IndexExcel")" class="on-btn on-btn--g" style="margin-left:auto"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
         </div>
 
         <div class="on-card">
-            <div style="overflow-x:auto;max-height:70vh;overflow-y:auto">
+            <div style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 320px)">
                 <table class="on-table" id="onTable">
                     <thead>
                         <tr>
@@ -250,31 +251,90 @@
         var ilSel = document.getElementById('onIl');
         var aySel = document.getElementById('onAy');
         var yalnizNo = document.getElementById('onYalnizNo');
+        var btnTemizle = document.getElementById('onTemizle');
+        var excelLink = document.getElementById('onExcel');
         var body = document.getElementById('onBody');
         var count = document.getElementById('onCount');
         if (!body) return;
 
+        var excelBase = excelLink ? excelLink.getAttribute('href') : '';
+
+        // Sətir datasını bir dəfə oxu (kaskad filtr üçün)
+        var allRows = [];
+        body.querySelectorAll('tr[data-search]').forEach(function (r) {
+            allRows.push({
+                el: r,
+                search: r.getAttribute('data-search') || '',
+                noodenis: r.getAttribute('data-noodenis') || '0',
+                status: r.getAttribute('data-status') || '',
+                item10: r.getAttribute('data-item10') || '',
+                il: r.getAttribute('data-il') || '',
+                ay: r.getAttribute('data-ay') || ''
+            });
+        });
+
+        function q() { return (axtar.value || '').trim().toLowerCase(); }
+
+        // Sətir filtrlərə uyğundur? exclude — həmin dropdown-un öz dəyərini nəzərə alma
+        function uygun(r, exclude) {
+            var s = q();
+            if (s && r.search.indexOf(s) === -1) return false;
+            if (yalnizNo.checked && r.noodenis !== '1') return false;
+            if (exclude !== 'status' && statusSel.value && r.status !== statusSel.value) return false;
+            if (exclude !== 'item10' && item10Sel.value && r.item10 !== item10Sel.value) return false;
+            if (exclude !== 'il' && ilSel.value && r.il !== ilSel.value) return false;
+            if (exclude !== 'ay' && aySel.value && r.ay !== aySel.value) return false;
+            return true;
+        }
+
+        // Kaskad: cari filtrə uyğun olmayan seçimləri gizlət; seçili dəyər yoxa çıxarsa sıfırla
+        function opsiyalariYenile(sel, key) {
+            if (!sel) return;
+            var cur = sel.value, curVar = (cur === '');
+            for (var i = 0; i < sel.options.length; i++) {
+                var o = sel.options[i];
+                if (o.value === '') { o.hidden = false; continue; }
+                var movcud = allRows.some(function (r) { return r[key] === o.value && uygun(r, key); });
+                o.hidden = !movcud;
+                if (o.value === cur && movcud) curVar = true;
+            }
+            if (!curVar) sel.value = '';
+        }
+
         function suz() {
-            var q = (axtar.value || '').trim().toLowerCase();
-            var onlyNo = yalnizNo.checked;
-            var st = statusSel ? statusSel.value : '';
-            var it10 = item10Sel ? item10Sel.value : '';
-            var ilVal = ilSel ? ilSel.value : '';
-            var ayVal = aySel ? aySel.value : '';
-            var rows = body.querySelectorAll('tr[data-search]');
+            opsiyalariYenile(statusSel, 'status');
+            opsiyalariYenile(item10Sel, 'item10');
+            opsiyalariYenile(ilSel, 'il');
+            opsiyalariYenile(aySel, 'ay');
+
             var gorunen = 0;
-            rows.forEach(function (r) {
-                var okText = !q || r.getAttribute('data-search').indexOf(q) !== -1;
-                var okNo = !onlyNo || r.getAttribute('data-noodenis') === '1';
-                var okStatus = !st || r.getAttribute('data-status') === st;
-                var okItem10 = !it10 || r.getAttribute('data-item10') === it10;
-                var okIl = !ilVal || r.getAttribute('data-il') === ilVal;
-                var okAy = !ayVal || r.getAttribute('data-ay') === ayVal;
-                var show = okText && okNo && okStatus && okItem10 && okIl && okAy;
-                r.style.display = show ? '' : 'none';
+            allRows.forEach(function (r) {
+                var show = uygun(r, null);
+                r.el.style.display = show ? '' : 'none';
                 if (show) gorunen++;
             });
             count.textContent = gorunen;
+            excelHrefYenile();
+        }
+
+        function excelHrefYenile() {
+            if (!excelLink) return;
+            var p = new URLSearchParams();
+            if (q()) p.set('axtaris', axtar.value.trim());
+            if (statusSel.value) p.set('status', statusSel.value);
+            if (item10Sel.value) p.set('item10', item10Sel.value);
+            if (ilSel.value) p.set('il', ilSel.value);
+            if (aySel.value) p.set('ay', aySel.value);
+            if (yalnizNo.checked) p.set('onlyNo', 'true');
+            var s = p.toString();
+            excelLink.href = excelBase + (s ? ('?' + s) : '');
+        }
+
+        function temizle() {
+            axtar.value = '';
+            statusSel.value = ''; item10Sel.value = ''; ilSel.value = ''; aySel.value = '';
+            yalnizNo.checked = false;
+            suz();
         }
 
         axtar.addEventListener('input', suz);
@@ -283,6 +343,9 @@
         if (item10Sel) item10Sel.addEventListener('change', suz);
         if (ilSel) ilSel.addEventListener('change', suz);
         if (aySel) aySel.addEventListener('change', suz);
+        if (btnTemizle) btnTemizle.addEventListener('click', temizle);
+
+        excelHrefYenile();
     })();
 </script>
 }

@@ -36,13 +36,37 @@ public class OdenisNezaretiController : Controller
     }
 
     // ── Excel export (Oracle canlı siyahı) ────────────────────────
-    public async Task<IActionResult> IndexExcel()
+    // Filtrlər (səhifədəki JS ilə eyni məntiq) query-dən gəlir ki, Excel yalnız
+    // görünən (süzülmüş) sətirləri versin — status/item10 kiçik hərflə müqayisə olunur.
+    public async Task<IActionResult> IndexExcel(
+        string? axtaris, string? status, string? item10, int? il, int? ay, bool onlyNo = false)
     {
         var vm = await _service.OracleSiyahiAsync();
+        var setirlerF = vm.Setirler.AsEnumerable();
+
+        if (onlyNo)
+            setirlerF = setirlerF.Where(x => x.OdenisYox);
+        if (!string.IsNullOrWhiteSpace(status))
+            setirlerF = setirlerF.Where(x => (x.Status ?? "").Trim().ToLowerInvariant() == status.Trim().ToLowerInvariant());
+        if (!string.IsNullOrWhiteSpace(item10))
+            setirlerF = setirlerF.Where(x => (x.Item10 ?? "").Trim().ToLowerInvariant() == item10.Trim().ToLowerInvariant());
+        if (il.HasValue)
+            setirlerF = setirlerF.Where(x => x.SonOdenisIl == il.Value);
+        if (ay.HasValue)
+            setirlerF = setirlerF.Where(x => x.SonOdenisAy == ay.Value);
+        if (!string.IsNullOrWhiteSpace(axtaris))
+        {
+            var q = axtaris.Trim().ToLowerInvariant();
+            setirlerF = setirlerF.Where(x =>
+                (x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "") + " " + (x.Item10 ?? ""))
+                    .ToLowerInvariant().Contains(q));
+        }
+
+        var filtered = setirlerF.ToList();
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
             "Tam qalıq", "Qalıq", "V/K qalıq", "Status", "Item 10", "Sistem son əməliyyat",
             "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Ödəniş sayı" };
-        var setirler = vm.Setirler.Select((x, idx) => new object?[]
+        var setirler = filtered.Select((x, idx) => new object?[]
         {
             idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
             x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.SistemSonEmel,
