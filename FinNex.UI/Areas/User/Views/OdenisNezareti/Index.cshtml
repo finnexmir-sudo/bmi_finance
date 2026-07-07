@@ -33,13 +33,6 @@
 
 <style>
     .on-wrap { padding: 4px 0; }
-    .on-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-    .on-stat { flex: 1 1 150px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; }
-    .on-stat-num { font-size: 22px; font-weight: 800; line-height: 1.1; }
-    .on-stat-lbl { font-size: 12px; color: #64748b; margin-top: 2px; }
-    .on-stat--all .on-stat-num { color: #334155; }
-    .on-stat--ok .on-stat-num { color: #16a34a; }
-    .on-stat--no .on-stat-num { color: #dc2626; }
     .on-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
     .on-inp { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; }
     .on-inp:focus { border-color: #6366f1; }
@@ -103,21 +96,6 @@
     }
     else
     {
-        <div class="on-stats">
-            <div class="on-stat on-stat--all">
-                <div class="on-stat-num">@Model.CemMusteri</div>
-                <div class="on-stat-lbl">Cəmi aktiv müştəri</div>
-            </div>
-            <div class="on-stat on-stat--ok">
-                <div class="on-stat-num">@Model.OdenisEdenSay</div>
-                <div class="on-stat-lbl">Ödənişi olan</div>
-            </div>
-            <div class="on-stat on-stat--no">
-                <div class="on-stat-num">@Model.OdenisEtmeyenSay</div>
-                <div class="on-stat-lbl">Ödənişi olmayan</div>
-            </div>
-        </div>
-
         <div class="on-bar">
             <input type="text" id="onAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, kredit hesabı və ya Item 01 axtar…" />
 
