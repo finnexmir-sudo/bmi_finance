@@ -4,7 +4,7 @@
     ViewData["Title"] = "Ödənişə Nəzarət";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
-    Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
+    Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") : "—";
 
     // Item_01 (status) filtri üçün datadan yığılan fərqli dəyərlər
     var statuslar = Model.Setirler
