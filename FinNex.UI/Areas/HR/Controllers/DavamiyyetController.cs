@@ -602,6 +602,32 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Select(x => x.IsciId)
                     .ToListAsync());
 
+            // Həmin gün offline tədbirdə (görüşdə) olan işçilər → "Tədbirdə" göstərilir.
+            // (QayibMarkerBackgroundService ilə eyni məntiq: offline, ləğv olunmamış,
+            //  iştirakçı Redd/İştiraketməyəcək deyil.) Yalnız görüntü — heç bir yazı yoxdur.
+            var tedbirDict = new Dictionary<int, (string Ad, TimeSpan Saat)>();
+            try
+            {
+                var tedbirler = await _unitOfWork.Repository<GorushIshtirakci>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib
+                             && x.Gorush.Nov == GorushNovu.Offline
+                             && x.Gorush.Status != GorushStatus.LegvEdildi
+                             && x.Gorush.Tarix.Date == hedef
+                             && x.Status != IshtirakciStatus.Redd
+                             && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib)
+                    .Select(x => new { x.IsciId, x.Gorush.Bashliq, x.Gorush.BaslamaSaati })
+                    .ToListAsync();
+                tedbirDict = tedbirler
+                    .GroupBy(x => x.IsciId)
+                    .ToDictionary(g => g.Key, g =>
+                    {
+                        var f = g.OrderBy(x => x.BaslamaSaati).First();
+                        return (f.Bashliq, f.BaslamaSaati);
+                    });
+            }
+            catch { /* Görüş cədvəli yoxdursa keç */ }
+
             var gozlenilenler = aktivIsciler
                 .Where(i => !qeydiOlanlar.Contains(i.Id))
                 .Select(i =>
@@ -610,9 +636,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .Where(t => t.Esasdir && !t.Silinib)
                         .FirstOrDefault()
                         ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
-                    int st = icazeliIsciIds.Contains(i.Id)
-                        ? 4                                      // İcazəli
-                        : (hedef < DateTime.Today ? 3 : 0);     // Qayib / Gözlənilir
+                    // İcazəli > Tədbirdə > (Qayib/Gözlənilir). Tədbirdə = sintetik status 100.
+                    int st;
+                    string? tedAd = null, tedSaat = null;
+                    if (icazeliIsciIds.Contains(i.Id)) st = 4;                    // İcazəli
+                    else if (tedbirDict.TryGetValue(i.Id, out var ted))           // Tədbirdə
+                    {
+                        st = 100;
+                        tedAd = ted.Ad;
+                        tedSaat = ted.Saat.ToString(@"hh\:mm");
+                    }
+                    else st = (hedef < DateTime.Today ? 3 : 0);                   // Qayib / Gözlənilir
                     return new
                     {
                         id = 0,
@@ -622,7 +656,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                         tarix = hedef,
                         girisVaxti = (DateTime?)null,
                         cixisVaxti = (DateTime?)null,
-                        status = st
+                        status = st,
+                        tedbirAd = tedAd,
+                        tedbirSaat = tedSaat
                     };
                 })
                 .OrderBy(x => x.isciTamAd)
@@ -635,6 +671,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 records = yalnizGozleyen,
                 count = yalnizGozleyen.Count,
+                tedbirdeCount = yalnizGozleyen.Count(x => x.status == 100),
                 tarix = hedef
             });
         }

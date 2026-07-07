@@ -164,6 +164,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 renderTable(data.records || [], true);
                 recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
                 extraStats.style.display = 'none';
+                var kpiGoz = document.getElementById('kpiGozlenilen');
+                if (kpiGoz) kpiGoz.textContent = data.count || 0;
+                var kpiTed = document.getElementById('kpiTedbirde');
+                if (kpiTed) kpiTed.textContent = data.tedbirdeCount || 0;
             })
             .catch(function (err) {
                 console.error('Gözlənilən işçilər yüklənmədi:', err);
@@ -261,6 +265,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         .then(function (data) {
                             var kpiGoz = document.getElementById('kpiGozlenilen');
                             if (kpiGoz) kpiGoz.textContent = data.count || 0;
+                            var kpiTed = document.getElementById('kpiTedbirde');
+                            if (kpiTed) kpiTed.textContent = data.tedbirdeCount || 0;
                             renderTable(data.records || [], true);
                             recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
                             extraStats.style.display = 'none';
@@ -686,6 +692,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             var badge = getStatusBadge(r.status);
+            // Tədbirdə (status 100) — tədbirin adı/saatı badge-in yanında göstərilir
+            if (r.status === 100 && (r.tedbirAd || r.tedbirSaat)) {
+                var tAd = r.tedbirAd || 'Tədbir';
+                var tTitle = String(tAd).replace(/"/g, '&quot;');
+                badge += ' <span style="font-size:11px;color:#7c3aed;margin-left:6px;" title="' + tTitle + '">' +
+                    (r.tedbirSaat ? '<i class="bi bi-clock" style="font-size:9px;"></i> ' + r.tedbirSaat + ' · ' : '') +
+                    tAd + '</span>';
+            }
             var tarixRaw = r.tarix ? toLocalDateStr(r.tarix) : toLocalDateStr(new Date());
 
             // Qayıb sıralarında kəsinti indikatoru + düzəliş + sil düymələri
@@ -827,6 +841,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 .then(function (data) {
                                     var kpiGoz = document.getElementById('kpiGozlenilen');
                                     if (kpiGoz) kpiGoz.textContent = data.count || 0;
+                                    var kpiTed = document.getElementById('kpiTedbirde');
+                                    if (kpiTed) kpiTed.textContent = data.tedbirdeCount || 0;
                                 });
                         } else {
                             alert(res.data.error || 'Xəta baş verdi.');
@@ -851,6 +867,7 @@ document.addEventListener('DOMContentLoaded', function () {
             case 7: return '<span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>';  // 7 = Dövlət vəzifəsi → məzuniyyət (İcazəli) kimi göstərilir
             case 5: return '<span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>';
             case 6: return '<span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(13,148,136,.1);color:#0d9488;"><span class="hrd-badge-dot" style="background:#0d9488;"></span>Ezamiyyət</span>';
+            case 100: return '<span class="hrd-badge" style="background:rgba(124,58,237,.1);color:#7c3aed;"><i class="bi bi-calendar-event" style="font-size:10px;margin-right:4px;"></i>Tədbirdə</span>';  // sintetik — offline tədbir iştirakçısı
             default: return '<span class="hrd-badge">Naməlum</span>';
         }
     }
@@ -1214,5 +1231,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(function (data) {
             var kpiGoz = document.getElementById('kpiGozlenilen');
             if (kpiGoz) kpiGoz.textContent = data.count || 0;
+            var kpiTed = document.getElementById('kpiTedbirde');
+            if (kpiTed) kpiTed.textContent = data.tedbirdeCount || 0;
         });
 });
