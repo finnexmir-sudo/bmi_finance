@@ -48,6 +48,7 @@ public class OdenisNezaretSatirDto
     public decimal? Qaliq        { get; set; }
     public decimal? VkQaliq      { get; set; }
     public string? Status        { get; set; }          // item_01
+    public string? Item10        { get; set; }          // item_10 (son fəaliyyət)
     public string? SistemSonEmel { get; set; }          // lastpaymentdate_ish (dd.MM.yyyy)
 
     // AVTOMAT — ARH_DD: müştərinin cari hesabından (DEBET 3/4) kredit hesabına (KREDIT 2121) son köçürmə
@@ -66,6 +67,10 @@ public class OdenisNezaretSatirDto
 
     // İzlənən pəncərədə (sorğudakı tarix filtrindən bəri) heç ödəniş görünmür → əsas risk siqnalı
     public bool OdenisYox => !SonOdenisParsed.HasValue;
+
+    // Son ödəniş tarixinin il/ay komponentləri (il+ay filtri üçün)
+    public int? SonOdenisIl => SonOdenisParsed?.Year;
+    public int? SonOdenisAy => SonOdenisParsed?.Month;
 }
 
 public class OdenisNezaretSiyahiDto

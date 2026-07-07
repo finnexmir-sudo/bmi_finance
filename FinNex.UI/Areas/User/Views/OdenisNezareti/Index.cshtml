@@ -14,6 +14,23 @@
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
         .ToList();
+
+    // Item_10 filtri üçün fərqli dəyərlər
+    var item10lar = Model.Setirler
+        .Where(x => !string.IsNullOrWhiteSpace(x.Item10))
+        .Select(x => x.Item10!.Trim())
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    // Son ödəniş tarixi üzrə mövcud illər (il+ay filtri)
+    var iller = Model.Setirler
+        .Where(x => x.SonOdenisIl.HasValue)
+        .Select(x => x.SonOdenisIl!.Value)
+        .Distinct().OrderByDescending(x => x).ToList();
+
+    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                           "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
 }
 
 <style>
@@ -103,6 +120,28 @@
                     <option value="@st.ToLowerInvariant()">@st</option>
                 }
             </select>
+            <select id="onItem10" class="on-inp" title="Item 10 üzrə süz">
+                <option value="">Bütün Item 10</option>
+                @foreach (var it in item10lar)
+                {
+                    <option value="@it.ToLowerInvariant()">@it</option>
+                }
+            </select>
+            <span style="font-size:12px;color:#94a3b8;white-space:nowrap;">Son ödəniş:</span>
+            <select id="onIl" class="on-inp" title="Son ödəniş ili">
+                <option value="">Bütün illər</option>
+                @foreach (var il in iller)
+                {
+                    <option value="@il">@il</option>
+                }
+            </select>
+            <select id="onAy" class="on-inp" title="Son ödəniş ayı">
+                <option value="">Bütün aylar</option>
+                @for (int m = 1; m <= 12; m++)
+                {
+                    <option value="@m">@ayAdlari[m]</option>
+                }
+            </select>
             <label class="on-chk">
                 <input type="checkbox" id="onYalnizNo" /> Yalnız ödənişi olmayanlar
             </label>
@@ -123,6 +162,7 @@
                             <th class="on-num">Qalıq</th>
                             <th class="on-num">V/K qalıq</th>
                             <th>Status</th>
+                            <th>Item 10</th>
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis">Ödəniş cəmi</th>
@@ -135,9 +175,12 @@
                             var i = 1;
                             @foreach (var x in Model.Setirler)
                             {
-                                <tr data-search="@((x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "")).ToLowerInvariant())"
+                                <tr data-search="@((x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "") + " " + (x.Item10 ?? "")).ToLowerInvariant())"
                                     data-noodenis="@(x.OdenisYox ? "1" : "0")"
-                                    data-status="@((x.Status ?? "").Trim().ToLowerInvariant())">
+                                    data-status="@((x.Status ?? "").Trim().ToLowerInvariant())"
+                                    data-item10="@((x.Item10 ?? "").Trim().ToLowerInvariant())"
+                                    data-il="@(x.SonOdenisIl?.ToString() ?? "")"
+                                    data-ay="@(x.SonOdenisAy?.ToString() ?? "")">
                                     <td>@(i++)</td>
                                     <td>@(string.IsNullOrWhiteSpace(x.Region) ? "—" : x.Region)</td>
                                     <td style="font-weight:600">@x.Musteri</td>
@@ -159,6 +202,16 @@
                                             <span class="on-status">@x.Status</span>
                                         }
                                     </td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(x.Item10))
+                                        {
+                                            <span class="on-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="on-status">@x.Item10</span>
+                                        }
+                                    </td>
                                     <td class="on-col-odenis">
                                         @if (x.OdenisYox)
                                         {
@@ -178,7 +231,7 @@
                         }
                         else
                         {
-                            <tr><td colspan="13"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
+                            <tr><td colspan="14"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
                         }
                     </tbody>
                 </table>
@@ -193,6 +246,9 @@
     (function () {
         var axtar = document.getElementById('onAxtar');
         var statusSel = document.getElementById('onStatus');
+        var item10Sel = document.getElementById('onItem10');
+        var ilSel = document.getElementById('onIl');
+        var aySel = document.getElementById('onAy');
         var yalnizNo = document.getElementById('onYalnizNo');
         var body = document.getElementById('onBody');
         var count = document.getElementById('onCount');
@@ -202,13 +258,19 @@
             var q = (axtar.value || '').trim().toLowerCase();
             var onlyNo = yalnizNo.checked;
             var st = statusSel ? statusSel.value : '';
+            var it10 = item10Sel ? item10Sel.value : '';
+            var ilVal = ilSel ? ilSel.value : '';
+            var ayVal = aySel ? aySel.value : '';
             var rows = body.querySelectorAll('tr[data-search]');
             var gorunen = 0;
             rows.forEach(function (r) {
                 var okText = !q || r.getAttribute('data-search').indexOf(q) !== -1;
                 var okNo = !onlyNo || r.getAttribute('data-noodenis') === '1';
                 var okStatus = !st || r.getAttribute('data-status') === st;
-                var show = okText && okNo && okStatus;
+                var okItem10 = !it10 || r.getAttribute('data-item10') === it10;
+                var okIl = !ilVal || r.getAttribute('data-il') === ilVal;
+                var okAy = !ayVal || r.getAttribute('data-ay') === ayVal;
+                var show = okText && okNo && okStatus && okItem10 && okIl && okAy;
                 r.style.display = show ? '' : 'none';
                 if (show) gorunen++;
             });
@@ -218,6 +280,9 @@
         axtar.addEventListener('input', suz);
         yalnizNo.addEventListener('change', suz);
         if (statusSel) statusSel.addEventListener('change', suz);
+        if (item10Sel) item10Sel.addEventListener('change', suz);
+        if (ilSel) ilSel.addEventListener('change', suz);
+        if (aySel) aySel.addEventListener('change', suz);
     })();
 </script>
 }

@@ -69,6 +69,7 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         Qaliq           = GetDec(row, "qaliq", "summa"),
         VkQaliq         = GetDec(row, "vk_qaliq", "summa_19"),
         Status          = GetStr(row, "status", "item_01"),
+        Item10          = GetStr(row, "item_10", "son_fealiyyet"),
         SistemSonEmel   = GetStr(row, "sistem_son_emel", "lastpaymentdate_ish"),
         SonOdenisTarixi  = GetStr(row, "son_odenis_tarixi"),
         SonOdenisMeblegi = GetDec(row, "son_odenis_meblegi"),

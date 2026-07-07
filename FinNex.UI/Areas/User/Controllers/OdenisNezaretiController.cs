@@ -40,12 +40,12 @@ public class OdenisNezaretiController : Controller
     {
         var vm = await _service.OracleSiyahiAsync();
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
-            "Tam qalıq", "Qalıq", "V/K qalıq", "Status", "Sistem son əməliyyat",
+            "Tam qalıq", "Qalıq", "V/K qalıq", "Status", "Item 10", "Sistem son əməliyyat",
             "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Ödəniş sayı" };
         var setirler = vm.Setirler.Select((x, idx) => new object?[]
         {
             idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
-            x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.SistemSonEmel,
+            x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.SistemSonEmel,
             x.SonOdenisTarixi, x.SonOdenisMeblegi, x.OdenisCemi, x.OdenisSayi
         });
         var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);
