@@ -229,6 +229,20 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detal), new { id });
         }
 
+        // ADMIN: səhv daxil edilmiş məzuniyyətin tarixini düzəldir — məzuniyyət artıq
+        // başlayıb/keçmiş olsa belə (HR-in edə bilmədiyi hallar). Yalnız Admin rolu.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Admin)]
+        public async Task<IActionResult> AdminTarixDeyis(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null) return Forbid();
+            var result = await _mezuniyyetService.AdminTarixDeyisAsync(id, yeniBaslama, yeniBitme, sebeb, isciId.Value);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         [HttpGet]

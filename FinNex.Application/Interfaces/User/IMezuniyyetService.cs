@@ -40,6 +40,11 @@ namespace FinNex.Application.Interfaces
         // Avans icra olunubsa və ya dövlət-vəzifə korreksiyası varsa bloklanır.
         Task<Result> HrTarixDeyisAsync(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb, int hrId);
 
+        // ADMIN: səhv daxil edilmiş məzuniyyətin tarixini düzəldir — məzuniyyət artıq
+        // başlayıb/keçmiş olsa da işləyir (HR versiyasındakı 'başlayıb' bloku YOXDUR).
+        // Balans/davamiyyət/avans eyni atomar məntiqlə uzlaşdırılır; ödənilmiş avans bloklanır.
+        Task<Result> AdminTarixDeyisAsync(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb, int adminId);
+
         // Təsdiq paneli üçün
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();
