@@ -1,6 +1,7 @@
 using FinNex.Application.DTOs.HR.Davamiyyet;
 using FinNex.Application.Services.HR;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -98,7 +99,7 @@ namespace FinNex.UI.Areas.User.Controllers
             IEnumerable<DavamiyyetListDto> gosteris = umumi;
             if (status.HasValue)
             {
-                gosteris = gosteris.Where(x => (int)x.Status == status.Value);
+                gosteris = gosteris.Where(x => (int)x.Status == status.Value && !hesablama.TedbirGecikmeIds.Contains(x.Id));
                 // İcazəli süzgəcində məzuniyyət günləri çıxarılır ki, sayğacla uyğun olsun
                 if (status.Value == (int)DavamiyyetStatus.Icazeli)
                     gosteris = gosteris.Where(x => !hesablama.MezuniyyetIcazeliIds.Contains(x.Id));
@@ -110,7 +111,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 tarix = x.Tarix,
                 girisVaxti = x.GirisVaxti,
                 cixisVaxti = x.CixisVaxti,
-                status = (int)x.Status,
+                status = hesablama.TedbirGecikmeIds.Contains(x.Id) ? (int)DavamiyyetStatus.Isde : (int)x.Status,
                 tezCixan = hesablama.TezCixanIds.Contains(x.Id)
             }).OrderByDescending(x => x.tarix).ToList();
 
@@ -242,6 +243,28 @@ namespace FinNex.UI.Areas.User.Controllers
             }
             catch { }
 
+            // Tədbir (offline görüş) — həm gecikmə, həm erkən çıxış bağışlanması (HR/ADMS ilə eyni)
+            var gorushDict = new Dictionary<DateTime, (TimeSpan Bas, TimeSpan Bit)>();
+            try
+            {
+                var grs = await _unitOfWork.Repository<GorushIshtirakci>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.IsciId == isciId
+                             && x.Gorush.Nov == GorushNovu.Offline
+                             && x.Gorush.Status != GorushStatus.LegvEdildi
+                             && x.Status != IshtirakciStatus.Redd
+                             && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
+                             && x.Gorush.BitisSaati != null
+                             && x.Gorush.Tarix.Date >= intizamBaslangic)
+                    .Select(x => new { Tarix = x.Gorush.Tarix.Date, Bas = x.Gorush.BaslamaSaati, Bit = x.Gorush.BitisSaati!.Value })
+                    .ToListAsync();
+                foreach (var g in grs)
+                    if (!gorushDict.TryGetValue(g.Tarix, out var cur) || g.Bit > cur.Bit)
+                        gorushDict[g.Tarix] = (g.Bas, g.Bit);
+            }
+            catch { }
+            var gecikTolerans = TimeSpan.FromMinutes(ip.GecikmeToleransDeqiqe);
+
             // Per-record erkən çıxış (HR GetByTarix ilə eyni düstur)
             foreach (var x in intizamResult)
             {
@@ -259,7 +282,10 @@ namespace FinNex.UI.Areas.User.Controllers
                     i.Bit >= hedd && cixisTod >= i.Bas - tezCixmaTolerans);
                 bool ezamiyyetOrtuyur = ezamiyyetList.Any(e => e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
                     (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
-                if (icazeOrtuyur || ezamiyyetOrtuyur) continue;
+                // Tədbir: çıxış tədbir pəncərəsindədirsə erkən çıxış deyil
+                bool gorushOrtuyur = gorushDict.TryGetValue(x.Tarix.Date, out var gw)
+                    && cixisTod >= gw.Bas - tezCixmaTolerans && cixisTod <= gw.Bit + tezCixmaTolerans;
+                if (icazeOrtuyur || ezamiyyetOrtuyur || gorushOrtuyur) continue;
 
                 // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə erkən çıxış bağışlanır
                 if (isElil && EmekRejimiHelper.ElilQisaldilmisGun(x.Tarix.Date, elilBayramSet))
@@ -305,10 +331,19 @@ namespace FinNex.UI.Areas.User.Controllers
                 catch { }
             }
 
+            // Tədbir səbəbli gecikmələr (giriş tədbir pəncərəsində) — Gecikmə sayğacından/göstərişdən çıxılır
+            foreach (var x in records)
+            {
+                if (x.Status == DavamiyyetStatus.Gecikme && x.GirisVaxti.HasValue
+                    && gorushDict.TryGetValue(x.Tarix.Date, out var gwg)
+                    && x.GirisVaxti.Value.TimeOfDay <= gwg.Bit + gecikTolerans)
+                    netice.TedbirGecikmeIds.Add(x.Id);
+            }
+
             netice.Stats = new DavamiyyetStatlar
             {
                 Isde      = records.Count(x => x.Status == DavamiyyetStatus.Isde),
-                Gecikme   = records.Count(x => x.Status == DavamiyyetStatus.Gecikme),
+                Gecikme   = records.Count(x => x.Status == DavamiyyetStatus.Gecikme && !netice.TedbirGecikmeIds.Contains(x.Id)),
                 Qayib     = records.Count(x => x.Status == DavamiyyetStatus.Qayib),
                 Icazeli   = records.Count(x => x.Status == DavamiyyetStatus.Icazeli && !netice.MezuniyyetIcazeliIds.Contains(x.Id)),
                 Xestelik  = records.Count(x => x.Status == DavamiyyetStatus.Xestelik),
@@ -327,6 +362,7 @@ namespace FinNex.UI.Areas.User.Controllers
             public DavamiyyetStatlar Stats { get; set; } = new();
             public HashSet<int> TezCixanIds { get; set; } = new();
             public HashSet<int> MezuniyyetIcazeliIds { get; set; } = new();
+            public HashSet<int> TedbirGecikmeIds { get; set; } = new();
         }
     }
 

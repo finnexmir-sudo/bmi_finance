@@ -659,8 +659,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                         (x.Tarix.Date != DateTime.Today || (indiSaatIcaze >= i.Bas && indiSaatIcaze <= i.Bit))))
                     .Select(x => x.IsciId));
 
-                // ── Tədbir (offline görüş) səbəbli gecikmə bağışlanması (HR səhifəsi ilə eyni) ──
-                var gorushBitisDict = new Dictionary<(int, DateTime), TimeSpan>();
+                // ── Tədbir (offline görüş) bağışlanması — həm Gecikmə, həm erkən çıxış (HR ilə eyni) ──
+                var gorushDict = new Dictionary<(int, DateTime), (TimeSpan Bas, TimeSpan Bit)>();
                 try
                 {
                     var gGorushB = (baslangic ?? tarix ?? DateTime.Today).Date;
@@ -672,13 +672,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                                  && x.Status != IshtirakciStatus.Redd
                                  && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
                                  && x.Gorush.BitisSaati != null)
-                        .Select(x => new { x.IsciId, Tarix = x.Gorush.Tarix.Date, Bitis = x.Gorush.BitisSaati!.Value })
+                        .Select(x => new { x.IsciId, Tarix = x.Gorush.Tarix.Date, Bas = x.Gorush.BaslamaSaati, Bit = x.Gorush.BitisSaati!.Value })
                         .ToListAsync();
                     foreach (var g in gorushlar)
                     {
                         var k = (g.IsciId, g.Tarix);
-                        if (!gorushBitisDict.TryGetValue(k, out var cur) || g.Bitis > cur)
-                            gorushBitisDict[k] = g.Bitis;
+                        if (!gorushDict.TryGetValue(k, out var cur) || g.Bit > cur.Bit)
+                            gorushDict[k] = (g.Bas, g.Bit);
                     }
                 }
                 catch { /* Görüş cədvəli yoxdursa keç */ }
@@ -686,8 +686,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 bool TedbirBagislanir(Application.DTOs.HR.Davamiyyet.DavamiyyetListDto rec) =>
                     rec.Status == DavamiyyetStatus.Gecikme
                     && rec.GirisVaxti.HasValue
-                    && gorushBitisDict.TryGetValue((rec.IsciId, rec.Tarix.Date), out var b)
-                    && rec.GirisVaxti.Value.TimeOfDay <= b + gorushGecikTolerans;
+                    && gorushDict.TryGetValue((rec.IsciId, rec.Tarix.Date), out var b)
+                    && rec.GirisVaxti.Value.TimeOfDay <= b.Bit + gorushGecikTolerans;
 
                 // status=4 (İcazəli) → "indi icazədə" canlı siyahısı; digər statuslar adi filtr
                 var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
@@ -862,6 +862,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     { ortukVar = true; ortukSebeb = $"Təsdiqlənmiş icazə var ({icBasC.ToString(@"hh\:mm")}-dan) — çıxış icazə daxilindədir."; }
                     else if (ezamBasDict.TryGetValue(gunKey, out var ezBasC) && cixisTime.HasValue && cixisTime.Value >= ezBasC)
                     { ortukVar = true; ortukSebeb = $"Təsdiqlənmiş ezamiyyət var ({ezBasC.ToString(@"hh\:mm")}-dan) — çıxış onunla uyğundur."; }
+                    else if (gorushDict.TryGetValue(gunKey, out var gw) && cixisTime.HasValue
+                             && cixisTime.Value >= gw.Bas - tezCixmaTolerans && cixisTime.Value <= gw.Bit + tezCixmaTolerans)
+                    { ortukVar = true; ortukSebeb = "Tədbirdə (offline görüş) olub — çıxış tədbir pəncərəsindədir, erkən çıxış sayılmır."; }
 
                     // ÇIXIŞ qırmızı: erkən çıxıb (tezCixan) + örtük yoxdur.
                     // İŞ SAATI qırmızı: bundan əlavə 8 saatdan az işləyib.

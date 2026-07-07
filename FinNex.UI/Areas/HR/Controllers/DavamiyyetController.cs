@@ -187,11 +187,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
-                // ── Tədbir (offline görüş) səbəbli gecikmə bağışlanması ──────────────
-                // İşçi həmin gün offline tədbir iştirakçısıdırsa və girişi tədbirin bitmə
-                // saatı + tolerans içindədirsə Gecikmə → İşdə (ADMS mənbə qaydası ilə eyni;
-                // mövcud qeydlərə də tətbiq olunur, çünki onlar artıq Gecikmə saxlanılıb).
-                var gorushBitisDict = new Dictionary<(int, DateTime), TimeSpan>();
+                // ── Tədbir (offline görüş) bağışlanması — həm Gecikmə, həm erkən çıxış ──────
+                // İşçi həmin gün offline tədbir iştirakçısıdırsa:
+                //  • giriş ≤ tədbir bitmə + tolerans → Gecikmə deyil (İşdə);
+                //  • çıxış tədbir pəncərəsindədirsə (Bas−tol .. Bit+tol) → erkən çıxış deyil.
+                // Mövcud qeydlərə də tətbiq olunur (ADMS mənbə qaydası ilə eyni).
+                var gorushDict = new Dictionary<(int, DateTime), (TimeSpan Bas, TimeSpan Bit)>();
                 try
                 {
                     var gGorushB = (baslangic ?? tarix ?? DateTime.Today).Date;
@@ -203,13 +204,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                                  && x.Status != IshtirakciStatus.Redd
                                  && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
                                  && x.Gorush.BitisSaati != null)
-                        .Select(x => new { x.IsciId, Tarix = x.Gorush.Tarix.Date, Bitis = x.Gorush.BitisSaati!.Value })
+                        .Select(x => new { x.IsciId, Tarix = x.Gorush.Tarix.Date, Bas = x.Gorush.BaslamaSaati, Bit = x.Gorush.BitisSaati!.Value })
                         .ToListAsync();
                     foreach (var g in gorushlar)
                     {
                         var k = (g.IsciId, g.Tarix);
-                        if (!gorushBitisDict.TryGetValue(k, out var cur) || g.Bitis > cur)
-                            gorushBitisDict[k] = g.Bitis;
+                        if (!gorushDict.TryGetValue(k, out var cur) || g.Bit > cur.Bit)
+                            gorushDict[k] = (g.Bas, g.Bit);
                     }
                 }
                 catch { /* Görüş cədvəli yoxdursa keç */ }
@@ -217,8 +218,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 bool TedbirBagislanir(Application.DTOs.HR.Davamiyyet.DavamiyyetListDto rec) =>
                     rec.Status == DavamiyyetStatus.Gecikme
                     && rec.GirisVaxti.HasValue
-                    && gorushBitisDict.TryGetValue((rec.IsciId, rec.Tarix.Date), out var b)
-                    && rec.GirisVaxti.Value.TimeOfDay <= b + gorushGecikTolerans;
+                    && gorushDict.TryGetValue((rec.IsciId, rec.Tarix.Date), out var b)
+                    && rec.GirisVaxti.Value.TimeOfDay <= b.Bit + gorushGecikTolerans;
 
                 // status=4 (İcazəli) → "indi icazədə" canlı siyahısı; digər statuslar adi filtr
                 var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
@@ -276,6 +277,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                     bool ezamiyyetOrtuyur = x.CixisVaxti.HasValue && ezamiyyetList.Any(e =>
                         e.IsciId == x.IsciId && e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
                         (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
+                    // Tədbir (offline görüş): çıxış tədbir pəncərəsindədirsə (Bas−tol .. Bit+tol)
+                    // erkən çıxış deyil — işçi tədbirə gedib/gəlib (Pattern A).
+                    bool gorushOrtuyur = x.CixisVaxti.HasValue
+                        && gorushDict.TryGetValue((x.IsciId, x.Tarix.Date), out var gw)
+                        && cixisTod >= gw.Bas - tezCixmaTolerans
+                        && cixisTod <= gw.Bit + tezCixmaTolerans;
 
                     // Nahar çıxılması — işçi nahar başlamadan gəlib, nahar bitdikdən sonra çıxıbsa.
                     // (Əlil 4 saat qaydası NET işləmə saatına baxdığı üçün tezCixan-dan ƏVVƏL hesablanır.)
@@ -306,6 +313,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date))
                         && !icazeOrtuyur
                         && !ezamiyyetOrtuyur
+                        && !gorushOrtuyur
                         && !elilCumeBagisla;
 
                     return new

@@ -1,6 +1,7 @@
 ﻿using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Dashboard;
 using FinNex.Application.Interfaces;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -247,13 +248,47 @@ namespace FinNex.Application.Services
                           && x.Tarix.Year == cariIl,
                         izlemeden: true);
 
-                dto.GecikmeGunSayi = ilinGecikmeleri.Count;
+                // Tədbir (offline görüş) səbəbli gecikmələri bağışla — həmin gün iştirakçı olub
+                // girişi tədbir bitmə saatı + tolerans içindədirsə gecikmə sayılmır (HR/ADMS ilə eyni).
+                var gecikTolerans = TimeSpan.FromMinutes(izParam?.GecikmeToleransDeqiqe ?? 5);
+                var tedbirBitisleri = new Dictionary<DateTime, TimeSpan>();
+                try
+                {
+                    var tedbirIshtiraklar = await _unitOfWork.Repository<GorushIshtirakci>()
+                        .HamisiniGetirAsync(
+                            x => x.IsciId == isci.Id && !x.Silinib
+                              && x.Gorush.Nov == GorushNovu.Offline
+                              && x.Gorush.Status != GorushStatus.LegvEdildi
+                              && x.Status != IshtirakciStatus.Redd
+                              && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
+                              && x.Gorush.Tarix.Year == cariIl
+                              && x.Gorush.BitisSaati != null,
+                            include: q => q.Include(gi => gi.Gorush),
+                            izlemeden: true);
+                    foreach (var t in tedbirIshtiraklar)
+                    {
+                        var d = t.Gorush.Tarix.Date;
+                        var bit = t.Gorush.BitisSaati!.Value;
+                        if (!tedbirBitisleri.TryGetValue(d, out var cur) || bit > cur)
+                            tedbirBitisleri[d] = bit;
+                    }
+                }
+                catch { /* Görüş cədvəli yoxdursa keç */ }
+
+                bool GecikmeBagislanir(Davamiyyet r) =>
+                    r.GirisVaxti.HasValue
+                    && tedbirBitisleri.TryGetValue(r.Tarix.Date, out var bit)
+                    && r.GirisVaxti.Value.TimeOfDay <= bit + gecikTolerans;
+
+                var realGecikmeler = ilinGecikmeleri.Where(x => !GecikmeBagislanir(x)).ToList();
+
+                dto.GecikmeGunSayi = realGecikmeler.Count;
                 dto.GecikmeToplamSaat = Math.Round(
-                    ilinGecikmeleri
+                    realGecikmeler
                         .Where(x => x.GirisVaxti.HasValue)
                         .Sum(x => Math.Max(0, (x.GirisVaxti!.Value.TimeOfDay - standartGiris).TotalHours)), 2);
-                dto.GecikmeSonTarix = ilinGecikmeleri.Count > 0
-                    ? ilinGecikmeleri.Max(x => x.Tarix)
+                dto.GecikmeSonTarix = realGecikmeler.Count > 0
+                    ? realGecikmeler.Max(x => x.Tarix)
                     : (DateTime?)null;
 
                 // ── 7. Bildirişlər ────────────────────────────────────────
