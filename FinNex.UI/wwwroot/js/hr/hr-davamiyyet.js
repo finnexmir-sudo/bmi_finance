@@ -122,7 +122,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Remove active from all
             document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
 
-            if (statusVal === 'gozlenilen') {
+            if (statusVal === 'tedbirde') {
+                kpi.classList.add('hrd-kpi--active');
+                loadGozlenilen(true);
+            } else if (statusVal === 'gozlenilen') {
                 kpi.classList.add('hrd-kpi--active');
                 loadGozlenilen();
             } else if (statusVal === 'mezuniyyet') {
@@ -150,8 +153,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Gözlənilən işçiləri yüklə ──
-    function loadGozlenilen() {
+    // ── Gözlənilən işçiləri yüklə (yalnizTedbir=true → yalnız tədbirdə olanlar) ──
+    function loadGozlenilen(yalnizTedbir) {
         var tarix = inputTarix.value || toLocalDateStr(new Date());
         var url = endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(tarix);
 
@@ -161,8 +164,15 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                renderTable(data.records || [], true);
-                recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
+                var records = data.records || [];
+                if (yalnizTedbir) {
+                    records = records.filter(function (r) { return r.status === 100; });
+                    renderTable(records, true);
+                    recordCount.textContent = records.length + ' tədbirdə olan işçi';
+                } else {
+                    renderTable(records, true);
+                    recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
+                }
                 extraStats.style.display = 'none';
                 var kpiGoz = document.getElementById('kpiGozlenilen');
                 if (kpiGoz) kpiGoz.textContent = data.count || 0;
