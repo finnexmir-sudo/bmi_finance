@@ -77,12 +77,12 @@ public class OdenisNezaretiController : Controller
         var filtered = setirlerF.ToList();
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
             "Tam qalıq", "Qalıq", "V/K qalıq", "Item 01", "Item 10", "Sistem son əməliyyat",
-            "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Ödəniş sayı" };
+            "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Rüsum cəmi", "Ödəniş sayı" };
         var setirler = filtered.Select((x, idx) => new object?[]
         {
             idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
             x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.SistemSonEmel,
-            x.SonOdenisTarixi, x.SonOdenisMeblegi, x.OdenisCemi, x.OdenisSayi
+            x.SonOdenisTarixi, x.SonOdenisMeblegi, x.OdenisCemi, x.RusumCemi, x.OdenisSayi
         });
         var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);
         return File(bytes, ExcelExportHelper.ContentType, $"Odenise_Nezaret_{DateTime.Now:yyyyMMdd}.xlsx");

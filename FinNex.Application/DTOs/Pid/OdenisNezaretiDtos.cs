@@ -54,8 +54,9 @@ public class OdenisNezaretSatirDto
     // AVTOMAT — ARH_DD: müştərinin cari hesabından (DEBET 3/4) kredit hesabına (KREDIT 2121) son köçürmə
     public string?  SonOdenisTarixi  { get; set; }      // MAX(date_oper) (dd.MM.yyyy)
     public decimal? SonOdenisMeblegi { get; set; }      // ən son tarixli əməliyyat(lar)ın məbləği
-    public decimal? OdenisCemi       { get; set; }      // SUM(summa_v_nacval) — izlənən pəncərə
-    public int?     OdenisSayi       { get; set; }      // COUNT(*)
+    public decimal? OdenisCemi       { get; set; }      // SUM(summa_v_nacval) — yalnız kredit ödənişləri
+    public int?     OdenisSayi       { get; set; }      // COUNT(*) — yalnız kredit ödənişləri
+    public decimal? RusumCemi        { get; set; }      // SUM(summa_v_nacval) — məhkəmə rüsumu (KREDIT 7011…)
 
     // ── Hesablanmış monitorinq siqnalı ──
     public DateTime? SonOdenisParsed

@@ -59,6 +59,8 @@
     .on-num { text-align: right; font-variant-numeric: tabular-nums; }
     .on-col-odenis { background: #fffdf5; }
     .on-table thead th.on-col-odenis { background: #fef9ec; }
+    .on-col-rusum { background: #f5faff; }
+    .on-table thead th.on-col-rusum { background: #eaf3fe; }
     .on-mono { font-family: ui-monospace, monospace; }
     .on-ks { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #eef2ff; color: #4338ca; font-size: 11px; font-weight: 800; margin-left: 4px; }
     .on-status { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; background: #f1f5f9; color: #475569; white-space: nowrap; }
@@ -153,6 +155,7 @@
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis">Ödəniş cəmi</th>
+                            <th class="on-num on-col-rusum">Rüsum cəmi</th>
                         </tr>
                     </thead>
                     <tbody id="onBody">
@@ -211,12 +214,13 @@
                                     </td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
+                                    <td class="on-num on-col-rusum">@Pul(x.RusumCemi)</td>
                                 </tr>
                             }
                         }
                         else
                         {
-                            <tr><td colspan="13"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
+                            <tr><td colspan="14"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
                         }
                     </tbody>
                 </table>
