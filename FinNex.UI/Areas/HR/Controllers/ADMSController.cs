@@ -194,6 +194,21 @@ public class ADMSController : Controller
                              x.BitmeTarixi.Date   >= tarix)
                 .FirstOrDefaultAsync();
 
+            // Bu gün offline tədbir (görüş) iştirakçısıdırmı? — ən gec bitən tədbirin bitmə saatı.
+            // Səhər tədbiri gecikməni bağışlayır (ezamiyyət kimi): giriş tədbirin bitmə saatı +
+            // tolerans içindədirsə işçi gecikməyib, sadəcə tədbirdən sonra masaya keçib.
+            var bugunGorushBitis = await _db.GorushIshtirakcilar
+                .Where(x => x.IsciId == isciId && !x.Silinib
+                         && x.Gorush.Tarix.Date == tarix
+                         && x.Gorush.Nov == GorushNovu.Offline
+                         && x.Gorush.Status != GorushStatus.LegvEdildi
+                         && x.Status != IshtirakciStatus.Redd
+                         && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
+                         && x.Gorush.BitisSaati != null)
+                .OrderByDescending(x => x.Gorush.BitisSaati)
+                .Select(x => x.Gorush.BitisSaati)
+                .FirstOrDefaultAsync();
+
             // Bu gün üçün təsdiqlənmiş Məzuniyyət (illik / xəstəlik və s. — ezamiyyət xaric) varmı?
             // Varsa, işçi həmin gün işdə deyil; səhvən cihaza basılan barmaq oxuması
             // davamiyyət statusunu (İcazəli / Xəstəlik) Gecikməyə çevirməməlidir.
@@ -256,7 +271,7 @@ public class ADMSController : Controller
                         Tarix = tarix,
                         GirisVaxti = vaxt,
                         CixisVaxti = null,
-                        Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans)
+                        Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans, bugunGorushBitis)
                     };
                     await _db.Davamiyyetler.AddAsync(yeni);
                     await _db.SaveChangesAsync();
@@ -274,7 +289,7 @@ public class ADMSController : Controller
                         // punch çıxışdır (məs. işçi günorta gəlib, axşam getdi). Swap.
                         movcud.GirisVaxti = movcud.CixisVaxti;
                         movcud.CixisVaxti = vaxt;
-                        movcud.Status = HesablaStatus(movcud.GirisVaxti.Value, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
+                        movcud.Status = HesablaStatus(movcud.GirisVaxti.Value, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans, bugunGorushBitis);
                         await _db.SaveChangesAsync();
                         davamiyyetId = movcud.Id;
                     }
@@ -282,7 +297,7 @@ public class ADMSController : Controller
                     {
                         // Daha erkən punch → əsl giriş budur, çıxış olduğu kimi qalır.
                         movcud.GirisVaxti = vaxt;
-                        movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
+                        movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans, bugunGorushBitis);
                         await _db.SaveChangesAsync();
                         davamiyyetId = movcud.Id;
                     }
@@ -292,7 +307,7 @@ public class ADMSController : Controller
                 {
                     // Bu oxuma mövcud girişdən ERKƏNdir → girişi yenilə
                     movcud.GirisVaxti = vaxt;
-                    movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
+                    movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans, bugunGorushBitis);
                     await _db.SaveChangesAsync();
                     davamiyyetId = movcud.Id;
                 }
@@ -595,7 +610,8 @@ public class ADMSController : Controller
         Icaze? bugunIcaze,
         EzamiyyetMuraciet? bugunEzamiyyet,
         TimeSpan standartGiris,
-        TimeSpan gecikTolerans)
+        TimeSpan gecikTolerans,
+        TimeSpan? bugunGorushBitis)
     {
         var girisZaman = girisVaxti.TimeOfDay;
 
@@ -611,6 +627,16 @@ public class ADMSController : Controller
         // Məs: ezamiyyət 09:00-11:00 → işçi 10:45-də gəlirsə gecikməyib
         if (bugunEzamiyyet?.BitisSaati != null &&
             girisZaman <= bugunEzamiyyet.BitisSaati.Value + gecikTolerans)
+        {
+            return DavamiyyetStatus.Isde;
+        }
+
+        // Səhər tədbiri (offline görüş): giriş tədbirin bitmə saatı + tolerans içindədirsə gecikməyib.
+        // İki hal da bununla örtülür: (a) işçi işə gəlib, giriş edib, sonra tədbirə gedib — girişi
+        // onsuz da vaxtındadır; (b) işçi birbaşa tədbirə gedib, sonra masaya keçib — girişi tədbir
+        // pəncərəsindədir. Hər ikisi İşdə sayılır.
+        if (bugunGorushBitis != null &&
+            girisZaman <= bugunGorushBitis.Value + gecikTolerans)
         {
             return DavamiyyetStatus.Isde;
         }
