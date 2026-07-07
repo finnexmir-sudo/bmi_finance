@@ -64,7 +64,7 @@ public class OdenisNezaretiController : Controller
 
         var filtered = setirlerF.ToList();
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
-            "Tam qalıq", "Qalıq", "V/K qalıq", "Status", "Item 10", "Sistem son əməliyyat",
+            "Tam qalıq", "Qalıq", "V/K qalıq", "Item 01", "Item 10", "Sistem son əməliyyat",
             "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Ödəniş sayı" };
         var setirler = filtered.Select((x, idx) => new object?[]
         {

@@ -53,7 +53,12 @@
     .on-btn--g { background: #fff; color: #334155; border: 1.5px solid #e2e8f0; }
     .on-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
     .on-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
-    .on-table thead th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; }
+    .on-table thead th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; z-index: 3; }
+    /* Müştəri sütunu üfüqi scroll-da solda dondurulur */
+    .on-table th.on-fix, .on-table td.on-fix { position: sticky; left: 0; z-index: 2; box-shadow: 6px 0 8px -6px rgba(0,0,0,.15); }
+    .on-table td.on-fix { background: #fff; }
+    .on-table tbody tr:hover td.on-fix { background: #fafbff; }
+    .on-table thead th.on-fix { z-index: 5; }
     .on-table td { padding: 9px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }
     .on-table tbody tr:hover { background: #fafbff; }
     .on-num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -112,9 +117,9 @@
         </div>
 
         <div class="on-bar">
-            <input type="text" id="onAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, kredit hesabı və ya status axtar…" />
+            <input type="text" id="onAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, kredit hesabı və ya Item 01 axtar…" />
             <select id="onStatus" class="on-inp">
-                <option value="">Bütün statuslar</option>
+                <option value="">Bütün Item 01</option>
                 @foreach (var st in statuslar)
                 {
                     <option value="@st.ToLowerInvariant()">@st</option>
@@ -156,13 +161,13 @@
                         <tr>
                             <th>#</th>
                             <th>Region</th>
-                            <th>Müştəri</th>
+                            <th class="on-fix">Müştəri</th>
                             <th>Kredit hesabı</th>
                             <th>Kreditin növü</th>
                             <th class="on-num">Tam qalıq</th>
                             <th class="on-num">Qalıq</th>
                             <th class="on-num">V/K qalıq</th>
-                            <th>Status</th>
+                            <th>Item 01</th>
                             <th>Item 10</th>
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
@@ -184,7 +189,7 @@
                                     data-ay="@(x.SonOdenisAy?.ToString() ?? "")">
                                     <td>@(i++)</td>
                                     <td>@(string.IsNullOrWhiteSpace(x.Region) ? "—" : x.Region)</td>
-                                    <td style="font-weight:600">@x.Musteri</td>
+                                    <td class="on-fix" style="font-weight:600">@x.Musteri</td>
                                     <td class="on-mono">
                                         @(string.IsNullOrWhiteSpace(x.KreditHesabi) ? "—" : x.KreditHesabi)
                                         @if (!string.IsNullOrWhiteSpace(x.Ks)) { <span class="on-ks">@x.Ks</span> }
