@@ -236,9 +236,12 @@ namespace FinNex.UI.Areas.HR.Controllers
         [Authorize(Roles = RoleNames.Admin)]
         public async Task<IActionResult> AdminTarixDeyis(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb)
         {
+            // Admin hesabı işçiyə bağlı olmaya bilər (IsciId null) — bu, düzəlişi bloklamamalıdır.
+            // Rol qoruması yuxarıdakı [Authorize(Roles = Admin)] ilə təmin olunur; buradakı
+            // 'isciId == null → Forbid()' yoxlaması səhv idi (admin AccessDenied alırdı).
+            // adminId yalnız audit konteksti üçündür (servisdə FK/DB yazısında işlədilmir) — 0 təhlükəsizdir.
             var isciId = await GetCurrentIsciIdAsync();
-            if (isciId == null) return Forbid();
-            var result = await _mezuniyyetService.AdminTarixDeyisAsync(id, yeniBaslama, yeniBitme, sebeb, isciId.Value);
+            var result = await _mezuniyyetService.AdminTarixDeyisAsync(id, yeniBaslama, yeniBitme, sebeb, isciId ?? 0);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Detal), new { id });
         }
