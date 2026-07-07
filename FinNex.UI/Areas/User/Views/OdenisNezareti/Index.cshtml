@@ -5,7 +5,6 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
-    Func<int?, string> GunCls = g => g == null ? "" : g <= 30 ? "on-gun--yeni" : g <= 90 ? "on-gun--orta" : "on-gun--kohne";
 
     // Item_01 (status) filtri üçün datadan yığılan fərqli dəyərlər
     var statuslar = Model.Setirler
@@ -65,10 +64,6 @@
     .on-ks { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #eef2ff; color: #4338ca; font-size: 11px; font-weight: 800; margin-left: 4px; }
     .on-status { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; background: #f1f5f9; color: #475569; white-space: nowrap; }
     .on-odate { font-weight: 700; color: #0f172a; }
-    .on-gun { display: block; font-size: 11px; margin-top: 1px; }
-    .on-gun--yeni { color: #16a34a; }
-    .on-gun--orta { color: #b45309; }
-    .on-gun--kohne { color: #dc2626; }
     .on-noodenis { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; background: #fee2e2; color: #b91c1c; }
     .on-muted { color: #cbd5e1; }
     .on-sub { font-size: 11px; color: #94a3b8; }
@@ -209,7 +204,6 @@
                                         else
                                         {
                                             <span class="on-odate">@x.SonOdenisTarixi</span>
-                                            <span class="on-gun @GunCls(x.GunEvvel)">@x.GunEvvel gün əvvəl</span>
                                         }
                                     </td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
