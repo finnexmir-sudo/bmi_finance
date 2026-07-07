@@ -23,14 +23,12 @@
         .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
         .ToList();
 
-    // Son ödəniş tarixi üzrə mövcud illər (il+ay filtri)
-    var iller = Model.Setirler
-        .Where(x => x.SonOdenisIl.HasValue)
-        .Select(x => x.SonOdenisIl!.Value)
-        .Distinct().OrderByDescending(x => x).ToList();
-
-    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
-                           "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+    // Son ödəniş dövrü filtri — cari və keçən ay (server tarixinə görə)
+    var cariIl = DateTime.Today.Year;
+    var cariAy = DateTime.Today.Month;
+    var kecen = DateTime.Today.AddMonths(-1);
+    var kecenIl = kecen.Year;
+    var kecenAy = kecen.Month;
 }
 
 <style>
@@ -139,19 +137,12 @@
             </select>
 
             <span class="on-flt-lbl">Son ödəniş:</span>
-            <select id="onIl" class="on-inp" title="Son ödəniş ili">
-                <option value="">bütün illər</option>
-                @foreach (var il in iller)
-                {
-                    <option value="@il">@il</option>
-                }
-            </select>
-            <select id="onAy" class="on-inp" title="Son ödəniş ayı">
-                <option value="">bütün aylar</option>
-                @for (int m = 1; m <= 12; m++)
-                {
-                    <option value="@m">@ayAdlari[m]</option>
-                }
+            <select id="onDovr" class="on-inp" title="Son ödəniş dövrü"
+                    data-cari-il="@cariIl" data-cari-ay="@cariAy"
+                    data-kecen-il="@kecenIl" data-kecen-ay="@kecenAy">
+                <option value="">bütün</option>
+                <option value="cari">Cari ay</option>
+                <option value="kecen">Keçən ay</option>
             </select>
 
             <label class="on-chk" title="İl + ay seçiləndə: seçilən ayda ödənişi olmayanları göstərir">
@@ -258,8 +249,7 @@
         var axtar = document.getElementById('onAxtar');
         var statusSel = document.getElementById('onStatus');
         var item10Sel = document.getElementById('onItem10');
-        var ilSel = document.getElementById('onIl');
-        var aySel = document.getElementById('onAy');
+        var dovrSel = document.getElementById('onDovr');
         var yalnizNo = document.getElementById('onYalnizNo');
         var btnTemizle = document.getElementById('onTemizle');
         var excelLink = document.getElementById('onExcel');
@@ -268,6 +258,18 @@
         if (!body) return;
 
         var excelBase = excelLink ? excelLink.getAttribute('href') : '';
+
+        // Cari/keçən ay (server tarixinə görə — dropdown data-atributlarından)
+        function di(a) { return dovrSel ? (parseInt(dovrSel.getAttribute(a), 10) || 0) : 0; }
+        var cariIl = di('data-cari-il'), cariAy = di('data-cari-ay');
+        var kecenIl = di('data-kecen-il'), kecenAy = di('data-kecen-ay');
+        // Seçilmiş dövrün hədəf il/ay-ı (yoxdursa null)
+        function hedefIlAy() {
+            var d = dovrSel ? dovrSel.value : '';
+            if (d === 'cari') return { il: cariIl, ay: cariAy };
+            if (d === 'kecen') return { il: kecenIl, ay: kecenAy };
+            return null;
+        }
 
         // Sətir datasını bir dəfə oxu (kaskad filtr üçün)
         var allRows = [];
@@ -291,29 +293,31 @@
             if (s && r.search.indexOf(s) === -1) return false;
             if (exclude !== 'status' && statusSel.value && r.status !== statusSel.value) return false;
             if (exclude !== 'item10' && item10Sel.value && r.item10 !== item10Sel.value) return false;
-            if (exclude !== 'il' && ilSel.value && r.il !== ilSel.value) return false;
-            if (exclude !== 'ay' && aySel.value && r.ay !== aySel.value) return false;
             return true;
         }
 
-        // Sətir göstərilsin? — "Ödənişi olmayanlar" + il/ay birlikdə seçiləndə: SEÇİLƏN AYDA
-        // ödəniş etməyənlər (son ödəniş həmin aydan ƏVVƏL, ya da heç ödəniş yox). Əks halda adi.
+        // Sətir göstərilsin? Dövr (cari/keçən ay) + "ödənişi olmayanlar" birləşir:
+        //  • dövr seçilib, checkbox YOX → son ödəniş MƏHZ həmin ayda olanlar
+        //  • dövr seçilib, checkbox VAR → həmin ayda ödəməyənlər (son ödəniş ondan əvvəl / heç yox)
         function setirGoster(r) {
             var s = q();
             if (s && r.search.indexOf(s) === -1) return false;
             if (statusSel.value && r.status !== statusSel.value) return false;
             if (item10Sel.value && r.item10 !== item10Sel.value) return false;
-            var ilV = ilSel.value, ayV = aySel.value;
-            if (yalnizNo.checked && ilV && ayV) {
-                if (r.noodenis === '1') return true;            // heç ödəniş yox
-                var rIl = parseInt(r.il, 10);
-                if (isNaN(rIl)) return false;
-                var rAy = parseInt(r.ay, 10), sIl = parseInt(ilV, 10), sAy = parseInt(ayV, 10);
-                return (rIl < sIl) || (rIl === sIl && rAy < sAy); // seçilən aydan əvvəl
+
+            var h = hedefIlAy();
+            var onlyNo = yalnizNo.checked;
+            if (h) {
+                var rIl = parseInt(r.il, 10), rAy = parseInt(r.ay, 10);
+                if (onlyNo) {
+                    if (r.noodenis === '1') return true;                  // heç ödəniş yox
+                    if (isNaN(rIl)) return false;
+                    return (rIl < h.il) || (rIl === h.il && rAy < h.ay);  // həmin aydan əvvəl
+                }
+                if (r.noodenis === '1' || isNaN(rIl)) return false;
+                return rIl === h.il && rAy === h.ay;                      // məhz həmin ayda
             }
-            if (yalnizNo.checked && r.noodenis !== '1') return false;
-            if (ilV && r.il !== ilV) return false;
-            if (ayV && r.ay !== ayV) return false;
+            if (onlyNo && r.noodenis !== '1') return false;
             return true;
         }
 
@@ -334,8 +338,6 @@
         function suz() {
             opsiyalariYenile(statusSel, 'status');
             opsiyalariYenile(item10Sel, 'item10');
-            opsiyalariYenile(ilSel, 'il');
-            opsiyalariYenile(aySel, 'ay');
 
             var gorunen = 0;
             allRows.forEach(function (r) {
@@ -353,8 +355,8 @@
             if (q()) p.set('axtaris', axtar.value.trim());
             if (statusSel.value) p.set('status', statusSel.value);
             if (item10Sel.value) p.set('item10', item10Sel.value);
-            if (ilSel.value) p.set('il', ilSel.value);
-            if (aySel.value) p.set('ay', aySel.value);
+            var h = hedefIlAy();
+            if (h) { p.set('il', h.il); p.set('ay', h.ay); }
             if (yalnizNo.checked) p.set('onlyNo', 'true');
             var s = p.toString();
             excelLink.href = excelBase + (s ? ('?' + s) : '');
@@ -362,7 +364,7 @@
 
         function temizle() {
             axtar.value = '';
-            statusSel.value = ''; item10Sel.value = ''; ilSel.value = ''; aySel.value = '';
+            statusSel.value = ''; item10Sel.value = ''; if (dovrSel) dovrSel.value = '';
             yalnizNo.checked = false;
             suz();
         }
@@ -371,8 +373,7 @@
         yalnizNo.addEventListener('change', suz);
         if (statusSel) statusSel.addEventListener('change', suz);
         if (item10Sel) item10Sel.addEventListener('change', suz);
-        if (ilSel) ilSel.addEventListener('change', suz);
-        if (aySel) aySel.addEventListener('change', suz);
+        if (dovrSel) dovrSel.addEventListener('change', suz);
         if (btnTemizle) btnTemizle.addEventListener('click', temizle);
 
         excelHrefYenile();
