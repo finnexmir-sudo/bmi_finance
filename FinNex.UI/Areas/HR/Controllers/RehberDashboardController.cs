@@ -849,6 +849,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     // ezamiyyət. Örtük varsa heç bir sütun qırmızı OLMUR.
                     var gunKey = (x.IsciId, x.Tarix.Date);
                     var cixisTime = x.CixisVaxti?.TimeOfDay;
+                    // Tədbir pəncərəsindəki çıxış = tədbirdən qayıdış (əsl çıxış deyil)
+                    bool gorushCixisQayidis = gorushDict.TryGetValue(gunKey, out var gwc) && cixisTime.HasValue
+                        && cixisTime.Value >= gwc.Bas - tezCixmaTolerans && cixisTime.Value <= gwc.Bit + tezCixmaTolerans;
                     bool erkenIcazeVar = erkenCixisSet.Contains(gunKey);
                     bool isSaatiAz = islemeSaatiDeq.HasValue && islemeSaatiDeq.Value < normaDeq;
 
@@ -862,8 +865,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     { ortukVar = true; ortukSebeb = $"Təsdiqlənmiş icazə var ({icBasC.ToString(@"hh\:mm")}-dan) — çıxış icazə daxilindədir."; }
                     else if (ezamBasDict.TryGetValue(gunKey, out var ezBasC) && cixisTime.HasValue && cixisTime.Value >= ezBasC)
                     { ortukVar = true; ortukSebeb = $"Təsdiqlənmiş ezamiyyət var ({ezBasC.ToString(@"hh\:mm")}-dan) — çıxış onunla uyğundur."; }
-                    else if (gorushDict.TryGetValue(gunKey, out var gw) && cixisTime.HasValue
-                             && cixisTime.Value >= gw.Bas - tezCixmaTolerans && cixisTime.Value <= gw.Bit + tezCixmaTolerans)
+                    else if (gorushCixisQayidis)
                     { ortukVar = true; ortukSebeb = "Tədbirdə (offline görüş) olub — çıxış tədbir pəncərəsindədir, erkən çıxış sayılmır."; }
 
                     // ÇIXIŞ qırmızı: erkən çıxıb (tezCixan) + örtük yoxdur.
@@ -909,7 +911,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                         departamentAd = x.DepartamentAd ?? "-",
                         tarix = x.Tarix,
                         girisVaxti = x.GirisVaxti,
-                        cixisVaxti = x.CixisVaxti,
+                        // Tədbir pəncərəsindəki çıxış = tədbirdən qayıdış → açıq göstər
+                        cixisVaxti = gorushCixisQayidis ? (DateTime?)null : x.CixisVaxti,
                         status = TedbirBagislanir(x) ? (int)DavamiyyetStatus.Isde : (int)x.Status,
                         maasdanKes = x.MaasdanKes,
                         qayibSebebi = x.QayibSebebi ?? "",

@@ -323,7 +323,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                         departamentAd = x.DepartamentAd ?? "-",
                         tarix = x.Tarix,
                         girisVaxti = x.GirisVaxti,
-                        cixisVaxti = x.CixisVaxti,
+                        // Tədbir pəncərəsindəki çıxış = tədbirdən qayıdış, əsl çıxış deyil → açıq göstər
+                        cixisVaxti = gorushOrtuyur ? (DateTime?)null : x.CixisVaxti,
                         status = TedbirBagislanir(x) ? (int)DavamiyyetStatus.Isde : (int)x.Status,
                         maasdanKes = x.MaasdanKes,
                         qayibSebebi = x.QayibSebebi ?? "",

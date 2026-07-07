@@ -110,7 +110,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 id = x.Id,
                 tarix = x.Tarix,
                 girisVaxti = x.GirisVaxti,
-                cixisVaxti = x.CixisVaxti,
+                cixisVaxti = hesablama.GorushCixisReturnIds.Contains(x.Id) ? (DateTime?)null : x.CixisVaxti,
                 status = hesablama.TedbirGecikmeIds.Contains(x.Id) ? (int)DavamiyyetStatus.Isde : (int)x.Status,
                 tezCixan = hesablama.TezCixanIds.Contains(x.Id)
             }).OrderByDescending(x => x.tarix).ToList();
@@ -331,13 +331,17 @@ namespace FinNex.UI.Areas.User.Controllers
                 catch { }
             }
 
-            // Tədbir səbəbli gecikmələr (giriş tədbir pəncərəsində) — Gecikmə sayğacından/göstərişdən çıxılır
+            // Tədbir pəncərəsi: giriş → gecikmə bağışlanır; çıxış → tədbirdən qayıdış (əsl çıxış deyil)
             foreach (var x in records)
             {
+                if (!gorushDict.TryGetValue(x.Tarix.Date, out var gw)) continue;
                 if (x.Status == DavamiyyetStatus.Gecikme && x.GirisVaxti.HasValue
-                    && gorushDict.TryGetValue(x.Tarix.Date, out var gwg)
-                    && x.GirisVaxti.Value.TimeOfDay <= gwg.Bit + gecikTolerans)
+                    && x.GirisVaxti.Value.TimeOfDay <= gw.Bit + gecikTolerans)
                     netice.TedbirGecikmeIds.Add(x.Id);
+                if (x.CixisVaxti.HasValue
+                    && x.CixisVaxti.Value.TimeOfDay >= gw.Bas - tezCixmaTolerans
+                    && x.CixisVaxti.Value.TimeOfDay <= gw.Bit + tezCixmaTolerans)
+                    netice.GorushCixisReturnIds.Add(x.Id);
             }
 
             netice.Stats = new DavamiyyetStatlar
@@ -363,6 +367,7 @@ namespace FinNex.UI.Areas.User.Controllers
             public HashSet<int> TezCixanIds { get; set; } = new();
             public HashSet<int> MezuniyyetIcazeliIds { get; set; } = new();
             public HashSet<int> TedbirGecikmeIds { get; set; } = new();
+            public HashSet<int> GorushCixisReturnIds { get; set; } = new();
         }
     }
 
