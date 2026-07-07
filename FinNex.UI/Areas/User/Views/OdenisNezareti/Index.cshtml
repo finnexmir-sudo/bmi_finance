@@ -6,6 +6,14 @@
 
     Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
     Func<int?, string> GunCls = g => g == null ? "" : g <= 30 ? "on-gun--yeni" : g <= 90 ? "on-gun--orta" : "on-gun--kohne";
+
+    // Item_01 (status) filtri üçün datadan yığılan fərqli dəyərlər
+    var statuslar = Model.Setirler
+        .Where(x => !string.IsNullOrWhiteSpace(x.Status))
+        .Select(x => x.Status!.Trim())
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+        .ToList();
 }
 
 <style>
@@ -88,6 +96,13 @@
 
         <div class="on-bar">
             <input type="text" id="onAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, kredit hesabı və ya status axtar…" />
+            <select id="onStatus" class="on-inp">
+                <option value="">Bütün statuslar</option>
+                @foreach (var st in statuslar)
+                {
+                    <option value="@st.ToLowerInvariant()">@st</option>
+                }
+            </select>
             <label class="on-chk">
                 <input type="checkbox" id="onYalnizNo" /> Yalnız ödənişi olmayanlar
             </label>
@@ -109,6 +124,7 @@
                             <th class="on-num">V/K qalıq</th>
                             <th>Status</th>
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
+                            <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis">Ödəniş cəmi</th>
                             <th class="on-num on-col-odenis">Sayı</th>
                         </tr>
@@ -120,7 +136,8 @@
                             @foreach (var x in Model.Setirler)
                             {
                                 <tr data-search="@((x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "")).ToLowerInvariant())"
-                                    data-noodenis="@(x.OdenisYox ? "1" : "0")">
+                                    data-noodenis="@(x.OdenisYox ? "1" : "0")"
+                                    data-status="@((x.Status ?? "").Trim().ToLowerInvariant())">
                                     <td>@(i++)</td>
                                     <td>@(string.IsNullOrWhiteSpace(x.Region) ? "—" : x.Region)</td>
                                     <td style="font-weight:600">@x.Musteri</td>
@@ -153,6 +170,7 @@
                                             <span class="on-gun @GunCls(x.GunEvvel)">@x.GunEvvel gün əvvəl</span>
                                         }
                                     </td>
+                                    <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
                                     <td class="on-num on-col-odenis">@(x.OdenisSayi?.ToString() ?? "—")</td>
                                 </tr>
@@ -160,7 +178,7 @@
                         }
                         else
                         {
-                            <tr><td colspan="12"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
+                            <tr><td colspan="13"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
                         }
                     </tbody>
                 </table>
@@ -174,6 +192,7 @@
 <script>
     (function () {
         var axtar = document.getElementById('onAxtar');
+        var statusSel = document.getElementById('onStatus');
         var yalnizNo = document.getElementById('onYalnizNo');
         var body = document.getElementById('onBody');
         var count = document.getElementById('onCount');
@@ -182,12 +201,14 @@
         function suz() {
             var q = (axtar.value || '').trim().toLowerCase();
             var onlyNo = yalnizNo.checked;
+            var st = statusSel ? statusSel.value : '';
             var rows = body.querySelectorAll('tr[data-search]');
             var gorunen = 0;
             rows.forEach(function (r) {
                 var okText = !q || r.getAttribute('data-search').indexOf(q) !== -1;
                 var okNo = !onlyNo || r.getAttribute('data-noodenis') === '1';
-                var show = okText && okNo;
+                var okStatus = !st || r.getAttribute('data-status') === st;
+                var show = okText && okNo && okStatus;
                 r.style.display = show ? '' : 'none';
                 if (show) gorunen++;
             });
@@ -196,6 +217,7 @@
 
         axtar.addEventListener('input', suz);
         yalnizNo.addEventListener('change', suz);
+        if (statusSel) statusSel.addEventListener('change', suz);
     })();
 </script>
 }

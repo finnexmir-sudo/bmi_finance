@@ -70,9 +70,10 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         VkQaliq         = GetDec(row, "vk_qaliq", "summa_19"),
         Status          = GetStr(row, "status", "item_01"),
         SistemSonEmel   = GetStr(row, "sistem_son_emel", "lastpaymentdate_ish"),
-        SonOdenisTarixi = GetStr(row, "son_odenis_tarixi"),
-        OdenisCemi      = GetDec(row, "odenis_cemi"),
-        OdenisSayi      = GetDec(row, "odenis_sayi") is decimal ds ? (int)Math.Round(ds) : (int?)null,
+        SonOdenisTarixi  = GetStr(row, "son_odenis_tarixi"),
+        SonOdenisMeblegi = GetDec(row, "son_odenis_meblegi"),
+        OdenisCemi       = GetDec(row, "odenis_cemi"),
+        OdenisSayi       = GetDec(row, "odenis_sayi") is decimal ds ? (int)Math.Round(ds) : (int?)null,
     };
 
     public async Task<IList<OdenisNezaretiDto>> HamisiniGetirAsync(BalansNovu? balans = null, string? axtaris = null)
