@@ -97,7 +97,7 @@ public class KreditMuqavileController : Controller
 
         // Nömrələri ayır (NomreYaz=false olduqda preview — Oracle-a yazılmır)
         var nomreler = await _nomreService.MenzilNomreleriAyirAsync(zaminler.Count, ct);
-        var mekno = await _nomreService.MektubQeydiyyatiAsync(dto.MektubTarixi, User.Identity?.Name ?? "FinNex", ct);
+        var mekno = await _nomreService.MektubQeydiyyatiAsync(dto.MuqavileTarixi, User.Identity?.Name ?? "FinNex", ct);
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──
         var ferqli = dto.GirovSahibiFerqli;
@@ -149,7 +149,7 @@ public class KreditMuqavileController : Controller
 
             // Məktub
             ["{mekno}"] = mekno,
-            ["{girov_tipi}"] = dto.GirovTipi,
+            ["{girov_tipi}"] = GirovTipiGenitiv(dto.GirovNovu),
         };
 
         var templateRoot = SablonQovlugu();
@@ -216,6 +216,17 @@ public class KreditMuqavileController : Controller
         };
         return string.Join(", ", hisseler.Where(s => !string.IsNullOrWhiteSpace(s)));
     }
+
+    // {girov_tipi} — girov növü → yiyəlik hal (BTİ məktubu üçün), BMI Menzil.girovTipiniTap()
+    private static string GirovTipiGenitiv(string? girovNovu) => girovNovu switch
+    {
+        "Mənzil" => "mənzilin",
+        "Qeyri yaşayış sahəsi" => "Qeyri yaşayış sahəsinin",
+        "Qeyri yaşayış binası" => "Qeyri yaşayış binasının",
+        "Fərdi yaşayış evi" => "Fərdi yaşayış evinin",
+        "Torpaq sahəsi" => "Torpaq sahəsinin",
+        _ => girovNovu ?? ""
+    };
 
     private static string Pul(decimal? v) => (v ?? 0).ToString("#,##0.##");
     private static string Faiz(decimal? v) => (v ?? 0).ToString("0.##");
