@@ -113,14 +113,56 @@ namespace FinNex.Application.Services
                     return false;
                 }
 
+                // Görüş (offline tədbir) səbəbli gecikmələri təqvimdə də bağışla —
+                // kart məntiqi ilə (aşağıda ── 6d) EYNİ: iştirakçı olub, girişi tədbir
+                // bitmə saatı + tolerans içindədirsə, həmin gün "Gecikmə" (qırmızı) deyil,
+                // normal iş günü (yaşıl) kimi göstərilir.
+                var izParam = await _unitOfWork.Repository<IsParametri>()
+                    .GetirAsync(x => !x.Silinib);
+                var gecikTolerans = TimeSpan.FromMinutes(izParam?.GecikmeToleransDeqiqe ?? 5);
+
+                var buAyTedbirBitisleri = new Dictionary<DateTime, TimeSpan>();
+                try
+                {
+                    var buAyIshtiraklar = await _unitOfWork.Repository<GorushIshtirakci>()
+                        .HamisiniGetirAsync(
+                            x => x.IsciId == isci.Id && !x.Silinib
+                              && x.Gorush.Nov == GorushNovu.Offline
+                              && x.Gorush.Status != GorushStatus.LegvEdildi
+                              && x.Status != IshtirakciStatus.Redd
+                              && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
+                              && x.Gorush.Tarix.Year == buIl
+                              && x.Gorush.Tarix.Month == buAy
+                              && x.Gorush.BitisSaati != null,
+                            include: q => q.Include(gi => gi.Gorush),
+                            izlemeden: true);
+                    foreach (var t in buAyIshtiraklar)
+                    {
+                        var d = t.Gorush.Tarix.Date;
+                        var bit = t.Gorush.BitisSaati!.Value;
+                        if (!buAyTedbirBitisleri.TryGetValue(d, out var cur) || bit > cur)
+                            buAyTedbirBitisleri[d] = bit;
+                    }
+                }
+                catch { /* Görüş cədvəli yoxdursa keç */ }
+
+                bool BuAyGecikmeBagislanir(Davamiyyet r) =>
+                    r.GirisVaxti.HasValue
+                    && buAyTedbirBitisleri.TryGetValue(r.Tarix.Date, out var bit)
+                    && r.GirisVaxti.Value.TimeOfDay <= bit + gecikTolerans;
+
                 dto.DavamiyyetTakvim = aydakiButunGunler.Select(gun =>
                 {
                     var qeyd = davamiyyetler.FirstOrDefault(d => d.Tarix.Date == gun.Date);
                     var bayramdir = IsHoliday(gun, out var bayramAdi);
+                    var status = qeyd?.Status ?? DavamiyyetStatus.Isde;
+                    // Tədbir səbəbli bağışlanan gecikmə təqvimdə normal iş günü kimi görünür.
+                    if (status == DavamiyyetStatus.Gecikme && qeyd != null && BuAyGecikmeBagislanir(qeyd))
+                        status = DavamiyyetStatus.Isde;
                     return new DashboardDavamiyyetGunDto
                     {
                         Tarix = gun,
-                        Status = qeyd?.Status ?? DavamiyyetStatus.Isde,
+                        Status = status,
                         Bayramdir = bayramdir,
                         BayramAdi = bayramAdi
                     };
@@ -220,8 +262,7 @@ namespace FinNex.Application.Services
                 // İstifadə = cari təqvim ilində təsdiqlənmiş adi icazə saatları.
                 // Jeton ödənən saat (bonus, sayılmır) və istifadə edilməyən nahar
                 // çıxılır — IcazeService.EfektivSaat ilə EYNİ qayda.
-                var izParam = await _unitOfWork.Repository<IsParametri>()
-                    .GetirAsync(x => !x.Silinib);
+                // (izParam yuxarıda ── 3-də yüklənib.)
                 double naharSaat = (izParam?.NaharMuddetDeqiqe ?? 45) / 60.0;
                 var cariIl = DateTime.Today.Year;
 
@@ -250,7 +291,7 @@ namespace FinNex.Application.Services
 
                 // Tədbir (offline görüş) səbəbli gecikmələri bağışla — həmin gün iştirakçı olub
                 // girişi tədbir bitmə saatı + tolerans içindədirsə gecikmə sayılmır (HR/ADMS ilə eyni).
-                var gecikTolerans = TimeSpan.FromMinutes(izParam?.GecikmeToleransDeqiqe ?? 5);
+                // (gecikTolerans yuxarıda ── 3-də təyin olunub.)
                 var tedbirBitisleri = new Dictionary<DateTime, TimeSpan>();
                 try
                 {
