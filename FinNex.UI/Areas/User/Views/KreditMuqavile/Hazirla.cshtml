@@ -92,6 +92,12 @@
                         <div><label>VÖEN (Oracle-dan)</label><input type="text" class="fn-input" value="@Model.Voen" readonly /></div>
                         <div><label>Direktor adı</label><input type="text" name="DirektorAd" class="fn-input" placeholder="Ad Soyad Ata adı" /></div>
                         <div><label>Direktor vəsiqəsi (seriya, FİN)</label><input type="text" name="DirektorVesiqe" class="fn-input" /></div>
+                        <div><label>Direktor ölkəsi</label>
+                            <select name="DirektorOlke" class="fn-input">
+                                <option value="">— seçin —</option>
+                                @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                            </select>
+                        </div>
                     </div>
                     <div class="kmh-sub">Borcalan hüquqi şəxsdir — kredit müqaviləsində «hüquqi şəxs @Model.Adi (VÖEN: @Model.Voen), direktoru ...» yazılacaq.</div>
                 </div>

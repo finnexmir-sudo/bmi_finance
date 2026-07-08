@@ -142,7 +142,7 @@ public class KreditMuqavileController : Controller
             ["{k_mno}"] = nomreler.KreditNo.ToString(),
             ["{k_tar_soz}"] = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi),
             ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
-            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe),
+            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe, dto.DirektorOlke),
             ["{k_olke}"] = dto.BorcalanOlke,
             ["{k_ves}"] = VesiqeVeyaVoen(kredit),
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
@@ -226,7 +226,7 @@ public class KreditMuqavileController : Controller
                 ["{ztel}"] = z.Telefon,
                 ["{zunvan}"] = z.Unvan,
                 ["{zolke1}"] = z.Huquqi
-                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.Olke}"
+                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.DirektorOlke}"
                     : z.Olke,
                 ["{zmno1}"] = (i < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[i] : 0).ToString(),
                 ["{ztar1_soz}"] = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi),
@@ -310,7 +310,7 @@ public class KreditMuqavileController : Controller
             ["{k_mno}"] = nomreler.KreditNo.ToString(),
             ["{k_tar_soz}"] = tarixSoz,
             ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
-            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe),
+            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe, dto.DirektorOlke),
             ["{k_olke}"] = dto.BorcalanOlke,
             ["{k_ves}"] = VesiqeVeyaVoen(kredit),
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
@@ -366,7 +366,7 @@ public class KreditMuqavileController : Controller
                 ["{ztel}"] = z.Telefon,
                 ["{zunvan}"] = z.Unvan,
                 ["{zolke1}"] = z.Huquqi
-                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.Olke}"
+                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.DirektorOlke}"
                     : z.Olke,
                 ["{zmno1}"] = (i < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[i] : 0).ToString(),
                 ["{ztar1_soz}"] = tarixSoz,
@@ -401,15 +401,16 @@ public class KreditMuqavileController : Controller
     // {k_kimlik} — borcalanın kimlik bəndi (fiziki / hüquqi şəxs).
     // Fiziki:  "{ölkə}nın vətəndaşı {ad} (vəsiqə məlumatı: {vəsiqə})"
     // Hüquqi:  "hüquqi şəxs {şirkət} (VÖEN: {voen}), direktoru {ölkə}nın vətəndaşı {direktor} (vəsiqə məlumatı: {direktor vəsiqəsi})"
-    private static string BorcaluKimlik(KreditMuqavileSatirDto k, string? olke, string? direktorAd, string? direktorVesiqe)
+    private static string BorcaluKimlik(KreditMuqavileSatirDto k, string? olke, string? direktorAd, string? direktorVesiqe, string? direktorOlke)
     {
-        var country = string.IsNullOrWhiteSpace(olke) ? (k.Olke ?? "") : olke;
         if (k.HuquqiSexs)
         {
+            // Hüquqi şəxsdə "vətəndaşı" ölkəsi DİREKTORA aiddir (şirkətə yox)
             var company = KreditSozeCevir.BaslikRegistri(k.Adi);
             var dir = KreditSozeCevir.BaslikRegistri(direktorAd);
-            return $"hüquqi şəxs {company} (VÖEN: {k.Voen}), direktoru {country}nın vətəndaşı {dir} (vəsiqə məlumatı: {direktorVesiqe})";
+            return $"hüquqi şəxs {company} (VÖEN: {k.Voen}), direktoru {direktorOlke}nın vətəndaşı {dir} (vəsiqə məlumatı: {direktorVesiqe})";
         }
+        var country = string.IsNullOrWhiteSpace(olke) ? (k.Olke ?? "") : olke;
         return $"{country}nın vətəndaşı {KreditSozeCevir.BaslikRegistri(k.Adi)} (vəsiqə məlumatı: {VesiqeMetni(k)})";
     }
 

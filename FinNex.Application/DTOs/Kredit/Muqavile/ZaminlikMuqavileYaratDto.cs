@@ -22,6 +22,7 @@ public class ZaminlikMuqavileYaratDto
     // Borcalan hüquqi şəxs olduqda (r.yurik=1) — direktorun məlumatı əl ilə daxil edilir.
     public string? DirektorAd { get; set; }
     public string? DirektorVesiqe { get; set; }   // seriya, FİN
+    public string? DirektorOlke { get; set; }      // hüquqi şəxsdə "vətəndaşı" ölkəsi direktora aiddir
 
     // Zaminlər — Oracle SELECT-dən avtomatik yüklənir, əl ilə də əlavə/redaktə oluna bilər
     public List<ZaminDaxilDto> Zaminler { get; set; } = new();

@@ -25,6 +25,7 @@ public class MenzilMuqavileYaratDto
     // Kimlik bəndi ({k_kimlik}): "hüquqi şəxs ŞİRKƏT (VÖEN: ...), direktoru ... DİREKTOR (vəsiqə)".
     public string? DirektorAd { get; set; }
     public string? DirektorVesiqe { get; set; }   // seriya, FİN
+    public string? DirektorOlke { get; set; }      // hüquqi şəxsdə "vətəndaşı" ölkəsi direktora aiddir
 
     // İpoteka (girov) məlumatı
     public string? IpotekaNovu { get; set; }         // {i_ipnovu} — İpoteka / Sonrakı İpoteka

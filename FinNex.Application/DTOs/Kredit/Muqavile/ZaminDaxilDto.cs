@@ -18,4 +18,5 @@ public class ZaminDaxilDto
     public string? Voen { get; set; }
     public string? DirektorAd { get; set; }
     public string? DirektorVesiqe { get; set; }
+    public string? DirektorOlke { get; set; }      // hüquqi şəxsdə "vətəndaşı" ölkəsi direktora aiddir
 }
