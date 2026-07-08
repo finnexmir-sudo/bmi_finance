@@ -305,11 +305,35 @@
                                                 <tbody>
                                                     @foreach (var ic in ist.Icazeler)
                                                     {
+                                                        // Müddətlər dəqiqə bandında göstərilir (0.6 saat yox → 36 dəq).
+                                                        var planDeq = (int)Math.Round(ic.IcazeSaati * 60);
+                                                        // Faktiki müddət — göstərilən çıxış/qayıdışdan hesablanır ki, ekrandakı
+                                                        // saatlarla üst-üstə düşsün; yoxdursa servisin FaktikiSaat dəyərinə düşür.
+                                                        double? faktSaat = (!ic.Birdefelik && ic.CixisVaxt.HasValue && ic.QayidisVaxt.HasValue
+                                                                            && ic.QayidisVaxt.Value > ic.CixisVaxt.Value)
+                                                            ? Math.Round((ic.QayidisVaxt.Value - ic.CixisVaxt.Value).TotalHours, 2)
+                                                            : ic.FaktikiSaat;
+                                                        var faktDeq = faktSaat.HasValue
+                                                            ? (int)Math.Round(faktSaat.Value * 60)
+                                                            : 0;
+                                                        // "Gec qayıdıb" = faktiki müddət icazə müddətindən böyükdür (1 dəq tolerans).
+                                                        // Birdəfəlik icazələrdə qayıdış olmadığı üçün tətbiq edilmir.
+                                                        var gecQayitdi = !ic.Birdefelik
+                                                            && faktSaat.HasValue
+                                                            && faktSaat.Value > ic.IcazeSaati + (1.0 / 60.0);
+                                                        var artiqDeq = faktDeq - planDeq;
                                                         <tr>
                                                             <td>@ic.IcazeTarixi.ToString("dd.MM.yyyy")</td>
                                                             <td>@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm")</td>
                                                             <td>
-                                                                <strong>@ic.IcazeSaati.ToString("0.#") saat</strong>
+                                                                <strong>@planDeq dəq</strong>
+                                                                @if (gecQayitdi)
+                                                                {
+                                                                    <span style="margin-left:6px;color:#e0566a;font-weight:700;white-space:nowrap"
+                                                                          title="İcazə @planDeq dəq idi, faktiki @faktDeq dəq — @artiqDeq dəq artıq (gec qayıdıb)">
+                                                                        ⚠ faktiki @faktDeq dəq (+@artiqDeq)
+                                                                    </span>
+                                                                }
                                                                 @if (ic.JetonOdenenSaat > 0)
                                                                 {
                                                                     var jSaat = ic.JetonOdenenSaat.ToString("0.#");
@@ -324,7 +348,10 @@
                                                             <td>
                                                                 @if (ic.QayidisVaxt.HasValue)
                                                                 {
-                                                                    <span>@ic.QayidisVaxt.Value.ToString("HH:mm")</span>
+                                                                    <span style="@(gecQayitdi ? "color:#e0566a;font-weight:700" : null)"
+                                                                          title="@(gecQayitdi ? $"Gec qayıdıb — icazə {planDeq} dəq idi, faktiki {faktDeq} dəq ({artiqDeq} dəq artıq)" : null)">
+                                                                        @ic.QayidisVaxt.Value.ToString("HH:mm")
+                                                                    </span>
                                                                 }
                                                                 else if (ic.Birdefelik)
                                                                 {
