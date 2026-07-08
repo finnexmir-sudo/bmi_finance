@@ -274,8 +274,7 @@
                                     <span class="iz-badge iz-badge--reject">@ist.ImtinaEdildiSayi</span>
                                 </td>
                                 <td>
-                                    <span class="iz-saat">@ist.TesdiqSaat.ToString("0.#")</span>
-                                    <span class="iz-saat-lbl"> saat</span>
+                                    <span class="iz-saat">@SaatToDeqiqe(ist.TesdiqSaat)</span>
                                 </td>
                                 @{
                                     // Faktiki cəmi təsdiq (planlaşdırılan) saatdan böyükdürsə işçi icazələrdən
@@ -285,8 +284,7 @@
                                 <td title="@(faktikiBoyuk ? "Faktiki müddət təsdiq olunan saatdan böyükdür — gec qayıdış" : "Cihazdan faktiki çıxış–qayıdış müddətlərinin cəmi")">
                                     @if (ist.FaktikiSaat > 0)
                                     {
-                                        <span class="iz-saat" style="color:@(faktikiBoyuk ? "#e0566a" : "#2d6cdf");@(faktikiBoyuk ? "font-weight:700" : "")">@ist.FaktikiSaat.ToString("0.#")</span>
-                                        <span class="iz-saat-lbl" style="@(faktikiBoyuk ? "color:#e0566a" : null)"> saat</span>
+                                        <span class="iz-saat" style="color:@(faktikiBoyuk ? "#e0566a" : "#2d6cdf");@(faktikiBoyuk ? "font-weight:700" : "")">@SaatToDeqiqe(ist.FaktikiSaat)</span>
                                     }
                                     else
                                     {

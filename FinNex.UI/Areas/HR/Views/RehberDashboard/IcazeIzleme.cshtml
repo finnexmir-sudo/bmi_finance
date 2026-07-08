@@ -255,8 +255,7 @@
                                 <td><span class="iz-badge iz-badge--wait">@ist.GozlemeSayi</span></td>
                                 <td><span class="iz-badge iz-badge--reject">@ist.ImtinaEdildiSayi</span></td>
                                 <td>
-                                    <span class="iz-saat">@ist.TesdiqSaat.ToString("0.#")</span>
-                                    <span class="iz-saat-lbl"> saat</span>
+                                    <span class="iz-saat">@SaatToDeqiqe(ist.TesdiqSaat)</span>
                                 </td>
                                 <td class="iz-isci-sub">@(ist.SonIcazeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
                             </tr>
