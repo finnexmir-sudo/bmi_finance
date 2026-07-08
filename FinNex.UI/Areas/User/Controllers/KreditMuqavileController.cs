@@ -141,7 +141,7 @@ public class KreditMuqavileController : Controller
             // Kredit / borcalan
             ["{k_mno}"] = nomreler.KreditNo.ToString(),
             ["{k_tar_soz}"] = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi),
-            ["{k_saa}"] = kredit.Adi,
+            ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
             ["{k_olke}"] = dto.BorcalanOlke,
             ["{k_ves}"] = VesiqeMetni(kredit),
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
@@ -176,7 +176,7 @@ public class KreditMuqavileController : Controller
             ["{Ipoteka_deyer_soz}"] = KreditSozeCevir.MebleghSozeQepiksiz(dto.GirovDeyeri ?? 0),
 
             // Girov sahibi — fərqli olduqda əl ilə, əks halda borcalan
-            ["{i_saa}"] = ferqli ? dto.SahibAd : kredit.Adi,
+            ["{i_saa}"] = ferqli ? dto.SahibAd : KreditSozeCevir.BaslikRegistri(kredit.Adi),
             ["{i_ves}"] = ferqli ? dto.SahibVesiqe : VesiqeMetni(kredit),
             ["{i_unvan}"] = ferqli ? dto.SahibUnvan : kredit.Unvan,
             ["{i_olke}"] = ferqli ? dto.SahibOlke : dto.BorcalanOlke,

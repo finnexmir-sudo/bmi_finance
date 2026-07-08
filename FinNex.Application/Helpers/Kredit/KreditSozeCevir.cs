@@ -155,6 +155,32 @@ public static class KreditSozeCevir
         };
     }
 
+    private static readonly CultureInfo Az = GetAz();
+    private static CultureInfo GetAz()
+    {
+        try { return CultureInfo.GetCultureInfo("az-Latn-AZ"); }
+        catch { try { return CultureInfo.GetCultureInfo("az"); } catch { return CultureInfo.InvariantCulture; } }
+    }
+    private static readonly HashSet<string> AdSuffiks =
+        new(StringComparer.OrdinalIgnoreCase) { "oğlu", "oglu", "qızı", "qizi", "kızı" };
+
+    /// <summary>
+    /// ALL-CAPS adı başlıq registrinə çevirir (Heydərova Aidə Ərzuman qızı).
+    /// "oğlu/qızı" suffiksləri kiçik qalır. Azərbaycan hərfləri (İ/ı/ə) düzgün.
+    /// </summary>
+    public static string BaslikRegistri(string? ad)
+    {
+        if (string.IsNullOrWhiteSpace(ad)) return ad ?? "";
+        var sozler = ad.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < sozler.Length; i++)
+        {
+            var w = sozler[i].ToLower(Az);
+            if (AdSuffiks.Contains(w)) { sozler[i] = w; continue; }
+            sozler[i] = char.ToUpper(w[0], Az) + (w.Length > 1 ? w.Substring(1) : "");
+        }
+        return string.Join(" ", sozler);
+    }
+
     // Aletler.AyYaziIle — müddət (ay) sözlə
     public static string MuddetSoze(int aySayi)
     {

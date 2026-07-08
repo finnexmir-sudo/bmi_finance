@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -6,12 +7,12 @@ namespace FinNex.UI.Services.Kredit;
 
 /// <summary>
 /// Kredit müqavilə şablonlarını (.docx) token əvəzləməklə doldurur.
-/// OdenisTapsirigiWordService ilə eyni mexanizm: əvvəl run-lar birləşdirilir
-/// (placeholder bölünməsin), sonra {token} → dəyər əvəzlənir.
+/// {token} bir neçə run-a bölünə bilər — run-ları birləşdirmədən, HƏR RUN-un
+/// öz formatını (bold, şrift) qoruyaraq əvəz edir. Token dəyəri başladığı
+/// run-un formatını alır (yəni şablonda token qalın idisə, dəyər də qalın olur).
 /// </summary>
 public static class KreditWordService
 {
-    /// <summary>Bir şablonu doldurub .docx bayt massivi qaytarır.</summary>
     public static byte[] Doldur(string templatePath, IReadOnlyDictionary<string, string?> tokenler)
     {
         var templateBytes = File.ReadAllBytes(templatePath);
@@ -20,17 +21,16 @@ public static class KreditWordService
 
         using (var doc = WordprocessingDocument.Open(ms, true))
         {
-            var body = doc.MainDocumentPart!.Document.Body!;
-            MergeRuns(body);
-            foreach (var kv in tokenler)
-                Replace(body, kv.Key, kv.Value);
-            doc.MainDocumentPart.Document.Save();
+            var main = doc.MainDocumentPart!;
+            DoldurElement(main.Document.Body!, tokenler);
+            foreach (var h in main.HeaderParts) DoldurElement(h.Header, tokenler);
+            foreach (var f in main.FooterParts) DoldurElement(f.Footer, tokenler);
+            main.Document.Save();
         }
 
         return ms.ToArray();
     }
 
-    /// <summary>Bir neçə sənədi tək .zip arxivinə yığır.</summary>
     public static byte[] ZipYarat(IEnumerable<(string ad, byte[] data)> senedler)
     {
         using var ms = new MemoryStream();
@@ -39,7 +39,6 @@ public static class KreditWordService
             var sayac = new Dictionary<string, int>();
             foreach (var (ad, data) in senedler)
             {
-                // Eyni adlı fayllar üçün suffiks
                 var faylAdi = ad;
                 if (sayac.TryGetValue(ad, out var n))
                 {
@@ -57,32 +56,72 @@ public static class KreditWordService
         return ms.ToArray();
     }
 
-    // Hər paragrafın run-larını birləşdirir ki, {token} bölünməsin
-    private static void MergeRuns(Body body)
+    private static void DoldurElement(OpenXmlElement root, IReadOnlyDictionary<string, string?> tokenler)
     {
-        foreach (var para in body.Descendants<Paragraph>())
+        foreach (var para in root.Descendants<Paragraph>())
+            ParaqrafiEvezle(para, tokenler);
+    }
+
+    // Bir paraqrafda bütün tokenləri run formatını qoruyaraq əvəz edir
+    private static void ParaqrafiEvezle(Paragraph para, IReadOnlyDictionary<string, string?> tokenler)
+    {
+        // Hər run-u tək Text-ə normallaşdır (yalnız RUN daxilində — format dəyişmir)
+        foreach (var run in para.Elements<Run>())
         {
-            var runs = para.Elements<Run>().ToList();
-            if (runs.Count < 2) continue;
+            var runTexts = run.Elements<Text>().ToList();
+            if (runTexts.Count <= 1) continue;
+            var birlesmis = string.Concat(runTexts.Select(t => t.Text));
+            runTexts[0].Text = birlesmis;
+            runTexts[0].Space = SpaceProcessingModeValues.Preserve;
+            for (var i = 1; i < runTexts.Count; i++) runTexts[i].Remove();
+        }
 
-            var firstText = runs[0].GetFirstChild<Text>();
-            if (firstText == null) continue;
+        var guard = 0;
+        while (guard++ < 2000)
+        {
+            var texts = para.Elements<Run>()
+                            .Select(r => r.GetFirstChild<Text>())
+                            .Where(t => t != null)
+                            .Cast<Text>()
+                            .ToList();
+            if (texts.Count == 0) break;
 
-            var combined = string.Concat(runs.Select(r =>
-                string.Concat(r.Elements<Text>().Select(t => t.Text))));
-
-            firstText.Text = combined;
-            firstText.Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve;
-
-            for (var i = 1; i < runs.Count; i++)
-                runs[i].Remove();
+            var full = string.Concat(texts.Select(t => t.Text));
+            var tapildi = false;
+            foreach (var kv in tokenler)
+            {
+                var idx = full.IndexOf(kv.Key, StringComparison.Ordinal);
+                if (idx < 0) continue;
+                DiapazonuEvezle(texts, idx, kv.Key.Length, kv.Value ?? "");
+                tapildi = true;
+                break; // yenidən tara (offsetlər dəyişdi)
+            }
+            if (!tapildi) break;
         }
     }
 
-    private static void Replace(Body body, string key, string? value)
+    // [start, start+length) diapazonunu (run-lara yayıla bilər) val ilə əvəz edir.
+    // Dəyər başladığı run-un formatını alır; digər run-ların formatı toxunulmur.
+    private static void DiapazonuEvezle(List<Text> texts, int start, int length, string val)
     {
-        foreach (var text in body.Descendants<Text>())
-            if (text.Text.Contains(key))
-                text.Text = text.Text.Replace(key, value ?? "");
+        var end = start + length;
+        var pos = 0;
+        var dolduruldu = false;
+        foreach (var t in texts)
+        {
+            var len = t.Text.Length;
+            int rs = pos, re = pos + len;
+            pos = re;
+            if (re <= start || rs >= end) continue; // kəsişmə yoxdur
+
+            var localStart = Math.Max(0, start - rs);
+            var localEnd = Math.Min(len, end - rs);
+            var before = t.Text.Substring(0, localStart);
+            var after = t.Text.Substring(localEnd);
+
+            t.Text = dolduruldu ? before + after : before + val + after;
+            t.Space = SpaceProcessingModeValues.Preserve;
+            dolduruldu = true;
+        }
     }
 }
