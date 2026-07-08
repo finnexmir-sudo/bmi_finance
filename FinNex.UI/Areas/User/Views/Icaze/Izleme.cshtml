@@ -331,11 +331,13 @@
                                                 <tbody>
                                                     @foreach (var ic in ist.Icazeler)
                                                     {
-                                                        <tr>
+                                                        var icGec = IcazedeGecQayidib(ic);
+                                                        <tr style="@(icGec ? "background:#fdeaea" : null)"
+                                                            title="@(icGec ? "Gec qayıdış — faktiki müddət icazə müddətindən böyükdür" : null)">
                                                             <td>@ic.IcazeTarixi.ToString("dd.MM.yyyy")</td>
                                                             <td>@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm")</td>
                                                             <td>
-                                                                <strong>@SaatToDeqiqe(ic.IcazeSaati)</strong>
+                                                                <strong style="@(icGec ? "color:#e0566a" : null)">@SaatToDeqiqe(ic.IcazeSaati)</strong>
                                                                 @if (ic.JetonOdenenSaat > 0)
                                                                 {
                                                                     var jSaat = ic.JetonOdenenSaat.ToString("0.#");
@@ -350,7 +352,7 @@
                                                             <td>
                                                                 @if (ic.QayidisVaxt.HasValue)
                                                                 {
-                                                                    <span>@ic.QayidisVaxt.Value.ToString("HH:mm")</span>
+                                                                    <span style="@(icGec ? "color:#e0566a;font-weight:700" : null)">@ic.QayidisVaxt.Value.ToString("HH:mm")</span>
                                                                 }
                                                                 else if (ic.Birdefelik)
                                                                 {
