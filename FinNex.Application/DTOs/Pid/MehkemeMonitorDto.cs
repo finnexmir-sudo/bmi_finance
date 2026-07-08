@@ -42,6 +42,15 @@ public class MehkemeMonitorDto
     public List<MonitorQrupDto> Item01Uzre { get; set; } = new();   // status (item_01) üzrə
     public List<MonitorQrupDto> GirovUzre  { get; set; } = new();   // girovun növü üzrə
     public List<MonitorQrupDto> GecikmeZolaqlari { get; set; } = new();   // gecikmə (real_overdue_day) zolaqları — risk evristik
+
+    // ── Məhkəmə / İcra kartları — Kredit portfeli (item_01 status) üzrə ──
+    // Məhkəmə statusları: QƏTNAMƏ, MƏHKƏMƏ BAXIŞ, APELLYASİYA MƏHKƏMƏSİ,
+    //   MƏHKƏMƏ MÜHASİBATLIQ EKSPERTİZASI, ALİ MƏHKƏMƏ, MƏHKƏMƏ ƏMRİ
+    // İcra statusları: İCRADA, NOTARIUS ICRA QEYDI
+    public int     PortfelMehkemedeSay { get; set; }   // məhkəmə statuslarının sayı
+    public int     PortfelIcradaSay    { get; set; }   // icra statuslarının sayı
+    public int     PortfelCemSay       { get; set; }   // ümumi = məhkəmə + icra
+    public decimal PortfelEsasBorc     { get; set; }   // Σ (qaliq + vk_qaliq) yalnız yuxarıdakı statuslarda
 }
 
 // Oracle qrup (status / girov) — say + qalıq

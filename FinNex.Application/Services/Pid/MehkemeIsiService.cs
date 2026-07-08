@@ -301,12 +301,37 @@ public class MehkemeIsiService : IMehkemeIsiService
                 static decimal EsasBorc(Dictionary<string, object?> r) =>
                     (GetDec(r, "qaliq") ?? 0m) + (GetDec(r, "vk_qaliq") ?? 0m);
 
+                // Məhkəmə / İcra kartları üçün item_01 status qrupları (Kredit portfeli SQL-dən)
+                var mehkemeStatuslari = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "QƏTNAMƏ", "MƏHKƏMƏ BAXIŞ", "APELLYASİYA MƏHKƏMƏSİ",
+                    "MƏHKƏMƏ MÜHASİBATLIQ EKSPERTİZASI", "ALİ MƏHKƏMƏ", "MƏHKƏMƏ ƏMRİ"
+                };
+                var icraStatuslari = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "İCRADA", "NOTARIUS ICRA QEYDI"
+                };
+
                 foreach (var r in rows)
                 {
-                    dto.OracleEsasBorc  += EsasBorc(r);
+                    var esas = EsasBorc(r);
+                    dto.OracleEsasBorc  += esas;
                     dto.OracleVkQaliq   += GetDec(r, "vk_qaliq") ?? 0m;
                     dto.OracleFaizBorcu += (GetDec(r, "faiz_meblegi") ?? 0m) + (GetDec(r, "vk_faiz_meblegi") ?? 0m);
+
+                    var st = (GetStr(r, "item_01") ?? "").Trim();
+                    if (mehkemeStatuslari.Contains(st))
+                    {
+                        dto.PortfelMehkemedeSay++;
+                        dto.PortfelEsasBorc += esas;
+                    }
+                    else if (icraStatuslari.Contains(st))
+                    {
+                        dto.PortfelIcradaSay++;
+                        dto.PortfelEsasBorc += esas;
+                    }
                 }
+                dto.PortfelCemSay = dto.PortfelMehkemedeSay + dto.PortfelIcradaSay;
                 dto.Item01Uzre = rows
                     .GroupBy(r => { var s = (GetStr(r, "item_01") ?? "").Trim(); return string.IsNullOrEmpty(s) ? "Adi (statussuz)" : s; })
                     .Select(g => new MonitorQrupDto { Ad = g.Key, Say = g.Count(), Mebleg = g.Sum(EsasBorc) })

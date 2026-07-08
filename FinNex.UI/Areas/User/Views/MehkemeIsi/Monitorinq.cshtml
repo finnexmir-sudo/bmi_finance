@@ -50,33 +50,23 @@
     <div class="md-kpis">
         <div class="md-kpi md-kpi--indigo">
             <div class="md-kpi-ic"><i class="bi bi-folder2-open"></i></div>
-            <div><div class="md-kpi-val">@Model.CemIs</div><div class="md-kpi-lbl">Ümumi iş</div>
-                <div class="md-kpi-sub">@Model.AktivIs aktiv</div></div>
+            <div><div class="md-kpi-val">@Model.PortfelCemSay</div><div class="md-kpi-lbl">Ümumi iş</div>
+                <div class="md-kpi-sub">@Model.PortfelMehkemedeSay məhkəmə · @Model.PortfelIcradaSay icra</div></div>
         </div>
         <div class="md-kpi md-kpi--blue">
             <div class="md-kpi-ic"><i class="bi bi-bank"></i></div>
-            <div><div class="md-kpi-val">@Model.Mehkemede</div><div class="md-kpi-lbl">Məhkəmədə</div>
-                <div class="md-kpi-sub">@Model.Hazirlanir hazırlanır</div></div>
+            <div><div class="md-kpi-val">@Model.PortfelMehkemedeSay</div><div class="md-kpi-lbl">Məhkəmədə</div>
+                <div class="md-kpi-sub">məhkəmə mərhələsi</div></div>
         </div>
         <div class="md-kpi md-kpi--amber">
             <div class="md-kpi-ic"><i class="bi bi-hammer"></i></div>
-            <div><div class="md-kpi-val">@Model.Icrada</div><div class="md-kpi-lbl">İcrada</div>
+            <div><div class="md-kpi-val">@Model.PortfelIcradaSay</div><div class="md-kpi-lbl">İcrada</div>
                 <div class="md-kpi-sub">icra fazası</div></div>
-        </div>
-        <div class="md-kpi md-kpi--rose">
-            <div class="md-kpi-ic"><i class="bi bi-check2-circle"></i></div>
-            <div><div class="md-kpi-val">@(Model.Baglandi + Model.Tamamlandi)</div><div class="md-kpi-lbl">Bağlanmış</div>
-                <div class="md-kpi-sub">@Model.Baglandi bağlandı · @Model.Tamamlandi tamam</div></div>
         </div>
         <div class="md-kpi md-kpi--green">
             <div class="md-kpi-ic"><i class="bi bi-cash-coin"></i></div>
-            <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.AktivQalanBorc)</div><div class="md-kpi-lbl">Aktiv qalan borc</div>
-                <div class="md-kpi-sub">xərc: @M(Model.CemMehkemeXerci)</div></div>
-        </div>
-        <div class="md-kpi md-kpi--violet">
-            <div class="md-kpi-ic"><i class="bi bi-calendar-event"></i></div>
-            <div><div class="md-kpi-val">@Model.YaxinlasanIclas30</div><div class="md-kpi-lbl">Yaxınlaşan iclas (30g)</div>
-                <div class="md-kpi-sub">@Model.YaxinlasanIclas7 növbəti 7 gündə</div></div>
+            <div><div class="md-kpi-val md-kpi-val--sm">@M(Model.PortfelEsasBorc)</div><div class="md-kpi-lbl">Balans üzrə əsas borc</div>
+                <div class="md-kpi-sub">əsas + VK əsas (qalıq)</div></div>
         </div>
     </div>
 
