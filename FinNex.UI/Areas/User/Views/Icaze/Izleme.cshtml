@@ -32,6 +32,18 @@
         int deqM = totalDeq % 60;
         return deqM == 0 ? $"{saatH} saat" : $"{saatH} saat {deqM} dəq";
     }
+
+    // BİR icazədə gec qayıdış: faktiki müddət (cihaz çıxış→qayıdış) icazə müddətindən böyükdür.
+    // Cəmə baxsaq, bir icazədə gec, digərində tez qayıdış bir-birini örtə bilər — ona görə
+    // hər icazəyə AYRICA baxılır (1 dəq tolerans). Birdəfəlikdə qayıdış olmadığı üçün sayılmır.
+    bool IcazedeGecQayidib(FinNex.Application.DTOs.HR.Icaze.IcazeListDto ic)
+    {
+        if (ic.Birdefelik || ic.Status != IcazeStatus.Tesdiqlenib) return false;
+        double? fakt = (ic.CixisVaxt.HasValue && ic.QayidisVaxt.HasValue && ic.QayidisVaxt.Value > ic.CixisVaxt.Value)
+            ? (ic.QayidisVaxt.Value - ic.CixisVaxt.Value).TotalHours
+            : ic.FaktikiSaat;
+        return fakt.HasValue && fakt.Value > ic.IcazeSaati + (1.0 / 60.0);
+    }
 }
 
 @{
@@ -277,11 +289,11 @@
                                     <span class="iz-saat">@SaatToDeqiqe(ist.TesdiqSaat)</span>
                                 </td>
                                 @{
-                                    // Faktiki cəmi təsdiq (planlaşdırılan) saatdan böyükdürsə işçi icazələrdən
-                                    // ümumilikdə gec qayıdıb — sütunu qırmızı göstər (0.05 saat ≈ 3 dəq tolerans).
-                                    var faktikiBoyuk = ist.FaktikiSaat > ist.TesdiqSaat + 0.05;
+                                    // Cəmə yox, HƏR icazəyə ayrıca baxılır: hər hansı bir icazədə gec qayıdış
+                                    // varsa sütun qırmızı olur (cəmdə tez/gec bir-birini örtməsin deyə).
+                                    var faktikiBoyuk = ist.Icazeler.Any(IcazedeGecQayidib);
                                 }
-                                <td title="@(faktikiBoyuk ? "Faktiki müddət təsdiq olunan saatdan böyükdür — gec qayıdış" : "Cihazdan faktiki çıxış–qayıdış müddətlərinin cəmi")">
+                                <td title="@(faktikiBoyuk ? "Ən azı bir icazədə gec qayıdış var (faktiki müddət icazədən böyük)" : "Cihazdan faktiki çıxış–qayıdış müddətlərinin cəmi")">
                                     @if (ist.FaktikiSaat > 0)
                                     {
                                         <span class="iz-saat" style="color:@(faktikiBoyuk ? "#e0566a" : "#2d6cdf");@(faktikiBoyuk ? "font-weight:700" : "")">@SaatToDeqiqe(ist.FaktikiSaat)</span>
