@@ -129,7 +129,7 @@ public class KreditMuqavileController : Controller
             ["{k_mno}"] = nomreler.KreditNo.ToString(),
             ["{k_tar_soz}"] = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi),
             ["{k_saa}"] = kredit.Adi,
-            ["{k_olke}"] = kredit.Olke,
+            ["{k_olke}"] = dto.BorcalanOlke,
             ["{k_ves}"] = VesiqeMetni(kredit),
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
             ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
@@ -166,7 +166,7 @@ public class KreditMuqavileController : Controller
             ["{i_saa}"] = ferqli ? dto.SahibAd : kredit.Adi,
             ["{i_ves}"] = ferqli ? dto.SahibVesiqe : VesiqeMetni(kredit),
             ["{i_unvan}"] = ferqli ? dto.SahibUnvan : kredit.Unvan,
-            ["{i_olke}"] = ferqli ? dto.SahibOlke : kredit.Olke,
+            ["{i_olke}"] = ferqli ? dto.SahibOlke : dto.BorcalanOlke,
             ["{i_tel}"] = ferqli ? dto.SahibTel : kredit.Mobil,
 
             // Məktub
@@ -229,14 +229,8 @@ public class KreditMuqavileController : Controller
 
     private static string VesiqeMetni(KreditMuqavileSatirDto k)
     {
-        // {k_ves} — DİQQƏT: mətnin dəqiq formatı BMI ilə tutuşdurulmalıdır.
-        var hisseler = new[]
-        {
-            k.SeriyaNo,
-            string.IsNullOrWhiteSpace(k.VerenOrqan) ? null : $"{k.VerenOrqan} tərəfindən verilmişdir",
-            k.SenedVerilmeTarixi?.ToString("dd.MM.yyyy")
-        };
-        return string.Join(", ", hisseler.Where(s => !string.IsNullOrWhiteSpace(s)));
+        // {k_ves} — BMI ilə eyni: pasport (seriya/nömrə) + FİN
+        return string.Join(", ", new[] { k.SeriyaNo, k.Fin }.Where(s => !string.IsNullOrWhiteSpace(s)));
     }
 
     // {girov_tipi} — girov növü → yiyəlik hal (BTİ məktubu üçün), BMI Menzil.girovTipiniTap()

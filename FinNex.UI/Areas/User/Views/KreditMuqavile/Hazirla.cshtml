@@ -62,16 +62,25 @@
                 </div>
             </div>
 
-            <!-- Kredit təyinatı -->
+            <!-- Kredit təyinatı + borcalan ölkəsi -->
             <div class="fn-card kmh-card" style="--i:1">
-                <div class="kmh-sec-title">Kredit təyinatı</div>
-                <select name="Teyinat" class="fn-input" style="max-width:360px">
-                    <option value="">— seçin —</option>
-                    @foreach (var t in teyinatlar)
-                    {
-                        <option value="@t">@t</option>
-                    }
-                </select>
+                <div class="kmh-sec-title">Müqavilə parametrləri</div>
+                <div class="kmh-grid">
+                    <div>
+                        <label>Kredit təyinatı</label>
+                        <select name="Teyinat" class="fn-input">
+                            <option value="">— seçin —</option>
+                            @foreach (var t in teyinatlar) { <option value="@t">@t</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label>Borcalanın ölkəsi</label>
+                        <select name="BorcalanOlke" class="fn-input">
+                            <option value="">— seçin —</option>
+                            @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <!-- İpoteka məlumatı -->

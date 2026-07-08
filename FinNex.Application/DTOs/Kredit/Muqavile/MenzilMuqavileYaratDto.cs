@@ -18,6 +18,9 @@ public class MenzilMuqavileYaratDto
     // Kredit təyinatı — formada seçilir ({k_teyinat})
     public string? Teyinat { get; set; }
 
+    // Borcalanın ölkəsi — formada seçilir ({k_olke})
+    public string? BorcalanOlke { get; set; }
+
     // İpoteka (girov) məlumatı
     public string? IpotekaNovu { get; set; }         // {i_ipnovu} — İpoteka / Sonrakı İpoteka
     public string? GirovNovu { get; set; }           // girov obyektinin növü → {girov_tipi} (yiyəlik hal)
