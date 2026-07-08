@@ -33,10 +33,13 @@ namespace FinNex.Application.Services.HR
 
         public async Task<IList<JetonTeyinatiListDto>> JetonTeyinatlariGetirAsync()
         {
+            // Sıralama: əvvəl müsbət (mükafat) jetonlar, saat dəyərinə görə BÖYÜKDƏN
+            // KİÇİYƏ (Platin 8 → Qızıl 4 → Gümüş 1 → Bürünc 0.5), sonda mənfi (Qara cəza).
             var list = await _unitOfWork.Repository<JetonTeyinati>()
                 .Query()
                 .Where(x => x.Aktivdir)
                 .OrderBy(x => x.Nov)
+                .ThenByDescending(x => x.SaatDeyeri)
                 .ThenBy(x => x.Rengi)
                 .ToListAsync();
 

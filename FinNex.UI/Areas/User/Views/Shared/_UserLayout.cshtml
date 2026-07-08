@@ -638,7 +638,7 @@
                                   || (currentArea == "HR" && currentController == "Ezamiyyet");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan" or "Sistem";
-                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi" || currentController == "JetonTeyinati");
+                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "JetonSaatlari" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi" || currentController == "JetonTeyinati");
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive || hrMotivActive;
 
                     <div class="fn-nav-g @(hrAsasActive ? "open" : "")">
@@ -834,6 +834,10 @@
                             <a asp-area="HR" asp-controller="JetonAnalitika" asp-action="Index"
                                class="fn-nav-item @(currentController == "JetonAnalitika" ? "active" : "")">
                                 <i class="bi bi-bar-chart-fill"></i> Jeton Analitika
+                            </a>
+                            <a asp-area="HR" asp-controller="JetonSaatlari" asp-action="Index"
+                               class="fn-nav-item @(currentController == "JetonSaatlari" ? "active" : "")">
+                                <i class="bi bi-clock-history"></i> İşçi Jeton Saatları
                             </a>
                             <a asp-area="HR" asp-controller="Reyting" asp-action="Index"
                                class="fn-nav-item @(currentController == "Reyting" ? "active" : "")">

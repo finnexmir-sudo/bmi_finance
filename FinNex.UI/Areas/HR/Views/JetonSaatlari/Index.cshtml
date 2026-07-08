@@ -1,0 +1,136 @@
+@model List<FinNex.UI.Areas.HR.ViewModels.Jeton.IsciJetonSaatVM>
+@{
+    ViewData["Title"] = "İşçi Jeton Saatları";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    decimal umumiBalans = Model.Sum(x => x.CariBalansSaat);
+    decimal umumiQazanilmis = Model.Sum(x => x.ToplamQazanilmisSaat);
+    int balansliSayi = Model.Count(x => x.CariBalansSaat > 0);
+}
+
+<style>
+    .js-page { padding: 4px 2px; }
+    .js-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+    .js-head-ic { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+                  background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; font-size:24px; }
+    .js-title { font-size:22px; font-weight:800; color:#0f172a; margin:0; }
+    .js-sub { font-size:13px; color:#64748b; margin:0; }
+    .js-kpi-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .js-kpi { flex:1; min-width:150px; background:#fff; border:1px solid #e8edf3; border-radius:12px; padding:14px 16px; }
+    .js-kpi-val { font-size:22px; font-weight:800; color:#0f172a; }
+    .js-kpi-lbl { font-size:12px; color:#64748b; margin-top:2px; }
+    .js-card { background:#fff; border:1px solid #e8edf3; border-radius:12px; overflow:hidden; }
+    .js-table { width:100%; border-collapse:collapse; }
+    .js-table thead th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px;
+                         color:#8590a6; font-weight:700; padding:12px 14px; border-bottom:1px solid #eef1f6; background:#fafbfd; }
+    .js-table thead th.num { text-align:right; }
+    .js-table tbody td { padding:12px 14px; border-bottom:1px solid #f1f4f8; font-size:14px; color:#243244; vertical-align:middle; }
+    .js-table tbody tr:hover { background:#f9fbff; }
+    .js-table td.num { text-align:right; }
+    .js-rank { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
+               border-radius:50%; font-size:.72rem; font-weight:800; }
+    .js-rank--1 { background:#ffd700; color:#7a5a00; }
+    .js-rank--2 { background:#c8ccd3; color:#3a3f47; }
+    .js-rank--3 { background:#cd7f32; color:#fff; }
+    .js-rank--n { background:#eef1f6; color:#8590a6; }
+    .js-name { font-weight:600; color:#0f172a; }
+    .js-dep { font-size:12px; color:#8590a6; }
+    .js-balance { font-weight:800; color:#0f766e; font-size:15px; }
+    .js-balance--zero { color:#b6bcc7; }
+    .js-muted { color:#8590a6; }
+    .js-qara { display:inline-block; min-width:22px; text-align:center; padding:1px 7px; border-radius:10px;
+               font-size:.74rem; font-weight:700; background:#1a1a1a; color:#fff; }
+    .js-empty { text-align:center; padding:48px 16px; color:#8590a6; }
+</style>
+
+<div class="js-page">
+    <div class="js-head">
+        <div class="js-head-ic"><i class="bi bi-clock-history"></i></div>
+        <div>
+            <h1 class="js-title">İşçi Jeton Saatları</h1>
+            <p class="js-sub">İşçilər cari xərclənə bilən jeton saat balansına görə sıralanıb (böyükdən kiçiyə)</p>
+        </div>
+    </div>
+
+    <div class="js-kpi-row">
+        <div class="js-kpi">
+            <div class="js-kpi-val">@umumiBalans.ToString("0.##") <span style="font-size:13px;font-weight:600;color:#64748b">saat</span></div>
+            <div class="js-kpi-lbl">Ümumi cari balans</div>
+        </div>
+        <div class="js-kpi">
+            <div class="js-kpi-val">@umumiQazanilmis.ToString("0.##") <span style="font-size:13px;font-weight:600;color:#64748b">saat</span></div>
+            <div class="js-kpi-lbl">İndiyədək qazanılmış (cəmi)</div>
+        </div>
+        <div class="js-kpi">
+            <div class="js-kpi-val">@balansliSayi</div>
+            <div class="js-kpi-lbl">Balansı olan işçi</div>
+        </div>
+        <div class="js-kpi">
+            <div class="js-kpi-val">@Model.Count</div>
+            <div class="js-kpi-lbl">Ümumi işçi</div>
+        </div>
+    </div>
+
+    <div class="js-card">
+        @if (!Model.Any())
+        {
+            <div class="js-empty">
+                <i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px"></i>
+                Nəticə tapılmadı
+            </div>
+        }
+        else
+        {
+            <table class="js-table">
+                <thead>
+                    <tr>
+                        <th style="width:44px">#</th>
+                        <th>İşçi</th>
+                        <th>Şöbə / Vəzifə</th>
+                        <th class="num">Aktiv jeton</th>
+                        <th class="num">Qazanılmış (saat)</th>
+                        <th class="num">İstifadə (saat)</th>
+                        <th class="num">Cari balans (saat)</th>
+                        <th class="num">Qara jeton</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int rank = 0; }
+                    @foreach (var x in Model)
+                    {
+                        rank++;
+                        var rankClass = rank == 1 ? "js-rank--1" : rank == 2 ? "js-rank--2" : rank == 3 ? "js-rank--3" : "js-rank--n";
+                        <tr>
+                            <td><span class="js-rank @rankClass">@rank</span></td>
+                            <td><span class="js-name">@x.AdSoyad</span></td>
+                            <td>
+                                <div class="js-dep">@x.Departament</div>
+                                @if (!string.IsNullOrEmpty(x.Vezife))
+                                {
+                                    <div class="js-dep">@x.Vezife</div>
+                                }
+                            </td>
+                            <td class="num">@(x.AktivMusbetSayi > 0 ? x.AktivMusbetSayi.ToString() : "—")</td>
+                            <td class="num js-muted">@x.ToplamQazanilmisSaat.ToString("0.##")</td>
+                            <td class="num js-muted">@(x.IstifadeOlunmusSaat > 0 ? x.IstifadeOlunmusSaat.ToString("0.##") : "—")</td>
+                            <td class="num">
+                                <span class="js-balance @(x.CariBalansSaat <= 0 ? "js-balance--zero" : "")">
+                                    @x.CariBalansSaat.ToString("0.##")
+                                </span>
+                            </td>
+                            <td class="num">
+                                @if (x.AktivQaraSayi > 0)
+                                {
+                                    <span class="js-qara">@x.AktivQaraSayi</span>
+                                }
+                                else
+                                {
+                                    <span class="js-muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
