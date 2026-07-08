@@ -72,13 +72,16 @@
                             @foreach (var t in teyinatlar) { <option value="@t">@t</option> }
                         </select>
                     </div>
-                    <div>
-                        <label>Borcalanın ölkəsi</label>
-                        <select name="BorcalanOlke" class="fn-input">
-                            <option value="">— seçin —</option>
-                            @foreach (var o in olkeler) { <option value="@o">@o</option> }
-                        </select>
-                    </div>
+                    @if (!Model.HuquqiSexs)
+                    {
+                        <div>
+                            <label>Borcalanın ölkəsi</label>
+                            <select name="BorcalanOlke" class="fn-input">
+                                <option value="">— seçin —</option>
+                                @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                            </select>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -121,7 +124,7 @@
                                 <div><label>FİN</label><input type="text" name="Zaminler[@i].Fin" value="@z.Fin" class="fn-input" /></div>
                                 <div><label>Telefon</label><input type="text" name="Zaminler[@i].Telefon" value="@z.Telefon" class="fn-input" /></div>
                                 <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[@i].Unvan" value="@z.Unvan" class="fn-input" /></div>
-                                <div><label>Ölkə</label>
+                                <div class="zamin-olke @(z.Huquqi ? "kmh-hidden" : "")"><label>Ölkə</label>
                                     <select name="Zaminler[@i].Olke" class="fn-input">
                                         <option value="">— seçin —</option>
                                         @foreach (var o in olkeler)
@@ -239,7 +242,7 @@
                     <div><label>FİN</label><input type="text" name="Zaminler[${i}].Fin" class="fn-input" /></div>
                     <div><label>Telefon</label><input type="text" name="Zaminler[${i}].Telefon" class="fn-input" /></div>
                     <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[${i}].Unvan" class="fn-input" /></div>
-                    <div><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input">${olkeOptions}</select></div>
+                    <div class="zamin-olke"><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input">${olkeOptions}</select></div>
                     <div class="kmh-full"><label class="kmh-check"><input type="checkbox" class="zamin-huquqi" name="Zaminler[${i}].Huquqi" value="true" /><span>Hüquqi şəxs</span></label></div>
                 </div>
                 <div class="zamin-huquqi-blok kmh-hidden">
@@ -268,8 +271,12 @@
         // "Hüquqi şəxs" checkbox — işarələnəndə həmin zaminin VÖEN/direktor bloku açılır
         zaminlerDiv.addEventListener('change', function (e) {
             if (e.target.classList.contains('zamin-huquqi')) {
-                var blok = e.target.closest('.zamin-row').querySelector('.zamin-huquqi-blok');
+                var row = e.target.closest('.zamin-row');
+                var blok = row.querySelector('.zamin-huquqi-blok');
                 if (blok) blok.classList.toggle('kmh-hidden', !e.target.checked);
+                // hüquqi şəxsdə zaminin öz ölkəsi gizlədilir (ölkə direktora aiddir)
+                var olke = row.querySelector('.zamin-olke');
+                if (olke) olke.classList.toggle('kmh-hidden', e.target.checked);
             }
         });
     </script>

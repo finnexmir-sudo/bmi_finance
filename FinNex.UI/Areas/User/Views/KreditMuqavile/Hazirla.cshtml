@@ -73,13 +73,16 @@
                             @foreach (var t in teyinatlar) { <option value="@t">@t</option> }
                         </select>
                     </div>
-                    <div>
-                        <label>Borcalanın ölkəsi</label>
-                        <select name="BorcalanOlke" class="fn-input">
-                            <option value="">— seçin —</option>
-                            @foreach (var o in olkeler) { <option value="@o">@o</option> }
-                        </select>
-                    </div>
+                    @if (!Model.HuquqiSexs)
+                    {
+                        <div>
+                            <label>Borcalanın ölkəsi</label>
+                            <select name="BorcalanOlke" class="fn-input">
+                                <option value="">— seçin —</option>
+                                @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                            </select>
+                        </div>
+                    }
                 </div>
             </div>
 
