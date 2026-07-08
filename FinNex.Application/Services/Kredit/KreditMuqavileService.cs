@@ -22,10 +22,28 @@ public class KreditMuqavileService : IKreditMuqavileService
 
     public async Task<List<KreditMuqavileSatirDto>> KreditleriGetirAsync(DateTime tarix, CancellationToken ct = default)
     {
+        var rows = await _oracle.SelectAsync(BuildSql(tarix, null), 2000, ct);
+        return rows.Select(Map).ToList();
+    }
+
+    public async Task<KreditMuqavileSatirDto?> KrediGetirAsync(string hesabNo, string ks, DateTime tarix, CancellationToken ct = default)
+    {
+        // hesabNo/ks yalnız rəqəmlərdən ibarətdir — SQL-ə salınmadan öncə təmizlənir.
+        var hesab = new string((hesabNo ?? "").Where(char.IsDigit).ToArray());
+        var subs = new string((ks ?? "").Where(char.IsDigit).ToArray());
+        if (hesab.Length == 0) return null;
+
+        var extra = $" AND t.licschkre = '{hesab}' AND t.subschkre = '{(subs.Length == 0 ? "0" : subs)}'";
+        var rows = await _oracle.SelectAsync(BuildSql(tarix, extra), 5, ct);
+        return rows.Select(Map).FirstOrDefault();
+    }
+
+    private static string BuildSql(DateTime tarix, string? extraWhere)
+    {
         // Tarix DateTime-dan formatlanır (istifadəçi mətni birbaşa SQL-ə düşmür).
         var tarixStr = tarix.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
 
-        var sql = $@"
+        return $@"
 SELECT
     r.name_regnom                              AS ADI,
     t.subschkre                                AS KS,
@@ -67,10 +85,7 @@ WHERE t.date_open = to_date('{tarixStr}', 'dd-MM-yyyy')
   AND t.subschkre = k.subschkre
   AND t.licschkre = y.licschkre
   AND t.subschkre = y.subschkre
-  AND m.licsch = k.licsch_3(+)";
-
-        var rows = await _oracle.SelectAsync(sql, 2000, ct);
-        return rows.Select(Map).ToList();
+  AND m.licsch = k.licsch_3(+){extraWhere}";
     }
 
     private static KreditMuqavileSatirDto Map(Dictionary<string, object?> r) => new()

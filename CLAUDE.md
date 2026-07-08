@@ -112,6 +112,23 @@ Layihədə ikinci bir verilənlər bazası mövcuddur: **Oracle (BMI)**
 - Bütün Oracle sorğuları `IOracleService` vasitəsilə icra olunur
 - Oracle sorguları `OracleSorgular` cədvəlində saxlanır (SQL Server-də), oradan oxunur
 
+### İSTİSNA — Kredit müqavilə nömrələri (yalnız 2 cədvəl)
+
+Kredit müqaviləsi modulu üçün **yalnız aşağıdakı iki cədvələ** yazı (INSERT/UPDATE)
+icazəlidir. Səbəb: BMI (köhnə desktop) və FinNex bir müddət paralel işləyəcək və
+müqavilə nömrələri **eyni Oracle sayğacından** verilməlidir ki, nömrələr toqquşmasın.
+
+- `odb.muqavile_nomreleri` — müqavilə nömrə sayğacları (UPDATE, seed üçün INSERT)
+- `odb.xaric_mektub` — girova düşmə (BTİ) məktub jurnalı (INSERT)
+
+Qaydalar:
+- Bu yazılar **yalnız** `IKreditMuqavileNomreService`-də olur — başqa yerdə Oracle yazısı QADAĞANDIR.
+- `IOracleService` hələ də **yalnız SELECT**-dir, dəyişdirilmir.
+- Bütün yazılar parametrli (`OracleCommand` bind) və atomik (`SELECT ... FOR UPDATE`) olmalıdır.
+- `KreditMuqavile:NomreYaz = false` (default) olduqda servis **heç nə yazmır** (preview);
+  yalnız real yoxlamadan sonra `true` edilir.
+- **Bu iki cədvəldən başqa Oracle-a heç bir yazı əlavə edilə bilməz.**
+
 ## Texnoloji stack
 - ASP.NET Core MVC, Areas: HR / User / Admin
 - EF Core, IUnitOfWork + IRepositoryAsync pattern
