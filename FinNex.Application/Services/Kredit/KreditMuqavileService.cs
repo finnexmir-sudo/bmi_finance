@@ -105,7 +105,9 @@ SELECT
     y.registryno                               AS TEMINAT_NO,
     y.registrydate                             AS CIXARIS_TARIXI,
     m.az || m.nr || m.bank || m.licsch         AS CARI_HESAB,
-    t.summa_zaloga                             AS GIROV_DEYERI
+    t.summa_zaloga                             AS GIROV_DEYERI,
+    r.yurik                                    AS HUQUQI_SEXS,
+    r.inn_regnom                               AS VOEN
 FROM odb.licschkre t, odb.regnom r, odb.licsch m, odb.srokpogprockre k, odb.creditinfo y
 WHERE t.date_open = to_date('{tarixStr}', 'dd-MM-yyyy')
   AND substr(t.licschkre, 10, 6) = r.regnom
@@ -144,6 +146,8 @@ WHERE t.date_open = to_date('{tarixStr}', 'dd-MM-yyyy')
         CixarisTarixi       = Dat(r, "CIXARIS_TARIXI"),
         CariHesab           = Str(r, "CARI_HESAB"),
         GirovDeyeri         = Dec(r, "GIROV_DEYERI"),
+        HuquqiSexs          = (Dec(r, "HUQUQI_SEXS") ?? 0m) == 1m,
+        Voen                = Str(r, "VOEN"),
     };
 
     private static object? Val(Dictionary<string, object?> r, string key)

@@ -83,6 +83,20 @@
                 </div>
             </div>
 
+            @if (Model.HuquqiSexs)
+            {
+                <!-- Borcalan hüquqi şəxs — direktor məlumatı (əl ilə) -->
+                <div class="fn-card kmh-card" style="--i:2">
+                    <div class="kmh-sec-title">Hüquqi şəxs — direktor məlumatı</div>
+                    <div class="kmh-grid">
+                        <div><label>VÖEN (Oracle-dan)</label><input type="text" class="fn-input" value="@Model.Voen" readonly /></div>
+                        <div><label>Direktor adı</label><input type="text" name="DirektorAd" class="fn-input" placeholder="Ad Soyad Ata adı" /></div>
+                        <div><label>Direktor vəsiqəsi (seriya, FİN)</label><input type="text" name="DirektorVesiqe" class="fn-input" /></div>
+                    </div>
+                    <div class="kmh-sub">Borcalan hüquqi şəxsdir — kredit müqaviləsində «hüquqi şəxs @Model.Adi (VÖEN: @Model.Voen), direktoru ...» yazılacaq.</div>
+                </div>
+            }
+
             <!-- İpoteka məlumatı -->
             <div class="fn-card kmh-card" style="--i:2">
                 <div class="kmh-sec-title">İpoteka (girov) məlumatı</div>

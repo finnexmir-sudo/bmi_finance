@@ -20,6 +20,10 @@ public class KreditMuqavileSatirDto
     public string? VerenOrqan { get; set; }          // r.senedi_veren_orqaninin_adi
     public DateTime? SenedVerilmeTarixi { get; set; } // r.senedin_verilme_tarixi
 
+    // Hüquqi şəxs (r.yurik = 1 → true). Hüquqi şəxsdə vəsiqə/FİN yerinə VÖEN yazılır.
+    public bool HuquqiSexs { get; set; }             // r.yurik == 1
+    public string? Voen { get; set; }                // r.inn_regnom
+
     // Kredit
     public DateTime? VerilmeTarixi { get; set; }     // t.date_open
     public string? Teyinat { get; set; }             // t.naznackredita

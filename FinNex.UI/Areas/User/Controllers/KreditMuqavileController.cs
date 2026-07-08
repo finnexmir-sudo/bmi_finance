@@ -142,8 +142,9 @@ public class KreditMuqavileController : Controller
             ["{k_mno}"] = nomreler.KreditNo.ToString(),
             ["{k_tar_soz}"] = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi),
             ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
+            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe),
             ["{k_olke}"] = dto.BorcalanOlke,
-            ["{k_ves}"] = VesiqeMetni(kredit),
+            ["{k_ves}"] = VesiqeVeyaVoen(kredit),
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
             ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
             ["{k_meb}"] = Pul(kredit.Mebleg),
@@ -177,7 +178,7 @@ public class KreditMuqavileController : Controller
 
             // Girov sahibi — fərqli olduqda əl ilə, əks halda borcalan
             ["{i_saa}"] = ferqli ? dto.SahibAd : KreditSozeCevir.BaslikRegistri(kredit.Adi),
-            ["{i_ves}"] = ferqli ? dto.SahibVesiqe : VesiqeMetni(kredit),
+            ["{i_ves}"] = ferqli ? dto.SahibVesiqe : VesiqeVeyaVoen(kredit),
             ["{i_unvan}"] = ferqli ? dto.SahibUnvan : kredit.Unvan,
             ["{i_olke}"] = ferqli ? dto.SahibOlke : dto.BorcalanOlke,
             ["{i_tel}"] = ferqli ? dto.SahibTel : kredit.Mobil,
@@ -216,7 +217,9 @@ public class KreditMuqavileController : Controller
             var zdict = new Dictionary<string, string?>(ortak)
             {
                 ["{zsaa1}"] = z.Ad,
-                ["{zves1}"] = string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
+                ["{zves1}"] = z.Huquqi
+                    ? $"VÖEN: {z.Voen}"
+                    : string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
                 ["{ztel}"] = z.Telefon,
                 ["{zunvan}"] = z.Unvan,
                 ["{zolke1}"] = z.Olke,
@@ -302,8 +305,9 @@ public class KreditMuqavileController : Controller
             ["{k_mno}"] = nomreler.KreditNo.ToString(),
             ["{k_tar_soz}"] = tarixSoz,
             ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
+            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe),
             ["{k_olke}"] = dto.BorcalanOlke,
-            ["{k_ves}"] = VesiqeMetni(kredit),
+            ["{k_ves}"] = VesiqeVeyaVoen(kredit),
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
             ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
             ["{k_meb}"] = Pul(kredit.Mebleg),
@@ -348,7 +352,9 @@ public class KreditMuqavileController : Controller
             var zdict = new Dictionary<string, string?>(ortak)
             {
                 ["{zsaa1}"] = z.Ad,
-                ["{zves1}"] = string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
+                ["{zves1}"] = z.Huquqi
+                    ? $"VÖEN: {z.Voen}"
+                    : string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
                 ["{ztel}"] = z.Telefon,
                 ["{zunvan}"] = z.Unvan,
                 ["{zolke1}"] = z.Olke,
@@ -376,6 +382,25 @@ public class KreditMuqavileController : Controller
     {
         // {k_ves} — BMI ilə eyni: pasport (seriya/nömrə) + FİN
         return string.Join(", ", new[] { k.SeriyaNo, k.Fin }.Where(s => !string.IsNullOrWhiteSpace(s)));
+    }
+
+    // {k_ves} — hüquqi şəxsdə vəsiqə/FİN yerinə VÖEN, əks halda pasport+FİN
+    private static string VesiqeVeyaVoen(KreditMuqavileSatirDto k) =>
+        k.HuquqiSexs ? $"VÖEN: {k.Voen}" : VesiqeMetni(k);
+
+    // {k_kimlik} — borcalanın kimlik bəndi (fiziki / hüquqi şəxs).
+    // Fiziki:  "{ölkə}nın vətəndaşı {ad} (vəsiqə məlumatı: {vəsiqə})"
+    // Hüquqi:  "hüquqi şəxs {şirkət} (VÖEN: {voen}), direktoru {ölkə}nın vətəndaşı {direktor} (vəsiqə məlumatı: {direktor vəsiqəsi})"
+    private static string BorcaluKimlik(KreditMuqavileSatirDto k, string? olke, string? direktorAd, string? direktorVesiqe)
+    {
+        var country = string.IsNullOrWhiteSpace(olke) ? (k.Olke ?? "") : olke;
+        if (k.HuquqiSexs)
+        {
+            var company = KreditSozeCevir.BaslikRegistri(k.Adi);
+            var dir = KreditSozeCevir.BaslikRegistri(direktorAd);
+            return $"hüquqi şəxs {company} (VÖEN: {k.Voen}), direktoru {country}nın vətəndaşı {dir} (vəsiqə məlumatı: {direktorVesiqe})";
+        }
+        return $"{country}nın vətəndaşı {KreditSozeCevir.BaslikRegistri(k.Adi)} (vəsiqə məlumatı: {VesiqeMetni(k)})";
     }
 
     // {girov_tipi} — girov növü → yiyəlik hal (BTİ məktubu üçün), BMI Menzil.girovTipiniTap()

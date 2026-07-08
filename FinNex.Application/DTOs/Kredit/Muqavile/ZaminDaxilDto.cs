@@ -10,4 +10,9 @@ public class ZaminDaxilDto
     public string? Unvan { get; set; }
     public string? Olke { get; set; }
     public string? PasportTarixi { get; set; }
+
+    // Zamin hüquqi şəxsdirmi? (formada "Şəxs tipi" seçimi). Hüquqi olduqda
+    // vəsiqə/FİN yerinə VÖEN yazılır ({zves1}).
+    public bool Huquqi { get; set; }
+    public string? Voen { get; set; }
 }

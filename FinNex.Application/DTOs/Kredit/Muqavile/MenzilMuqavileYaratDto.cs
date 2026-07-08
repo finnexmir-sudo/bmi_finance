@@ -21,6 +21,11 @@ public class MenzilMuqavileYaratDto
     // Borcalanın ölkəsi — formada seçilir ({k_olke})
     public string? BorcalanOlke { get; set; }
 
+    // Borcalan hüquqi şəxs olduqda (r.yurik=1) — direktorun məlumatı əl ilə daxil edilir.
+    // Kimlik bəndi ({k_kimlik}): "hüquqi şəxs ŞİRKƏT (VÖEN: ...), direktoru ... DİREKTOR (vəsiqə)".
+    public string? DirektorAd { get; set; }
+    public string? DirektorVesiqe { get; set; }   // seriya, FİN
+
     // İpoteka (girov) məlumatı
     public string? IpotekaNovu { get; set; }         // {i_ipnovu} — İpoteka / Sonrakı İpoteka
     public string? GirovNovu { get; set; }           // girov obyektinin növü → {girov_tipi} (yiyəlik hal)
