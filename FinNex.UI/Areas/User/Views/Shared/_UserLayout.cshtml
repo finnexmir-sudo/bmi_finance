@@ -63,7 +63,7 @@
         if (currentArea == "SenedDovriyyesi") return "umumi";
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentController == "Tesdiq") return "tesdiq";
-        if (currentController == "KreditMuraciet") return "kredit";
+        if (currentController is "KreditMuraciet" or "KreditMuqavile") return "kredit";
         if (currentController is "PidSms" or "MehkemeIsi" or "OdenisNezareti" or "MehkemeCedvel") return "pid";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
@@ -515,8 +515,12 @@
             case "kredit":
                 <div class="fn-nav-label">Kredit</div>
                 <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
-                   class="fn-nav-item @(currentAction == "Index" ? "active" : "")">
+                   class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
                     <i class="bi bi-credit-card"></i> Müraciətlər
+                </a>
+                <a asp-area="User" asp-controller="KreditMuqavile" asp-action="Index"
+                   class="fn-nav-item @(currentController == "KreditMuqavile" ? "active" : "")">
+                    <i class="bi bi-file-earmark-text"></i> Müqavilələr
                 </a>
                 <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
                    class="fn-nav-item @(currentAction == "Komite" ? "active" : "")">

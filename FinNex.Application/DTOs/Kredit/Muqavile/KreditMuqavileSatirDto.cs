@@ -1,0 +1,41 @@
+namespace FinNex.Application.DTOs.Kredit.Muqavile;
+
+/// <summary>
+/// Kredit müqaviləsi hazırlanması üçün verilmiş kreditlərin siyahı sətri.
+/// Mənbə: Oracle (BMI) — odb.licschkre + regnom + srokpogprockre + creditinfo (yalnız SELECT).
+/// BMI-dəki Form2 (Anakredit) "kataloqgetir_zamin_ayliq" sorğusunun qarşılığıdır.
+/// </summary>
+public class KreditMuqavileSatirDto
+{
+    // Borcalan
+    public string? Adi { get; set; }                 // r.name_regnom
+    public string? Ks { get; set; }                  // t.subschkre
+    public string? SubQeyd { get; set; }             // substr(licschkre,10,6)||subschkre
+    public string? HesabNo { get; set; }             // t.licschkre
+    public string? Fin { get; set; }                 // y.pincode
+    public string? Mobil { get; set; }               // r.telefon
+    public string? Unvan { get; set; }               // r.registrac
+    public string? Olke { get; set; }                // r.grajdanstvo
+    public string? SeriyaNo { get; set; }            // r.passport
+    public string? VerenOrqan { get; set; }          // r.senedi_veren_orqaninin_adi
+    public DateTime? SenedVerilmeTarixi { get; set; } // r.senedin_verilme_tarixi
+
+    // Kredit
+    public DateTime? VerilmeTarixi { get; set; }     // t.date_open
+    public string? Teyinat { get; set; }             // t.naznackredita
+    public decimal? Mebleg { get; set; }             // t.summakre
+    public decimal? MeblegAzn { get; set; }          // t.summa
+    public decimal? Ayliq { get; set; }              // graphpogkre — aylıq ödəniş
+    public string? Fifd { get; set; }                // k.fifd
+    public decimal? Faiz { get; set; }               // t.procstavkre
+    public decimal? VkFaiz { get; set; }             // t.procstav_19
+    public decimal? EhtiyatFaiz { get; set; }        // t.procstavrez
+    public string? Muddet { get; set; }              // t.srok
+    public string? CariHesab { get; set; }           // m.az||m.nr||m.bank||m.licsch
+
+    // Girov / təminat (creditinfo)
+    public decimal? GirovDeyeri { get; set; }        // t.summa_zaloga
+    public string? GirovUnvan { get; set; }          // y.anyinfotodisting
+    public string? TeminatNo { get; set; }           // y.registryno
+    public DateTime? CixarisTarixi { get; set; }     // y.registrydate
+}

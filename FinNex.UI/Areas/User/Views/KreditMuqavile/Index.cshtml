@@ -1,0 +1,170 @@
+@model List<FinNex.Application.DTOs.Kredit.Muqavile.KreditMuqavileSatirDto>
+@{
+    ViewData["Title"] = "Kredit Müqavilələri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var seciliTarix = (DateTime)(ViewBag.SeciliTarix ?? DateTime.Today);
+    var seciliTip = ViewBag.SeciliTip as string ?? "Daşınmaz Əmlak";
+    var tipler = ViewBag.Tipler as string[] ?? new string[0];
+    var xeta = ViewBag.Xeta as string;
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Kredit Müqavilələrinin Hazırlanması</div>
+            <div class="fn-page-sub">Verilmiş kreditlər üzrə Word müqavilələrinin hazırlanması</div>
+        </div>
+        <form method="get" asp-action="Index" class="kmq-filter">
+            <div class="kmq-field">
+                <label>Verilmə tarixi</label>
+                <input type="date" name="tarix" value="@seciliTarix.ToString("yyyy-MM-dd")" class="fn-input" />
+            </div>
+            <div class="kmq-field">
+                <label>Müqavilə tipi</label>
+                <select name="tip" class="fn-input">
+                    @foreach (var t in tipler)
+                    {
+                        if (t == seciliTip)
+                        {
+                            <option value="@t" selected>@t</option>
+                        }
+                        else
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    }
+                </select>
+            </div>
+            <button type="submit" class="fn-btn fn-btn--primary">Göstər</button>
+        </form>
+    </div>
+
+    <div class="km-search-bar">
+        <input type="text" id="kmqSearch" class="fn-input" placeholder="Ad, FİN, hesab və ya təyinat ilə axtar..." />
+    </div>
+
+    @if (xeta != null)
+    {
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@xeta</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-title">Kredit tapılmadı</div>
+            <div class="fn-empty-sub">Seçilmiş tarixdə (@seciliTarix.ToString("dd.MM.yyyy")) verilmiş kredit yoxdur — tarixi dəyişib yenidən yoxlayın.</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card" style="padding:0;overflow:hidden">
+            <div style="overflow-x:auto">
+                <table class="kmq-table" id="kmqTable">
+                    <thead>
+                        <tr>
+                            <th>Adı</th>
+                            <th>KS</th>
+                            <th>Sub-qeyd</th>
+                            <th>Hesab No</th>
+                            <th>Ver. tarixi</th>
+                            <th>Təyinat</th>
+                            <th class="num">Məbləğ</th>
+                            <th class="num">Aylıq</th>
+                            <th class="num">Faiz</th>
+                            <th>Müddət</th>
+                            <th>FİN</th>
+                            <th>Mobil</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var k in Model)
+                        {
+                            <tr class="kmq-row"
+                                data-search="@(($"{k.Adi} {k.Fin} {k.HesabNo} {k.Teyinat}").ToLower())">
+                                <td>@k.Adi</td>
+                                <td>@k.Ks</td>
+                                <td>@k.SubQeyd</td>
+                                <td>@k.HesabNo</td>
+                                <td>@k.VerilmeTarixi?.ToString("dd.MM.yyyy")</td>
+                                <td>@k.Teyinat</td>
+                                <td class="num">@k.Mebleg?.ToString("N2")</td>
+                                <td class="num">@k.Ayliq?.ToString("N2")</td>
+                                <td class="num">@k.Faiz?.ToString("0.##")</td>
+                                <td>@k.Muddet</td>
+                                <td>@k.Fin</td>
+                                <td>@k.Mobil</td>
+                                <td>
+                                    @if (seciliTip == "Daşınmaz Əmlak")
+                                    {
+                                        <a class="fn-btn fn-btn--outline"
+                                           asp-action="Hazirla"
+                                           asp-route-hesabNo="@k.HesabNo"
+                                           asp-route-ks="@k.Ks"
+                                           asp-route-tarix="@seciliTarix.ToString("yyyy-MM-dd")">
+                                            Müqavilə hazırla
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="fn-btn fn-btn--outline kmq-hazirla"
+                                                data-ad="@k.Adi">
+                                            Müqavilə hazırla
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="kmq-count" id="kmqCount">Cəmi: @Model.Count kredit</div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .kmq-filter { display:flex; align-items:flex-end; gap:10px; }
+        .kmq-field { display:flex; flex-direction:column; gap:4px; }
+        .kmq-field label { font-size:11px; color:#64748b; font-weight:600; }
+        .kmq-filter .fn-input { min-width:150px; }
+        .kmq-table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
+        .kmq-table thead th { text-align:left; padding:11px 14px; background:#f8fafc; color:#475569;
+            font-weight:600; font-size:12px; border-bottom:1px solid #e2e8f0; position:sticky; top:0; }
+        .kmq-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; color:#1e293b; }
+        .kmq-table td.num, .kmq-table th.num { text-align:right; }
+        .kmq-table tbody tr:hover { background:#f8fafc; }
+        .kmq-count { margin-top:10px; font-size:12px; color:#64748b; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Client-side axtarış — yüklənmiş sətirlər üzərində filtr
+        const kmqSearch = document.getElementById('kmqSearch');
+        const kmqCount = document.getElementById('kmqCount');
+        if (kmqSearch) {
+            kmqSearch.addEventListener('input', function () {
+                const q = this.value.trim().toLowerCase();
+                let gorunen = 0;
+                document.querySelectorAll('.kmq-row').forEach(function (row) {
+                    const ok = row.getAttribute('data-search').indexOf(q) !== -1;
+                    row.style.display = ok ? '' : 'none';
+                    if (ok) gorunen++;
+                });
+                if (kmqCount) kmqCount.textContent = 'Cəmi: ' + gorunen + ' kredit';
+            });
+        }
+
+        // Daşınmaz Əmlakdan başqa tiplər — hazırlama Səviyyə 2-də növbə ilə qoşulacaq
+        const seciliTip = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(seciliTip));
+        document.querySelectorAll('.kmq-hazirla').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                alert('"' + seciliTip + '" tipi üçün hazırlama növbəti mərhələdə qoşulacaq.\n' +
+                      'Hazırda yalnız "Daşınmaz Əmlak" hazırdır.');
+            });
+        });
+    </script>
+}

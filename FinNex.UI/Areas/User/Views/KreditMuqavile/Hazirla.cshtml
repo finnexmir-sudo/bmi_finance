@@ -1,0 +1,277 @@
+@using FinNex.Application.DTOs.Kredit.Muqavile
+@model KreditMuqavileSatirDto
+@{
+    ViewData["Title"] = "İpoteka müqaviləsi hazırla";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var seciliTarix = (DateTime)(ViewBag.SeciliTarix ?? DateTime.Today);
+    var xeta = ViewBag.Xeta as string;
+    var muqavileTarixi = Model.VerilmeTarixi ?? seciliTarix; // sətirdən gələn, dəyişməz tarix
+    var zaminler = ViewBag.Zaminler as List<ZaminDaxilDto> ?? new List<ZaminDaxilDto>();
+    var teyinatlar = ViewBag.Teyinatlar as string[] ?? new string[0];
+    var olkeler = ViewBag.Olkeler as string[] ?? new string[0];
+    var ayMuddet = FinNex.UI.Areas.User.Controllers.KreditMuqavileController.AyMuddet(Model.Muddet);
+}
+
+<div class="fn-page kmh-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Daşınmaz Əmlak — Müqavilə Hazırlanması</div>
+            <div class="fn-page-sub">@Model.Adi &nbsp;·&nbsp; Hesab: @Model.HesabNo</div>
+        </div>
+        <div class="kmh-datechip" title="Müqavilə tarixi (kreditin verilmə tarixi)">
+            <span class="kmh-datechip-lbl">Müqavilə tarixi</span>
+            <span class="kmh-datechip-val">@muqavileTarixi.ToString("dd.MM.yyyy")</span>
+        </div>
+    </div>
+
+    @if (xeta != null)
+    {
+        <div class="kmh-alert">@xeta</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="kmh-alert">@TempData["Error"]</div>
+    }
+
+    @if (xeta == null)
+    {
+        <form asp-action="MenzilYarat" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="HesabNo" value="@Model.HesabNo" />
+            <input type="hidden" name="Ks" value="@Model.Ks" />
+            <input type="hidden" name="KreditTarixi" value="@seciliTarix.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="MuqavileTarixi" value="@muqavileTarixi.ToString("yyyy-MM-dd")" />
+
+            <!-- Kredit məlumatı (Oracle-dan, oxunaqlı) -->
+            <div class="fn-card kmh-card" style="--i:0">
+                <div class="kmh-sec-title">Kredit məlumatı</div>
+                <div class="kmh-tiles">
+                    <div class="kmh-tile kmh-tile--wide"><span class="t-l">Borcalan</span><span class="t-v">@Model.Adi</span></div>
+                    <div class="kmh-tile"><span class="t-l">FİN</span><span class="t-v">@Model.Fin</span></div>
+                    <div class="kmh-tile kmh-tile--accent"><span class="t-l">Məbləğ</span><span class="t-v">@Model.Mebleg?.ToString("N2") AZN</span></div>
+                    <div class="kmh-tile"><span class="t-l">Faiz</span><span class="t-v">@Model.Faiz?.ToString("0.##")%</span></div>
+                    <div class="kmh-tile"><span class="t-l">V/K faiz</span><span class="t-v">@Model.VkFaiz?.ToString("0.##")%</span></div>
+                    <div class="kmh-tile"><span class="t-l">Müddət</span><span class="t-v">@ayMuddet ay</span></div>
+                    <div class="kmh-tile"><span class="t-l">Aylıq ödəniş</span><span class="t-v">@Model.Ayliq?.ToString("N2")</span></div>
+                    <div class="kmh-tile"><span class="t-l">FİFD</span><span class="t-v">@Model.Fifd</span></div>
+                    <div class="kmh-tile"><span class="t-l">Təminatın dəyəri</span><span class="t-v">@Model.GirovDeyeri?.ToString("N2")</span></div>
+                    <div class="kmh-tile"><span class="t-l">Mobil</span><span class="t-v">@Model.Mobil</span></div>
+                    <div class="kmh-tile kmh-tile--wide"><span class="t-l">Ünvan</span><span class="t-v">@Model.Unvan</span></div>
+                    <div class="kmh-tile kmh-tile--wide"><span class="t-l">Cari hesab</span><span class="t-v">@Model.CariHesab</span></div>
+                </div>
+            </div>
+
+            <!-- Kredit təyinatı + borcalan ölkəsi -->
+            <div class="fn-card kmh-card" style="--i:1">
+                <div class="kmh-sec-title">Müqavilə parametrləri</div>
+                <div class="kmh-grid">
+                    <div>
+                        <label>Kredit təyinatı</label>
+                        <select name="Teyinat" class="fn-input">
+                            <option value="">— seçin —</option>
+                            @foreach (var t in teyinatlar) { <option value="@t">@t</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label>Borcalanın ölkəsi</label>
+                        <select name="BorcalanOlke" class="fn-input">
+                            <option value="">— seçin —</option>
+                            @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İpoteka məlumatı -->
+            <div class="fn-card kmh-card" style="--i:2">
+                <div class="kmh-sec-title">İpoteka (girov) məlumatı</div>
+                <div class="kmh-grid">
+                    <div>
+                        <label>İpoteka növü</label>
+                        <select name="IpotekaNovu" class="fn-input">
+                            <option value="İpoteka">İpoteka</option>
+                            <option value="Sonrakı İpoteka">Sonrakı İpoteka</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Girov növü <span class="kmh-hint">(BTİ məktubu üçün)</span></label>
+                        <select name="GirovNovu" class="fn-input">
+                            <option value="Mənzil">Mənzil</option>
+                            <option value="Qeyri yaşayış sahəsi">Qeyri yaşayış sahəsi</option>
+                            <option value="Qeyri yaşayış binası">Qeyri yaşayış binası</option>
+                            <option value="Fərdi yaşayış evi">Fərdi yaşayış evi</option>
+                            <option value="Torpaq sahəsi">Torpaq sahəsi</option>
+                        </select>
+                    </div>
+                    <div><label>Girov dəyəri</label><input type="number" step="0.01" name="GirovDeyeri" value="@Model.GirovDeyeri?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="fn-input" /></div>
+                    <div><label>Çıxarış №</label><input type="text" name="CixarisNo" class="fn-input" /></div>
+                    <div><label>Qeydiyyat №</label><input type="text" name="QeydiyyatNo" value="@Model.TeminatNo" class="fn-input" /></div>
+                    <div><label>Reyestr №</label><input type="text" name="ReyestrNo" class="fn-input" /></div>
+                    <div><label>Ərazi</label><input type="text" name="Erazi" class="fn-input" /></div>
+                    <div class="kmh-full"><label>İpoteka ünvanı</label><input type="text" name="IpotekaUnvan" value="@Model.GirovUnvan" class="fn-input" /></div>
+                    <div class="kmh-full"><label>Digər çıxarış məlumatı</label><input type="text" name="DigerCixarisMelumati" class="fn-input" /></div>
+                </div>
+            </div>
+
+            <!-- Girov sahibi -->
+            <div class="fn-card kmh-card" style="--i:3">
+                <label class="kmh-check">
+                    <input type="checkbox" name="GirovSahibiFerqli" value="true" id="ferqliChk" />
+                    <span>Girov sahibi borcalandan fərqlidir</span>
+                </label>
+                <div id="sahibBlok" class="kmh-grid kmh-collapse">
+                    <div><label>Sahibin adı</label><input type="text" name="SahibAd" class="fn-input" /></div>
+                    <div><label>Vəsiqə məlumatı</label><input type="text" name="SahibVesiqe" class="fn-input" /></div>
+                    <div class="kmh-full"><label>Ünvan</label><input type="text" name="SahibUnvan" class="fn-input" /></div>
+                    <div><label>Ölkə</label>
+                        <select name="SahibOlke" class="fn-input">
+                            <option value="">— seçin —</option>
+                            @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                        </select>
+                    </div>
+                    <div><label>Telefon</label><input type="text" name="SahibTel" class="fn-input" /></div>
+                </div>
+            </div>
+
+            <!-- Zaminlər (Oracle-dan avtomatik yüklənir) -->
+            <div class="fn-card kmh-card" style="--i:4">
+                <div class="kmh-sec-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>Zaminlər @if (zaminler.Any()) { <span class="kmh-badge">@zaminler.Count avtomatik</span> }</span>
+                    <button type="button" class="fn-btn fn-btn--outline" id="zaminElave">+ Zamin əlavə et</button>
+                </div>
+                <div id="zaminler">
+                    @for (var i = 0; i < zaminler.Count; i++)
+                    {
+                        var z = zaminler[i];
+                        <div class="zamin-row" data-row="@i">
+                            <input type="hidden" name="Zaminler.Index" value="@i" />
+                            <button type="button" class="fn-btn fn-btn--outline zamin-sil" data-row="@i">Sil</button>
+                            <div class="kmh-grid">
+                                <div><label>Ad</label><input type="text" name="Zaminler[@i].Ad" value="@z.Ad" class="fn-input" /></div>
+                                <div><label>Pasport/seriya</label><input type="text" name="Zaminler[@i].Pasport" value="@z.Pasport" class="fn-input" /></div>
+                                <div><label>FİN</label><input type="text" name="Zaminler[@i].Fin" value="@z.Fin" class="fn-input" /></div>
+                                <div><label>Telefon</label><input type="text" name="Zaminler[@i].Telefon" value="@z.Telefon" class="fn-input" /></div>
+                                <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[@i].Unvan" value="@z.Unvan" class="fn-input" /></div>
+                                <div><label>Ölkə</label>
+                                    <select name="Zaminler[@i].Olke" class="fn-input">
+                                        <option value="">— seçin —</option>
+                                        @foreach (var o in olkeler)
+                                        {
+                                            if (z.Olke == o) { <option value="@o" selected>@o</option> }
+                                            else { <option value="@o">@o</option> }
+                                        }
+                                    </select>
+                                </div>
+                                <div><label>Pasport tarixi</label><input type="text" name="Zaminler[@i].PasportTarixi" value="@z.PasportTarixi" class="fn-input" /></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="kmh-sub" id="zaminBos" style="@(zaminler.Any() ? "display:none" : "")">Zamin yoxdur (zaminlik müqaviləsi yaranmayacaq).</div>
+            </div>
+
+            <div class="kmh-actions">
+                <button type="submit" class="fn-btn fn-btn--primary kmh-yarat">
+                    <span class="kmh-yarat-ic">📄</span> Word yarat (.zip)
+                </button>
+                <a asp-action="Index" asp-route-tarix="@seciliTarix.ToString("yyyy-MM-dd")" asp-route-tip="Daşınmaz Əmlak" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .kmh-page { animation: kmhFade .35s ease both; }
+        .kmh-card { padding:18px 20px; margin-bottom:14px; border:1px solid #e8edf3;
+            transition:box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+            animation:kmhUp .4s ease both; animation-delay:calc(var(--i,0) * .06s); }
+        .kmh-card:hover { box-shadow:0 6px 22px rgba(15,23,42,.07); border-color:#dbe3ee; transform:translateY(-1px); }
+        .kmh-sec-title { font-size:14px; font-weight:700; color:#0f172a; margin-bottom:14px;
+            padding-left:10px; border-left:3px solid #2563eb; }
+        /* Kredit məlumatı — fərqləndirilmiş tile-lar */
+        .kmh-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+        .kmh-tile { display:flex; flex-direction:column; gap:4px; padding:11px 14px;
+            background:#f8fafc; border:1px solid #eef2f7; border-radius:10px; transition:background .15s, border-color .15s; }
+        .kmh-tile:hover { background:#f1f5f9; border-color:#e2e8f0; }
+        .kmh-tile .t-l { font-size:10.5px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+        .kmh-tile .t-v { font-size:14px; color:#1e293b; font-weight:600; word-break:break-word; }
+        .kmh-tile--wide { grid-column:span 2; }
+        .kmh-tile--accent { background:linear-gradient(135deg,#eff6ff,#f8fafc); border-color:#dbeafe; }
+        .kmh-tile--accent .t-v { color:#1d4ed8; font-weight:700; }
+        /* Formlar */
+        .kmh-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px 18px; }
+        .kmh-grid .kmh-full { grid-column:1/-1; }
+        .kmh-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; letter-spacing:.2px; }
+        .kmh-hint { color:#94a3b8; font-weight:500; }
+        .kmh-page .fn-input { transition:border-color .15s ease, box-shadow .15s ease; }
+        .kmh-page .fn-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); outline:none; }
+        .kmh-datechip { display:flex; flex-direction:column; align-items:flex-end; gap:2px;
+            background:linear-gradient(135deg,#eff6ff,#f8fafc); border:1px solid #dbeafe; padding:8px 14px; border-radius:10px; }
+        .kmh-datechip-lbl { font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+        .kmh-datechip-val { font-size:15px; font-weight:700; color:#1d4ed8; }
+        .kmh-badge { font-size:11px; font-weight:600; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd;
+            padding:2px 9px; border-radius:20px; margin-left:6px; }
+        .kmh-check { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; }
+        .kmh-check input { width:16px; height:16px; accent-color:#2563eb; }
+        .kmh-collapse { max-height:0; overflow:hidden; opacity:0; margin-top:0;
+            transition:max-height .3s ease, opacity .25s ease, margin-top .3s ease; }
+        .kmh-collapse.acik { max-height:420px; opacity:1; margin-top:14px; }
+        .kmh-sub { font-size:12px; color:#94a3b8; margin-top:10px; }
+        .zamin-row { border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:10px;
+            position:relative; background:#fbfcfe; animation:kmhUp .25s ease both; }
+        .zamin-row .zamin-sil { position:absolute; top:10px; right:10px; padding:4px 12px; font-size:12px; }
+        .kmh-actions { display:flex; gap:10px; margin-top:6px; position:sticky; bottom:0; padding:12px 0;
+            background:linear-gradient(to top, var(--fn-bg,#fff) 70%, transparent); }
+        .kmh-yarat { transition:transform .12s ease, box-shadow .2s ease; }
+        .kmh-yarat:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(37,99,235,.28); }
+        .kmh-yarat:active { transform:translateY(0); }
+        .kmh-yarat-ic { margin-right:4px; }
+        @@keyframes kmhFade { from{opacity:0} to{opacity:1} }
+        @@keyframes kmhUp { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.getElementById('ferqliChk').addEventListener('change', function () {
+            document.getElementById('sahibBlok').classList.toggle('acik', this.checked);
+        });
+
+        // Zaminlər — Oracle-dan yüklənənlərdən sonra davam edən indeks
+        let zaminIndex = @zaminler.Count;
+        const zaminlerDiv = document.getElementById('zaminler');
+        const zaminBos = document.getElementById('zaminBos');
+        const olkeOptions = `<option value="">— seçin —</option>@Html.Raw(string.Concat(olkeler.Select(o => $"<option value=\"{o}\">{o}</option>")))`;
+
+        function zaminSablon(i) {
+            return `
+            <div class="zamin-row" data-row="${i}">
+                <input type="hidden" name="Zaminler.Index" value="${i}" />
+                <button type="button" class="fn-btn fn-btn--outline zamin-sil" data-row="${i}">Sil</button>
+                <div class="kmh-grid">
+                    <div><label>Ad</label><input type="text" name="Zaminler[${i}].Ad" class="fn-input" /></div>
+                    <div><label>Pasport/seriya</label><input type="text" name="Zaminler[${i}].Pasport" class="fn-input" /></div>
+                    <div><label>FİN</label><input type="text" name="Zaminler[${i}].Fin" class="fn-input" /></div>
+                    <div><label>Telefon</label><input type="text" name="Zaminler[${i}].Telefon" class="fn-input" /></div>
+                    <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[${i}].Unvan" class="fn-input" /></div>
+                    <div><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input">${olkeOptions}</select></div>
+                    <div><label>Pasport tarixi</label><input type="text" name="Zaminler[${i}].PasportTarixi" class="fn-input" /></div>
+                </div>
+            </div>`;
+        }
+
+        document.getElementById('zaminElave').addEventListener('click', function () {
+            zaminlerDiv.insertAdjacentHTML('beforeend', zaminSablon(zaminIndex++));
+            zaminBos.style.display = 'none';
+        });
+
+        zaminlerDiv.addEventListener('click', function (e) {
+            if (e.target.classList.contains('zamin-sil')) {
+                e.target.closest('.zamin-row').remove();
+                if (!zaminlerDiv.querySelector('.zamin-row')) zaminBos.style.display = '';
+            }
+        });
+    </script>
+}
