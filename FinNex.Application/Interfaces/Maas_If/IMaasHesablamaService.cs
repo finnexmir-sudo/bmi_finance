@@ -82,6 +82,13 @@ namespace FinNex.Application.Interfaces.Maas_If
         Task<int> OzHesabinaIsGunuSayAsync(int isciId, int il, int ay);
 
         /// <summary>
+        /// İşdən çıxma (çıxış) kəsintisi preview — işçi həmin ay işdən çıxıbsa,
+        /// ayrılma tarixindən sonrakı iş günlərinə görə tutulan kəsinti (yoxsa 0).
+        /// Toplu hesablama önizləməsini real hesablama ilə uyğunlaşdırmaq üçün.
+        /// </summary>
+        Task<decimal> CixisKesintisiPreviewAsync(int isciId, int il, int ay);
+
+        /// <summary>
         /// Toplu hesablama preview üçün — əvvəlki ayın maaşı hesablandıqdan
         /// sonra yaradılan xəstəlik/məzuniyyət qeydləri əsasında cari ayın maaşına
         /// tətbiq olunacaq korreksiyanı qaytarır.

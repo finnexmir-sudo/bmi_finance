@@ -387,6 +387,11 @@
                                 { ozHesGun = ozHesVal.gun; ozHesKesinti = ozHesVal.kesinti; }
                                 var ozHesKesintiStr = ozHesKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // İşdən çıxma (çıxış) kəsintisi — həmin ay işdən çıxan işçidə (önizləmə)
+                                var cixisMap = ViewBag.IsciCixisMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+                                decimal cixisKesinti = cixisMap.TryGetValue(isci.Id, out var cixisVal) ? cixisVal : 0m;
+                                var cixisKesintiStr = cixisKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 // Əvvəlki ay korreksiyası (post-maaş daxil edilmiş xəstəlik/məzuniyyət)
                                 var korrMap = ViewBag.IsciKorreksiyaMap as Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>
                                               ?? new Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>();
@@ -431,6 +436,7 @@
                                     data-qayib-kesinti="@qayibKesintiStr"
                                     data-ozhes-gun="@ozHesGun"
                                     data-ozhes-kesinti="@ozHesKesintiStr"
+                                    data-cixis-kesinti="@cixisKesintiStr"
                                     data-mav-brut="@mavBrutStr"
                                     data-mav-gelirv="@mavGelirVStr"
                                     data-mav-dsmf="@mavDsmfStr"

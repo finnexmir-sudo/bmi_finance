@@ -2033,6 +2033,37 @@ namespace FinNex.Application.Services.HR
         public Task<int> AyIsGunSayiniHesablaAsync(int il, int ay) =>
             AyinIsGunleriniHesablaAsync(il, ay);
 
+        // İşdən çıxma (çıxış) kəsintisi PREVIEW — toplu hesablama ekranında GROSS-u
+        // real hesablama (FerdiHesablaAsync 5.1) ilə eyni göstərmək üçün.
+        // İşçi həmin ay işdən çıxıbsa, ayrılma tarixindən SONRAKI iş günləri kəsilir
+        // (ayrılma günü daxildir — işlənmiş sayılır). Kəsinti olmasa 0 qaytarır.
+        public async Task<decimal> CixisKesintisiPreviewAsync(int isciId, int il, int ay)
+        {
+            var isci = await _unitOfWork.Repository<Isci>()
+                .GetirAsync(x => x.Id == isciId && !x.Silinib);
+            if (isci == null
+                || isci.Status != IsciStatus.IshtenCixib
+                || !isci.IsdenAyrilmaTarixi.HasValue
+                || isci.IsdenAyrilmaTarixi.Value.Year != il
+                || isci.IsdenAyrilmaTarixi.Value.Month != ay)
+                return 0m;
+
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId && !x.Silinib);
+            decimal esasMaas = maliye?.CariMaas ?? 0m;
+            if (esasMaas <= 0) return 0m;
+
+            int ayIsGunu = await AyinIsGunleriniHesablaAsync(il, ay);
+            if (ayIsGunu <= 0) return 0m;
+
+            var ayBash = new DateTime(il, ay, 1);
+            int islenmis = await IsGunleriniTariheGoereSayAsync(ayBash, isci.IsdenAyrilmaTarixi.Value.Date);
+            int cixisGun = Math.Max(0, ayIsGunu - islenmis);
+            if (cixisGun <= 0) return 0m;
+
+            return Math.Round(esasMaas / ayIsGunu * cixisGun, 2);
+        }
+
         // ─────────────────────────────────────────────────────────
         // AYIN IS GUNLERINI HESABLA -- BayramGunu cədvəlindən oxunur
         // Tip = Bayram → həmin gün istirahət

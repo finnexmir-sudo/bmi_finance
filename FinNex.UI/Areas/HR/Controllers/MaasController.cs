@@ -1231,6 +1231,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 isciOzHesabinaMap[id] = (ozHesGun, kesinti);
             }
 
+            // İşdən çıxma (çıxış) kəsintisi preview — həmin ay işdən çıxan işçidə
+            // ayrılma tarixindən sonrakı iş günləri kəsilir. FerdiHesablaAsync (5.1)
+            // ilə eyni düstur; önizləmə real hesablama ilə uyğun olsun deyə.
+            var isciCixisMap = new Dictionary<int, decimal>();
+            foreach (var id in isciIdler)
+            {
+                var cixisKes = await _hesablamaService.CixisKesintisiPreviewAsync(id, cIl, cAy);
+                if (cixisKes > 0) isciCixisMap[id] = cixisKes;
+            }
+            ViewBag.IsciCixisMap = isciCixisMap;
+
             // Məzuniyyət avansı (QabaqcadanOdenis, ödənilmiş) — vergi dağılımı ilə birlikdə
             var mezuniyyetAvanslar = await _unitOfWork.Repository<Mezuniyyet>()
                 .Query()

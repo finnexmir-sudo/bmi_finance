@@ -99,6 +99,8 @@
         // yalnız baza maaşdan real iş günləri kəsilir (server FerdiHesablaAsync ilə eyni).
         const ozhesGun = parseInt(row.dataset.ozhesGun || 0) || 0;
         const ozhesKesinti = parseFloat(row.dataset.ozhesKesinti || 0) || 0;
+        // İşdən çıxma (çıxış) kəsintisi — həmin ay işdən çıxan işçidə (server ilə eyni)
+        const cixisKesinti = parseFloat(row.dataset.cixisKesinti || 0) || 0;
         // Məzuniyyət avansı vergisi — server-tərəfi (combined − maaş) inkremental dəyərlər.
         // QEYD: əvvəl bu 4 vergi faktiki ödənilmiş net-ə uyğun gəlsin deyə proporsional
         // SCALE olunurdu, amma scale hər vergini fərqli əyirdi: İTSS düzgün payından
@@ -161,7 +163,7 @@
         const esasBrut = Math.max(
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
-                 - qayibKesinti - ozhesKesinti
+                 - qayibKesinti - ozhesKesinti - cixisKesinti
                  + bonus + overtime + ferqliGelir + cfgCemi + kompensasiya - cerime,
             0);
         const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
