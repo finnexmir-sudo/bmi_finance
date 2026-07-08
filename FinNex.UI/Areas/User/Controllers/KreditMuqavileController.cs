@@ -231,6 +231,138 @@ public class KreditMuqavileController : Controller
         return File(zip, "application/zip", zipAd);
     }
 
+    // Səviyyə 2 — Zaminlik hazırlama formasını göstərir (ipoteka yoxdur, yalnız zaminlər)
+    [HttpGet]
+    public async Task<IActionResult> ZaminlikHazirla(string hesabNo, string ks, DateTime? tarix)
+    {
+        var seciliTarix = tarix ?? DateTime.Today;
+        KreditMuqavileSatirDto? kredit = null;
+        try
+        {
+            kredit = await _muqavileService.KrediGetirAsync(hesabNo, ks, seciliTarix);
+        }
+        catch (Exception ex)
+        {
+            ViewBag.Xeta = "Oracle-dan məlumat alınmadı: " + ex.Message;
+        }
+
+        if (kredit == null)
+        {
+            ViewBag.Xeta ??= "Kredit tapılmadı.";
+            return View("ZaminlikHazirla", new KreditMuqavileSatirDto { HesabNo = hesabNo, Ks = ks });
+        }
+
+        // Zaminləri Oracle SELECT-dən avtomatik yüklə (neçə zamin varsa o qədər)
+        var zaminler = new List<ZaminDaxilDto>();
+        try { zaminler = await _muqavileService.ZaminleriGetirAsync(hesabNo, ks); }
+        catch { /* zamin sorğusu uğursuz olarsa forma zaminsiz açılır */ }
+
+        ViewBag.SeciliTarix = seciliTarix;
+        ViewBag.Zaminler = zaminler;
+        ViewBag.Teyinatlar = Teyinatlar;
+        ViewBag.Olkeler = Olkeler;
+        return View("ZaminlikHazirla", kredit);
+    }
+
+    // Səviyyə 2 — Zaminlik sənədlərini yaradır (kredit müqaviləsi + hər zaminə zaminlik müqaviləsi) → .zip
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminlikYarat(ZaminlikMuqavileYaratDto dto, CancellationToken ct)
+    {
+        var kredit = await _muqavileService.KrediGetirAsync(dto.HesabNo, dto.Ks, dto.KreditTarixi, ct);
+        if (kredit == null)
+        {
+            TempData["Error"] = "Kredit tapılmadı — nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Zaminlik" });
+        }
+
+        var zaminler = (dto.Zaminler ?? new()).Where(z => !string.IsNullOrWhiteSpace(z.Ad)).ToList();
+        if (zaminler.Count == 0)
+        {
+            TempData["Error"] = "Ən azı bir zamin daxil edilməlidir — zaminlik müqaviləsi zaminsiz yaradıla bilməz.";
+            return RedirectToAction("ZaminlikHazirla", new { hesabNo = dto.HesabNo, ks = dto.Ks, tarix = dto.KreditTarixi.ToString("yyyy-MM-dd") });
+        }
+
+        // Nömrələri ayır (NomreYaz=false olduqda preview — Oracle-a yazılmır).
+        // KreditNo = kr_zaminlik sayğacı, ZaminNolar = kr_zaminler sayğacı (ipoteka toxunulmur).
+        var nomreler = await _nomreService.ZaminlikNomreleriAyirAsync(zaminler.Count, ct);
+
+        var tarixSoz = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi);
+
+        // Kredit müqaviləsinin təminat bəndi — zaminlər (BMI Menzil məntiqi ilə eyni, ipoteka yoxdur)
+        string ZaminTeminat(int idx)
+        {
+            if (idx >= zaminler.Count) return "";
+            var no = idx < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[idx] : 0;
+            return $"{(idx == 0 ? "" : ",")}{tarixSoz} il tarixli {no} nömrəli {zaminler[idx].Ad} tərəfindən verilmiş zaminlik müqaviləsi";
+        }
+
+        var ortak = new Dictionary<string, string?>
+        {
+            ["{k_mno}"] = nomreler.KreditNo.ToString(),
+            ["{k_tar_soz}"] = tarixSoz,
+            ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
+            ["{k_olke}"] = dto.BorcalanOlke,
+            ["{k_ves}"] = VesiqeMetni(kredit),
+            ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
+            ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
+            ["{k_meb}"] = Pul(kredit.Mebleg),
+            ["{k_meb_soz}"] = KreditSozeCevir.MebleghSozeQepiksiz(kredit.Mebleg ?? 0),
+            ["{k_val}"] = "AZN",
+            ["{k_faiz}"] = Faiz(kredit.Faiz),
+            ["{k_cfaiz}"] = Faiz(kredit.VkFaiz),
+            ["{k_ay_odenis}"] = Pul(kredit.Ayliq),
+            ["{k_ay_odenis_soz}"] = KreditSozeCevir.MebleghSoze(kredit.Ayliq ?? 0),
+            ["{k_fifd}"] = Reqem(kredit.Fifd),
+            ["{k_teyinat}"] = string.IsNullOrWhiteSpace(dto.Teyinat) ? kredit.Teyinat : dto.Teyinat,
+            ["{k_unvan}"] = kredit.Unvan,
+            ["{k_tel}"] = kredit.Mobil,
+            // Zaminlik kreditində ipoteka təminatı yoxdur — yalnız zaminlər
+            ["{k_teminatavto}"] = "",
+            ["{k_teminat1}"] = ZaminTeminat(0),
+            ["{k_teminat2}"] = ZaminTeminat(1),
+            ["{k_teminat3}"] = ZaminTeminat(2),
+        };
+
+        var templateRoot = SablonQovlugu();
+        string T(string ad) => Path.Combine(templateRoot, ad);
+
+        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", "Zaminlik_muqavilesi.docx" }
+            .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
+        if (eksikSablon != null)
+        {
+            TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot})";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Zaminlik" });
+        }
+
+        var ad = (kredit.Adi ?? "muqavile").Trim();
+        var senedler = new List<(string ad, byte[] data)>
+        {
+            ($"Kredit müqaviləsi - {ad}.docx", KreditWordService.Doldur(T("Kredit_muqavili_yeni.docx"), ortak)),
+        };
+
+        // Hər zamin üçün ayrıca zaminlik müqaviləsi (neçə zamin gəlibsə o qədər)
+        for (var i = 0; i < zaminler.Count; i++)
+        {
+            var z = zaminler[i];
+            var zdict = new Dictionary<string, string?>(ortak)
+            {
+                ["{zsaa1}"] = z.Ad,
+                ["{zves1}"] = string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
+                ["{ztel}"] = z.Telefon,
+                ["{zunvan}"] = z.Unvan,
+                ["{zolke1}"] = z.Olke,
+                ["{zmno1}"] = (i < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[i] : 0).ToString(),
+                ["{ztar1_soz}"] = tarixSoz,
+            };
+            senedler.Add(($"Zaminlik - {z.Ad}.docx", KreditWordService.Doldur(T("Zaminlik_muqavilesi.docx"), zdict)));
+        }
+
+        var zip = KreditWordService.ZipYarat(senedler);
+        var zipAd = $"Zaminlik_{ad}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+        return File(zip, "application/zip", zipAd);
+    }
+
     // ── Köməkçilər ──
     private string SablonQovlugu()
     {

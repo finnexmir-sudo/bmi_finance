@@ -96,6 +96,67 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
         return netice;
     }
 
+    public async Task<MenzilNomreleriDto> ZaminlikNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default)
+    {
+        await using var con = new OracleConnection(_connectionString);
+        await con.OpenAsync(ct);
+
+        var il = await CariIlAsync(con, ct);
+
+        await using var tx = _nomreYaz ? (OracleTransaction)await con.BeginTransactionAsync(ct) : null;
+
+        // Sətir yoxdursa — yalnız yazı rejimində seed (sıfırlarla) əlavə et
+        if (_nomreYaz && !await SetirVarAsync(con, il, ct))
+            await SeedElaveEtAsync(con, il, ct);
+
+        // Yalnız zaminlik kreditinin sayğacları — ipoteka (kr_menzil) TOXUNULMUR
+        var forUpdate = _nomreYaz ? " FOR UPDATE" : "";
+        int krZaminlik = 1, krZaminler = 0;
+
+        await using (var read = new OracleCommand(
+            $"SELECT kr_zaminlik, kr_zaminler FROM odb.muqavile_nomreleri WHERE IL = :il{forUpdate}", con)
+            { BindByName = true })
+        {
+            read.Parameters.Add("il", il);
+            await using var dr = await read.ExecuteReaderAsync(ct);
+            if (await dr.ReadAsync(ct))
+            {
+                krZaminlik = ToInt(dr[0], 1);
+                krZaminler = ToInt(dr[1], 0);
+            }
+        }
+
+        if (krZaminlik <= 0) krZaminlik = 1;
+        if (krZaminler < 0) krZaminler = 0;
+
+        var netice = new MenzilNomreleriDto
+        {
+            KreditNo = krZaminlik,
+            IpotekaNo = 0,   // zaminlik kreditində ipoteka yoxdur
+            Yazildi = false
+        };
+        for (var i = 1; i <= zaminSayi; i++)
+            netice.ZaminNolar.Add(krZaminler + i);
+
+        if (_nomreYaz)
+        {
+            await using var upd = new OracleCommand(@"
+                UPDATE odb.muqavile_nomreleri
+                   SET kr_zaminlik = :kr,
+                       kr_zaminler = :zam
+                 WHERE IL = :il", con)
+            { BindByName = true };
+            upd.Parameters.Add("kr", krZaminlik + 1);
+            upd.Parameters.Add("zam", krZaminler + zaminSayi);
+            upd.Parameters.Add("il", il);
+            await upd.ExecuteNonQueryAsync(ct);
+            await tx!.CommitAsync(ct);
+            netice.Yazildi = true;
+        }
+
+        return netice;
+    }
+
     public async Task<string> MektubQeydiyyatiAsync(DateTime tarix, string icraci, CancellationToken ct = default)
     {
         await using var con = new OracleConnection(_connectionString);

@@ -20,6 +20,13 @@ public interface IKreditMuqavileNomreService
     Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default);
 
     /// <summary>
+    /// Zaminlik krediti üçün nömrələri ayırır — yalnız kr_zaminlik (kredit müqaviləsi)
+    /// və kr_zaminler (zaminlik running) sayğacları. İpoteka (kr_menzil) TOXUNULMUR,
+    /// çünki zaminlik kreditində ipoteka yoxdur. IpotekaNo = 0 qaytarılır.
+    /// </summary>
+    Task<MenzilNomreleriDto> ZaminlikNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default);
+
+    /// <summary>
     /// Girova düşmə (BTİ) məktubunu odb.xaric_mektub-a qeyd edir və məktub nömrəsini ({mekno}) qaytarır.
     /// NomreYaz=false olduqda yazmır, cari maksimum əsasında növbəti nömrəni qaytarır (preview).
     /// </summary>
