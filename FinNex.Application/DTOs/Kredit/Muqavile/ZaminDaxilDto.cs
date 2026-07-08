@@ -11,8 +11,11 @@ public class ZaminDaxilDto
     public string? Olke { get; set; }
     public string? PasportTarixi { get; set; }
 
-    // Zamin hüquqi şəxsdirmi? (formada "Şəxs tipi" seçimi). Hüquqi olduqda
-    // vəsiqə/FİN yerinə VÖEN yazılır ({zves1}).
+    // Zamin hüquqi şəxsdirmi? (formada "Hüquqi şəxs" checkbox). Hüquqi olduqda
+    // borcalan kimi VÖEN + direktor məlumatı əl ilə doldurulur; müqavilədə:
+    // "hüquqi şəxs {ad} (VÖEN: X), direktoru {ölkə} vətəndaşı {direktor} (vəsiqə: ...)".
     public bool Huquqi { get; set; }
     public string? Voen { get; set; }
+    public string? DirektorAd { get; set; }
+    public string? DirektorVesiqe { get; set; }
 }

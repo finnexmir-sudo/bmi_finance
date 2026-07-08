@@ -216,13 +216,18 @@ public class KreditMuqavileController : Controller
             var z = zaminler[i];
             var zdict = new Dictionary<string, string?>(ortak)
             {
-                ["{zsaa1}"] = z.Ad,
+                // Hüquqi zamin: {zolke1} prefiksinə "hüquqi şəxs {ad} (VÖEN: X), direktoru {ölkə}"
+                // qoyulur, {zsaa1}=direktor, {zves1}=direktor vəsiqəsi → şablon "{zolke1} vətəndaşı
+                // {zsaa1} (Vəsiqə məlumatı: {zves1})" tam hüquqi bəndi verir. Fiziki: adi zamin.
+                ["{zsaa1}"] = z.Huquqi ? KreditSozeCevir.BaslikRegistri(z.DirektorAd) : z.Ad,
                 ["{zves1}"] = z.Huquqi
-                    ? $"VÖEN: {z.Voen}"
+                    ? (z.DirektorVesiqe ?? "")
                     : string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
                 ["{ztel}"] = z.Telefon,
                 ["{zunvan}"] = z.Unvan,
-                ["{zolke1}"] = z.Olke,
+                ["{zolke1}"] = z.Huquqi
+                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.Olke}"
+                    : z.Olke,
                 ["{zmno1}"] = (i < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[i] : 0).ToString(),
                 ["{ztar1_soz}"] = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi),
             };
@@ -351,13 +356,18 @@ public class KreditMuqavileController : Controller
             var z = zaminler[i];
             var zdict = new Dictionary<string, string?>(ortak)
             {
-                ["{zsaa1}"] = z.Ad,
+                // Hüquqi zamin: {zolke1} prefiksinə "hüquqi şəxs {ad} (VÖEN: X), direktoru {ölkə}"
+                // qoyulur, {zsaa1}=direktor, {zves1}=direktor vəsiqəsi → şablon "{zolke1} vətəndaşı
+                // {zsaa1} (Vəsiqə məlumatı: {zves1})" tam hüquqi bəndi verir. Fiziki: adi zamin.
+                ["{zsaa1}"] = z.Huquqi ? KreditSozeCevir.BaslikRegistri(z.DirektorAd) : z.Ad,
                 ["{zves1}"] = z.Huquqi
-                    ? $"VÖEN: {z.Voen}"
+                    ? (z.DirektorVesiqe ?? "")
                     : string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
                 ["{ztel}"] = z.Telefon,
                 ["{zunvan}"] = z.Unvan,
-                ["{zolke1}"] = z.Olke,
+                ["{zolke1}"] = z.Huquqi
+                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.Olke}"
+                    : z.Olke,
                 ["{zmno1}"] = (i < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[i] : 0).ToString(),
                 ["{ztar1_soz}"] = tarixSoz,
             };

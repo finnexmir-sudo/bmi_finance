@@ -125,13 +125,19 @@
                                         }
                                     </select>
                                 </div>
-                                <div><label>Şəxs tipi</label>
-                                    <select name="Zaminler[@i].Huquqi" class="fn-input">
-                                        <option value="false" selected="@(!z.Huquqi ? "selected" : null)">Fiziki şəxs</option>
-                                        <option value="true" selected="@(z.Huquqi ? "selected" : null)">Hüquqi şəxs</option>
-                                    </select>
+                                <div class="kmh-full">
+                                    <label class="kmh-check">
+                                        <input type="checkbox" class="zamin-huquqi" name="Zaminler[@i].Huquqi" value="true" @(z.Huquqi ? "checked" : "") />
+                                        <span>Hüquqi şəxs</span>
+                                    </label>
                                 </div>
-                                <div><label>VÖEN (hüquqi şəxsdə)</label><input type="text" name="Zaminler[@i].Voen" value="@z.Voen" class="fn-input" /></div>
+                            </div>
+                            <div class="zamin-huquqi-blok @(z.Huquqi ? "" : "kmh-hidden")">
+                                <div class="kmh-grid">
+                                    <div><label>VÖEN</label><input type="text" name="Zaminler[@i].Voen" value="@z.Voen" class="fn-input" /></div>
+                                    <div><label>Direktor adı</label><input type="text" name="Zaminler[@i].DirektorAd" value="@z.DirektorAd" class="fn-input" placeholder="Ad Soyad Ata adı" /></div>
+                                    <div><label>Direktor vəsiqəsi (seriya, FİN)</label><input type="text" name="Zaminler[@i].DirektorVesiqe" value="@z.DirektorVesiqe" class="fn-input" /></div>
+                                </div>
                             </div>
                         </div>
                     }
@@ -180,6 +186,10 @@
             padding:2px 9px; border-radius:20px; margin-left:6px; }
         .kmh-alert { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px 16px; border-radius:10px; margin-bottom:14px; font-size:13px; }
         .kmh-sub { font-size:12px; color:#94a3b8; margin-top:10px; }
+        .kmh-check { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; }
+        .kmh-check input { width:16px; height:16px; accent-color:#2563eb; }
+        .kmh-hidden { display:none; }
+        .zamin-huquqi-blok { margin-top:10px; padding-top:12px; border-top:1px dashed #dbe3ee; }
         .zamin-row { border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:10px;
             position:relative; background:#fbfcfe; animation:kmhUp .25s ease both; }
         .zamin-row .zamin-sil { position:absolute; top:10px; right:10px; padding:4px 12px; font-size:12px; }
@@ -214,8 +224,14 @@
                     <div><label>Telefon</label><input type="text" name="Zaminler[${i}].Telefon" class="fn-input" /></div>
                     <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[${i}].Unvan" class="fn-input" /></div>
                     <div><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input">${olkeOptions}</select></div>
-                    <div><label>Şəxs tipi</label><select name="Zaminler[${i}].Huquqi" class="fn-input"><option value="false" selected>Fiziki şəxs</option><option value="true">Hüquqi şəxs</option></select></div>
-                    <div><label>VÖEN (hüquqi şəxsdə)</label><input type="text" name="Zaminler[${i}].Voen" class="fn-input" /></div>
+                    <div class="kmh-full"><label class="kmh-check"><input type="checkbox" class="zamin-huquqi" name="Zaminler[${i}].Huquqi" value="true" /><span>Hüquqi şəxs</span></label></div>
+                </div>
+                <div class="zamin-huquqi-blok kmh-hidden">
+                    <div class="kmh-grid">
+                        <div><label>VÖEN</label><input type="text" name="Zaminler[${i}].Voen" class="fn-input" /></div>
+                        <div><label>Direktor adı</label><input type="text" name="Zaminler[${i}].DirektorAd" class="fn-input" placeholder="Ad Soyad Ata adı" /></div>
+                        <div><label>Direktor vəsiqəsi (seriya, FİN)</label><input type="text" name="Zaminler[${i}].DirektorVesiqe" class="fn-input" /></div>
+                    </div>
                 </div>
             </div>`;
         }
@@ -229,6 +245,14 @@
             if (e.target.classList.contains('zamin-sil')) {
                 e.target.closest('.zamin-row').remove();
                 if (!zaminlerDiv.querySelector('.zamin-row')) zaminBos.style.display = '';
+            }
+        });
+
+        // "Hüquqi şəxs" checkbox — işarələnəndə həmin zaminin VÖEN/direktor bloku açılır
+        zaminlerDiv.addEventListener('change', function (e) {
+            if (e.target.classList.contains('zamin-huquqi')) {
+                var blok = e.target.closest('.zamin-row').querySelector('.zamin-huquqi-blok');
+                if (blok) blok.classList.toggle('kmh-hidden', !e.target.checked);
             }
         });
     </script>
