@@ -22,7 +22,7 @@
             </div>
             <div class="kmq-field">
                 <label>Müqavilə tipi</label>
-                <select name="tip" class="fn-input">
+                <select name="tip" class="fn-input" onchange="this.form.submit()">
                     @foreach (var t in tipler)
                     {
                         if (t == seciliTip)
