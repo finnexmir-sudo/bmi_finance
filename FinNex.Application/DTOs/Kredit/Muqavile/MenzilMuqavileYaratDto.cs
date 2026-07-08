@@ -15,6 +15,9 @@ public class MenzilMuqavileYaratDto
     // Müqavilə tarixi — sətirdən (verilmə tarixi) gəlir, dəyişməzdir (k_tar_soz üçün)
     public DateTime MuqavileTarixi { get; set; }
 
+    // Kredit təyinatı — formada seçilir ({k_teyinat})
+    public string? Teyinat { get; set; }
+
     // İpoteka (girov) məlumatı
     public string? IpotekaNovu { get; set; }         // {i_ipnovu} — İpoteka / Sonrakı İpoteka
     public string? GirovNovu { get; set; }           // girov obyektinin növü → {girov_tipi} (yiyəlik hal)

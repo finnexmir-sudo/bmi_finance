@@ -18,4 +18,10 @@ public interface IKreditMuqavileService
     /// Hazırlama səhifəsi üçün. Tapılmasa null.
     /// </summary>
     Task<KreditMuqavileSatirDto?> KrediGetirAsync(string hesabNo, string ks, DateTime tarix, CancellationToken ct = default);
+
+    /// <summary>
+    /// Kreditin zaminlərini Oracle-dan (odb.creditinfoguarantee) oxuyur.
+    /// Neçə zamin varsa, o qədər sətir qaytarır. Hazırlama formasını avtomatik doldurmaq üçün.
+    /// </summary>
+    Task<List<ZaminDaxilDto>> ZaminleriGetirAsync(string hesabNo, string ks, CancellationToken ct = default);
 }

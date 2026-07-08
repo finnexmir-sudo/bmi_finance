@@ -22,6 +22,13 @@ public class KreditMuqavileController : Controller
         "Avtomobil", "Zaminlik", "Daşınmaz Əmlak", "Qızıl girovu", "Əlavə"
     };
 
+    // Kredit təyinatları — BMI dialoqundakı siyahı ({k_teyinat})
+    public static readonly string[] Teyinatlar =
+    {
+        "Avtomobil almaq", "Məişət əşyalarının alınması", "Mənzil təmiri", "Təhsil haqqı",
+        "Xeyir iş", "Müalicə xərci", "İstirahət Xərci", "Dövriyyə vəsaitinin artırılması"
+    };
+
     public KreditMuqavileController(
         IKreditMuqavileService muqavileService,
         IKreditMuqavileNomreService nomreService,
@@ -77,7 +84,14 @@ public class KreditMuqavileController : Controller
             return View("Hazirla", new KreditMuqavileSatirDto { HesabNo = hesabNo, Ks = ks });
         }
 
+        // Zaminləri Oracle-dan avtomatik yüklə (neçə zamin varsa)
+        var zaminler = new List<ZaminDaxilDto>();
+        try { zaminler = await _muqavileService.ZaminleriGetirAsync(hesabNo, ks); }
+        catch { /* zamin sorğusu uğursuz olarsa forma zaminsiz açılır */ }
+
         ViewBag.SeciliTarix = seciliTarix;
+        ViewBag.Zaminler = zaminler;
+        ViewBag.Teyinatlar = Teyinatlar;
         return View("Hazirla", kredit);
     }
 
@@ -109,8 +123,8 @@ public class KreditMuqavileController : Controller
             ["{k_saa}"] = kredit.Adi,
             ["{k_olke}"] = kredit.Olke,
             ["{k_ves}"] = VesiqeMetni(kredit),
-            ["{k_mud}"] = kredit.Muddet,
-            ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(IntParse(kredit.Muddet)),
+            ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
+            ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
             ["{k_meb}"] = Pul(kredit.Mebleg),
             ["{k_meb_soz}"] = KreditSozeCevir.MebleghSoze(kredit.Mebleg ?? 0),
             ["{k_val}"] = "AZN",
@@ -119,7 +133,7 @@ public class KreditMuqavileController : Controller
             ["{k_ay_odenis}"] = Pul(kredit.Ayliq),
             ["{k_ay_odenis_soz}"] = KreditSozeCevir.MebleghSoze(kredit.Ayliq ?? 0),
             ["{k_fifd}"] = kredit.Fifd,
-            ["{k_teyinat}"] = kredit.Teyinat,
+            ["{k_teyinat}"] = string.IsNullOrWhiteSpace(dto.Teyinat) ? kredit.Teyinat : dto.Teyinat,
             ["{k_unvan}"] = kredit.Unvan,
             ["{k_tel}"] = kredit.Mobil,
             ["{k_teminatavto}"] = "",
@@ -231,4 +245,6 @@ public class KreditMuqavileController : Controller
     private static string Pul(decimal? v) => (v ?? 0).ToString("#,##0.##");
     private static string Faiz(decimal? v) => (v ?? 0).ToString("0.##");
     private static int IntParse(string? s) => int.TryParse(new string((s ?? "").Where(char.IsDigit).ToArray()), out var r) ? r : 0;
+    // Müddət: srok gün-lə gəlir → aya çevir (÷30)
+    public static int AyMuddet(string? srokGun) => (int)Math.Round(IntParse(srokGun) / 30.0, MidpointRounding.AwayFromZero);
 }

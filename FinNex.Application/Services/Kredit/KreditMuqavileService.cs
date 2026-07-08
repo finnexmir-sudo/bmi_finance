@@ -38,6 +38,34 @@ public class KreditMuqavileService : IKreditMuqavileService
         return rows.Select(Map).FirstOrDefault();
     }
 
+    public async Task<List<ZaminDaxilDto>> ZaminleriGetirAsync(string hesabNo, string ks, CancellationToken ct = default)
+    {
+        var hesab = new string((hesabNo ?? "").Where(char.IsDigit).ToArray());
+        var subs = new string((ks ?? "").Where(char.IsDigit).ToArray());
+        if (hesab.Length == 0) return new();
+
+        // BMI Zaminler.cs (zamingetir) — odb.creditinfoguarantee-dən zaminlər
+        var sql = $@"
+SELECT g.guarantee_name AS AD,
+       g.guarantee_id   AS PASPORT,
+       g.pincode        AS FIN,
+       g.telefon        AS TELEFON,
+       g.adress         AS UNVAN
+  FROM odb.creditinfoguarantee g
+ WHERE g.licschkre = '{hesab}'
+   AND g.subschkre = '{(subs.Length == 0 ? "0" : subs)}'";
+
+        var rows = await _oracle.SelectAsync(sql, 20, ct);
+        return rows.Select(r => new ZaminDaxilDto
+        {
+            Ad = Str(r, "AD"),
+            Pasport = Str(r, "PASPORT"),
+            Fin = Str(r, "FIN"),
+            Telefon = Str(r, "TELEFON"),
+            Unvan = Str(r, "UNVAN"),
+        }).ToList();
+    }
+
     private static string BuildSql(DateTime tarix, string? extraWhere)
     {
         // Tarix DateTime-dan formatlanır (istifadəçi mətni birbaşa SQL-ə düşmür).
