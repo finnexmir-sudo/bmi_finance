@@ -117,6 +117,7 @@
                     <div class="kmh-full"><label>Ünvan</label><input type="text" name="SahibUnvan" class="fn-input" /></div>
                     <div><label>Ölkə</label>
                         <select name="SahibOlke" class="fn-input">
+                            <option value="">— seçin —</option>
                             @foreach (var o in olkeler) { <option value="@o">@o</option> }
                         </select>
                     </div>
@@ -145,6 +146,7 @@
                                 <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[@i].Unvan" value="@z.Unvan" class="fn-input" /></div>
                                 <div><label>Ölkə</label>
                                     <select name="Zaminler[@i].Olke" class="fn-input">
+                                        <option value="">— seçin —</option>
                                         @foreach (var o in olkeler)
                                         {
                                             if (z.Olke == o) { <option value="@o" selected>@o</option> }
@@ -232,7 +234,7 @@
         let zaminIndex = @zaminler.Count;
         const zaminlerDiv = document.getElementById('zaminler');
         const zaminBos = document.getElementById('zaminBos');
-        const olkeOptions = `@Html.Raw(string.Concat(olkeler.Select(o => $"<option value=\"{o}\">{o}</option>")))`;
+        const olkeOptions = `<option value="">— seçin —</option>@Html.Raw(string.Concat(olkeler.Select(o => $"<option value=\"{o}\">{o}</option>")))`;
 
         function zaminSablon(i) {
             return `
