@@ -40,11 +40,16 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/Avans ────────────────────────────────────
-        public async Task<IActionResult> Index(int? statusFilter = null)
+        // Dövr (İl/Ay) üzrə ayrılır: default cari ay. ay=0 → həmin ilin bütün ayları.
+        // Status filtri yalnız göstərilən siyahıya tətbiq olunur; sayğaclar ay üzrə sabit qalır.
+        public async Task<IActionResult> Index(int? statusFilter = null, int? il = null, int? ay = null)
         {
-            var query = _unitOfWork.Repository<Avans>()
+            var secilmisIl = il ?? DateTime.Now.Year;
+            var secilmisAy = ay ?? DateTime.Now.Month;   // 0 = bütün aylar
+
+            var ayQuery = _unitOfWork.Repository<Avans>()
                 .Query()
-                .Where(x => !x.Silinib)
+                .Where(x => !x.Silinib && x.Il == secilmisIl)
                 .Include(x => x.Isci)
                     .ThenInclude(i => i.Maliye)
                 .Include(x => x.Isci)
@@ -53,17 +58,26 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Include(x => x.Muhasib)
                 .AsQueryable();
 
-            if (statusFilter.HasValue)
-                query = query.Where(x => (int)x.Status == statusFilter.Value);
+            if (secilmisAy >= 1 && secilmisAy <= 12)
+                ayQuery = ayQuery.Where(x => x.Ay == secilmisAy);
 
-            var list = await query
+            // Seçilmiş dövrün bütün müraciətləri (status filtrindən asılı olmayan sayğaclar üçün)
+            var ayListesi = await ayQuery
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
             ViewBag.StatusFilter = statusFilter;
-            ViewBag.GozlemedeSayi = list.Count(x => x.Status == AvansStatus.Gozlemede);
-            ViewBag.TesdiqSayi = list.Count(x => x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib);
-            ViewBag.ImtinaSayi = list.Count(x => x.Status == AvansStatus.ImtinaEdildi);
+            ViewBag.SecilmisIl = secilmisIl;
+            ViewBag.SecilmisAy = secilmisAy;
+            ViewBag.GozlemedeSayi = ayListesi.Count(x => x.Status == AvansStatus.Gozlemede);
+            ViewBag.TesdiqSayi = ayListesi.Count(x => x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib);
+            ViewBag.ImtinaSayi = ayListesi.Count(x => x.Status == AvansStatus.ImtinaEdildi);
+            ViewBag.HamisiSayi = ayListesi.Count;
+
+            // Göstərilən siyahı — status filtri (varsa) tətbiq olunur
+            var list = statusFilter.HasValue
+                ? ayListesi.Where(x => (int)x.Status == statusFilter.Value).ToList()
+                : ayListesi;
 
             ViewData["Title"] = "Avans Müraciətləri";
             return View(list);
@@ -169,8 +183,11 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Avans/Tesdiq ────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Tesdiq(int id, bool tesdiq, string? imtinaSebebi)
+        public async Task<IActionResult> Tesdiq(int id, bool tesdiq, string? imtinaSebebi, int? il = null, int? ay = null)
         {
+            // Əməliyyatdan sonra baxılan dövrə qayıt (siyahı sıçramasın)
+            object DovrRoute() => new { il, ay };
+
             var avans = await _unitOfWork.Repository<Avans>()
                 .Query()
                 .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
@@ -178,13 +195,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (avans == null)
             {
                 TempData["Error"] = "Müraciət tapılmadı.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Index), DovrRoute());
             }
 
             if (avans.Status != AvansStatus.Gozlemede)
             {
                 TempData["Error"] = "Yalnız gözləmədə olan müraciətləri təsdiq/rədd etmək olar.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Index), DovrRoute());
             }
 
             var appUser = await _userManager.GetUserAsync(User);
@@ -230,7 +247,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     redirectUrl: redirectUrl);
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), DovrRoute());
         }
     }
 }

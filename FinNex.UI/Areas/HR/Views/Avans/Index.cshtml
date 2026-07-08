@@ -7,7 +7,11 @@
     int gozlemede = (int)(ViewBag.GozlemedeSayi ?? 0);
     int tesdiq = (int)(ViewBag.TesdiqSayi ?? 0);
     int imtina = (int)(ViewBag.ImtinaSayi ?? 0);
+    int hamisi = (int)(ViewBag.HamisiSayi ?? Model.Count);
+    int secilmisIl = (int)(ViewBag.SecilmisIl ?? DateTime.Now.Year);
+    int secilmisAy = (int)(ViewBag.SecilmisAy ?? DateTime.Now.Month);
     var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
+    string dovrMetni = (secilmisAy >= 1 && secilmisAy <= 12) ? $"{ayAdlar[secilmisAy]} {secilmisIl}" : $"{secilmisIl} — bütün aylar";
 }
 
 @section Styles {
@@ -21,26 +25,59 @@
             <div class="ha-sub">İşçilərin avans müraciətlərini nəzərdən keçirin</div>
         </div>
         <div class="ha-stats">
-            <a asp-action="Index" asp-route-statusFilter="1"
+            <a asp-action="Index" asp-route-statusFilter="1" asp-route-il="@secilmisIl" asp-route-ay="@secilmisAy"
                class="ha-stat @(statusFilter == 1 ? "ha-stat--active" : "")">
                 <span class="ha-stat-num" style="color:#b45309;">@gozlemede</span>
                 <span class="ha-stat-lbl">Gözləmədə</span>
             </a>
-            <a asp-action="Index" asp-route-statusFilter="2"
+            <a asp-action="Index" asp-route-statusFilter="2" asp-route-il="@secilmisIl" asp-route-ay="@secilmisAy"
                class="ha-stat @(statusFilter == 2 ? "ha-stat--active" : "")">
                 <span class="ha-stat-num" style="color:#1e9b6b;">@tesdiq</span>
                 <span class="ha-stat-lbl">Təsdiqlənib</span>
             </a>
-            <a asp-action="Index" asp-route-statusFilter="3"
+            <a asp-action="Index" asp-route-statusFilter="3" asp-route-il="@secilmisIl" asp-route-ay="@secilmisAy"
                class="ha-stat @(statusFilter == 3 ? "ha-stat--active" : "")">
                 <span class="ha-stat-num" style="color:#dc2626;">@imtina</span>
                 <span class="ha-stat-lbl">Rədd</span>
             </a>
-            <a asp-action="Index" class="ha-stat @(statusFilter == null ? "ha-stat--active" : "")">
-                <span class="ha-stat-num">@Model.Count</span>
+            <a asp-action="Index" asp-route-il="@secilmisIl" asp-route-ay="@secilmisAy"
+               class="ha-stat @(statusFilter == null ? "ha-stat--active" : "")">
+                <span class="ha-stat-num">@hamisi</span>
                 <span class="ha-stat-lbl">Hamısı</span>
             </a>
         </div>
+    </div>
+
+    @* ── Dövr filtri — cari ay default, digər aylara isteğe bağlı baxış ── *@
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:#eef4ff;border:1px solid #d6e2fb;border-radius:10px;padding:12px 16px;margin-bottom:14px">
+        <div>
+            <div style="font-size:13px;font-weight:700;color:#0f172a">Dövr — hansı ayın müraciətləri</div>
+            <div style="font-size:11px;color:#5a6478">Göstərilir: <strong>@dovrMetni</strong> · başqa ayı seçib baxa bilərsiniz</div>
+        </div>
+        <form asp-action="Index" method="get" style="display:flex;align-items:flex-end;gap:8px;margin-left:auto">
+            @if (statusFilter.HasValue)
+            {
+                <input type="hidden" name="statusFilter" value="@statusFilter" />
+            }
+            <div>
+                <label style="font-size:11px;color:#5a6478;display:block">İl</label>
+                <input type="number" name="il" value="@secilmisIl" min="2020" max="2100"
+                       style="width:90px;padding:7px 10px;border:1px solid #c7d6f2;border-radius:8px" />
+            </div>
+            <div>
+                <label style="font-size:11px;color:#5a6478;display:block">Ay</label>
+                <select name="ay" style="padding:7px 10px;border:1px solid #c7d6f2;border-radius:8px">
+                    <option value="0" selected="@(secilmisAy == 0 ? "selected" : null)">Bütün aylar</option>
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" selected="@(m == secilmisAy ? "selected" : null)">@ayAdlar[m]</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer">
+                <i class="bi bi-funnel"></i> Göstər
+            </button>
+        </form>
     </div>
 
     @* ── Əməliyyatın yazılışı (Excel) — mühasib üçün ── *@
@@ -49,10 +86,11 @@
             <div style="font-size:13px;font-weight:700;color:#0f172a">Avans — Əməliyyatın yazılışı (.xls)</div>
             <div style="font-size:11px;color:#64748b">Seçilmiş ay üzrə təsdiqlənmiş avanslar — Debet sabit (ayardan), Kredit işçinin bank hesabı</div>
         </div>
+        @{ int eksportAy = (secilmisAy >= 1 && secilmisAy <= 12) ? secilmisAy : DateTime.Now.Month; }
         <form asp-action="PravodkaExport" method="get" style="display:flex;align-items:flex-end;gap:8px;margin-left:auto">
             <div>
                 <label style="font-size:11px;color:#64748b;display:block">İl</label>
-                <input type="number" name="il" value="@DateTime.Now.Year" min="2020" max="2100"
+                <input type="number" name="il" value="@secilmisIl" min="2020" max="2100"
                        style="width:90px;padding:7px 10px;border:1px solid #d7dee8;border-radius:8px" />
             </div>
             <div>
@@ -60,7 +98,7 @@
                 <select name="ay" style="padding:7px 10px;border:1px solid #d7dee8;border-radius:8px">
                     @for (int m = 1; m <= 12; m++)
                     {
-                        <option value="@m" selected="@(m == DateTime.Now.Month ? "selected" : null)">@ayAdlar[m]</option>
+                        <option value="@m" selected="@(m == eksportAy ? "selected" : null)">@ayAdlar[m]</option>
                     }
                 </select>
             </div>
@@ -90,7 +128,7 @@
         {
             <div class="ha-empty">
                 <i class="bi bi-inbox"></i>
-                <p>Müraciət tapılmadı</p>
+                <p>@dovrMetni üçün müraciət tapılmadı</p>
             </div>
         }
         else
@@ -146,6 +184,8 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@a.Id" />
                                             <input type="hidden" name="tesdiq" value="true" />
+                                            <input type="hidden" name="il" value="@secilmisIl" />
+                                            <input type="hidden" name="ay" value="@secilmisAy" />
                                             <button type="submit" class="ha-btn ha-btn--ok ha-btn--sm" title="Təsdiq et">
                                                 <i class="bi bi-check-lg"></i>
                                             </button>
@@ -173,6 +213,8 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" id="haRejectId" />
             <input type="hidden" name="tesdiq" value="false" />
+            <input type="hidden" name="il" value="@secilmisIl" />
+            <input type="hidden" name="ay" value="@secilmisAy" />
             <div class="ha-modal-body">
                 <label class="ha-label">İmtina səbəbi</label>
                 <textarea name="imtinaSebebi" rows="3" class="ha-input" placeholder="Səbəbi qeyd edin..."></textarea>
