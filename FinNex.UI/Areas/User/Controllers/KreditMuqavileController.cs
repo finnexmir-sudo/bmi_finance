@@ -1,3 +1,4 @@
+using System.Globalization;
 using FinNex.Application.DTOs.Kredit.Muqavile;
 using FinNex.Application.Helpers.Kredit;
 using FinNex.Application.Interfaces.Kredit;
@@ -123,6 +124,18 @@ public class KreditMuqavileController : Controller
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──
         var ferqli = dto.GirovSahibiFerqli;
+
+        // 1.3 bənd — təminatlar (BMI Menzil.cs məntiqi)
+        var tarixSoz = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi);
+        var menzilSahibiAdi = ferqli ? (dto.SahibAd ?? "") : (kredit.Adi ?? "");
+        var ipotekaTeminat = $"{tarixSoz} il tarixli {nomreler.IpotekaNo} nömrəli {menzilSahibiAdi} ilə bağlanmış DAŞINMAZ ƏMLAK {dto.IpotekaNovu} MÜQAVİLƏSİ";
+        string ZaminTeminat(int idx)
+        {
+            if (idx >= zaminler.Count) return "";
+            var no = idx < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[idx] : 0;
+            return $",{tarixSoz} il tarixli {no} nömrəli {zaminler[idx].Ad} tərəfindən verilmiş zaminlik müqaviləsi";
+        }
+
         var ortak = new Dictionary<string, string?>
         {
             // Kredit / borcalan
@@ -134,20 +147,20 @@ public class KreditMuqavileController : Controller
             ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
             ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
             ["{k_meb}"] = Pul(kredit.Mebleg),
-            ["{k_meb_soz}"] = KreditSozeCevir.MebleghSoze(kredit.Mebleg ?? 0),
+            ["{k_meb_soz}"] = KreditSozeCevir.MebleghSozeQepiksiz(kredit.Mebleg ?? 0),
             ["{k_val}"] = "AZN",
             ["{k_faiz}"] = Faiz(kredit.Faiz),
             ["{k_cfaiz}"] = Faiz(kredit.VkFaiz),
             ["{k_ay_odenis}"] = Pul(kredit.Ayliq),
             ["{k_ay_odenis_soz}"] = KreditSozeCevir.MebleghSoze(kredit.Ayliq ?? 0),
-            ["{k_fifd}"] = kredit.Fifd,
+            ["{k_fifd}"] = Reqem(kredit.Fifd),
             ["{k_teyinat}"] = string.IsNullOrWhiteSpace(dto.Teyinat) ? kredit.Teyinat : dto.Teyinat,
             ["{k_unvan}"] = kredit.Unvan,
             ["{k_tel}"] = kredit.Mobil,
-            ["{k_teminatavto}"] = "",
-            ["{k_teminat1}"] = zaminler.Count > 0 ? zaminler[0].Ad : "",
-            ["{k_teminat2}"] = zaminler.Count > 1 ? zaminler[1].Ad : "",
-            ["{k_teminat3}"] = zaminler.Count > 2 ? zaminler[2].Ad : "",
+            ["{k_teminatavto}"] = ipotekaTeminat,
+            ["{k_teminat1}"] = ZaminTeminat(0),
+            ["{k_teminat2}"] = ZaminTeminat(1),
+            ["{k_teminat3}"] = ZaminTeminat(2),
 
             // İpoteka / girov
             ["{i_mno}"] = nomreler.IpotekaNo.ToString(),
@@ -244,8 +257,13 @@ public class KreditMuqavileController : Controller
         _ => girovNovu ?? ""
     };
 
-    private static string Pul(decimal? v) => (v ?? 0).ToString("#,##0.##");
-    private static string Faiz(decimal? v) => (v ?? 0).ToString("0.##");
+    // BMI ilə eyni format: min ayırıcı yox, onluq nöqtə (100000, 2406.16)
+    private static string Pul(decimal? v) => (v ?? 0).ToString("0.##", CultureInfo.InvariantCulture);
+    private static string Faiz(decimal? v) => (v ?? 0).ToString("0.##", CultureInfo.InvariantCulture);
+    // Oracle-dan gələn rəqəm mətnini nöqtəli formata gətir (vergül → nöqtə)
+    private static string Reqem(string? s) =>
+        decimal.TryParse((s ?? "").Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out var r)
+            ? r.ToString("0.##", CultureInfo.InvariantCulture) : (s ?? "");
     private static int IntParse(string? s) => int.TryParse(new string((s ?? "").Where(char.IsDigit).ToArray()), out var r) ? r : 0;
     // Müddət: srok gün-lə gəlir → aya çevir (÷30)
     public static int AyMuddet(string? srokGun) => (int)Math.Round(IntParse(srokGun) / 30.0, MidpointRounding.AwayFromZero);

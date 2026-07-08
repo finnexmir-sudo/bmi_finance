@@ -19,9 +19,10 @@ public static class KreditSozeCevir
         { "", "on", "iyirmi", "otuz", "qırx", "əlli", "altmış", "yetmiş", "səksən", "doxsan" };
     private static readonly string[] Binler =
         { "katrilyon", "trilyon", "milyard", "milyon", "min", "" };
+    // BMI ilə eyni — ay adları böyük hərflə başlayır
     private static readonly string[] Aylar =
-        { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
-          "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
+        { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+          "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
 
     // Aletler.yaziyaCevir — məbləğ + "manat" + qəpik
     public static string MebleghSoze(decimal tutar)
