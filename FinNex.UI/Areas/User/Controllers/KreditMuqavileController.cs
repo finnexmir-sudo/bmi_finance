@@ -29,6 +29,13 @@ public class KreditMuqavileController : Controller
         "Xeyir iş", "Müalicə xərci", "İstirahət Xərci", "Dövriyyə vəsaitinin artırılması"
     };
 
+    // Ölkələr — BMI dialoqundakı siyahı ({k_olke}/{i_olke}/{zolke1})
+    public static readonly string[] Olkeler =
+    {
+        "Azərbaycan Respublikası", "İran İslam Respublikası", "Rusiya Respublikası",
+        "Türkiyə Respublikası", "Gürcüstan Respublikası"
+    };
+
     public KreditMuqavileController(
         IKreditMuqavileService muqavileService,
         IKreditMuqavileNomreService nomreService,
@@ -92,6 +99,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
+        ViewBag.Olkeler = Olkeler;
         return View("Hazirla", kredit);
     }
 

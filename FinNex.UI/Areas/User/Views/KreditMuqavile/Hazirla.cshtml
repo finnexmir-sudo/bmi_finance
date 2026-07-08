@@ -8,6 +8,7 @@
     var muqavileTarixi = Model.VerilmeTarixi ?? seciliTarix; // sətirdən gələn, dəyişməz tarix
     var zaminler = ViewBag.Zaminler as List<ZaminDaxilDto> ?? new List<ZaminDaxilDto>();
     var teyinatlar = ViewBag.Teyinatlar as string[] ?? new string[0];
+    var olkeler = ViewBag.Olkeler as string[] ?? new string[0];
     var ayMuddet = FinNex.UI.Areas.User.Controllers.KreditMuqavileController.AyMuddet(Model.Muddet);
 }
 
@@ -114,7 +115,11 @@
                     <div><label>Sahibin adı</label><input type="text" name="SahibAd" class="fn-input" /></div>
                     <div><label>Vəsiqə məlumatı</label><input type="text" name="SahibVesiqe" class="fn-input" /></div>
                     <div class="kmh-full"><label>Ünvan</label><input type="text" name="SahibUnvan" class="fn-input" /></div>
-                    <div><label>Ölkə</label><input type="text" name="SahibOlke" class="fn-input" /></div>
+                    <div><label>Ölkə</label>
+                        <select name="SahibOlke" class="fn-input">
+                            @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                        </select>
+                    </div>
                     <div><label>Telefon</label><input type="text" name="SahibTel" class="fn-input" /></div>
                 </div>
             </div>
@@ -138,7 +143,15 @@
                                 <div><label>FİN</label><input type="text" name="Zaminler[@i].Fin" value="@z.Fin" class="fn-input" /></div>
                                 <div><label>Telefon</label><input type="text" name="Zaminler[@i].Telefon" value="@z.Telefon" class="fn-input" /></div>
                                 <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[@i].Unvan" value="@z.Unvan" class="fn-input" /></div>
-                                <div><label>Ölkə</label><input type="text" name="Zaminler[@i].Olke" value="@z.Olke" class="fn-input" /></div>
+                                <div><label>Ölkə</label>
+                                    <select name="Zaminler[@i].Olke" class="fn-input">
+                                        @foreach (var o in olkeler)
+                                        {
+                                            if (z.Olke == o) { <option value="@o" selected>@o</option> }
+                                            else { <option value="@o">@o</option> }
+                                        }
+                                    </select>
+                                </div>
                                 <div><label>Pasport tarixi</label><input type="text" name="Zaminler[@i].PasportTarixi" value="@z.PasportTarixi" class="fn-input" /></div>
                             </div>
                         </div>
@@ -219,6 +232,7 @@
         let zaminIndex = @zaminler.Count;
         const zaminlerDiv = document.getElementById('zaminler');
         const zaminBos = document.getElementById('zaminBos');
+        const olkeOptions = `@Html.Raw(string.Concat(olkeler.Select(o => $"<option value=\"{o}\">{o}</option>")))`;
 
         function zaminSablon(i) {
             return `
@@ -231,7 +245,7 @@
                     <div><label>FİN</label><input type="text" name="Zaminler[${i}].Fin" class="fn-input" /></div>
                     <div><label>Telefon</label><input type="text" name="Zaminler[${i}].Telefon" class="fn-input" /></div>
                     <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[${i}].Unvan" class="fn-input" /></div>
-                    <div><label>Ölkə</label><input type="text" name="Zaminler[${i}].Olke" class="fn-input" /></div>
+                    <div><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input">${olkeOptions}</select></div>
                     <div><label>Pasport tarixi</label><input type="text" name="Zaminler[${i}].PasportTarixi" class="fn-input" /></div>
                 </div>
             </div>`;
