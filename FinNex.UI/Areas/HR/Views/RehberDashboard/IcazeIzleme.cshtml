@@ -23,6 +23,17 @@
         _                        => "iz-status-dot--wait"
     };
 
+    // Saatı dəqiqə bandında yazır: 60 dəq-dən azdırsa "N dəq",
+    // çoxdursa "H saat M dəq" (M sıfırdırsa yalnız "H saat"). Məs: 0.6 → 36 dəq, 2.5 → 2 saat 30 dəq.
+    string SaatToDeqiqe(double saat)
+    {
+        int totalDeq = (int)Math.Round(saat * 60);
+        if (totalDeq < 60) return $"{totalDeq} dəq";
+        int saatH = totalDeq / 60;
+        int deqM = totalDeq % 60;
+        return deqM == 0 ? $"{saatH} saat" : $"{saatH} saat {deqM} dəq";
+    }
+
     string SortUrl(string key) => Url.Action("IcazeIzleme", "RehberDashboard", new {
         area = "HR",
         Model.Filtr.TarixFrom,
@@ -272,7 +283,7 @@
                                                         <tr>
                                                             <td>@ic.IcazeTarixi.ToString("dd.MM.yyyy")</td>
                                                             <td>@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm")</td>
-                                                            <td><strong>@ic.IcazeSaati.ToString("0.#") saat</strong></td>
+                                                            <td><strong>@SaatToDeqiqe(ic.IcazeSaati)</strong></td>
                                                             <td>@(string.IsNullOrEmpty(ic.Sebeb) ? "—" : ic.Sebeb)</td>
                                                             <td>
                                                                 <span class="iz-status-dot @StatusDotClass(ic.Status)"></span>
