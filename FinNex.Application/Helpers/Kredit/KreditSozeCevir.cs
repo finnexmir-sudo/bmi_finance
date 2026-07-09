@@ -164,9 +164,17 @@ public static class KreditSozeCevir
     private static readonly HashSet<string> AdSuffiks =
         new(StringComparer.OrdinalIgnoreCase) { "oğlu", "oglu", "qızı", "qizi", "kızı" };
 
+    // Hüquqi-forma abreviaturaları — title-case zamanı tam BÖYÜK qalır (Mmc yox → MMC).
+    private static readonly HashSet<string> Abreviaturalar =
+        new(StringComparer.OrdinalIgnoreCase) { "MMC", "ASC", "QSC", "MMM", "LTD" };
+
     /// <summary>
     /// ALL-CAPS adı başlıq registrinə çevirir (Heydərova Aidə Ərzuman qızı).
-    /// "oğlu/qızı" suffiksləri kiçik qalır. Azərbaycan hərfləri (İ/ı/ə) düzgün.
+    /// - "oğlu/qızı" suffiksləri kiçik qalır.
+    /// - Söz baş durğu işarəsi ilə başlayırsa (dırnaq/mötərizə) o keçilir və ilk
+    ///   HƏRF böyüdülür — «"BOSTAN» → «"Bostan» (əvvəl "bostan çıxırdı).
+    /// - Hüquqi-forma abreviaturaları BÖYÜK qalır (MMC, ASC, QSC, MMM, LTD).
+    /// Azərbaycan hərfləri (İ/ı/ə) düzgün.
     /// </summary>
     public static string BaslikRegistri(string? ad)
     {
@@ -174,9 +182,30 @@ public static class KreditSozeCevir
         var sozler = ad.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < sozler.Length; i++)
         {
-            var w = sozler[i].ToLower(Az);
-            if (AdSuffiks.Contains(w)) { sozler[i] = w; continue; }
-            sozler[i] = char.ToUpper(w[0], Az) + (w.Length > 1 ? w.Substring(1) : "");
+            var soz = sozler[i];
+
+            // "oğlu/qızı" — kiçik qalır
+            if (AdSuffiks.Contains(soz.ToLower(Az))) { sozler[i] = soz.ToLower(Az); continue; }
+
+            // Hüquqi-forma abreviaturası (yalnız hərf hissəsinə görə yoxla) — tam BÖYÜK
+            var herfCore = new string(soz.Where(char.IsLetter).ToArray());
+            if (herfCore.Length > 0 && Abreviaturalar.Contains(herfCore))
+            {
+                sozler[i] = soz.ToUpper(Az);
+                continue;
+            }
+
+            // Adi söz: hamısını kiçilt, sonra ilk HƏRFİ böyüt (baş durğu işarələrini keç)
+            var ch = soz.ToLower(Az).ToCharArray();
+            for (var j = 0; j < ch.Length; j++)
+            {
+                if (char.IsLetter(ch[j]))
+                {
+                    ch[j] = char.ToUpper(ch[j], Az);
+                    break;
+                }
+            }
+            sozler[i] = new string(ch);
         }
         return string.Join(" ", sozler);
     }
