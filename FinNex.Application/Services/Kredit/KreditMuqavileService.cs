@@ -61,103 +61,44 @@ public class KreditMuqavileService : IKreditMuqavileService
         }).ToList();
     }
 
-    // ── SQL mənbəyi: Admin → Oracle Sorğular (adına görə), tapılmasa daxili şablon ──
-    // PID (Cari Kataloq/Bildiriş) ilə eyni pattern. Fərq: bu sorğular parametrlidir —
-    // stored SQL-də yer tutucular ({TARIX}/{EXTRA}/{HESAB}/{SUBS}) servisdə əvəz olunur.
-    // hesab/subs/tarix dəyərləri əvvəlcədən təmizlənir (yalnız rəqəm / DateTime format) —
-    // istifadəçi mətni birbaşa SQL-ə düşmür.
+    // ── SQL mənbəyi: Admin → Oracle Sorğular (adına görə) ──
+    // PID (Cari Kataloq/Bildiriş) ilə eyni pattern. SQL yalnız Admin panelindədir —
+    // kodda saxlanmır. Bu sorğular parametrlidir: stored SQL-də yer tutucular
+    // ({TARIX}/{EXTRA}/{HESAB}/{SUBS}) servisdə əvəz olunur. hesab/subs/tarix dəyərləri
+    // əvvəlcədən təmizlənir (yalnız rəqəm / DateTime format) — mətn birbaşa SQL-ə düşmür.
+    // Sorğu adları: "Kredit Müqavilə" və "Kredit Zaminləri" (Admin-də aktiv olmalıdır).
 
     private async Task<string> KreditSqlAsync(DateTime tarix, string? extraWhere)
     {
         var tarixStr = tarix.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
-        var xam = await SaxlanmisSqlAsync(n => n.Contains("kredit") && n.Contains("muqavile") && !n.Contains("zamin"))
-                  ?? KreditSqlXam;
+        var xam = await SaxlanmisSqlAsync("Kredit Müqavilə")
+            ?? throw new InvalidOperationException(
+                "\"Kredit Müqavilə\" sorğusu Admin → Oracle Sorğular-da tapılmadı (aktiv olmalıdır).");
         return xam.Replace("{TARIX}", tarixStr).Replace("{EXTRA}", extraWhere ?? "");
     }
 
     private async Task<string> ZaminSqlAsync(string hesab, string subs)
     {
-        var xam = await SaxlanmisSqlAsync(n => n.Contains("kredit") && n.Contains("zamin"))
-                  ?? ZaminSqlXam;
+        var xam = await SaxlanmisSqlAsync("Kredit Zaminləri")
+            ?? throw new InvalidOperationException(
+                "\"Kredit Zaminləri\" sorğusu Admin → Oracle Sorğular-da tapılmadı (aktiv olmalıdır).");
         return xam.Replace("{HESAB}", hesab).Replace("{SUBS}", subs);
     }
 
-    // Admin → Oracle Sorğular-da aktiv sorğu (adı normalizasiya olunur: ə→e, ş→s, boşluq atılır)
-    private async Task<string?> SaxlanmisSqlAsync(Func<string, bool> adUygun)
+    // Admin → Oracle Sorğular-da adına görə aktiv sorğu (ad normalizasiya olunur:
+    // ə→e, ş→s, boşluq atılır — böyük/kiçik hərf və boşluq fərqi əhəmiyyətsiz).
+    private async Task<string?> SaxlanmisSqlAsync(string ad)
     {
-        try
-        {
-            var res = await _sorguService.HamisiniGetirAsync();
-            if (!res.Success || res.Data is null) return null;
-            var q = res.Data.FirstOrDefault(x => x.Aktiv && adUygun(Norm(x.SorguAdi)));
-            return string.IsNullOrWhiteSpace(q?.SorguMetni) ? null : q!.SorguMetni;
-        }
-        catch { return null; }   // sorğu servisi əlçatmazdırsa daxili şablona düş
+        var res = await _sorguService.HamisiniGetirAsync();
+        if (!res.Success || res.Data is null) return null;
+        var hedef = Norm(ad);
+        var q = res.Data.FirstOrDefault(x => x.Aktiv && Norm(x.SorguAdi) == hedef);
+        return string.IsNullOrWhiteSpace(q?.SorguMetni) ? null : q!.SorguMetni;
     }
 
     private static string Norm(string? s) => (s ?? "").ToLowerInvariant()
         .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
         .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
-
-    // Daxili şablon (fallback) — Admin-ə "Kredit Müqavilə" adı ilə əlavə edilməli SQL.
-    // Yer tutucular: {TARIX} = verilmə tarixi (dd-MM-yyyy), {EXTRA} = əlavə filtr (siyahıda boş).
-    private const string KreditSqlXam = @"
-SELECT
-    r.name_regnom                              AS ADI,
-    t.subschkre                                AS KS,
-    substr(t.licschkre, 10, 6) || t.subschkre  AS SUBQEYD,
-    t.licschkre                                AS HESABNO,
-    t.date_open                                AS VERILME_TARIXI,
-    t.naznackredita                            AS TEYINAT,
-    t.summakre                                 AS MEBLEG,
-    t.summa                                    AS MEBLEG_AZN,
-    (SELECT g1.summa_pog_kre + g1.summa_pog_pro
-       FROM odb.graphpogkre g1
-      WHERE g1.subschkre = t.subschkre
-        AND g1.licschkre = t.licschkre
-        AND g1.date_pog = odb.func_tar((SELECT MAX(gr3.date_pog)
-                                          FROM odb.graphpogkre gr3
-                                         WHERE gr3.subschkre = t.subschkre
-                                           AND gr3.licschkre = t.licschkre)))  AS AYLIQ,
-    k.fifd                                     AS FIFD,
-    t.procstavkre                              AS FAIZ,
-    t.procstav_19                              AS VK_FAIZ,
-    t.procstavrez                              AS EHTIYAT_FAIZ,
-    t.srok                                     AS MUDDET,
-    r.passport                                 AS SERIYA_NO,
-    r.senedi_veren_orqaninin_adi               AS VEREN_ORQAN,
-    r.senedin_verilme_tarixi                   AS SENED_VERILME_TARIXI,
-    r.telefon                                  AS MOBIL,
-    r.registrac                                AS UNVAN,
-    r.grajdanstvo                              AS OLKE,
-    y.pincode                                  AS FIN,
-    y.anyinfotodisting                         AS GIROV_UNVAN,
-    y.registryno                               AS TEMINAT_NO,
-    y.registrydate                             AS CIXARIS_TARIXI,
-    m.az || m.nr || m.bank || m.licsch         AS CARI_HESAB,
-    t.summa_zaloga                             AS GIROV_DEYERI,
-    r.yurik                                    AS HUQUQI_SEXS,
-    r.inn_regnom                               AS VOEN
-FROM odb.licschkre t, odb.regnom r, odb.licsch m, odb.srokpogprockre k, odb.creditinfo y
-WHERE t.date_open = to_date('{TARIX}', 'dd-MM-yyyy')
-  AND substr(t.licschkre, 10, 6) = r.regnom
-  AND t.licschkre = k.licschkre
-  AND t.subschkre = k.subschkre
-  AND t.licschkre = y.licschkre
-  AND t.subschkre = y.subschkre
-  AND m.licsch = k.licsch_3(+){EXTRA}";
-
-    // Daxili şablon (fallback) — Admin-ə "Kredit Zaminləri" adı ilə əlavə edilməli SQL.
-    // Yer tutucular: {HESAB} = kredit hesabı, {SUBS} = subkod (rəqəm, əvvəlcədən təmizlənir).
-    private const string ZaminSqlXam = @"
-SELECT g.guarantee_name AS AD,
-       g.guarantee_id   AS PASPORT,
-       g.pincode        AS FIN,
-       g.telefon        AS TELEFON,
-       g.adress         AS UNVAN
-  FROM odb.creditinfoguarantee g
- WHERE g.licschkre = '{HESAB}'
-   AND g.subschkre = '{SUBS}'";
 
     private static KreditMuqavileSatirDto Map(Dictionary<string, object?> r) => new()
     {
