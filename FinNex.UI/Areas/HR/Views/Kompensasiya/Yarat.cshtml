@@ -214,12 +214,12 @@
 
         // Pul hesablanması
         html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
-        html += '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Gündəlik Dərəcə (məzuniyyət düsturu ilə)</div>';
+        html += '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Gündəlik Dərəcə (kompensasiya = MH)</div>';
         html += '<div style="display:grid;grid-template-columns:auto auto;gap:6px 14px;font-size:12.5px">';
         html += '<span style="color:#64748b">Son 12 ay düzəlmiş cəm (S):</span><span style="text-align:right;font-family:monospace">' + fmtMon(d.son12AyDuzelmisQazanc) + ' ₼</span>';
-        html += '<span style="color:#64748b">MH (S/12/30.4):</span><span style="text-align:right;font-family:monospace' + (d.qalib === 'MH' ? ';color:#16a34a;font-weight:700' : '') + '">' + fmtMon(d.gunlukMezPul) + ' ₼/gün</span>';
-        html += '<span style="color:#64748b">ƏH (Maaş/ayİşGün):</span><span style="text-align:right;font-family:monospace' + (d.qalib === 'ƏH' ? ';color:#16a34a;font-weight:700' : '') + '">' + fmtMon(d.gunlukMaas) + ' ₼/gün</span>';
-        html += '<span style="color:#0f172a;font-weight:600">MAX (' + d.qalib + ' qalib):</span><span style="text-align:right;font-family:monospace;font-weight:700">' + fmtMon(d.gunlukRate) + ' ₼/gün</span>';
+        html += '<span style="color:#64748b">MH (S/12/30.4):</span><span style="text-align:right;font-family:monospace;color:#16a34a;font-weight:700">' + fmtMon(d.gunlukMezPul) + ' ₼/gün</span>';
+        html += '<span style="color:#94a3b8">ƏH (Maaş/ayİşGün) — informativ:</span><span style="text-align:right;font-family:monospace;color:#94a3b8">' + fmtMon(d.gunlukMaas) + ' ₼/gün</span>';
+        html += '<span style="color:#0f172a;font-weight:600">Kompensasiya dərəcəsi (MH):</span><span style="text-align:right;font-family:monospace;font-weight:700">' + fmtMon(d.gunlukRate) + ' ₼/gün</span>';
         html += '</div>';
         html += '</div>';
 

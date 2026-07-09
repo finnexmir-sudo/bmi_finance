@@ -11,7 +11,7 @@ namespace FinNex.Application.Services.HR
     /// <summary>
     /// İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya
     /// hesablama servisi. Adi məzuniyyət ödənişi düsturu ilə eyni
-    /// (MAX(S/12/30.4, CariMaas/AyIsGun)) gündəlik dərəcəni istifadə edir.
+    /// gündəlik dərəcə: MH (S/12/30.4) — kompensasiyada MAX(MH, ƏH) tətbiq olunmur.
     /// Fərq yalnız günlərin sayında: keçmiş illərin qalığı + cari il prorate.
     /// </summary>
     public class KompensasiyaService : IKompensasiyaService
@@ -164,11 +164,11 @@ namespace FinNex.Application.Services.HR
 
                 result.CemiKompensasiyaGun = result.KecmisQaligGun + cariIlProrate;
 
-                // ─── 4. GUNLUK RATE (məzuniyyət düsturu ilə eyni) ───
+                // ─── 4. GUNLUK RATE (kompensasiya = MH) ───
                 //   S = son 12 ay düzəlmiş qazanc cəmi (ayrılma ayından əvvəlki 12 ay)
-                //   gunlukMezPul = S / 12 / 30.4
-                //   gunlukMaas   = CariMaas / ayIsGun (ayrılma ayının iş günü sayı)
-                //   gunlukRate   = MAX(gunlukMezPul, gunlukMaas)
+                //   gunlukMezPul (MH) = S / 12 / 30.4  ← kompensasiya bunu istifadə edir
+                //   gunlukMaas   (ƏH) = CariMaas / ayIsGun (yalnız informativ)
+                //   gunlukRate   = gunlukMezPul (MH) — MAX məntiqi tətbiq olunmur
                 int baslamaRefKey = ayrilmaTarixi.Year * 12 + ayrilmaTarixi.Month;
                 var son12Qazanc = await _uow.Repository<IsciAyliqQazanc>()
                     .Query()
@@ -208,8 +208,11 @@ namespace FinNex.Application.Services.HR
                 decimal gunlukMaas = (result.CariMaas > 0 && ayIsGun > 0)
                     ? Math.Round(result.CariMaas / ayIsGun, 4)
                     : 0m;
-                decimal gunlukRate = Math.Max(gunlukMezPul, gunlukMaas);
-                string qalib = gunlukMezPul >= gunlukMaas ? "MH" : "ƏH";
+                // KOMPENSASİYA: gündəlik dərəcə HƏMİŞƏ MH (S/12/30.4) — adi məzuniyyət
+                // ödənişindəki MAX(MH, ƏH) məntiqi burada TƏTBİQ OLUNMUR.
+                // ƏH (gunlukMaas) yalnız informativ göstərilir, hesablamada iştirak etmir.
+                decimal gunlukRate = gunlukMezPul;
+                string qalib = "MH";
 
                 result.GunlukMezPul = gunlukMezPul;
                 result.GunlukMaas = gunlukMaas;
@@ -251,9 +254,10 @@ namespace FinNex.Application.Services.HR
                 result.Izahatlar.Add(
                     $"Gündəlik məzuniyyət pulu (MH): {sDuzelmis:N2} ÷ 12 ÷ 30.4 = {gunlukMezPul:N4} ₼");
                 result.Izahatlar.Add(
-                    $"Gündəlik maaş (ƏH): {result.CariMaas:N2} ÷ {ayIsGun} = {gunlukMaas:N4} ₼");
+                    $"Gündəlik maaş (ƏH): {result.CariMaas:N2} ÷ {ayIsGun} = {gunlukMaas:N4} ₼ (informativ — istifadə olunmur)");
                 result.Izahatlar.Add(
-                    $"Seçilən gündəlik dərəcə: MAX(MH, ƏH) = {gunlukRate:N4} ₼ ({qalib} qalib)");
+                    $"Kompensasiya gündəlik dərəcəsi = MH (S/12/30.4) = {gunlukRate:N4} ₼ " +
+                    $"(adi məzuniyyətdəki MAX(MH, ƏH) tətbiq olunmur)");
                 result.Izahatlar.Add(
                     $"YEKUN MƏBLƏĞ: {result.CemiKompensasiyaGun:N2} gün × {gunlukRate:N4} ₼ = " +
                     $"{result.CemiMebleg:N2} ₼");
