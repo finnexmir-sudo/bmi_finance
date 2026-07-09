@@ -42,13 +42,8 @@
     </Content>
   </ItemGroup>
 
-  <!-- Kredit müqavilə Word şablonları — bin/publish qovluğuna kopyalanır -->
-  <ItemGroup>
-    <None Update="Files\Word\Kredit\*.docx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-  </ItemGroup>
+  <!-- Kredit müqavilə Word şablonları artıq wwwroot/Files/Word/Kredit-dədir —
+       wwwroot avtomatik publish olunur, ayrıca <None Update> lazım deyil. -->
 
   <ItemGroup>
     <Content Update="wwwroot\js\PR_Odenis_Tapsirigi\payment-word -Update.js">

@@ -382,9 +382,11 @@ public class KreditMuqavileController : Controller
     // ── Köməkçilər ──
     private string SablonQovlugu()
     {
+        // Şablonlar wwwroot/Files/Word/Kredit-də saxlanılır — istifadəçi birbaşa görə/dəyişə bilsin
+        // (Bildiriş şablonları ilə eyni yer). Konfiqurasiyada TemplateRoot verilibsə, o üstünlük təşkil edir.
         var root = _config["KreditMuqavile:TemplateRoot"];
         return string.IsNullOrWhiteSpace(root)
-            ? Path.Combine(_env.ContentRootPath, "Files", "Word", "Kredit")
+            ? Path.Combine(_env.WebRootPath, "Files", "Word", "Kredit")
             : root;
     }
 
