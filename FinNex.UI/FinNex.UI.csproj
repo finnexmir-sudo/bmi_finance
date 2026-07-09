@@ -67,4 +67,15 @@
     </Content>
   </ItemGroup>
 
+  <!-- appsettings.json publish çıxışına DÜŞMÜR — serverdəki (VM) tam dolu konfiqurasiya
+       (Oracle bağlantısı, Goyercin açarları, mail və s. gizli dəyərlər) publish zamanı
+       layihədəki boş versiya ilə əvəz olunmasın. Lokal işə salmaya (build/F5) təsir etmir;
+       yalnız Publish çıxışından çıxarır. QEYD: tamamilə boş serverə ilk dəfə əl ilə
+       appsettings.json qoyulmalıdır. -->
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
