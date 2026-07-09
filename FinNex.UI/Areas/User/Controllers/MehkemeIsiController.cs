@@ -232,6 +232,27 @@ public class MehkemeIsiController : Controller
         }
     }
 
+    // ── Çoxsaylı Zaminlik (1-dən çox kreditə zamin duranlar) ──
+    public async Task<IActionResult> CoxsayliZaminlik()
+    {
+        var vm = await _service.CoxsayliZaminlikAsync();
+        return View(vm);
+    }
+
+    public async Task<IActionResult> CoxsayliZaminlikExcel()
+    {
+        var vm = await _service.CoxsayliZaminlikAsync();
+        var basliqlar = new[] { "№", "Zamin FİN", "Zamin", "Zamin durduğu kredit sayı",
+            "Borcalan", "Region", "Kredit hesabı", "KS", "Kreditin məbləği", "Qalıq", "VK qalıq" };
+        var setirler = vm.Setirler.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.ZaminFin, x.ZaminAd, x.ZaminDurduguKreditSayi,
+            x.Borcalan, x.Region, x.KreditHesabi, x.Ks, x.KreditinMeblegi, x.Qaliq, x.VkQaliq
+        });
+        var bytes = ExcelExportHelper.Yarat("Çoxsaylı Zaminlik", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Coxsayli_Zaminlik_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
     // ── Excel export (hər grid səhifəsi) ──────────────────────────
     // Aktiv Müştərilər — TAM Oracle sorğusu (bütün sütunlar/sətirlər), yalnız görünən cədvəl deyil.
     public async Task<IActionResult> IndexExcel()

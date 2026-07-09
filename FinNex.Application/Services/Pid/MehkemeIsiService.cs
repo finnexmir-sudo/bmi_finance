@@ -395,6 +395,52 @@ public class MehkemeIsiService : IMehkemeIsiService
         return await _oracle.SelectXamAsync(res.Data.SorguMetni, maxRows);
     }
 
+    // ── Çoxsaylı Zaminlik ──────────────────────────────────────────
+    // Sorğu Admin → Oracle Sorğular-da, adına görə tapılır ("çoxsaylı"+"zamin").
+    private async Task<string?> CoxsayliZaminlikSorguMetniAsync()
+    {
+        var res = await _sorguService.HamisiniGetirAsync();
+        if (!res.Success || res.Data is null) return null;
+        static string Norm(string? s) => (s ?? "").ToLowerInvariant()
+            .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
+            .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
+        var q = res.Data.FirstOrDefault(x => x.Aktiv
+            && Norm(x.SorguAdi).Contains("coxsayli") && Norm(x.SorguAdi).Contains("zamin"));
+        return q?.SorguMetni;
+    }
+
+    public async Task<CoxsayliZaminlikViewDto> CoxsayliZaminlikAsync()
+    {
+        var vm = new CoxsayliZaminlikViewDto();
+        var sql = await CoxsayliZaminlikSorguMetniAsync();
+        if (string.IsNullOrWhiteSpace(sql)) { vm.SorguTapildi = false; return vm; }
+        vm.SorguTapildi = true;
+        try
+        {
+            var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+            vm.Setirler = rows.Select(r => new CoxsayliZaminlikSetirDto
+            {
+                ZaminFin               = GetStr(r, "zamin_fin"),
+                ZaminAd                = GetStr(r, "zamin_ad") ?? "(naməlum)",
+                ZaminDurduguKreditSayi = GetDec(r, "zamin_durdugu_kredit_sayi") is decimal _s ? (int)Math.Round(_s) : 0,
+                Borcalan               = GetStr(r, "borcalan"),
+                Region                 = GetStr(r, "region"),
+                KreditHesabi           = GetStr(r, "kredit_hesabi"),
+                Ks                     = GetStr(r, "ks"),
+                KreditinMeblegi        = GetDec(r, "kreditin_meblegi"),
+                Qaliq                  = GetDec(r, "qaliq"),
+                VkQaliq                = GetDec(r, "vk_qaliq"),
+            })
+            // əvvəl ən çox kreditə zamin duranlar, sonra zamin adı, sonra borcalan
+            .OrderByDescending(x => x.ZaminDurduguKreditSayi)
+            .ThenBy(x => x.ZaminAd)
+            .ThenBy(x => x.Borcalan)
+            .ToList();
+        }
+        catch (Exception ex) { vm.Xeta = ex.Message; }
+        return vm;
+    }
+
     // ── Bildirişə düşənlər ─────────────────────────────────────────
     // Sorğu Admin → Oracle Sorğular-da saxlanılır, adına görə tapılır
     // (normalizasiya: boşluq silinir, ə→e). Ad "Bildiriş" + "düşən" saxlamalıdır.

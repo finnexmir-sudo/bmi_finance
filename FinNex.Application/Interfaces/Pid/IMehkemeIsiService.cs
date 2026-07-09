@@ -19,6 +19,9 @@ public interface IMehkemeIsiService
     Task<IList<KataloqSecimDto>> KataloqlarAsync();
     Task<OracleNetice> KataloqIcraEtAsync(int sorguId, int maxRows);
 
+    // ── Çoxsaylı Zaminlik (Oracle sorğusu → 1-dən çox kreditə zamin duranlar) ──
+    Task<CoxsayliZaminlikViewDto> CoxsayliZaminlikAsync();
+
     // ── Bildirişə düşənlər (Oracle sorğusu → borcalan + zaminlər) ──
     Task<BildirisViewDto> BildirisSiyahiAsync();
     Task<BildirisSetirDto?> BildirisSetirTapAsync(string sk, string hes);
