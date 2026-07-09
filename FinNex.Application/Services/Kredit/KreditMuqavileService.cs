@@ -2,6 +2,7 @@ using System.Globalization;
 using FinNex.Application.DTOs.Kredit.Muqavile;
 using FinNex.Application.Interfaces.Kredit;
 using FinNex.Application.Interfaces.Oracle;
+using FinNex.Application.Interfaces.Sorgular;
 
 namespace FinNex.Application.Services.Kredit;
 
@@ -14,15 +15,18 @@ namespace FinNex.Application.Services.Kredit;
 public class KreditMuqavileService : IKreditMuqavileService
 {
     private readonly IOracleService _oracle;
+    private readonly IOracleSorguService _sorguService;
 
-    public KreditMuqavileService(IOracleService oracle)
+    public KreditMuqavileService(IOracleService oracle, IOracleSorguService sorguService)
     {
         _oracle = oracle;
+        _sorguService = sorguService;
     }
 
     public async Task<List<KreditMuqavileSatirDto>> KreditleriGetirAsync(DateTime tarix, CancellationToken ct = default)
     {
-        var rows = await _oracle.SelectAsync(BuildSql(tarix, null), 2000, ct);
+        var sql = await KreditSqlAsync(tarix, null);
+        var rows = await _oracle.SelectAsync(sql, 2000, ct);
         return rows.Select(Map).ToList();
     }
 
@@ -34,7 +38,8 @@ public class KreditMuqavileService : IKreditMuqavileService
         if (hesab.Length == 0) return null;
 
         var extra = $" AND t.licschkre = '{hesab}' AND t.subschkre = '{(subs.Length == 0 ? "0" : subs)}'";
-        var rows = await _oracle.SelectAsync(BuildSql(tarix, extra), 5, ct);
+        var sql = await KreditSqlAsync(tarix, extra);
+        var rows = await _oracle.SelectAsync(sql, 5, ct);
         return rows.Select(Map).FirstOrDefault();
     }
 
@@ -44,17 +49,7 @@ public class KreditMuqavileService : IKreditMuqavileService
         var subs = new string((ks ?? "").Where(char.IsDigit).ToArray());
         if (hesab.Length == 0) return new();
 
-        // BMI Zaminler.cs (zamingetir) — odb.creditinfoguarantee-dən zaminlər
-        var sql = $@"
-SELECT g.guarantee_name AS AD,
-       g.guarantee_id   AS PASPORT,
-       g.pincode        AS FIN,
-       g.telefon        AS TELEFON,
-       g.adress         AS UNVAN
-  FROM odb.creditinfoguarantee g
- WHERE g.licschkre = '{hesab}'
-   AND g.subschkre = '{(subs.Length == 0 ? "0" : subs)}'";
-
+        var sql = await ZaminSqlAsync(hesab, subs.Length == 0 ? "0" : subs);
         var rows = await _oracle.SelectAsync(sql, 20, ct);
         return rows.Select(r => new ZaminDaxilDto
         {
@@ -66,12 +61,47 @@ SELECT g.guarantee_name AS AD,
         }).ToList();
     }
 
-    private static string BuildSql(DateTime tarix, string? extraWhere)
-    {
-        // Tarix DateTime-dan formatlanır (istifadəçi mətni birbaşa SQL-ə düşmür).
-        var tarixStr = tarix.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+    // ── SQL mənbəyi: Admin → Oracle Sorğular (adına görə), tapılmasa daxili şablon ──
+    // PID (Cari Kataloq/Bildiriş) ilə eyni pattern. Fərq: bu sorğular parametrlidir —
+    // stored SQL-də yer tutucular ({TARIX}/{EXTRA}/{HESAB}/{SUBS}) servisdə əvəz olunur.
+    // hesab/subs/tarix dəyərləri əvvəlcədən təmizlənir (yalnız rəqəm / DateTime format) —
+    // istifadəçi mətni birbaşa SQL-ə düşmür.
 
-        return $@"
+    private async Task<string> KreditSqlAsync(DateTime tarix, string? extraWhere)
+    {
+        var tarixStr = tarix.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+        var xam = await SaxlanmisSqlAsync(n => n.Contains("kredit") && n.Contains("muqavile") && !n.Contains("zamin"))
+                  ?? KreditSqlXam;
+        return xam.Replace("{TARIX}", tarixStr).Replace("{EXTRA}", extraWhere ?? "");
+    }
+
+    private async Task<string> ZaminSqlAsync(string hesab, string subs)
+    {
+        var xam = await SaxlanmisSqlAsync(n => n.Contains("kredit") && n.Contains("zamin"))
+                  ?? ZaminSqlXam;
+        return xam.Replace("{HESAB}", hesab).Replace("{SUBS}", subs);
+    }
+
+    // Admin → Oracle Sorğular-da aktiv sorğu (adı normalizasiya olunur: ə→e, ş→s, boşluq atılır)
+    private async Task<string?> SaxlanmisSqlAsync(Func<string, bool> adUygun)
+    {
+        try
+        {
+            var res = await _sorguService.HamisiniGetirAsync();
+            if (!res.Success || res.Data is null) return null;
+            var q = res.Data.FirstOrDefault(x => x.Aktiv && adUygun(Norm(x.SorguAdi)));
+            return string.IsNullOrWhiteSpace(q?.SorguMetni) ? null : q!.SorguMetni;
+        }
+        catch { return null; }   // sorğu servisi əlçatmazdırsa daxili şablona düş
+    }
+
+    private static string Norm(string? s) => (s ?? "").ToLowerInvariant()
+        .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
+        .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
+
+    // Daxili şablon (fallback) — Admin-ə "Kredit Müqavilə" adı ilə əlavə edilməli SQL.
+    // Yer tutucular: {TARIX} = verilmə tarixi (dd-MM-yyyy), {EXTRA} = əlavə filtr (siyahıda boş).
+    private const string KreditSqlXam = @"
 SELECT
     r.name_regnom                              AS ADI,
     t.subschkre                                AS KS,
@@ -109,14 +139,25 @@ SELECT
     r.yurik                                    AS HUQUQI_SEXS,
     r.inn_regnom                               AS VOEN
 FROM odb.licschkre t, odb.regnom r, odb.licsch m, odb.srokpogprockre k, odb.creditinfo y
-WHERE t.date_open = to_date('{tarixStr}', 'dd-MM-yyyy')
+WHERE t.date_open = to_date('{TARIX}', 'dd-MM-yyyy')
   AND substr(t.licschkre, 10, 6) = r.regnom
   AND t.licschkre = k.licschkre
   AND t.subschkre = k.subschkre
   AND t.licschkre = y.licschkre
   AND t.subschkre = y.subschkre
-  AND m.licsch = k.licsch_3(+){extraWhere}";
-    }
+  AND m.licsch = k.licsch_3(+){EXTRA}";
+
+    // Daxili şablon (fallback) — Admin-ə "Kredit Zaminləri" adı ilə əlavə edilməli SQL.
+    // Yer tutucular: {HESAB} = kredit hesabı, {SUBS} = subkod (rəqəm, əvvəlcədən təmizlənir).
+    private const string ZaminSqlXam = @"
+SELECT g.guarantee_name AS AD,
+       g.guarantee_id   AS PASPORT,
+       g.pincode        AS FIN,
+       g.telefon        AS TELEFON,
+       g.adress         AS UNVAN
+  FROM odb.creditinfoguarantee g
+ WHERE g.licschkre = '{HESAB}'
+   AND g.subschkre = '{SUBS}'";
 
     private static KreditMuqavileSatirDto Map(Dictionary<string, object?> r) => new()
     {
