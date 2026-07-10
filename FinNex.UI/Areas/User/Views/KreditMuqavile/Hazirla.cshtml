@@ -230,13 +230,20 @@
 
 @section Styles {
     <style>
-        .kmh-page { animation: kmhFade .35s ease both; }
-        .kmh-card { padding:18px 20px; margin-bottom:14px; border:1px solid #e8edf3;
+        /* A) Səhifə fonu — çox açıq boz/mavi kətan, ağ kartlar üzə çıxsın */
+        .kmh-page { animation: kmhFade .35s ease both;
+            background:linear-gradient(180deg,#f6f8fc 0%,#eef2f8 100%);
+            padding:18px; border-radius:16px; }
+        /* B) Kartlar — sabit yüngül kölgə + aydın kənar (dərinlik) */
+        .kmh-card { padding:18px 20px; margin-bottom:14px; background:#fff; border:1px solid #e3e9f2; border-radius:14px;
+            box-shadow:0 1px 2px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.05);
             transition:box-shadow .2s ease, transform .2s ease, border-color .2s ease;
             animation:kmhUp .4s ease both; animation-delay:calc(var(--i,0) * .06s); }
-        .kmh-card:hover { box-shadow:0 6px 22px rgba(15,23,42,.07); border-color:#dbe3ee; transform:translateY(-1px); }
-        .kmh-sec-title { font-size:14px; font-weight:700; color:#0f172a; margin-bottom:14px;
-            padding-left:10px; border-left:3px solid #2563eb; }
+        .kmh-card:hover { box-shadow:0 8px 26px rgba(15,23,42,.10); border-color:#cdd8e8; transform:translateY(-1px); }
+        /* C) Bölmə başlıqları — vurğulu zolaq + incə fon */
+        .kmh-sec-title { font-size:14px; font-weight:700; color:#0f172a; margin-bottom:16px;
+            padding:7px 12px; border-left:3px solid #2563eb; border-radius:0 8px 8px 0;
+            background:linear-gradient(90deg,#eff4ff,transparent); }
         /* Kredit məlumatı — fərqləndirilmiş tile-lar */
         .kmh-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
         .kmh-tile { display:flex; flex-direction:column; gap:4px; padding:11px 14px;
@@ -252,8 +259,9 @@
         .kmh-grid .kmh-full { grid-column:1/-1; }
         .kmh-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; letter-spacing:.2px; }
         .kmh-hint { color:#94a3b8; font-weight:500; }
-        .kmh-page .fn-input { transition:border-color .15s ease, box-shadow .15s ease; }
-        .kmh-page .fn-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); outline:none; }
+        /* İnputlar — ölü ağ yerinə çox yüngül çalar, fokus zamanı ağ */
+        .kmh-page .fn-input { background:#fbfcff; transition:border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+        .kmh-page .fn-input:focus { border-color:#2563eb; background:#fff; box-shadow:0 0 0 3px rgba(37,99,235,.12); outline:none; }
         .kmh-datechip { display:flex; flex-direction:column; align-items:flex-end; gap:2px;
             background:linear-gradient(135deg,#eff6ff,#f8fafc); border:1px solid #dbeafe; padding:8px 14px; border-radius:10px; }
         .kmh-datechip-lbl { font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
@@ -270,7 +278,7 @@
             position:relative; background:#fbfcfe; animation:kmhUp .25s ease both; }
         .zamin-row .zamin-sil { position:absolute; top:10px; right:10px; padding:4px 12px; font-size:12px; }
         .kmh-actions { display:flex; gap:10px; margin-top:6px; position:sticky; bottom:0; padding:12px 0;
-            background:linear-gradient(to top, var(--fn-bg,#fff) 70%, transparent); }
+            background:linear-gradient(to top, #eef2f8 72%, transparent); }
         .kmh-yarat { transition:transform .12s ease, box-shadow .2s ease; }
         .kmh-yarat:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(37,99,235,.28); }
         .kmh-yarat:active { transform:translateY(0); }
