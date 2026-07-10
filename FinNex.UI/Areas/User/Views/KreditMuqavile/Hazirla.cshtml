@@ -127,6 +127,9 @@
                                 <option value="@t.Kod">@t.Ad</option>
                             }
                         </select>
+                        <div id="obyektTipiXeta" style="display:none;color:#dc2626;font-size:12px;margin-top:4px;font-weight:600">
+                            Hüquq obyektinin adını seçin — müqavilə və BTİ məktubu üçün lazımdır.
+                        </div>
                     </div>
                     <div><label>Çıxarış №</label><input type="text" name="CixarisNo" class="fn-input" /></div>
                     <div><label>Seriya və nömrəsi</label><input type="text" name="SeriyaNomre" class="fn-input" /></div>
@@ -298,6 +301,23 @@
             }
             sel.addEventListener('change', tetbiq);
             tetbiq();
+
+            // Submit yoxlaması — obyekt tipi seçilməyibsə forma göndərilmir (data itmir).
+            var xeta = document.getElementById('obyektTipiXeta');
+            var form = sel.closest('form');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    if (!sel.value) {
+                        e.preventDefault();
+                        if (xeta) xeta.style.display = '';
+                        sel.focus();
+                        sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            }
+            sel.addEventListener('change', function () {
+                if (sel.value && xeta) xeta.style.display = 'none';
+            });
         })();
 
         // Zaminlər — Oracle-dan yüklənənlərdən sonra davam edən indeks
