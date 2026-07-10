@@ -119,7 +119,7 @@
                     </div>
                     <div><label>Girov dəyəri</label><input type="number" step="0.01" name="GirovDeyeri" value="@Model.GirovDeyeri?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="fn-input" /></div>
                     <div>
-                        <label>Hüquq obyektinin adı <span class="kmh-hint">(BTİ məktubu + sahələr)</span></label>
+                        <label>Hüquq obyektinin adı</label>
                         <select name="ObyektTipi" id="obyektTipi" class="fn-input">
                             <option value="">— seçin —</option>
                             @foreach (var t in FinNex.UI.Areas.User.Controllers.KreditMuqavileController.ObyektTipleri)
