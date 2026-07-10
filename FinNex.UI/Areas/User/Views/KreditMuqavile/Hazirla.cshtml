@@ -117,19 +117,9 @@
                             <option value="Sonrakı İpoteka">Sonrakı İpoteka</option>
                         </select>
                     </div>
-                    <div>
-                        <label>Girov növü <span class="kmh-hint">(BTİ məktubu üçün)</span></label>
-                        <select name="GirovNovu" class="fn-input">
-                            <option value="Mənzil">Mənzil</option>
-                            <option value="Qeyri yaşayış sahəsi">Qeyri yaşayış sahəsi</option>
-                            <option value="Qeyri yaşayış binası">Qeyri yaşayış binası</option>
-                            <option value="Fərdi yaşayış evi">Fərdi yaşayış evi</option>
-                            <option value="Torpaq sahəsi">Torpaq sahəsi</option>
-                        </select>
-                    </div>
                     <div><label>Girov dəyəri</label><input type="number" step="0.01" name="GirovDeyeri" value="@Model.GirovDeyeri?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="fn-input" /></div>
                     <div>
-                        <label>Hüquq obyektinin adı</label>
+                        <label>Hüquq obyektinin adı <span class="kmh-hint">(BTİ məktubu + sahələr)</span></label>
                         <select name="ObyektTipi" id="obyektTipi" class="fn-input">
                             <option value="">— seçin —</option>
                             @foreach (var t in FinNex.UI.Areas.User.Controllers.KreditMuqavileController.ObyektTipleri)

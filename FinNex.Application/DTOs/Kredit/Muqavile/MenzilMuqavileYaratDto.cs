@@ -29,7 +29,6 @@ public class MenzilMuqavileYaratDto
 
     // İpoteka (girov) məlumatı
     public string? IpotekaNovu { get; set; }         // {i_ipnovu} — İpoteka / Sonrakı İpoteka
-    public string? GirovNovu { get; set; }           // girov obyektinin növü → {girov_tipi} (yiyəlik hal)
     public string? IpotekaUnvan { get; set; }        // {i_ipoteka_unvan}
     public string? Erazi { get; set; }               // {i_erazi}
     public decimal? GirovDeyeri { get; set; }        // {Ipoteka_deyer}

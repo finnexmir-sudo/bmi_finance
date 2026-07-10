@@ -196,7 +196,7 @@ public class KreditMuqavileController : Controller
 
             // Məktub
             ["{mekno}"] = mekno,
-            ["{girov_tipi}"] = GirovTipiGenitiv(dto.GirovNovu),
+            ["{girov_tipi}"] = GirovTipiGenitiv(dto.ObyektTipi),
         };
 
         var templateRoot = SablonQovlugu();
@@ -468,15 +468,15 @@ public class KreditMuqavileController : Controller
         return $"{country}nın vətəndaşı {KreditSozeCevir.BaslikRegistri(k.Adi)} (vəsiqə məlumatı: {VesiqeMetni(k)})";
     }
 
-    // {girov_tipi} — girov növü → yiyəlik hal (BTİ məktubu üçün), BMI Menzil.girovTipiniTap()
-    private static string GirovTipiGenitiv(string? girovNovu) => girovNovu switch
+    // {girov_tipi} — obyekt tipi (Hüquq obyektinin adı) → yiyəlik hal (BTİ məktubu üçün).
+    // Köhnə ayrıca "Girov növü" sahəsi silindi — mənbə eyni obyekt tipidir.
+    private static string GirovTipiGenitiv(string? obyektKod) => obyektKod switch
     {
-        "Mənzil" => "mənzilin",
-        "Qeyri yaşayış sahəsi" => "Qeyri yaşayış sahəsinin",
-        "Qeyri yaşayış binası" => "Qeyri yaşayış binasının",
-        "Fərdi yaşayış evi" => "Fərdi yaşayış evinin",
-        "Torpaq sahəsi" => "Torpaq sahəsinin",
-        _ => girovNovu ?? ""
+        "menzil" => "mənzilin",
+        "ferdi"  => "fərdi yaşayış evinin",
+        "torpaq" => "torpaq sahəsinin",
+        "qeyri"  => "qeyri-yaşayış obyektinin",
+        _ => ObyektTipiAd(obyektKod).ToLower(new System.Globalization.CultureInfo("az-Latn-AZ"))
     };
 
     // BMI ilə eyni format: min ayırıcı yox, onluq nöqtə (100000, 2406.16)
