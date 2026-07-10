@@ -177,7 +177,11 @@ public class KreditMuqavileController : Controller
             // İpoteka / girov
             ["{i_mno}"] = nomreler.IpotekaNo.ToString(),
             ["{i_erazi}"] = dto.Erazi,
-            ["{i_cixarisNo}"] = dto.CixarisNo,
+            // Çıxarış no varsa "{no} seriyalı, ", yoxdursa boş — şablonda "seriyalı" sözü artıq
+            // sabit deyil (yeni çıxarışlarda seriya olmaya bilər).
+            ["{i_cixarisNo}"] = string.IsNullOrWhiteSpace(dto.CixarisNo)
+                ? ""
+                : $"{dto.CixarisNo.Trim()} seriyalı, ",
             ["{i_tarix}"] = kredit.CixarisTarixi?.ToString("dd-MM-yyyy"),
             ["{i_qeydiyyatNo}"] = dto.QeydiyyatNo,
             ["{i_reyestrNo}"] = dto.ReyestrNo,
