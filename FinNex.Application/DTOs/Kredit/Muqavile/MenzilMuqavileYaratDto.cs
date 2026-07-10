@@ -42,7 +42,6 @@ public class MenzilMuqavileYaratDto
     // Sahə dəyərləri sərbəst mətndir (məs. "120 m²", "6 sot"). Sahələr obyekt tipinə görə
     // formada göstərilir/gizlədilir (ObyektTipi kodu): menzil / ferdi / torpaq / qeyri.
     public string? ObyektTipi { get; set; }          // Hüquq obyektinin adı (kod)
-    public string? SeriyaNomre { get; set; }         // çıxarış seriya və nömrəsi
     public string? UmumiSahe { get; set; }           // ümumi sahə
     public string? YasayisSahe { get; set; }         // yaşayış sahəsi
     public string? YardimciSahe { get; set; }        // yardımçı sahə

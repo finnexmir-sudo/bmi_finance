@@ -418,7 +418,6 @@ public class KreditMuqavileController : Controller
 
         Add("ərazi", dto.Erazi);
         Add("ünvan", dto.IpotekaUnvan);
-        Add("çıxarış seriya və nömrəsi", dto.SeriyaNomre);
         Add("ümumi sahə", dto.UmumiSahe);
         Add("yaşayış sahəsi", dto.YasayisSahe);
         Add("yardımçı sahə", dto.YardimciSahe);
