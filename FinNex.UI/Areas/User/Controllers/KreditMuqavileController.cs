@@ -37,6 +37,16 @@ public class KreditMuqavileController : Controller
         "Türkiyə Respublikası", "Gürcüstan Respublikası"
     };
 
+    // İpoteka obyektinin tipi — köhnə BMI "Hüquq obyektinin adı" (seçiliyə uyğun sahələr).
+    // Kod → görünən ad. Kod formadan gəlir, sənəddə ad işlədilir.
+    public static readonly (string Kod, string Ad)[] ObyektTipleri =
+    {
+        ("menzil", "Mənzil"),
+        ("ferdi",  "Fərdi yaşayış evi (həyət evi)"),
+        ("torpaq", "Torpaq sahəsi"),
+        ("qeyri",  "Qeyri-yaşayış obyekti"),
+    };
+
     public KreditMuqavileController(
         IKreditMuqavileService muqavileService,
         IKreditMuqavileNomreService nomreService,
@@ -101,6 +111,7 @@ public class KreditMuqavileController : Controller
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
         ViewBag.Olkeler = Olkeler;
+        ViewBag.ObyektTipleri = ObyektTipleri;
         return View("Hazirla", kredit);
     }
 
@@ -172,7 +183,7 @@ public class KreditMuqavileController : Controller
             ["{i_reyestrNo}"] = dto.ReyestrNo,
             ["{i_ipoteka_unvan}"] = dto.IpotekaUnvan,
             ["{i_ipnovu}"] = dto.IpotekaNovu,
-            ["{i_diger_cixaris_melumati}"] = dto.DigerCixarisMelumati,
+            ["{i_diger_cixaris_melumati}"] = CixarisBlok(dto),
             ["{Ipoteka_deyer}"] = Pul(dto.GirovDeyeri),
             ["{Ipoteka_deyer_soz}"] = KreditSozeCevir.MebleghSozeQepiksiz(dto.GirovDeyeri ?? 0),
 
@@ -388,6 +399,47 @@ public class KreditMuqavileController : Controller
         return string.IsNullOrWhiteSpace(root)
             ? Path.Combine(_env.WebRootPath, "Files", "Word", "Kredit")
             : root;
+    }
+
+    // İpoteka obyekti tipi kodu → görünən ad (sənəddə işlədilir)
+    private static string ObyektTipiAd(string? kod) =>
+        ObyektTipleri.FirstOrDefault(t => t.Kod == kod).Ad ?? "";
+
+    // Köhnə BMI "Girova aid məlumatlar" → ipoteka predmeti təsviri ({i_diger_cixaris_melumati}).
+    // Yalnız doldurulmuş sahələr daxil edilir. Obyekt tipi başda, sonra "etiket: dəyər" siyahısı,
+    // ən sonda əl ilə yazılmış "digər çıxarış məlumatı". Sahə dəyərləri sərbəst mətndir.
+    private static string CixarisBlok(MenzilMuqavileYaratDto dto)
+    {
+        var hisseler = new List<string>();
+        void Add(string etiket, string? deyer)
+        {
+            if (!string.IsNullOrWhiteSpace(deyer)) hisseler.Add($"{etiket}: {deyer.Trim()}");
+        }
+
+        Add("ərazi", dto.Erazi);
+        Add("ünvan", dto.IpotekaUnvan);
+        Add("çıxarış seriya və nömrəsi", dto.SeriyaNomre);
+        Add("ümumi sahə", dto.UmumiSahe);
+        Add("yaşayış sahəsi", dto.YasayisSahe);
+        Add("yardımçı sahə", dto.YardimciSahe);
+        Add("torpaq sahəsi", dto.TorpaqSahe);
+        Add("otaqların sayı", dto.OtaqSayi);
+        Add("reyestr nömrəsi", dto.ReyestrNo);
+        Add("reyestr kitab nömrəsi", dto.ReyestrKitabNo);
+        Add("reyestr vərəq nömrəsi", dto.ReyestrVereqNo);
+        Add("qeydiyyat nömrəsi", dto.QeydiyyatNo);
+        if (dto.QeydiyyatTarixi.HasValue)
+            hisseler.Add($"qeydiyyat tarixi: {dto.QeydiyyatTarixi.Value:dd.MM.yyyy}");
+
+        var tipAd = ObyektTipiAd(dto.ObyektTipi);
+        var netice = tipAd.Length > 0
+            ? tipAd + (hisseler.Count > 0 ? " — " + string.Join(", ", hisseler) : "")
+            : string.Join(", ", hisseler);
+
+        if (!string.IsNullOrWhiteSpace(dto.DigerCixarisMelumati))
+            netice = (netice.Length > 0 ? netice + ". " : "") + dto.DigerCixarisMelumati.Trim();
+
+        return netice;
     }
 
     private static string VesiqeMetni(KreditMuqavileSatirDto k)

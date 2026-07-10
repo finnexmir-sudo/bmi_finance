@@ -128,10 +128,42 @@
                         </select>
                     </div>
                     <div><label>Girov dəyəri</label><input type="number" step="0.01" name="GirovDeyeri" value="@Model.GirovDeyeri?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="fn-input" /></div>
+                    <div>
+                        <label>Hüquq obyektinin adı</label>
+                        <select name="ObyektTipi" id="obyektTipi" class="fn-input">
+                            <option value="">— seçin —</option>
+                            @foreach (var t in FinNex.UI.Areas.User.Controllers.KreditMuqavileController.ObyektTipleri)
+                            {
+                                <option value="@t.Kod">@t.Ad</option>
+                            }
+                        </select>
+                    </div>
                     <div><label>Çıxarış №</label><input type="text" name="CixarisNo" class="fn-input" /></div>
+                    <div><label>Seriya və nömrəsi</label><input type="text" name="SeriyaNomre" class="fn-input" /></div>
                     <div><label>Qeydiyyat №</label><input type="text" name="QeydiyyatNo" value="@Model.TeminatNo" class="fn-input" /></div>
+                    <div><label>Qeydiyyat tarixi</label><input type="date" name="QeydiyyatTarixi" class="fn-input" /></div>
                     <div><label>Reyestr №</label><input type="text" name="ReyestrNo" class="fn-input" /></div>
+                    <div><label>Reyestr kitab №</label><input type="text" name="ReyestrKitabNo" class="fn-input" /></div>
+                    <div><label>Reyestr vərəq №</label><input type="text" name="ReyestrVereqNo" class="fn-input" /></div>
                     <div><label>Ərazi</label><input type="text" name="Erazi" class="fn-input" /></div>
+
+                    <!-- Obyekt tipinə görə göstərilən sahələr (sərbəst mətn: "120 m²", "6 sot") -->
+                    <div class="cx-cond" data-tipler="menzil ferdi qeyri" style="display:none">
+                        <label>Ümumi sahə</label><input type="text" name="UmumiSahe" class="fn-input" placeholder="məs. 120 m²" />
+                    </div>
+                    <div class="cx-cond" data-tipler="menzil ferdi" style="display:none">
+                        <label>Yaşayış sahəsi</label><input type="text" name="YasayisSahe" class="fn-input" placeholder="məs. 80 m²" />
+                    </div>
+                    <div class="cx-cond" data-tipler="ferdi" style="display:none">
+                        <label>Yardımçı sahə</label><input type="text" name="YardimciSahe" class="fn-input" />
+                    </div>
+                    <div class="cx-cond" data-tipler="ferdi torpaq" style="display:none">
+                        <label>Torpaq sahəsi</label><input type="text" name="TorpaqSahe" class="fn-input" placeholder="məs. 6 sot" />
+                    </div>
+                    <div class="cx-cond" data-tipler="menzil ferdi" style="display:none">
+                        <label>Otaqların sayı</label><input type="text" name="OtaqSayi" class="fn-input" />
+                    </div>
+
                     <div class="kmh-full"><label>İpoteka ünvanı</label><input type="text" name="IpotekaUnvan" value="@Model.GirovUnvan" class="fn-input" /></div>
                     <div class="kmh-full"><label>Digər çıxarış məlumatı</label><input type="text" name="DigerCixarisMelumati" class="fn-input" /></div>
                 </div>
@@ -261,6 +293,22 @@
         document.getElementById('ferqliChk').addEventListener('change', function () {
             document.getElementById('sahibBlok').classList.toggle('acik', this.checked);
         });
+
+        // Hüquq obyektinin adı → seçiliyə uyğun sahələri göstər/gizlət
+        (function () {
+            var sel = document.getElementById('obyektTipi');
+            if (!sel) return;
+            var conds = Array.prototype.slice.call(document.querySelectorAll('.cx-cond'));
+            function tetbiq() {
+                var kod = sel.value;
+                conds.forEach(function (el) {
+                    var tipler = (el.getAttribute('data-tipler') || '').split(' ');
+                    el.style.display = (kod && tipler.indexOf(kod) !== -1) ? '' : 'none';
+                });
+            }
+            sel.addEventListener('change', tetbiq);
+            tetbiq();
+        })();
 
         // Zaminlər — Oracle-dan yüklənənlərdən sonra davam edən indeks
         let zaminIndex = @zaminler.Count;
