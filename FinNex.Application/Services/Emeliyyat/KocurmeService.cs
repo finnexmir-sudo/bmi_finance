@@ -122,7 +122,7 @@ public class KocurmeService : IKocurmeService
     public async Task<Result<int>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId)
     {
         if (string.IsNullOrWhiteSpace(dto.GonderenAd) && string.IsNullOrWhiteSpace(dto.AlanAd))
-            return Result<string>.Fail("Ən azı göndərən və ya alan adı daxil edilməlidir.");
+            return Result<int>.Fail("Ən azı göndərən və ya alan adı daxil edilməlidir.");
 
         var isci = (await _uow.Repository<Isci>().HamisiniGetirAsync(
             predicate: x => x.AppUserId == yaradanUserId && !x.Silinib, izlemeden: true)).FirstOrDefault();
