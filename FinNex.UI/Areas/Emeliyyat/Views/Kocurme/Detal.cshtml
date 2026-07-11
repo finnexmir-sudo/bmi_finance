@@ -1,0 +1,92 @@
+@model KocurmeDetalDto
+@{
+    var baslik = (string)(ViewBag.Baslik ?? "Köçürmə");
+    ViewData["Title"] = baslik + " — voucher";
+    string T(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
+    string M(decimal? v) => v.HasValue ? v.Value.ToString("#,0.00") : "—";
+    var userId = (int)(ViewBag.UserId ?? 0);
+    var isAdmin = (bool)(ViewBag.IsAdmin ?? false);
+}
+
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@baslik — muhasibat voucher</div>
+            <div class="fn-page-sub">Həvalə № @T(Model.HevaleNo) — @Model.Tarix?.ToString("dd.MM.yyyy")</div>
+        </div>
+        <div style="display:flex;gap:8px">
+            @if (isAdmin || Model.YaradanId == userId)
+            {
+                <a asp-action="Redakte" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-pencil"></i> Redaktə</a>
+            }
+            <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+        </div>
+    </div>
+
+    <div class="fn-card" style="margin-bottom:16px">
+        <div class="td-info">
+            <div><span>Göndərən</span><b>@T(Model.GonderenTamAd)</b></div>
+            <div><span>Alan</span><b>@T(Model.AlanTamAd)</b></div>
+            <div><span>Məbləğ</span><b>@M(Model.Mebleg)</b></div>
+            <div><span>Mədaxil valyuta</span><b>@T(Model.MedaxilValyuta)</b></div>
+            <div><span>Köçürülən valyuta</span><b>@T(Model.KocurulenValyuta)</b></div>
+            <div><span>Seçim</span><b>@T(Model.Secim)</b></div>
+            <div><span>İran Rial / kurs</span><b>@M(Model.IranRial)</b></div>
+            <div><span>Rial CBAR</span><b>@M(Model.RialCbar)</b></div>
+            <div><span>Valyuta CBAR</span><b>@M(Model.ValyutaCbar)</b></div>
+            <div><span>Bank</span><b>@T(Model.BankAd)</b></div>
+            <div><span>Alan hesab</span><b>@T(Model.AlanHesab)</b></div>
+            <div><span>Məqsəd</span><b>@T(Model.Meqsed)</b></div>
+        </div>
+    </div>
+
+    <div class="fn-card">
+        <div class="td-title">Debet / Kredit voucher</div>
+        <div class="dm-twrap">
+            <table class="td-table">
+                <thead>
+                    <tr>
+                        <th>Debet</th>
+                        <th>Kredit</th>
+                        <th class="td-r">Məbləğ</th>
+                        <th>Təyinat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Setirler)
+                    {
+                        <tr>
+                            <td class="td-mono">@T(s.Debet)</td>
+                            <td class="td-mono">@T(s.Kredit)</td>
+                            <td class="td-r td-mono">@s.Mebleg.ToString("#,0.00")</td>
+                            <td class="td-teyinat">@T(s.Teyinat)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Setirler.Any())
+        {
+            <div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px">
+                Voucher hesablanmadı — valyuta/seçim kombinasiyası tam deyil (Rial/Rubl üçün kurslar tələb olunur).
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .td-info { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px 20px; }
+        .td-info > div { display:flex; flex-direction:column; gap:3px; }
+        .td-info span { font-size:11px; color:#94a3b8; font-weight:600; }
+        .td-info b { font-size:14px; color:#0f172a; }
+        .td-title { font-size:13px; font-weight:700; color:#334155; margin-bottom:12px; }
+        .dm-twrap { overflow-x:auto; }
+        .td-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .td-table thead th { background:#f1f5f9; color:#475569; font-weight:600; font-size:12px; text-align:left; padding:10px 12px; border-bottom:1px solid #e2e8f0; }
+        .td-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; color:#1e293b; vertical-align:top; }
+        .td-r { text-align:right; }
+        .td-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; white-space:nowrap; }
+        .td-teyinat { font-size:12px; color:#475569; min-width:280px; }
+    </style>
+}

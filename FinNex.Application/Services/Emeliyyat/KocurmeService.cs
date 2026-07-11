@@ -100,6 +100,64 @@ public class KocurmeService : IKocurmeService
         return Result<string>.Ok(hevaleNo, $"Köçürmə qeydə alındı — № {hevaleNo}.");
     }
 
+    // Form dəyərlərini voucher açarlarına çevir
+    private static string SecimAcar(string? s) => s switch
+    {
+        "Hesab və mədaxil" => "vemedaxil",
+        "Hesabdan" => "hesabdan",
+        _ => "acmadan"
+    };
+
+    public async Task<KocurmeDetalDto?> DetalAsync(int id, string novu)
+    {
+        var e = await _uow.Repository<Kocurme>().GetirAsync(
+            x => x.Id == id && x.Novu == novu && !x.Silinib, izlemeden: true);
+        if (e == null) return null;
+
+        var gondTamAd = TamAd(e.GonderenAd, e.GonderenSoyad, e.GonderenAtaAd);
+        var input = new FinNex.Application.Helpers.Emeliyyat.PulKocurmeVoucher.Input
+        {
+            Secim       = SecimAcar(e.Secim),
+            Kocurulen   = string.IsNullOrWhiteSpace(e.KocurulenValyuta) ? "USD" : e.KocurulenValyuta!,
+            Medaxil     = string.IsNullOrWhiteSpace(e.MedaxilValyuta) ? "USD" : e.MedaxilValyuta!,
+            Mebleg      = e.Mebleg ?? 0m,
+            IranRial    = e.IranRial ?? 0m,
+            RialCbar    = e.RialCbar ?? 0m,
+            ValyutaCbar = e.ValyutaCbar ?? 0m,
+            MusteriHesabi = e.AlanHesab,
+            BankAdi     = e.BankAd,
+            Filial      = e.Filial,
+            Hevale      = e.HevaleNo,
+            Meqsed      = e.Meqsed,
+            AlanAdi     = TamAd(e.AlanAd, e.AlanSoyad, e.AlanAtaAd),
+            GonderenTamAd = $"({gondTamAd})"
+        };
+
+        return new KocurmeDetalDto
+        {
+            Id            = e.Id,
+            HevaleNo      = e.HevaleNo,
+            Tarix         = e.Tarix,
+            GonderenTamAd = gondTamAd,
+            AlanTamAd     = TamAd(e.AlanAd, e.AlanSoyad, e.AlanAtaAd),
+            GonderenPassport = e.GonderenPassport,
+            AlanPassport  = e.AlanPassport,
+            Mebleg        = e.Mebleg,
+            MedaxilValyuta   = e.MedaxilValyuta,
+            KocurulenValyuta = e.KocurulenValyuta,
+            Secim         = e.Secim,
+            IranRial      = e.IranRial,
+            RialCbar      = e.RialCbar,
+            ValyutaCbar   = e.ValyutaCbar,
+            BankAd        = e.BankAd,
+            Filial        = e.Filial,
+            AlanHesab     = e.AlanHesab,
+            Meqsed        = e.Meqsed,
+            YaradanId     = e.YaradanIcraciId,
+            Setirler      = FinNex.Application.Helpers.Emeliyyat.PulKocurmeVoucher.Qur(input)
+        };
+    }
+
     public async Task<KocurmeEditDto?> RedakteMelumatiAsync(int id, string novu)
     {
         var e = await _uow.Repository<Kocurme>().GetirAsync(

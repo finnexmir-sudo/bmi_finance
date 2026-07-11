@@ -60,6 +60,18 @@ public abstract class KocurmeControllerBase : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    public async Task<IActionResult> Detal(int id)
+    {
+        var model = await _service.DetalAsync(id, Novu);
+        if (model == null)
+        {
+            TempData["Error"] = "Köçürmə tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+        Baza();
+        return View($"{V}Detal.cshtml", model);
+    }
+
     [HttpGet]
     public async Task<IActionResult> Redakte(int id)
     {

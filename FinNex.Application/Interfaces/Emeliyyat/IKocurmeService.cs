@@ -11,6 +11,9 @@ public interface IKocurmeService
     // Yeni köçürmə — Həvalə № il üzrə avtomatik (növə görə prefiks). Qaytarır: yeni Həvalə №.
     Task<Result<string>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId);
 
+    // Qeyd + hesablanmış debet/kredit voucher (BMI cevirme məntiqi)
+    Task<KocurmeDetalDto?> DetalAsync(int id, string novu);
+
     Task<KocurmeEditDto?> RedakteMelumatiAsync(int id, string novu);
     Task<Result> YenileAsync(string novu, KocurmeEditDto dto, int userId, bool isAdmin);
     Task<Result> SilAsync(int id, int userId, bool isAdmin);

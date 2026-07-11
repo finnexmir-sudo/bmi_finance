@@ -53,6 +53,31 @@ public class KocurmeFormDto
 
 public class KocurmeCreateDto : KocurmeFormDto { }
 
+// Detal — qeyd + hesablanmış debet/kredit voucher
+public class KocurmeDetalDto
+{
+    public int       Id            { get; set; }
+    public string?   HevaleNo      { get; set; }
+    public DateTime? Tarix         { get; set; }
+    public string?   GonderenTamAd { get; set; }
+    public string?   AlanTamAd     { get; set; }
+    public string?   GonderenPassport { get; set; }
+    public string?   AlanPassport  { get; set; }
+    public decimal?  Mebleg        { get; set; }
+    public string?   MedaxilValyuta   { get; set; }
+    public string?   KocurulenValyuta { get; set; }
+    public string?   Secim         { get; set; }
+    public decimal?  IranRial      { get; set; }
+    public decimal?  RialCbar      { get; set; }
+    public decimal?  ValyutaCbar   { get; set; }
+    public string?   BankAd        { get; set; }
+    public string?   Filial        { get; set; }
+    public string?   AlanHesab     { get; set; }
+    public string?   Meqsed        { get; set; }
+    public int?      YaradanId     { get; set; }
+    public IList<MuhasibatSetirDto> Setirler { get; set; } = new List<MuhasibatSetirDto>();
+}
+
 public class KocurmeEditDto : KocurmeFormDto
 {
     public int     Id        { get; set; }
