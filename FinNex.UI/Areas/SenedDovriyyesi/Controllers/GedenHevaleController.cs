@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-namespace FinNex.UI.Areas.Emeliyyat.Controllers;
+namespace FinNex.UI.Areas.SenedDovriyyesi.Controllers;
 
-[Area("Emeliyyat")]
+[Area("SenedDovriyyesi")]
 [Authorize]
 public class GedenHevaleController : Controller
 {

@@ -1,4 +1,4 @@
-using FinNex.Application.Interfaces.Hevale;
+using FinNex.Application.Interfaces.Emeliyyat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,26 +8,24 @@ namespace FinNex.UI.Areas.Emeliyyat.Controllers;
 [Authorize]
 public class DashboardController : Controller
 {
-    private readonly IGedenHevaleService _geden;
-    private readonly IGelenHevaleService _gelen;
+    private readonly IKocurmeService _service;
 
-    public DashboardController(IGedenHevaleService geden, IGelenHevaleService gelen)
+    public DashboardController(IKocurmeService service)
     {
-        _geden = geden;
-        _gelen = gelen;
+        _service = service;
     }
 
     public async Task<IActionResult> Index()
     {
         var il = DateTime.Now.Year;
-        var geden = await _geden.HamisiniGetirAsync(il);
-        var gelen = await _gelen.HamisiniGetirAsync(il);
+        var pul = await _service.HamisiniGetirAsync("Pul", il);
+        var telebe = await _service.HamisiniGetirAsync("Telebe", il);
 
         ViewBag.Il = il;
-        ViewBag.GedenSay = geden.Count;
-        ViewBag.GelenSay = gelen.Count;
-        ViewBag.GedenMebleg = geden.Where(x => x.Mebleg.HasValue).Sum(x => x.Mebleg!.Value);
-        ViewBag.GelenMebleg = gelen.Where(x => x.Mebleg.HasValue).Sum(x => x.Mebleg!.Value);
+        ViewBag.PulSay = pul.Count;
+        ViewBag.TelebeSay = telebe.Count;
+        ViewBag.PulMebleg = pul.Where(x => x.Mebleg.HasValue).Sum(x => x.Mebleg!.Value);
+        ViewBag.TelebeMebleg = telebe.Where(x => x.Mebleg.HasValue).Sum(x => x.Mebleg!.Value);
         return View();
     }
 }

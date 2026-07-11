@@ -1,0 +1,117 @@
+@model KocurmeFormDto
+@{
+    string I(decimal? v) => v?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
+    var medaxil = new[] { "USD", "Avro", "AZN" };
+    var kocurulen = new[] { "USD", "Avro", "Rial" };
+    var secimler = new[] { "Hesab açmadan", "Hesab və mədaxil", "Hesabdan" };
+}
+
+<div class="kc-grid">
+    <!-- Göndərən -->
+    <div class="kc-box">
+        <div class="kc-box-title kc-red">Göndərən</div>
+        <label>Adı</label>
+        <input type="text" name="GonderenAd" value="@Model.GonderenAd" class="fn-input" />
+        <label>Soyadı</label>
+        <input type="text" name="GonderenSoyad" value="@Model.GonderenSoyad" class="fn-input" />
+        <label>Ata adı</label>
+        <input type="text" name="GonderenAtaAd" value="@Model.GonderenAtaAd" class="fn-input" />
+        <label>Passport</label>
+        <input type="text" name="GonderenPassport" value="@Model.GonderenPassport" class="fn-input" />
+        <label>Telefon</label>
+        <input type="text" name="GonderenTelefon" value="@Model.GonderenTelefon" class="fn-input" />
+    </div>
+
+    <!-- Alan -->
+    <div class="kc-box">
+        <div class="kc-box-title kc-red">Alan</div>
+        <label>Adı</label>
+        <input type="text" name="AlanAd" value="@Model.AlanAd" class="fn-input" />
+        <label>Soyadı</label>
+        <input type="text" name="AlanSoyad" value="@Model.AlanSoyad" class="fn-input" />
+        <label>Ata adı</label>
+        <input type="text" name="AlanAtaAd" value="@Model.AlanAtaAd" class="fn-input" />
+        <label>Passport</label>
+        <input type="text" name="AlanPassport" value="@Model.AlanPassport" class="fn-input" />
+        <label>Telefon</label>
+        <input type="text" name="AlanTelefon" value="@Model.AlanTelefon" class="fn-input" />
+    </div>
+
+    <!-- Məbləğ -->
+    <div class="kc-box">
+        <div class="kc-box-title">Məbləğ</div>
+        <label>Tarix</label>
+        <input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+        <label>Məbləğ</label>
+        <input type="number" step="0.01" name="Mebleg" value="@I(Model.Mebleg)" class="fn-input" />
+        <label>Rial (MB kursu)</label>
+        <input type="number" step="0.0001" name="RialCbar" value="@I(Model.RialCbar)" class="fn-input" />
+        <label>Valyuta (MB kursu)</label>
+        <input type="number" step="0.0001" name="ValyutaCbar" value="@I(Model.ValyutaCbar)" class="fn-input" />
+        <label>İran Rial</label>
+        <input type="number" step="0.01" name="IranRial" value="@I(Model.IranRial)" class="fn-input" />
+    </div>
+</div>
+
+<div class="kc-grid kc-grid--sec">
+    <!-- Mədaxil olunan valyuta -->
+    <div class="kc-box kc-box--sm">
+        <div class="kc-box-title">Mədaxil olunan valyuta</div>
+        @foreach (var v in medaxil)
+        {
+            <label class="kc-radio">
+                <input type="radio" name="MedaxilValyuta" value="@v" checked="@(Model.MedaxilValyuta == v)" /> @v
+            </label>
+        }
+    </div>
+
+    <!-- Köçürülən valyuta -->
+    <div class="kc-box kc-box--sm">
+        <div class="kc-box-title">Köçürülən valyuta</div>
+        @foreach (var v in kocurulen)
+        {
+            <label class="kc-radio">
+                <input type="radio" name="KocurulenValyuta" value="@v" checked="@(Model.KocurulenValyuta == v)" /> @v
+            </label>
+        }
+    </div>
+
+    <!-- Seçim -->
+    <div class="kc-box kc-box--sm">
+        <div class="kc-box-title">Seçim</div>
+        @foreach (var s in secimler)
+        {
+            <label class="kc-radio">
+                <input type="radio" name="Secim" value="@s" checked="@(Model.Secim == s)" /> @s
+            </label>
+        }
+    </div>
+
+    <!-- Bank məlumatları -->
+    <div class="kc-box">
+        <div class="kc-box-title">Bank məlumatları</div>
+        <label>Bankın adı</label>
+        <input type="text" name="BankAd" value="@Model.BankAd" class="fn-input" />
+        <label>Filial</label>
+        <input type="text" name="Filial" value="@Model.Filial" class="fn-input" />
+        <label>Alan hesab</label>
+        <input type="text" name="AlanHesab" value="@Model.AlanHesab" class="fn-input" />
+    </div>
+</div>
+
+<div class="kc-box kc-box--full">
+    <div class="kc-3">
+        <div>
+            <label>Əlavə</label>
+            <input type="text" name="Elave" value="@Model.Elave" class="fn-input" />
+        </div>
+        <div>
+            <label>Məqsəd</label>
+            <input type="text" name="Meqsed" value="@Model.Meqsed" class="fn-input" />
+        </div>
+        <div>
+            <label>Qeyd</label>
+            <input type="text" name="Qeyd" value="@Model.Qeyd" class="fn-input" />
+        </div>
+    </div>
+</div>

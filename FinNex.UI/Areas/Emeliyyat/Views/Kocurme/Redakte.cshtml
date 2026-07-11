@@ -1,0 +1,36 @@
+@model KocurmeEditDto
+@{
+    var baslik = (string)(ViewBag.Baslik ?? "Köçürmə");
+    ViewData["Title"] = "Redaktə — " + baslik;
+}
+
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@baslik — redaktə</div>
+            <div class="fn-page-sub">Həvalə № @(Model.HevaleNo ?? "—") — dəyişməz</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    <div class="fn-card">
+        <form asp-action="Redakte" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+            @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_Form.cshtml", (KocurmeFormDto)Model)
+            <div class="dm-actions">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Yadda saxla</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_FormStyles.cshtml")
+}

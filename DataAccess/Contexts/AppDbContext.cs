@@ -5,6 +5,7 @@ using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Mektub;
 using FinNex.Domain.Entities.Hevale;
+using FinNex.Domain.Entities.Emeliyyat;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Sorgular;
@@ -61,6 +62,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<XaricMektub> XaricMektublar { get; set; }
     public DbSet<GedenHevale> GedenHevaleler { get; set; }
     public DbSet<GelenHevale> GelenHevaleler { get; set; }
+    public DbSet<Kocurme> Kocurmeler { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
@@ -290,6 +292,37 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.AlBank).HasColumnName("AL_BANK").HasMaxLength(250);
             e.Property(x => x.Icra).HasColumnName("ICRA");
             e.HasIndex(x => x.Tarix);
+        });
+
+        // Əməliyyat — pul / tələbə köçürməsi (FinNex cədvəli, təmiz sütun adları)
+        builder.Entity<Kocurme>(e =>
+        {
+            e.ToTable("Kocurme");
+            e.Property(x => x.Novu).HasMaxLength(16);
+            e.Property(x => x.HevaleNo).HasMaxLength(20);
+            e.Property(x => x.GonderenAd).HasMaxLength(80);
+            e.Property(x => x.GonderenSoyad).HasMaxLength(80);
+            e.Property(x => x.GonderenAtaAd).HasMaxLength(80);
+            e.Property(x => x.GonderenPassport).HasMaxLength(30);
+            e.Property(x => x.GonderenTelefon).HasMaxLength(30);
+            e.Property(x => x.AlanAd).HasMaxLength(80);
+            e.Property(x => x.AlanSoyad).HasMaxLength(80);
+            e.Property(x => x.AlanAtaAd).HasMaxLength(80);
+            e.Property(x => x.AlanPassport).HasMaxLength(30);
+            e.Property(x => x.AlanTelefon).HasMaxLength(30);
+            e.Property(x => x.Mebleg).HasPrecision(18, 2);
+            e.Property(x => x.RialCbar).HasPrecision(18, 4);
+            e.Property(x => x.ValyutaCbar).HasPrecision(18, 4);
+            e.Property(x => x.IranRial).HasPrecision(18, 2);
+            e.Property(x => x.MedaxilValyuta).HasMaxLength(10);
+            e.Property(x => x.KocurulenValyuta).HasMaxLength(10);
+            e.Property(x => x.Secim).HasMaxLength(30);
+            e.Property(x => x.BankAd).HasMaxLength(120);
+            e.Property(x => x.Filial).HasMaxLength(120);
+            e.Property(x => x.AlanHesab).HasMaxLength(40);
+            e.Property(x => x.Elave).HasMaxLength(200);
+            e.Property(x => x.Meqsed).HasMaxLength(200);
+            e.HasIndex(x => new { x.Novu, x.Tarix });
         });
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)

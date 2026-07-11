@@ -1,0 +1,35 @@
+@model KocurmeCreateDto
+@{
+    var baslik = (string)(ViewBag.Baslik ?? "Köçürmə");
+    ViewData["Title"] = "Yeni — " + baslik;
+}
+
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni @baslik.ToLower()</div>
+            <div class="fn-page-sub">Həvalə № və icraçı avtomatik təyin olunur</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    <div class="fn-card">
+        <form asp-action="Yarat" method="post">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_Form.cshtml", (KocurmeFormDto)Model)
+            <div class="dm-actions">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Qeydə al</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_FormStyles.cshtml")
+}

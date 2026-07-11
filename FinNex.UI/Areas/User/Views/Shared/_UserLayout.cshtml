@@ -1072,6 +1072,23 @@
                         </div>
                     </div>
 
+                    <div class="fn-nav-g @(currentController is "GedenHevale" or "GelenHevale" ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Həvalə</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="SenedDovriyyesi" asp-controller="GedenHevale" asp-action="Index"
+                               class="fn-nav-item @(currentController == "GedenHevale" ? "active" : "")">
+                                <i class="bi bi-arrow-up-right-circle"></i> Gedən həvalə
+                            </a>
+                            <a asp-area="SenedDovriyyesi" asp-controller="GelenHevale" asp-action="Index"
+                               class="fn-nav-item @(currentController == "GelenHevale" ? "active" : "")">
+                                <i class="bi bi-arrow-down-left-circle"></i> Gələn həvalə
+                            </a>
+                        </div>
+                    </div>
+
                     <div class="fn-nav-g">
                         <button type="button" class="fn-nav-g-head">
                             <span>Swift</span>
@@ -1101,23 +1118,14 @@
                        class="fn-nav-item @(currentController == "Dashboard" && currentArea == "Emeliyyat" ? "active" : "")">
                         <i class="bi bi-grid"></i> Dashboard
                     </a>
-
-                    <div class="fn-nav-g @(currentController is "GedenHevale" or "GelenHevale" ? "open" : "")">
-                        <button type="button" class="fn-nav-g-head">
-                            <span>Pul Köçürməsi</span>
-                            <i class="bi bi-chevron-down"></i>
-                        </button>
-                        <div class="fn-nav-g-body">
-                            <a asp-area="Emeliyyat" asp-controller="GedenHevale" asp-action="Index"
-                               class="fn-nav-item @(currentController == "GedenHevale" ? "active" : "")">
-                                <i class="bi bi-arrow-up-right-circle"></i> Gedən həvalə
-                            </a>
-                            <a asp-area="Emeliyyat" asp-controller="GelenHevale" asp-action="Index"
-                               class="fn-nav-item @(currentController == "GelenHevale" ? "active" : "")">
-                                <i class="bi bi-arrow-down-left-circle"></i> Gələn həvalə
-                            </a>
-                        </div>
-                    </div>
+                    <a asp-area="Emeliyyat" asp-controller="PulKocurme" asp-action="Index"
+                       class="fn-nav-item @(currentController == "PulKocurme" ? "active" : "")">
+                        <i class="bi bi-cash-stack"></i> Pul köçürməsi
+                    </a>
+                    <a asp-area="Emeliyyat" asp-controller="TelebeKocurme" asp-action="Index"
+                       class="fn-nav-item @(currentController == "TelebeKocurme" ? "active" : "")">
+                        <i class="bi bi-mortarboard"></i> Tələbə köçürməsi
+                    </a>
                 }
                 break;
 

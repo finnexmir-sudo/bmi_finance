@@ -1,0 +1,20 @@
+<style>
+    .kc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .kc-grid--sec { margin-top:16px; grid-template-columns:repeat(3,minmax(0,1fr)) 1.4fr; }
+    .kc-box { background:#fbfcff; border:1px solid #e8edf5; border-radius:12px; padding:14px 16px; }
+    .kc-box--sm { }
+    .kc-box--full { margin-top:16px; }
+    .kc-box-title { font-size:12px; font-weight:700; color:#334155; margin-bottom:10px; text-transform:uppercase; letter-spacing:.02em; }
+    .kc-box-title.kc-red { color:#e11d48; }
+    .kc-box label { display:block; font-size:11px; color:#64748b; font-weight:600; margin:8px 0 4px; }
+    .kc-box label:first-of-type { margin-top:0; }
+    .kc-radio { display:flex; align-items:center; gap:8px; font-size:13px; color:#1e293b; font-weight:500;
+        text-transform:none; letter-spacing:0; margin:6px 0; cursor:pointer; }
+    .kc-radio input { width:15px; height:15px; }
+    .kc-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .kc-3 label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:4px; }
+    .dm-actions { display:flex; gap:10px; margin-top:18px; }
+    .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+    .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    @@media (max-width:900px) { .kc-grid, .kc-grid--sec, .kc-3 { grid-template-columns:1fr; } }
+</style>
