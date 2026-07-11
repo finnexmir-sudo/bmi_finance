@@ -1,7 +1,7 @@
 @model KocurmeDetalDto
 @{
     var baslik = (string)(ViewBag.Baslik ?? "Köçürmə");
-    ViewData["Title"] = baslik + " — voucher";
+    ViewData["Title"] = baslik + " — mühasibat yazılışı";
     string T(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
     string M(decimal? v) => v.HasValue ? v.Value.ToString("#,0.00") : "—";
     var userId = (int)(ViewBag.UserId ?? 0);
@@ -11,7 +11,7 @@
 <div class="fn-page fn-tint">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">@baslik — muhasibat voucher</div>
+            <div class="fn-page-title">@baslik — mühasibat yazılışı</div>
             <div class="fn-page-sub">Həvalə № @T(Model.HevaleNo) — @Model.Tarix?.ToString("dd.MM.yyyy")</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -44,7 +44,7 @@
     </div>
 
     <div class="fn-card">
-        <div class="td-title">Debet / Kredit voucher</div>
+        <div class="td-title">Debet / Kredit yazılışı</div>
         <div class="dm-twrap">
             <table class="td-table">
                 <thead>
@@ -71,7 +71,7 @@
         @if (!Model.Setirler.Any())
         {
             <div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px">
-                Voucher hesablanmadı — valyuta/seçim kombinasiyası tam deyil (Rial/Rubl üçün kurslar tələb olunur).
+                Yazılış hesablanmadı — valyuta/seçim kombinasiyası tam deyil (Rial üçün kurslar tələb olunur).
             </div>
         }
     </div>

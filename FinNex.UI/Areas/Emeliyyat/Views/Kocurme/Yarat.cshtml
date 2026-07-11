@@ -32,11 +32,11 @@
         @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_Form.cshtml", (KocurmeFormDto)Model)
 
         <div class="pk-card" style="margin-top:16px">
-            <div class="pk-head pk-head--sm"><i class="bi bi-list-columns"></i> Muhasibat voucher (canlı)</div>
+            <div class="pk-head pk-head--sm"><i class="bi bi-list-columns"></i> Mühasibat yazılışı (canlı)</div>
             <div class="dm-twrap">
                 <table class="pv-table">
                     <thead><tr><th>Debet</th><th>Kredit</th><th class="pv-r">Məbləğ</th><th>Təyinat</th></tr></thead>
-                    <tbody id="pkVoucher"><tr><td colspan="4" class="pv-empty">Məbləğ və valyuta seçdikcə voucher burada hesablanır…</td></tr></tbody>
+                    <tbody id="pkVoucher"><tr><td colspan="4" class="pv-empty">Məbləğ və valyuta seçdikcə yazılış burada hesablanır…</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -60,7 +60,7 @@
             function fmt(n) { return (Number(n) || 0).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
             function render(rows) {
                 if (!rows || !rows.length) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="pv-empty">Voucher hesablanmadı — məbləğ/valyuta/kurs tam deyil.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="pv-empty">Yazılış hesablanmadı — məbləğ/valyuta/kurs tam deyil.</td></tr>';
                     return;
                 }
                 tbody.innerHTML = rows.map(function (r) {
