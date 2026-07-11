@@ -84,6 +84,19 @@ Nəticədə `FinNex.Application` build olmadı (CS0535 + CS1501), bu da `FinNex.
 - Bir layihə build olmayanda asılı layihələrdəki xətalar yalançı istiqamətə
   yönəldə bilər — **kök səbəb həmişə build olmayan layihədədir**, oradan başla.
 
+## İşçi Siyahıları — Sıralama və Filtr Qaydası (KRİTİK)
+
+İşçi siyahısı göstərən **hər** səhifədə eyni qayda tətbiq olunmalıdır — mənbə
+kanonik nümunə: `IsciSiralamaService`.
+
+- **Sıralama**: həmişə `OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)`.
+  "İşçi Sıralaması" səhifəsində HR drag-and-drop ilə `Sira`-nı təyin edir — bütün
+  siyahılar həmin sıraya tabe olmalıdır (ad/soyad əlifbası yalnız eyni `Sira`-da).
+- **Aktiv filtr**: aktiv işçi siyahılarında `x.Status == IsciStatus.Aktiv && !x.Silinib`.
+  (Passiv/məzuniyyətdə/işdən çıxmış işçilər aktiv siyahıda görünmür.)
+- Yeni işçi siyahısı yazanda bu iki qaydanı **əl ilə əlavə etmə** — mövcud
+  `IsciSiralamaService` / `IsciService.HamisiniGetirAsync` sıralamasını təkrarla.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

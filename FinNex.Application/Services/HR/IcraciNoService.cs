@@ -18,8 +18,9 @@ public class IcraciNoService : IIcraciNoService
 
     public async Task<IList<IcraciNoSetirDto>> HamisiniGetirAsync()
     {
+        // İşçi Sıralaması qaydası ilə eyni: yalnız aktiv işçilər, Sira → Ad → Soyad
         var isciler = await _uow.Repository<Isci>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib,
+            predicate: x => !x.Silinib && x.Status == IsciStatus.Aktiv,
             include: q => q
                 .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
                 .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament),
