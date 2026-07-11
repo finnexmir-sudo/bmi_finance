@@ -57,6 +57,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     public DbSet<Isci> Isciler { get; set; }
     public DbSet<DaxilMektub> DaxilMektublar { get; set; }
+    public DbSet<XaricMektub> XaricMektublar { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
@@ -224,6 +225,23 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Il).HasColumnName("IL");
             e.Property(x => x.Mezmun).HasColumnName("MEZMUN");
             e.HasIndex(x => new { x.Il, x.Nom1 });
+        });
+
+        // Xaric olan məktub — BMI odb.xaric_mektub sütun adları ilə (Oracle datası yüklənə bilsin)
+        builder.Entity<XaricMektub>(e =>
+        {
+            e.ToTable("XaricMektub");
+            e.Property(x => x.Kod).HasColumnName("KOD");
+            e.Property(x => x.QeyNom).HasColumnName("QEY_NOM").HasMaxLength(15);
+            e.Property(x => x.GonYer).HasColumnName("GON_YER").HasMaxLength(255);
+            e.Property(x => x.Tarix).HasColumnName("TARIX");
+            e.Property(x => x.QisaMez).HasColumnName("QISA_MEZ").HasMaxLength(255);
+            e.Property(x => x.Icraci).HasColumnName("ICRACI").HasMaxLength(50);
+            e.Property(x => x.Dubl).HasColumnName("DUBL").HasMaxLength(10);
+            e.Property(x => x.MektubMetn).HasColumnName("MEKTUB_METN");
+            e.Property(x => x.Il).HasColumnName("IL");
+            // FaylYolu — FinNex sütunu (Oracle-da yoxdur), default adla
+            e.HasIndex(x => new { x.Il, x.Kod });
         });
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)

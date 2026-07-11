@@ -1,0 +1,67 @@
+@using FinNex.Application.DTOs.Mektub
+@model XaricMektubCreateDto
+@{
+    ViewData["Title"] = "Yeni xaric olan məktub";
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni xaric olan məktub</div>
+            <div class="fn-page-sub">Qeydiyyat № və icraçı avtomatik təyin olunur</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    <div class="fn-card" style="max-width:720px">
+        <form asp-action="Yarat" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="dm-grid">
+                <div>
+                    <label>Tarix</label>
+                    <input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+                </div>
+                <div class="dm-full">
+                    <label>Göndərilən yer (təyinat) *</label>
+                    <input type="text" name="GonYer" value="@Model.GonYer" class="fn-input" placeholder="məs. Mərkəzi Bank" />
+                </div>
+                <div class="dm-full">
+                    <label>Qısa məzmun</label>
+                    <input type="text" name="QisaMez" value="@Model.QisaMez" class="fn-input" placeholder="Məktubun mövzusu" />
+                </div>
+                <div class="dm-full">
+                    <label>Məktubun mətni <span style="color:#94a3b8;font-weight:500">— istəyə bağlı</span></label>
+                    <textarea name="MektubMetn" class="fn-input" rows="5" placeholder="Məktubun tam mətni (istəyə görə)">@Model.MektubMetn</textarea>
+                </div>
+                <div class="dm-full">
+                    <label>Sənəd (qoşma) <span style="color:#94a3b8;font-weight:500">— istəyə bağlı</span></label>
+                    <input type="file" name="fayl" class="fn-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tif,.tiff" />
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px">PDF, şəkil və ya Word — maks. 30 MB.</div>
+                </div>
+            </div>
+
+            <div class="dm-actions">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Qeydə al</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .dm-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px 18px; }
+        .dm-grid .dm-full { grid-column:1/-1; }
+        .dm-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
+        .dm-grid textarea.fn-input { resize:vertical; }
+        .dm-actions { display:flex; gap:10px; margin-top:18px; }
+        .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    </style>
+}
