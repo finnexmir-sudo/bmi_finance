@@ -1,0 +1,140 @@
+@using FinNex.Application.DTOs.HR.IcraciNo
+@model IList<IcraciNoSetirDto>
+@{
+    ViewData["Title"] = "İcraçı Nömrələri";
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İcraçı Nömrələri</div>
+            <div class="fn-page-sub">Hər işçiyə icraçı nömrəsi təyin edin — məktub/həvalə jurnallarında istifadə olunur (bir işçi = bir nömrə)</div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="in-alert in-alert--ok"><i class="bi bi-check-circle"></i> @TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="in-alert in-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    <div class="fn-card">
+        <div class="in-toolbar">
+            <div class="in-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="inSearch" placeholder="Ad, vəzifə, departament axtar..." autocomplete="off" />
+            </div>
+            <div class="in-hint">Cəmi: @Model.Count işçi · Nömrəsi olan: @Model.Count(x => x.IcraciNo.HasValue)</div>
+        </div>
+
+        <form method="post" asp-action="Saxla">
+            @Html.AntiForgeryToken()
+            <div class="in-twrap">
+                <table class="in-table" id="inTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Ad Soyad Ata adı</th>
+                            <th>Vəzifə</th>
+                            <th>Departament</th>
+                            <th>Status</th>
+                            <th class="in-num-col">İcraçı №</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ var i = 0; }
+                        @foreach (var s in Model)
+                        {
+                            <tr class="in-row" data-search="@($"{s.AdSoyad} {s.Vezife} {s.Departament}".ToLower())">
+                                <td class="in-idx">@(i + 1)</td>
+                                <td class="in-name">
+                                    @s.AdSoyad
+                                    <input type="hidden" name="teyinler[@i].IsciId" value="@s.IsciId" />
+                                </td>
+                                <td>@(s.Vezife ?? "—")</td>
+                                <td>@(s.Departament ?? "—")</td>
+                                <td>
+                                    @if (s.Aktivdir)
+                                    {
+                                        <span class="in-badge in-badge--ok">Aktiv</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="in-badge in-badge--off">Passiv</span>
+                                    }
+                                </td>
+                                <td class="in-num-col">
+                                    <input type="number" min="1" step="1" name="teyinler[@i].IcraciNo"
+                                           value="@(s.IcraciNo?.ToString())" class="in-num" placeholder="—" />
+                                </td>
+                            </tr>
+                            i++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="in-actions">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Yadda saxla</button>
+                <span class="in-note">Boş qalan xanalar nömrəsiz sayılır. Eyni nömrə iki işçiyə verilə bilməz.</span>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .in-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+        .in-search { position:relative; max-width:360px; flex:1; }
+        .in-search i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; }
+        .in-search input { width:100%; padding:9px 12px 9px 34px; border:1px solid #e2e8f0; border-radius:10px; font-size:13px; outline:none; background:#fbfcff; }
+        .in-search input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+        .in-hint { font-size:12px; color:#64748b; }
+
+        .in-twrap { overflow-x:auto; max-height:calc(100vh - 320px); }
+        .in-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .in-table thead th { position:sticky; top:0; background:#f1f5f9; color:#475569; font-weight:600; font-size:12px;
+            text-align:left; padding:10px 14px; border-bottom:1px solid #e2e8f0; }
+        .in-table td { padding:9px 14px; border-bottom:1px solid #f1f5f9; color:#1e293b; }
+        .in-table tbody tr:hover td { background:#f8fafc; }
+        .in-idx { color:#94a3b8; font-weight:600; text-align:center; width:44px; }
+        .in-name { font-weight:600; color:#0f172a; }
+        .in-num-col { text-align:right; width:130px; }
+        .in-num { width:110px; padding:6px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:13px; text-align:right;
+            font-family:ui-monospace,Menlo,Consolas,monospace; outline:none; background:#fff; }
+        .in-num:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+
+        .in-badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+        .in-badge--ok { background:#dcfce7; color:#166534; }
+        .in-badge--off { background:#f1f5f9; color:#64748b; }
+
+        .in-actions { display:flex; align-items:center; gap:14px; margin-top:16px; position:sticky; bottom:0;
+            background:linear-gradient(to top,#eef2f8 72%,transparent); padding:12px 0; }
+        .in-note { font-size:12px; color:#94a3b8; }
+
+        .in-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .in-alert--ok { background:#dcfce7; border:1px solid #bbf7d0; color:#166534; }
+        .in-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var inp = document.getElementById('inSearch');
+            if (!inp) return;
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#inTable .in-row'));
+            inp.addEventListener('input', function () {
+                var q = inp.value.trim().toLowerCase();
+                rows.forEach(function (r) {
+                    var hay = r.getAttribute('data-search') || '';
+                    r.style.display = (q === '' || hay.indexOf(q) !== -1) ? '' : 'none';
+                });
+            });
+        })();
+    </script>
+}

@@ -60,6 +60,13 @@
         public int? AppUserId { get; set; }
         public AppUser? AppUser { get; set; }
 
+        /// <summary>
+        /// İcraçı nömrəsi (BMI-dəki icraçı kodu — məs. 45).
+        /// Məktub/həvalə jurnallarında qeydi kimin yaratdığını göstərir.
+        /// Bir işçidə bir nömrə (unikal); təyin olunmayanlarda NULL.
+        /// </summary>
+        public int? IcraciNo { get; set; }
+
         // Əlaqələr
         public IsciMaliye? Maliye { get; set; }
         public ICollection<MezuniyyetBalans> MezuniyyetBalanslari { get; set; } = new List<MezuniyyetBalans>();

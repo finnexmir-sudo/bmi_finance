@@ -202,7 +202,11 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     {
         base.OnModelCreating(builder);
 
-
+        // İcraçı nömrəsi — bir işçidə bir unikal nömrə (NULL-lar istisnadır, çoxu ola bilər)
+        builder.Entity<Isci>()
+            .HasIndex(x => x.IcraciNo)
+            .IsUnique()
+            .HasFilter("[IcraciNo] IS NOT NULL");
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)
         builder.Entity<OdenisTapsirigi>()
