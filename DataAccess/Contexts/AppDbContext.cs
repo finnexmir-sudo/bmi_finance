@@ -4,6 +4,7 @@ using FinNex.Domain.Entities.AI;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Mektub;
+using FinNex.Domain.Entities.Hevale;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Sorgular;
@@ -58,6 +59,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Isci> Isciler { get; set; }
     public DbSet<DaxilMektub> DaxilMektublar { get; set; }
     public DbSet<XaricMektub> XaricMektublar { get; set; }
+    public DbSet<GedenHevale> GedenHevaleler { get; set; }
+    public DbSet<GelenHevale> GelenHevaleler { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
@@ -242,6 +245,51 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Il).HasColumnName("IL");
             // FaylYolu — FinNex sütunu (Oracle-da yoxdur), default adla
             e.HasIndex(x => new { x.Il, x.Kod });
+        });
+
+        // Gedən həvalə — BMI odb.geden_hevale sütun adları ilə (Oracle datası yüklənə bilsin)
+        builder.Entity<GedenHevale>(e =>
+        {
+            e.ToTable("GedenHevale");
+            e.Property(x => x.HevNom).HasColumnName("HEV_NOM").HasMaxLength(10);
+            e.Property(x => x.HesNom).HasColumnName("HES_NOM").HasMaxLength(20);
+            e.Property(x => x.Saa).HasColumnName("SAA").HasMaxLength(50);
+            e.Property(x => x.TipRes).HasColumnName("TIP_RES").HasMaxLength(16);
+            e.Property(x => x.Mebleg).HasColumnName("MEBLEG").HasPrecision(14, 2);
+            e.Property(x => x.ValTip).HasColumnName("VAL_TIP").HasMaxLength(10);
+            e.Property(x => x.Tarix).HasColumnName("TARIX");
+            e.Property(x => x.MenOlke).HasColumnName("MEN_OLKE").HasMaxLength(40);
+            e.Property(x => x.ContracNom).HasColumnName("CONTRAC_NOM").HasMaxLength(15);
+            e.Property(x => x.DeclarNom).HasColumnName("DECLAR_NOM").HasMaxLength(15);
+            e.Property(x => x.Arayis).HasColumnName("ARAYIS");
+            e.Property(x => x.Olke).HasColumnName("OLKE").HasMaxLength(40);
+            e.Property(x => x.HevTip).HasColumnName("HEV_TIP").HasMaxLength(254);
+            e.Property(x => x.GonTip).HasColumnName("GON_TIP").HasMaxLength(20);
+            e.Property(x => x.AlBank).HasColumnName("AL_BANK").HasMaxLength(40);
+            e.Property(x => x.Icra).HasColumnName("ICRA");
+            e.HasIndex(x => x.Tarix);
+        });
+
+        // Gələn həvalə — BMI odb.gelen_hevale sütun adları ilə
+        builder.Entity<GelenHevale>(e =>
+        {
+            e.ToTable("GelenHevale");
+            e.Property(x => x.HevNom).HasColumnName("HEV_NOM").HasMaxLength(10);
+            e.Property(x => x.HesNom).HasColumnName("HES_NOM").HasMaxLength(20);
+            e.Property(x => x.Saa).HasColumnName("SAA").HasMaxLength(50);
+            e.Property(x => x.TipRes).HasColumnName("TIP_RES").HasMaxLength(16);
+            e.Property(x => x.Mebleg).HasColumnName("MEBLEG").HasPrecision(10, 2);
+            e.Property(x => x.ValTip).HasColumnName("VAL_TIP").HasMaxLength(10);
+            e.Property(x => x.Tarix).HasColumnName("TARIX");
+            e.Property(x => x.MenOlke).HasColumnName("MEN_OLKE").HasMaxLength(40);
+            e.Property(x => x.HevTip).HasColumnName("HEV_TIP").HasMaxLength(254);
+            e.Property(x => x.Dec).HasColumnName("DEC");
+            e.Property(x => x.DecNom).HasColumnName("DEC_NOM").HasMaxLength(30);
+            e.Property(x => x.GelOlke).HasColumnName("GEL_OLKE").HasMaxLength(40);
+            e.Property(x => x.GonTip).HasColumnName("GON_TIP").HasMaxLength(20);
+            e.Property(x => x.AlBank).HasColumnName("AL_BANK").HasMaxLength(250);
+            e.Property(x => x.Icra).HasColumnName("ICRA");
+            e.HasIndex(x => x.Tarix);
         });
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)
