@@ -56,6 +56,21 @@ public abstract class KocurmeControllerBase : Controller
         return View($"{V}Yarat.cshtml", dto);
     }
 
+    // Mövcud köçürməni təkrar göndər — məlumat dolu, yeni № ilə yeni qeyd
+    [HttpGet]
+    public async Task<IActionResult> Tekrarla(int id)
+    {
+        var dto = await _service.TekrarMelumatiAsync(id, Novu);
+        if (dto == null)
+        {
+            TempData["Error"] = "Köçürmə tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+        Baza();
+        ViewBag.Tekrar = true;
+        return View($"{V}Yarat.cshtml", dto);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Yarat(KocurmeCreateDto dto)

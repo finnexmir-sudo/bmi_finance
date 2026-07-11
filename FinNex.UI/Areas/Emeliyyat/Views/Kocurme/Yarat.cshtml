@@ -7,8 +7,17 @@
 <div class="fn-page fn-tint">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Yeni @baslik.ToLower()</div>
-            <div class="fn-page-sub">Həvalə № və icraçı avtomatik təyin olunur</div>
+            <div class="fn-page-title">@(ViewBag.Tekrar == true ? "Təkrar" : "Yeni") @baslik.ToLower()</div>
+            <div class="fn-page-sub">
+                @if (ViewBag.Tekrar == true)
+                {
+                    <span>Əvvəlki köçürmənin məlumatı dolduruldu — dəyişib yeni № ilə göndər.</span>
+                }
+                else
+                {
+                    <span>Həvalə № və icraçı avtomatik təyin olunur</span>
+                }
+            </div>
         </div>
         <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>

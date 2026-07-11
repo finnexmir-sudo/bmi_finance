@@ -15,6 +15,7 @@
             <div class="fn-page-sub">Həvalə № @T(Model.HevaleNo) — @Model.Tarix?.ToString("dd.MM.yyyy")</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a asp-action="Tekrarla" asp-route-id="@Model.Id" class="fn-btn fn-btn--primary"><i class="bi bi-arrow-repeat"></i> Təkrar göndər</a>
             <a asp-action="ExcelIxrac" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-file-earmark-excel"></i> Excel</a>
             <a asp-action="WordIxrac" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-file-earmark-word"></i> Ərizə (Word)</a>
             @if (isAdmin || Model.YaradanId == userId)

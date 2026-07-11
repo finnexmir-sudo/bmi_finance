@@ -11,6 +11,9 @@ public interface IKocurmeService
     // Növbəti Həvalə № ({il}-T-{sıra}) — yadda saxlanmadan (form preview)
     Task<string> NovbetiHevaleNoAsync(string novu);
 
+    // Mövcud köçürməni təkrar üçün: bütün məlumat dolu, yeni Həvalə № + bugünkü tarix
+    Task<KocurmeCreateDto?> TekrarMelumatiAsync(int id, string novu);
+
     // Yeni köçürmə — Həvalə № il üzrə avtomatik (növə görə prefiks). Qaytarır: yeni Həvalə №.
     Task<Result<string>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId);
 

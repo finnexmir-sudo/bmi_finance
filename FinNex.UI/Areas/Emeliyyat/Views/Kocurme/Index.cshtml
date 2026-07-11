@@ -70,6 +70,7 @@
                                 <td>@T(m.BankAd)</td>
                                 <td>@(m.IcraciAd ?? (m.Icra?.ToString() ?? "—"))</td>
                                 <td class="dm-ops">
+                                    <a asp-action="Tekrarla" asp-route-id="@m.Id" class="dm-op" title="Təkrar göndər (yeni №)"><i class="bi bi-arrow-repeat"></i></a>
                                     <a asp-action="Detal" asp-route-id="@m.Id" class="dm-op" title="Muhasibat voucher"><i class="bi bi-list-columns"></i></a>
                                     @if (isAdmin || m.YaradanId == userId)
                                     {

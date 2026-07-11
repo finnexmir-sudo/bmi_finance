@@ -83,6 +83,42 @@ public class KocurmeService : IKocurmeService
         return $"{il % 100:D2}-{Prefiks(novu)}-{novbeti}";
     }
 
+    public async Task<KocurmeCreateDto?> TekrarMelumatiAsync(int id, string novu)
+    {
+        var e = await _uow.Repository<Kocurme>().GetirAsync(
+            x => x.Id == id && x.Novu == novu && !x.Silinib, izlemeden: true);
+        if (e == null) return null;
+
+        return new KocurmeCreateDto
+        {
+            HevaleNo         = await NovbetiHevaleNoAsync(novu),
+            Tarix            = DateTime.Today,
+            GonderenAd       = e.GonderenAd,
+            GonderenSoyad    = e.GonderenSoyad,
+            GonderenAtaAd    = e.GonderenAtaAd,
+            GonderenPassport = e.GonderenPassport,
+            GonderenTelefon  = e.GonderenTelefon,
+            AlanAd           = e.AlanAd,
+            AlanSoyad        = e.AlanSoyad,
+            AlanAtaAd        = e.AlanAtaAd,
+            AlanPassport     = e.AlanPassport,
+            AlanTelefon      = e.AlanTelefon,
+            Mebleg           = e.Mebleg,
+            RialCbar         = e.RialCbar,
+            ValyutaCbar      = e.ValyutaCbar,
+            IranRial         = e.IranRial,
+            MedaxilValyuta   = e.MedaxilValyuta,
+            KocurulenValyuta = e.KocurulenValyuta,
+            Secim            = e.Secim,
+            BankAd           = e.BankAd,
+            Filial           = e.Filial,
+            AlanHesab        = e.AlanHesab,
+            Elave            = e.Elave,
+            Meqsed           = e.Meqsed,
+            Qeyd             = e.Qeyd
+        };
+    }
+
     public async Task<Result<string>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId)
     {
         if (string.IsNullOrWhiteSpace(dto.GonderenAd) && string.IsNullOrWhiteSpace(dto.AlanAd))
