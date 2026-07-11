@@ -50,29 +50,30 @@
                 <input type="number" step="0.01" name="Mebleg" value="@I(Model.Mebleg)" class="pk-in pk-in--big" placeholder="0.00" />
             </div>
             <div><label>Tarix</label><input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="pk-in" /></div>
-            <div><label>Rial (MB kursu)</label><input type="number" step="0.0001" name="RialCbar" value="@I(Model.RialCbar)" class="pk-in" /></div>
-            <div><label>Valyuta (MB kursu)</label><input type="number" step="0.0001" name="ValyutaCbar" value="@I(Model.ValyutaCbar)" class="pk-in" /></div>
-            <div><label>İran Rial (kurs)</label><input type="number" step="0.0001" name="IranRial" value="@I(Model.IranRial)" class="pk-in" /></div>
+            <div class="pk-rate-f"><label>Rial (MB kursu)</label><input type="number" step="0.0001" name="RialCbar" value="@I(Model.RialCbar)" class="pk-in pk-rate" /></div>
+            <div class="pk-rate-f"><label>Valyuta (MB kursu)</label><input type="number" step="0.0001" name="ValyutaCbar" value="@I(Model.ValyutaCbar)" class="pk-in pk-rate" /></div>
+            <div class="pk-rate-f"><label>İran Rial (kurs)</label><input type="number" step="0.0001" name="IranRial" value="@I(Model.IranRial)" class="pk-in pk-rate" /></div>
         </div>
     </div>
 
     <!-- Seçimlər (seqment düymələr) -->
     <div class="pk-row pk-row--3">
-        <div class="pk-card">
+        <div class="pk-card" id="pkMedaxilCard">
             <div class="pk-head pk-head--sm">Mədaxil olunan valyuta</div>
             <div class="pk-seg pk-seg--wrap">
                 @foreach (var v in medaxil)
                 {
-                    <label class="pk-seg-i"><input type="radio" name="MedaxilValyuta" value="@v" checked="@(Model.MedaxilValyuta == v)" /><span>@v</span></label>
+                    <label class="pk-seg-i"><input type="radio" name="MedaxilValyuta" value="@v" checked="@(Model.MedaxilValyuta == v || (Model.MedaxilValyuta == null && v == "USD"))" /><span>@v</span></label>
                 }
             </div>
+            <div class="pk-hint" id="pkMedaxilHint">Yalnız Rial/Rubl köçürmədə funksiyalıdır.</div>
         </div>
         <div class="pk-card">
             <div class="pk-head pk-head--sm">Köçürülən valyuta</div>
             <div class="pk-seg pk-seg--wrap">
                 @foreach (var v in kocurulen)
                 {
-                    <label class="pk-seg-i"><input type="radio" name="KocurulenValyuta" value="@v" checked="@(Model.KocurulenValyuta == v)" /><span>@v</span></label>
+                    <label class="pk-seg-i"><input type="radio" name="KocurulenValyuta" value="@v" checked="@(Model.KocurulenValyuta == v || (Model.KocurulenValyuta == null && v == "USD"))" /><span>@v</span></label>
                 }
             </div>
         </div>
@@ -112,3 +113,45 @@
     </div>
 
 </div>
+
+<script>
+    (function () {
+        var kocRadios = document.querySelectorAll('input[name="KocurulenValyuta"]');
+        var medRadios = document.querySelectorAll('input[name="MedaxilValyuta"]');
+        var medCard = document.getElementById('pkMedaxilCard');
+        var rateFields = document.querySelectorAll('.pk-rate-f');
+        if (!kocRadios.length) return;
+
+        function secilenKoc() {
+            var r = document.querySelector('input[name="KocurulenValyuta"]:checked');
+            return r ? r.value : '';
+        }
+        function tetbiq() {
+            var koc = secilenKoc();
+            var rialRubl = (koc === 'Rial' || koc === 'Rubl');
+
+            // Mədaxil: USD/Avro köçürmədə mənbə valyuta = köçürülən (avtomatik), sönük
+            if (!rialRubl) {
+                medRadios.forEach(function (m) { m.disabled = true; m.checked = (m.value === koc); });
+                if (medCard) medCard.classList.add('pk-dim');
+            } else {
+                medRadios.forEach(function (m) { m.disabled = false; });
+                if (medCard) medCard.classList.remove('pk-dim');
+                // AZN köçürülən üçün deyil — mədaxildə default varsa saxla
+                if (!document.querySelector('input[name="MedaxilValyuta"]:checked')) {
+                    var usd = document.querySelector('input[name="MedaxilValyuta"][value="USD"]');
+                    if (usd) usd.checked = true;
+                }
+            }
+
+            // Məzənnə sahələri yalnız Rial/Rubl üçün aktiv
+            rateFields.forEach(function (f) {
+                var inp = f.querySelector('.pk-rate');
+                f.classList.toggle('pk-dim', !rialRubl);
+                if (inp) inp.disabled = !rialRubl;
+            });
+        }
+        kocRadios.forEach(function (r) { r.addEventListener('change', tetbiq); });
+        tetbiq();
+    })();
+</script>
