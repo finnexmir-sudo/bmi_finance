@@ -13,6 +13,7 @@ public class DaxilMektubListDto
     public int?      IcraciNo  { get; set; }   // MEK_UNVAN
     public string?   IcraciAd  { get; set; }   // icraçı nömrəsindən tapılan işçi adı
     public int?      YaradanId { get; set; }   // sahiblik yoxlaması üçün (AppUser id)
+    public string?   FaylYolu  { get; set; }   // DMS nisbi yol (yeni yükləmə) — /dms/ ilə serve olunur
     public bool      FaylVar   { get; set; }   // qoşma (DMS və ya köhnə binar) varmı
 }
 

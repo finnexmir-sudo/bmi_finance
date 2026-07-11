@@ -9,6 +9,7 @@ public interface IDaxilMektubService
     Task<IList<DaxilMektubListDto>> HamisiniGetirAsync(int? il = null);
 
     // Yeni məktub — Qeydiyyat № il üzrə avtomatik. yaradanUserId (AppUser id) həm sahiblik,
-    // həm də icraçı nömrəsini (Isci.IcraciNo) tapmaq üçün istifadə olunur. Qaytarır: yeni Qeydiyyat №.
-    Task<Result<int>> YaratAsync(DaxilMektubCreateDto dto, int yaradanUserId);
+    // həm də icraçı nömrəsini (Isci.IcraciNo) tapmaq üçün istifadə olunur.
+    // faylYolu — DMS-də nisbi yol (istəyə bağlı qoşma). Qaytarır: yeni Qeydiyyat №.
+    Task<Result<int>> YaratAsync(DaxilMektubCreateDto dto, int yaradanUserId, string? faylYolu = null);
 }

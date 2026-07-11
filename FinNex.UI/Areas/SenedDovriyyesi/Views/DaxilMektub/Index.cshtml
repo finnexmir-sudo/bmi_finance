@@ -65,7 +65,20 @@
                                 <td class="dm-mono">@T(m.DaxNom)</td>
                                 <td>@(m.IcraciAd ?? (m.IcraciNo?.ToString() ?? "—"))</td>
                                 <td>@(m.Il?.ToString() ?? "—")</td>
-                                <td>@(m.FaylVar ? Html.Raw("<i class='bi bi-paperclip' title='Qoşma var'></i>") : Html.Raw("—"))</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(m.FaylYolu))
+                                    {
+                                        <a href="/dms/@m.FaylYolu" target="_blank" title="Qoşmanı aç"><i class="bi bi-paperclip"></i></a>
+                                    }
+                                    else if (m.FaylVar)
+                                    {
+                                        <i class="bi bi-paperclip" title="Qoşma var (köhnə data)"></i>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>

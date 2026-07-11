@@ -43,12 +43,13 @@ public class DaxilMektubService : IDaxilMektubService
                 IcraciNo = x.MekUnvan,
                 IcraciAd = (x.MekUnvan.HasValue && adMap.TryGetValue(x.MekUnvan.Value, out var ad)) ? ad : null,
                 YaradanId = x.YaradanIcraciId,
+                FaylYolu = x.FaylYolu,
                 FaylVar  = !string.IsNullOrEmpty(x.FaylYolu) || (x.Mezmun != null && x.Mezmun.Length > 0)
             })
             .ToList();
     }
 
-    public async Task<Result<int>> YaratAsync(DaxilMektubCreateDto dto, int yaradanUserId)
+    public async Task<Result<int>> YaratAsync(DaxilMektubCreateDto dto, int yaradanUserId, string? faylYolu = null)
     {
         // İcraçı nömrəsi — cari istifadəçinin işçisindən (Isci.AppUserId → IcraciNo)
         var isci = (await _uow.Repository<Isci>().HamisiniGetirAsync(
@@ -75,6 +76,7 @@ public class DaxilMektubService : IDaxilMektubService
             DaxNom   = dto.DaxNom?.Trim(),
             MekUnvan = (icraciNo.HasValue && icraciNo.Value > 0) ? icraciNo : (int?)null,
             Il       = il,
+            FaylYolu = string.IsNullOrWhiteSpace(faylYolu) ? null : faylYolu,
             YaradanIcraciId = yaradanUserId
         };
 
