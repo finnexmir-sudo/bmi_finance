@@ -18,15 +18,60 @@
         <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
     }
 
-    <form asp-action="Yarat" method="post">
+    <form asp-action="Yarat" method="post" id="pkForm">
         @Html.AntiForgeryToken()
         @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_Form.cshtml", (KocurmeFormDto)Model)
+
+        <div class="pk-card" style="margin-top:16px">
+            <div class="pk-head pk-head--sm"><i class="bi bi-list-columns"></i> Muhasibat voucher (canlı)</div>
+            <div class="dm-twrap">
+                <table class="pv-table">
+                    <thead><tr><th>Debet</th><th>Kredit</th><th class="pv-r">Məbləğ</th><th>Təyinat</th></tr></thead>
+                    <tbody id="pkVoucher"><tr><td colspan="4" class="pv-empty">Məbləğ və valyuta seçdikcə voucher burada hesablanır…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="dm-actions">
             <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Qeydə al</button>
             <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
         </div>
     </form>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('pkForm');
+            var tbody = document.getElementById('pkVoucher');
+            if (!form || !tbody) return;
+            var url = '@Url.Action("VoucherPreview")';
+            var t;
+            function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+            function fmt(n) { return (Number(n) || 0).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+            function render(rows) {
+                if (!rows || !rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="pv-empty">Voucher hesablanmadı — məbləğ/valyuta/kurs tam deyil.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map(function (r) {
+                    return '<tr><td class="pv-mono">' + esc(r.debet) + '</td><td class="pv-mono">' + esc(r.kredit) +
+                        '</td><td class="pv-r pv-mono">' + fmt(r.mebleg) + '</td><td class="pv-tey">' + esc(r.teyinat) + '</td></tr>';
+                }).join('');
+            }
+            function yenile() {
+                var fd = new FormData(form);
+                fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : []; })
+                    .then(render)
+                    .catch(function () { });
+            }
+            form.addEventListener('input', function () { clearTimeout(t); t = setTimeout(yenile, 350); });
+            form.addEventListener('change', function () { clearTimeout(t); t = setTimeout(yenile, 150); });
+            setTimeout(yenile, 300);
+        })();
+    </script>
+}
 
 @section Styles {
     @await Html.PartialAsync("~/Areas/Emeliyyat/Views/Kocurme/_FormStyles.cshtml")

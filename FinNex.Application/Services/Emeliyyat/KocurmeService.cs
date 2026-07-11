@@ -108,40 +108,67 @@ public class KocurmeService : IKocurmeService
         _ => "acmadan"
     };
 
+    // Sahələrdən voucher Input qurur (BMI açar map)
+    private FinNex.Application.Helpers.Emeliyyat.PulKocurmeVoucher.Input BuildInput(
+        string? secim, string? kocurulen, string? medaxil, decimal? mebleg, decimal? iranRial,
+        decimal? rialCbar, decimal? valyutaCbar, string? musteriHesabi, string? bankAd, string? filial,
+        string? hevale, string? meqsed, string? gAd, string? gSoyad, string? gAta,
+        string? aAd, string? aSoyad, string? aAta)
+        => new()
+        {
+            Secim       = SecimAcar(secim),
+            Kocurulen   = string.IsNullOrWhiteSpace(kocurulen) ? "USD" : kocurulen!,
+            Medaxil     = string.IsNullOrWhiteSpace(medaxil) ? "USD" : medaxil!,
+            Mebleg      = mebleg ?? 0m,
+            IranRial    = iranRial ?? 0m,
+            RialCbar    = rialCbar ?? 0m,
+            ValyutaCbar = valyutaCbar ?? 0m,
+            MusteriHesabi = musteriHesabi,
+            BankAdi     = bankAd,
+            Filial      = filial,
+            Hevale      = hevale,
+            Meqsed      = meqsed,
+            AlanAdi     = TamAd(aAd, aSoyad, aAta),
+            GonderenTamAd = $"({TamAd(gAd, gSoyad, gAta)})"
+        };
+
+    public IList<MuhasibatSetirDto> VoucherHesabla(KocurmeFormDto dto, string? hevaleNo)
+    {
+        var input = BuildInput(dto.Secim, dto.KocurulenValyuta, dto.MedaxilValyuta, dto.Mebleg,
+            dto.IranRial, dto.RialCbar, dto.ValyutaCbar, dto.AlanHesab, dto.BankAd, dto.Filial,
+            hevaleNo, dto.Meqsed, dto.GonderenAd, dto.GonderenSoyad, dto.GonderenAtaAd,
+            dto.AlanAd, dto.AlanSoyad, dto.AlanAtaAd);
+        return FinNex.Application.Helpers.Emeliyyat.PulKocurmeVoucher.Qur(input);
+    }
+
     public async Task<KocurmeDetalDto?> DetalAsync(int id, string novu)
     {
         var e = await _uow.Repository<Kocurme>().GetirAsync(
             x => x.Id == id && x.Novu == novu && !x.Silinib, izlemeden: true);
         if (e == null) return null;
 
-        var gondTamAd = TamAd(e.GonderenAd, e.GonderenSoyad, e.GonderenAtaAd);
-        var input = new FinNex.Application.Helpers.Emeliyyat.PulKocurmeVoucher.Input
-        {
-            Secim       = SecimAcar(e.Secim),
-            Kocurulen   = string.IsNullOrWhiteSpace(e.KocurulenValyuta) ? "USD" : e.KocurulenValyuta!,
-            Medaxil     = string.IsNullOrWhiteSpace(e.MedaxilValyuta) ? "USD" : e.MedaxilValyuta!,
-            Mebleg      = e.Mebleg ?? 0m,
-            IranRial    = e.IranRial ?? 0m,
-            RialCbar    = e.RialCbar ?? 0m,
-            ValyutaCbar = e.ValyutaCbar ?? 0m,
-            MusteriHesabi = e.AlanHesab,
-            BankAdi     = e.BankAd,
-            Filial      = e.Filial,
-            Hevale      = e.HevaleNo,
-            Meqsed      = e.Meqsed,
-            AlanAdi     = TamAd(e.AlanAd, e.AlanSoyad, e.AlanAtaAd),
-            GonderenTamAd = $"({gondTamAd})"
-        };
+        var input = BuildInput(e.Secim, e.KocurulenValyuta, e.MedaxilValyuta, e.Mebleg, e.IranRial,
+            e.RialCbar, e.ValyutaCbar, e.AlanHesab, e.BankAd, e.Filial, e.HevaleNo, e.Meqsed,
+            e.GonderenAd, e.GonderenSoyad, e.GonderenAtaAd, e.AlanAd, e.AlanSoyad, e.AlanAtaAd);
 
         return new KocurmeDetalDto
         {
             Id            = e.Id,
             HevaleNo      = e.HevaleNo,
             Tarix         = e.Tarix,
-            GonderenTamAd = gondTamAd,
+            GonderenTamAd = TamAd(e.GonderenAd, e.GonderenSoyad, e.GonderenAtaAd),
             AlanTamAd     = TamAd(e.AlanAd, e.AlanSoyad, e.AlanAtaAd),
+            GonderenAd    = e.GonderenAd,
+            GonderenSoyad = e.GonderenSoyad,
+            GonderenAtaAd = e.GonderenAtaAd,
+            GonderenTelefon = e.GonderenTelefon,
+            AlanAd        = e.AlanAd,
+            AlanSoyad     = e.AlanSoyad,
+            AlanAtaAd     = e.AlanAtaAd,
             GonderenPassport = e.GonderenPassport,
             AlanPassport  = e.AlanPassport,
+            Elave         = e.Elave,
+            Qeyd          = e.Qeyd,
             Mebleg        = e.Mebleg,
             MedaxilValyuta   = e.MedaxilValyuta,
             KocurulenValyuta = e.KocurulenValyuta,

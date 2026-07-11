@@ -2,7 +2,7 @@
 @{
     string I(decimal? v) => v?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
     var medaxil = new[] { "USD", "Avro", "AZN" };
-    var kocurulen = new[] { "USD", "Avro", "Rial", "Rubl" };
+    var kocurulen = new[] { "USD", "Avro", "Rial" };
     var secimler = new[] { "Hesab açmadan", "Hesab və mədaxil", "Hesabdan" };
 }
 
@@ -41,18 +41,20 @@
         </div>
     </div>
 
-    <!-- Məbləğ və məzənnə -->
-    <div class="pk-card">
-        <div class="pk-head"><span class="pk-ic pk-ic--amt"><i class="bi bi-cash-coin"></i></span> Məbləğ və məzənnə</div>
-        <div class="pk-amt-grid">
-            <div class="pk-amt-main">
-                <label>Məbləğ</label>
-                <input type="number" step="0.01" name="Mebleg" value="@I(Model.Mebleg)" class="pk-in pk-in--big" placeholder="0.00" />
+    <!-- Məbləğ (ayrıca) + Tarix və məzənnə (alt-alta) -->
+    <div class="pk-row pk-row--amt">
+        <div class="pk-card pk-card--amt">
+            <div class="pk-head"><span class="pk-ic pk-ic--amt"><i class="bi bi-cash-coin"></i></span> Məbləğ</div>
+            <input type="number" step="0.01" name="Mebleg" value="@I(Model.Mebleg)" class="pk-in pk-in--big" placeholder="0.00" />
+        </div>
+        <div class="pk-card">
+            <div class="pk-head pk-head--sm"><i class="bi bi-calendar3"></i> Tarix və məzənnə</div>
+            <div class="pk-stack">
+                <div><label>Tarix</label><input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="pk-in" /></div>
+                <div class="pk-rate-f"><label>Rial (MB kursu)</label><input type="number" step="0.0001" name="RialCbar" value="@I(Model.RialCbar)" class="pk-in pk-rate" /></div>
+                <div class="pk-rate-f"><label>Valyuta (MB kursu)</label><input type="number" step="0.0001" name="ValyutaCbar" value="@I(Model.ValyutaCbar)" class="pk-in pk-rate" /></div>
+                <div class="pk-rate-f"><label>İran Rial (kurs)</label><input type="number" step="0.0001" name="IranRial" value="@I(Model.IranRial)" class="pk-in pk-rate" /></div>
             </div>
-            <div><label>Tarix</label><input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="pk-in" /></div>
-            <div class="pk-rate-f"><label>Rial (MB kursu)</label><input type="number" step="0.0001" name="RialCbar" value="@I(Model.RialCbar)" class="pk-in pk-rate" /></div>
-            <div class="pk-rate-f"><label>Valyuta (MB kursu)</label><input type="number" step="0.0001" name="ValyutaCbar" value="@I(Model.ValyutaCbar)" class="pk-in pk-rate" /></div>
-            <div class="pk-rate-f"><label>İran Rial (kurs)</label><input type="number" step="0.0001" name="IranRial" value="@I(Model.IranRial)" class="pk-in pk-rate" /></div>
         </div>
     </div>
 

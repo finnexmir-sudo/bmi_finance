@@ -61,8 +61,17 @@ public class KocurmeDetalDto
     public DateTime? Tarix         { get; set; }
     public string?   GonderenTamAd { get; set; }
     public string?   AlanTamAd     { get; set; }
+    public string?   GonderenAd    { get; set; }
+    public string?   GonderenSoyad { get; set; }
+    public string?   GonderenAtaAd { get; set; }
+    public string?   GonderenTelefon { get; set; }
+    public string?   AlanAd        { get; set; }
+    public string?   AlanSoyad     { get; set; }
+    public string?   AlanAtaAd     { get; set; }
     public string?   GonderenPassport { get; set; }
     public string?   AlanPassport  { get; set; }
+    public string?   Elave         { get; set; }
+    public string?   Qeyd          { get; set; }
     public decimal?  Mebleg        { get; set; }
     public string?   MedaxilValyuta   { get; set; }
     public string?   KocurulenValyuta { get; set; }

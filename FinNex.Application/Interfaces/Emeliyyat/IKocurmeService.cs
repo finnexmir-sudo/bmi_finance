@@ -14,6 +14,9 @@ public interface IKocurmeService
     // Qeyd + hesablanmış debet/kredit voucher (BMI cevirme məntiqi)
     Task<KocurmeDetalDto?> DetalAsync(int id, string novu);
 
+    // Form dəyərlərindən canlı voucher (yadda saxlanmadan preview)
+    IList<MuhasibatSetirDto> VoucherHesabla(KocurmeFormDto dto, string? hevaleNo);
+
     Task<KocurmeEditDto?> RedakteMelumatiAsync(int id, string novu);
     Task<Result> YenileAsync(string novu, KocurmeEditDto dto, int userId, bool isAdmin);
     Task<Result> SilAsync(int id, int userId, bool isAdmin);
