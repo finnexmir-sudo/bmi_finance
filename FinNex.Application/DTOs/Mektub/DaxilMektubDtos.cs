@@ -25,3 +25,18 @@ public class DaxilMektubCreateDto
     public DateTime? GonTarix { get; set; }
     public string?   DaxNom   { get; set; }
 }
+
+// Redaktə üçün (Qeydiyyat №, İl dəyişməz — yalnız məlumat sahələri)
+public class DaxilMektubEditDto
+{
+    public int       Id       { get; set; }
+    public DateTime? DaxTarix { get; set; }
+    public string?   IdareAdi { get; set; }
+    public DateTime? GonTarix { get; set; }
+    public string?   DaxNom   { get; set; }
+    // Yalnız göstərmə üçün (redaktə olunmur)
+    public int?      Nom1           { get; set; }
+    public int?      Il             { get; set; }
+    public string?   MovcudFaylYolu { get; set; }
+    public int?      YaradanId      { get; set; }
+}

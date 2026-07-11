@@ -80,4 +80,65 @@ public class XaricMektubService : IXaricMektubService
 
         return Result<int>.Ok(novbeti, $"Xaric məktub qeydə alındı — Qeydiyyat № {novbeti}/{il}.");
     }
+
+    public async Task<XaricMektubEditDto?> RedakteMelumatiAsync(int id)
+    {
+        var e = await _uow.Repository<XaricMektub>().GetirAsync(
+            x => x.Id == id && !x.Silinib, izlemeden: true);
+        if (e == null) return null;
+
+        return new XaricMektubEditDto
+        {
+            Id             = e.Id,
+            Tarix          = e.Tarix,
+            GonYer         = e.GonYer,
+            QisaMez        = e.QisaMez,
+            MektubMetn     = e.MektubMetn,
+            QeyNom         = e.QeyNom,
+            Il             = e.Il,
+            MovcudFaylYolu = e.FaylYolu,
+            YaradanId      = e.YaradanIcraciId
+        };
+    }
+
+    public async Task<Result> YenileAsync(XaricMektubEditDto dto, int userId, bool isAdmin, string? yeniFaylYolu = null)
+    {
+        if (string.IsNullOrWhiteSpace(dto.GonYer))
+            return Result.Fail("Göndərilən yer (təyinat) boş ola bilməz.");
+
+        var e = await _uow.Repository<XaricMektub>().GetirAsync(x => x.Id == dto.Id && !x.Silinib);
+        if (e == null) return Result.Fail("Məktub tapılmadı.");
+        if (!isAdmin && e.YaradanIcraciId != userId)
+            return Result.Fail("Yalnız öz qeydinizi və ya Admin dəyişə bilər.");
+
+        // Qeydiyyat № (QeyNom) və İl dəyişməz qalır — jurnal nömrəsi yaradılışda təyin olunur
+        e.Tarix      = dto.Tarix;
+        e.GonYer     = dto.GonYer?.Trim();
+        e.QisaMez    = dto.QisaMez?.Trim();
+        e.MektubMetn = string.IsNullOrWhiteSpace(dto.MektubMetn) ? null : dto.MektubMetn.Trim();
+        if (!string.IsNullOrWhiteSpace(yeniFaylYolu))
+            e.FaylYolu = yeniFaylYolu;
+        e.YenileyenIcraciId = userId;
+        e.YenilenmeTarixi   = DateTime.Now;
+
+        await _uow.Repository<XaricMektub>().YenileAsync(e);
+        await _uow.YaddaSaxlaAsync();
+        return Result.Ok("Məktub yeniləndi.");
+    }
+
+    public async Task<Result> SilAsync(int id, int userId, bool isAdmin)
+    {
+        var e = await _uow.Repository<XaricMektub>().GetirAsync(x => x.Id == id && !x.Silinib);
+        if (e == null) return Result.Fail("Məktub tapılmadı.");
+        if (!isAdmin && e.YaradanIcraciId != userId)
+            return Result.Fail("Yalnız öz qeydinizi və ya Admin silə bilər.");
+
+        e.Silinib       = true;
+        e.SilinmeTarixi = DateTime.Now;
+        e.SilenIcraciId = userId;
+
+        await _uow.Repository<XaricMektub>().YenileAsync(e);
+        await _uow.YaddaSaxlaAsync();
+        return Result.Ok("Məktub silindi.");
+    }
 }

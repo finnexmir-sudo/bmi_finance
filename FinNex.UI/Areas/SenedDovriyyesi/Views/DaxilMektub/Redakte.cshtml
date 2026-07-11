@@ -1,0 +1,73 @@
+@using FinNex.Application.DTOs.Mektub
+@model DaxilMektubEditDto
+@{
+    ViewData["Title"] = "Daxil olan məktubu redaktə et";
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Məktubu redaktə et</div>
+            <div class="fn-page-sub">Qeydiyyat № @(Model.Nom1?.ToString() ?? "—") / @(Model.Il?.ToString() ?? "—") — dəyişməz</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    <div class="fn-card" style="max-width:720px">
+        <form asp-action="Redakte" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+            <div class="dm-grid">
+                <div>
+                    <label>Daxil olma tarixi</label>
+                    <input type="date" name="DaxTarix" value="@(Model.DaxTarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+                </div>
+                <div>
+                    <label>Göndərilmə tarixi</label>
+                    <input type="date" name="GonTarix" value="@(Model.GonTarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+                </div>
+                <div class="dm-full">
+                    <label>Göndərən idarə / təşkilat *</label>
+                    <input type="text" name="IdareAdi" value="@Model.IdareAdi" class="fn-input" placeholder="məs. Mərkəzi Bank" />
+                </div>
+                <div>
+                    <label>Məktub №</label>
+                    <input type="text" name="DaxNom" value="@Model.DaxNom" class="fn-input" />
+                </div>
+                <div class="dm-full">
+                    <label>Sənəd (qoşma) <span style="color:#94a3b8;font-weight:500">— istəyə bağlı</span></label>
+                    @if (!string.IsNullOrEmpty(Model.MovcudFaylYolu))
+                    {
+                        <div style="font-size:12px;margin-bottom:6px">
+                            Mövcud qoşma: <a href="/dms/@Model.MovcudFaylYolu" target="_blank"><i class="bi bi-paperclip"></i> aç</a>
+                        </div>
+                    }
+                    <input type="file" name="fayl" class="fn-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tif,.tiff" />
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px">Yeni fayl seçsən köhnəsini əvəz edər. Boş buraxsan mövcud qoşma qalır.</div>
+                </div>
+            </div>
+
+            <div class="dm-actions">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Yadda saxla</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .dm-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px 18px; }
+        .dm-grid .dm-full { grid-column:1/-1; }
+        .dm-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
+        .dm-actions { display:flex; gap:10px; margin-top:18px; }
+        .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    </style>
+}

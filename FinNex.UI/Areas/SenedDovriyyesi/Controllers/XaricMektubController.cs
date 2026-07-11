@@ -26,6 +26,19 @@ public class XaricMektubController : Controller
 
     private bool IsAdmin() => User.IsInRole(RoleNames.Admin);
 
+    // İstəyə bağlı qoşmanı DMS-ə yazır, nisbi yolu qaytarır (fayl yoxdursa null)
+    private async Task<string?> QosmaYazAsync(IFormFile? fayl)
+    {
+        if (fayl == null || fayl.Length == 0) return null;
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var dir = Path.Combine(dmsRoot, "mektublar");
+        Directory.CreateDirectory(dir);
+        var ad = $"{Guid.NewGuid()}{Path.GetExtension(fayl.FileName)}";
+        await using var fs = new FileStream(Path.Combine(dir, ad), FileMode.Create);
+        await fayl.CopyToAsync(fs);
+        return $"mektublar/{ad}";
+    }
+
     // Köhnə BMI "Göndərilən yer" hazır siyahısı — combobox təklifi (istifadəçi əl ilə də yaza bilər)
     private static readonly string[] GonYerSiyahi =
     {
@@ -89,20 +102,55 @@ public class XaricMektubController : Controller
         }
 
         // İstəyə bağlı qoşma — DMS-ə (C:\FinNex_DMS\mektublar\), DB-yə yalnız nisbi yol
-        string? faylYolu = null;
-        if (fayl != null && fayl.Length > 0)
-        {
-            var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
-            var dir = Path.Combine(dmsRoot, "mektublar");
-            Directory.CreateDirectory(dir);
-            var ext = Path.GetExtension(fayl.FileName);
-            var ad = $"{Guid.NewGuid()}{ext}";
-            await using var fs = new FileStream(Path.Combine(dir, ad), FileMode.Create);
-            await fayl.CopyToAsync(fs);
-            faylYolu = $"mektublar/{ad}";
-        }
+        var faylYolu = await QosmaYazAsync(fayl);
 
         var res = await _service.YaratAsync(dto, GetUserId(), faylYolu);
+        TempData[res.Success ? "Success" : "Error"] = res.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /SenedDovriyyesi/XaricMektub/Redakte/5
+    [HttpGet]
+    public async Task<IActionResult> Redakte(int id)
+    {
+        var dto = await _service.RedakteMelumatiAsync(id);
+        if (dto == null)
+        {
+            TempData["Error"] = "Məktub tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+        if (!IsAdmin() && dto.YaradanId != GetUserId())
+        {
+            TempData["Error"] = "Bu məktubu yalnız yaradan və ya Admin dəyişə bilər.";
+            return RedirectToAction(nameof(Index));
+        }
+        ViewBag.GonYerler = GonYerSiyahi;
+        return View(dto);
+    }
+
+    // POST: /SenedDovriyyesi/XaricMektub/Redakte
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(30_000_000)]
+    public async Task<IActionResult> Redakte(XaricMektubEditDto dto, IFormFile? fayl)
+    {
+        var yeniFaylYolu = await QosmaYazAsync(fayl);
+        var res = await _service.YenileAsync(dto, GetUserId(), IsAdmin(), yeniFaylYolu);
+        TempData[res.Success ? "Success" : "Error"] = res.Message;
+        if (!res.Success)
+        {
+            ViewBag.GonYerler = GonYerSiyahi;
+            return View(dto);
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    // POST: /SenedDovriyyesi/XaricMektub/Sil/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Sil(int id)
+    {
+        var res = await _service.SilAsync(id, GetUserId(), IsAdmin());
         TempData[res.Success ? "Success" : "Error"] = res.Message;
         return RedirectToAction(nameof(Index));
     }

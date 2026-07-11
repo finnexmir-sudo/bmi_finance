@@ -85,4 +85,65 @@ public class DaxilMektubService : IDaxilMektubService
 
         return Result<int>.Ok(novbeti, $"Məktub qeydə alındı — Qeydiyyat № {novbeti}/{il}.");
     }
+
+    public async Task<DaxilMektubEditDto?> RedakteMelumatiAsync(int id)
+    {
+        var e = await _uow.Repository<DaxilMektub>().GetirAsync(
+            x => x.Id == id && !x.Silinib, izlemeden: true);
+        if (e == null) return null;
+
+        return new DaxilMektubEditDto
+        {
+            Id             = e.Id,
+            DaxTarix       = e.DaxTarix,
+            IdareAdi       = e.IdareAdi,
+            GonTarix       = e.GonTarix,
+            DaxNom         = e.DaxNom,
+            Nom1           = e.Nom1,
+            Il             = e.Il,
+            MovcudFaylYolu = e.FaylYolu,
+            YaradanId      = e.YaradanIcraciId
+        };
+    }
+
+    public async Task<Result> YenileAsync(DaxilMektubEditDto dto, int userId, bool isAdmin, string? yeniFaylYolu = null)
+    {
+        if (string.IsNullOrWhiteSpace(dto.IdareAdi))
+            return Result.Fail("Göndərən idarə/təşkilat adı boş ola bilməz.");
+
+        var e = await _uow.Repository<DaxilMektub>().GetirAsync(x => x.Id == dto.Id && !x.Silinib);
+        if (e == null) return Result.Fail("Məktub tapılmadı.");
+        if (!isAdmin && e.YaradanIcraciId != userId)
+            return Result.Fail("Yalnız öz qeydinizi və ya Admin dəyişə bilər.");
+
+        // Qeydiyyat № (Nom1) və İl dəyişməz qalır — jurnal nömrəsi yaradılışda təyin olunur
+        e.DaxTarix = dto.DaxTarix;
+        e.IdareAdi = dto.IdareAdi?.Trim();
+        e.GonTarix = dto.GonTarix;
+        e.DaxNom   = dto.DaxNom?.Trim();
+        if (!string.IsNullOrWhiteSpace(yeniFaylYolu))
+            e.FaylYolu = yeniFaylYolu;
+        e.YenileyenIcraciId = userId;
+        e.YenilenmeTarixi   = DateTime.Now;
+
+        await _uow.Repository<DaxilMektub>().YenileAsync(e);
+        await _uow.YaddaSaxlaAsync();
+        return Result.Ok("Məktub yeniləndi.");
+    }
+
+    public async Task<Result> SilAsync(int id, int userId, bool isAdmin)
+    {
+        var e = await _uow.Repository<DaxilMektub>().GetirAsync(x => x.Id == id && !x.Silinib);
+        if (e == null) return Result.Fail("Məktub tapılmadı.");
+        if (!isAdmin && e.YaradanIcraciId != userId)
+            return Result.Fail("Yalnız öz qeydinizi və ya Admin silə bilər.");
+
+        e.Silinib       = true;
+        e.SilinmeTarixi = DateTime.Now;
+        e.SilenIcraciId = userId;
+
+        await _uow.Repository<DaxilMektub>().YenileAsync(e);
+        await _uow.YaddaSaxlaAsync();
+        return Result.Ok("Məktub silindi.");
+    }
 }

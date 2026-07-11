@@ -23,3 +23,18 @@ public class XaricMektubCreateDto
     public string?   QisaMez    { get; set; }
     public string?   MektubMetn { get; set; }
 }
+
+// Redaktə üçün (Qeydiyyat №, İl dəyişməz — yalnız məlumat sahələri)
+public class XaricMektubEditDto
+{
+    public int       Id         { get; set; }
+    public DateTime? Tarix      { get; set; }
+    public string?   GonYer     { get; set; }
+    public string?   QisaMez    { get; set; }
+    public string?   MektubMetn { get; set; }
+    // Yalnız göstərmə üçün (redaktə olunmur)
+    public string?   QeyNom         { get; set; }
+    public int?      Il             { get; set; }
+    public string?   MovcudFaylYolu { get; set; }
+    public int?      YaradanId      { get; set; }
+}
