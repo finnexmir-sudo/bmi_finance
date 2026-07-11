@@ -1,0 +1,92 @@
+@model TelebeKocurmeDetalDto
+@{
+    ViewData["Title"] = "Tələbə köçürməsi — muhasibat qeydləri";
+    string T(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
+    string M(decimal? v) => v.HasValue ? v.Value.ToString("#,0.00") : "—";
+    var userId = (int)(ViewBag.UserId ?? 0);
+    var isAdmin = (bool)(ViewBag.IsAdmin ?? false);
+}
+
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Muhasibat qeydləri</div>
+            <div class="fn-page-sub">Həvalə № @T(Model.HevaleNo) — @Model.Tarix?.ToString("dd.MM.yyyy")</div>
+        </div>
+        <div style="display:flex;gap:8px">
+            @if (isAdmin || Model.YaradanId == userId)
+            {
+                <a asp-action="Redakte" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-pencil"></i> Redaktə</a>
+            }
+            <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="dm-alert dm-alert--ok"><i class="bi bi-check-circle"></i> @TempData["Success"]</div>
+    }
+
+    <div class="fn-card" style="margin-bottom:16px">
+        <div class="td-info">
+            <div><span>Tələbə</span><b>@T(Model.Adi)</b></div>
+            <div><span>Passport</span><b>@T(Model.Passport)</b></div>
+            <div><span>Universitet</span><b>@T(Model.UniAd)</b></div>
+            <div><span>Alan bank</span><b>@T(Model.AlanBank)</b></div>
+            <div><span>BMİ filial</span><b>@T(Model.BmiFilial)</b></div>
+            <div><span>REF</span><b>@T(Model.RefNo)</b></div>
+            <div><span>Tələbə kurs</span><b>@T(Model.TelebeKursu)</b></div>
+            <div><span>Məbləğ</span><b>@M(Model.Mebleg)</b></div>
+            <div><span>Kurs</span><b>@M(Model.Kurs)</b></div>
+            <div><span>X/H</span><b>@M(Model.XH)</b></div>
+            <div class="td-kom"><span>Komissiya</span><b>@M(Model.Komissiya)</b></div>
+        </div>
+    </div>
+
+    <div class="fn-card">
+        <div class="td-title">Debet / Kredit qeydləri</div>
+        <div class="dm-twrap">
+            <table class="td-table">
+                <thead>
+                    <tr>
+                        <th>Debet</th>
+                        <th>Kredit</th>
+                        <th class="td-r">Məbləğ</th>
+                        <th>Təyinat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Setirler)
+                    {
+                        <tr>
+                            <td class="td-mono">@T(s.Debet)</td>
+                            <td class="td-mono">@T(s.Kredit)</td>
+                            <td class="td-r td-mono">@s.Mebleg.ToString("#,0.00")</td>
+                            <td class="td-teyinat">@T(s.Teyinat)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .td-info { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px 20px; }
+        .td-info > div { display:flex; flex-direction:column; gap:3px; }
+        .td-info span { font-size:11px; color:#94a3b8; font-weight:600; }
+        .td-info b { font-size:14px; color:#0f172a; }
+        .td-kom b { color:#2563eb; }
+        .td-title { font-size:13px; font-weight:700; color:#334155; margin-bottom:12px; }
+        .dm-twrap { overflow-x:auto; }
+        .td-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .td-table thead th { background:#f1f5f9; color:#475569; font-weight:600; font-size:12px; text-align:left; padding:10px 12px; border-bottom:1px solid #e2e8f0; }
+        .td-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; color:#1e293b; vertical-align:top; }
+        .td-r { text-align:right; }
+        .td-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; white-space:nowrap; }
+        .td-teyinat { font-size:12px; color:#475569; min-width:280px; }
+        .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .dm-alert--ok { background:#dcfce7; border:1px solid #bbf7d0; color:#166534; }
+    </style>
+}

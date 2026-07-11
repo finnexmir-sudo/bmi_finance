@@ -63,6 +63,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<GedenHevale> GedenHevaleler { get; set; }
     public DbSet<GelenHevale> GelenHevaleler { get; set; }
     public DbSet<Kocurme> Kocurmeler { get; set; }
+    public DbSet<TelebeKocurme> TelebeKocurmeler { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
@@ -323,6 +324,29 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Elave).HasMaxLength(200);
             e.Property(x => x.Meqsed).HasMaxLength(200);
             e.HasIndex(x => new { x.Novu, x.Tarix });
+        });
+
+        // Tələbə köçürməsi (təhsil haqqı) — FinNex cədvəli
+        builder.Entity<TelebeKocurme>(e =>
+        {
+            e.ToTable("TelebeKocurme");
+            e.Property(x => x.HevaleNo).HasMaxLength(30);
+            e.Property(x => x.Adi).HasMaxLength(120);
+            e.Property(x => x.Passport).HasMaxLength(30);
+            e.Property(x => x.Mebleg).HasPrecision(18, 2);
+            e.Property(x => x.BmiFilial).HasMaxLength(80);
+            e.Property(x => x.RefNo).HasMaxLength(50);
+            e.Property(x => x.UniAd).HasMaxLength(200);
+            e.Property(x => x.AlanBank).HasMaxLength(80);
+            e.Property(x => x.TelebeKursu).HasMaxLength(50);
+            e.Property(x => x.XH).HasPrecision(9, 4);
+            e.Property(x => x.Kurs).HasPrecision(12, 4);
+            e.Property(x => x.Komissiya).HasPrecision(18, 2);
+            e.Property(x => x.Hes35025).HasMaxLength(30);
+            e.Property(x => x.Hes45023).HasMaxLength(30);
+            e.Property(x => x.Hes45011).HasMaxLength(30);
+            e.Property(x => x.Hes67013).HasMaxLength(30);
+            e.HasIndex(x => x.Tarix);
         });
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)

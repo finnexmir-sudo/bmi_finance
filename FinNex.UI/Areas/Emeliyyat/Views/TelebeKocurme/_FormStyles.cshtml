@@ -1,0 +1,16 @@
+<style>
+    .tk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .tk-box { background:#fbfcff; border:1px solid #e8edf5; border-radius:12px; padding:14px 16px; }
+    .tk-box-title { font-size:12px; font-weight:700; color:#334155; margin-bottom:10px; text-transform:uppercase; letter-spacing:.02em; }
+    .tk-box label { display:block; font-size:11px; color:#64748b; font-weight:600; margin:8px 0 4px; }
+    .tk-box label:first-of-type { margin-top:0; }
+    .tk-box .dm-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
+    .tk-komissiya { margin-top:14px; padding:10px 12px; background:#eff6ff; border:1px solid #dbeafe; border-radius:9px;
+        display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#1e293b; }
+    .tk-komissiya b { font-size:16px; color:#2563eb; font-family:ui-monospace,Menlo,Consolas,monospace; }
+    .tk-note { font-size:11px; color:#94a3b8; margin-top:6px; }
+    .dm-actions { display:flex; gap:10px; margin-top:18px; }
+    .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+    .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    @@media (max-width:900px) { .tk-grid { grid-template-columns:1fr; } }
+</style>

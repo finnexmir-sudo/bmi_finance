@@ -1,0 +1,79 @@
+@model TelebeKocurmeFormDto
+@{
+    string I(decimal? v) => v?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
+}
+
+<div class="tk-grid">
+    <!-- Tələbə -->
+    <div class="tk-box">
+        <div class="tk-box-title">Tələbə</div>
+        <label>Adı *</label>
+        <input type="text" name="Adi" value="@Model.Adi" class="fn-input" />
+        <label>Passport</label>
+        <input type="text" name="Passport" value="@Model.Passport" class="fn-input" />
+        <label>Məbləğ *</label>
+        <input type="number" step="0.01" name="Mebleg" id="tkMebleg" value="@I(Model.Mebleg)" class="fn-input" />
+        <label>BMİ filial</label>
+        <input type="text" name="BmiFilial" value="@Model.BmiFilial" class="fn-input" />
+        <label>Həvalə No</label>
+        <input type="text" name="HevaleNo" value="@Model.HevaleNo" class="fn-input" />
+        <label>REF</label>
+        <input type="text" name="RefNo" value="@Model.RefNo" class="fn-input" />
+    </div>
+
+    <!-- Universitet / kurs -->
+    <div class="tk-box">
+        <div class="tk-box-title">Universitet / kurs</div>
+        <label>Tarix</label>
+        <input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+        <label>Uni adı</label>
+        <input type="text" name="UniAd" value="@Model.UniAd" class="fn-input" />
+        <label>Alan bank</label>
+        <input type="text" name="AlanBank" value="@(Model.AlanBank ?? "Kapital")" class="fn-input" />
+        <label>Tələbə kurs</label>
+        <input type="text" name="TelebeKursu" value="@Model.TelebeKursu" class="fn-input" />
+        <label>X/H</label>
+        <input type="number" step="0.0001" name="XH" id="tkXH" value="@I(Model.XH)" class="fn-input" />
+        <label>Kurs</label>
+        <input type="number" step="0.0001" name="Kurs" id="tkKurs" value="@I(Model.Kurs)" class="fn-input" />
+    </div>
+
+    <!-- Hesablar + komissiya -->
+    <div class="tk-box">
+        <div class="tk-box-title">Hesablar</div>
+        <label>35025…</label>
+        <input type="text" name="Hes35025" value="@Model.Hes35025" class="fn-input dm-mono" />
+        <label>45023…</label>
+        <input type="text" name="Hes45023" value="@Model.Hes45023" class="fn-input dm-mono" />
+        <label>45011…</label>
+        <input type="text" name="Hes45011" value="@Model.Hes45011" class="fn-input dm-mono" />
+        <label>67013…</label>
+        <input type="text" name="Hes67013" value="@Model.Hes67013" class="fn-input dm-mono" />
+
+        <div class="tk-komissiya">
+            <span>Hesablanan komissiya:</span>
+            <b id="tkKomissiya">—</b>
+        </div>
+        <div class="tk-note">Komissiya = Məbləğ × Kurs × X/H ÷ 100 (minimum 0.50)</div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var meb = document.getElementById('tkMebleg');
+        var xh = document.getElementById('tkXH');
+        var kurs = document.getElementById('tkKurs');
+        var out = document.getElementById('tkKomissiya');
+        if (!out) return;
+        function hesabla() {
+            var m = parseFloat(meb.value) || 0;
+            var x = parseFloat(xh.value) || 0;
+            var k = parseFloat(kurs.value) || 0;
+            var kom = m * k * x / 100;
+            if (kom < 0.5) kom = 0.5;
+            out.textContent = kom.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        [meb, xh, kurs].forEach(function (el) { if (el) el.addEventListener('input', hesabla); });
+        hesabla();
+    })();
+</script>

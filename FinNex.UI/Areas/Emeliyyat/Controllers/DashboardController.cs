@@ -8,18 +8,20 @@ namespace FinNex.UI.Areas.Emeliyyat.Controllers;
 [Authorize]
 public class DashboardController : Controller
 {
-    private readonly IKocurmeService _service;
+    private readonly IKocurmeService _pul;
+    private readonly ITelebeKocurmeService _telebe;
 
-    public DashboardController(IKocurmeService service)
+    public DashboardController(IKocurmeService pul, ITelebeKocurmeService telebe)
     {
-        _service = service;
+        _pul = pul;
+        _telebe = telebe;
     }
 
     public async Task<IActionResult> Index()
     {
         var il = DateTime.Now.Year;
-        var pul = await _service.HamisiniGetirAsync("Pul", il);
-        var telebe = await _service.HamisiniGetirAsync("Telebe", il);
+        var pul = await _pul.HamisiniGetirAsync("Pul", il);
+        var telebe = await _telebe.HamisiniGetirAsync(il);
 
         ViewBag.Il = il;
         ViewBag.PulSay = pul.Count;
