@@ -26,6 +26,37 @@ public class XaricMektubController : Controller
 
     private bool IsAdmin() => User.IsInRole(RoleNames.Admin);
 
+    // Köhnə BMI "Göndərilən yer" hazır siyahısı — combobox təklifi (istifadəçi əl ilə də yaza bilər)
+    private static readonly string[] GonYerSiyahi =
+    {
+        "Azsığorta ASC",
+        "Azərsell Telecom MMC",
+        "Azərfon",
+        "Bakcell",
+        "Bakı Apellyasiya Məhkəməsi",
+        "Baş Dövlət Yol Polis İdarəsinə",
+        "BMİ Dubay",
+        "BMİ Tehran",
+        "BTİ",
+        "Vergi",
+        "DYP",
+        "DSMF",
+        "Dövlət Gömrük Komitəsi",
+        "DƏDRX",
+        "Yasamal rayon Məhkəməsi",
+        "Mega sığorta",
+        "Megaservice MMC",
+        "Millikart MMC",
+        "Mərkəzi Bank",
+        "Nəzarət Palatası",
+        "Sabunçu rayon Məhkəməsi",
+        "Suraxanı rayon Məhkəməsi",
+        "Səbail rayon Məhkəməsi",
+        "Xalq Sığorta",
+        "Xətayi rayon Məhkəməsi",
+        "Hərbi Prokurorluq"
+    };
+
     // GET: /SenedDovriyyesi/XaricMektub
     public async Task<IActionResult> Index(int? il)
     {
@@ -38,8 +69,11 @@ public class XaricMektubController : Controller
 
     // GET: /SenedDovriyyesi/XaricMektub/Yarat
     [HttpGet]
-    public IActionResult Yarat() =>
-        View(new XaricMektubCreateDto { Tarix = DateTime.Today });
+    public IActionResult Yarat()
+    {
+        ViewBag.GonYerler = GonYerSiyahi;
+        return View(new XaricMektubCreateDto { Tarix = DateTime.Today });
+    }
 
     // POST: /SenedDovriyyesi/XaricMektub/Yarat
     [HttpPost]
@@ -50,6 +84,7 @@ public class XaricMektubController : Controller
         if (string.IsNullOrWhiteSpace(dto.GonYer))
         {
             TempData["Error"] = "Göndərilən yer (təyinat) boş ola bilməz.";
+            ViewBag.GonYerler = GonYerSiyahi;
             return View(dto);
         }
 

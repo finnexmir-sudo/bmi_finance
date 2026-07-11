@@ -29,7 +29,15 @@
                 </div>
                 <div class="dm-full">
                     <label>Göndərilən yer (təyinat) *</label>
-                    <input type="text" name="GonYer" value="@Model.GonYer" class="fn-input" placeholder="məs. Mərkəzi Bank" />
+                    <input type="text" name="GonYer" value="@Model.GonYer" class="fn-input"
+                           list="gonYerList" autocomplete="off" placeholder="Siyahıdan seç və ya əl ilə yaz" />
+                    <datalist id="gonYerList">
+                        @foreach (var yer in (string[])(ViewBag.GonYerler ?? Array.Empty<string>()))
+                        {
+                            <option value="@yer"></option>
+                        }
+                    </datalist>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px">Hazır siyahıdan seçə və ya yeni ünvan yaza bilərsən.</div>
                 </div>
                 <div class="dm-full">
                     <label>Qısa məzmun</label>
