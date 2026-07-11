@@ -73,6 +73,16 @@ public class KocurmeService : IKocurmeService
             .ToList();
     }
 
+    public async Task<string> NovbetiHevaleNoAsync(string novu)
+    {
+        var il = DateTime.Now.Year;
+        var heminIl = await _uow.Repository<Kocurme>().HamisiniGetirAsync(
+            predicate: x => !x.Silinib && x.Novu == novu && x.Tarix != null && x.Tarix.Value.Year == il,
+            izlemeden: true);
+        var novbeti = heminIl.Select(x => SonReqem(x.HevaleNo)).DefaultIfEmpty(0).Max() + 1;
+        return $"{il % 100:D2}-{Prefiks(novu)}-{novbeti}";
+    }
+
     public async Task<Result<string>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId)
     {
         if (string.IsNullOrWhiteSpace(dto.GonderenAd) && string.IsNullOrWhiteSpace(dto.AlanAd))

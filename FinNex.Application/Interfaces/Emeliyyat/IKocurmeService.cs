@@ -8,6 +8,9 @@ public interface IKocurmeService
     // Novu: "Pul" / "Telebe"
     Task<IList<KocurmeListDto>> HamisiniGetirAsync(string novu, int? il = null);
 
+    // Növbəti Həvalə № ({il}-T-{sıra}) — yadda saxlanmadan (form preview)
+    Task<string> NovbetiHevaleNoAsync(string novu);
+
     // Yeni köçürmə — Həvalə № il üzrə avtomatik (növə görə prefiks). Qaytarır: yeni Həvalə №.
     Task<Result<string>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId);
 

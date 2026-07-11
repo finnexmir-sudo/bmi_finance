@@ -19,6 +19,7 @@ public class KocurmeListDto
 // Yaratma / redaktə üçün ortaq sahələr
 public class KocurmeFormDto
 {
+    public string?   HevaleNo { get; set; }   // avtomatik ({il}-T-{sıra}); formada oxunur
     public DateTime? Tarix { get; set; }
 
     public string?   GonderenAd       { get; set; }
@@ -90,7 +91,5 @@ public class KocurmeDetalDto
 public class KocurmeEditDto : KocurmeFormDto
 {
     public int     Id        { get; set; }
-    // Göstərmə üçün (redaktə olunmur)
-    public string? HevaleNo  { get; set; }
     public int?    YaradanId { get; set; }
 }

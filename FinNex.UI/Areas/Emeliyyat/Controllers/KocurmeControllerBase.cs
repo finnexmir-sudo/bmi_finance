@@ -49,10 +49,11 @@ public abstract class KocurmeControllerBase : Controller
     }
 
     [HttpGet]
-    public IActionResult Yarat()
+    public async Task<IActionResult> Yarat()
     {
         Baza();
-        return View($"{V}Yarat.cshtml", new KocurmeCreateDto { Tarix = DateTime.Today });
+        var dto = new KocurmeCreateDto { Tarix = DateTime.Today, HevaleNo = await _service.NovbetiHevaleNoAsync(Novu) };
+        return View($"{V}Yarat.cshtml", dto);
     }
 
     [HttpPost]
@@ -86,7 +87,7 @@ public abstract class KocurmeControllerBase : Controller
     [ValidateAntiForgeryToken]
     public IActionResult VoucherPreview(KocurmeCreateDto dto)
     {
-        var setirler = _service.VoucherHesabla(dto, "(yeni)");
+        var setirler = _service.VoucherHesabla(dto, string.IsNullOrWhiteSpace(dto.HevaleNo) ? "" : dto.HevaleNo);
         return Json(setirler.Select(s => new { s.Debet, s.Kredit, Mebleg = s.Mebleg, s.Teyinat }));
     }
 
