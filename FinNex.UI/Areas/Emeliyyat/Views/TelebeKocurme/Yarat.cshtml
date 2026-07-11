@@ -6,8 +6,17 @@
 <div class="fn-page fn-tint">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Yeni tələbə köçürməsi</div>
-            <div class="fn-page-sub">Qeyd yaradıldıqda 3 debet/kredit muhasibat sətri hesablanır</div>
+            <div class="fn-page-title">@(ViewBag.Tekrar == true ? "Təkrar" : "Yeni") tələbə köçürməsi</div>
+            <div class="fn-page-sub">
+                @if (ViewBag.Tekrar == true)
+                {
+                    <span>Əvvəlki qeydin məlumatı dolduruldu — Həvalə № yaz və göndər.</span>
+                }
+                else
+                {
+                    <span>Qeyd yaradıldıqda 3 debet/kredit muhasibat sətri hesablanır</span>
+                }
+            </div>
         </div>
         <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
@@ -18,9 +27,20 @@
     }
 
     <div class="fn-card">
-        <form asp-action="Yarat" method="post">
+        <form asp-action="Yarat" method="post" id="tkForm">
             @Html.AntiForgeryToken()
             <partial name="_Form" model="Model" />
+
+            <div style="margin-top:18px;border-top:1px solid #eef2f7;padding-top:16px">
+                <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:10px"><i class="bi bi-list-columns"></i> Debet / Kredit sətirləri (canlı)</div>
+                <div class="dm-twrap">
+                    <table class="pv-table">
+                        <thead><tr><th>Debet</th><th>Kredit</th><th class="pv-r">Məbləğ</th><th>Təyinat</th></tr></thead>
+                        <tbody id="tkVoucher"><tr><td colspan="4" class="pv-empty">Məbləğ və kursları doldurduqca sətirlər burada hesablanır…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="dm-actions">
                 <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Qeydə al</button>
                 <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
@@ -31,4 +51,42 @@
 
 @section Styles {
     <partial name="_FormStyles" />
+    <style>
+        .dm-twrap { overflow-x:auto; }
+        .pv-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .pv-table thead th { background:#f1f5f9; color:#475569; font-weight:600; font-size:12px; text-align:left; padding:9px 12px; border-bottom:1px solid #e2e8f0; }
+        .pv-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; color:#1e293b; vertical-align:top; }
+        .pv-r { text-align:right; }
+        .pv-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; white-space:nowrap; }
+        .pv-tey { font-size:12px; color:#475569; min-width:260px; }
+        .pv-empty { text-align:center; color:#94a3b8; padding:18px; font-size:12px; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('tkForm');
+            var tbody = document.getElementById('tkVoucher');
+            if (!form || !tbody) return;
+            var url = '@Url.Action("VoucherPreview")';
+            var t;
+            function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+            function fmt(n) { return (Number(n) || 0).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+            function render(rows) {
+                if (!rows || !rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="pv-empty">Sətirlər hesablanmadı.</td></tr>'; return; }
+                tbody.innerHTML = rows.map(function (r) {
+                    return '<tr><td class="pv-mono">' + esc(r.debet) + '</td><td class="pv-mono">' + esc(r.kredit) +
+                        '</td><td class="pv-r pv-mono">' + fmt(r.mebleg) + '</td><td class="pv-tey">' + esc(r.teyinat) + '</td></tr>';
+                }).join('');
+            }
+            function yenile() {
+                var fd = new FormData(form);
+                fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : []; }).then(render).catch(function () { });
+            }
+            form.addEventListener('input', function () { clearTimeout(t); t = setTimeout(yenile, 350); });
+            setTimeout(yenile, 300);
+        })();
+    </script>
 }

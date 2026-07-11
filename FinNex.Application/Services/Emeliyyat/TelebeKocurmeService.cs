@@ -83,6 +83,31 @@ public class TelebeKocurmeService : ITelebeKocurmeService
         };
     }
 
+    public IList<MuhasibatSetirDto> SetirlerHesabla(TelebeKocurmeFormDto dto)
+    {
+        var (h35025, h45023, h45011, h67013) = StandartHesablar();
+        var e = new TelebeKocurme
+        {
+            HevaleNo    = dto.HevaleNo,
+            Adi         = dto.Adi,
+            Passport    = dto.Passport,
+            Mebleg      = dto.Mebleg,
+            BmiFilial   = dto.BmiFilial,
+            RefNo       = dto.RefNo,
+            UniAd       = dto.UniAd,
+            AlanBank    = string.IsNullOrWhiteSpace(dto.AlanBank) ? "Kapital" : dto.AlanBank,
+            TelebeKursu = dto.TelebeKursu,
+            XH          = dto.XH ?? 0.1m,
+            Kurs        = dto.Kurs ?? 1.68m,
+            Hes35025    = string.IsNullOrWhiteSpace(dto.Hes35025) ? h35025 : dto.Hes35025,
+            Hes45023    = string.IsNullOrWhiteSpace(dto.Hes45023) ? h45023 : dto.Hes45023,
+            Hes45011    = string.IsNullOrWhiteSpace(dto.Hes45011) ? h45011 : dto.Hes45011,
+            Hes67013    = string.IsNullOrWhiteSpace(dto.Hes67013) ? h67013 : dto.Hes67013
+        };
+        var komissiya = KomissiyaHesabla(e.Mebleg, e.Kurs, e.XH);
+        return Setirler(e, komissiya);
+    }
+
     public async Task<TelebeKocurmeDetalDto?> DetalAsync(int id)
     {
         var e = await _uow.Repository<TelebeKocurme>().GetirAsync(x => x.Id == id && !x.Silinib, izlemeden: true);
@@ -150,6 +175,32 @@ public class TelebeKocurmeService : ITelebeKocurmeService
         await _uow.YaddaSaxlaAsync();
 
         return Result<int>.Ok(e.Id, $"Tələbə köçürməsi qeydə alındı — komissiya {e.Komissiya:#,0.00}.");
+    }
+
+    public async Task<TelebeKocurmeCreateDto?> TekrarMelumatiAsync(int id)
+    {
+        var e = await _uow.Repository<TelebeKocurme>().GetirAsync(x => x.Id == id && !x.Silinib, izlemeden: true);
+        if (e == null) return null;
+
+        return new TelebeKocurmeCreateDto
+        {
+            Tarix       = DateTime.Today,
+            HevaleNo    = null,   // yeni № əl ilə
+            Adi         = e.Adi,
+            Passport    = e.Passport,
+            Mebleg      = e.Mebleg,
+            BmiFilial   = e.BmiFilial,
+            RefNo       = e.RefNo,
+            UniAd       = e.UniAd,
+            AlanBank    = e.AlanBank,
+            TelebeKursu = e.TelebeKursu,
+            XH          = e.XH,
+            Kurs        = e.Kurs,
+            Hes35025    = e.Hes35025,
+            Hes45023    = e.Hes45023,
+            Hes45011    = e.Hes45011,
+            Hes67013    = e.Hes67013
+        };
     }
 
     public async Task<TelebeKocurmeEditDto?> RedakteMelumatiAsync(int id)

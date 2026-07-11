@@ -14,7 +14,13 @@ public interface ITelebeKocurmeService
     Task<IList<TelebeKocurmeListDto>> HamisiniGetirAsync(int? il = null);
     Task<TelebeKocurmeDetalDto?> DetalAsync(int id);
 
+    // Form dəyərlərindən canlı 3 debet/kredit sətri (yadda saxlanmadan)
+    IList<MuhasibatSetirDto> SetirlerHesabla(TelebeKocurmeFormDto dto);
+
     Task<Result<int>> YaratAsync(TelebeKocurmeCreateDto dto, int yaradanUserId);
+
+    // Mövcud qeydi təkrar üçün: məlumat dolu, yeni № (əl ilə) + bugünkü tarix
+    Task<TelebeKocurmeCreateDto?> TekrarMelumatiAsync(int id);
 
     Task<TelebeKocurmeEditDto?> RedakteMelumatiAsync(int id);
     Task<Result> YenileAsync(TelebeKocurmeEditDto dto, int userId, bool isAdmin);

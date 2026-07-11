@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces.Emeliyyat;
 using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NPOI.HSSF.UserModel;
 
 namespace FinNex.UI.Areas.Emeliyyat.Controllers;
 
@@ -55,7 +56,54 @@ public class TelebeKocurmeController : Controller
         TempData[res.Success ? "Success" : "Error"] = res.Message;
         if (!res.Success)
             return View(dto);
+        TempData["AvtoYukle"] = "1";
         return RedirectToAction(nameof(Detal), new { id = res.Data });
+    }
+
+    // Mövcud qeydi təkrar göndər — məlumat dolu, yeni № ilə
+    [HttpGet]
+    public async Task<IActionResult> Tekrarla(int id)
+    {
+        var dto = await _service.TekrarMelumatiAsync(id);
+        if (dto == null)
+        {
+            TempData["Error"] = "Qeyd tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+        ViewBag.Tekrar = true;
+        return View("Yarat", dto);
+    }
+
+    // Canlı 3 debet/kredit sətri (yadda saxlanmadan) — JSON
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult VoucherPreview(TelebeKocurmeCreateDto dto)
+    {
+        var setirler = _service.SetirlerHesabla(dto);
+        return Json(setirler.Select(s => new { s.Debet, s.Kredit, Mebleg = s.Mebleg, s.Teyinat }));
+    }
+
+    // Excel ixracı — muhasibat sətirləri (import üçün): D=debet, F=kredit, G=məbləğ, J=təyinat
+    public async Task<IActionResult> ExcelIxrac(int id)
+    {
+        var m = await _service.DetalAsync(id);
+        if (m == null) { TempData["Error"] = "Qeyd tapılmadı."; return RedirectToAction(nameof(Index)); }
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("TƏLƏBƏ İMPORT");
+        for (int i = 0; i < m.Setirler.Count; i++)
+        {
+            var r = sh.CreateRow(i + 1);                 // 2-ci sətirdən
+            var s = m.Setirler[i];
+            r.CreateCell(3).SetCellValue(s.Debet ?? "");   // D
+            r.CreateCell(5).SetCellValue(s.Kredit ?? "");  // F
+            r.CreateCell(6).SetCellValue((double)s.Mebleg);// G
+            r.CreateCell(9).SetCellValue(s.Teyinat ?? ""); // J
+        }
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        var ad = $"Telebe_{(m.HevaleNo ?? id.ToString()).Replace("/", "-")}.xls";
+        return File(ms.ToArray(), "application/vnd.ms-excel", ad);
     }
 
     public async Task<IActionResult> Detal(int id)

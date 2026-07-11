@@ -5,6 +5,20 @@
     string M(decimal? v) => v.HasValue ? v.Value.ToString("#,0.00") : "—";
     var userId = (int)(ViewBag.UserId ?? 0);
     var isAdmin = (bool)(ViewBag.IsAdmin ?? false);
+    var avtoYukle = TempData["AvtoYukle"] != null;
+}
+
+@section Scripts {
+    @if (avtoYukle)
+    {
+        <script>
+            (function () {
+                var a = document.createElement('a');
+                a.href = '@Url.Action("ExcelIxrac", new { id = Model.Id })'; a.download = '';
+                document.body.appendChild(a); a.click(); a.remove();
+            })();
+        </script>
+    }
 }
 
 <div class="fn-page fn-tint">
@@ -13,7 +27,9 @@
             <div class="fn-page-title">Muhasibat qeydləri</div>
             <div class="fn-page-sub">Həvalə № @T(Model.HevaleNo) — @Model.Tarix?.ToString("dd.MM.yyyy")</div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a asp-action="Tekrarla" asp-route-id="@Model.Id" class="fn-btn fn-btn--primary"><i class="bi bi-arrow-repeat"></i> Təkrar göndər</a>
+            <a asp-action="ExcelIxrac" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-file-earmark-excel"></i> Excel</a>
             @if (isAdmin || Model.YaradanId == userId)
             {
                 <a asp-action="Redakte" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-pencil"></i> Redaktə</a>
@@ -25,6 +41,10 @@
     @if (TempData["Success"] != null)
     {
         <div class="dm-alert dm-alert--ok"><i class="bi bi-check-circle"></i> @TempData["Success"]</div>
+    }
+    @if (avtoYukle)
+    {
+        <div class="dm-alert dm-alert--ok"><i class="bi bi-download"></i> Qeydə alındı — Excel avtomatik yüklənir… (yüklənmədisə Excel düyməsinə klikləyin)</div>
     }
 
     <div class="fn-card" style="margin-bottom:16px">

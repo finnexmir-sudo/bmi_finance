@@ -69,10 +69,11 @@
                                 <td>@T(m.AlanBank)</td>
                                 <td>@(m.IcraciAd ?? (m.Icra?.ToString() ?? "—"))</td>
                                 <td class="dm-ops">
-                                    <a asp-action="Detal" asp-route-id="@m.Id" class="dm-op" title="Muhasibat qeydləri"><i class="bi bi-list-columns"></i></a>
+                                    <a asp-action="Tekrarla" asp-route-id="@m.Id" class="dm-op dm-op--repeat" title="Təkrar göndər"><i class="bi bi-arrow-repeat"></i></a>
+                                    <a asp-action="Detal" asp-route-id="@m.Id" class="dm-op dm-op--detail" title="Muhasibat qeydləri"><i class="bi bi-list-columns"></i></a>
                                     @if (isAdmin || m.YaradanId == userId)
                                     {
-                                        <a asp-action="Redakte" asp-route-id="@m.Id" class="dm-op" title="Redaktə et"><i class="bi bi-pencil"></i></a>
+                                        <a asp-action="Redakte" asp-route-id="@m.Id" class="dm-op dm-op--edit" title="Redaktə et"><i class="bi bi-pencil"></i></a>
                                         <form asp-action="Sil" asp-route-id="@m.Id" method="post" class="dm-op-del"
                                               onsubmit="return confirm('Bu köçürməni silmək istədiyinizə əminsiniz?');">
                                             @Html.AntiForgeryToken()
@@ -113,10 +114,17 @@
         .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
         .dm-ops { white-space:nowrap; text-align:right; }
         .dm-op-del { display:inline; margin:0; }
-        .dm-op { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; margin-left:4px;
-            border:1px solid #e2e8f0; border-radius:7px; background:#fff; color:#475569; cursor:pointer; text-decoration:none; font-size:13px; }
-        .dm-op:hover { background:#f1f5f9; color:#2563eb; border-color:#cbd5e1; }
-        .dm-op--del:hover { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+        .dm-op { display:inline-flex; align-items:center; justify-content:center; width:29px; height:29px; margin-left:5px;
+            border:1px solid #e2e8f0; border-radius:8px; background:#fff; color:#64748b; cursor:pointer; text-decoration:none; font-size:14px; transition:.15s; }
+        .dm-op:hover { transform:translateY(-1px); }
+        .dm-op--repeat { color:#0d9488; border-color:#ccfbf1; background:#f0fdfa; }
+        .dm-op--repeat:hover { background:#ccfbf1; border-color:#5eead4; }
+        .dm-op--detail { color:#4f46e5; border-color:#e0e7ff; background:#eef2ff; }
+        .dm-op--detail:hover { background:#e0e7ff; border-color:#a5b4fc; }
+        .dm-op--edit { color:#d97706; border-color:#fef3c7; background:#fffbeb; }
+        .dm-op--edit:hover { background:#fef3c7; border-color:#fcd34d; }
+        .dm-op--del { color:#dc2626; border-color:#fee2e2; background:#fef2f2; }
+        .dm-op--del:hover { background:#fee2e2; border-color:#fca5a5; }
     </style>
 }
 
