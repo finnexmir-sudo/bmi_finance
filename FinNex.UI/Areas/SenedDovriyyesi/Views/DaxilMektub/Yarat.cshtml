@@ -1,0 +1,61 @@
+@using FinNex.Application.DTOs.Mektub
+@model DaxilMektubCreateDto
+@{
+    ViewData["Title"] = "Yeni daxil olan məktub";
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni daxil olan məktub</div>
+            <div class="fn-page-sub">Qeydiyyat № və icraçı avtomatik təyin olunur</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    <div class="fn-card" style="max-width:720px">
+        <form asp-action="Yarat" method="post">
+            @Html.AntiForgeryToken()
+            <div class="dm-grid">
+                <div>
+                    <label>Daxil olma tarixi</label>
+                    <input type="date" name="DaxTarix" value="@(Model.DaxTarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+                </div>
+                <div>
+                    <label>Göndərilmə tarixi</label>
+                    <input type="date" name="GonTarix" value="@(Model.GonTarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
+                </div>
+                <div class="dm-full">
+                    <label>Göndərən idarə / təşkilat *</label>
+                    <input type="text" name="IdareAdi" value="@Model.IdareAdi" class="fn-input" placeholder="məs. Mərkəzi Bank" />
+                </div>
+                <div>
+                    <label>Məktub №</label>
+                    <input type="text" name="DaxNom" value="@Model.DaxNom" class="fn-input" />
+                </div>
+            </div>
+
+            <div class="dm-actions">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Qeydə al</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .dm-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px 18px; }
+        .dm-grid .dm-full { grid-column:1/-1; }
+        .dm-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
+        .dm-actions { display:flex; gap:10px; margin-top:18px; }
+        .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    </style>
+}

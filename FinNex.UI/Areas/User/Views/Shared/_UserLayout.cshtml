@@ -1046,6 +1046,23 @@
                         </div>
                     </div>
 
+                    <div class="fn-nav-g @(currentController is "DaxilMektub" or "XaricMektub" ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Məktublar</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="SenedDovriyyesi" asp-controller="DaxilMektub" asp-action="Index"
+                               class="fn-nav-item @(currentController == "DaxilMektub" ? "active" : "")">
+                                <i class="bi bi-envelope-arrow-down"></i> Daxil olan
+                            </a>
+                            <a asp-area="SenedDovriyyesi" asp-controller="XaricMektub" asp-action="Index"
+                               class="fn-nav-item @(currentController == "XaricMektub" ? "active" : "")">
+                                <i class="bi bi-envelope-arrow-up"></i> Xaric olan
+                            </a>
+                        </div>
+                    </div>
+
                     <div class="fn-nav-g">
                         <button type="button" class="fn-nav-g-head">
                             <span>Swift</span>

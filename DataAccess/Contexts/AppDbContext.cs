@@ -3,6 +3,7 @@ using FinNex.Domain.Entities;
 using FinNex.Domain.Entities.AI;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.Mektub;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Sorgular;
@@ -55,6 +56,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // =====================
 
     public DbSet<Isci> Isciler { get; set; }
+    public DbSet<DaxilMektub> DaxilMektublar { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
@@ -207,6 +209,22 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasIndex(x => x.IcraciNo)
             .IsUnique()
             .HasFilter("[IcraciNo] IS NOT NULL");
+
+        // Daxil olan məktub — BMI odb.daxil_mektub sütun adları ilə (Oracle datası yüklənə bilsin)
+        builder.Entity<DaxilMektub>(e =>
+        {
+            e.ToTable("DaxilMektub");
+            e.Property(x => x.Nom).HasColumnName("NOM");
+            e.Property(x => x.Nom1).HasColumnName("NOM1");
+            e.Property(x => x.DaxTarix).HasColumnName("DAX_TARIX");
+            e.Property(x => x.IdareAdi).HasColumnName("IDARE_ADI").HasMaxLength(255);
+            e.Property(x => x.GonTarix).HasColumnName("GON_TARIX");
+            e.Property(x => x.DaxNom).HasColumnName("DAX_NOM").HasMaxLength(45);
+            e.Property(x => x.MekUnvan).HasColumnName("MEK_UNVAN");
+            e.Property(x => x.Il).HasColumnName("IL");
+            e.Property(x => x.Mezmun).HasColumnName("MEZMUN");
+            e.HasIndex(x => new { x.Il, x.Nom1 });
+        });
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)
         builder.Entity<OdenisTapsirigi>()
