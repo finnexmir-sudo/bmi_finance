@@ -82,7 +82,9 @@ public abstract class KocurmeControllerBase : Controller
             Baza();
             return View($"{V}Yarat.cshtml", dto);
         }
-        return RedirectToAction(nameof(Index));
+        // Qeyddən sonra Detal-a keç və Word+Excel avtomatik yüklənsin
+        TempData["AvtoYukle"] = "1";
+        return RedirectToAction(nameof(Detal), new { id = res.Data });
     }
 
     public async Task<IActionResult> Detal(int id)

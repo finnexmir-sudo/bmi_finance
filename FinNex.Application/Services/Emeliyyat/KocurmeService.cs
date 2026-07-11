@@ -119,7 +119,7 @@ public class KocurmeService : IKocurmeService
         };
     }
 
-    public async Task<Result<string>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId)
+    public async Task<Result<int>> YaratAsync(string novu, KocurmeCreateDto dto, int yaradanUserId)
     {
         if (string.IsNullOrWhiteSpace(dto.GonderenAd) && string.IsNullOrWhiteSpace(dto.AlanAd))
             return Result<string>.Fail("Ən azı göndərən və ya alan adı daxil edilməlidir.");
@@ -143,7 +143,7 @@ public class KocurmeService : IKocurmeService
         await _uow.Repository<Kocurme>().YaratAsync(e);
         await _uow.YaddaSaxlaAsync();
 
-        return Result<string>.Ok(hevaleNo, $"Köçürmə qeydə alındı — № {hevaleNo}.");
+        return Result<int>.Ok(e.Id, $"Köçürmə qeydə alındı — № {hevaleNo}.");
     }
 
     // Form dəyərlərini voucher açarlarına çevir
