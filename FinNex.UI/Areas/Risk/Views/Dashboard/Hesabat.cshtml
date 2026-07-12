@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = Model.Ad;
     var hesabatlar = ViewBag.Hesabatlar as IList<RiskHesabatDto> ?? new List<RiskHesabatDto>();
+    var p = Model.Parametrler;
+    var d = Model.Deyerler;
     string Fmt(object? v)
     {
         if (v is null) return "";
@@ -16,10 +18,13 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">@Model.Ad</div>
-            <div class="fn-page-sub">@(string.IsNullOrWhiteSpace(Model.Mahiyyet) ? "Risk hesabatı" : Model.Mahiyyet) — @Model.Say sətir</div>
+            <div class="fn-page-sub">@(string.IsNullOrWhiteSpace(Model.Mahiyyet) ? "Risk hesabatı" : Model.Mahiyyet)@(Model.IcraOlundu ? $" — {Model.Say} sətir" : "")</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <a asp-action="Excel" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            @if (Model.IcraOlundu)
+            {
+                <a asp-action="Excel" asp-route-id="@Model.Id" asp-route-bt="@d.BasTarix" asp-route-st="@d.SonTarix" asp-route-t="@d.Tarix" asp-route-h="@d.Hedd" asp-route-il="@d.Il" class="fn-btn fn-btn--outline"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            }
             <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
         </div>
     </div>
@@ -34,50 +39,92 @@
         </div>
     }
 
-    <div class="fn-card">
-        <div class="rk-toolbar">
-            <div class="rk-search">
-                <i class="bi bi-search"></i>
-                <input type="text" id="rkSearch" placeholder="Cədvəldə axtar..." autocomplete="off" />
-            </div>
-            <div class="rk-hint">Cəmi: @Model.Say sətir</div>
+    @if (p.VarMi)
+    {
+        <div class="fn-card rk-param">
+            <form asp-action="Hesabat" method="get" class="rk-pform">
+                <input type="hidden" name="id" value="@Model.Id" />
+                @if (p.BasTarix)
+                {
+                    <div><label>Başlanğıc tarix</label><input type="date" name="bt" value="@d.BasTarix" required /></div>
+                }
+                @if (p.SonTarix)
+                {
+                    <div><label>Son tarix</label><input type="date" name="st" value="@d.SonTarix" required /></div>
+                }
+                @if (p.Tarix)
+                {
+                    <div><label>Tarix</label><input type="date" name="t" value="@d.Tarix" required /></div>
+                }
+                @if (p.Hedd)
+                {
+                    <div><label>Hədd (məbləğ)</label><input type="number" step="0.01" name="h" value="@d.Hedd" placeholder="məs. 20000" required /></div>
+                }
+                @if (p.Il)
+                {
+                    <div><label>İl</label><input type="number" name="il" value="@d.Il" placeholder="məs. 2026" required /></div>
+                }
+                <div class="rk-pbtn"><button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-play-fill"></i> İşlət</button></div>
+            </form>
         </div>
+    }
 
-        @if (Model.Netice.Sutunlar.Count == 0 || Model.Say == 0)
-        {
-            <div class="rk-empty2"><i class="bi bi-inbox"></i> Nəticə boşdur.</div>
-        }
-        else
-        {
-            <div class="rk-twrap">
-                <table class="rk-table" id="rkTable">
-                    <thead>
-                        <tr>
-                            <th class="rk-no">#</th>
-                            @foreach (var s in Model.Netice.Sutunlar)
-                            {
-                                <th>@s</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{ var no = 0; }
-                        @foreach (var row in Model.Netice.Setirler)
-                        {
-                            no++;
-                            <tr class="rk-row" data-search="@(string.Join(" ", row.Select(Fmt)).ToLower())">
-                                <td class="rk-no">@no</td>
-                                @foreach (var cell in row)
+    @if (!string.IsNullOrEmpty(Model.Xeta))
+    {
+        <div class="rk-alert rk-alert--err"><i class="bi bi-x-octagon"></i> Sorğu xətası: @Model.Xeta</div>
+    }
+
+    @if (!Model.IcraOlundu && p.VarMi && string.IsNullOrEmpty(Model.Xeta))
+    {
+        <div class="fn-card"><div class="rk-empty2"><i class="bi bi-sliders"></i> Parametrləri doldurub <b>İşlət</b> düyməsinə klikləyin.</div></div>
+    }
+    else if (Model.IcraOlundu)
+    {
+        <div class="fn-card">
+            <div class="rk-toolbar">
+                <div class="rk-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="rkSearch" placeholder="Cədvəldə axtar..." autocomplete="off" />
+                </div>
+                <div class="rk-hint">Cəmi: @Model.Say sətir</div>
+            </div>
+
+            @if (Model.Netice.Sutunlar.Count == 0 || Model.Say == 0)
+            {
+                <div class="rk-empty2"><i class="bi bi-inbox"></i> Nəticə boşdur.</div>
+            }
+            else
+            {
+                <div class="rk-twrap">
+                    <table class="rk-table" id="rkTable">
+                        <thead>
+                            <tr>
+                                <th class="rk-no">#</th>
+                                @foreach (var s in Model.Netice.Sutunlar)
                                 {
-                                    <td>@Fmt(cell)</td>
+                                    <th>@s</th>
                                 }
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
+                        </thead>
+                        <tbody>
+                            @{ var no = 0; }
+                            @foreach (var row in Model.Netice.Setirler)
+                            {
+                                no++;
+                                <tr class="rk-row" data-search="@(string.Join(" ", row.Select(Fmt)).ToLower())">
+                                    <td class="rk-no">@no</td>
+                                    @foreach (var cell in row)
+                                    {
+                                        <td>@Fmt(cell)</td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
 </div>
 
 @section Styles {
@@ -87,6 +134,11 @@
             font-size:12.5px; font-weight:600; text-decoration:none; }
         .rk-tab:hover { border-color:#fecaca; color:#dc2626; }
         .rk-tab.active { background:#fef2f2; border-color:#fecaca; color:#dc2626; }
+        .rk-param { margin-bottom:16px; }
+        .rk-pform { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+        .rk-pform label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
+        .rk-pform input { padding:9px 12px; border:1px solid #e2e8f0; border-radius:10px; font-size:13px; outline:none; background:#fbfcff; }
+        .rk-pform input:focus { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
         .rk-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
         .rk-search { position:relative; max-width:360px; flex:1; }
         .rk-search i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; }
@@ -101,6 +153,8 @@
         .rk-table tbody tr:hover td { background:#fef2f2; }
         .rk-no { color:#94a3b8; text-align:right; font-variant-numeric:tabular-nums; }
         .rk-empty2 { text-align:center; color:#94a3b8; padding:36px; font-size:14px; }
+        .rk-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .rk-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
     </style>
 }
 

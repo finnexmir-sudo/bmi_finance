@@ -1,3 +1,4 @@
+using FinNex.Application.DTOs.Risk;
 using FinNex.Application.Interfaces.Risk;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,10 +24,11 @@ public class DashboardController : Controller
         return View(model);
     }
 
-    // Bir hesabatı icra edib dinamik cədvəl göstərir
-    public async Task<IActionResult> Hesabat(int id)
+    // Bir hesabatı icra edib dinamik cədvəl göstərir (bt/st/t=tarixlər, h=hədd, il=il)
+    public async Task<IActionResult> Hesabat(int id, string? bt, string? st, string? t, string? h, string? il)
     {
-        var model = await _service.IcraEtAsync(id);
+        var deyer = new RiskParametrDeyer { BasTarix = bt, SonTarix = st, Tarix = t, Hedd = h, Il = il };
+        var model = await _service.IcraEtAsync(id, deyer);
         if (model == null)
         {
             TempData["Error"] = "Hesabat tapılmadı və ya aktiv deyil.";
@@ -37,10 +39,11 @@ public class DashboardController : Controller
     }
 
     // Hesabatın nəticəsini Excel-ə ixrac edir
-    public async Task<IActionResult> Excel(int id)
+    public async Task<IActionResult> Excel(int id, string? bt, string? st, string? t, string? h, string? il)
     {
-        var m = await _service.IcraEtAsync(id);
-        if (m == null)
+        var deyer = new RiskParametrDeyer { BasTarix = bt, SonTarix = st, Tarix = t, Hedd = h, Il = il };
+        var m = await _service.IcraEtAsync(id, deyer);
+        if (m == null || !m.IcraOlundu)
         {
             TempData["Error"] = "Hesabat tapılmadı.";
             return RedirectToAction(nameof(Index));
