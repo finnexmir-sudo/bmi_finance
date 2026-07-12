@@ -124,8 +124,11 @@ where  EXTRACT(YEAR FROM dd.date_oper) = {IL}
   and  substr(dd.kredit,1,1) in (3,4);
 
 
-/* === Risk — Ölkə üzrə müştərilər (aktiv hesab) ============================ */
-/* Mənbə: olke_kodlari_uzre_adlari.sql */
+/* === Risk — Ölkə üzrə müştərilər (detallı siyahı, aktiv hesab) ============ */
+/* Mənbə: olke_kodlari_uzre_adlari.sql
+   QEYD: ölkə üzrə SAY qrafiki (dashboard [BAR] widget) Risk_Panel_Widgetler.sql-dədir.
+   Bu blok isə ad-ad DETALLI siyahıdır (kim, hansı ölkə). İkisi eyni deyil —
+   birini dashboard kartı, digərini hesabat kimi saxla. */
 select distinct l.registrac_nomer qeyd_no, r.name_regnom ad,
        case when l.countrycode='GEO' then 'Gürcüstan' else c.name end olke
 from   licsch l, countrycode c, regnom r
