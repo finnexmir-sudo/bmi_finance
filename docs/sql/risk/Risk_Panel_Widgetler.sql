@@ -110,14 +110,14 @@ group by to_char(l.date_open_licsch, 'YYYY-MM')
 order by ay;
 
 /* Ad: Risk səviyyəsi bölgüsü | Mahiyyət: [PIE] aktiv müştəri, risk reytinqi */
-/* DİQQƏT: riskler join-i sənin bazanda yoxlanmalıdır (rs.code = r.riskler).
-   Səhv çıxsa mətnini göndər, dəqiqləşdirək. */
-select rs.name risk, count(distinct r.regnom) say
+/* '%%%%%%' = boş risk (AML_riskler.sql-dəki kimi 'boş' göstərilir) */
+select case when rs.name = '%%%%%%%%%%%%%%%%' then 'boş' else rs.name end risk,
+       count(distinct r.regnom) say
 from   regnom r, licsch l, riskler rs
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
   and  substr(l.licsch,1,1) in ('3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  r.riskler = rs.code
-group by rs.name
+group by case when rs.name = '%%%%%%%%%%%%%%%%' then 'boş' else rs.name end
 order by say desc;
