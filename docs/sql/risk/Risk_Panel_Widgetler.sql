@@ -34,39 +34,62 @@
 
 /* ========================  KPI KARTLARI  ================================== */
 
+/*
+   MÜHÜM (KPI + klik siyahı): KPI-ya [KPI] tag qoyulanda —
+     · sorğu 1 sətir (count) qaytarırsa → kart o rəqəmi göstərir, klik cəmi 1 sətir;
+     · sorğu DETAL SİYAHI qaytarırsa     → kart SƏTİR SAYINI göstərir, klik SİYAHINI açır.
+   Klik real siyahı göstərsin deyə KPI-ları count() yox, DETAL select kimi yazırıq.
+   ("Ümumi müştərilər" cəmi rəqəmdir — count kimi qalır.)
+   Diqqət: detal-KPI ən çox 20000 sətir yükləyir; çox iri siyahını KPI etmə.
+*/
+
 /* Ad: Aktiv müştərilər     | Mahiyyət: [KPI] açıq hesablı real müştəri */
-select count(distinct r.regnom)
+select distinct r.regnom qeyd_no, r.name_regnom musteri, r.inn_regnom voen,
+       r.pincode fin, r.passport pasport,
+       case when r.yurik=1 then 'Hüquqi' when r.predprinimatel=1 then 'Sahibkar'
+            when r.fizik=1 then 'Fiziki' end tip
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
   and  substr(l.licsch,1,1) in ('3','4')
-  and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1);
+  and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
+order by r.name_regnom;
 
 /* Ad: Qeyri-rezidentlər    | Mahiyyət: [KPI] aktiv müştəri, nerezident */
-select count(distinct r.regnom)
+select distinct r.regnom qeyd_no, r.name_regnom musteri, r.inn_regnom voen,
+       r.pincode fin, r.passport pasport, r.telefon telefon
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
   and  substr(l.licsch,1,1) in ('3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
-  and  r.nerezident = 1;
+  and  r.nerezident = 1
+order by r.name_regnom;
 
 /* Ad: İnsayder / əlaqəli   | Mahiyyət: [KPI] aktiv müştəri, insider/əlaqəli */
-select count(distinct r.regnom)
+select distinct r.regnom qeyd_no, r.name_regnom musteri, r.inn_regnom voen, r.passport pasport,
+       case when r.insider=1 then 'insayder' end insayder,
+       case when r.svazanniy=1 then 'əlaqəli' end elaqeli
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
   and  substr(l.licsch,1,1) in ('3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
-  and  (r.insider = 1 or r.svazanniy = 1);
+  and  (r.insider = 1 or r.svazanniy = 1)
+order by r.name_regnom;
 
 /* Ad: Açıq müştəri hesabları | Mahiyyət: [KPI] real müştəriyə aid açıq hesab */
-select count(distinct l.licsch)
+select l.licsch hesab, r.name_regnom musteri, r.inn_regnom voen, r.pincode fin,
+       l.name_licsch hesab_adi, l.date_open_licsch acilma
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
   and  substr(l.licsch,1,1) in ('3','4')
-  and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1);
+  and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
+order by l.date_open_licsch desc;
+
+/* Ad: Ümumi müştərilər     | Mahiyyət: [KPI] qeydiyyatda olan (cəmi rəqəm) */
+select count(*) from regnom;
 
 
 /* ========================  QRAFİKLƏR  ===================================== */

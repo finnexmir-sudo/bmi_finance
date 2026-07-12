@@ -73,16 +73,26 @@ public class RiskService : IRiskService
            && char.IsDigit(s[0]) && char.IsDigit(s[1]) && char.IsDigit(s[2]) && char.IsDigit(s[3])
            && char.IsDigit(s[5]) && char.IsDigit(s[6]);
 
-    // KPI kartını qurur (tək rəqəm — sorğunun ilk sətrinin sonuncu sütunu)
-    private RiskKpiDto KpiQur(int id, string ad, string? alt, OracleNetice xam)
+    private const int KpiCap = 20000;   // detal-KPI üçün maksimum yüklənən sətir
+
+    // KPI kartı: nəticə 1 sətirdirsə → o rəqəm (count sorğusu);
+    // çox sətirdirsə → sətir SAYI (detal siyahı — kart sayı göstərir, klik siyahını açır).
+    private RiskKpiDto KpiQur(int id, string ad, string? alt, OracleNetice xam, bool kesildi = false)
     {
         var kpi = new RiskKpiDto { Id = id, Ad = ad, Alt = alt };
         if (xam.Setirler.Count == 0) { kpi.Deyer = "0"; return kpi; }
-        var row = xam.Setirler[0];
-        var cell = row.Length > 0 ? row[^1] : null;
-        var ed = Eded(cell);
-        if (ed.HasValue) kpi.Deyer = ed.Value.ToString("#,0.##", CultureInfo.InvariantCulture);
-        else { kpi.Deyer = cell?.ToString() ?? "0"; kpi.Reqem = false; }
+        if (xam.Setirler.Count == 1)
+        {
+            var row = xam.Setirler[0];
+            var cell = row.Length > 0 ? row[^1] : null;
+            var ed = Eded(cell);
+            if (ed.HasValue) kpi.Deyer = ed.Value.ToString("#,0.##", CultureInfo.InvariantCulture);
+            else { kpi.Deyer = cell?.ToString() ?? "0"; kpi.Reqem = false; }
+        }
+        else
+        {
+            kpi.Deyer = xam.Setirler.Count.ToString("#,0", CultureInfo.InvariantCulture) + (kesildi ? "+" : "");
+        }
         return kpi;
     }
 
@@ -125,7 +135,12 @@ public class RiskService : IRiskService
             // Açıq TAG varsa — ona güvən
             if (tip == "KPI")
             {
-                try { panel.Kpiler.Add(KpiQur(s.Id, s.SorguAdi, alt, await _oracle.SelectXamAsync(s.SorguMetni!, 2))); }
+                try
+                {
+                    // count sorğusu → 1 sətir; detal siyahı → çox sətir (kart sayı göstərir)
+                    var xam = await _oracle.SelectXamAsync(s.SorguMetni!, KpiCap);
+                    panel.Kpiler.Add(KpiQur(s.Id, s.SorguAdi, alt, xam, xam.Setirler.Count >= KpiCap));
+                }
                 catch (Exception ex) { panel.Kpiler.Add(new RiskKpiDto { Id = s.Id, Ad = s.SorguAdi, Alt = alt, Xeta = ex.Message }); }
                 continue;
             }
