@@ -17,10 +17,10 @@ public class DashboardController : Controller
         _service = service;
     }
 
-    // Risk hesabatlarının siyahısı (kartlar)
+    // Risk dashboard: KPI kartları + qrafiklər + hesabat kartları
     public async Task<IActionResult> Index()
     {
-        var model = await _service.HesabatlarAsync();
+        var model = await _service.PanelAsync();
         return View(model);
     }
 
