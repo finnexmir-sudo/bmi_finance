@@ -63,6 +63,7 @@
         if (currentArea == "SenedDovriyyesi") return "umumi";
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentArea == "Emeliyyat") return "emeliyyat";
+        if (currentArea == "Risk") return "risk";
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController is "KreditMuraciet" or "KreditMuqavile") return "kredit";
         if (currentController is "PidSms" or "MehkemeIsi" or "OdenisNezareti" or "MehkemeCedvel") return "pid";
@@ -234,6 +235,14 @@
                         <div>
                             <div class="fn-topnav-dd-title">Əməliyyat</div>
                             <div class="fn-topnav-dd-sub">Pul köçürməsi — həvalələr</div>
+                        </div>
+                    </a>
+                    <a asp-area="Risk" asp-controller="Dashboard" asp-action="Index"
+                       class="fn-topnav-dd-item @(activeModule == "risk" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">Risk</div>
+                            <div class="fn-topnav-dd-sub">Risk / AML hesabatları</div>
                         </div>
                     </a>
                 </div>
@@ -1125,6 +1134,16 @@
                     <a asp-area="Emeliyyat" asp-controller="TelebeKocurme" asp-action="Index"
                        class="fn-nav-item @(currentController == "TelebeKocurme" ? "active" : "")">
                         <i class="bi bi-mortarboard"></i> Tələbə köçürməsi
+                    </a>
+                }
+                break;
+
+            case "risk":
+                {
+                    <div class="fn-nav-label">Risk Departamenti</div>
+                    <a asp-area="Risk" asp-controller="Dashboard" asp-action="Index"
+                       class="fn-nav-item @(currentAction == "Index" ? "active" : "")">
+                        <i class="bi bi-grid"></i> Hesabatlar
                     </a>
                 }
                 break;

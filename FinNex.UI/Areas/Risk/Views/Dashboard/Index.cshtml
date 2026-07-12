@@ -1,0 +1,68 @@
+@model IList<RiskHesabatDto>
+@{
+    ViewData["Title"] = "Risk Departamenti";
+}
+
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Risk Departamenti</div>
+            <div class="fn-page-sub">Risk / AML hesabatları — real vaxt</div>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rk-alert rk-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="fn-card">
+            <div class="rk-empty">
+                <i class="bi bi-clipboard-data"></i>
+                <div>Hələ risk hesabatı yoxdur.</div>
+                <div class="rk-empty-sub">Admin paneldə <b>Oracle Sorğular</b>-a sorğu əlavə edib <b>"Risk"</b> departamentinə təyin edin — burada avtomatik görünəcək.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="rk-grid">
+            @foreach (var h in Model)
+            {
+                <a asp-action="Hesabat" asp-route-id="@h.Id" class="rk-card">
+                    <div class="rk-ic"><i class="bi bi-shield-check"></i></div>
+                    <div class="rk-body">
+                        <div class="rk-title">@h.Ad</div>
+                        @if (!string.IsNullOrWhiteSpace(h.Mahiyyet))
+                        {
+                            <div class="rk-sub">@h.Mahiyyet</div>
+                        }
+                    </div>
+                    <i class="bi bi-chevron-right rk-arrow"></i>
+                </a>
+            }
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .rk-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
+        .rk-card { display:flex; align-items:center; gap:14px; padding:16px 18px; background:#fff; border:1px solid #eef2f7;
+            border-radius:14px; text-decoration:none; transition:.15s; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+        .rk-card:hover { border-color:#fecaca; box-shadow:0 10px 26px rgba(220,38,38,.10); transform:translateY(-2px); }
+        .rk-ic { width:44px; height:44px; border-radius:11px; background:#fef2f2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+        .rk-body { flex:1; min-width:0; }
+        .rk-title { font-size:14px; font-weight:700; color:#0f172a; }
+        .rk-sub { font-size:12px; color:#64748b; margin-top:2px; }
+        .rk-arrow { color:#cbd5e1; }
+        .rk-empty { text-align:center; padding:40px 20px; color:#64748b; }
+        .rk-empty i { font-size:34px; color:#cbd5e1; }
+        .rk-empty > div { margin-top:8px; }
+        .rk-empty-sub { font-size:12px; color:#94a3b8; max-width:520px; margin:6px auto 0; }
+        .rk-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .rk-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+    </style>
+}
