@@ -1,4 +1,5 @@
 using System.Globalization;
+using FinNex.Application.DTOs.Oracle;
 using FinNex.Application.DTOs.Risk;
 using FinNex.Application.Interfaces.Oracle;
 using FinNex.Application.Interfaces.Risk;
@@ -66,7 +67,40 @@ public class RiskService : IRiskService
         return null;
     }
 
-    // Dashboard paneli: KPI kartları + qrafiklər + adi hesabat kartları
+    // Etiket "YYYY-MM" formatındadırmı? (zaman seriyası → line)
+    private static bool AyEtiketi(string? s)
+        => s != null && s.Length == 7 && s[4] == '-'
+           && char.IsDigit(s[0]) && char.IsDigit(s[1]) && char.IsDigit(s[2]) && char.IsDigit(s[3])
+           && char.IsDigit(s[5]) && char.IsDigit(s[6]);
+
+    // KPI kartını qurur (tək rəqəm — sorğunun ilk sətrinin sonuncu sütunu)
+    private RiskKpiDto KpiQur(int id, string ad, string? alt, OracleNetice xam)
+    {
+        var kpi = new RiskKpiDto { Id = id, Ad = ad, Alt = alt };
+        if (xam.Setirler.Count == 0) { kpi.Deyer = "0"; return kpi; }
+        var row = xam.Setirler[0];
+        var cell = row.Length > 0 ? row[^1] : null;
+        var ed = Eded(cell);
+        if (ed.HasValue) kpi.Deyer = ed.Value.ToString("#,0.##", CultureInfo.InvariantCulture);
+        else { kpi.Deyer = cell?.ToString() ?? "0"; kpi.Reqem = false; }
+        return kpi;
+    }
+
+    // Qrafik DTO-sunu qurur (sütun0 = etiket, sonuncu sütun = dəyər)
+    private RiskChartDto ChartQur(int id, string ad, string tip, OracleNetice xam)
+    {
+        var ch = new RiskChartDto { Id = id, Ad = ad, Tip = tip };
+        foreach (var row in xam.Setirler.Take(50))
+        {
+            ch.Etiketler.Add(row.Length > 0 ? (row[0]?.ToString() ?? "") : "");
+            ch.Deyerler.Add(Eded(row.Length > 1 ? row[^1] : null) ?? 0m);
+        }
+        return ch;
+    }
+
+    // Dashboard paneli: KPI kartları + qrafiklər + adi hesabat kartları.
+    // Tag ([KPI]/[PIE]/[BAR]/[LINE]) varsa ona görə; yoxdursa parametrsiz sorğu
+    // nəticəsinin FORMASINA görə AVTOMATİK təsnif olunur (1 rəqəm→KPI, 2 sütun→qrafik).
     public async Task<RiskPanelDto> PanelAsync(int maxRows = 5000)
     {
         var panel = new RiskPanelDto();
@@ -79,52 +113,56 @@ public class RiskService : IRiskService
         foreach (var s in list)
         {
             var (tip, alt) = TagOxu(s.Mahiyyet);
-            // widget yalnız parametrsiz sorğudan qurula bilər (auto-icra üçün)
             var tokenli = s.SorguMetni?.Contains('{') ?? false;
-            if (tip == null || tokenli)
+
+            // Parametrli (token-li) sorğu widget ola bilməz — dəyər girişi lazımdır
+            if (tokenli)
             {
                 panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = s.Mahiyyet });
                 continue;
             }
 
+            // Açıq TAG varsa — ona güvən
             if (tip == "KPI")
             {
-                var kpi = new RiskKpiDto { Id = s.Id, Ad = s.SorguAdi, Alt = alt };
-                try
-                {
-                    var xam = await _oracle.SelectXamAsync(s.SorguMetni!, 2);
-                    if (xam.Setirler.Count == 0)
-                    {
-                        kpi.Deyer = "0";
-                    }
-                    else
-                    {
-                        var row = xam.Setirler[0];
-                        var cell = row.Length > 0 ? row[^1] : null;
-                        var ed = Eded(cell);
-                        if (ed.HasValue)
-                            kpi.Deyer = ed.Value.ToString("#,0.##", CultureInfo.InvariantCulture);
-                        else { kpi.Deyer = cell?.ToString() ?? "0"; kpi.Reqem = false; }
-                    }
-                }
-                catch (Exception ex) { kpi.Xeta = ex.Message; }
-                panel.Kpiler.Add(kpi);
+                try { panel.Kpiler.Add(KpiQur(s.Id, s.SorguAdi, alt, await _oracle.SelectXamAsync(s.SorguMetni!, 2))); }
+                catch (Exception ex) { panel.Kpiler.Add(new RiskKpiDto { Id = s.Id, Ad = s.SorguAdi, Alt = alt, Xeta = ex.Message }); }
+                continue;
             }
-            else // PIE / BAR / LINE
+            if (tip is "PIE" or "BAR" or "LINE")
             {
-                var ch = new RiskChartDto { Id = s.Id, Ad = s.SorguAdi, Tip = tip.ToLowerInvariant() };
-                try
-                {
-                    var xam = await _oracle.SelectXamAsync(s.SorguMetni!, maxRows);
-                    foreach (var row in xam.Setirler.Take(50))
-                    {
-                        ch.Etiketler.Add(row.Length > 0 ? (row[0]?.ToString() ?? "") : "");
-                        ch.Deyerler.Add(Eded(row.Length > 1 ? row[^1] : null) ?? 0m);
-                    }
-                }
-                catch (Exception ex) { ch.Xeta = ex.Message; }
-                panel.Qrafikler.Add(ch);
+                try { panel.Qrafikler.Add(ChartQur(s.Id, s.SorguAdi, tip.ToLowerInvariant(), await _oracle.SelectXamAsync(s.SorguMetni!, maxRows))); }
+                catch (Exception ex) { panel.Qrafikler.Add(new RiskChartDto { Id = s.Id, Ad = s.SorguAdi, Xeta = ex.Message }); }
+                continue;
             }
+
+            // TAG YOXDUR — nəticənin formasına görə avtomatik təsnif et
+            OracleNetice xam;
+            try { xam = await _oracle.SelectXamAsync(s.SorguMetni!, 51); }
+            catch { panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = s.Mahiyyet }); continue; }
+
+            var setirSay = xam.Setirler.Count;
+            var sutunSay = xam.Sutunlar.Count;
+
+            // 1 sətir + sonuncu xana rəqəm → KPI
+            if (setirSay == 1 && Eded(xam.Setirler[0].Length > 0 ? xam.Setirler[0][^1] : null).HasValue)
+            {
+                panel.Kpiler.Add(KpiQur(s.Id, s.SorguAdi, s.Mahiyyet, xam));
+                continue;
+            }
+
+            // 2 sütun, 2..50 sətir, dəyər sütunu rəqəm → qrafik
+            if (sutunSay == 2 && setirSay >= 2 && setirSay <= 50
+                && xam.Setirler.All(r => Eded(r.Length > 1 ? r[1] : null).HasValue))
+            {
+                var hamsiAy = xam.Setirler.All(r => AyEtiketi(r.Length > 0 ? r[0]?.ToString() : null));
+                var avtoTip = hamsiAy ? "line" : (setirSay <= 6 ? "pie" : "bar");
+                panel.Qrafikler.Add(ChartQur(s.Id, s.SorguAdi, avtoTip, xam));
+                continue;
+            }
+
+            // Əks halda — adi hesabat kartı
+            panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = s.Mahiyyet });
         }
         return panel;
     }
