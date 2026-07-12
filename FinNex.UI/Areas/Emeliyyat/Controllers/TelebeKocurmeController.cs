@@ -74,27 +74,30 @@ public class TelebeKocurmeController : Controller
         return View("Yarat", dto);
     }
 
-    // Canlı 3 debet/kredit sətri (yadda saxlanmadan) — JSON
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult VoucherPreview(TelebeKocurmeCreateDto dto)
+    // Batch sətri (Excel üçün)
+    public class ExcelSetir
     {
-        var setirler = _service.SetirlerHesabla(dto);
-        return Json(setirler.Select(s => new { s.Debet, s.Kredit, Mebleg = s.Mebleg, s.Teyinat }));
+        public string? Debet { get; set; }
+        public string? Kredit { get; set; }
+        public decimal Mebleg { get; set; }
+        public string? Teyinat { get; set; }
     }
 
-    // Excel ixracı — muhasibat sətirləri (import üçün): D=debet, F=kredit, G=məbləğ, J=təyinat
-    public async Task<IActionResult> ExcelIxrac(int id)
+    // TƏLƏBƏ İMPORT şablonuna uyğun .xls qurur (başlıq + sətirlər)
+    private static byte[] TelebeExcel(IEnumerable<ExcelSetir> setirler)
     {
-        var m = await _service.DetalAsync(id);
-        if (m == null) { TempData["Error"] = "Qeyd tapılmadı."; return RedirectToAction(nameof(Index)); }
-
         var wb = new HSSFWorkbook();
         var sh = wb.CreateSheet("TƏLƏBƏ İMPORT");
-        for (int i = 0; i < m.Setirler.Count; i++)
+        var hdr = sh.CreateRow(0);
+        string[] basliqlar = { "Sənədin\n№", "Əməliyyat\nkodu", "SHD", "Debet", "SHK",
+                               "Kredit", "Məbləğ", "Operation\ncode", "Ölkə\nkodu", "Qeyd" };
+        for (int c = 0; c < basliqlar.Length; c++)
+            hdr.CreateCell(c).SetCellValue(basliqlar[c]);
+
+        int i = 0;
+        foreach (var s in setirler)
         {
-            var r = sh.CreateRow(i + 1);                 // 2-ci sətirdən
-            var s = m.Setirler[i];
+            var r = sh.CreateRow(++i);                     // 2-ci sətirdən
             r.CreateCell(3).SetCellValue(s.Debet ?? "");   // D
             r.CreateCell(5).SetCellValue(s.Kredit ?? "");  // F
             r.CreateCell(6).SetCellValue((double)s.Mebleg);// G
@@ -102,8 +105,42 @@ public class TelebeKocurmeController : Controller
         }
         using var ms = new MemoryStream();
         wb.Write(ms, true);
-        var ad = $"Telebe_{(m.HevaleNo ?? id.ToString()).Replace("/", "-")}.xls";
-        return File(ms.ToArray(), "application/vnd.ms-excel", ad);
+        return ms.ToArray();
+    }
+
+    // "Əlavə et" — tələbəni DB-yə yazır (jurnal) və 3 muhasibat sətrini qaytarır (batch üçün)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Elave(TelebeKocurmeCreateDto dto)
+    {
+        var res = await _service.YaratAsync(dto, GetUserId());
+        if (!res.Success)
+            return Json(new { ok = false, message = res.Message });
+
+        var setirler = _service.SetirlerHesabla(dto)
+            .Select(s => new { s.Debet, s.Kredit, Mebleg = s.Mebleg, s.Teyinat });
+        return Json(new { ok = true, message = res.Message, hevaleNo = dto.HevaleNo, setirler });
+    }
+
+    // Batch Excel — akkumulyasiya olunmuş bütün sətirləri bir fayla yazır
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ExcelBatch(string data)
+    {
+        var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var rows = System.Text.Json.JsonSerializer.Deserialize<List<ExcelSetir>>(data ?? "[]", opts) ?? new();
+        var bytes = TelebeExcel(rows);
+        return File(bytes, "application/vnd.ms-excel", "TELEBE_IMPORT.xls");
+    }
+
+    // Tək qeydin Excel ixracı (Detal-dan)
+    public async Task<IActionResult> ExcelIxrac(int id)
+    {
+        var m = await _service.DetalAsync(id);
+        if (m == null) { TempData["Error"] = "Qeyd tapılmadı."; return RedirectToAction(nameof(Index)); }
+        var setirler = m.Setirler.Select(s => new ExcelSetir { Debet = s.Debet, Kredit = s.Kredit, Mebleg = s.Mebleg, Teyinat = s.Teyinat });
+        var bytes = TelebeExcel(setirler);
+        return File(bytes, "application/vnd.ms-excel", $"Telebe_{(m.HevaleNo ?? id.ToString()).Replace("/", "-")}.xls");
     }
 
     public async Task<IActionResult> Detal(int id)

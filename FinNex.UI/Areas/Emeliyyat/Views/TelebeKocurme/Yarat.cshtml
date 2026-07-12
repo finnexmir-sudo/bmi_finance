@@ -1,65 +1,69 @@
 @model TelebeKocurmeCreateDto
 @{
-    ViewData["Title"] = "Yeni tələbə köçürməsi";
+    ViewData["Title"] = "Tələbə köçürməsi";
+    var tekrar = ViewBag.Tekrar == true;
 }
 
 <div class="fn-page fn-tint">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">@(ViewBag.Tekrar == true ? "Təkrar" : "Yeni") tələbə köçürməsi</div>
-            <div class="fn-page-sub">
-                @if (ViewBag.Tekrar == true)
-                {
-                    <span>Əvvəlki qeydin məlumatı dolduruldu — Həvalə № yaz və göndər.</span>
-                }
-                else
-                {
-                    <span>Qeyd yaradıldıqda 3 debet/kredit muhasibat sətri hesablanır</span>
-                }
-            </div>
+            <div class="fn-page-title">@(tekrar ? "Təkrar" : "Yeni") tələbə köçürməsi</div>
+            <div class="fn-page-sub">Hər tələbəni <b>Əlavə et</b> — 3 muhasibat sətri aşağıda yığılır; sonda <b>Excelə at</b></div>
         </div>
         <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="dm-alert dm-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
-    }
+    <div class="dm-alert dm-alert--err" id="tkErr" style="display:none"><i class="bi bi-x-octagon"></i> <span></span></div>
+    <div class="dm-alert dm-alert--ok" id="tkOk" style="display:none"><i class="bi bi-check-circle"></i> <span></span></div>
 
     <div class="fn-card">
-        <form asp-action="Yarat" method="post" id="tkForm">
+        <form id="tkForm">
             @Html.AntiForgeryToken()
             <partial name="_Form" model="Model" />
-
-            <div style="margin-top:18px;border-top:1px solid #eef2f7;padding-top:16px">
-                <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:10px"><i class="bi bi-list-columns"></i> Debet / Kredit sətirləri (canlı)</div>
-                <div class="dm-twrap">
-                    <table class="pv-table">
-                        <thead><tr><th>Debet</th><th>Kredit</th><th class="pv-r">Məbləğ</th><th>Təyinat</th></tr></thead>
-                        <tbody id="tkVoucher"><tr><td colspan="4" class="pv-empty">Məbləğ və kursları doldurduqca sətirlər burada hesablanır…</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
             <div class="dm-actions">
-                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-save"></i> Qeydə al</button>
-                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                <button type="button" id="tkElave" class="fn-btn fn-btn--primary"><i class="bi bi-plus-lg"></i> Əlavə et</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Bağla</a>
             </div>
         </form>
     </div>
+
+    <div class="fn-card" style="margin-top:16px">
+        <div class="tkl-head">
+            <div class="tkl-title"><i class="bi bi-list-columns"></i> Yığılmış sətirlər (<span id="tkCount">0</span>)</div>
+            <div style="display:flex;gap:8px">
+                <button type="button" id="tkExcel" class="fn-btn fn-btn--primary"><i class="bi bi-file-earmark-excel"></i> Excelə at</button>
+                <button type="button" id="tkTemizle" class="fn-btn fn-btn--outline"><i class="bi bi-eraser"></i> Siyahını təmizlə</button>
+            </div>
+        </div>
+        <div class="dm-twrap">
+            <table class="pv-table">
+                <thead><tr><th>Debet</th><th>Kredit</th><th class="pv-r">Məbləğ</th><th>Təyinat</th><th></th></tr></thead>
+                <tbody id="tkList"><tr><td colspan="5" class="pv-empty">Hələ sətir yığılmayıb — tələbə məlumatını doldurub "Əlavə et"ə klikləyin.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <form id="tkExcelForm" asp-action="ExcelBatch" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="data" id="tkExcelData" />
+    </form>
 </div>
 
 @section Styles {
     <partial name="_FormStyles" />
     <style>
         .dm-twrap { overflow-x:auto; }
+        .tkl-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+        .tkl-title { font-size:13px; font-weight:700; color:#334155; }
         .pv-table { width:100%; border-collapse:collapse; font-size:13px; }
         .pv-table thead th { background:#f1f5f9; color:#475569; font-weight:600; font-size:12px; text-align:left; padding:9px 12px; border-bottom:1px solid #e2e8f0; }
         .pv-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; color:#1e293b; vertical-align:top; }
         .pv-r { text-align:right; }
         .pv-mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; white-space:nowrap; }
-        .pv-tey { font-size:12px; color:#475569; min-width:260px; }
+        .pv-tey { font-size:12px; color:#475569; min-width:240px; }
         .pv-empty { text-align:center; color:#94a3b8; padding:18px; font-size:12px; }
+        .tkl-del { border:none; background:none; color:#dc2626; cursor:pointer; font-size:14px; }
+        .tkl-grp td { border-top:2px solid #e2e8f0; }
     </style>
 }
 
@@ -67,26 +71,84 @@
     <script>
         (function () {
             var form = document.getElementById('tkForm');
-            var tbody = document.getElementById('tkVoucher');
-            if (!form || !tbody) return;
-            var url = '@Url.Action("VoucherPreview")';
-            var t;
+            var elaveBtn = document.getElementById('tkElave');
+            var list = document.getElementById('tkList');
+            var countEl = document.getElementById('tkCount');
+            var excelBtn = document.getElementById('tkExcel');
+            var temizleBtn = document.getElementById('tkTemizle');
+            var excelForm = document.getElementById('tkExcelForm');
+            var excelData = document.getElementById('tkExcelData');
+            var errBox = document.getElementById('tkErr');
+            var okBox = document.getElementById('tkOk');
+            if (!form) return;
+
+            var qruplar = [];  // hər əlavə = {hevale, setirler:[...]}
+
             function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
             function fmt(n) { return (Number(n) || 0).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-            function render(rows) {
-                if (!rows || !rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="pv-empty">Sətirlər hesablanmadı.</td></tr>'; return; }
-                tbody.innerHTML = rows.map(function (r) {
-                    return '<tr><td class="pv-mono">' + esc(r.debet) + '</td><td class="pv-mono">' + esc(r.kredit) +
-                        '</td><td class="pv-r pv-mono">' + fmt(r.mebleg) + '</td><td class="pv-tey">' + esc(r.teyinat) + '</td></tr>';
-                }).join('');
+            function mesaj(box, text) { box.querySelector('span').textContent = text; box.style.display = 'flex'; setTimeout(function () { box.style.display = 'none'; }, 4000); }
+
+            function render() {
+                var say = 0;
+                qruplar.forEach(function (g) { say += g.setirler.length; });
+                countEl.textContent = say;
+                if (!qruplar.length) {
+                    list.innerHTML = '<tr><td colspan="5" class="pv-empty">Hələ sətir yığılmayıb — tələbə məlumatını doldurub "Əlavə et"ə klikləyin.</td></tr>';
+                    return;
+                }
+                var html = '';
+                qruplar.forEach(function (g, gi) {
+                    g.setirler.forEach(function (r, ri) {
+                        html += '<tr' + (ri === 0 ? ' class="tkl-grp"' : '') + '><td class="pv-mono">' + esc(r.debet) +
+                            '</td><td class="pv-mono">' + esc(r.kredit) + '</td><td class="pv-r pv-mono">' + fmt(r.mebleg) +
+                            '</td><td class="pv-tey">' + esc(r.teyinat) + '</td><td>' +
+                            (ri === 0 ? '<button type="button" class="tkl-del" data-gi="' + gi + '" title="Bu tələbəni siyahıdan sil"><i class="bi bi-x-lg"></i></button>' : '') +
+                            '</td></tr>';
+                    });
+                });
+                list.innerHTML = html;
+                list.querySelectorAll('.tkl-del').forEach(function (b) {
+                    b.addEventListener('click', function () { qruplar.splice(parseInt(b.getAttribute('data-gi')), 1); render(); });
+                });
             }
-            function yenile() {
-                var fd = new FormData(form);
-                fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(function (r) { return r.ok ? r.json() : []; }).then(render).catch(function () { });
+
+            function temizleForm() {
+                ['Adi', 'Passport', 'Mebleg', 'HevaleNo', 'RefNo'].forEach(function (n) {
+                    var el = form.querySelector('[name="' + n + '"]'); if (el) el.value = '';
+                });
+                var mk = document.getElementById('tkKomissiya'); if (mk) mk.textContent = '—';
+                var ad = form.querySelector('[name="Adi"]'); if (ad) ad.focus();
             }
-            form.addEventListener('input', function () { clearTimeout(t); t = setTimeout(yenile, 350); });
-            setTimeout(yenile, 300);
+
+            elaveBtn.addEventListener('click', function () {
+                elaveBtn.disabled = true;
+                fetch('@Url.Action("Elave")', { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        elaveBtn.disabled = false;
+                        if (!d.ok) { mesaj(errBox, d.message || 'Xəta baş verdi'); return; }
+                        qruplar.push({ hevale: d.hevaleNo, setirler: d.setirler || [] });
+                        render();
+                        mesaj(okBox, d.message || 'Əlavə olundu');
+                        temizleForm();
+                    })
+                    .catch(function () { elaveBtn.disabled = false; mesaj(errBox, 'Şəbəkə xətası'); });
+            });
+
+            excelBtn.addEventListener('click', function () {
+                var hami = [];
+                qruplar.forEach(function (g) { g.setirler.forEach(function (r) { hami.push(r); }); });
+                if (!hami.length) { mesaj(errBox, 'Siyahı boşdur — əvvəlcə tələbə əlavə edin'); return; }
+                excelData.value = JSON.stringify(hami);
+                excelForm.submit();
+            });
+
+            temizleBtn.addEventListener('click', function () {
+                if (qruplar.length && !confirm('Yığılmış siyahını təmizləmək istəyirsiniz?')) return;
+                qruplar = []; render();
+            });
+
+            render();
         })();
     </script>
 }
