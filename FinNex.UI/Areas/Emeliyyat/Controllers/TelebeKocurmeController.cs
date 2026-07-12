@@ -40,7 +40,6 @@ public class TelebeKocurmeController : Controller
             Tarix = DateTime.Today,
             AlanBank = "Kapital",
             XH = 0.1m,
-            Kurs = 1.68m,
             Hes35025 = h35025,
             Hes45023 = h45023,
             Hes45011 = h45011,

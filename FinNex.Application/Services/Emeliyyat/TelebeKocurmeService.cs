@@ -98,7 +98,7 @@ public class TelebeKocurmeService : ITelebeKocurmeService
             AlanBank    = string.IsNullOrWhiteSpace(dto.AlanBank) ? "Kapital" : dto.AlanBank,
             TelebeKursu = dto.TelebeKursu,
             XH          = dto.XH ?? 0.1m,
-            Kurs        = dto.Kurs ?? 1.68m,
+            Kurs        = dto.Kurs,
             Hes35025    = string.IsNullOrWhiteSpace(dto.Hes35025) ? h35025 : dto.Hes35025,
             Hes45023    = string.IsNullOrWhiteSpace(dto.Hes45023) ? h45023 : dto.Hes45023,
             Hes45011    = string.IsNullOrWhiteSpace(dto.Hes45011) ? h45011 : dto.Hes45011,
@@ -161,7 +161,7 @@ public class TelebeKocurmeService : ITelebeKocurmeService
             AlanBank    = string.IsNullOrWhiteSpace(dto.AlanBank) ? "Kapital" : dto.AlanBank.Trim(),
             TelebeKursu = dto.TelebeKursu?.Trim(),
             XH          = dto.XH ?? 0.1m,
-            Kurs        = dto.Kurs ?? 1.68m,
+            Kurs        = dto.Kurs,
             Hes35025    = string.IsNullOrWhiteSpace(dto.Hes35025) ? h35025 : dto.Hes35025.Trim(),
             Hes45023    = string.IsNullOrWhiteSpace(dto.Hes45023) ? h45023 : dto.Hes45023.Trim(),
             Hes45011    = string.IsNullOrWhiteSpace(dto.Hes45011) ? h45011 : dto.Hes45011.Trim(),
@@ -254,7 +254,7 @@ public class TelebeKocurmeService : ITelebeKocurmeService
         e.AlanBank    = string.IsNullOrWhiteSpace(dto.AlanBank) ? "Kapital" : dto.AlanBank.Trim();
         e.TelebeKursu = dto.TelebeKursu?.Trim();
         e.XH          = dto.XH ?? 0.1m;
-        e.Kurs        = dto.Kurs ?? 1.68m;
+        e.Kurs        = dto.Kurs;
         e.Hes35025    = dto.Hes35025?.Trim();
         e.Hes45023    = dto.Hes45023?.Trim();
         e.Hes45011    = dto.Hes45011?.Trim();
