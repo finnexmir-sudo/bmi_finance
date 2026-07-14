@@ -331,7 +331,9 @@ order by olke, r.name_regnom;
    (day_uderproc = ödəniş günü, DPD DEYİL!). Birləşmə: licschpkre + subschkre.
    Sütunlar: date_open=verilmə, date_planclose=son ödəmə, summakre=verilmiş,
    summa=cari qalıq. Müştəri: substr(licschkre,10,6) = r.regnom.
-   Mənbə məntiqi: sənin master kredit sorğun (məbləğ ×100-SUZ — real manat).
+   MANATA ÇEVİRMƏ (bazada xam rəqəm valyutadadır — hazır metod):
+       məbləğ * round(odb.func_get_kurval(substr(licschkre,6,2), tarix), 6)
+       (substr(...,6,2)=valyuta kodu; AZN üçün kurs=1). ×100 YOX — o köhnə IT qalığı idi.
    DİQQƏT: default həddi (90 gün) bazanda yoxlanmalıdır. */
 
 
@@ -345,36 +347,32 @@ order by olke, r.name_regnom;
    QEYD     : əgər həftəsonu/bayram günü boş qaytarsa (o gün snapshot yoxdursa),
              to_date(sysdate) yerinə son iş gününü işlət (aşağıdakı [ALT] blok).
 --------------------------------------------------------------------------- */
-select extract(year from lk.date_open)                                verilme_ili,
-       count(*)                                                       kredit_sayi,
-       round(sum(lk.summakre), 2)                                     verilmis_mebleg,
-       sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
-                then 1 else 0 end)                                    default_say,
-       round(100 * sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
-                            then lk.summakre else 0 end)
-             / nullif(sum(lk.summakre), 0), 2)                        default_faizi
-from   odb.licschkre lk, view_nacpogprokre_all x
-where  lk.licschpkre = x.licschpkre
-  and  lk.subschkre  = x.subschkre
-  and  x.date_oper   = to_date(sysdate)
-  and  lk.date_close is null
-  and  length(lk.licschkre) = 20
-group by extract(year from lk.date_open)
-order by verilme_ili;
+with kr as (
+  select extract(year from lk.date_open)                                              il,
+         lk.summakre * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6)  meb_azn,
+         odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))             gec_gun
+  from   odb.licschkre lk, view_nacpogprokre_all x
+  where  lk.licschpkre = x.licschpkre
+    and  lk.subschkre  = x.subschkre
+    and  x.date_oper   = to_date(sysdate)
+    and  lk.date_close is null
+    and  length(lk.licschkre) = 20
+)
+select il                                                    verilme_ili,
+       count(*)                                              kredit_sayi,
+       round(sum(meb_azn), 2)                                verilmis_mebleg,
+       sum(case when gec_gun >= 90 then 1 else 0 end)        default_say,
+       round(100 * sum(case when gec_gun >= 90 then meb_azn else 0 end)
+             / nullif(sum(meb_azn), 0), 2)                   default_faizi
+from   kr
+group by il
+order by il;
 
-/* [ALT] Həftəsonu/bayramda da işləsin deyə — son iş günü snapshot-u (master
-   sorğundakı calendar məntiqi). Yuxarıdakı boş qaytarsa bunu işlət:
-   select extract(year from lk.date_open) verilme_ili, count(*) kredit_sayi,
-          round(sum(lk.summakre),2) verilmis_mebleg,
-          sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90 then 1 else 0 end) default_say,
-          round(100*sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90 then lk.summakre else 0 end)
-                /nullif(sum(lk.summakre),0),2) default_faizi
-   from odb.licschkre lk, view_nacpogprokre_all x
-   where lk.licschpkre=x.licschpkre and lk.subschkre=x.subschkre
-     and x.date_oper=(select max(c.date_oper) from calendar c
-                      where (c.space_or_star is null or c.space_or_star<>'*') and c.date_oper<=sysdate)
-     and lk.date_close is null and length(lk.licschkre)=20
-   group by extract(year from lk.date_open) order by verilme_ili; */
+/* [ALT] Həftəsonu/bayramda da işləsin deyə — son iş günü snapshot-u (calendar).
+   Yuxarıdakı boş qaytarsa to_date(sysdate)-i bununla əvəz et (2 yerdə):
+       (select max(c.date_oper) from calendar c
+         where (c.space_or_star is null or c.space_or_star<>'*') and c.date_oper<=sysdate)
+   — həm x.date_oper filtrində, həm func_get_kurval-ın tarix arqumentində. */
 
 
 /* ── 17 ────────────────────────────────────────────────────────────────────
@@ -384,17 +382,20 @@ order by verilme_ili;
    QEYD    : cari licschkre; date_planclose = son ödəmə. Əgər licschkre-də
              date_planclose/procstavkre yoxdursa, mənə de, uyğunlaşdırım.
 --------------------------------------------------------------------------- */
-select lk.licschkre                              hesab,
-       r.name_regnom                             musteri,
-       round(lk.summa, 2)                        qaliq,
-       lk.date_planclose                         son_odeme,
-       round(lk.date_planclose - trunc(sysdate)) qalan_gun,
-       lk.procstavkre                            faiz
-from   odb.licschkre lk, regnom r
-where  substr(lk.licschkre, 10, 6) = r.regnom
-  and  length(lk.licschkre) = 20
-  and  lk.date_close is null
-  and  lk.summa > 0
-  and  lk.date_planclose between trunc(sysdate) and {SONTARIX}
-  and  lk.summa >= {HEDD}
-order by lk.summa desc;
+with kr as (
+  select lk.licschkre                                                                    hesab,
+         r.name_regnom                                                                   musteri,
+         round(lk.summa * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  qaliq,
+         lk.date_planclose                                                               son_odeme,
+         round(lk.date_planclose - trunc(sysdate))                                       qalan_gun,
+         lk.procstavkre                                                                  faiz
+  from   odb.licschkre lk, regnom r
+  where  substr(lk.licschkre, 10, 6) = r.regnom
+    and  length(lk.licschkre) = 20
+    and  lk.date_close is null
+    and  lk.summa > 0
+    and  lk.date_planclose between trunc(sysdate) and {SONTARIX}
+)
+select * from kr
+where  qaliq >= {HEDD}
+order by qaliq desc;
