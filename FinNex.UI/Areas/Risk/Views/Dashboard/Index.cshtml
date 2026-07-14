@@ -134,21 +134,21 @@
 
         /* Hero */
         .rk-hero { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;
-            padding:24px 26px; border-radius:20px; margin-bottom:20px; color:#fff; position:relative; overflow:hidden;
+            padding:15px 20px; border-radius:15px; margin-bottom:13px; color:#fff; position:relative; overflow:hidden;
             background:radial-gradient(1200px 300px at 90% -40%, rgba(255,255,255,.18), transparent 60%), linear-gradient(120deg,#7f1d1d,#dc2626 55%,#ef4444); box-shadow:0 16px 40px rgba(185,28,28,.28); }
         .rk-hero::after { content:""; position:absolute; right:-40px; top:-40px; width:220px; height:220px; border-radius:50%;
             background:rgba(255,255,255,.08); }
         .rk-hero-badge { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; letter-spacing:.4px;
             text-transform:uppercase; background:rgba(255,255,255,.18); padding:5px 11px; border-radius:999px; }
-        .rk-hero-title { font-size:27px; font-weight:800; margin:10px 0 4px; letter-spacing:-.5px; }
+        .rk-hero-title { font-size:19px; font-weight:800; margin:6px 0 2px; letter-spacing:-.4px; }
         .rk-hero-sub { font-size:12.5px; opacity:.92; display:flex; align-items:center; gap:7px; }
         .rk-refresh { display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.16); color:#fff;
             border:1px solid rgba(255,255,255,.28); padding:9px 15px; border-radius:12px; font-size:13px; font-weight:600; text-decoration:none; transition:.15s; }
         .rk-refresh:hover { background:rgba(255,255,255,.28); color:#fff; }
 
         /* KPI */
-        .rk-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; margin-bottom:22px; }
-        .rk-kpi { display:block; padding:18px 20px; border-radius:18px; text-decoration:none; color:#fff; position:relative;
+        .rk-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:11px; margin-bottom:14px; }
+        .rk-kpi { display:block; padding:13px 15px; border-radius:13px; text-decoration:none; color:#fff; position:relative;
             overflow:hidden; box-shadow:0 10px 26px rgba(15,23,42,.12); transition:.18s; }
         .rk-kpi::after { content:""; position:absolute; right:-30px; bottom:-40px; width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,.10); }
         .rk-kpi:hover { transform:translateY(-3px); box-shadow:0 18px 38px rgba(15,23,42,.20); color:#fff; }
@@ -157,45 +157,45 @@
         .rk-kpi--2 { background:linear-gradient(135deg,#0ea5e9,#075985); }
         .rk-kpi--3 { background:linear-gradient(135deg,#7c3aed,#5b21b6); }
         .rk-kpi--4 { background:linear-gradient(135deg,#059669,#065f46); }
-        .rk-kpi-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-        .rk-kpi-ic { width:44px; height:44px; border-radius:13px; background:rgba(255,255,255,.20); display:flex;
-            align-items:center; justify-content:center; font-size:21px; backdrop-filter:blur(4px); }
-        .rk-kpi-cta { font-size:16px; opacity:.7; }
-        .rk-kpi-val { font-size:32px; font-weight:800; line-height:1; letter-spacing:-1px; position:relative; z-index:1; }
-        .rk-kpi-lbl { font-size:13.5px; font-weight:700; margin-top:8px; position:relative; z-index:1; }
-        .rk-kpi-alt { font-size:11.5px; opacity:.82; margin-top:2px; position:relative; z-index:1; }
+        .rk-kpi-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+        .rk-kpi-ic { width:36px; height:36px; border-radius:11px; background:rgba(255,255,255,.20); display:flex;
+            align-items:center; justify-content:center; font-size:17px; backdrop-filter:blur(4px); }
+        .rk-kpi-cta { font-size:15px; opacity:.7; }
+        .rk-kpi-val { font-size:24px; font-weight:800; line-height:1; letter-spacing:-.6px; position:relative; z-index:1; }
+        .rk-kpi-lbl { font-size:12px; font-weight:700; margin-top:5px; position:relative; z-index:1; }
+        .rk-kpi-alt { font-size:11px; opacity:.82; margin-top:2px; position:relative; z-index:1; }
         .rk-kpi-err { font-size:10.5px; background:rgba(0,0,0,.22); display:inline-flex; gap:4px; align-items:center; padding:2px 8px; border-radius:7px; margin-top:8px; position:relative; z-index:1; }
 
         /* Section title */
-        .rk-sec { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:800; color:#0f172a; margin:6px 0 14px; }
+        .rk-sec { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:800; color:#0f172a; margin:2px 0 10px; }
         .rk-sec-bar { width:4px; height:17px; border-radius:3px; background:linear-gradient(180deg,#dc2626,#ea580c); }
 
         /* Charts */
-        .rk-charts { display:grid; grid-template-columns:repeat(auto-fill,minmax(370px,1fr)); gap:16px; margin-bottom:24px; }
-        .rk-chartcard { background:#fff; border:1px solid #eef2f7; border-radius:18px; padding:18px 20px;
+        .rk-charts { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; margin-bottom:16px; }
+        .rk-chartcard { background:#fff; border:1px solid #eef2f7; border-radius:14px; padding:13px 16px;
             box-shadow:0 2px 10px rgba(15,23,42,.05); transition:.18s; }
         .rk-chartcard:hover { box-shadow:0 14px 32px rgba(15,23,42,.10); transform:translateY(-2px); }
-        .rk-chart-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+        .rk-chart-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; }
         .rk-chart-titlewrap { display:flex; align-items:center; gap:10px; min-width:0; }
-        .rk-chart-chip { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; color:#fff; flex-shrink:0; }
+        .rk-chart-chip { width:28px; height:28px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; flex-shrink:0; }
         .rk-acc-0 { background:linear-gradient(135deg,#dc2626,#b91c1c); }
         .rk-acc-1 { background:linear-gradient(135deg,#ea580c,#c2410c); }
         .rk-acc-2 { background:linear-gradient(135deg,#0ea5e9,#0369a1); }
         .rk-acc-3 { background:linear-gradient(135deg,#7c3aed,#5b21b6); }
         .rk-acc-4 { background:linear-gradient(135deg,#059669,#047857); }
         .rk-acc-5 { background:linear-gradient(135deg,#d946ef,#a21caf); }
-        .rk-chart-title { font-size:14px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .rk-chart-title { font-size:13px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .rk-chart-link { color:#cbd5e1; text-decoration:none; font-size:15px; flex-shrink:0; }
         .rk-chart-link:hover { color:#dc2626; }
-        .rk-canvas-wrap { position:relative; height:270px; }
-        .rk-canvas--pie { height:270px; }
+        .rk-canvas-wrap { position:relative; height:195px; }
+        .rk-canvas--pie { height:195px; }
 
         /* Report cards */
-        .rk-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
-        .rk-card { display:flex; align-items:center; gap:14px; padding:16px 18px; background:#fff; border:1px solid #eef2f7;
-            border-radius:14px; text-decoration:none; transition:.15s; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+        .rk-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:11px; }
+        .rk-card { display:flex; align-items:center; gap:12px; padding:12px 15px; background:#fff; border:1px solid #eef2f7;
+            border-radius:12px; text-decoration:none; transition:.15s; box-shadow:0 1px 2px rgba(15,23,42,.04); }
         .rk-card:hover { border-color:#fecaca; box-shadow:0 10px 26px rgba(220,38,38,.10); transform:translateY(-2px); }
-        .rk-ic { width:44px; height:44px; border-radius:11px; background:#fef2f2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+        .rk-ic { width:38px; height:38px; border-radius:10px; background:#fef2f2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
         .rk-body { flex:1; min-width:0; }
         .rk-title { font-size:14px; font-weight:700; color:#0f172a; }
         .rk-sub { font-size:12px; color:#64748b; margin-top:2px; }
