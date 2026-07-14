@@ -20,7 +20,9 @@
 
    AKTİV MÜŞTƏRİ təyini (bütün widget-lərdə):
        açıq hesab      : l.date_close_licsch is null
-       müştəri hesabı  : substr(l.licsch,1,1) in ('3','4')   (bank/texniki deyil)
+       müştəri hesabı  : substr(l.licsch,1,1) in ('2','3','4')
+                         (2=kredit, 3/4=cari hesab; bank/texniki deyil.
+                          Cari bağlı olsa da açıq krediti olan müştəri AKTİVdir.)
        real müştəri    : r.yurik=1 or r.fizik=1 or r.predprinimatel=1
 
    ┌─ ƏLAVƏ ETMƏ SİYAHISI ─────────────────────────────────────────────┐
@@ -52,7 +54,7 @@ select distinct r.regnom qeyd_no, r.name_regnom musteri, r.inn_regnom voen,
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
 order by r.name_regnom;
 
@@ -66,7 +68,7 @@ select distinct r.regnom qeyd_no, r.name_regnom musteri, r.inn_regnom voen,
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  r.nerezident = 1
 order by r.name_regnom;
@@ -82,7 +84,7 @@ select distinct r.regnom qeyd_no, r.name_regnom musteri, r.inn_regnom voen, r.pa
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  (r.insider = 1 or r.svazanniy = 1)
 order by r.name_regnom;
@@ -97,7 +99,7 @@ select l.licsch hesab, r.name_regnom musteri, r.inn_regnom voen, r.pincode fin,
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
 order by l.date_open_licsch desc;
 
@@ -117,7 +119,7 @@ select case when r.yurik = 1 then 'Hüquqi'
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
 group by case when r.yurik = 1 then 'Hüquqi'
               when r.predprinimatel = 1 then 'Sahibkar'
@@ -135,7 +137,7 @@ from   regnom r, licsch l, countrycode c
 where  r.regnom = l.registrac_nomer
   and  l.countrycode = c.code
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
 group by case when l.countrycode = 'GEO' then 'Gürcüstan' else c.name end
 order by say desc;
@@ -149,7 +151,7 @@ select to_char(l.date_open_licsch, 'YYYY-MM') ay, count(distinct l.licsch) say
 from   regnom r, licsch l
 where  r.regnom = l.registrac_nomer
   and  l.date_open_licsch >= add_months(trunc(sysdate, 'MM'), -11)
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
 group by to_char(l.date_open_licsch, 'YYYY-MM')
 order by ay;
@@ -165,7 +167,7 @@ select case when rs.name = '%%%%%%%%%%%%%%%%' then 'boş' else rs.name end risk,
 from   regnom r, licsch l, riskler rs
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  r.riskler = rs.code
 group by case when rs.name = '%%%%%%%%%%%%%%%%' then 'boş' else rs.name end
@@ -314,7 +316,7 @@ select distinct r.regnom qeyd_no, r.name_regnom ad,
 from   regnom r, licsch l, countrycode c
 where  r.regnom = l.registrac_nomer
   and  l.date_close_licsch is null
-  and  substr(l.licsch,1,1) in ('3','4')
+  and  substr(l.licsch,1,1) in ('2','3','4')
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  l.countrycode = c.code
 order by olke, r.name_regnom;
