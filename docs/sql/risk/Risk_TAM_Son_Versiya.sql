@@ -24,13 +24,12 @@
        real müştəri    : r.yurik=1 or r.fizik=1 or r.predprinimatel=1
 
    ┌─ ƏLAVƏ ETMƏ SİYAHISI ─────────────────────────────────────────────┐
-   │ DASHBOARD (1–9) — hamısını əlavə et                                │
-   │   1. [KPI] Aktiv müştərilər        6. [PIE] Müştəri tipi           │
-   │   2. [KPI] Qeyri-rezidentlər       7. [BAR] Ölkə üzrə müştərilər   │
-   │   3. [KPI] İnsayder / əlaqəli      8. [LINE] Son 12 ay açılan hes. │
-   │   4. [KPI] Açıq müştəri hesabları  9. [PIE] Risk səviyyəsi         │
-   │   5. [KPI] Ümumi müştərilər                                        │
-   │ HESABATLAR (10–16) — parametrli/detallı, istəyə görə              │
+   │ DASHBOARD (1–8) — hamısını əlavə et                                │
+   │   1. [KPI] Aktiv müştərilər        5. [PIE] Müştəri tipi           │
+   │   2. [KPI] Qeyri-rezidentlər       6. [BAR] Ölkə üzrə müştərilər   │
+   │   3. [KPI] İnsayder / əlaqəli      7. [LINE] Son 12 ay açılan hes. │
+   │   4. [KPI] Açıq müştəri hesabları  8. [PIE] Risk səviyyəsi         │
+   │ HESABATLAR (9–15) — parametrli/detallı, istəyə görə               │
    └───────────────────────────────────────────────────────────────────┘
 
    Cədvəllər: regnom, licsch, countrycode, riskler, arh_dd, fiziki_shexs,
@@ -39,7 +38,7 @@
 
 
 
-/* ####################  DASHBOARD — KPI KARTLARI (1–5)  #################### */
+/* ####################  DASHBOARD — KPI KARTLARI (1–4)  #################### */
 
 
 /* ── 1 ─────────────────────────────────────────────────────────────────────
@@ -103,24 +102,11 @@ where  r.regnom = l.registrac_nomer
 order by l.date_open_licsch desc;
 
 
+
+/* ####################  DASHBOARD — QRAFİKLƏR (5–8)  ###################### */
+
+
 /* ── 5 ─────────────────────────────────────────────────────────────────────
-   Ad      : Ümumi müştərilər
-   Mahiyyət: [KPI] real müştəri (aktiv+passiv, daxili qeydlər istisna)
-   Qeyd    : regnom-da bankın öz DAXİLİ qeydləri də var — count(*) mənasızdır.
-             Yalnız müştəri tipli (yurik/fizik/predprinimatel) sayılır;
-             daxili/texniki qeydlərdə bu bayraqlar olmadığı üçün düşür.
-             (#1 Aktiv müştərilərdən fərqi: bura hesabı bağlanmış keçmiş
-              müştərilər də daxildir. İstəməsən bunu ümumiyyətlə əlavə etmə.)
---------------------------------------------------------------------------- */
-select count(*) from regnom
-where  yurik = 1 or fizik = 1 or predprinimatel = 1;
-
-
-
-/* ####################  DASHBOARD — QRAFİKLƏR (6–9)  ###################### */
-
-
-/* ── 6 ─────────────────────────────────────────────────────────────────────
    Ad      : Müştəri tipi
    Mahiyyət: [PIE] aktiv — fiziki/hüquqi/sahibkar
 --------------------------------------------------------------------------- */
@@ -139,7 +125,7 @@ group by case when r.yurik = 1 then 'Hüquqi'
 order by say desc;
 
 
-/* ── 7 ─────────────────────────────────────────────────────────────────────
+/* ── 6 ─────────────────────────────────────────────────────────────────────
    Ad      : Ölkə üzrə müştərilər
    Mahiyyət: [BAR] aktiv müştəri, ölkə üzrə
 --------------------------------------------------------------------------- */
@@ -155,7 +141,7 @@ group by case when l.countrycode = 'GEO' then 'Gürcüstan' else c.name end
 order by say desc;
 
 
-/* ── 8 ─────────────────────────────────────────────────────────────────────
+/* ── 7 ─────────────────────────────────────────────────────────────────────
    Ad      : Son 12 ay açılan hesablar
    Mahiyyət: [LINE] real müştəri hesabı, aylıq
 --------------------------------------------------------------------------- */
@@ -169,7 +155,7 @@ group by to_char(l.date_open_licsch, 'YYYY-MM')
 order by ay;
 
 
-/* ── 9 ─────────────────────────────────────────────────────────────────────
+/* ── 8 ─────────────────────────────────────────────────────────────────────
    Ad      : Risk səviyyəsi bölgüsü
    Mahiyyət: [PIE] aktiv müştəri, risk reytinqi
    Qeyd    : '%%%%%%' = boş risk → 'boş' göstərilir
@@ -187,12 +173,12 @@ order by say desc;
 
 
 
-/* ####################  HESABATLAR — parametrli/detallı (10–16)  ######### */
+/* ####################  HESABATLAR — parametrli/detallı (9–15)  ######### */
 /* Bunlar tag-siz əlavə olunur (aşağıda hesabat kartı kimi görünür).        */
 /* Parametr token-i olanlar açılanda tarix/ədəd xanası göstərir.            */
 
 
-/* ── 10 ────────────────────────────────────────────────────────────────────
+/* ── 9 ─────────────────────────────────────────────────────────────────────
    Ad      : Böyük əməliyyatlar
    Mahiyyət: Müştəri üzrə gün aralığında hədddən böyük mədaxil
    Parametr: Başlanğıc + Son tarix + Hədd
@@ -211,7 +197,7 @@ having sum(d.summa_v_nacval) > {HEDD}
 order by mebleg desc;
 
 
-/* ── 11 ────────────────────────────────────────────────────────────────────
+/* ── 10 ────────────────────────────────────────────────────────────────────
    Ad      : Qeyri-rezident hesablar (tarixdən)
    Mahiyyət: Qeyri-rezidentlərin seçilmiş tarixdən açdığı hesablar
    Parametr: Başlanğıc tarix
@@ -228,7 +214,7 @@ where  r.regnom = f.regnom
 order by r.name_regnom;
 
 
-/* ── 12 ────────────────────────────────────────────────────────────────────
+/* ── 11 ────────────────────────────────────────────────────────────────────
    Ad      : Yüksək risk + KYC yeniləmə
    Mahiyyət: Risk səviyyəsinə görə KYC yenilənməli müştərilər
    Parametr: Tarix
@@ -261,7 +247,7 @@ WHERE m.qeyd = t.qeyd
 order by m.qeyd asc;
 
 
-/* ── 13 ────────────────────────────────────────────────────────────────────
+/* ── 12 ────────────────────────────────────────────────────────────────────
    Ad      : Benefisiar mülkiyyətçilər
    Mahiyyət: Təsisçi payı ≥ 10% olan şəxslər
    Parametr: yoxdur
@@ -278,7 +264,7 @@ where  i.tesischinin_payi >= 10
 order by i.tesischinin_payi desc;
 
 
-/* ── 14 ────────────────────────────────────────────────────────────────────
+/* ── 13 ────────────────────────────────────────────────────────────────────
    Ad      : 12 ay aktiv VÖEN-lər
    Mahiyyət: İl ərzində hər ay ən azı 2 əməliyyatı olan VÖEN-lər
    Parametr: İl
@@ -298,7 +284,7 @@ HAVING COUNT(DISTINCT EXTRACT(MONTH FROM dd.date_oper)) = 12
 ORDER BY voen;
 
 
-/* ── 15 ────────────────────────────────────────────────────────────────────
+/* ── 14 ────────────────────────────────────────────────────────────────────
    Ad      : Terminal əməliyyatları
    Mahiyyət: İl üzrə terminal mədaxil əməliyyatları (yekun)
    Parametr: İl
@@ -313,9 +299,9 @@ where  EXTRACT(YEAR FROM dd.date_oper) = {IL}
   and  substr(dd.kredit,1,1) in (3,4);
 
 
-/* ── 16 ────────────────────────────────────────────────────────────────────
+/* ── 15 ────────────────────────────────────────────────────────────────────
    Ad      : Ölkə üzrə müştərilər (siyahı)
-   Mahiyyət: Ölkə üzrə ad-ad detallı siyahı (7-ci qrafikdən fərqli)
+   Mahiyyət: Ölkə üzrə ad-ad detallı siyahı (6-cı qrafikdən fərqli)
    Parametr: Tarix
    Mənbə   : olke_kodlari_uzre_adlari.sql
 --------------------------------------------------------------------------- */
