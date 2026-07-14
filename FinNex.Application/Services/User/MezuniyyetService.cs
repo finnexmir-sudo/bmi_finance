@@ -116,14 +116,17 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
                         if (sobeReisi != null)
                         {
-                            // Şöbə rəisi bu gün təsdiqlənmiş məzuniyyətdədirsə step atlansın
+                            // Şöbə rəisi bu gün təsdiqlənmiş məzuniyyətdədirsə step atlansın.
+                            // .Date — tarixlər saat komponenti daşıya bilir (kod bazasının konvensiyası);
+                            // .Date-siz müqayisə məzuniyyətin başladığı gündə uğursuz olur.
                             var bugun = DateTime.Today;
                             var mezuniyyetdedir = await _unitOfWork.Repository<Mezuniyyet>()
                                 .MovcuddurmuAsync(m =>
                                     m.IsciId == sobeReisi.IsciId &&
+                                    !m.Silinib &&
                                     m.Status == MezuniyyetStatus.Tesdiqlenib &&
-                                    m.BaslamaTarixi <= bugun &&
-                                    m.BitmeTarixi >= bugun);
+                                    m.BaslamaTarixi.Date <= bugun &&
+                                    m.BitmeTarixi.Date >= bugun);
 
                             sobeReisiAvailable = !mezuniyyetdedir;
                         }

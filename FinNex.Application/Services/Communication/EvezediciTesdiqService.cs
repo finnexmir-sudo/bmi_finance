@@ -93,16 +93,35 @@ namespace FinNex.Application.Services.Communication
                 }
                 else
                 {
-                    // Adi işçi — şöbə rəisi varsa ona, yoxsa rəhbərə
+                    // Adi işçi — şöbədə AKTİV (məzuniyyətdə olmayan) şöbə rəisi varsa ona,
+                    // yoxsa/rəis məzuniyyətdədirsə birbaşa rəhbərə (MezuniyyetService ilə eyni qayda).
                     var teyinat = mezuniyyet.Isci.IsciTeyinatlari?.FirstOrDefault(t => t.Aktivdir);
-                    var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
-                        .MovcuddurmuAsync(x =>
-                            x.DepartamentId == teyinat.DepartamentId &&
-                            x.RolTipi == StrukturRolTipi.SobeReisi &&
-                            x.IsciId != mezuniyyet.IsciId &&
-                            x.Aktivdir);
+                    var sobeReisiAvailable = false;
+                    if (teyinat != null)
+                    {
+                        var sobeReisi = await _unitOfWork.Repository<IsciStrukturRolu>()
+                            .GetirAsync(x =>
+                                x.DepartamentId == teyinat.DepartamentId &&
+                                x.RolTipi == StrukturRolTipi.SobeReisi &&
+                                x.IsciId != mezuniyyet.IsciId &&
+                                x.Aktivdir);
 
-                    sonrakiStatus = sobeReisiVar
+                        if (sobeReisi != null)
+                        {
+                            var bugun = DateTime.Today;
+                            var reisMezuniyyetde = await _unitOfWork.Repository<Mezuniyyet>()
+                                .MovcuddurmuAsync(m =>
+                                    m.IsciId == sobeReisi.IsciId &&
+                                    !m.Silinib &&
+                                    m.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                    m.BaslamaTarixi.Date <= bugun &&
+                                    m.BitmeTarixi.Date >= bugun);
+
+                            sobeReisiAvailable = !reisMezuniyyetde;
+                        }
+                    }
+
+                    sonrakiStatus = sobeReisiAvailable
                         ? MezuniyyetStatus.SobeReisiTesdiqinde
                         : MezuniyyetStatus.RehberTesdiqinde;
                 }
