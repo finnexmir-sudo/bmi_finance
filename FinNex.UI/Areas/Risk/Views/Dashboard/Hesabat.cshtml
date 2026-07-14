@@ -61,7 +61,7 @@
                 {
                     <ul class="rk-note-l">
                         @if (p.BasTarix) { <li><b>Başlanğıc tarix</b> — hesablama bu tarixdən başlayır.</li> }
-                        @if (p.SonTarix) { <li><b>Son tarix</b> — bu tarixə <b>qədər</b> olanlar (məs. bu tarixə qədər ödəmə vaxtı çatan kreditlər).</li> }
+                        @if (p.SonTarix) { <li><b>Son tarix</b> — <b>gələcək</b> bir tarix seçin (məs. 31-12-2026). Bu tarixə <b>qədər</b> ödəmə vaxtı çatan kreditlər gəlir. (Bugünü seçsəniz nəticə boş olar.)</li> }
                         @if (p.Tarix)    { <li><b>Tarix</b> — hesablama bu tarixə görə aparılır (adətən bugün).</li> }
                         @if (p.Hedd)     { <li><b>Hədd</b> — yalnız bu məbləğdən (manatla) <b>böyük</b> olanlar göstərilir.</li> }
                         @if (p.Il)       { <li><b>İl</b> — yalnız seçilmiş il üzrə.</li> }
