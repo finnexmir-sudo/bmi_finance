@@ -301,14 +301,20 @@ where  EXTRACT(YEAR FROM dd.date_oper) = {IL}
 
 /* ── 15 ────────────────────────────────────────────────────────────────────
    Ad      : Ölkə üzrə müştərilər (siyahı)
-   Mahiyyət: Ölkə üzrə ad-ad detallı siyahı (6-cı qrafikdən fərqli)
-   Parametr: Tarix
+   Mahiyyət: Ölkə üzrə ad-ad detallı siyahı (6-cı BAR qrafiki ilə eyni süzgəc)
+   Parametr: yoxdur
    Mənbə   : olke_kodlari_uzre_adlari.sql
+   QEYD    : 6-cı qrafiklə EYNİ real-aktiv-müştəri süzgəci qoyuldu — beləliklə
+             siyahı və say uyğun gəlir. Əvvəl süzgəc olmadığı üçün bankın öz
+             filialı ("BMİ - HAMBURG BRANCH" / Almaniya) kimi qeyri-müştərilər
+             də siyahıya düşürdü.
 --------------------------------------------------------------------------- */
-select distinct l.registrac_nomer qeyd_no, r.name_regnom ad,
+select distinct r.regnom qeyd_no, r.name_regnom ad,
        case when l.countrycode='GEO' then 'Gürcüstan' else c.name end olke
-from   licsch l, countrycode c, regnom r
-where  l.registrac_nomer = r.regnom
-  and  (l.date_close_licsch is null or l.date_close_licsch > {TARIX})
+from   regnom r, licsch l, countrycode c
+where  r.regnom = l.registrac_nomer
+  and  l.date_close_licsch is null
+  and  substr(l.licsch,1,1) in ('3','4')
+  and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  l.countrycode = c.code
 order by olke, r.name_regnom;
