@@ -31,7 +31,8 @@
    │   2. [KPI] Qeyri-rezidentlər       6. [BAR] Ölkə üzrə müştərilər   │
    │   3. [KPI] İnsayder / əlaqəli      7. [LINE] Son 12 ay açılan hes. │
    │   4. [KPI] Açıq müştəri hesabları  8. [PIE] Risk səviyyəsi         │
-   │ HESABATLAR (9–15) — parametrli/detallı, istəyə görə               │
+   │ HESABATLAR (9–17) — parametrli/detallı, istəyə görə               │
+   │   16. Vintage (verilmə ili → default)  17. Müddət (maturity)      │
    └───────────────────────────────────────────────────────────────────┘
 
    Cədvəllər: regnom, licsch, countrycode, riskler, arh_dd, fiziki_shexs,
@@ -320,3 +321,65 @@ where  r.regnom = l.registrac_nomer
   and  (r.yurik = 1 or r.fizik = 1 or r.predprinimatel = 1)
   and  l.countrycode = c.code
 order by olke, r.name_regnom;
+
+
+/* ####################  KREDİT PORTFELİ / DİNAMİKA (16–17)  ############# */
+/* Cədvəl: arh_licschkre (kredit arxivi). date_oper = snapshot; ən son
+   snapshot götürülür. date_open=verilmə, date_planclose=son ödəmə (maturity),
+   summakre=verilmiş məbləğ, summa=cari qalıq (×100), day_uderproc=gecikmə günü.
+   DİQQƏT: bu iki sorğu kredit cədvəllərinə toxunur — bazanda YOXLA. Xüsusən
+   default meyarı (day_uderproc>=90 gün) və summa ×100 miqyası dəqiqləşdirilməli;
+   fərq varsa mətnini göndər, uyğunlaşdıraq. */
+
+
+/* ── 16 ────────────────────────────────────────────────────────────────────
+   Ad      : Vintage (verilmə ili üzrə default)
+   Mahiyyət: Hansı ildə verilən kreditlər daha çox gecikir (90+ gün)
+   Parametr: yoxdur (ən son snapshot)
+   Mənbə   : Vintaj_Tam.sql / iller_erzinde_verilmiskreditler...sql
+   QEYD    : yalnız AÇIQ kreditlər (date_close is null) — cari portfel vintage-i.
+             default = day_uderproc >= 90 gün.
+--------------------------------------------------------------------------- */
+select extract(year from l.date_open)                          verilme_ili,
+       count(*)                                                 kredit_sayi,
+       round(sum(l.summakre) * 100, 2)                          verilmis_mebleg,
+       sum(case when l.day_uderproc >= 90 then 1 else 0 end)    default_say,
+       round(100 * sum(case when l.day_uderproc >= 90 then l.summakre else 0 end)
+             / nullif(sum(l.summakre), 0), 2)                   default_faizi
+from   arh_licschkre l
+where  l.date_oper = (select max(date_oper) from arh_licschkre)
+  and  l.date_close is null
+  and  l.summa > 0
+group by extract(year from l.date_open)
+order by verilme_ili;
+/* [BAR] variantı istəsən (yalnız il → default %):
+   select to_char(extract(year from l.date_open)) il,
+          round(100*sum(case when l.day_uderproc>=90 then l.summakre else 0 end)
+                /nullif(sum(l.summakre),0),2) default_faizi
+   from arh_licschkre l
+   where l.date_oper=(select max(date_oper) from arh_licschkre)
+     and l.date_close is null and l.summa>0
+   group by extract(year from l.date_open) order by il; */
+
+
+/* ── 17 ────────────────────────────────────────────────────────────────────
+   Ad      : Müddət uyğunsuzluğu (maturity)
+   Mahiyyət: Yaxın vaxtda ödəniş vaxtı çatan böyük kreditlər
+   Parametr: Son tarix (nə vaxta qədər) + Hədd (min qalıq, manat)
+   Mənbə   : Loans_Overdue.sql (date_planclose = son ödəmə)
+--------------------------------------------------------------------------- */
+select l.licschkre                              hesab,
+       r.name_regnom                            musteri,
+       round(l.summa * 100, 2)                  qaliq,
+       l.date_planclose                         son_odeme,
+       round(l.date_planclose - trunc(sysdate)) qalan_gun,
+       l.procstavkre                            faiz
+from   arh_licschkre l, licsch nm, regnom r
+where  l.date_oper = (select max(date_oper) from arh_licschkre)
+  and  l.date_close is null
+  and  l.summa > 0
+  and  l.licschkre = nm.licsch
+  and  nm.registrac_nomer = r.regnom
+  and  l.date_planclose between trunc(sysdate) and {SONTARIX}
+  and  l.summa * 100 >= {HEDD}
+order by l.summa desc;
