@@ -4,12 +4,19 @@
     var hesabatlar = ViewBag.Hesabatlar as IList<RiskHesabatDto> ?? new List<RiskHesabatDto>();
     var p = Model.Parametrler;
     var d = Model.Deyerler;
+    // İl/kod kimi 1900–2100 aralığındakı tam ədədləri minlik ayırıcısız göstər
+    // (2007 → "2007", "2.007" yox). Real məbləğlər (>2100) ayırıcı ilə qalır.
+    bool IldirMi(decimal d) => d == Math.Truncate(d) && d >= 1900 && d <= 2100;
     string Fmt(object? v)
     {
         if (v is null) return "";
         if (v is DateTime dt) return dt.ToString("dd.MM.yyyy");
-        if (v is decimal dec) return dec.ToString("#,0.##");
-        if (v is double dbl) return dbl.ToString("#,0.##");
+        if (v is decimal dec)
+            return IldirMi(dec) ? ((long)dec).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                : dec.ToString("#,0.##");
+        if (v is double dbl)
+            return IldirMi((decimal)dbl) ? ((long)dbl).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                         : dbl.ToString("#,0.##");
         return v.ToString() ?? "";
     }
 }
