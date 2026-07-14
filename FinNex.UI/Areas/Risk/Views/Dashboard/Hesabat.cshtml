@@ -119,7 +119,7 @@
                     <i class="bi bi-search"></i>
                     <input type="text" id="rkSearch" placeholder="Cədvəldə axtar..." autocomplete="off" />
                 </div>
-                <div class="rk-hint">Cəmi: @Model.Say sətir</div>
+                <div class="rk-hint">Cəmi: @Model.Say sətir@(Model.DrillVar ? " · sətrə klik → detal" : "")</div>
             </div>
 
             @if (Model.Netice.Sutunlar.Count == 0 || Model.Say == 0)
@@ -137,6 +137,10 @@
                                 {
                                     <th>@s</th>
                                 }
+                                @if (Model.DrillVar)
+                                {
+                                    <th class="rk-drill"></th>
+                                }
                             </tr>
                         </thead>
                         <tbody>
@@ -144,11 +148,26 @@
                             @foreach (var row in Model.Netice.Setirler)
                             {
                                 no++;
-                                <tr class="rk-row" data-search="@(string.Join(" ", row.Select(Fmt)).ToLower())">
+                                string? drillUrl = null;
+                                if (Model.DrillVar && Model.DrillSutun >= 0 && Model.DrillSutun < row.Length)
+                                {
+                                    var dv = Fmt(row[Model.DrillSutun]);
+                                    if (!string.IsNullOrWhiteSpace(dv))
+                                    {
+                                        var rv = new Microsoft.AspNetCore.Routing.RouteValueDictionary { { "id", Model.DrillId } };
+                                        rv[Model.DrillParam!] = dv;
+                                        drillUrl = Url.Action("Hesabat", rv);
+                                    }
+                                }
+                                <tr class="rk-row @(drillUrl != null ? "rk-clic" : "")" data-href="@drillUrl" data-search="@(string.Join(" ", row.Select(Fmt)).ToLower())">
                                     <td class="rk-no">@no</td>
                                     @foreach (var cell in row)
                                     {
                                         <td>@Fmt(cell)</td>
+                                    }
+                                    @if (Model.DrillVar)
+                                    {
+                                        <td class="rk-drill">@(drillUrl != null ? Html.Raw("<i class=\"bi bi-box-arrow-up-right\"></i>") : null)</td>
                                     }
                                 </tr>
                             }
@@ -194,6 +213,10 @@
             text-align:left; padding:9px 12px; border-bottom:1px solid #e2e8f0; }
         .rk-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; color:#1e293b; }
         .rk-table tbody tr:hover td { background:#fef2f2; }
+        .rk-clic { cursor:pointer; }
+        .rk-clic:hover td { background:#eff6ff !important; }
+        .rk-drill { color:#94a3b8; text-align:center; width:30px; }
+        .rk-clic:hover .rk-drill { color:#2563eb; }
         .rk-no { color:#94a3b8; text-align:right; font-variant-numeric:tabular-nums; }
         .rk-empty2 { text-align:center; color:#94a3b8; padding:36px; font-size:14px; }
         .rk-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
@@ -212,6 +235,16 @@
                 rows.forEach(function (r) {
                     var hay = r.getAttribute('data-search') || '';
                     r.style.display = (q === '' || hay.indexOf(q) !== -1) ? '' : 'none';
+                });
+            });
+        })();
+
+        // Drill-down — sətrə klik → detal hesabat
+        (function () {
+            document.querySelectorAll('#rkTable tr.rk-clic').forEach(function (r) {
+                r.addEventListener('click', function () {
+                    var u = r.getAttribute('data-href');
+                    if (u) location.href = u;
                 });
             });
         })();

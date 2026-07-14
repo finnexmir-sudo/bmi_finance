@@ -355,6 +355,16 @@ order by olke, r.name_regnom;
      → Nəticə: hansı ilin kreditləri indi daha çox defolt olub (vintage əyrisi).
 
    QEYD: həftəsonu/bayramda to_date(sysdate) snapshot tapmasa [ALT] blokuna bax.
+
+   ★ KLİK DRILL-DOWN (il-ə klik → müştəri siyahısı #18):
+     #16-nın Mahiyyət sahəsinin SONUNA bu direktivi əlavə et:
+        {DRILL:Vintage — kreditlər (il üzrə)|il|verilme_ili}
+     Format: {DRILL:<hədəf hesabatın adı>|<parametr>|<sütun adı>}
+     Yəni: cədvəldə sətrə klikləyəndə həmin sətrin "verilme_ili" dəyəri #18-ə
+     "il" parametri kimi ötürülür və #18 avtomatik açılır.
+     ({DRILL:...} istifadəçiyə görünmür — Mahiyyətdən avtomatik çıxarılır.)
+     Tam Mahiyyət nümunəsi:
+        Hansı ildə verilən kreditlər daha çox gecikir (90+ gün) {DRILL:Vintage — kreditlər (il üzrə)|il|verilme_ili}
 --------------------------------------------------------------------------- */
 with kr as (
   select extract(year from lk.date_open)                                              il,

@@ -76,4 +76,10 @@ public class RiskNeticeDto
     public RiskParametrDeyer Deyerler   { get; set; } = new();
     public bool            IcraOlundu   { get; set; }   // parametrlər tam olub icra edildimi
     public string?         Xeta         { get; set; }
+
+    // Drill-down: sətrə klik → başqa hesabatı aç (Mahiyyətdə {DRILL:ad|param|sütun})
+    public int?            DrillId      { get; set; }   // açılacaq hesabat id
+    public string?         DrillParam   { get; set; }   // ötürüləcək parametr (il/t/h/bt/st)
+    public int             DrillSutun   { get; set; } = -1; // hansı sütunun dəyəri ötürülür
+    public bool            DrillVar => DrillId.HasValue && !string.IsNullOrEmpty(DrillParam) && DrillSutun >= 0;
 }

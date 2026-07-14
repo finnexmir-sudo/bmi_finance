@@ -29,7 +29,7 @@ public class RiskService : IRiskService
         return res.Data
             .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk"))
             .OrderBy(x => x.SorguAdi)
-            .Select(x => new RiskHesabatDto { Id = x.Id, Ad = x.SorguAdi, Mahiyyet = x.Mahiyyet })
+            .Select(x => new RiskHesabatDto { Id = x.Id, Ad = x.SorguAdi, Mahiyyet = DrillStrip(x.Mahiyyet) })
             .ToList();
     }
 
@@ -65,6 +65,32 @@ public class RiskService : IRiskService
         var str = v.ToString();
         if (decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var r)) return r;
         return null;
+    }
+
+    // Mahiyyətdən drill direktivini oxuyur: {DRILL:hədəf ad|param|sütun}
+    private static (string? hedef, string? param, string? sutun) DrillOxu(string? mahiyyet)
+    {
+        if (string.IsNullOrEmpty(mahiyyet)) return (null, null, null);
+        var i = mahiyyet.IndexOf("{DRILL:", StringComparison.OrdinalIgnoreCase);
+        if (i < 0) return (null, null, null);
+        var j = mahiyyet.IndexOf('}', i);
+        if (j < 0) return (null, null, null);
+        var parts = mahiyyet.Substring(i + 7, j - (i + 7)).Split('|');
+        if (parts.Length < 3) return (null, null, null);
+        var hedef = parts[0].Trim(); var param = parts[1].Trim(); var sutun = parts[2].Trim();
+        if (hedef.Length == 0 || param.Length == 0 || sutun.Length == 0) return (null, null, null);
+        return (hedef, param, sutun);
+    }
+
+    // {DRILL:...} hissəsini Mahiyyətdən çıxarır (göstərilməsin)
+    private static string? DrillStrip(string? mahiyyet)
+    {
+        if (string.IsNullOrEmpty(mahiyyet)) return mahiyyet;
+        var i = mahiyyet.IndexOf("{DRILL:", StringComparison.OrdinalIgnoreCase);
+        if (i < 0) return mahiyyet;
+        var j = mahiyyet.IndexOf('}', i);
+        if (j < 0) return mahiyyet;
+        return mahiyyet.Remove(i, j - i + 1).Trim();
     }
 
     // Etiket "YYYY-MM" formatındadırmı? (zaman seriyası → line)
@@ -128,7 +154,7 @@ public class RiskService : IRiskService
             // Parametrli (token-li) sorğu widget ola bilməz — dəyər girişi lazımdır
             if (tokenli)
             {
-                panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = s.Mahiyyet });
+                panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = DrillStrip(s.Mahiyyet) });
                 continue;
             }
 
@@ -154,7 +180,7 @@ public class RiskService : IRiskService
             // TAG YOXDUR — nəticənin formasına görə avtomatik təsnif et
             OracleNetice xam;
             try { xam = await _oracle.SelectXamAsync(s.SorguMetni!, 51); }
-            catch { panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = s.Mahiyyet }); continue; }
+            catch { panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = DrillStrip(s.Mahiyyet) }); continue; }
 
             var setirSay = xam.Setirler.Count;
             var sutunSay = xam.Sutunlar.Count;
@@ -177,7 +203,7 @@ public class RiskService : IRiskService
             }
 
             // Əks halda — adi hesabat kartı
-            panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = s.Mahiyyet });
+            panel.Hesabatlar.Add(new RiskHesabatDto { Id = s.Id, Ad = s.SorguAdi, Mahiyyet = DrillStrip(s.Mahiyyet) });
         }
         return panel;
     }
@@ -223,6 +249,24 @@ public class RiskService : IRiskService
             Parametrler = p, Deyerler = deyerler
         };
 
+        // Drill-down direktivi: {DRILL:hədəf ad|param|sütun}
+        // Klikləyəndə həmin sütunun dəyəri hədəf hesabata (param kimi) ötürülür.
+        string? drillSutunAd = null;
+        var (dHedef, dParam, dSutun) = DrillOxu(sorgu.Mahiyyet);
+        if (dHedef != null)
+        {
+            netice.Mahiyyet = DrillStrip(sorgu.Mahiyyet);
+            var hedef = res!.Data!.FirstOrDefault(z => z.Aktiv
+                && Norm(z.DepartamentAd).Contains("risk")
+                && string.Equals(z.SorguAdi?.Trim(), dHedef, StringComparison.OrdinalIgnoreCase));
+            if (hedef != null)
+            {
+                netice.DrillId = hedef.Id;
+                netice.DrillParam = dParam;
+                drillSutunAd = dSutun;
+            }
+        }
+
         // Tarix parametrləri
         if (p.BasTarix)
         {
@@ -261,6 +305,11 @@ public class RiskService : IRiskService
             netice.Netice = xam;
             netice.Say = xam.Setirler.Count;
             netice.IcraOlundu = true;
+
+            // Drill sütununun indeksini tap (sütun adına görə)
+            if (netice.DrillId.HasValue && !string.IsNullOrEmpty(drillSutunAd))
+                netice.DrillSutun = xam.Sutunlar.FindIndex(s =>
+                    string.Equals(s?.Trim(), drillSutunAd, StringComparison.OrdinalIgnoreCase));
         }
         catch (Exception ex)
         {
