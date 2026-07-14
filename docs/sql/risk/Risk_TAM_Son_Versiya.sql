@@ -330,9 +330,9 @@ order by olke, r.name_regnom;
        odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))
    (day_uderproc = ödəniş günü, DPD DEYİL!). Birləşmə: licschpkre + subschkre.
    Sütunlar: date_open=verilmə, date_planclose=son ödəmə, summakre=verilmiş,
-   summa=cari qalıq (×100). Müştəri: substr(licschkre,10,6) = r.regnom.
-   Mənbə məntiqi: sənin işlək kredit/PID sorğuların.
-   DİQQƏT: default həddi (90 gün) və ×100 miqyası bazanda yoxlanmalıdır. */
+   summa=cari qalıq. Müştəri: substr(licschkre,10,6) = r.regnom.
+   Mənbə məntiqi: sənin master kredit sorğun (məbləğ ×100-SUZ — real manat).
+   DİQQƏT: default həddi (90 gün) bazanda yoxlanmalıdır. */
 
 
 /* ── 16 ────────────────────────────────────────────────────────────────────
@@ -347,7 +347,7 @@ order by olke, r.name_regnom;
 --------------------------------------------------------------------------- */
 select extract(year from lk.date_open)                                verilme_ili,
        count(*)                                                       kredit_sayi,
-       round(sum(lk.summakre) * 100, 2)                               verilmis_mebleg,
+       round(sum(lk.summakre), 2)                                     verilmis_mebleg,
        sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
                 then 1 else 0 end)                                    default_say,
        round(100 * sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
@@ -365,7 +365,7 @@ order by verilme_ili;
 /* [ALT] Həftəsonu/bayramda da işləsin deyə — son iş günü snapshot-u (master
    sorğundakı calendar məntiqi). Yuxarıdakı boş qaytarsa bunu işlət:
    select extract(year from lk.date_open) verilme_ili, count(*) kredit_sayi,
-          round(sum(lk.summakre)*100,2) verilmis_mebleg,
+          round(sum(lk.summakre),2) verilmis_mebleg,
           sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90 then 1 else 0 end) default_say,
           round(100*sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90 then lk.summakre else 0 end)
                 /nullif(sum(lk.summakre),0),2) default_faizi
@@ -386,7 +386,7 @@ order by verilme_ili;
 --------------------------------------------------------------------------- */
 select lk.licschkre                              hesab,
        r.name_regnom                             musteri,
-       round(lk.summa * 100, 2)                  qaliq,
+       round(lk.summa, 2)                        qaliq,
        lk.date_planclose                         son_odeme,
        round(lk.date_planclose - trunc(sysdate)) qalan_gun,
        lk.procstavkre                            faiz
@@ -396,5 +396,5 @@ where  substr(lk.licschkre, 10, 6) = r.regnom
   and  lk.date_close is null
   and  lk.summa > 0
   and  lk.date_planclose between trunc(sysdate) and {SONTARIX}
-  and  lk.summa * 100 >= {HEDD}
+  and  lk.summa >= {HEDD}
 order by lk.summa desc;
