@@ -84,6 +84,29 @@ Nəticədə `FinNex.Application` build olmadı (CS0535 + CS1501), bu da `FinNex.
 - Bir layihə build olmayanda asılı layihələrdəki xətalar yalançı istiqamətə
   yönəldə bilər — **kök səbəb həmişə build olmayan layihədədir**, oradan başla.
 
+## Məzuniyyət Təsdiq Axını — İki Yerdə Dublikat Routing (KRİTİK)
+
+Məzuniyyət müraciətinin **ilkin təsdiqçisini** (şöbə rəisi / rəhbər) təyin edən
+routing məntiqi **İKİ ayrı yerdə** var:
+
+1. `MezuniyyetService.YaratAsync` — işçi əvəzedici **seçməyəndə** birbaşa işləyir.
+2. `EvezediciTesdiqService.QebulEtAsync` — işçi əvəzedici **seçəndə**, əvəzedici
+   qəbul edəndən sonra müraciəti növbəti mərhələyə keçirən yer.
+
+Routing qaydasını dəyişəndə (məs. "şöbə rəisi məzuniyyətdədirsə addımı atla,
+Rəhbərə keç") **HƏR İKİ yeri eyni anda yenilə**.
+
+Real nümunə (2026-07): "şöbə rəisi məzuniyyətdədirsə keç" yoxlaması yalnız
+`YaratAsync`-də var idi. `EvezediciTesdiqService` isə şöbə rəisinin yalnız
+**MÖVCUDLUĞUNU** yoxlayırdı (məzuniyyətdə olub-olmadığını yox). Nəticədə
+**əvəzedici seçən** işçinin müraciəti, əvəzedici qəbul edəndən sonra
+məzuniyyətdə olan şöbə rəisinə ilişib qaldı. Əsas yolda yoxlama düz idi — səhv
+yalnız əvəzedici yolunda görünürdü, ona görə diaqnoz çətinləşdi.
+
+**Qayda:** Bir müraciətin təsdiq axınının birdən çox giriş nöqtəsi (birbaşa /
+əvəzedici / birbaşa qeyd) varsa, status/routing qaydasını dəyişəndə hamısını
+tutuşdur — biri köhnə məntiqlə qalarsa, xəta yalnız o yolda təzahür edər.
+
 ## İşçi Siyahıları — Sıralama və Filtr Qaydası (KRİTİK)
 
 İşçi siyahısı göstərən **hər** səhifədə eyni qayda tətbiq olunmalıdır — mənbə
