@@ -338,7 +338,12 @@ order by olke, r.name_regnom;
 /* ── 16 ────────────────────────────────────────────────────────────────────
    Ad      : Vintage (verilmə ili üzrə default)
    Mahiyyət: Hansı ildə verilən kreditlər daha çox gecikir (90+ gün)
-   Parametr: yoxdur (bu günkü DPD snapshot-u)
+   Parametr: yoxdur
+   Vəziyyət: ✅ 1-ci bazada yoxlanıldı — işləyir (0.28 san, məntiqli vintage əyrisi).
+   DPD     : odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)),
+             view_nacpogprokre_all bu günə (x.date_oper = to_date(sysdate)).
+   QEYD     : əgər həftəsonu/bayram günü boş qaytarsa (o gün snapshot yoxdursa),
+             to_date(sysdate) yerinə son iş gününü işlət (aşağıdakı [ALT] blok).
 --------------------------------------------------------------------------- */
 select extract(year from lk.date_open)                                verilme_ili,
        count(*)                                                       kredit_sayi,
@@ -356,14 +361,20 @@ where  lk.licschpkre = x.licschpkre
   and  length(lk.licschkre) = 20
 group by extract(year from lk.date_open)
 order by verilme_ili;
-/* [BAR] variantı (yalnız il → default %):
-   select to_char(extract(year from lk.date_open)) il,
-          round(100*sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90
-                             then lk.summakre else 0 end)/nullif(sum(lk.summakre),0),2) default_faizi
+
+/* [ALT] Həftəsonu/bayramda da işləsin deyə — son iş günü snapshot-u (master
+   sorğundakı calendar məntiqi). Yuxarıdakı boş qaytarsa bunu işlət:
+   select extract(year from lk.date_open) verilme_ili, count(*) kredit_sayi,
+          round(sum(lk.summakre)*100,2) verilmis_mebleg,
+          sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90 then 1 else 0 end) default_say,
+          round(100*sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90 then lk.summakre else 0 end)
+                /nullif(sum(lk.summakre),0),2) default_faizi
    from odb.licschkre lk, view_nacpogprokre_all x
-   where lk.licschpkre=x.licschpkre and lk.subschkre=x.subschkre and x.date_oper=to_date(sysdate)
+   where lk.licschpkre=x.licschpkre and lk.subschkre=x.subschkre
+     and x.date_oper=(select max(c.date_oper) from calendar c
+                      where (c.space_or_star is null or c.space_or_star<>'*') and c.date_oper<=sysdate)
      and lk.date_close is null and length(lk.licschkre)=20
-   group by extract(year from lk.date_open) order by il; */
+   group by extract(year from lk.date_open) order by verilme_ili; */
 
 
 /* ── 17 ────────────────────────────────────────────────────────────────────
