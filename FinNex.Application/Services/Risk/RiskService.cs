@@ -138,8 +138,8 @@ public class RiskService : IRiskService
                 try
                 {
                     // count sorğusu → 1 sətir; detal siyahı → çox sətir (kart sayı göstərir)
-                    var xam = await _oracle.SelectXamAsync(s.SorguMetni!, KpiCap);
-                    panel.Kpiler.Add(KpiQur(s.Id, s.SorguAdi, alt, xam, xam.Setirler.Count >= KpiCap));
+                    var xkpi = await _oracle.SelectXamAsync(s.SorguMetni!, KpiCap);
+                    panel.Kpiler.Add(KpiQur(s.Id, s.SorguAdi, alt, xkpi, xkpi.Setirler.Count >= KpiCap));
                 }
                 catch (Exception ex) { panel.Kpiler.Add(new RiskKpiDto { Id = s.Id, Ad = s.SorguAdi, Alt = alt, Xeta = ex.Message }); }
                 continue;
