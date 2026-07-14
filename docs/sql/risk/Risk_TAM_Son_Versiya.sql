@@ -358,13 +358,13 @@ order by olke, r.name_regnom;
 
    ★ KLİK DRILL-DOWN (il-ə klik → müştəri siyahısı #18):
      #16-nın Mahiyyət sahəsinin SONUNA bu direktivi əlavə et:
-        {DRILL:Vintage — kreditlər (il üzrə)|il|verilme_ili}
+        {DRILL:Vintage kreditlər|il|verilme_ili}
      Format: {DRILL:<hədəf hesabatın adı>|<parametr>|<sütun adı>}
      Yəni: cədvəldə sətrə klikləyəndə həmin sətrin "verilme_ili" dəyəri #18-ə
      "il" parametri kimi ötürülür və #18 avtomatik açılır.
      ({DRILL:...} istifadəçiyə görünmür — Mahiyyətdən avtomatik çıxarılır.)
      Tam Mahiyyət nümunəsi:
-        Hansı ildə verilən kreditlər daha çox gecikir (90+ gün) {DRILL:Vintage — kreditlər (il üzrə)|il|verilme_ili}
+        Hansı ildə verilən kreditlər daha çox gecikir (90+ gün) {DRILL:Vintage kreditlər|il|verilme_ili}
 --------------------------------------------------------------------------- */
 with kr as (
   select extract(year from lk.date_open)                                              il,
@@ -421,7 +421,7 @@ order by qaliq desc;
 
 
 /* ── 18 ────────────────────────────────────────────────────────────────────
-   Ad      : Vintage — kreditlər (il üzrə)
+   Ad      : Vintage kreditlər
    Mahiyyət: Seçilmiş ildə verilən kreditlərin müştəri siyahısı (#16 detalı)
    Parametr: İl
    İzah    : #16 Vintage cədvəlində hansı ilin yüksək default-u varsa, həmin ili
