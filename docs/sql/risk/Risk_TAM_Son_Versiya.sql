@@ -34,6 +34,7 @@
    │ HESABATLAR (9–18) — parametrli/detallı, istəyə görə               │
    │   16. Vintage (verilmə ili → default)  17. Müddət (maturity)      │
    │   18. Vintage — kreditlər (il üzrə, #16 detalı — müştərilər)      │
+   │   19. Ödəniş təqvimi (srokpogprockre) — aylıq ödənişlər  (YOXLA)   │
    └───────────────────────────────────────────────────────────────────┘
 
    Cədvəllər: regnom, licsch, countrycode, riskler, arh_dd, fiziki_shexs,
@@ -397,14 +398,19 @@ order by il;
 /* ── 17 ────────────────────────────────────────────────────────────────────
    Ad      : Müddət uyğunsuzluğu (maturity)
    Mahiyyət: Yaxın vaxtda ödəniş vaxtı çatan böyük kreditlər
-   Parametr: Son tarix (nə vaxta qədər) + Hədd (min qalıq, manat)
-   QEYD    : cari licschkre; date_planclose = son ödəmə. Əgər licschkre-də
-             date_planclose/procstavkre yoxdursa, mənə de, uyğunlaşdırım.
+   Parametr: Son tarix (nə vaxta qədər) + Hədd (min tam qalıq, manat)
+   Sütunlar: ESAS_QALIQ  = əsas borc qalığı (summa)
+             VK_QALIQ    = vaxtı keçmiş / problemli borc qalığı (summa_19)
+             TAM_QALIQ   = esas + vk = ümumi borc (real risk məbləği)
+   QEYD    : summa & summa_19 hər ikisi odb.licschkre sütunudur — əlavə join yox.
+             Hədd filtri artıq TAM_QALIQ-ə görə işləyir (ümumi borca baxır).
 --------------------------------------------------------------------------- */
 with kr as (
   select lk.licschkre                                                                    hesab,
          r.name_regnom                                                                   musteri,
-         round(lk.summa * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  qaliq,
+         round(lk.summa    * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  esas_qaliq,
+         round(lk.summa_19 * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  vk_qaliq,
+         round((lk.summa + lk.summa_19) * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  tam_qaliq,
          lk.date_planclose                                                               son_odeme,
          round(lk.date_planclose - trunc(sysdate))                                       qalan_gun,
          lk.procstavkre                                                                  faiz
@@ -416,8 +422,8 @@ with kr as (
     and  lk.date_planclose between trunc(sysdate) and {SONTARIX}
 )
 select * from kr
-where  qaliq >= {HEDD}
-order by qaliq desc;
+where  tam_qaliq >= {HEDD}
+order by tam_qaliq desc;
 
 
 /* ── 18 ────────────────────────────────────────────────────────────────────
@@ -445,3 +451,39 @@ where  lk.licschpkre = x.licschpkre
   and  length(lk.licschkre) = 20
   and  extract(year from lk.date_open) = {IL}
 order by gecikme_gun desc;
+
+
+/* ── 19 ────────────────────────────────────────────────────────────────────
+   Ad      : Ödəniş təqvimi (aylıq ödənişlər)
+   Mahiyyət: Seçilmiş tarixə qədər ödəniş vaxtı çatan planlaşdırılmış ödənişlər
+   Parametr: Son tarix (nə vaxta qədər)
+   Mənbə   : odb.srokpogprockre — kredit ödəniş qrafiki (plan cədvəli)
+
+   ⚠️ YOXLAMA LAZIMDIR — srokpogprockre sütunlarının adları/mənası mənə dəqiq
+      məlum deyil (item_01..item_13). Aşağıdakı hesabatı işlətməzdən əvvəl bir
+      dəfə bu KƏŞF sorğusunu işlət və sütunları mənə göstər:
+
+        select * from odb.srokpogprockre
+         where licschpkre = <yoxlanacaq kreditin licschpkre-si>
+         order by 1;
+
+      Adətən bu cədvəldə: ödəniş tarixi, əsas hissə (osnovnoy), faiz hissəsi
+      (procent), ümumi ödəniş sütunları olur. Hansı item_NN nəyə uyğundur —
+      təsdiqlə, aşağıdakı SELECT-i ona görə dəqiqləşdirim. İndilik struktur
+      SKELETdir, real sütun adları ilə əvəz olunmalıdır.
+--------------------------------------------------------------------------- */
+-- SKELET (sütun adları təsdiqlənəndən sonra dəqiqləşdiriləcək):
+-- select lk.licschkre                                    hesab,
+--        r.name_regnom                                   musteri,
+--        s.<odeme_tarixi_sutunu>                         odeme_tarixi,
+--        round(s.<esas_hisse>  * round(odb.func_get_kurval(substr(lk.licschkre,6,2), s.<odeme_tarixi_sutunu>), 6), 2)  esas,
+--        round(s.<faiz_hisse>  * round(odb.func_get_kurval(substr(lk.licschkre,6,2), s.<odeme_tarixi_sutunu>), 6), 2)  faiz,
+--        round((s.<esas_hisse> + s.<faiz_hisse>) * round(odb.func_get_kurval(substr(lk.licschkre,6,2), s.<odeme_tarixi_sutunu>), 6), 2)  ayliq_odenis
+-- from   odb.srokpogprockre s, odb.licschkre lk, regnom r
+-- where  s.licschpkre = lk.licschpkre
+--   and  s.subschkre  = lk.subschkre
+--   and  substr(lk.licschkre, 10, 6) = r.regnom
+--   and  length(lk.licschkre) = 20
+--   and  lk.date_close is null
+--   and  s.<odeme_tarixi_sutunu> between trunc(sysdate) and {SONTARIX}
+-- order by s.<odeme_tarixi_sutunu>, tam_qaliq desc;
