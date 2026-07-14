@@ -340,12 +340,20 @@ order by olke, r.name_regnom;
 /* ── 16 ────────────────────────────────────────────────────────────────────
    Ad      : Vintage (verilmə ili üzrə default)
    Mahiyyət: Hansı ildə verilən kreditlər daha çox gecikir (90+ gün)
-   Parametr: yoxdur
-   Vəziyyət: ✅ 1-ci bazada yoxlanıldı — işləyir (0.28 san, məntiqli vintage əyrisi).
-   DPD     : odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)),
-             view_nacpogprokre_all bu günə (x.date_oper = to_date(sysdate)).
-   QEYD     : əgər həftəsonu/bayram günü boş qaytarsa (o gün snapshot yoxdursa),
-             to_date(sysdate) yerinə son iş gününü işlət (aşağıdakı [ALT] blok).
+   Parametr: yoxdur      Vəziyyət: ✅ bazada yoxlanıldı (0.12 san).
+
+   NECƏ İŞLƏYİR:
+     1) licschkre (cari AÇIQ kreditlər) + view_nacpogprokre_all (gecikmə) —
+        licschpkre+subschkre üzrə birləşir; view BU GÜNƏ (x.date_oper=to_date(sysdate)).
+     2) Filtr: yalnız açıq kredit (date_close is null) + düzgün hesab (length=20).
+     3) MANAT: hər kredit summakre × func_get_kurval(valyuta_kodu, bugün) = meb_azn.
+     4) GECİKMƏ (DPD): tar_ferq360(bugün, nvl(son_gecikmə_tarixi, bugün)) = gec_gun.
+     5) Qruplaşma: verilmə İLİ (date_open ili).
+     6) Hər il üçün: say, cəmi məbləğ(manat), 90+ gün gecikən say (default_say),
+        default_faizi = 90+ gün gecikən məbləğ ÷ ümumi məbləğ × 100.
+     → Nəticə: hansı ilin kreditləri indi daha çox defolt olub (vintage əyrisi).
+
+   QEYD: həftəsonu/bayramda to_date(sysdate) snapshot tapmasa [ALT] blokuna bax.
 --------------------------------------------------------------------------- */
 with kr as (
   select extract(year from lk.date_open)                                              il,
