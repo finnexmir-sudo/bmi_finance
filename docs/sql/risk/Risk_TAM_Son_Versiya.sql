@@ -31,8 +31,9 @@
    │   2. [KPI] Qeyri-rezidentlər       6. [BAR] Ölkə üzrə müştərilər   │
    │   3. [KPI] İnsayder / əlaqəli      7. [LINE] Son 12 ay açılan hes. │
    │   4. [KPI] Açıq müştəri hesabları  8. [PIE] Risk səviyyəsi         │
-   │ HESABATLAR (9–17) — parametrli/detallı, istəyə görə               │
+   │ HESABATLAR (9–18) — parametrli/detallı, istəyə görə               │
    │   16. Vintage (verilmə ili → default)  17. Müddət (maturity)      │
+   │   18. Vintage — kreditlər (il üzrə, #16 detalı — müştərilər)      │
    └───────────────────────────────────────────────────────────────────┘
 
    Cədvəllər: regnom, licsch, countrycode, riskler, arh_dd, fiziki_shexs,
@@ -407,3 +408,30 @@ with kr as (
 select * from kr
 where  qaliq >= {HEDD}
 order by qaliq desc;
+
+
+/* ── 18 ────────────────────────────────────────────────────────────────────
+   Ad      : Vintage — kreditlər (il üzrə)
+   Mahiyyət: Seçilmiş ildə verilən kreditlərin müştəri siyahısı (#16 detalı)
+   Parametr: İl
+   İzah    : #16 Vintage cədvəlində hansı ilin yüksək default-u varsa, həmin ili
+             burda yaz — o ilin bütün kreditlərini/müştərilərini görürsən (kim,
+             nə qədər, neçə gün gecikib, DEFAULT-durmu). #16 il-ə "klik" əvəzi.
+--------------------------------------------------------------------------- */
+select r.name_regnom                                                                     musteri,
+       lk.licschkre                                                                      kredit_hesabi,
+       round(lk.summakre * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  mebleg_azn,
+       to_char(lk.date_open, 'DD.MM.YYYY')                                               verilme,
+       odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))                 gecikme_gun,
+       case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
+            then 'DEFAULT' else 'normal' end                                             veziyyet,
+       lk.procstavkre                                                                    faiz
+from   odb.licschkre lk, view_nacpogprokre_all x, regnom r
+where  lk.licschpkre = x.licschpkre
+  and  lk.subschkre  = x.subschkre
+  and  x.date_oper   = to_date(sysdate)
+  and  substr(lk.licschkre, 10, 6) = r.regnom
+  and  lk.date_close is null
+  and  length(lk.licschkre) = 20
+  and  extract(year from lk.date_open) = {IL}
+order by gecikme_gun desc;
