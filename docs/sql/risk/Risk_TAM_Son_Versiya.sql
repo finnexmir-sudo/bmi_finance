@@ -324,67 +324,66 @@ order by olke, r.name_regnom;
 
 
 /* ####################  KREDİT PORTFELİ / DİNAMİKA (16–17)  ############# */
-/* Cədvəl: arh_licschkre (kredit arxivi). date_oper = snapshot; ən son
-   snapshot götürülür. date_open=verilmə, date_planclose=son ödəmə (maturity),
-   summakre=verilmiş məbləğ, summa=cari qalıq (×100), day_uderproc=gecikmə günü.
-   DİQQƏT: bu iki sorğu kredit cədvəllərinə toxunur — bazanda YOXLA. Xüsusən
-   default meyarı (day_uderproc>=90 gün) və summa ×100 miqyası dəqiqləşdirilməli;
-   fərq varsa mətnini göndər, uyğunlaşdıraq. */
+/* Cədvəl: odb.licschkre (CARI kredit hesabları — arxiv arh_licschkre YOX,
+   snapshot uyğunluğu problemi olmasın deyə). Gecikmə günü (DPD) isə
+   view_nacpogprokre_all-dan BU GÜNƏ bağlanır: x.date_oper = to_date(sysdate):
+       odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))
+   (day_uderproc = ödəniş günü, DPD DEYİL!). Birləşmə: licschpkre + subschkre.
+   Sütunlar: date_open=verilmə, date_planclose=son ödəmə, summakre=verilmiş,
+   summa=cari qalıq (×100). Müştəri: substr(licschkre,10,6) = r.regnom.
+   Mənbə məntiqi: sənin işlək kredit/PID sorğuların.
+   DİQQƏT: default həddi (90 gün) və ×100 miqyası bazanda yoxlanmalıdır. */
 
 
 /* ── 16 ────────────────────────────────────────────────────────────────────
    Ad      : Vintage (verilmə ili üzrə default)
    Mahiyyət: Hansı ildə verilən kreditlər daha çox gecikir (90+ gün)
-   Parametr: yoxdur (ən son snapshot)
-   Mənbə   : Vintaj_Tam.sql
-   DPD     : odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate,x.date_oper))
-             — GECİKMƏ GÜNÜ bu view-dan gəlir (day_uderproc ödəniş günüdür, DPD deyil!)
-   QEYD    : yalnız AÇIQ kreditlər (ar.date_close is null) — cari portfel vintage-i.
+   Parametr: yoxdur (bu günkü DPD snapshot-u)
 --------------------------------------------------------------------------- */
-select extract(year from ar.date_open)                                verilme_ili,
+select extract(year from lk.date_open)                                verilme_ili,
        count(*)                                                       kredit_sayi,
-       round(sum(ar.summakre) * 100, 2)                               verilmis_mebleg,
+       round(sum(lk.summakre) * 100, 2)                               verilmis_mebleg,
        sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
                 then 1 else 0 end)                                    default_say,
        round(100 * sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
-                            then ar.summakre else 0 end)
-             / nullif(sum(ar.summakre), 0), 2)                        default_faizi
-from   view_nacpogprokre_all x, arh_licschkre ar
-where  x.licschpkre = ar.licschpkre
-  and  x.subschkre  = ar.subschkre
-  and  ar.date_oper = x.date_oper
-  and  x.date_oper  = (select max(date_oper) from view_nacpogprokre_all)
-  and  ar.date_close is null
-group by extract(year from ar.date_open)
+                            then lk.summakre else 0 end)
+             / nullif(sum(lk.summakre), 0), 2)                        default_faizi
+from   odb.licschkre lk, view_nacpogprokre_all x
+where  lk.licschpkre = x.licschpkre
+  and  lk.subschkre  = x.subschkre
+  and  x.date_oper   = to_date(sysdate)
+  and  lk.date_close is null
+  and  length(lk.licschkre) = 20
+group by extract(year from lk.date_open)
 order by verilme_ili;
 /* [BAR] variantı (yalnız il → default %):
-   select to_char(extract(year from ar.date_open)) il,
+   select to_char(extract(year from lk.date_open)) il,
           round(100*sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90
-                             then ar.summakre else 0 end)/nullif(sum(ar.summakre),0),2) default_faizi
-   from view_nacpogprokre_all x, arh_licschkre ar
-   where x.licschpkre=ar.licschpkre and x.subschkre=ar.subschkre and ar.date_oper=x.date_oper
-     and x.date_oper=(select max(date_oper) from view_nacpogprokre_all) and ar.date_close is null
-   group by extract(year from ar.date_open) order by il; */
+                             then lk.summakre else 0 end)/nullif(sum(lk.summakre),0),2) default_faizi
+   from odb.licschkre lk, view_nacpogprokre_all x
+   where lk.licschpkre=x.licschpkre and lk.subschkre=x.subschkre and x.date_oper=to_date(sysdate)
+     and lk.date_close is null and length(lk.licschkre)=20
+   group by extract(year from lk.date_open) order by il; */
 
 
 /* ── 17 ────────────────────────────────────────────────────────────────────
    Ad      : Müddət uyğunsuzluğu (maturity)
    Mahiyyət: Yaxın vaxtda ödəniş vaxtı çatan böyük kreditlər
    Parametr: Son tarix (nə vaxta qədər) + Hədd (min qalıq, manat)
-   Mənbə   : Loans_Overdue.sql (date_planclose = son ödəmə)
+   QEYD    : cari licschkre; date_planclose = son ödəmə. Əgər licschkre-də
+             date_planclose/procstavkre yoxdursa, mənə de, uyğunlaşdırım.
 --------------------------------------------------------------------------- */
-select l.licschkre                              hesab,
-       r.name_regnom                            musteri,
-       round(l.summa * 100, 2)                  qaliq,
-       l.date_planclose                         son_odeme,
-       round(l.date_planclose - trunc(sysdate)) qalan_gun,
-       l.procstavkre                            faiz
-from   arh_licschkre l, licsch nm, regnom r
-where  l.date_oper = (select max(date_oper) from arh_licschkre)
-  and  l.date_close is null
-  and  l.summa > 0
-  and  l.licschkre = nm.licsch
-  and  nm.registrac_nomer = r.regnom
-  and  l.date_planclose between trunc(sysdate) and {SONTARIX}
-  and  l.summa * 100 >= {HEDD}
-order by l.summa desc;
+select lk.licschkre                              hesab,
+       r.name_regnom                             musteri,
+       round(lk.summa * 100, 2)                  qaliq,
+       lk.date_planclose                         son_odeme,
+       round(lk.date_planclose - trunc(sysdate)) qalan_gun,
+       lk.procstavkre                            faiz
+from   odb.licschkre lk, regnom r
+where  substr(lk.licschkre, 10, 6) = r.regnom
+  and  length(lk.licschkre) = 20
+  and  lk.date_close is null
+  and  lk.summa > 0
+  and  lk.date_planclose between trunc(sysdate) and {SONTARIX}
+  and  lk.summa * 100 >= {HEDD}
+order by lk.summa desc;
