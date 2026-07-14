@@ -336,30 +336,35 @@ order by olke, r.name_regnom;
    Ad      : Vintage (verilmə ili üzrə default)
    Mahiyyət: Hansı ildə verilən kreditlər daha çox gecikir (90+ gün)
    Parametr: yoxdur (ən son snapshot)
-   Mənbə   : Vintaj_Tam.sql / iller_erzinde_verilmiskreditler...sql
-   QEYD    : yalnız AÇIQ kreditlər (date_close is null) — cari portfel vintage-i.
-             default = day_uderproc >= 90 gün.
+   Mənbə   : Vintaj_Tam.sql
+   DPD     : odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate,x.date_oper))
+             — GECİKMƏ GÜNÜ bu view-dan gəlir (day_uderproc ödəniş günüdür, DPD deyil!)
+   QEYD    : yalnız AÇIQ kreditlər (ar.date_close is null) — cari portfel vintage-i.
 --------------------------------------------------------------------------- */
-select extract(year from l.date_open)                          verilme_ili,
-       count(*)                                                 kredit_sayi,
-       round(sum(l.summakre) * 100, 2)                          verilmis_mebleg,
-       sum(case when l.day_uderproc >= 90 then 1 else 0 end)    default_say,
-       round(100 * sum(case when l.day_uderproc >= 90 then l.summakre else 0 end)
-             / nullif(sum(l.summakre), 0), 2)                   default_faizi
-from   arh_licschkre l
-where  l.date_oper = (select max(date_oper) from arh_licschkre)
-  and  l.date_close is null
-  and  l.summa > 0
-group by extract(year from l.date_open)
+select extract(year from ar.date_open)                                verilme_ili,
+       count(*)                                                       kredit_sayi,
+       round(sum(ar.summakre) * 100, 2)                               verilmis_mebleg,
+       sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
+                then 1 else 0 end)                                    default_say,
+       round(100 * sum(case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
+                            then ar.summakre else 0 end)
+             / nullif(sum(ar.summakre), 0), 2)                        default_faizi
+from   view_nacpogprokre_all x, arh_licschkre ar
+where  x.licschpkre = ar.licschpkre
+  and  x.subschkre  = ar.subschkre
+  and  ar.date_oper = x.date_oper
+  and  x.date_oper  = (select max(date_oper) from view_nacpogprokre_all)
+  and  ar.date_close is null
+group by extract(year from ar.date_open)
 order by verilme_ili;
-/* [BAR] variantı istəsən (yalnız il → default %):
-   select to_char(extract(year from l.date_open)) il,
-          round(100*sum(case when l.day_uderproc>=90 then l.summakre else 0 end)
-                /nullif(sum(l.summakre),0),2) default_faizi
-   from arh_licschkre l
-   where l.date_oper=(select max(date_oper) from arh_licschkre)
-     and l.date_close is null and l.summa>0
-   group by extract(year from l.date_open) order by il; */
+/* [BAR] variantı (yalnız il → default %):
+   select to_char(extract(year from ar.date_open)) il,
+          round(100*sum(case when odb.tar_ferq360(x.date_oper,nvl(x.lastoverduedate,x.date_oper))>=90
+                             then ar.summakre else 0 end)/nullif(sum(ar.summakre),0),2) default_faizi
+   from view_nacpogprokre_all x, arh_licschkre ar
+   where x.licschpkre=ar.licschpkre and x.subschkre=ar.subschkre and ar.date_oper=x.date_oper
+     and x.date_oper=(select max(date_oper) from view_nacpogprokre_all) and ar.date_close is null
+   group by extract(year from ar.date_open) order by il; */
 
 
 /* ── 17 ────────────────────────────────────────────────────────────────────
