@@ -105,9 +105,15 @@ order by l.date_open_licsch desc;
 
 /* ── 5 ─────────────────────────────────────────────────────────────────────
    Ad      : Ümumi müştərilər
-   Mahiyyət: [KPI] qeydiyyatda olan (cəmi rəqəm)
+   Mahiyyət: [KPI] real müştəri (aktiv+passiv, daxili qeydlər istisna)
+   Qeyd    : regnom-da bankın öz DAXİLİ qeydləri də var — count(*) mənasızdır.
+             Yalnız müştəri tipli (yurik/fizik/predprinimatel) sayılır;
+             daxili/texniki qeydlərdə bu bayraqlar olmadığı üçün düşür.
+             (#1 Aktiv müştərilərdən fərqi: bura hesabı bağlanmış keçmiş
+              müştərilər də daxildir. İstəməsən bunu ümumiyyətlə əlavə etmə.)
 --------------------------------------------------------------------------- */
-select count(*) from regnom;
+select count(*) from regnom
+where  yurik = 1 or fizik = 1 or predprinimatel = 1;
 
 
 
