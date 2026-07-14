@@ -46,6 +46,32 @@
         </div>
     }
 
+    @* Necə işləyir — işçi üçün izah *@
+    @if (!string.IsNullOrWhiteSpace(Model.Mahiyyet) || p.VarMi)
+    {
+        <div class="rk-note">
+            <i class="bi bi-info-circle-fill"></i>
+            <div class="rk-note-b">
+                <div class="rk-note-h">Necə işləyir</div>
+                @if (!string.IsNullOrWhiteSpace(Model.Mahiyyet))
+                {
+                    <div class="rk-note-t">@Model.Mahiyyet</div>
+                }
+                @if (p.VarMi)
+                {
+                    <ul class="rk-note-l">
+                        @if (p.BasTarix) { <li><b>Başlanğıc tarix</b> — hesablama bu tarixdən başlayır.</li> }
+                        @if (p.SonTarix) { <li><b>Son tarix</b> — bu tarixə <b>qədər</b> olanlar (məs. bu tarixə qədər ödəmə vaxtı çatan kreditlər).</li> }
+                        @if (p.Tarix)    { <li><b>Tarix</b> — hesablama bu tarixə görə aparılır (adətən bugün).</li> }
+                        @if (p.Hedd)     { <li><b>Hədd</b> — yalnız bu məbləğdən (manatla) <b>böyük</b> olanlar göstərilir.</li> }
+                        @if (p.Il)       { <li><b>İl</b> — yalnız seçilmiş il üzrə.</li> }
+                    </ul>
+                    <div class="rk-note-f">Xanaları doldurub <b>İşlət</b> düyməsinə basın.</div>
+                }
+            </div>
+        </div>
+    }
+
     @if (p.VarMi)
     {
         <div class="fn-card rk-param">
@@ -141,6 +167,16 @@
             font-size:12.5px; font-weight:600; text-decoration:none; }
         .rk-tab:hover { border-color:#fecaca; color:#dc2626; }
         .rk-tab.active { background:#fef2f2; border-color:#fecaca; color:#dc2626; }
+        .rk-note { display:flex; gap:11px; background:#eff6ff; border:1px solid #dbeafe; border-radius:12px;
+            padding:13px 16px; margin-bottom:14px; }
+        .rk-note > i { color:#2563eb; font-size:17px; margin-top:1px; flex-shrink:0; }
+        .rk-note-b { font-size:13px; color:#1e293b; line-height:1.55; }
+        .rk-note-h { font-weight:700; color:#1d4ed8; margin-bottom:3px; }
+        .rk-note-t { color:#334155; }
+        .rk-note-l { margin:6px 0 0; padding-left:18px; }
+        .rk-note-l li { margin-bottom:2px; }
+        .rk-note-l b, .rk-note-t b, .rk-note-f b { color:#0f172a; }
+        .rk-note-f { margin-top:6px; color:#475569; }
         .rk-param { margin-bottom:16px; }
         .rk-pform { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
         .rk-pform label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
