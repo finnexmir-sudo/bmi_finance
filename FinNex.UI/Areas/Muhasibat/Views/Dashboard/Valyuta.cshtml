@@ -15,6 +15,7 @@
             <div class="mh-badge"><i class="bi bi-currency-exchange"></i> Mühasibat / Valyuta</div>
             <h1 class="mh-title">Valyuta Əməliyyatları</h1>
             <div class="mh-sub"><i class="bi bi-calendar-range"></i> @Model.BasTarix.ToString("dd.MM.yyyy") — @Model.SonTarix.ToString("dd.MM.yyyy")</div>
+            <a asp-action="ValyutaExcel" asp-route-bt="@Model.BasTarix.ToString("yyyy-MM-dd")" asp-route-st="@Model.SonTarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə yüklə</a>
         </div>
         <form method="get" class="mh-datef mh-datef--2">
             <div><label>Başlanğıc</label><input type="date" name="bt" value="@Model.BasTarix.ToString("yyyy-MM-dd")" /></div>
