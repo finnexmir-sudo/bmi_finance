@@ -107,6 +107,19 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Drill-down — kart/sətrin arxasındakı hesab detalı (JSON).
+    // sahe: balans / balans-valyuta / balans-menfeet / likvidlik / depozit / kredit / valyuta / rezident.
+    [HttpGet]
+    public async Task<IActionResult> Detal(string sahe, string madde, string? t, string? bt, string? st)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var dto = await _service.DetalAsync(sahe ?? "", madde ?? "",
+            ParseTarix(t), ParseTarix(bt), ParseTarix(st));
+        return Json(dto);
+    }
+
     private static DateTime? ParseTarix(string? t)
     {
         if (!string.IsNullOrWhiteSpace(t) &&

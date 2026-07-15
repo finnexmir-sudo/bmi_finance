@@ -1,0 +1,132 @@
+@*
+    Drill-down modal — hər hansı kart/sətrə klik edəndə arxasındakı hesab detalını göstərir.
+    İstifadə: elementə  data-mhsahe / data-mhmadde / data-mhbaslik  + class="mh-click".
+    Cari tarix parametrləri (t / bt / st) location.search-dən götürülür — səhifə ilə eyni.
+*@
+<div id="mhDetalOverlay" class="mh-dov" style="display:none">
+    <div class="mh-dmodal" role="dialog" aria-modal="true">
+        <div class="mh-dhead">
+            <div>
+                <div class="mh-dtitle" id="mhDT">Detal</div>
+                <div class="mh-dsub" id="mhDS"></div>
+            </div>
+            <button type="button" class="mh-dx" onclick="mhDetalClose()" aria-label="Bağla">&times;</button>
+        </div>
+        <div class="mh-dbody" id="mhDB"></div>
+        <div class="mh-dfoot">
+            <span id="mhDFsay" class="mh-dsay"></span>
+            <span class="mh-dcem">CƏMI: <b id="mhDFcem">—</b></span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .mh-dov { position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 3000;
+        display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
+    .mh-dmodal { background: #fff; width: min(760px, 96vw); max-height: 86vh; border-radius: 16px;
+        display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+    .mh-dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+        padding: 16px 20px; background: linear-gradient(135deg,#16478a,#1e63b8); color: #fff; }
+    .mh-dtitle { font-size: 16px; font-weight: 700; }
+    .mh-dsub { font-size: 12px; opacity: .85; margin-top: 2px; }
+    .mh-dx { background: rgba(255,255,255,.18); border: none; color: #fff; width: 30px; height: 30px;
+        border-radius: 8px; font-size: 20px; line-height: 1; cursor: pointer; }
+    .mh-dx:hover { background: rgba(255,255,255,.32); }
+    .mh-dbody { overflow: auto; padding: 0; }
+    .mh-dbody table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .mh-dbody th { position: sticky; top: 0; background: #f1f5f9; color: #475569; text-align: left;
+        padding: 9px 14px; font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+    .mh-dbody td { padding: 8px 14px; border-top: 1px solid #eef2f7; color: #1e293b; }
+    .mh-dbody tr:hover td { background: #f8fafc; }
+    .mh-dbody .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+    .mh-dbody .kod { font-family: ui-monospace, Menlo, Consolas, monospace; color: #64748b; white-space: nowrap; }
+    .mh-dbody .muted { color: #94a3b8; }
+    .mh-dfoot { display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 20px; border-top: 2px solid #e2e8f0; background: #f8fafc; }
+    .mh-dsay { font-size: 12.5px; color: #64748b; }
+    .mh-dcem { font-size: 14px; color: #0f172a; }
+    .mh-dcem b { font-size: 16px; color: #16478a; margin-left: 4px; }
+    .mh-dload, .mh-derr { padding: 40px; text-align: center; color: #64748b; font-size: 13.5px; }
+    .mh-derr { color: #b91c1c; }
+    .mh-click { cursor: pointer; }
+    .mh-click:hover { filter: brightness(1.03); }
+</style>
+
+<script>
+    (function () {
+        function mhFmt(n) {
+            var neg = n < 0; n = Math.abs(Math.round(n * 100) / 100);
+            var s = n.toFixed(2).split('.');
+            s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            return (neg ? '-' : '') + s[0] + ',' + s[1] + ' ₼';
+        }
+        function esc(x) { return (x == null ? '' : String(x)).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+        window.mhDetalClose = function () {
+            document.getElementById('mhDetalOverlay').style.display = 'none';
+        };
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') mhDetalClose(); });
+        document.getElementById('mhDetalOverlay').addEventListener('click', function (e) {
+            if (e.target === this) mhDetalClose();
+        });
+
+        window.mhDetal = function (sahe, madde, baslik) {
+            var ov = document.getElementById('mhDetalOverlay');
+            document.getElementById('mhDT').textContent = baslik || madde || 'Detal';
+            document.getElementById('mhDS').textContent = 'Hesab detalı — hansı hesabların qalığı';
+            document.getElementById('mhDB').innerHTML = '<div class="mh-dload">Yüklənir…</div>';
+            document.getElementById('mhDFcem').textContent = '—';
+            document.getElementById('mhDFsay').textContent = '';
+            ov.style.display = 'flex';
+
+            var base = @Json.Serialize(Url.Action("Detal", "Dashboard", new { area = "Muhasibat" }));
+            var cur = new URLSearchParams(location.search);
+            var p = new URLSearchParams();
+            ['t', 'bt', 'st'].forEach(function (k) { if (cur.get(k)) p.set(k, cur.get(k)); });
+            p.set('sahe', sahe); p.set('madde', madde);
+
+            fetch(base + '?' + p.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ugurlu) {
+                        document.getElementById('mhDB').innerHTML =
+                            '<div class="mh-derr">Detal alınmadı: ' + esc(d.xeta || '') + '</div>';
+                        return;
+                    }
+                    var rows = d.setirler || [];
+                    if (!rows.length) {
+                        document.getElementById('mhDB').innerHTML =
+                            '<div class="mh-dload">Bu maddə üçün hesab tapılmadı.</div>';
+                    } else {
+                        var html = '<table><thead><tr><th>Hesab / kod</th><th>Ad</th>' +
+                            '<th>Val.</th><th class="num">Məbləğ</th><th></th></tr></thead><tbody>';
+                        rows.forEach(function (x) {
+                            html += '<tr><td class="kod">' + esc(x.kod) + '</td>' +
+                                '<td>' + (x.ad ? esc(x.ad) : '<span class="muted">—</span>') + '</td>' +
+                                '<td class="muted">' + esc(x.valyuta || '') + '</td>' +
+                                '<td class="num">' + mhFmt(x.mebleg) + '</td>' +
+                                '<td class="muted">' + esc(x.elave || '') + '</td></tr>';
+                        });
+                        html += '</tbody></table>';
+                        document.getElementById('mhDB').innerHTML = html;
+                    }
+                    document.getElementById('mhDFcem').textContent = mhFmt(d.cem);
+                    document.getElementById('mhDFsay').textContent = d.say + ' sətir';
+                })
+                .catch(function (e) {
+                    document.getElementById('mhDB').innerHTML =
+                        '<div class="mh-derr">Xəta: ' + esc(e.message || e) + '</div>';
+                });
+        };
+
+        // Delegasiya — data-mhsahe olan istənilən elementə klik
+        document.addEventListener('click', function (e) {
+            var el = e.target.closest('[data-mhsahe]');
+            if (!el) return;
+            e.preventDefault();
+            mhDetal(el.getAttribute('data-mhsahe'), el.getAttribute('data-mhmadde'),
+                el.getAttribute('data-mhbaslik') || '');
+        });
+    })();
+</script>

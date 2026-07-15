@@ -28,6 +28,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdKredit   = "Muhasibat — Kredit portfeli";
     private const string AdValyuta  = "Muhasibat — Valyuta emeliyyatlari";
     private const string AdRezident = "Muhasibat — Rezident";
+    private const string AdRezidentDetal = "Muhasibat — Rezident detal";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -526,6 +527,246 @@ public class MuhasibatService : IMuhasibatService
 
         return dto;
     }
+
+    // ── Drill-down ──────────────────────────────────────────────────────────
+    // Aqreqasiya ilə EYNİ sorğunu işlədir və EYNİ helper-lərlə (Tesnif/LikvidQrup/
+    // dep_tip/TipAd...) təsnif edir → detal cəmi kartla üst-üstə düşür.
+    public async Task<MuhasibatDetalDto> DetalAsync(string sahe, string madde,
+        DateTime? tarix = null, DateTime? bas = null, DateTime? son = null)
+    {
+        var s0 = (sahe ?? "").ToLowerInvariant();
+        madde ??= "";
+        var dto = new MuhasibatDetalDto { Sahe = s0, Madde = madde, Baslik = madde };
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+
+        try
+        {
+            switch (s0)
+            {
+                case "balans":
+                case "balans-valyuta":
+                case "balans-menfeet":
+                case "likvidlik":
+                {
+                    var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+                    foreach (var r in rows)
+                    {
+                        var hesab = Val(r, "hesab")?.ToString() ?? "";
+                        var ad = Val(r, "ad")?.ToString() ?? "";
+                        var valKod = Val(r, "valyuta")?.ToString() ?? "";
+                        var qaliq = Dec(Val(r, "qaliq"));
+                        if (qaliq == 0m) continue;
+                        var depTip = Val(r, "dep_tip")?.ToString() ?? "X";
+
+                        if (s0 == "balans-menfeet")
+                        {
+                            if (!hesab.StartsWith("50130")) continue;
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), -qaliq));
+                            continue;
+                        }
+                        if (s0 == "likvidlik")
+                        {
+                            var lq = LikvidQrup(hesab);
+                            if (lq == null || lq != madde) continue;
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq));
+                            continue;
+                        }
+                        if (s0 == "balans-valyuta")
+                        {
+                            if (depTip is "H" or "F") continue;      // valyuta bölgüsü yalnız aktivlərdən
+                            var (kat0, _) = Tesnif(hesab);
+                            if (kat0 != "aktiv") continue;
+                            if (ValyutaAd(valKod) != madde) continue;
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq));
+                            continue;
+                        }
+
+                        // s0 == "balans": bucket etiketi BalansAsync ilə eyni.
+                        // madde "*aktiv"/"*ohdelik"/"*kapital" → total kartı (bütün kat hesabları).
+                        string kat2, bucket; decimal disp;
+                        if (depTip == "H") { kat2 = "ohdelik"; bucket = "Hüquqi şəxs depozitləri"; disp = -qaliq; }
+                        else if (depTip == "F") { kat2 = "ohdelik"; bucket = "Fiziki şəxs depozitləri"; disp = -qaliq; }
+                        else
+                        {
+                            var (kat, qrup) = Tesnif(hesab);
+                            kat2 = kat;
+                            if (kat == "aktiv") { bucket = qrup; disp = qaliq; }
+                            else if (kat == "ohdelik") { bucket = qrup; disp = -qaliq; }
+                            else if (kat == "kapital") { bucket = "Kapital və ehtiyatlar"; disp = -qaliq; }
+                            else { bucket = "Təsnif edilməmiş"; disp = qaliq; }
+                        }
+                        bool match = madde.StartsWith("*") ? ("*" + kat2 == madde) : (bucket == madde);
+                        if (!match) continue;
+                        dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), disp));
+                    }
+                    break;
+                }
+
+                case "depozit":
+                {
+                    // madde: "tip:huquqi" | "tip:fiziki" | "valyuta:<VAL>" | "musteri:<tip>:<qeyd>"
+                    var sql = (await SqlAl(AdDepozit)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
+                    var parts = (madde ?? "").Split(':');
+                    var mod = parts.Length > 0 ? parts[0] : "";
+
+                    if (mod == "musteri")
+                    {
+                        var mtip = parts.Length > 1 ? parts[1] : "";
+                        var mqeyd = parts.Length > 2 ? parts[2] : "";
+                        foreach (var r in rows)
+                        {
+                            if ((Val(r, "tip")?.ToString() ?? "") != mtip) continue;
+                            if ((Val(r, "qeyd")?.ToString() ?? "") != mqeyd) continue;
+                            var q = Dec(Val(r, "qaliq"));
+                            if (q == 0m) continue;
+                            var ad = Val(r, "musteri")?.ToString() ?? "(adsız)";
+                            var hesab = Val(r, "hesab")?.ToString() ?? mqeyd;
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""), q));
+                        }
+                        dto.Baslik = "Depozitor hesabları";
+                    }
+                    else
+                    {
+                        var arg = parts.Length > 1 ? parts[1] : "";
+                        var musteriler = new Dictionary<string, (string ad, string tip, decimal meb)>();
+                        foreach (var r in rows)
+                        {
+                            var tip = Val(r, "tip")?.ToString() ?? "";
+                            var qeyd = Val(r, "qeyd")?.ToString() ?? "";
+                            var vk = Val(r, "valyuta")?.ToString() ?? "";
+                            var q = Dec(Val(r, "qaliq"));
+                            if (q == 0m) continue;
+                            if (mod == "tip" && tip != arg) continue;
+                            if (mod == "valyuta" && ValyutaAd(vk) != arg) continue;
+                            var ad = Val(r, "musteri")?.ToString() ?? "(adsız)";
+                            var key = tip + "|" + qeyd;
+                            if (musteriler.TryGetValue(key, out var cur))
+                                musteriler[key] = (cur.ad, cur.tip, cur.meb + q);
+                            else
+                                musteriler[key] = (ad, tip, q);
+                        }
+                        foreach (var m in musteriler.OrderByDescending(x => x.Value.meb))
+                        {
+                            var qeyd = m.Key.Contains('|') ? m.Key.Split('|')[1] : m.Key;
+                            dto.Setirler.Add(new MuhasibatDetalSetirDto
+                            {
+                                Kod = qeyd, Ad = m.Value.ad, Mebleg = Math.Round(m.Value.meb, 2),
+                                Elave = m.Value.tip == "fiziki" ? "fiziki" : "hüquqi"
+                            });
+                        }
+                    }
+                    break;
+                }
+
+                case "kredit":
+                {
+                    // madde: "tip:<Ad>" | "teyinat:<Ad>" | "valyuta:<VAL>" | "age:<Ad>"
+                    var sql = await SqlAl(AdKredit);
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
+                    var parts = (madde ?? "").Split(':', 2);
+                    var mod = parts.Length > 0 ? parts[0] : "";
+                    var mval = parts.Length > 1 ? parts[1] : "";
+                    foreach (var r in rows)
+                    {
+                        var kurs = Dec(Val(r, "kurs"));
+                        var esas = Dec(Val(r, "esas"));
+                        var vk = Dec(Val(r, "vk"));
+                        var gec = (int)Dec(Val(r, "gec_gun"));
+                        var qaliq = (esas + vk) * kurs;
+                        if (qaliq == 0m) continue;
+                        bool uygun = mod switch
+                        {
+                            "tip"      => TipAd((int)Dec(Val(r, "tip"))) == mval,
+                            "teyinat"  => TeyinatAd((int)Dec(Val(r, "teyinat"))) == mval,
+                            "valyuta"  => ValyutaAd(Val(r, "valyuta")?.ToString() ?? "") == mval,
+                            "age"      => AgeAd(gec) == mval,
+                            _          => false
+                        };
+                        if (!uygun) continue;
+                        var muq = Val(r, "muqavile")?.ToString() ?? "";
+                        dto.Setirler.Add(new MuhasibatDetalSetirDto
+                        {
+                            Kod = muq, Ad = TipAd((int)Dec(Val(r, "tip"))),
+                            Valyuta = ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""),
+                            Mebleg = Math.Round(qaliq, 2),
+                            Elave = gec > 0 ? $"DPD {gec}" : "cari"
+                        });
+                    }
+                    dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
+                    break;
+                }
+
+                case "valyuta":
+                {
+                    // madde: "val:<VAL>" | "val:<VAL>:alis" | "val:<VAL>:satis"
+                    var sv = (son ?? DateTime.Now.Date).Date;
+                    var bv = (bas ?? sv.AddDays(-30)).Date;
+                    var sql = (await SqlAl(AdValyuta))
+                        .Replace("{BAS}", bv.ToString("dd/MM/yyyy"))
+                        .Replace("{SON}", sv.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 500000);
+                    var parts = (madde ?? "").Split(':');
+                    var mval = parts.Length > 1 ? parts[1] : "";
+                    var myon = parts.Length > 2 ? parts[2] : "";
+                    foreach (var r in rows)
+                    {
+                        var yon = Val(r, "yon")?.ToString() ?? "";
+                        var val = ValyutaAd(Val(r, "val")?.ToString() ?? "");
+                        if (val != mval) continue;
+                        if (!string.IsNullOrEmpty(myon) && yon != myon) continue;
+                        var hecm = Dec(Val(r, "hecm"));
+                        var azn = Dec(Val(r, "azn"));
+                        var tarixStr = Val(r, "tarix") is DateTime dtv ? dtv.ToString("dd.MM.yyyy") : "";
+                        dto.Setirler.Add(new MuhasibatDetalSetirDto
+                        {
+                            Kod = tarixStr, Ad = yon == "alis" ? "Alış" : "Satış", Valyuta = val,
+                            Mebleg = Math.Round(azn, 2),
+                            Elave = $"{Math.Round(hecm, 2)} {val}"
+                        });
+                    }
+                    break;
+                }
+
+                case "rezident":
+                {
+                    // per-account rezident detalı — ayrıca stored sorğu (eyni case məntiqi).
+                    var sql = (await SqlAl(AdRezidentDetal)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+                    foreach (var r in rows)
+                    {
+                        if ((Val(r, "tip")?.ToString() ?? "") != madde) continue;
+                        var meb = Dec(Val(r, "mebleg"));
+                        if (meb == 0m) continue;
+                        dto.Setirler.Add(DSetir(Val(r, "hesab")?.ToString() ?? "",
+                            Val(r, "ad")?.ToString() ?? "", null, Math.Round(meb, 2)));
+                    }
+                    break;
+                }
+
+                default:
+                    throw new InvalidOperationException($"Naməlum sahə: {sahe}");
+            }
+
+            if (s0 is "balans" or "balans-valyuta" or "balans-menfeet" or "likvidlik" or "rezident")
+                dto.Setirler = dto.Setirler.OrderByDescending(x => Math.Abs(x.Mebleg)).ToList();
+
+            dto.Cem = Math.Round(dto.Setirler.Sum(x => x.Mebleg), 2);
+            dto.Say = dto.Setirler.Count;
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    private static MuhasibatDetalSetirDto DSetir(string kod, string ad, string? val, decimal meb) =>
+        new() { Kod = kod, Ad = ad, Valyuta = val, Mebleg = Math.Round(meb, 2) };
 
     private static List<BalansMaddeDto> ToMadde(Dictionary<string, decimal> d, decimal total) =>
         d.Where(x => Math.Abs(x.Value) > 0.005m).OrderByDescending(x => x.Value)

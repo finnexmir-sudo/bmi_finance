@@ -41,7 +41,7 @@
         </div>
 
         <div class="mh-kpis">
-            <div class="mh-kpi mh-kpi--a">
+            <div class="mh-kpi mh-kpi--a mh-click" data-mhsahe="balans" data-mhmadde="*aktiv" data-mhbaslik="Ümumi Aktivlər — bütün aktiv hesablar">
                 <div class="mh-kpi-ic"><i class="bi bi-graph-up-arrow"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiAktiv) <span>₼</span></div>
                 <div class="mh-kpi-l">Ümumi Aktivlər</div>
@@ -50,7 +50,7 @@
                     <div class="mh-kpi-d"><i class="bi bi-@(Model.AktivDeyisme >= 0 ? "arrow-up" : "arrow-down")"></i> @Fmt(Math.Abs(Model.AktivDeyisme)) ₼ <span>dünəndən</span></div>
                 }
             </div>
-            <div class="mh-kpi mh-kpi--o">
+            <div class="mh-kpi mh-kpi--o mh-click" data-mhsahe="balans" data-mhmadde="*ohdelik" data-mhbaslik="Ümumi Öhdəliklər — bütün öhdəlik hesabları">
                 <div class="mh-kpi-ic"><i class="bi bi-graph-down-arrow"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiOhdelik) <span>₼</span></div>
                 <div class="mh-kpi-l">Ümumi Öhdəliklər</div>
@@ -59,7 +59,7 @@
                     <div class="mh-kpi-d"><i class="bi bi-@(Model.OhdelikDeyisme >= 0 ? "arrow-up" : "arrow-down")"></i> @Fmt(Math.Abs(Model.OhdelikDeyisme)) ₼ <span>dünəndən</span></div>
                 }
             </div>
-            <div class="mh-kpi mh-kpi--k">
+            <div class="mh-kpi mh-kpi--k mh-click" data-mhsahe="balans" data-mhmadde="*kapital" data-mhbaslik="Kapital və ehtiyatlar — bütün kapital hesabları">
                 <div class="mh-kpi-ic"><i class="bi bi-shield-check"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.Kapital) <span>₼</span></div>
                 <div class="mh-kpi-l">Kapital və ehtiyatlar</div>
@@ -76,7 +76,7 @@
         </div>
 
         <div class="mh-profit">
-            <div class="mh-prof-card mh-prof--m">
+            <div class="mh-prof-card mh-prof--m mh-click" data-mhsahe="balans-menfeet" data-mhmadde="menfeet" data-mhbaslik="Xalis mənfəət — 50130 hesabları">
                 <div class="mh-prof-t"><i class="bi bi-graph-up-arrow"></i> Xalis mənfəət (YTD)</div>
                 <div class="mh-prof-v">@Fmt(Model.XalisMenfeet) <span>₼</span></div>
                 <div class="mh-prof-s">
@@ -107,7 +107,7 @@
                     <div class="mh-list">
                         @foreach (var a in Model.Aktivler)
                         {
-                            <div class="mh-row">
+                            <div class="mh-row mh-click" data-mhsahe="balans" data-mhmadde="@a.Ad" data-mhbaslik="@a.Ad">
                                 <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
                                 <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
@@ -124,7 +124,7 @@
                     <div class="mh-list">
                         @foreach (var o in Model.Ohdelikler)
                         {
-                            <div class="mh-row">
+                            <div class="mh-row mh-click" data-mhsahe="balans" data-mhmadde="@o.Ad" data-mhbaslik="@o.Ad">
                                 <div class="mh-row-t"><span>@o.Ad</span><b>@Fmt(o.Mebleg) ₼</b></div>
                                 <div class="mh-bar mh-bar--o"><span style="width:@(o.Faiz)%"></span></div>
                                 <div class="mh-row-p">@o.Faiz%</div>
@@ -142,7 +142,7 @@
                 <div class="mh-vallist">
                     @foreach (var v in Model.ValyutaBolgusu)
                     {
-                        <div class="mh-valitem"><span class="mh-valk">@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b><i>@v.Faiz%</i></div>
+                        <div class="mh-valitem mh-click" data-mhsahe="balans-valyuta" data-mhmadde="@v.Ad" data-mhbaslik="Aktivlər — @v.Ad valyutası"><span class="mh-valk">@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b><i>@v.Faiz%</i></div>
                     }
                 </div>
             </div>

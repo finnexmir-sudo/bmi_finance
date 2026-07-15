@@ -21,4 +21,10 @@ public interface IMuhasibatService
 
     // Rezident / qeyri-rezident — hesab qalıqlarının rezidentlik bölgüsü.
     Task<MuhasibatRezidentDto> RezidentAsync(DateTime? tarix = null);
+
+    // Drill-down — bir kart/sətrin arxasındakı hesab (sətir) detalı.
+    // sahe: balans / balans-valyuta / balans-menfeet / likvidlik / depozit / kredit / valyuta / rezident.
+    // Cem müvafiq kartdakı rəqəmlə üst-üstə düşür (eyni sorğu + eyni təsnifat).
+    Task<MuhasibatDetalDto> DetalAsync(string sahe, string madde,
+        DateTime? tarix = null, DateTime? bas = null, DateTime? son = null);
 }
