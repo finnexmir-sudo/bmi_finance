@@ -18,6 +18,13 @@ public class MuhasibatBalansDto
     // Balans eyniliyi: Aktiv = Öhdəlik + Kapital. Fərq sıfıra yaxın olmalıdır.
     public decimal  BalansFerqi => UmumiAktiv - (UmumiOhdelik + Kapital + Tesnifsiz);
 
+    // Gəlirlilik (hesab 50130 = cari ilin mənfəəti/zərəri, bütün valyuta)
+    public decimal  XalisMenfeet { get; set; }   // YTD, AZN
+    public decimal  Roa          { get; set; }   // mənfəət / aktiv, %  (YTD)
+    public decimal  Roe          { get; set; }   // mənfəət / kapital, % (YTD)
+    public decimal  RoaIllik     { get; set; }   // illikləşdirilmiş
+    public decimal  RoeIllik     { get; set; }
+
     public List<BalansMaddeDto> Aktivler       { get; set; } = new();
     public List<BalansMaddeDto> Ohdelikler     { get; set; } = new();
     public List<BalansMaddeDto> ValyutaBolgusu { get; set; } = new();  // aktivlərin valyuta strukturu

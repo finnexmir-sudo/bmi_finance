@@ -86,7 +86,7 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
             var aktiv   = new Dictionary<string, decimal>();
             var ohdelik = new Dictionary<string, decimal>();
             var valyuta = new Dictionary<string, decimal>();
-            decimal kapital = 0m, tesnifsiz = 0m;
+            decimal kapital = 0m, tesnifsiz = 0m, menfeet = 0m;
 
             foreach (var r in rows)
             {
@@ -94,6 +94,9 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
                 var valKod = Val(r, "valyuta")?.ToString() ?? "";
                 var qaliq = Dec(Val(r, "qaliq"));
                 if (qaliq == 0m) continue;
+
+                // Cari ilin mənfəəti (50130*) — kredit qalıqlı, çevir
+                if (hesab.StartsWith("50130")) menfeet += -qaliq;
 
                 var (kat, qrup) = Tesnif(hesab);
                 switch (kat)
@@ -119,6 +122,15 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
             dto.UmumiOhdelik = Math.Round(ohdelik.Values.Sum(), 2);
             dto.Kapital      = Math.Round(kapital, 2);
             dto.Tesnifsiz    = Math.Round(tesnifsiz, 2);
+
+            // Gəlirlilik — ROA / ROE (YTD) + illikləşdirilmiş
+            dto.XalisMenfeet = Math.Round(menfeet, 2);
+            dto.Roa = dto.UmumiAktiv != 0 ? Math.Round(menfeet / dto.UmumiAktiv * 100, 2) : 0;
+            dto.Roe = dto.Kapital != 0 ? Math.Round(menfeet / dto.Kapital * 100, 2) : 0;
+            var gun = t.DayOfYear;
+            var faktor = gun > 0 ? 365m / gun : 1m;
+            dto.RoaIllik = Math.Round(dto.Roa * faktor, 2);
+            dto.RoeIllik = Math.Round(dto.Roe * faktor, 2);
 
             dto.Aktivler = aktiv.Where(x => Math.Abs(x.Value) > 0.005m)
                 .OrderByDescending(x => x.Value)
