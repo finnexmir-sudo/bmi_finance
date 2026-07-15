@@ -409,6 +409,10 @@ order by il;
                            bu tarixə uzadılıb (date_planclose saxta görünə bilər).
              ITEM_01     = kreditin əl ilə yazılan status qeydi (məs. "İCRADA").
                            Riskin oxuduğu sərbəst mətn — icra/məhkəmə vəziyyəti.
+                           MƏNBƏ: odb.srokpogprockre.item_01 (licschkre-də DEYİL).
+                           srokpogprockre qrafik cədvəlidir (bir kreditə çox sətir),
+                           ona görə skalyar alt-sorğu (rownum=1) — sətir çoxalmasın.
+                           Eyni sütun MehkemeIsiService "CariKataloq" sorğusunda da var.
    MƏNTİQ  : İcradakı / uzun gecikmiş kreditlər hesabatda QALIR, amma VEZIYYET
              sütunu ilə etiketlənir. Belə kreditin date_planclose-u praktikada
              saxtadır (cədvəl üzrə ödənmir, məhkəmə/icra ilə yığılır) — DEFAULT
@@ -429,7 +433,9 @@ with kr as (
          odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))               gecikme_gun,
          case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
               then 'DEFAULT' else 'normal' end                                           veziyyet,
-         lk.item_01                                                                      item_01,
+         (select s.item_01 from odb.srokpogprockre s
+           where s.licschpkre = lk.licschpkre and s.subschkre = lk.subschkre
+             and rownum = 1)                                                             item_01,
          lk.procstavkre                                                                  faiz
   from   odb.licschkre lk, view_nacpogprokre_all x, regnom r
   where  lk.licschpkre = x.licschpkre
