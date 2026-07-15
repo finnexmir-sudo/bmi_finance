@@ -404,9 +404,11 @@ order by il;
              TAM_QALIQ   = esas + vk = ümumi borc (real risk məbləği)
              GECIKME_GUN = DPD (view_nacpogprokre_all + tar_ferq360)
              VEZIYYET    = normal (<90 gün) / DEFAULT (90+ gün — icra/problemli)
-             RESTRUKT    = restrukturizasiya/uzadılma tarixi (date_prolong).
+             UZADILMA    = uzadılma/prolongasiya tarixi (date_prolong).
                            Boşdursa — kredit uzadılmayıb. Doludursa — son ödəmə
                            bu tarixə uzadılıb (date_planclose saxta görünə bilər).
+             ITEM_01     = kreditin əl ilə yazılan status qeydi (məs. "İCRADA").
+                           Riskin oxuduğu sərbəst mətn — icra/məhkəmə vəziyyəti.
    MƏNTİQ  : İcradakı / uzun gecikmiş kreditlər hesabatda QALIR, amma VEZIYYET
              sütunu ilə etiketlənir. Belə kreditin date_planclose-u praktikada
              saxtadır (cədvəl üzrə ödənmir, məhkəmə/icra ilə yığılır) — DEFAULT
@@ -423,10 +425,11 @@ with kr as (
          round((lk.summa + lk.summa_19) * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  tam_qaliq,
          lk.date_planclose                                                               son_odeme,
          round(lk.date_planclose - trunc(sysdate))                                       qalan_gun,
-         lk.date_prolong                                                                 restrukt_tarixi,
+         lk.date_prolong                                                                 uzadilma_tarixi,
          odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))               gecikme_gun,
          case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
               then 'DEFAULT' else 'normal' end                                           veziyyet,
+         lk.item_01                                                                      item_01,
          lk.procstavkre                                                                  faiz
   from   odb.licschkre lk, view_nacpogprokre_all x, regnom r
   where  lk.licschpkre = x.licschpkre
