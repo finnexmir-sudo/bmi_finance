@@ -15,11 +15,27 @@ public class MuhasibatService : IMuhasibatService
 
     // Balans qalıqları — bir tarixə bütün açıq hesablar (odb.arh_saldo_ls).
     // saldo_ish_nacval = günün sonuna milli valyutada (AZN) qalıq.
+    // dep_tip: real müştəri depoziti? (frm_Dep məntiqi ilə eyni)
+    //   'F' = fiziki (41, müştəri regnom var, ≠000004)
+    //   'H' = hüquqi (40/3x, texniki istisna, müştəri regnom var, ≠000004)
+    //   'X' = deyil → adi təsnifat (Tesnif)
     private const string BalansSql = @"
 SELECT ar.licsch AS hesab,
        CASE WHEN SUBSTR(ar.licsch,0,3) IN ('159','209','219','239','259')
             THEN SUBSTR(ar.licsch,16,2) ELSE SUBSTR(ar.licsch,6,2) END AS valyuta,
-       ar.saldo_ish_nacval AS qaliq
+       ar.saldo_ish_nacval AS qaliq,
+       CASE
+         WHEN SUBSTR(ar.licsch,1,2)='41'
+              AND SUBSTR(ar.licsch,10,6)<>'000004'
+              AND EXISTS (SELECT 1 FROM regnom r WHERE r.regnom=SUBSTR(ar.licsch,10,6))
+           THEN 'F'
+         WHEN (SUBSTR(ar.licsch,1,2)='40' OR SUBSTR(ar.licsch,1,1)='3')
+              AND SUBSTR(ar.licsch,1,5) NOT IN ('35020','35025','35026','35940')
+              AND SUBSTR(ar.licsch,10,6)<>'000004'
+              AND EXISTS (SELECT 1 FROM regnom r WHERE r.regnom=ch.registrac_nomer)
+           THEN 'H'
+         ELSE 'X'
+       END AS dep_tip
 FROM   odb.arh_saldo_ls ar, licsch ch
 WHERE  ar.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
   AND  ch.licsch = ar.licsch
@@ -97,6 +113,19 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
 
                 // Cari ilin mənfəəti (50130*) — kredit qalıqlı, çevir
                 if (hesab.StartsWith("50130")) menfeet += -qaliq;
+
+                // Real müştəri depoziti (frm_Dep məntiqi) — Depozit tab-ı ilə tam uyğun
+                var depTip = Val(r, "dep_tip")?.ToString() ?? "X";
+                if (depTip == "H")
+                {
+                    ohdelik["Hüquqi şəxs depozitləri"] = ohdelik.GetValueOrDefault("Hüquqi şəxs depozitləri") + (-qaliq);
+                    continue;
+                }
+                if (depTip == "F")
+                {
+                    ohdelik["Fiziki şəxs depozitləri"] = ohdelik.GetValueOrDefault("Fiziki şəxs depozitləri") + (-qaliq);
+                    continue;
+                }
 
                 var (kat, qrup) = Tesnif(hesab);
                 switch (kat)
@@ -534,15 +563,11 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
 
         if (d1 == '3' || d1 == '4')
         {
-            string q = p2 switch
-            {
-                "35" or "36" => "Bank və maliyyə öhdəlikləri",
-                // 38/39 (əvvəl "Cəlb olunmuş vəsaitlər") mühasib qərarı ilə hüquqi
-                // şəxs depozitinə birləşdirildi — Depozit tab-ı ilə uyğun olsun.
-                "38" or "39" or "40" => "Hüquqi şəxs depozitləri",
-                "41" => "Fiziki şəxs depozitləri",
-                _ => "Digər öhdəliklər"
-            };
+            // Real müştəri depozitləri (hüquqi/fiziki) BalansAsync-də dep_tip flaqı
+            // ilə ayrılır (frm_Dep müştəri məntiqi). Burada yalnız qalanlar:
+            //   35/36 → bank öhdəlikləri; digər 3x/4x (müştərisiz depozit, bağlı
+            //   hesab və s.) → digər öhdəliklər.
+            string q = (p2 == "35" || p2 == "36") ? "Bank və maliyyə öhdəlikləri" : "Digər öhdəliklər";
             return ("ohdelik", q);
         }
 
