@@ -1,0 +1,178 @@
+using FinNex.Application.DTOs.Muhasibat;
+using FinNex.Application.Interfaces.Muhasibat;
+using FinNex.Application.Interfaces.Oracle;
+
+namespace FinNex.Application.Services.Muhasibat;
+
+// Mühasibat — Balans İcmalı servisi.
+// Oracle YALNIZ SELECT (CLAUDE.md). Tarix parametri validasiya olunmuş DateTime-dır
+// və ciddi formatla (dd/MM/yyyy) SQL-ə yerləşdirilir — sərbəst istifadəçi mətni deyil.
+public class MuhasibatService : IMuhasibatService
+{
+    private readonly IOracleService _oracle;
+
+    public MuhasibatService(IOracleService oracle) => _oracle = oracle;
+
+    // Balans qalıqları — bir tarixə bütün açıq hesablar (odb.arh_saldo_ls).
+    // saldo_ish_nacval = günün sonuna milli valyutada (AZN) qalıq.
+    private const string BalansSql = @"
+SELECT ar.licsch AS hesab,
+       CASE WHEN SUBSTR(ar.licsch,0,3) IN ('159','209','219','239','259')
+            THEN SUBSTR(ar.licsch,16,2) ELSE SUBSTR(ar.licsch,6,2) END AS valyuta,
+       ar.saldo_ish_nacval AS qaliq
+FROM   odb.arh_saldo_ls ar, licsch ch
+WHERE  ar.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
+  AND  ch.licsch = ar.licsch
+  AND  (ch.date_close_licsch IS NULL OR ar.date_oper <= ch.date_close_licsch)";
+
+    public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatBalansDto { Tarix = t };
+
+        try
+        {
+            var sql = BalansSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+
+            var aktiv   = new Dictionary<string, decimal>();
+            var ohdelik = new Dictionary<string, decimal>();
+            var valyuta = new Dictionary<string, decimal>();
+            decimal kapital = 0m, tesnifsiz = 0m;
+
+            foreach (var r in rows)
+            {
+                var hesab = Val(r, "hesab")?.ToString() ?? "";
+                var valKod = Val(r, "valyuta")?.ToString() ?? "";
+                var qaliq = Dec(Val(r, "qaliq"));
+                if (qaliq == 0m) continue;
+
+                var (kat, qrup) = Tesnif(hesab);
+                switch (kat)
+                {
+                    case "aktiv":
+                        aktiv[qrup] = aktiv.GetValueOrDefault(qrup) + qaliq;   // debet-müsbət
+                        var vad = ValyutaAd(valKod);
+                        valyuta[vad] = valyuta.GetValueOrDefault(vad) + qaliq;
+                        break;
+                    case "ohdelik":
+                        ohdelik[qrup] = ohdelik.GetValueOrDefault(qrup) + (-qaliq);  // kredit-mənfi → çevir
+                        break;
+                    case "kapital":
+                        kapital += (-qaliq);
+                        break;
+                    default:
+                        tesnifsiz += qaliq;
+                        break;
+                }
+            }
+
+            dto.UmumiAktiv   = Math.Round(aktiv.Values.Sum(), 2);
+            dto.UmumiOhdelik = Math.Round(ohdelik.Values.Sum(), 2);
+            dto.Kapital      = Math.Round(kapital, 2);
+            dto.Tesnifsiz    = Math.Round(tesnifsiz, 2);
+
+            dto.Aktivler = aktiv.Where(x => Math.Abs(x.Value) > 0.005m)
+                .OrderByDescending(x => x.Value)
+                .Select(x => new BalansMaddeDto
+                {
+                    Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
+                    Faiz = dto.UmumiAktiv != 0 ? Math.Round(x.Value / dto.UmumiAktiv * 100, 1) : 0
+                }).ToList();
+
+            dto.Ohdelikler = ohdelik.Where(x => Math.Abs(x.Value) > 0.005m)
+                .OrderByDescending(x => x.Value)
+                .Select(x => new BalansMaddeDto
+                {
+                    Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
+                    Faiz = dto.UmumiOhdelik != 0 ? Math.Round(x.Value / dto.UmumiOhdelik * 100, 1) : 0
+                }).ToList();
+
+            dto.ValyutaBolgusu = valyuta.Where(x => Math.Abs(x.Value) > 0.005m)
+                .OrderByDescending(x => x.Value)
+                .Select(x => new BalansMaddeDto
+                {
+                    Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
+                    Faiz = dto.UmumiAktiv != 0 ? Math.Round(x.Value / dto.UmumiAktiv * 100, 1) : 0
+                }).ToList();
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    // Hesab kodunun ilk rəqəmi/ilk 2 rəqəmi üzrə təsnifat.
+    // 1,2 → aktiv;  3,4 → öhdəlik (44/45 və 5x istisna → kapital);  qalanı → təsnifsiz.
+    private static (string kat, string qrup) Tesnif(string hesab)
+    {
+        if (string.IsNullOrEmpty(hesab) || hesab.Length < 2)
+            return ("tesnifsiz", "Təsnif edilməmiş");
+
+        var d1 = hesab[0];
+        var p2 = hesab.Substring(0, 2);
+
+        // Kapital və ehtiyatlar
+        if (p2 == "44" || p2 == "45" || d1 == '5')
+            return ("kapital", "Kapital və ehtiyatlar");
+
+        if (d1 == '1' || d1 == '2')
+        {
+            string q = p2 switch
+            {
+                "10" => "Kassa (nağd vəsaitlər)",
+                "11" => "AMB və müxbir hesablar",
+                "12" or "13" or "14" => "Banklararası yerləşdirmələr",
+                "15" => "Digər yerləşdirmələr / likvid aktivlər",
+                "20" or "21" or "22" or "23" => "Müştərilərə kreditlər",
+                "24" or "25" or "26" => "Hesablanmış faizlər və digər aktivlər",
+                "27" or "28" => "Əsas vəsaitlər və qeyri-maddi aktivlər",
+                _ => "Digər aktivlər"
+            };
+            return ("aktiv", q);
+        }
+
+        if (d1 == '3' || d1 == '4')
+        {
+            string q = p2 switch
+            {
+                "35" or "36" => "Bank və maliyyə öhdəlikləri",
+                "38" or "39" => "Cəlb olunmuş vəsaitlər",
+                "40" => "Hüquqi şəxs depozitləri",
+                "41" => "Fiziki şəxs depozitləri",
+                _ => "Digər öhdəliklər"
+            };
+            return ("ohdelik", q);
+        }
+
+        return ("tesnifsiz", "Təsnif edilməmiş");
+    }
+
+    private static string ValyutaAd(string kod) => kod switch
+    {
+        "00" => "AZN",
+        "01" => "USD",
+        "02" => "EUR",
+        "03" => "RUB",
+        "04" => "IRR",
+        "05" => "AED",
+        _ => "Digər"
+    };
+
+    // Oracle sütun adları böyük hərflə gələ bilər — case-insensitive axtarış.
+    private static object? Val(Dictionary<string, object?> r, string key)
+    {
+        foreach (var kv in r)
+            if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase))
+                return kv.Value;
+        return null;
+    }
+
+    private static decimal Dec(object? o) =>
+        (o == null || o == DBNull.Value) ? 0m : Convert.ToDecimal(o);
+}
