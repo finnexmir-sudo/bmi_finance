@@ -29,152 +29,18 @@ public class MuhasibatService : IMuhasibatService
     private const string AdValyuta  = "Muhasibat — Valyuta emeliyyatlari";
     private const string AdRezident = "Muhasibat — Rezident";
 
-    // SQL-i OracleSorgular-dan ad ilə oxu; yoxdursa embedded fallback qaytar.
-    private async Task<string> SqlAl(string ad, string fallback)
+    // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
+    private async Task<string> SqlAl(string ad)
     {
-        try
-        {
-            var res = await _sorgu.HamisiniGetirAsync();
-            var q = res?.Data?.FirstOrDefault(x => x.Aktiv
-                && !string.IsNullOrWhiteSpace(x.SorguMetni)
-                && string.Equals((x.SorguAdi ?? "").Trim(), ad, StringComparison.OrdinalIgnoreCase));
-            return q != null ? q.SorguMetni : fallback;
-        }
-        catch { return fallback; }
+        var res = await _sorgu.HamisiniGetirAsync();
+        var q = res?.Data?.FirstOrDefault(x => x.Aktiv
+            && !string.IsNullOrWhiteSpace(x.SorguMetni)
+            && string.Equals((x.SorguAdi ?? "").Trim(), ad, StringComparison.OrdinalIgnoreCase));
+        if (q == null)
+            throw new InvalidOperationException(
+                $"OracleSorgular-da sorğu tapılmadı: '{ad}'. Muhasibat INSERT script işlədilməlidir.");
+        return q.SorguMetni;
     }
-
-    // Balans qalıqları — bir tarixə bütün açıq hesablar (odb.arh_saldo_ls).
-    // saldo_ish_nacval = günün sonuna milli valyutada (AZN) qalıq.
-    // dep_tip: real müştəri depoziti? (frm_Dep məntiqi ilə eyni)
-    //   'F' = fiziki (41, müştəri regnom var, ≠000004)
-    //   'H' = hüquqi (40/3x, texniki istisna, müştəri regnom var, ≠000004)
-    //   'X' = deyil → adi təsnifat (Tesnif)
-    private const string BalansSql = @"
-SELECT ar.licsch AS hesab,
-       CASE WHEN SUBSTR(ar.licsch,0,3) IN ('159','209','219','239','259')
-            THEN SUBSTR(ar.licsch,16,2) ELSE SUBSTR(ar.licsch,6,2) END AS valyuta,
-       ar.saldo_ish_nacval AS qaliq,
-       CASE
-         WHEN SUBSTR(ar.licsch,1,2)='41'
-              AND SUBSTR(ar.licsch,10,6)<>'000004'
-              AND EXISTS (SELECT 1 FROM regnom r WHERE r.regnom=SUBSTR(ar.licsch,10,6))
-           THEN 'F'
-         WHEN (SUBSTR(ar.licsch,1,2)='40' OR SUBSTR(ar.licsch,1,1)='3')
-              AND SUBSTR(ar.licsch,1,5) NOT IN ('35020','35025','35026','35940')
-              AND SUBSTR(ar.licsch,10,6)<>'000004'
-              AND EXISTS (SELECT 1 FROM regnom r WHERE r.regnom=ch.registrac_nomer)
-           THEN 'H'
-         ELSE 'X'
-       END AS dep_tip
-FROM   odb.arh_saldo_ls ar, licsch ch
-WHERE  ar.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
-  AND  ch.licsch = ar.licsch
-  AND  (ch.date_close_licsch IS NULL OR ar.date_oper <= ch.date_close_licsch)";
-
-    // Depozit hesabları — hüquqi (40/3x) + fiziki (41), müştəri linki ilə.
-    // saldo_ish_nacval passiv → mənfi; -qaliq ilə müsbətə çevrilir.
-    private const string DepozitSql = @"
-SELECT 'huquqi' tip, b.registrac_nomer qeyd, r.name_regnom musteri,
-       SUBSTR(l.licsch,6,2) valyuta, -l.saldo_ish_nacval qaliq
-FROM   odb.arh_saldo_ls l, licsch b, regnom r
-WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
-  AND  b.licsch = l.licsch AND r.regnom = b.registrac_nomer
-  AND  (SUBSTR(l.licsch,1,2)='40' OR SUBSTR(l.licsch,1,1)='3')
-  AND  SUBSTR(l.licsch,1,5) NOT IN ('35020','35025','35026','35940')
-  AND  SUBSTR(l.licsch,10,6) <> '000004'
-  AND  l.saldo_ish_nacval <> 0
-UNION ALL
-SELECT 'fiziki' tip, SUBSTR(l.licsch,10,6) qeyd, r.name_regnom musteri,
-       SUBSTR(l.licsch,6,2) valyuta, -l.saldo_ish_nacval qaliq
-FROM   odb.arh_saldo_ls l, regnom r
-WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
-  AND  SUBSTR(l.licsch,1,2)='41' AND r.regnom = SUBSTR(l.licsch,10,6)
-  AND  SUBSTR(l.licsch,10,6) <> '000004'
-  AND  l.saldo_ish_nacval <> 0";
-
-    // Əlaqəli tərəf depoziti (normativ) — şirkət (təsisçisi imza sahibi olan) +
-    // təsisçi/imza sahibinin şəxsi depozitləri. İŞÇİ komponenti HƏLƏ YOX (frm_elaqeli
-    // ilə tam uyğunluq üçün sonra əlavə olunacaq). Məxrəc: top_qal (35-49).
-    private const string ElaqeliSql = @"
-with elaqeli_hesab as (
-  select distinct ar.licsch
-  from odb.arh_saldo_ls ar, licsch l
-  where ar.licsch = l.licsch and ar.date_oper = to_date('{TARIX}','dd/mm/yyyy')
-    and substr(ar.licsch,1,1) in ('3','4')
-    and (l.registrac_nomer in (select customer_regnom from imza_huquqi_olan_shexsler)
-         or l.registrac_nomer in (select regnom from imza_huquqi_olan_shexsler))
-)
-select
-  (select round(-sum(k.saldo_ish_nacval),2)
-     from odb.arh_saldo_ls k, licsch p
-    where p.licsch = k.licsch and k.date_oper = to_date('{TARIX}','dd/mm/yyyy')
-      and substr(k.licsch,1,2) in ('35','36','38','39','40','41','49')
-      and (p.date_close_licsch is null or k.date_oper <= p.date_close_licsch)) portfel,
-  (select round(-sum(ar.saldo_ish_nacval),2)
-     from odb.arh_saldo_ls ar
-    where ar.date_oper = to_date('{TARIX}','dd/mm/yyyy')
-      and ar.licsch in (select licsch from elaqeli_hesab)) elaqeli
-from dual";
-
-    // Cari kredit portfeli — sysdate snapshot. summa=əsas, summa_19=VK.
-    // kurs bir dəfə çıxarılır; qalıq C#-da (esas+vk)*kurs kimi hesablanır.
-    private const string KreditSql = @"
-SELECT lk.tipkredita tip,
-       lk.index_otrasli teyinat,
-       SUBSTR(lk.licschkre,6,2) valyuta,
-       ROUND(odb.func_get_kurval(SUBSTR(lk.licschkre,6,2), to_date(sysdate)), 6) kurs,
-       lk.summa esas,
-       lk.summa_19 vk,
-       odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate, x.date_oper)) gec_gun
-FROM   odb.licschkre lk, view_nacpogprokre_all x
-WHERE  lk.licschpkre = x.licschpkre AND lk.subschkre = x.subschkre
-  AND  x.date_oper = to_date(sysdate)
-  AND  lk.date_close IS NULL AND LENGTH(lk.licschkre) = 20";
-
-    // Valyuta alış/satış — arh_dd dövriyyələri (alış: 10060←10050; satış: 10050←10060).
-    private const string ValyutaSql = @"
-SELECT 'alis' yon, SUBSTR(d.debet,6,2) val, d.summa_v_inval hecm, d.summa_v_inval*d.kurs_valuti azn
-FROM   arh_dd d
-WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd/mm/yyyy')
-  AND  SUBSTR(d.debet,1,5) = '10060' AND SUBSTR(d.kredit,1,5) = '10050'
-UNION ALL
-SELECT 'satis' yon, SUBSTR(d.kredit,6,2) val, d.summa_v_inval hecm, d.summa_v_inval*d.kurs_valuti azn
-FROM   arh_dd d
-WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd/mm/yyyy')
-  AND  SUBSTR(d.debet,1,5) = '10050' AND SUBSTR(d.kredit,1,5) = '10060'";
-
-    // Əvvəlki iş günü totalları (müqayisə üçün) — sadə sinif aqreqasiyası.
-    private const string MuqayiseSql = @"
-select
-  round(sum(case when substr(ar.licsch,1,1) in ('1','2') then ar.saldo_ish_nacval else 0 end),2) aktiv,
-  round(-sum(case when substr(ar.licsch,1,1) in ('3','4') and substr(ar.licsch,1,2) not in ('44','45') then ar.saldo_ish_nacval else 0 end),2) ohdelik,
-  round(-sum(case when substr(ar.licsch,1,2) in ('44','45') or substr(ar.licsch,1,1)='5' then ar.saldo_ish_nacval else 0 end),2) kapital,
-  round(-sum(case when substr(ar.licsch,1,5)='50130' then ar.saldo_ish_nacval else 0 end),2) menfeet
-from odb.arh_saldo_ls ar, licsch ch
-where ar.date_oper = (
-    select max(c.date_oper) from odb.arh_saldo_ls c
-    where c.date_oper < to_date('{TARIX}','dd/mm/yyyy')
-      and c.date_oper >= to_date('{TARIX}','dd/mm/yyyy') - 10)
-  and ch.licsch = ar.licsch
-  and (ch.date_close_licsch is null or ar.date_oper <= ch.date_close_licsch)";
-
-    // Rezident/qeyri-rezident — frm_reziden_ve_qeyri_rezident məntiqi (ABS qalıq).
-    private const string RezidentSql = @"
-select
-  case when (substr(s.licsch,0,3)='409'
-             and substr(regexp_substr(l.name_licsch,'\(([^()]*)\)\s*$',1,1,null,1),5,1)='5')
-            or substr(s.licsch,0,5)='45029'
-       then 'qr' else 'r' end tip,
-  round(sum(abs(s.saldo_ish_nacval)),2) mebleg,
-  count(*) say
-from odb.arh_saldo_ls s, licsch l
-where l.licsch = s.licsch
-  and s.date_oper = to_date('{TARIX}','dd/mm/yyyy')
-  and (l.date_close_licsch is null or l.date_close_licsch >= to_date('{TARIX}','dd/mm/yyyy'))
-group by case when (substr(s.licsch,0,3)='409'
-             and substr(regexp_substr(l.name_licsch,'\(([^()]*)\)\s*$',1,1,null,1),5,1)='5')
-            or substr(s.licsch,0,5)='45029'
-       then 'qr' else 'r' end";
 
     public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
     {
@@ -183,7 +49,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = (await SqlAl(AdBalans, BalansSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
 
             var aktiv   = new Dictionary<string, decimal>();
@@ -251,7 +117,7 @@ group by case when (substr(s.licsch,0,3)='409'
             // Əvvəlki iş günü ilə müqayisə (xəta əsas balansı pozmasın)
             try
             {
-                var msql = (await SqlAl(AdMuqayise, MuqayiseSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                var msql = (await SqlAl(AdMuqayise)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                 var mrows = await _oracle.SelectAsync(msql, maxRows: 5);
                 if (mrows.Count > 0 && Dec(Val(mrows[0], "aktiv")) != 0)
                 {
@@ -306,7 +172,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = (await SqlAl(AdDepozit, DepozitSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdDepozit)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
 
             decimal huquqi = 0m, fiziki = 0m;
@@ -350,7 +216,7 @@ group by case when (substr(s.licsch,0,3)='409'
             // Əlaqəli tərəf (normativ) — ayrıca sorğu; xəta əsas depoziti pozmasın
             try
             {
-                var esql = (await SqlAl(AdElaqeli, ElaqeliSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                var esql = (await SqlAl(AdElaqeli)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                 var erows = await _oracle.SelectAsync(esql, maxRows: 5);
                 if (erows.Count > 0)
                 {
@@ -412,7 +278,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = await SqlAl(AdKredit, KreditSql);
+            var sql = await SqlAl(AdKredit);
             var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
 
             var tipD = new Dictionary<string, decimal>();
@@ -478,7 +344,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = (await SqlAl(AdBalans, BalansSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
 
             var likvidD = new Dictionary<string, decimal>();
@@ -561,7 +427,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = (await SqlAl(AdValyuta, ValyutaSql))
+            var sql = (await SqlAl(AdValyuta))
                 .Replace("{BAS}", b.ToString("dd/MM/yyyy"))
                 .Replace("{SON}", s.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 500000);
@@ -638,7 +504,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = (await SqlAl(AdRezident, RezidentSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdRezident)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 10);
             foreach (var r in rows)
             {
