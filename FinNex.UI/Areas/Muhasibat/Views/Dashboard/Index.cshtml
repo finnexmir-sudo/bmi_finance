@@ -79,7 +79,13 @@
             <div class="mh-prof-card mh-prof--m">
                 <div class="mh-prof-t"><i class="bi bi-graph-up-arrow"></i> Xalis mənfəət (YTD)</div>
                 <div class="mh-prof-v">@Fmt(Model.XalisMenfeet) <span>₼</span></div>
-                <div class="mh-prof-s">Cari ilin mənfəəti/zərəri · hesab 50130@if (Model.MuqayiseVar) {<text> · <b class="@(Model.MenfeetDeyisme >= 0 ? "d-up" : "d-dn")">@(Model.MenfeetDeyisme >= 0 ? "▲" : "▼") @Fmt(Math.Abs(Model.MenfeetDeyisme)) ₼</b></text>}</div>
+                <div class="mh-prof-s">
+                    Cari ilin mənfəəti/zərəri · hesab 50130
+                    @if (Model.MuqayiseVar)
+                    {
+                        <text> · <b class="@(Model.MenfeetDeyisme >= 0 ? "d-up" : "d-dn")">@(Model.MenfeetDeyisme >= 0 ? "▲" : "▼") @Fmt(Math.Abs(Model.MenfeetDeyisme)) ₼</b></text>
+                    }
+                </div>
             </div>
             <div class="mh-prof-card mh-prof--a">
                 <div class="mh-prof-t"><i class="bi bi-pie-chart-fill"></i> ROA</div>
