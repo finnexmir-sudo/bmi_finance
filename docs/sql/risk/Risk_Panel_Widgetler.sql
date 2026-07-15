@@ -78,7 +78,7 @@ where  r.regnom = l.registrac_nomer
   and  (r.insider = 1 or r.svazanniy = 1)
 order by r.name_regnom;
 
-/* Ad: Açıq müştəri hesabları | Mahiyyət: [KPI] real müştəriyə aid açıq hesab */
+/* Ad: Açıq cari müştəri hesabları | Mahiyyət: [KPI] real müştəriyə aid açıq hesab */
 select l.licsch hesab, r.name_regnom musteri, r.inn_regnom voen, r.pincode fin,
        l.name_licsch hesab_adi, l.date_open_licsch acilma
 from   regnom r, licsch l

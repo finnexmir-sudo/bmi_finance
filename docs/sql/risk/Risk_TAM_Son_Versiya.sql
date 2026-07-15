@@ -30,7 +30,7 @@
    │   1. [KPI] Aktiv müştərilər        5. [PIE] Müştəri tipi           │
    │   2. [KPI] Qeyri-rezidentlər       6. [BAR] Ölkə üzrə müştərilər   │
    │   3. [KPI] İnsayder / əlaqəli      7. [LINE] Son 12 ay açılan hes. │
-   │   4. [KPI] Açıq müştəri hesabları  8. [PIE] Risk səviyyəsi         │
+   │   4. [KPI] Açıq cari müştəri hesabları  8. [PIE] Risk səviyyəsi    │
    │ HESABATLAR (9–18) — parametrli/detallı, istəyə görə               │
    │   16. Vintage (verilmə ili → default)  17. Müddət (maturity)      │
    │   18. Vintage — kreditlər (il üzrə, #16 detalı — müştərilər)      │
@@ -94,7 +94,7 @@ order by r.name_regnom;
 
 
 /* ── 4 ─────────────────────────────────────────────────────────────────────
-   Ad      : Açıq müştəri hesabları
+   Ad      : Açıq cari müştəri hesabları
    Mahiyyət: [KPI] real müştəriyə aid açıq hesab
 --------------------------------------------------------------------------- */
 select l.licsch hesab, r.name_regnom musteri, r.inn_regnom voen, r.pincode fin,
