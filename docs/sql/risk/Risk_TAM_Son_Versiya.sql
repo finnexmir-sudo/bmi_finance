@@ -434,7 +434,7 @@ with kr as (
          case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
               then 'DEFAULT' else 'normal' end                                           veziyyet,
          (select s.item_01 from odb.srokpogprockre s
-           where s.licschpkre = lk.licschpkre and s.subschkre = lk.subschkre
+           where s.licschkre = lk.licschkre and s.subschkre = lk.subschkre
              and rownum = 1)                                                             item_01,
          lk.procstavkre                                                                  faiz
   from   odb.licschkre lk, view_nacpogprokre_all x, regnom r
