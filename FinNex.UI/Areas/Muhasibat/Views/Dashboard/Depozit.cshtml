@@ -1,0 +1,229 @@
+@using System.Text.Json
+@model MuhasibatDepozitDto
+@{
+    ViewData["Title"] = "Mühasibat — Depozitlər";
+    string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    var tipJson = Html.Raw(JsonSerializer.Serialize(Model.TipBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var valJson = Html.Raw(JsonSerializer.Serialize(Model.ValyutaBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+}
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--dep">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-piggy-bank"></i> Mühasibat / Depozitlər</div>
+            <h1 class="mh-title">Depozit Portfeli</h1>
+            <div class="mh-sub"><i class="bi bi-calendar3"></i> Hesabat tarixi: <b>@Model.Tarix.ToString("dd.MM.yyyy")</b></div>
+        </div>
+        <form method="get" class="mh-datef">
+            <label>Tarix</label>
+            <input type="date" name="t" value="@Model.Tarix.ToString("yyyy-MM-dd")" />
+            <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
+        </form>
+    </div>
+
+    <partial name="_MhTabs" />
+
+    @if (!Model.Ugurlu)
+    {
+        <div class="mh-alert"><i class="bi bi-x-octagon"></i> Depozitlər yüklənmədi: @Model.Xeta</div>
+    }
+    else
+    {
+        <div class="mh-kpis">
+            <div class="mh-kpi mh-kpi--a">
+                <div class="mh-kpi-ic"><i class="bi bi-safe2"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.UmumiPortfel) <span>₼</span></div>
+                <div class="mh-kpi-l">Ümumi depozit portfeli</div>
+            </div>
+            <div class="mh-kpi mh-kpi--k">
+                <div class="mh-kpi-ic"><i class="bi bi-building"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.HuquqiCem) <span>₼</span></div>
+                <div class="mh-kpi-l">Hüquqi şəxs depozitləri</div>
+            </div>
+            <div class="mh-kpi mh-kpi--c">
+                <div class="mh-kpi-ic"><i class="bi bi-person"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.FizikiCem) <span>₼</span></div>
+                <div class="mh-kpi-l">Fiziki şəxs depozitləri</div>
+            </div>
+            <div class="mh-kpi mh-kpi--o">
+                <div class="mh-kpi-ic"><i class="bi bi-people"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.MusteriSayi)</div>
+                <div class="mh-kpi-l">Depozitor sayı</div>
+            </div>
+        </div>
+
+        <div class="mh-grid">
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--a"></span> Fiziki / Hüquqi bölgü</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chTip"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var a in Model.TipBolgusu)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
+                                <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
+                                <div class="mh-row-p">@a.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--v"></span> Valyuta strukturu</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chVal"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var v in Model.ValyutaBolgusu)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
+                                <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
+                                <div class="mh-row-p">@v.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mh-grid">
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--k"></span> Ən böyük 10 hüquqi depozitor</div>
+                <div class="mh-toplist">
+                    @{ var i1 = 0; }
+                    @foreach (var d in Model.TopHuquqi)
+                    {
+                        i1++;
+                        <div class="mh-toprow">
+                            <span class="mh-toprank">@i1</span>
+                            <span class="mh-topname">@d.Ad</span>
+                            <b class="mh-topmeb">@Fmt(d.Mebleg) ₼</b>
+                            <i class="mh-toppct">@d.Faiz%</i>
+                        </div>
+                    }
+                    @if (!Model.TopHuquqi.Any()) { <div class="mh-empty2">Məlumat yoxdur</div> }
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--c"></span> Ən böyük 10 fiziki depozitor</div>
+                <div class="mh-toplist">
+                    @{ var i2 = 0; }
+                    @foreach (var d in Model.TopFiziki)
+                    {
+                        i2++;
+                        <div class="mh-toprow">
+                            <span class="mh-toprank">@i2</span>
+                            <span class="mh-topname">@d.Ad</span>
+                            <b class="mh-topmeb">@Fmt(d.Mebleg) ₼</b>
+                            <i class="mh-toppct">@d.Faiz%</i>
+                        </div>
+                    }
+                    @if (!Model.TopFiziki.Any()) { <div class="mh-empty2">Məlumat yoxdur</div> }
+                </div>
+            </div>
+        </div>
+
+        <div class="mh-note">
+            <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
+            <ul>
+                <li>Mənbə: <code>odb.arh_saldo_ls</code> — hüquqi (hesab 40 / 3x, texniki 35020/25/26/40 istisna) və fiziki (41) depozit hesabları.</li>
+                <li>Məbləğlər AZN-də (<code>saldo_ish_nacval</code>). TOP-10 müştəri üzrə cəmlənir.</li>
+                <li>Əlaqəli tərəf depozitləri (xüsusi çəki / normativ) növbəti addımda ayrıca əlavə olunacaq.</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script>
+        (function () {
+            if (typeof Chart === 'undefined') return;
+            const palTip = ['#047857', '#a855f7'];
+            const palVal = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#a855f7', '#64748b'];
+            function donut(id, rows, pal) {
+                const el = document.getElementById(id);
+                if (!el || !rows || !rows.length) return;
+                new Chart(el, {
+                    type: 'doughnut',
+                    data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderWidth: 0 }] },
+                    options: {
+                        cutout: '62%', responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                            tooltip: { callbacks: { label: c => c.label + ': ' + Number(c.raw).toLocaleString('az-AZ') + ' ₼' } }
+                        }
+                    }
+                });
+            }
+            donut('chTip', @tipJson, palTip);
+            donut('chVal', @valJson, palVal);
+        })();
+    </script>
+}
+
+<style>
+    .mh-wrap { max-width: 1280px; margin: 0 auto; padding: 8px 0 40px; color: #1e293b; }
+    .mh-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;
+        background: linear-gradient(120deg, #0f2f5c 0%, #16478a 55%, #1e63b8 100%); color: #fff;
+        border-radius: 18px; padding: 26px 30px; box-shadow: 0 12px 30px rgba(16,71,138,.28); flex-wrap: wrap; }
+    .mh-hero--dep { background: linear-gradient(120deg, #064e3b 0%, #047857 55%, #0d9488 100%); box-shadow: 0 12px 30px rgba(4,120,87,.28); }
+    .mh-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.16);
+        padding: 5px 13px; border-radius: 30px; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+    .mh-title { font-size: 30px; font-weight: 800; margin: 0 0 6px; letter-spacing: -.5px; }
+    .mh-sub { font-size: 13.5px; opacity: .92; }
+    .mh-datef { display: flex; align-items: flex-end; gap: 8px; background: rgba(255,255,255,.12); padding: 12px 14px; border-radius: 14px; }
+    .mh-datef label { display: block; font-size: 11px; opacity: .85; margin-bottom: 3px; width: 100%; }
+    .mh-datef input { border: none; border-radius: 9px; padding: 8px 10px; font-size: 13px; }
+    .mh-datef button { border: none; background: #ffb703; color: #1a1a1a; font-weight: 700; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .mh-alert { margin-top: 18px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; }
+
+    .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+    .mh-kpi { position: relative; border-radius: 16px; padding: 20px; color: #fff; overflow: hidden; box-shadow: 0 8px 22px rgba(2,6,23,.12); }
+    .mh-kpi--a { background: linear-gradient(135deg, #047857, #10b981); }
+    .mh-kpi--k { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+    .mh-kpi--c { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+    .mh-kpi--o { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .mh-kpi-ic { position: absolute; right: 14px; top: 12px; font-size: 30px; opacity: .28; }
+    .mh-kpi-v { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
+    .mh-kpi-v span { font-size: 14px; font-weight: 600; opacity: .85; }
+    .mh-kpi-l { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+
+    .mh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .mh-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(2,6,23,.05); }
+    .mh-card-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
+    .mh-dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
+    .mh-dot--a { background: #047857; } .mh-dot--k { background: #2563eb; } .mh-dot--c { background: #a855f7; } .mh-dot--v { background: #16a34a; }
+    .mh-card-b { display: grid; grid-template-columns: 240px 1fr; gap: 18px; padding: 18px 20px; align-items: center; }
+    .mh-chart { height: 230px; position: relative; }
+    .mh-list { display: flex; flex-direction: column; gap: 12px; }
+    .mh-row-t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+    .mh-row-t span { color: #475569; } .mh-row-t b { color: #0f172a; }
+    .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
+    .mh-bar span { display: block; height: 100%; background: linear-gradient(90deg, #047857, #34d399); border-radius: 6px; }
+    .mh-bar--v span { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+    .mh-row-p { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 2px; }
+
+    .mh-toplist { padding: 8px 12px 14px; }
+    .mh-toprow { display: flex; align-items: center; gap: 12px; padding: 10px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; }
+    .mh-toprow:last-child { border-bottom: none; }
+    .mh-toprank { width: 24px; height: 24px; border-radius: 7px; background: #f1f5f9; color: #475569; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; flex: none; }
+    .mh-topname { flex: 1; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mh-topmeb { color: #0f172a; }
+    .mh-toppct { color: #94a3b8; font-style: normal; font-size: 11.5px; width: 46px; text-align: right; }
+    .mh-empty2 { padding: 20px; text-align: center; color: #94a3b8; }
+
+    .mh-note { margin-top: 18px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px 22px; }
+    .mh-note-h { font-weight: 700; color: #047857; margin-bottom: 8px; }
+    .mh-note ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.7; }
+    .mh-note code { background: #dcfce7; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+
+    @@media (max-width: 900px) {
+        .mh-kpis { grid-template-columns: 1fr 1fr; }
+        .mh-grid { grid-template-columns: 1fr; }
+        .mh-card-b { grid-template-columns: 1fr; }
+    }
+</style>

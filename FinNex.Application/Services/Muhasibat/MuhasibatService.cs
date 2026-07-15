@@ -25,6 +25,27 @@ WHERE  ar.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
   AND  ch.licsch = ar.licsch
   AND  (ch.date_close_licsch IS NULL OR ar.date_oper <= ch.date_close_licsch)";
 
+    // Depozit hesabları — hüquqi (40/3x) + fiziki (41), müştəri linki ilə.
+    // saldo_ish_nacval passiv → mənfi; -qaliq ilə müsbətə çevrilir.
+    private const string DepozitSql = @"
+SELECT 'huquqi' tip, b.registrac_nomer qeyd, r.name_regnom musteri,
+       SUBSTR(l.licsch,6,2) valyuta, -l.saldo_ish_nacval qaliq
+FROM   odb.arh_saldo_ls l, licsch b, regnom r
+WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
+  AND  b.licsch = l.licsch AND r.regnom = b.registrac_nomer
+  AND  (SUBSTR(l.licsch,1,2)='40' OR SUBSTR(l.licsch,1,1)='3')
+  AND  SUBSTR(l.licsch,1,5) NOT IN ('35020','35025','35026','35940')
+  AND  SUBSTR(l.licsch,10,6) <> '000004'
+  AND  l.saldo_ish_nacval <> 0
+UNION ALL
+SELECT 'fiziki' tip, SUBSTR(l.licsch,10,6) qeyd, r.name_regnom musteri,
+       SUBSTR(l.licsch,6,2) valyuta, -l.saldo_ish_nacval qaliq
+FROM   odb.arh_saldo_ls l, regnom r
+WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
+  AND  SUBSTR(l.licsch,1,2)='41' AND r.regnom = SUBSTR(l.licsch,10,6)
+  AND  SUBSTR(l.licsch,10,6) <> '000004'
+  AND  l.saldo_ish_nacval <> 0";
+
     public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
     {
         var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
@@ -94,6 +115,90 @@ WHERE  ar.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
                 {
                     Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
                     Faiz = dto.UmumiAktiv != 0 ? Math.Round(x.Value / dto.UmumiAktiv * 100, 1) : 0
+                }).ToList();
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    public async Task<MuhasibatDepozitDto> DepozitAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatDepozitDto { Tarix = t };
+
+        try
+        {
+            var sql = DepozitSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
+
+            decimal huquqi = 0m, fiziki = 0m;
+            var valyuta = new Dictionary<string, decimal>();
+            // müştəri açarı (tip|qeyd) → (ad, tip, cəm)
+            var musteriler = new Dictionary<string, (string ad, string tip, decimal meb)>();
+
+            foreach (var r in rows)
+            {
+                var tip = Val(r, "tip")?.ToString() ?? "";
+                var qeyd = Val(r, "qeyd")?.ToString() ?? "";
+                var ad = Val(r, "musteri")?.ToString() ?? "(adsız)";
+                var vk = Val(r, "valyuta")?.ToString() ?? "";
+                var q = Dec(Val(r, "qaliq"));
+                if (q == 0m) continue;
+
+                if (tip == "fiziki") fiziki += q; else huquqi += q;
+
+                var vad = ValyutaAd(vk);
+                valyuta[vad] = valyuta.GetValueOrDefault(vad) + q;
+
+                var key = tip + "|" + qeyd;
+                if (musteriler.TryGetValue(key, out var cur))
+                    musteriler[key] = (cur.ad, cur.tip, cur.meb + q);
+                else
+                    musteriler[key] = (ad, tip, q);
+            }
+
+            dto.HuquqiCem    = Math.Round(huquqi, 2);
+            dto.FizikiCem    = Math.Round(fiziki, 2);
+            dto.UmumiPortfel = Math.Round(huquqi + fiziki, 2);
+            dto.MusteriSayi  = musteriler.Count;
+
+            dto.TipBolgusu = new List<BalansMaddeDto>
+            {
+                new() { Ad = "Hüquqi şəxslər", Mebleg = dto.HuquqiCem,
+                        Faiz = dto.UmumiPortfel != 0 ? Math.Round(dto.HuquqiCem / dto.UmumiPortfel * 100, 1) : 0 },
+                new() { Ad = "Fiziki şəxslər", Mebleg = dto.FizikiCem,
+                        Faiz = dto.UmumiPortfel != 0 ? Math.Round(dto.FizikiCem / dto.UmumiPortfel * 100, 1) : 0 },
+            };
+
+            dto.ValyutaBolgusu = valyuta.Where(x => Math.Abs(x.Value) > 0.005m)
+                .OrderByDescending(x => x.Value)
+                .Select(x => new BalansMaddeDto
+                {
+                    Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
+                    Faiz = dto.UmumiPortfel != 0 ? Math.Round(x.Value / dto.UmumiPortfel * 100, 1) : 0
+                }).ToList();
+
+            dto.TopHuquqi = musteriler.Values.Where(m => m.tip == "huquqi")
+                .OrderByDescending(m => m.meb).Take(10)
+                .Select(m => new BalansMaddeDto
+                {
+                    Ad = m.ad, Mebleg = Math.Round(m.meb, 2),
+                    Faiz = dto.HuquqiCem != 0 ? Math.Round(m.meb / dto.HuquqiCem * 100, 1) : 0
+                }).ToList();
+
+            dto.TopFiziki = musteriler.Values.Where(m => m.tip == "fiziki")
+                .OrderByDescending(m => m.meb).Take(10)
+                .Select(m => new BalansMaddeDto
+                {
+                    Ad = m.ad, Mebleg = Math.Round(m.meb, 2),
+                    Faiz = dto.FizikiCem != 0 ? Math.Round(m.meb / dto.FizikiCem * 100, 1) : 0
                 }).ToList();
 
             dto.Ugurlu = true;

@@ -1,0 +1,24 @@
+@{
+    var act = ViewContext.RouteData.Values["action"]?.ToString();
+}
+<div class="mh-tabs">
+    <a asp-action="Index" class="mh-tab @(act == "Index" ? "on" : "")">
+        <i class="bi bi-clipboard-data"></i> Balans İcmalı
+    </a>
+    <a asp-action="Depozit" class="mh-tab @(act == "Depozit" ? "on" : "")">
+        <i class="bi bi-piggy-bank"></i> Depozitlər
+    </a>
+    <span class="mh-tab mh-tab--soon"><i class="bi bi-droplet"></i> Likvidlik <em>tezliklə</em></span>
+    <span class="mh-tab mh-tab--soon"><i class="bi bi-credit-card"></i> Kredit portfeli <em>tezliklə</em></span>
+</div>
+
+<style>
+    .mh-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 4px; }
+    .mh-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 11px;
+        background: #eef2f7; color: #475569; font-size: 13.5px; font-weight: 600; text-decoration: none;
+        border: 1px solid transparent; transition: .15s; }
+    .mh-tab:hover { background: #e2e8f0; color: #1e293b; }
+    .mh-tab.on { background: linear-gradient(135deg, #16478a, #1e63b8); color: #fff; box-shadow: 0 6px 16px rgba(16,71,138,.28); }
+    .mh-tab--soon { background: transparent; color: #94a3b8; border: 1px dashed #cbd5e1; cursor: default; }
+    .mh-tab--soon em { font-style: normal; font-size: 10.5px; background: #f1f5f9; padding: 1px 6px; border-radius: 20px; margin-left: 2px; }
+</style>

@@ -985,8 +985,12 @@
                             </button>
                             <div class="fn-nav-g-body">
                                 <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Index"
-                                   class="fn-nav-item @(currentArea == "Muhasibat" ? "active" : "")">
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Index" ? "active" : "")">
                                     <i class="bi bi-bank2"></i> Balans İcmalı
+                                </a>
+                                <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Depozit"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Depozit" ? "active" : "")">
+                                    <i class="bi bi-piggy-bank"></i> Depozitlər
                                 </a>
                                 <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">

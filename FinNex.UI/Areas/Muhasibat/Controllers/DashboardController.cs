@@ -49,16 +49,29 @@ public class DashboardController : Controller
         if (!await IcazeVarAsync())
             return Forbid();
 
-        DateTime? tarix = null;
+        var model = await _service.BalansAsync(ParseTarix(t));
+        return View(model);
+    }
+
+    // Depozitlər.
+    public async Task<IActionResult> Depozit(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.DepozitAsync(ParseTarix(t));
+        return View(model);
+    }
+
+    private static DateTime? ParseTarix(string? t)
+    {
         if (!string.IsNullOrWhiteSpace(t) &&
             DateTime.TryParseExact(t.Trim(),
                 new[] { "dd-MM-yyyy", "yyyy-MM-dd", "dd/MM/yyyy" },
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
         {
-            tarix = parsed;
+            return parsed;
         }
-
-        var model = await _service.BalansAsync(tarix);
-        return View(model);
+        return null;
     }
 }
