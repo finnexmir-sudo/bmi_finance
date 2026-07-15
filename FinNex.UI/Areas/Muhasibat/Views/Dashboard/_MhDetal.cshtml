@@ -10,7 +10,10 @@
                 <div class="mh-dtitle" id="mhDT">Detal</div>
                 <div class="mh-dsub" id="mhDS"></div>
             </div>
-            <button type="button" class="mh-dx" onclick="mhDetalClose()" aria-label="Bağla">&times;</button>
+            <div class="mh-dhead-a">
+                <a id="mhDXls" class="mh-dxls" target="_blank" rel="noopener"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+                <button type="button" class="mh-dx" onclick="mhDetalClose()" aria-label="Bağla">&times;</button>
+            </div>
         </div>
         <div class="mh-dbody" id="mhDB"></div>
         <div class="mh-dfoot">
@@ -29,6 +32,11 @@
         padding: 16px 20px; background: linear-gradient(135deg,#16478a,#1e63b8); color: #fff; }
     .mh-dtitle { font-size: 16px; font-weight: 700; }
     .mh-dsub { font-size: 12px; opacity: .85; margin-top: 2px; }
+    .mh-dhead-a { display: flex; align-items: center; gap: 8px; }
+    .mh-dxls { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.16);
+        color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-size: 12.5px;
+        font-weight: 600; border: 1px solid rgba(255,255,255,.28); white-space: nowrap; }
+    .mh-dxls:hover { background: rgba(255,255,255,.3); color: #fff; }
     .mh-dx { background: rgba(255,255,255,.18); border: none; color: #fff; width: 30px; height: 30px;
         border-radius: 8px; font-size: 20px; line-height: 1; cursor: pointer; }
     .mh-dx:hover { background: rgba(255,255,255,.32); }
@@ -81,10 +89,13 @@
             ov.style.display = 'flex';
 
             var base = @Json.Serialize(Url.Action("Detal", "Dashboard", new { area = "Muhasibat" }));
+            var xlsBase = @Json.Serialize(Url.Action("DetalExcel", "Dashboard", new { area = "Muhasibat" }));
             var cur = new URLSearchParams(location.search);
             var p = new URLSearchParams();
             ['t', 'bt', 'st'].forEach(function (k) { if (cur.get(k)) p.set(k, cur.get(k)); });
             p.set('sahe', sahe); p.set('madde', madde);
+
+            document.getElementById('mhDXls').setAttribute('href', xlsBase + '?' + p.toString());
 
             fetch(base + '?' + p.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(function (r) { return r.json(); })

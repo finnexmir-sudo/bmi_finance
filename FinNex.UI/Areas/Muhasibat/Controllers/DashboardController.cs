@@ -120,6 +120,43 @@ public class DashboardController : Controller
         return Json(dto);
     }
 
+    // Drill-down detalını Excel-ə çıxar (uzun siyahılar üçün).
+    public async Task<IActionResult> DetalExcel(string sahe, string madde, string? t, string? bt, string? st)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var d = await _service.DetalAsync(sahe ?? "", madde ?? "",
+            ParseTarix(t), ParseTarix(bt), ParseTarix(st));
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Detal");
+        int r = 0;
+        Setir(sh, r++, string.IsNullOrWhiteSpace(d.Baslik) ? "Detal" : d.Baslik);
+        r++;
+        var h = sh.CreateRow(r++);
+        h.CreateCell(0).SetCellValue("Hesab / kod");
+        h.CreateCell(1).SetCellValue("Ad");
+        h.CreateCell(2).SetCellValue("Valyuta");
+        h.CreateCell(3).SetCellValue("Məbləğ (AZN)");
+        h.CreateCell(4).SetCellValue("Əlavə");
+        foreach (var x in d.Setirler)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(x.Kod);
+            row.CreateCell(1).SetCellValue(x.Ad);
+            row.CreateCell(2).SetCellValue(x.Valyuta ?? "");
+            row.CreateCell(3).SetCellValue((double)x.Mebleg);
+            row.CreateCell(4).SetCellValue(x.Elave ?? "");
+        }
+        r++;
+        KV(sh, r++, "CƏMI", d.Cem);
+        KV(sh, r++, "Sətir sayı", d.Say);
+
+        var ad = "Detal_" + (sahe ?? "detal").Replace("-", "_");
+        return Yukle(wb, ad);
+    }
+
     private static DateTime? ParseTarix(string? t)
     {
         if (!string.IsNullOrWhiteSpace(t) &&
