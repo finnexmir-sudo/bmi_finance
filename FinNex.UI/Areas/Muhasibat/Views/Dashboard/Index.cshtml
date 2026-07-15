@@ -39,6 +39,12 @@
             <span class="mh-check-num">@Fmt(Model.UmumiAktiv) = @Fmt(Model.UmumiOhdelik) + @Fmt(Model.Kapital)@(Model.Tesnifsiz != 0 ? $" + {Fmt(Model.Tesnifsiz)} (təsnifsiz)" : "")</span>
             <span class="mh-check-ferq">Fərq: @Fmt2(Model.BalansFerqi) ₼</span>
         </div>
+        <div class="mh-check-note">
+            <i class="bi bi-info-circle"></i>
+            <span><b>Fərq nədir?</b> Aktiv − (Öhdəlik + Kapital). Cari @Fmt2(Model.BalansFerqi) ₼ — hesabların
+            <b>valyuta yenidənqiymətləndirmə</b> və <b>kopek yuvarlaqlaşma</b> qalığıdır (Aktivin ~0.00004%-i, praktiki sıfır).
+            Balans tutur; yaşıl sayılma toleransı Aktivin 0.5%-i qədərdir. Təsnif olunmamış hesab yoxdur.</span>
+        </div>
 
         <div class="mh-kpis">
             <div class="mh-kpi mh-kpi--a mh-click" data-mhsahe="balans" data-mhmadde="*aktiv" data-mhbaslik="Ümumi Aktivlər — bütün aktiv hesablar">
@@ -76,8 +82,8 @@
         </div>
 
         <div class="mh-profit">
-            <div class="mh-prof-card mh-prof--m mh-click" data-mhsahe="balans-menfeet" data-mhmadde="menfeet" data-mhbaslik="Xalis mənfəət — 50130 hesabları">
-                <div class="mh-prof-t"><i class="bi bi-graph-up-arrow"></i> Xalis mənfəət (YTD)</div>
+            <div class="mh-prof-card mh-prof--m mh-click" onclick="mhIzah('menfeet')">
+                <div class="mh-prof-t"><i class="bi bi-graph-up-arrow"></i> Xalis mənfəət (YTD) <i class="bi bi-info-circle" style="font-size:12px;opacity:.6"></i></div>
                 <div class="mh-prof-v">@Fmt(Model.XalisMenfeet) <span>₼</span></div>
                 <div class="mh-prof-s">
                     Cari ilin mənfəəti/zərəri · hesab 50130
@@ -132,12 +138,35 @@
             </ul>
             <div class="mh-note3">💡 "Xalis mənfəət" və "Kapital" kartlarına klik edib hesab-detalına baxa bilərsən.</div>
         </template>
+        <template id="tpl-menfeet">
+            <div class="mh-formula">Xalis mənfəət (YTD) = hesab 50130 qalığı</div>
+            <div class="mh-calc">Cari ilin mənfəəti/zərəri = <b>@Fmt(Model.XalisMenfeet) ₼</b></div>
+            @if (Model.MuqayiseVar)
+            {
+                <div class="mh-note2">
+                    <b>@(Model.MenfeetDeyisme >= 0 ? "▲" : "▼") @Fmt(Math.Abs(Model.MenfeetDeyisme)) ₼</b> — bu, <b>dünənki iş günü ilə fərqdir</b>:<br>
+                    əvvəlki gün @Fmt(Model.XalisMenfeet - Model.MenfeetDeyisme) ₼ &nbsp;→&nbsp; bu gün @Fmt(Model.XalisMenfeet) ₼
+                    &nbsp;(fərq @(Model.MenfeetDeyisme >= 0 ? "+" : "−")@Fmt(Math.Abs(Model.MenfeetDeyisme)) ₼).
+                </div>
+            }
+            else
+            {
+                <div class="mh-note2">Dünənki iş günü tapılmadığı üçün müqayisə (dəyişmə) göstərilmir.</div>
+            }
+            <ul class="mh-izul">
+                <li><b>50130</b> = "Cari ilin mənfəəti/zərəri" hesabı (kapital bölməsində saxlanılır).</li>
+                <li>Mənbə: Oracle <b>arh_saldo_ls</b> · kredit qalıqlı olduğu üçün müsbətə çevrilir.</li>
+                <li>ROA/ROE bu rəqəmi məxrəc kimi işlədir (pay = mənfəət).</li>
+            </ul>
+            <div class="mh-note3"><a href="javascript:void(0)" onclick="document.getElementById('mhIzahOv').style.display='none';mhDetal('balans-menfeet','menfeet','Xalis mənfəət — 50130 hesabları')" style="color:#16478a;font-weight:600;text-decoration:none">→ 50130 hesab detalını gör</a></div>
+        </template>
         <script>
             (function () {
+                var mhIzTitles = { roa: 'ROA — necə hesablanır', roe: 'ROE — necə hesablanır', menfeet: 'Xalis mənfəət — izah' };
                 window.mhIzah = function (kind) {
                     var tpl = document.getElementById('tpl-' + kind);
                     if (!tpl) return;
-                    document.getElementById('mhIzT').textContent = kind.toUpperCase();
+                    document.getElementById('mhIzT').textContent = mhIzTitles[kind] || kind.toUpperCase();
                     document.getElementById('mhIzB').innerHTML = tpl.innerHTML;
                     document.getElementById('mhIzahOv').style.display = 'flex';
                 };
@@ -283,6 +312,10 @@
     .mh-check i { font-size: 20px; }
     .mh-check-num { font-family: ui-monospace, monospace; opacity: .9; }
     .mh-check-ferq { margin-left: auto; font-weight: 700; }
+    .mh-check-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 8px; padding: 10px 18px;
+        background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 12px; font-size: 12.5px; color: #64748b; line-height: 1.55; }
+    .mh-check-note i { color: #16478a; font-size: 15px; margin-top: 1px; }
+    .mh-check-note b { color: #334155; }
 
     .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px; }
     .mh-kpi { position: relative; border-radius: 16px; padding: 20px; color: #fff; overflow: hidden;
