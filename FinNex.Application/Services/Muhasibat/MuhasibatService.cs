@@ -740,13 +740,16 @@ public class MuhasibatService : IMuhasibatService
                     {
                         var meb = Dec(Val(r, "mebleg"));
                         if (meb == 0m) continue;
+                        // Əlaqəli tərəf adı SQL-dən gəlir (prefiks C#-da — Oracle SQL mətnində
+                        // ə hərfi client charset-də "?"-ə çevrilir, ona görə literal burada verilir).
+                        var rel = Val(r, "elave")?.ToString();
                         dto.Setirler.Add(new MuhasibatDetalSetirDto
                         {
                             Kod = Val(r, "hesab")?.ToString() ?? "",
                             Ad = Val(r, "ad")?.ToString() ?? "",
                             Valyuta = ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""),
                             Mebleg = Math.Round(meb, 2),
-                            Elave = Val(r, "elave")?.ToString() ?? ""   // "Şirkət" / "İmza sahibi: <şirkət>"
+                            Elave = string.IsNullOrWhiteSpace(rel) ? "—" : "Əlaqəli: " + rel
                         });
                     }
                     dto.Baslik = "Əlaqəli tərəf hesabları";

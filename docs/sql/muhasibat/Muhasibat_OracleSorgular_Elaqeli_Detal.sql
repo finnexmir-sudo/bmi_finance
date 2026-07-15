@@ -23,18 +23,16 @@ DECLARE @Sql NVARCHAR(MAX) = N'select ar.licsch hesab,
        l.name_licsch ad,
        substr(ar.licsch,6,2) valyuta,
        round(-ar.saldo_ish_nacval,2) mebleg,
-       nvl(''Əlaqəli: '' || (
-         select substr(listagg(nm, ''; '') within group (order by nm),1,150)
-         from (select nm from (
-                 select distinct r.name_regnom nm
-                   from imza_huquqi_olan_shexsler i join regnom r on r.regnom = i.customer_regnom
-                  where i.regnom = l.registrac_nomer
-                 union
-                 select distinct r.name_regnom nm
-                   from imza_huquqi_olan_shexsler i join regnom r on r.regnom = i.regnom
-                  where i.customer_regnom = l.registrac_nomer
-               ) where rownum <= 10)
-       ), ''—'') elave,
+       (select substr(listagg(nm, ''; '') within group (order by nm),1,150)
+          from (select nm from (
+                  select distinct r.name_regnom nm
+                    from imza_huquqi_olan_shexsler i join regnom r on r.regnom = i.customer_regnom
+                   where i.regnom = l.registrac_nomer
+                  union
+                  select distinct r.name_regnom nm
+                    from imza_huquqi_olan_shexsler i join regnom r on r.regnom = i.regnom
+                   where i.customer_regnom = l.registrac_nomer
+                ) where rownum <= 10)) elave,
        (select min(g) from (
           select l.registrac_nomer g from dual
           union select i.customer_regnom from imza_huquqi_olan_shexsler i where i.regnom = l.registrac_nomer
