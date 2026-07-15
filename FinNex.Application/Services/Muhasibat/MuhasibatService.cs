@@ -537,8 +537,9 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
             string q = p2 switch
             {
                 "35" or "36" => "Bank və maliyyə öhdəlikləri",
-                "38" or "39" => "Cəlb olunmuş vəsaitlər",
-                "40" => "Hüquqi şəxs depozitləri",
+                // 38/39 (əvvəl "Cəlb olunmuş vəsaitlər") mühasib qərarı ilə hüquqi
+                // şəxs depozitinə birləşdirildi — Depozit tab-ı ilə uyğun olsun.
+                "38" or "39" or "40" => "Hüquqi şəxs depozitləri",
                 "41" => "Fiziki şəxs depozitləri",
                 _ => "Digər öhdəliklər"
             };
