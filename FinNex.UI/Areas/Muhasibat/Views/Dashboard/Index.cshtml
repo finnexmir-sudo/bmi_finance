@@ -87,17 +87,76 @@
                     }
                 </div>
             </div>
-            <div class="mh-prof-card mh-prof--a">
-                <div class="mh-prof-t"><i class="bi bi-pie-chart-fill"></i> ROA</div>
+            <div class="mh-prof-card mh-prof--a mh-click" onclick="mhIzah('roa')">
+                <div class="mh-prof-t"><i class="bi bi-pie-chart-fill"></i> ROA <i class="bi bi-info-circle" style="font-size:12px;opacity:.6"></i></div>
                 <div class="mh-prof-v">@Model.Roa<span>%</span></div>
                 <div class="mh-prof-s">Aktivlərin gəlirliliyi · illik ≈ <b>@Model.RoaIllik%</b></div>
             </div>
-            <div class="mh-prof-card mh-prof--e">
-                <div class="mh-prof-t"><i class="bi bi-bullseye"></i> ROE</div>
+            <div class="mh-prof-card mh-prof--e mh-click" onclick="mhIzah('roe')">
+                <div class="mh-prof-t"><i class="bi bi-bullseye"></i> ROE <i class="bi bi-info-circle" style="font-size:12px;opacity:.6"></i></div>
                 <div class="mh-prof-v">@Model.Roe<span>%</span></div>
                 <div class="mh-prof-s">Kapitalın gəlirliliyi · illik ≈ <b>@Model.RoeIllik%</b></div>
             </div>
         </div>
+
+        @* ROA/ROE izah modalı — düstur + rəqəmlər (klik ediləndə açılır) *@
+        <div id="mhIzahOv" class="mh-dov" style="display:none">
+            <div class="mh-dmodal" style="width:min(560px,96vw)">
+                <div class="mh-dhead">
+                    <div>
+                        <div class="mh-dtitle" id="mhIzT">İzah</div>
+                        <div class="mh-dsub">Necə hesablanır — düstur və rəqəmlər</div>
+                    </div>
+                    <button type="button" class="mh-dx" onclick="document.getElementById('mhIzahOv').style.display='none'">&times;</button>
+                </div>
+                <div id="mhIzB" class="mh-izb"></div>
+            </div>
+        </div>
+        <template id="tpl-roa">
+            <div class="mh-formula">ROA = Xalis mənfəət ÷ Ümumi Aktiv × 100</div>
+            <div class="mh-calc">= @Fmt(Model.XalisMenfeet) ÷ @Fmt(Model.UmumiAktiv) × 100 = <b>@Model.Roa %</b></div>
+            <div class="mh-note2">İllikləşdirilmiş ≈ <b>@Model.RoaIllik %</b> &nbsp;(× 365 ÷ @Model.Tarix.DayOfYear gün — ilin əvvəlindən keçən günlərə görə)</div>
+            <ul class="mh-izul">
+                <li><b>Xalis mənfəət</b> — 50130 hesabları (cari ilin mənfəəti/zərəri): @Fmt(Model.XalisMenfeet) ₼</li>
+                <li><b>Ümumi Aktiv</b> — bütün aktiv hesablar (kod 1, 2): @Fmt(Model.UmumiAktiv) ₼</li>
+            </ul>
+            <div class="mh-note3">💡 "Xalis mənfəət" və "Ümumi Aktivlər" kartlarına klik edib hesab-detalına baxa bilərsən.</div>
+        </template>
+        <template id="tpl-roe">
+            <div class="mh-formula">ROE = Xalis mənfəət ÷ Kapital × 100</div>
+            <div class="mh-calc">= @Fmt(Model.XalisMenfeet) ÷ @Fmt(Model.Kapital) × 100 = <b>@Model.Roe %</b></div>
+            <div class="mh-note2">İllikləşdirilmiş ≈ <b>@Model.RoeIllik %</b> &nbsp;(× 365 ÷ @Model.Tarix.DayOfYear gün — ilin əvvəlindən keçən günlərə görə)</div>
+            <ul class="mh-izul">
+                <li><b>Xalis mənfəət</b> — 50130 hesabları (cari ilin mənfəəti/zərəri): @Fmt(Model.XalisMenfeet) ₼</li>
+                <li><b>Kapital və ehtiyatlar</b> — 44/45 və 5x hesablar: @Fmt(Model.Kapital) ₼</li>
+            </ul>
+            <div class="mh-note3">💡 "Xalis mənfəət" və "Kapital" kartlarına klik edib hesab-detalına baxa bilərsən.</div>
+        </template>
+        <script>
+            (function () {
+                window.mhIzah = function (kind) {
+                    var tpl = document.getElementById('tpl-' + kind);
+                    if (!tpl) return;
+                    document.getElementById('mhIzT').textContent = kind.toUpperCase();
+                    document.getElementById('mhIzB').innerHTML = tpl.innerHTML;
+                    document.getElementById('mhIzahOv').style.display = 'flex';
+                };
+                var ov = document.getElementById('mhIzahOv');
+                ov.addEventListener('click', function (e) { if (e.target === this) this.style.display = 'none'; });
+                document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ov.style.display = 'none'; });
+            })();
+        </script>
+        <style>
+            .mh-izb { padding: 22px 24px; font-size: 14px; color: #1e293b; }
+            .mh-formula { font-weight: 700; font-size: 15px; color: #16478a; background: #f0f7ff;
+                border: 1px solid #cfe4ff; border-radius: 10px; padding: 12px 16px; }
+            .mh-calc { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; margin: 14px 2px;
+                color: #334155; }
+            .mh-calc b { color: #0f172a; font-size: 16px; }
+            .mh-note2 { font-size: 13px; color: #475569; background: #f8fafc; border-radius: 8px; padding: 9px 13px; }
+            .mh-izul { margin: 14px 0 10px; padding-left: 18px; line-height: 1.9; font-size: 13px; color: #334155; }
+            .mh-note3 { font-size: 12.5px; color: #64748b; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
+        </style>
 
         <div class="mh-grid">
             <div class="mh-card">

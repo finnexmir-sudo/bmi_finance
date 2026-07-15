@@ -29,6 +29,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdValyuta  = "Muhasibat — Valyuta emeliyyatlari";
     private const string AdRezident = "Muhasibat — Rezident";
     private const string AdRezidentDetal = "Muhasibat — Rezident detal";
+    private const string AdElaqeliDetal  = "Muhasibat — Elaqeli detal";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -730,6 +731,23 @@ public class MuhasibatService : IMuhasibatService
                     break;
                 }
 
+                case "elaqeli":
+                {
+                    // əlaqəli tərəf — hesab-səviyyə (aqreqat "elaqeli" ilə eyni filtr).
+                    var sql = (await SqlAl(AdElaqeliDetal)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+                    foreach (var r in rows)
+                    {
+                        var meb = Dec(Val(r, "mebleg"));
+                        if (meb == 0m) continue;
+                        dto.Setirler.Add(DSetir(Val(r, "hesab")?.ToString() ?? "",
+                            Val(r, "ad")?.ToString() ?? "", ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""),
+                            Math.Round(meb, 2)));
+                    }
+                    dto.Baslik = "Əlaqəli tərəf hesabları";
+                    break;
+                }
+
                 case "rezident":
                 {
                     // per-account rezident detalı — ayrıca stored sorğu (eyni case məntiqi).
@@ -750,7 +768,7 @@ public class MuhasibatService : IMuhasibatService
                     throw new InvalidOperationException($"Naməlum sahə: {sahe}");
             }
 
-            if (s0 is "balans" or "balans-valyuta" or "balans-menfeet" or "likvidlik" or "rezident")
+            if (s0 is "balans" or "balans-valyuta" or "balans-menfeet" or "likvidlik" or "rezident" or "elaqeli")
                 dto.Setirler = dto.Setirler.OrderByDescending(x => Math.Abs(x.Mebleg)).ToList();
 
             dto.Cem = Math.Round(dto.Setirler.Sum(x => x.Mebleg), 2);
