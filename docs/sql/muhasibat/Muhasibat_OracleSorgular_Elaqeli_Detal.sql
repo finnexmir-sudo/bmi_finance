@@ -2,10 +2,10 @@
    MÜHASİBAT — Əlaqəli tərəf DRILL-DOWN sorğusu (OracleSorgular)
    ----------------------------------------------------------------------------
    Bir dəfə işlət. "Muhasibat — Elaqeli detal" sorğusunu qoyur/yeniləyir.
-   Filtr aqreqat "Muhasibat — Elaqeli teref" ilə EYNİdir (imza sahibi olan
-   hüquqi şəxslərin 3x/4x hesabları), amma:
-     • hər sətrin ROL-unu göstərir: "Şirkət" / "İmza sahibi: <bağlı şirkət>"
-     • sətirlər QRUPLA sıralanır — şirkət, sonra onun əlaqəli şəxsləri.
+   Filtr aqreqat "Muhasibat — Elaqeli teref" ilə EYNİdir. Hər sətrin yanında
+   onun ƏLAQƏLİ TƏRƏFinin adını göstərir — imza_huquqi_olan_shexsler cədvəlində
+   HƏR İKİ istiqamətə baxaraq (regnom ↔ customer_regnom). Sətirlər əlaqəli
+   qrup üzrə sıralanır (əlaqəli tərəflər yan-yana).
    İdempotentdir (varsa UPDATE, yoxdursa INSERT).
    ============================================================================ */
 SET NOCOUNT ON;
@@ -23,14 +23,23 @@ DECLARE @Sql NVARCHAR(MAX) = N'select ar.licsch hesab,
        l.name_licsch ad,
        substr(ar.licsch,6,2) valyuta,
        round(-ar.saldo_ish_nacval,2) mebleg,
-       case
-         when exists (select 1 from imza_huquqi_olan_shexsler i where i.customer_regnom = l.registrac_nomer)
-           then ''Şirkət''
-         else ''İmza sahibi: '' ||
-              nvl((select substr(listagg(cr.name_regnom, ''; '') within group (order by cr.name_regnom),1,120)
-                     from imza_huquqi_olan_shexsler i2 join regnom cr on cr.regnom = i2.customer_regnom
-                    where i2.regnom = l.registrac_nomer), ''?'')
-       end elave
+       nvl(''Əlaqəli: '' || (
+         select substr(listagg(nm, ''; '') within group (order by nm),1,150)
+         from (select nm from (
+                 select distinct r.name_regnom nm
+                   from imza_huquqi_olan_shexsler i join regnom r on r.regnom = i.customer_regnom
+                  where i.regnom = l.registrac_nomer
+                 union
+                 select distinct r.name_regnom nm
+                   from imza_huquqi_olan_shexsler i join regnom r on r.regnom = i.regnom
+                  where i.customer_regnom = l.registrac_nomer
+               ) where rownum <= 10)
+       ), ''—'') elave,
+       (select min(g) from (
+          select l.registrac_nomer g from dual
+          union select i.customer_regnom from imza_huquqi_olan_shexsler i where i.regnom = l.registrac_nomer
+          union select i.regnom          from imza_huquqi_olan_shexsler i where i.customer_regnom = l.registrac_nomer
+        )) grup_kod
 from   odb.arh_saldo_ls ar
 join   licsch l on l.licsch = ar.licsch
 where  ar.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
@@ -38,13 +47,7 @@ where  ar.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and  (l.registrac_nomer in (select customer_regnom from imza_huquqi_olan_shexsler)
         or l.registrac_nomer in (select regnom from imza_huquqi_olan_shexsler))
   and  ar.saldo_ish_nacval <> 0
-order  by (case
-             when exists (select 1 from imza_huquqi_olan_shexsler i where i.customer_regnom = l.registrac_nomer)
-               then l.registrac_nomer
-             else nvl((select min(i2.customer_regnom) from imza_huquqi_olan_shexsler i2 where i2.regnom = l.registrac_nomer), l.registrac_nomer)
-           end),
-           (case when exists (select 1 from imza_huquqi_olan_shexsler i where i.customer_regnom = l.registrac_nomer) then 0 else 1 end),
-           mebleg desc';
+order  by grup_kod, mebleg desc';
 
 UPDATE OracleSorgular
 SET    SorguMetni = @Sql, Aktiv = 1, Silinib = 0
@@ -52,11 +55,11 @@ WHERE  SorguAdi = N'Muhasibat — Elaqeli detal';
 
 IF @@ROWCOUNT = 0
     INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
-    VALUES (N'Muhasibat — Elaqeli detal', N'Əlaqəli tərəf — hesab-səviyyə detalı, ROL + qrup (drill-down)',
+    VALUES (N'Muhasibat — Elaqeli detal', N'Əlaqəli tərəf — hesab-səviyyə, əlaqəli tərəf adı + qrup (drill-down)',
             @Sql, 1, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
-PRINT N'Elaqeli detal sorğusu (ROL + qrup) hazırdır.';
+PRINT N'Elaqeli detal sorğusu (iki istiqamətli əlaqə + qrup) hazırdır.';
 
 SELECT SorguAdi FROM OracleSorgular WHERE SorguAdi LIKE N'Muhasibat — Elaqeli%' ORDER BY SorguAdi;
 
