@@ -1,6 +1,7 @@
 using FinNex.Application.DTOs.Muhasibat;
 using FinNex.Application.Interfaces.Muhasibat;
 using FinNex.Application.Interfaces.Oracle;
+using FinNex.Application.Interfaces.Sorgular;
 
 namespace FinNex.Application.Services.Muhasibat;
 
@@ -10,8 +11,37 @@ namespace FinNex.Application.Services.Muhasibat;
 public class MuhasibatService : IMuhasibatService
 {
     private readonly IOracleService _oracle;
+    private readonly IOracleSorguService _sorgu;
 
-    public MuhasibatService(IOracleService oracle) => _oracle = oracle;
+    public MuhasibatService(IOracleService oracle, IOracleSorguService sorgu)
+    {
+        _oracle = oracle;
+        _sorgu = sorgu;
+    }
+
+    // OracleSorgular-dakı sorğu adları (admin paneldən redaktə oluna bilər).
+    // Tapılmasa aşağıdakı embedded SQL fallback işləyir.
+    private const string AdBalans   = "Muhasibat — Balans qaliqlari";
+    private const string AdMuqayise = "Muhasibat — Balans muqayise";
+    private const string AdDepozit  = "Muhasibat — Depozit hesablari";
+    private const string AdElaqeli  = "Muhasibat — Elaqeli teref";
+    private const string AdKredit   = "Muhasibat — Kredit portfeli";
+    private const string AdValyuta  = "Muhasibat — Valyuta emeliyyatlari";
+    private const string AdRezident = "Muhasibat — Rezident";
+
+    // SQL-i OracleSorgular-dan ad ilə oxu; yoxdursa embedded fallback qaytar.
+    private async Task<string> SqlAl(string ad, string fallback)
+    {
+        try
+        {
+            var res = await _sorgu.HamisiniGetirAsync();
+            var q = res?.Data?.FirstOrDefault(x => x.Aktiv
+                && !string.IsNullOrWhiteSpace(x.SorguMetni)
+                && string.Equals((x.SorguAdi ?? "").Trim(), ad, StringComparison.OrdinalIgnoreCase));
+            return q != null ? q.SorguMetni : fallback;
+        }
+        catch { return fallback; }
+    }
 
     // Balans qalıqları — bir tarixə bütün açıq hesablar (odb.arh_saldo_ls).
     // saldo_ish_nacval = günün sonuna milli valyutada (AZN) qalıq.
@@ -153,7 +183,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = BalansSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdBalans, BalansSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
 
             var aktiv   = new Dictionary<string, decimal>();
@@ -221,7 +251,7 @@ group by case when (substr(s.licsch,0,3)='409'
             // Əvvəlki iş günü ilə müqayisə (xəta əsas balansı pozmasın)
             try
             {
-                var msql = MuqayiseSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                var msql = (await SqlAl(AdMuqayise, MuqayiseSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                 var mrows = await _oracle.SelectAsync(msql, maxRows: 5);
                 if (mrows.Count > 0 && Dec(Val(mrows[0], "aktiv")) != 0)
                 {
@@ -276,7 +306,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = DepozitSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdDepozit, DepozitSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
 
             decimal huquqi = 0m, fiziki = 0m;
@@ -320,7 +350,7 @@ group by case when (substr(s.licsch,0,3)='409'
             // Əlaqəli tərəf (normativ) — ayrıca sorğu; xəta əsas depoziti pozmasın
             try
             {
-                var esql = ElaqeliSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                var esql = (await SqlAl(AdElaqeli, ElaqeliSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                 var erows = await _oracle.SelectAsync(esql, maxRows: 5);
                 if (erows.Count > 0)
                 {
@@ -382,7 +412,8 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var rows = await _oracle.SelectAsync(KreditSql, maxRows: 300000);
+            var sql = await SqlAl(AdKredit, KreditSql);
+            var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
 
             var tipD = new Dictionary<string, decimal>();
             var teyinatD = new Dictionary<string, decimal>();
@@ -447,7 +478,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = BalansSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdBalans, BalansSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
 
             var likvidD = new Dictionary<string, decimal>();
@@ -530,7 +561,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = ValyutaSql
+            var sql = (await SqlAl(AdValyuta, ValyutaSql))
                 .Replace("{BAS}", b.ToString("dd/MM/yyyy"))
                 .Replace("{SON}", s.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 500000);
@@ -607,7 +638,7 @@ group by case when (substr(s.licsch,0,3)='409'
 
         try
         {
-            var sql = RezidentSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var sql = (await SqlAl(AdRezident, RezidentSql)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 10);
             foreach (var r in rows)
             {
