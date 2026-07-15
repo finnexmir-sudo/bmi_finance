@@ -36,12 +36,12 @@
                 <div class="mh-kpi-v">@Fmt(Model.UmumiPortfel) <span>₼</span></div>
                 <div class="mh-kpi-l">Ümumi depozit portfeli</div>
             </div>
-            <div class="mh-kpi mh-kpi--k">
+            <div class="mh-kpi mh-kpi--k mh-click" data-mhsahe="depozit" data-mhmadde="tip:huquqi" data-mhbaslik="Hüquqi şəxs depozitorları">
                 <div class="mh-kpi-ic"><i class="bi bi-building"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.HuquqiCem) <span>₼</span></div>
                 <div class="mh-kpi-l">Hüquqi şəxs depozitləri</div>
             </div>
-            <div class="mh-kpi mh-kpi--c">
+            <div class="mh-kpi mh-kpi--c mh-click" data-mhsahe="depozit" data-mhmadde="tip:fiziki" data-mhbaslik="Fiziki şəxs depozitorları">
                 <div class="mh-kpi-ic"><i class="bi bi-person"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.FizikiCem) <span>₼</span></div>
                 <div class="mh-kpi-l">Fiziki şəxs depozitləri</div>
@@ -61,7 +61,7 @@
                     <div class="mh-list">
                         @foreach (var a in Model.TipBolgusu)
                         {
-                            <div class="mh-row">
+                            <div class="mh-row mh-click" data-mhsahe="depozit" data-mhmadde="tip:@(a.Ad.StartsWith("Hüquqi") ? "huquqi" : "fiziki")" data-mhbaslik="@a.Ad — depozitorlar">
                                 <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
                                 <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
@@ -78,7 +78,7 @@
                     <div class="mh-list">
                         @foreach (var v in Model.ValyutaBolgusu)
                         {
-                            <div class="mh-row">
+                            <div class="mh-row mh-click" data-mhsahe="depozit" data-mhmadde="valyuta:@v.Ad" data-mhbaslik="Depozit — @v.Ad valyutası">
                                 <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
                                 <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
                                 <div class="mh-row-p">@v.Faiz%</div>

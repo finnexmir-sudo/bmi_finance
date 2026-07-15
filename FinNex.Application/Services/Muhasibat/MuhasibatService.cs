@@ -568,7 +568,8 @@ public class MuhasibatService : IMuhasibatService
                         if (s0 == "likvidlik")
                         {
                             var lq = LikvidQrup(hesab);
-                            if (lq == null || lq != madde) continue;
+                            if (lq == null) continue;
+                            if (madde != "*" && lq != madde) continue;   // "*" → bütün likvid aktivlər
                             dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq));
                             continue;
                         }

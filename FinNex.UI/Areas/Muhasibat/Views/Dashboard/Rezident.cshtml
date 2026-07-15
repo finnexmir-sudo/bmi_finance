@@ -33,12 +33,12 @@
     else
     {
         <div class="mh-kpis">
-            <div class="mh-kpi mh-kpi--a">
+            <div class="mh-kpi mh-kpi--a mh-click" data-mhsahe="rezident" data-mhmadde="r" data-mhbaslik="Rezident hesabları">
                 <div class="mh-kpi-ic"><i class="bi bi-house-check"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.Rezident) <span>₼</span></div>
                 <div class="mh-kpi-l">Rezident · @Model.RezidentSay hesab</div>
             </div>
-            <div class="mh-kpi mh-kpi--r">
+            <div class="mh-kpi mh-kpi--r mh-click" data-mhsahe="rezident" data-mhmadde="qr" data-mhbaslik="Qeyri-rezident hesabları">
                 <div class="mh-kpi-ic"><i class="bi bi-airplane"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.QeyriRezident) <span>₼</span></div>
                 <div class="mh-kpi-l">Qeyri-rezident · @Model.QeyriRezidentSay hesab</div>
@@ -60,11 +60,11 @@
             <div class="mh-card-b">
                 <div class="mh-chart"><canvas id="chRez"></canvas></div>
                 <div class="mh-list">
-                    <div class="mh-row">
+                    <div class="mh-row mh-click" data-mhsahe="rezident" data-mhmadde="r" data-mhbaslik="Rezident hesabları">
                         <div class="mh-row-t"><span>Rezident</span><b>@Fmt(Model.Rezident) ₼</b></div>
                         <div class="mh-bar"><span style="width:@(Model.Umumi != 0 ? Math.Round(Model.Rezident / Model.Umumi * 100, 1) : 0)%"></span></div>
                     </div>
-                    <div class="mh-row">
+                    <div class="mh-row mh-click" data-mhsahe="rezident" data-mhmadde="qr" data-mhbaslik="Qeyri-rezident hesabları">
                         <div class="mh-row-t"><span>Qeyri-rezident</span><b>@Fmt(Model.QeyriRezident) ₼</b></div>
                         <div class="mh-bar mh-bar--r"><span style="width:@(Model.QeyriRezidentPay)%"></span></div>
                     </div>

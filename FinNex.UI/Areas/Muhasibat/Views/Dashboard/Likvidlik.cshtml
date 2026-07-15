@@ -31,7 +31,7 @@
     else
     {
         <div class="mh-kpis">
-            <div class="mh-kpi mh-kpi--a">
+            <div class="mh-kpi mh-kpi--a mh-click" data-mhsahe="likvidlik" data-mhmadde="*" data-mhbaslik="Likvid aktivlər — bütün hesablar">
                 <div class="mh-kpi-ic"><i class="bi bi-droplet"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.LikvidAktiv) <span>₼</span></div>
                 <div class="mh-kpi-l">Likvid aktivlər (HQLA)</div>
@@ -75,7 +75,7 @@
                     <div class="mh-list">
                         @foreach (var s in Model.LikvidStruktur)
                         {
-                            <div class="mh-row">
+                            <div class="mh-row mh-click" data-mhsahe="likvidlik" data-mhmadde="@s.Ad" data-mhbaslik="Likvid — @s.Ad">
                                 <div class="mh-row-t"><span>@s.Ad</span><b>@Fmt(s.Mebleg) ₼</b></div>
                                 <div class="mh-bar"><span style="width:@(s.Faiz)%"></span></div>
                                 <div class="mh-row-p">@s.Faiz%</div>
