@@ -53,6 +53,20 @@
             </div>
         </div>
 
+        <div class="mh-lcr @(Model.Lcr >= 100 ? "ok" : "warn")">
+            <div class="mh-lcr-main">
+                <div class="mh-lcr-lbl"><i class="bi bi-speedometer2"></i> LCR (təxmini)</div>
+                <div class="mh-lcr-v">@Model.Lcr<span>%</span></div>
+                <div class="mh-lcr-s">Requlyativ hədd ≥ 100% — @(Model.Lcr >= 100 ? "qaneedici ✓" : "diqqət ⚠")</div>
+            </div>
+            <div class="mh-lcr-comp">
+                <div><span>HQLA (haircut sonrası)</span><b>@Fmt(Model.Hqla) ₼</b></div>
+                <div><span>Xalis məxaric (30 gün, təxmini)</span><b>@Fmt(Model.XalisMexaric) ₼</b></div>
+                <div><span>Fiziki depozit × 10%</span><b>@Fmt(Model.FizikiDepozit * 0.10m) ₼</b></div>
+                <div><span>Hüquqi depozit × 40%</span><b>@Fmt(Model.HuquqiDepozit * 0.40m) ₼</b></div>
+            </div>
+        </div>
+
         <div class="mh-grid">
             <div class="mh-card">
                 <div class="mh-card-h"><span class="mh-dot mh-dot--a"></span> Likvid aktivlərin strukturu</div>
@@ -94,7 +108,8 @@
             <ul>
                 <li><b>Likvid aktivlər</b>: kassa (100), AMB/müxbir (11010/11020/11110/11710), banklararası/MB (14010–14034), cari likvid (15020/15025), HQLA (15770).</li>
                 <li><b>Ani likvidlik</b> = likvid aktiv / ümumi öhdəlik (sadə sürətli göstərici).</li>
-                <li>⚠️ Bu <b>v1</b>-dir — tam Basel <b>LCR</b> (haircut, xalis nağd məxaric axını, 30 günlük stress) növbəti addımda əlavə olunacaq.</li>
+                <li><b>LCR (təxmini)</b> = HQLA / xalis məxaric. Fərziyyələr: Level 2 (15020/15025) haircut <b>25%</b>; 30 günlük xalis məxaric = fiziki depozit × <b>10%</b> + hüquqi depozit × <b>40%</b>.</li>
+                <li>⚠️ Bu <b>təxmini</b> LCR-dir — regulyativ dəqiq LCR (AMB şablonu, LCR.cs) deyil. Rəsmi hesabat üçün onunla yoxlanmalıdır.</li>
             </ul>
         </div>
     }
@@ -172,9 +187,24 @@
     .mh-note ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.7; }
     .mh-note b { font-weight: 700; }
 
+    .mh-lcr { display: grid; grid-template-columns: 300px 1fr; gap: 20px; margin-top: 18px; border-radius: 16px;
+        padding: 22px 24px; color: #fff; box-shadow: 0 10px 26px rgba(2,6,23,.18); align-items: center; }
+    .mh-lcr.ok { background: linear-gradient(135deg, #047857, #0d9488); }
+    .mh-lcr.warn { background: linear-gradient(135deg, #b45309, #dc2626); }
+    .mh-lcr-lbl { font-size: 13px; font-weight: 700; opacity: .95; display: flex; align-items: center; gap: 7px; }
+    .mh-lcr-v { font-size: 44px; font-weight: 800; letter-spacing: -1px; line-height: 1.05; }
+    .mh-lcr-v span { font-size: 22px; }
+    .mh-lcr-s { font-size: 12.5px; opacity: .92; }
+    .mh-lcr-comp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; }
+    .mh-lcr-comp div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; background: rgba(255,255,255,.14);
+        padding: 8px 13px; border-radius: 9px; }
+    .mh-lcr-comp span { opacity: .9; } .mh-lcr-comp b { font-weight: 700; }
+
     @@media (max-width: 900px) {
         .mh-kpis { grid-template-columns: 1fr 1fr; }
         .mh-grid { grid-template-columns: 1fr; }
         .mh-card-b { grid-template-columns: 1fr; }
+        .mh-lcr { grid-template-columns: 1fr; }
+        .mh-lcr-comp { grid-template-columns: 1fr; }
     }
 </style>

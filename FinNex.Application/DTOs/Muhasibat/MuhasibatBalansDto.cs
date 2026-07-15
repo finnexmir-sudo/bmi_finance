@@ -25,6 +25,13 @@ public class MuhasibatBalansDto
     public decimal  RoaIllik     { get; set; }   // illikləşdirilmiş
     public decimal  RoeIllik     { get; set; }
 
+    // Əvvəlki iş günü ilə müqayisə (mütləq dəyişmə)
+    public bool     MuqayiseVar    { get; set; }
+    public decimal  AktivDeyisme   { get; set; }
+    public decimal  OhdelikDeyisme { get; set; }
+    public decimal  KapitalDeyisme { get; set; }
+    public decimal  MenfeetDeyisme { get; set; }
+
     public List<BalansMaddeDto> Aktivler       { get; set; } = new();
     public List<BalansMaddeDto> Ohdelikler     { get; set; } = new();
     public List<BalansMaddeDto> ValyutaBolgusu { get; set; } = new();  // aktivlərin valyuta strukturu

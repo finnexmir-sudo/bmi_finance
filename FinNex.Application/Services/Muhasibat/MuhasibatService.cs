@@ -113,6 +113,21 @@ FROM   arh_dd d
 WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd/mm/yyyy')
   AND  SUBSTR(d.debet,1,5) = '10050' AND SUBSTR(d.kredit,1,5) = '10060'";
 
+    // Əvvəlki iş günü totalları (müqayisə üçün) — sadə sinif aqreqasiyası.
+    private const string MuqayiseSql = @"
+select
+  round(sum(case when substr(ar.licsch,1,1) in ('1','2') then ar.saldo_ish_nacval else 0 end),2) aktiv,
+  round(-sum(case when substr(ar.licsch,1,1) in ('3','4') and substr(ar.licsch,1,2) not in ('44','45') then ar.saldo_ish_nacval else 0 end),2) ohdelik,
+  round(-sum(case when substr(ar.licsch,1,2) in ('44','45') or substr(ar.licsch,1,1)='5' then ar.saldo_ish_nacval else 0 end),2) kapital,
+  round(-sum(case when substr(ar.licsch,1,5)='50130' then ar.saldo_ish_nacval else 0 end),2) menfeet
+from odb.arh_saldo_ls ar, licsch ch
+where ar.date_oper = (
+    select max(c.date_oper) from odb.arh_saldo_ls c
+    where c.date_oper < to_date('{TARIX}','dd/mm/yyyy')
+      and c.date_oper >= to_date('{TARIX}','dd/mm/yyyy') - 10)
+  and ch.licsch = ar.licsch
+  and (ch.date_close_licsch is null or ar.date_oper <= ch.date_close_licsch)";
+
     // Rezident/qeyri-rezident — frm_reziden_ve_qeyri_rezident məntiqi (ABS qalıq).
     private const string RezidentSql = @"
 select
@@ -202,6 +217,22 @@ group by case when (substr(s.licsch,0,3)='409'
             var faktor = gun > 0 ? 365m / gun : 1m;
             dto.RoaIllik = Math.Round(dto.Roa * faktor, 2);
             dto.RoeIllik = Math.Round(dto.Roe * faktor, 2);
+
+            // Əvvəlki iş günü ilə müqayisə (xəta əsas balansı pozmasın)
+            try
+            {
+                var msql = MuqayiseSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                var mrows = await _oracle.SelectAsync(msql, maxRows: 5);
+                if (mrows.Count > 0 && Dec(Val(mrows[0], "aktiv")) != 0)
+                {
+                    dto.AktivDeyisme   = Math.Round(dto.UmumiAktiv   - Dec(Val(mrows[0], "aktiv")), 2);
+                    dto.OhdelikDeyisme = Math.Round(dto.UmumiOhdelik - Dec(Val(mrows[0], "ohdelik")), 2);
+                    dto.KapitalDeyisme = Math.Round(dto.Kapital      - Dec(Val(mrows[0], "kapital")), 2);
+                    dto.MenfeetDeyisme = Math.Round(dto.XalisMenfeet - Dec(Val(mrows[0], "menfeet")), 2);
+                    dto.MuqayiseVar = true;
+                }
+            }
+            catch { /* müqayisə alınmadı — oxlar göstərilməz */ }
 
             dto.Aktivler = aktiv.Where(x => Math.Abs(x.Value) > 0.005m)
                 .OrderByDescending(x => x.Value)
@@ -421,7 +452,8 @@ group by case when (substr(s.licsch,0,3)='409'
 
             var likvidD = new Dictionary<string, decimal>();
             var valyutaD = new Dictionary<string, decimal>();
-            decimal likvid = 0m, aktiv = 0m, ohdelik = 0m;
+            decimal likvid = 0m, aktiv = 0m, ohdelik = 0m, level2 = 0m;
+            decimal fizikiDep = 0m, huquqiDep = 0m;
 
             foreach (var r in rows)
             {
@@ -429,6 +461,10 @@ group by case when (substr(s.licsch,0,3)='409'
                 var valKod = Val(r, "valyuta")?.ToString() ?? "";
                 var qaliq = Dec(Val(r, "qaliq"));
                 if (qaliq == 0m) continue;
+
+                var depTip = Val(r, "dep_tip")?.ToString() ?? "X";
+                if (depTip == "F") fizikiDep += -qaliq;
+                else if (depTip == "H") huquqiDep += -qaliq;
 
                 var (kat, _) = Tesnif(hesab);
                 if (kat == "aktiv") aktiv += qaliq;
@@ -438,6 +474,7 @@ group by case when (substr(s.licsch,0,3)='409'
                 if (lq != null)
                 {
                     likvid += qaliq;
+                    if (lq == "Cari likvid vəsaitlər") level2 += qaliq;   // Level 2 (haircut)
                     likvidD[lq] = likvidD.GetValueOrDefault(lq) + qaliq;
                     var vad = ValyutaAd(valKod);
                     valyutaD[vad] = valyutaD.GetValueOrDefault(vad) + qaliq;
@@ -450,6 +487,16 @@ group by case when (substr(s.licsch,0,3)='409'
             dto.LikvidAktivPay = aktiv != 0 ? Math.Round(likvid / aktiv * 100, 1) : 0;
             dto.LikvidStruktur = ToMadde(likvidD, likvid);
             dto.ValyutaBolgusu = ToMadde(valyutaD, likvid);
+
+            // Təxmini LCR — Level 2 haircut 25%; net outflow = fiziki×10% + hüquqi×40%
+            var hqla = likvid - 0.25m * level2;
+            var netMex = fizikiDep * 0.10m + huquqiDep * 0.40m;
+            dto.Hqla          = Math.Round(hqla, 2);
+            dto.FizikiDepozit = Math.Round(fizikiDep, 2);
+            dto.HuquqiDepozit = Math.Round(huquqiDep, 2);
+            dto.XalisMexaric  = Math.Round(netMex, 2);
+            dto.Lcr           = netMex != 0 ? Math.Round(hqla / netMex * 100, 1) : 0;
+
             dto.Ugurlu = true;
         }
         catch (Exception ex)

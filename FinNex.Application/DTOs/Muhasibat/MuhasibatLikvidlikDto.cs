@@ -16,4 +16,12 @@ public class MuhasibatLikvidlikDto
 
     public List<BalansMaddeDto> LikvidStruktur { get; set; } = new();   // qruplar
     public List<BalansMaddeDto> ValyutaBolgusu { get; set; } = new();   // likvid aktivlərin valyutası
+
+    // Təxmini LCR (Basel-vari) — fərziyyələr: Level 2 (15020/25) haircut 25%;
+    // xalis məxaric = fiziki depozit×10% + hüquqi depozit×40%. Regulyativ LCR.cs deyil.
+    public decimal  Hqla          { get; set; }   // haircut tətbiq olunmuş likvid aktiv
+    public decimal  FizikiDepozit { get; set; }
+    public decimal  HuquqiDepozit { get; set; }
+    public decimal  XalisMexaric  { get; set; }   // təxmini 30 günlük net outflow
+    public decimal  Lcr           { get; set; }   // HQLA / xalis məxaric, %
 }

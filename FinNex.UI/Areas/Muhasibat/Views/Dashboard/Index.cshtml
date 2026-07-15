@@ -45,16 +45,28 @@
                 <div class="mh-kpi-ic"><i class="bi bi-graph-up-arrow"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiAktiv) <span>₼</span></div>
                 <div class="mh-kpi-l">Ümumi Aktivlər</div>
+                @if (Model.MuqayiseVar)
+                {
+                    <div class="mh-kpi-d"><i class="bi bi-@(Model.AktivDeyisme >= 0 ? "arrow-up" : "arrow-down")"></i> @Fmt(Math.Abs(Model.AktivDeyisme)) ₼ <span>dünəndən</span></div>
+                }
             </div>
             <div class="mh-kpi mh-kpi--o">
                 <div class="mh-kpi-ic"><i class="bi bi-graph-down-arrow"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiOhdelik) <span>₼</span></div>
                 <div class="mh-kpi-l">Ümumi Öhdəliklər</div>
+                @if (Model.MuqayiseVar)
+                {
+                    <div class="mh-kpi-d"><i class="bi bi-@(Model.OhdelikDeyisme >= 0 ? "arrow-up" : "arrow-down")"></i> @Fmt(Math.Abs(Model.OhdelikDeyisme)) ₼ <span>dünəndən</span></div>
+                }
             </div>
             <div class="mh-kpi mh-kpi--k">
                 <div class="mh-kpi-ic"><i class="bi bi-shield-check"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.Kapital) <span>₼</span></div>
                 <div class="mh-kpi-l">Kapital və ehtiyatlar</div>
+                @if (Model.MuqayiseVar)
+                {
+                    <div class="mh-kpi-d"><i class="bi bi-@(Model.KapitalDeyisme >= 0 ? "arrow-up" : "arrow-down")"></i> @Fmt(Math.Abs(Model.KapitalDeyisme)) ₼ <span>dünəndən</span></div>
+                }
             </div>
             <div class="mh-kpi mh-kpi--c">
                 <div class="mh-kpi-ic"><i class="bi bi-percent"></i></div>
@@ -67,7 +79,7 @@
             <div class="mh-prof-card mh-prof--m">
                 <div class="mh-prof-t"><i class="bi bi-graph-up-arrow"></i> Xalis mənfəət (YTD)</div>
                 <div class="mh-prof-v">@Fmt(Model.XalisMenfeet) <span>₼</span></div>
-                <div class="mh-prof-s">Cari ilin mənfəəti/zərəri · hesab 50130</div>
+                <div class="mh-prof-s">Cari ilin mənfəəti/zərəri · hesab 50130@if (Model.MuqayiseVar) {<text> · <b class="@(Model.MenfeetDeyisme >= 0 ? "d-up" : "d-dn")">@(Model.MenfeetDeyisme >= 0 ? "▲" : "▼") @Fmt(Math.Abs(Model.MenfeetDeyisme)) ₼</b></text>}</div>
             </div>
             <div class="mh-prof-card mh-prof--a">
                 <div class="mh-prof-t"><i class="bi bi-pie-chart-fill"></i> ROA</div>
@@ -218,6 +230,10 @@
     .mh-kpi-v { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
     .mh-kpi-v span { font-size: 14px; font-weight: 600; opacity: .85; }
     .mh-kpi-l { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+    .mh-kpi-d { margin-top: 7px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(255,255,255,.2); padding: 2px 9px; border-radius: 20px; }
+    .mh-kpi-d span { opacity: .8; font-weight: 400; }
+    .d-up { color: #059669; } .d-dn { color: #dc2626; }
 
     .mh-profit { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
     .mh-prof-card { border-radius: 16px; padding: 18px 20px; border: 1px solid #e6ebf2; background: #fff; box-shadow: 0 4px 16px rgba(2,6,23,.05); position: relative; overflow: hidden; }
