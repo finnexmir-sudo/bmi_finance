@@ -1,0 +1,179 @@
+@using System.Text.Json
+@model MuhasibatLikvidlikDto
+@{
+    ViewData["Title"] = "Mühasibat — Likvidlik";
+    string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    var strukJson = Html.Raw(JsonSerializer.Serialize(Model.LikvidStruktur.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var valJson = Html.Raw(JsonSerializer.Serialize(Model.ValyutaBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+}
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--lq">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-droplet-half"></i> Mühasibat / Likvidlik</div>
+            <h1 class="mh-title">Likvidlik İcmalı</h1>
+            <div class="mh-sub"><i class="bi bi-calendar3"></i> Hesabat tarixi: <b>@Model.Tarix.ToString("dd.MM.yyyy")</b></div>
+        </div>
+        <form method="get" class="mh-datef">
+            <label>Tarix</label>
+            <input type="date" name="t" value="@Model.Tarix.ToString("yyyy-MM-dd")" />
+            <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
+        </form>
+    </div>
+
+    <partial name="_MhTabs" />
+
+    @if (!Model.Ugurlu)
+    {
+        <div class="mh-alert"><i class="bi bi-x-octagon"></i> Likvidlik yüklənmədi: @Model.Xeta</div>
+    }
+    else
+    {
+        <div class="mh-kpis">
+            <div class="mh-kpi mh-kpi--a">
+                <div class="mh-kpi-ic"><i class="bi bi-droplet"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.LikvidAktiv) <span>₼</span></div>
+                <div class="mh-kpi-l">Likvid aktivlər (HQLA)</div>
+            </div>
+            <div class="mh-kpi mh-kpi--g">
+                <div class="mh-kpi-ic"><i class="bi bi-speedometer"></i></div>
+                <div class="mh-kpi-v">@Model.AniLikvidlik<span>%</span></div>
+                <div class="mh-kpi-l">Likvid aktiv / Öhdəlik</div>
+            </div>
+            <div class="mh-kpi mh-kpi--b">
+                <div class="mh-kpi-ic"><i class="bi bi-pie-chart"></i></div>
+                <div class="mh-kpi-v">@Model.LikvidAktivPay<span>%</span></div>
+                <div class="mh-kpi-l">Likvid aktiv / Ümumi aktiv</div>
+            </div>
+            <div class="mh-kpi mh-kpi--o">
+                <div class="mh-kpi-ic"><i class="bi bi-cash-stack"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.UmumiOhdelik) <span>₼</span></div>
+                <div class="mh-kpi-l">Ümumi öhdəliklər</div>
+            </div>
+        </div>
+
+        <div class="mh-grid">
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--a"></span> Likvid aktivlərin strukturu</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chStruk"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var s in Model.LikvidStruktur)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@s.Ad</span><b>@Fmt(s.Mebleg) ₼</b></div>
+                                <div class="mh-bar"><span style="width:@(s.Faiz)%"></span></div>
+                                <div class="mh-row-p">@s.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--v"></span> Valyuta strukturu</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chVal"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var v in Model.ValyutaBolgusu)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
+                                <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
+                                <div class="mh-row-p">@v.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mh-note">
+            <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
+            <ul>
+                <li><b>Likvid aktivlər</b>: kassa (100), AMB/müxbir (11010/11020/11110/11710), banklararası/MB (14010–14034), cari likvid (15020/15025), HQLA (15770).</li>
+                <li><b>Ani likvidlik</b> = likvid aktiv / ümumi öhdəlik (sadə sürətli göstərici).</li>
+                <li>⚠️ Bu <b>v1</b>-dir — tam Basel <b>LCR</b> (haircut, xalis nağd məxaric axını, 30 günlük stress) növbəti addımda əlavə olunacaq.</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script>
+        (function () {
+            if (typeof Chart === 'undefined') return;
+            const palS = ['#0e7490', '#0891b2', '#06b6d4', '#22d3ee', '#67e8f9'];
+            const palV = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#a855f7', '#64748b'];
+            function bar(id, rows, pal) {
+                const el = document.getElementById(id);
+                if (!el || !rows || !rows.length) return;
+                new Chart(el, {
+                    type: 'bar',
+                    data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderRadius: 6, maxBarThickness: 54 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => Number(c.raw).toLocaleString('az-AZ') + ' ₼' } } },
+                        scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { callback: v => (v / 1000000).toFixed(0) + 'M' } } }
+                    }
+                });
+            }
+            bar('chStruk', @strukJson, palS);
+            bar('chVal', @valJson, palV);
+        })();
+    </script>
+}
+
+<style>
+    .mh-wrap { max-width: 1280px; margin: 0 auto; padding: 8px 0 40px; color: #1e293b; }
+    .mh-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;
+        background: linear-gradient(120deg, #0f2f5c 0%, #16478a 55%, #1e63b8 100%); color: #fff;
+        border-radius: 18px; padding: 26px 30px; box-shadow: 0 12px 30px rgba(16,71,138,.28); flex-wrap: wrap; }
+    .mh-hero--lq { background: linear-gradient(120deg, #083344 0%, #0e7490 55%, #0891b2 100%); box-shadow: 0 12px 30px rgba(8,145,178,.28); }
+    .mh-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.16); padding: 5px 13px; border-radius: 30px; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+    .mh-title { font-size: 30px; font-weight: 800; margin: 0 0 6px; letter-spacing: -.5px; }
+    .mh-sub { font-size: 13.5px; opacity: .92; }
+    .mh-datef { display: flex; align-items: flex-end; gap: 8px; background: rgba(255,255,255,.12); padding: 12px 14px; border-radius: 14px; }
+    .mh-datef label { display: block; font-size: 11px; opacity: .85; margin-bottom: 3px; width: 100%; }
+    .mh-datef input { border: none; border-radius: 9px; padding: 8px 10px; font-size: 13px; }
+    .mh-datef button { border: none; background: #ffb703; color: #1a1a1a; font-weight: 700; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .mh-alert { margin-top: 18px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; }
+
+    .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+    .mh-kpi { position: relative; border-radius: 16px; padding: 20px; color: #fff; overflow: hidden; box-shadow: 0 8px 22px rgba(2,6,23,.12); }
+    .mh-kpi--a { background: linear-gradient(135deg, #0e7490, #06b6d4); }
+    .mh-kpi--g { background: linear-gradient(135deg, #047857, #10b981); }
+    .mh-kpi--b { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+    .mh-kpi--o { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .mh-kpi-ic { position: absolute; right: 14px; top: 12px; font-size: 30px; opacity: .28; }
+    .mh-kpi-v { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
+    .mh-kpi-v span { font-size: 14px; font-weight: 600; opacity: .85; }
+    .mh-kpi-l { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+
+    .mh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .mh-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(2,6,23,.05); }
+    .mh-card-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
+    .mh-dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
+    .mh-dot--a { background: #0e7490; } .mh-dot--v { background: #16a34a; }
+    .mh-card-b { display: grid; grid-template-columns: 240px 1fr; gap: 18px; padding: 18px 20px; align-items: center; }
+    .mh-chart { height: 230px; position: relative; }
+    .mh-list { display: flex; flex-direction: column; gap: 12px; }
+    .mh-row-t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+    .mh-row-t span { color: #475569; } .mh-row-t b { color: #0f172a; }
+    .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
+    .mh-bar span { display: block; height: 100%; background: linear-gradient(90deg, #0e7490, #22d3ee); border-radius: 6px; }
+    .mh-bar--v span { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .mh-row-p { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 2px; }
+
+    .mh-note { margin-top: 18px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 14px; padding: 16px 22px; }
+    .mh-note-h { font-weight: 700; color: #0e7490; margin-bottom: 8px; }
+    .mh-note ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.7; }
+    .mh-note b { font-weight: 700; }
+
+    @@media (max-width: 900px) {
+        .mh-kpis { grid-template-columns: 1fr 1fr; }
+        .mh-grid { grid-template-columns: 1fr; }
+        .mh-card-b { grid-template-columns: 1fr; }
+    }
+</style>

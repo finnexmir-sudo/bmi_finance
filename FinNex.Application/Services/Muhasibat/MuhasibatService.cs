@@ -184,6 +184,13 @@ WHERE  lk.licschpkre = x.licschpkre AND lk.subschkre = x.subschkre
             dto.UmumiPortfel = Math.Round(huquqi + fiziki, 2);
             dto.MusteriSayi  = musteriler.Count;
 
+            // Konsentrasiya — bütün depozitorlar üzrə ən böyükləri
+            var sirali = musteriler.Values.OrderByDescending(m => m.meb).ToList();
+            var top10 = sirali.Take(10).Sum(m => m.meb);
+            var top20 = sirali.Take(20).Sum(m => m.meb);
+            dto.Top10Pay = dto.UmumiPortfel != 0 ? Math.Round(top10 / dto.UmumiPortfel * 100, 1) : 0;
+            dto.Top20Pay = dto.UmumiPortfel != 0 ? Math.Round(top20 / dto.UmumiPortfel * 100, 1) : 0;
+
             dto.TipBolgusu = new List<BalansMaddeDto>
             {
                 new() { Ad = "Hüquqi şəxslər", Mebleg = dto.HuquqiCem,
@@ -289,6 +296,72 @@ WHERE  lk.licschpkre = x.licschpkre AND lk.subschkre = x.subschkre
         }
 
         return dto;
+    }
+
+    public async Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatLikvidlikDto { Tarix = t };
+
+        try
+        {
+            var sql = BalansSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+
+            var likvidD = new Dictionary<string, decimal>();
+            var valyutaD = new Dictionary<string, decimal>();
+            decimal likvid = 0m, aktiv = 0m, ohdelik = 0m;
+
+            foreach (var r in rows)
+            {
+                var hesab = Val(r, "hesab")?.ToString() ?? "";
+                var valKod = Val(r, "valyuta")?.ToString() ?? "";
+                var qaliq = Dec(Val(r, "qaliq"));
+                if (qaliq == 0m) continue;
+
+                var (kat, _) = Tesnif(hesab);
+                if (kat == "aktiv") aktiv += qaliq;
+                else if (kat == "ohdelik") ohdelik += -qaliq;
+
+                var lq = LikvidQrup(hesab);
+                if (lq != null)
+                {
+                    likvid += qaliq;
+                    likvidD[lq] = likvidD.GetValueOrDefault(lq) + qaliq;
+                    var vad = ValyutaAd(valKod);
+                    valyutaD[vad] = valyutaD.GetValueOrDefault(vad) + qaliq;
+                }
+            }
+
+            dto.LikvidAktiv    = Math.Round(likvid, 2);
+            dto.UmumiOhdelik   = Math.Round(ohdelik, 2);
+            dto.AniLikvidlik   = ohdelik != 0 ? Math.Round(likvid / ohdelik * 100, 1) : 0;
+            dto.LikvidAktivPay = aktiv != 0 ? Math.Round(likvid / aktiv * 100, 1) : 0;
+            dto.LikvidStruktur = ToMadde(likvidD, likvid);
+            dto.ValyutaBolgusu = ToMadde(valyutaD, likvid);
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    // Likvid aktiv qrupu (yoxsa null). Prefikslər LCR/frm_Dep-dən.
+    private static string? LikvidQrup(string hesab)
+    {
+        if (hesab.Length < 3) return null;
+        if (hesab.Substring(0, 3) == "100") return "Kassa (nağd)";
+        if (hesab.Length < 5) return null;
+        var p5 = hesab.Substring(0, 5);
+        if (p5 is "11010" or "11020" or "11110" or "11710") return "AMB / müxbir (NOSTRO)";
+        if (p5 is "14010" or "14012" or "14014" or "14030" or "14032" or "14034") return "Banklararası / Mərkəzi Bank";
+        if (p5 is "15020" or "15025") return "Cari likvid vəsaitlər";
+        if (p5 == "15770") return "Yüksək likvid aktivlər (HQLA)";
+        return null;
     }
 
     private static List<BalansMaddeDto> ToMadde(Dictionary<string, decimal> d, decimal total) =>

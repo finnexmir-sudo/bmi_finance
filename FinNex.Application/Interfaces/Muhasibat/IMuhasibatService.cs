@@ -12,4 +12,7 @@ public interface IMuhasibatService
 
     // Kredit portfeli — cari vəziyyət (tip/təyinat/valyuta/gecikmə bölgüsü, NPL).
     Task<MuhasibatKreditDto> KreditPortfelAsync();
+
+    // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
+    Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 }

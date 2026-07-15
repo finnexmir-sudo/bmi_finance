@@ -88,6 +88,23 @@
             </div>
         </div>
 
+        <div class="mh-conc">
+            <div class="mh-conc-h"><i class="bi bi-diagram-3"></i> Depozit konsentrasiyası</div>
+            <div class="mh-conc-b">
+                <div class="mh-conc-item">
+                    <div class="mh-conc-v">@Model.Top10Pay<span>%</span></div>
+                    <div class="mh-conc-l">Ən böyük <b>10</b> depozitorun payı</div>
+                    <div class="mh-conc-bar"><span style="width:@(Model.Top10Pay)%"></span></div>
+                </div>
+                <div class="mh-conc-item">
+                    <div class="mh-conc-v">@Model.Top20Pay<span>%</span></div>
+                    <div class="mh-conc-l">Ən böyük <b>20</b> depozitorun payı</div>
+                    <div class="mh-conc-bar mh-conc-bar--2"><span style="width:@(Model.Top20Pay)%"></span></div>
+                </div>
+                <div class="mh-conc-note"><i class="bi bi-info-circle"></i> Yüksək pay = konsentrasiya/likvidlik riski (bir neçə iri depozitordan asılılıq).</div>
+            </div>
+        </div>
+
         <div class="mh-grid">
             <div class="mh-card">
                 <div class="mh-card-h"><span class="mh-dot mh-dot--k"></span> Ən böyük 10 hüquqi depozitor</div>
@@ -144,23 +161,21 @@
             if (typeof Chart === 'undefined') return;
             const palTip = ['#047857', '#a855f7'];
             const palVal = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#a855f7', '#64748b'];
-            function donut(id, rows, pal) {
+            function bar(id, rows, pal) {
                 const el = document.getElementById(id);
                 if (!el || !rows || !rows.length) return;
                 new Chart(el, {
-                    type: 'doughnut',
-                    data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderWidth: 0 }] },
+                    type: 'bar',
+                    data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderRadius: 6, maxBarThickness: 64 }] },
                     options: {
-                        cutout: '62%', responsive: true, maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
-                            tooltip: { callbacks: { label: c => c.label + ': ' + Number(c.raw).toLocaleString('az-AZ') + ' ₼' } }
-                        }
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => Number(c.raw).toLocaleString('az-AZ') + ' ₼' } } },
+                        scales: { x: { ticks: { font: { size: 11 } } }, y: { ticks: { callback: v => (v / 1000000).toFixed(0) + 'M' } } }
                     }
                 });
             }
-            donut('chTip', @tipJson, palTip);
-            donut('chVal', @valJson, palVal);
+            bar('chTip', @tipJson, palTip);
+            bar('chVal', @valJson, palVal);
         })();
     </script>
 }
@@ -221,9 +236,22 @@
     .mh-note ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.7; }
     .mh-note code { background: #dcfce7; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
 
+    .mh-conc { margin-top: 18px; background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; box-shadow: 0 4px 16px rgba(2,6,23,.05); overflow: hidden; }
+    .mh-conc-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; color: #b45309; }
+    .mh-conc-b { display: grid; grid-template-columns: 1fr 1fr auto; gap: 22px; padding: 20px; align-items: center; }
+    .mh-conc-item { }
+    .mh-conc-v { font-size: 30px; font-weight: 800; color: #0f172a; letter-spacing: -.5px; }
+    .mh-conc-v span { font-size: 16px; color: #b45309; }
+    .mh-conc-l { font-size: 13px; color: #64748b; margin: 2px 0 8px; }
+    .mh-conc-bar { height: 8px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+    .mh-conc-bar span { display: block; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 6px; }
+    .mh-conc-bar--2 span { background: linear-gradient(90deg, #d97706, #f59e0b); }
+    .mh-conc-note { font-size: 12px; color: #94a3b8; max-width: 260px; }
+
     @@media (max-width: 900px) {
         .mh-kpis { grid-template-columns: 1fr 1fr; }
         .mh-grid { grid-template-columns: 1fr; }
         .mh-card-b { grid-template-columns: 1fr; }
+        .mh-conc-b { grid-template-columns: 1fr; }
     }
 </style>

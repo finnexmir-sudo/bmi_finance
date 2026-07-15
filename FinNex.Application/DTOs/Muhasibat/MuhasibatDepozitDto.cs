@@ -14,6 +14,10 @@ public class MuhasibatDepozitDto
     public decimal  FizikiCem    { get; set; }
     public int      MusteriSayi  { get; set; }
 
+    // Konsentrasiya (risk): ən böyük depozitorların portfeldəki payı
+    public decimal  Top10Pay     { get; set; }
+    public decimal  Top20Pay     { get; set; }
+
     public List<BalansMaddeDto> TipBolgusu     { get; set; } = new();   // Hüquqi / Fiziki
     public List<BalansMaddeDto> ValyutaBolgusu { get; set; } = new();   // AZN / USD / Digər
     public List<BalansMaddeDto> TopHuquqi      { get; set; } = new();   // ən böyük 10 hüquqi

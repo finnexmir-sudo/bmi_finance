@@ -1,0 +1,19 @@
+namespace FinNex.Application.DTOs.Muhasibat;
+
+// Likvidlik tab (v1) — likvid aktivlər + sadə likvidlik nisbətləri.
+// Mənbə: odb.arh_saldo_ls (balans qalıqları). Tam Basel LCR (haircut + net outflow)
+// sonrakı addımda; bu v1 sürətli likvidlik şəklidir.
+public class MuhasibatLikvidlikDto
+{
+    public DateTime Tarix   { get; set; }
+    public bool     Ugurlu  { get; set; }
+    public string?  Xeta    { get; set; }
+
+    public decimal  LikvidAktiv    { get; set; }   // HQLA-tipli likvid aktivlər (AZN)
+    public decimal  UmumiOhdelik   { get; set; }   // ümumi öhdəlik
+    public decimal  AniLikvidlik   { get; set; }   // likvid aktiv / öhdəlik, %
+    public decimal  LikvidAktivPay { get; set; }   // likvid aktiv / ümumi aktiv, %
+
+    public List<BalansMaddeDto> LikvidStruktur { get; set; } = new();   // qruplar
+    public List<BalansMaddeDto> ValyutaBolgusu { get; set; } = new();   // likvid aktivlərin valyutası
+}

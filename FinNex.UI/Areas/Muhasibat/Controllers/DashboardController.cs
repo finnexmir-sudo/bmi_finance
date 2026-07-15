@@ -73,6 +73,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Likvidlik.
+    public async Task<IActionResult> Likvidlik(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.LikvidlikAsync(ParseTarix(t));
+        return View(model);
+    }
+
     private static DateTime? ParseTarix(string? t)
     {
         if (!string.IsNullOrWhiteSpace(t) &&

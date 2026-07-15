@@ -11,7 +11,9 @@
     <a asp-action="Kredit" class="mh-tab @(act == "Kredit" ? "on" : "")">
         <i class="bi bi-credit-card"></i> Kredit portfeli
     </a>
-    <span class="mh-tab mh-tab--soon"><i class="bi bi-droplet"></i> Likvidlik <em>tezliklə</em></span>
+    <a asp-action="Likvidlik" class="mh-tab @(act == "Likvidlik" ? "on" : "")">
+        <i class="bi bi-droplet"></i> Likvidlik
+    </a>
 </div>
 
 <style>

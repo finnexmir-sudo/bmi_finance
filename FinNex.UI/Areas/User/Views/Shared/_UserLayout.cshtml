@@ -996,6 +996,10 @@
                                    class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Kredit" ? "active" : "")">
                                     <i class="bi bi-credit-card"></i> Kredit portfeli
                                 </a>
+                                <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Likvidlik"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Likvidlik" ? "active" : "")">
+                                    <i class="bi bi-droplet"></i> Likvidlik
+                                </a>
                                 <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">
                                     <i class="bi bi-speedometer2"></i> Maliyyə Dashboard
