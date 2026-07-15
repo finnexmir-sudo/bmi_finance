@@ -402,8 +402,15 @@ order by il;
    Sütunlar: ESAS_QALIQ  = əsas borc qalığı (summa)
              VK_QALIQ    = vaxtı keçmiş / problemli borc qalığı (summa_19)
              TAM_QALIQ   = esas + vk = ümumi borc (real risk məbləği)
-   QEYD    : summa & summa_19 hər ikisi odb.licschkre sütunudur — əlavə join yox.
-             Hədd filtri artıq TAM_QALIQ-ə görə işləyir (ümumi borca baxır).
+             GECIKME_GUN = DPD (view_nacpogprokre_all + tar_ferq360)
+             VEZIYYET    = normal (<90 gün) / DEFAULT (90+ gün — icra/problemli)
+   MƏNTİQ  : İcradakı / uzun gecikmiş kreditlər hesabatda QALIR, amma VEZIYYET
+             sütunu ilə etiketlənir. Belə kreditin date_planclose-u praktikada
+             saxtadır (cədvəl üzrə ödənmir, məhkəmə/icra ilə yığılır) — DEFAULT
+             etiketi risk zabitinə bunu bildirir; likvidlik gözləntisinə salma.
+   QEYD    : summa & summa_19 hər ikisi odb.licschkre sütunudur. GECIKME_GUN üçün
+             view_nacpogprokre_all snapshot join-i əlavə edildi (#16/#18 ilə eyni).
+             Hədd filtri TAM_QALIQ-ə görə işləyir (ümumi borca baxır).
 --------------------------------------------------------------------------- */
 with kr as (
   select lk.licschkre                                                                    hesab,
@@ -413,9 +420,15 @@ with kr as (
          round((lk.summa + lk.summa_19) * round(odb.func_get_kurval(substr(lk.licschkre,6,2), to_date(sysdate)), 6), 2)  tam_qaliq,
          lk.date_planclose                                                               son_odeme,
          round(lk.date_planclose - trunc(sysdate))                                       qalan_gun,
+         odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper))               gecikme_gun,
+         case when odb.tar_ferq360(x.date_oper, nvl(x.lastoverduedate, x.date_oper)) >= 90
+              then 'DEFAULT' else 'normal' end                                           veziyyet,
          lk.procstavkre                                                                  faiz
-  from   odb.licschkre lk, regnom r
-  where  substr(lk.licschkre, 10, 6) = r.regnom
+  from   odb.licschkre lk, view_nacpogprokre_all x, regnom r
+  where  lk.licschpkre = x.licschpkre
+    and  lk.subschkre  = x.subschkre
+    and  x.date_oper   = to_date(sysdate)
+    and  substr(lk.licschkre, 10, 6) = r.regnom
     and  length(lk.licschkre) = 20
     and  lk.date_close is null
     and  lk.summa > 0
