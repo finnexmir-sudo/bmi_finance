@@ -990,7 +990,7 @@
                                 </a>
                                 <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Depozit"
                                    class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Depozit" ? "active" : "")">
-                                    <i class="bi bi-piggy-bank"></i> Depozitlər
+                                    <i class="bi bi-safe2"></i> Depozitlər
                                 </a>
                                 <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Kredit"
                                    class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Kredit" ? "active" : "")">
@@ -1000,13 +1000,17 @@
                                    class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Likvidlik" ? "active" : "")">
                                     <i class="bi bi-droplet"></i> Likvidlik
                                 </a>
+                                <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Valyuta"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Valyuta" ? "active" : "")">
+                                    <i class="bi bi-currency-exchange"></i> Valyuta
+                                </a>
                                 <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">
                                     <i class="bi bi-speedometer2"></i> Maliyyə Dashboard
                                 </a>
                                 <a asp-area="HR" asp-controller="Budce" asp-action="Index"
                                    class="fn-nav-item @(currentController == "Budce" ? "active" : "")">
-                                    <i class="bi bi-piggy-bank"></i> Büdcə
+                                    <i class="bi bi-wallet2"></i> Büdcə
                                 </a>
                                 <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">

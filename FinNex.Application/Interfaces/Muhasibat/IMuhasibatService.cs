@@ -15,4 +15,7 @@ public interface IMuhasibatService
 
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
+
+    // Valyuta əməliyyatları — tarix aralığında alış/satış, spred, açıq mövqe.
+    Task<MuhasibatValyutaDto> ValyutaAsync(DateTime? bas = null, DateTime? son = null);
 }

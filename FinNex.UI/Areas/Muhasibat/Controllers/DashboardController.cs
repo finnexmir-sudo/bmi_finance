@@ -83,6 +83,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Valyuta əməliyyatları (tarix aralığı: bt=başlanğıc, st=son).
+    public async Task<IActionResult> Valyuta(string? bt, string? st)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.ValyutaAsync(ParseTarix(bt), ParseTarix(st));
+        return View(model);
+    }
+
     private static DateTime? ParseTarix(string? t)
     {
         if (!string.IsNullOrWhiteSpace(t) &&

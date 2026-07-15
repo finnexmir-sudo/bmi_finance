@@ -61,6 +61,18 @@ WHERE  lk.licschpkre = x.licschpkre AND lk.subschkre = x.subschkre
   AND  x.date_oper = to_date(sysdate)
   AND  lk.date_close IS NULL AND LENGTH(lk.licschkre) = 20";
 
+    // Valyuta alış/satış — arh_dd dövriyyələri (alış: 10060←10050; satış: 10050←10060).
+    private const string ValyutaSql = @"
+SELECT 'alis' yon, SUBSTR(d.debet,6,2) val, d.summa_v_inval hecm, d.summa_v_inval*d.kurs_valuti azn
+FROM   arh_dd d
+WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd/mm/yyyy')
+  AND  SUBSTR(d.debet,1,5) = '10060' AND SUBSTR(d.kredit,1,5) = '10050'
+UNION ALL
+SELECT 'satis' yon, SUBSTR(d.kredit,6,2) val, d.summa_v_inval hecm, d.summa_v_inval*d.kurs_valuti azn
+FROM   arh_dd d
+WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd/mm/yyyy')
+  AND  SUBSTR(d.debet,1,5) = '10050' AND SUBSTR(d.kredit,1,5) = '10060'";
+
     public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
     {
         var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
@@ -362,6 +374,84 @@ WHERE  lk.licschpkre = x.licschpkre AND lk.subschkre = x.subschkre
         if (p5 is "15020" or "15025") return "Cari likvid vəsaitlər";
         if (p5 == "15770") return "Yüksək likvid aktivlər (HQLA)";
         return null;
+    }
+
+    public async Task<MuhasibatValyutaDto> ValyutaAsync(DateTime? bas = null, DateTime? son = null)
+    {
+        var s = (son ?? DateTime.Now.Date).Date;
+        var b = (bas ?? s.AddDays(-30)).Date;
+        var dto = new MuhasibatValyutaDto { BasTarix = b, SonTarix = s };
+
+        try
+        {
+            var sql = ValyutaSql
+                .Replace("{BAS}", b.ToString("dd/MM/yyyy"))
+                .Replace("{SON}", s.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 500000);
+
+            // valyuta → cəmlər
+            var alisH = new Dictionary<string, decimal>();
+            var alisA = new Dictionary<string, decimal>();
+            var satisH = new Dictionary<string, decimal>();
+            var satisA = new Dictionary<string, decimal>();
+            int sayA = 0, sayS = 0;
+
+            foreach (var r in rows)
+            {
+                var yon = Val(r, "yon")?.ToString() ?? "";
+                var val = ValyutaAd(Val(r, "val")?.ToString() ?? "");
+                var hecm = Dec(Val(r, "hecm"));
+                var azn = Dec(Val(r, "azn"));
+
+                if (yon == "alis")
+                {
+                    alisH[val] = alisH.GetValueOrDefault(val) + hecm;
+                    alisA[val] = alisA.GetValueOrDefault(val) + azn;
+                    sayA++;
+                }
+                else
+                {
+                    satisH[val] = satisH.GetValueOrDefault(val) + hecm;
+                    satisA[val] = satisA.GetValueOrDefault(val) + azn;
+                    sayS++;
+                }
+            }
+
+            var valyutalar = alisH.Keys.Union(satisH.Keys).Distinct();
+            foreach (var v in valyutalar)
+            {
+                var ah = alisH.GetValueOrDefault(v);
+                var aa = alisA.GetValueOrDefault(v);
+                var sh = satisH.GetValueOrDefault(v);
+                var sa = satisA.GetValueOrDefault(v);
+                var ortaA = ah != 0 ? aa / ah : 0;
+                var ortaS = sh != 0 ? sa / sh : 0;
+                dto.Setirler.Add(new ValyutaSetirDto
+                {
+                    Valyuta = v,
+                    AlisHecm = Math.Round(ah, 2), AlisAzn = Math.Round(aa, 2),
+                    SatisHecm = Math.Round(sh, 2), SatisAzn = Math.Round(sa, 2),
+                    OrtaAlisKurs = Math.Round(ortaA, 4), OrtaSatisKurs = Math.Round(ortaS, 4),
+                    Spred = Math.Round(ortaS - ortaA, 4),
+                    AcigMovqe = Math.Round(ah - sh, 2)
+                });
+            }
+            dto.Setirler = dto.Setirler.Where(x => x.AlisAzn != 0 || x.SatisAzn != 0)
+                                       .OrderByDescending(x => x.AlisAzn + x.SatisAzn).ToList();
+
+            dto.AlisAzn = Math.Round(alisA.Values.Sum(), 2);
+            dto.SatisAzn = Math.Round(satisA.Values.Sum(), 2);
+            dto.Xalis = Math.Round(dto.SatisAzn - dto.AlisAzn, 2);
+            dto.EmeliyyatSayi = sayA + sayS;
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
     }
 
     private static List<BalansMaddeDto> ToMadde(Dictionary<string, decimal> d, decimal total) =>
