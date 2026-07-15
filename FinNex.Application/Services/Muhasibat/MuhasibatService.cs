@@ -62,6 +62,30 @@ WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
   AND  SUBSTR(l.licsch,10,6) <> '000004'
   AND  l.saldo_ish_nacval <> 0";
 
+    // Əlaqəli tərəf depoziti (normativ) — şirkət (təsisçisi imza sahibi olan) +
+    // təsisçi/imza sahibinin şəxsi depozitləri. İŞÇİ komponenti HƏLƏ YOX (frm_elaqeli
+    // ilə tam uyğunluq üçün sonra əlavə olunacaq). Məxrəc: top_qal (35-49).
+    private const string ElaqeliSql = @"
+with elaqeli_hesab as (
+  select distinct ar.licsch
+  from odb.arh_saldo_ls ar, licsch l
+  where ar.licsch = l.licsch and ar.date_oper = to_date('{TARIX}','dd/mm/yyyy')
+    and substr(ar.licsch,1,1) in ('3','4')
+    and (l.registrac_nomer in (select customer_regnom from imza_huquqi_olan_shexsler)
+         or l.registrac_nomer in (select regnom from imza_huquqi_olan_shexsler))
+)
+select
+  (select round(-sum(k.saldo_ish_nacval),2)
+     from odb.arh_saldo_ls k, licsch p
+    where p.licsch = k.licsch and k.date_oper = to_date('{TARIX}','dd/mm/yyyy')
+      and substr(k.licsch,1,2) in ('35','36','38','39','40','41','49')
+      and (p.date_close_licsch is null or k.date_oper <= p.date_close_licsch)) portfel,
+  (select round(-sum(ar.saldo_ish_nacval),2)
+     from odb.arh_saldo_ls ar
+    where ar.date_oper = to_date('{TARIX}','dd/mm/yyyy')
+      and ar.licsch in (select licsch from elaqeli_hesab)) elaqeli
+from dual";
+
     // Cari kredit portfeli — sysdate snapshot. summa=əsas, summa_19=VK.
     // kurs bir dəfə çıxarılır; qalıq C#-da (esas+vk)*kurs kimi hesablanır.
     private const string KreditSql = @"
@@ -88,6 +112,24 @@ SELECT 'satis' yon, SUBSTR(d.kredit,6,2) val, d.summa_v_inval hecm, d.summa_v_in
 FROM   arh_dd d
 WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd/mm/yyyy')
   AND  SUBSTR(d.debet,1,5) = '10050' AND SUBSTR(d.kredit,1,5) = '10060'";
+
+    // Rezident/qeyri-rezident — frm_reziden_ve_qeyri_rezident məntiqi (ABS qalıq).
+    private const string RezidentSql = @"
+select
+  case when (substr(s.licsch,0,3)='409'
+             and substr(regexp_substr(l.name_licsch,'\(([^()]*)\)\s*$',1,1,null,1),5,1)='5')
+            or substr(s.licsch,0,5)='45029'
+       then 'qr' else 'r' end tip,
+  round(sum(abs(s.saldo_ish_nacval)),2) mebleg,
+  count(*) say
+from odb.arh_saldo_ls s, licsch l
+where l.licsch = s.licsch
+  and s.date_oper = to_date('{TARIX}','dd/mm/yyyy')
+  and (l.date_close_licsch is null or l.date_close_licsch >= to_date('{TARIX}','dd/mm/yyyy'))
+group by case when (substr(s.licsch,0,3)='409'
+             and substr(regexp_substr(l.name_licsch,'\(([^()]*)\)\s*$',1,1,null,1),5,1)='5')
+            or substr(s.licsch,0,5)='45029'
+       then 'qr' else 'r' end";
 
     public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
     {
@@ -243,6 +285,22 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
             var top20 = sirali.Take(20).Sum(m => m.meb);
             dto.Top10Pay = dto.UmumiPortfel != 0 ? Math.Round(top10 / dto.UmumiPortfel * 100, 1) : 0;
             dto.Top20Pay = dto.UmumiPortfel != 0 ? Math.Round(top20 / dto.UmumiPortfel * 100, 1) : 0;
+
+            // Əlaqəli tərəf (normativ) — ayrıca sorğu; xəta əsas depoziti pozmasın
+            try
+            {
+                var esql = ElaqeliSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                var erows = await _oracle.SelectAsync(esql, maxRows: 5);
+                if (erows.Count > 0)
+                {
+                    var portfel = Dec(Val(erows[0], "portfel"));
+                    var elaqeli = Dec(Val(erows[0], "elaqeli"));
+                    dto.ElaqeliDepozit = Math.Round(elaqeli, 2);
+                    dto.ElaqeliPortfel = Math.Round(portfel, 2);
+                    dto.ElaqeliXususiCeki = portfel != 0 ? Math.Round(elaqeli / portfel * 100, 2) : 0;
+                }
+            }
+            catch { /* əlaqəli tərəf hesablanmadı — panel boş qalar */ }
 
             dto.TipBolgusu = new List<BalansMaddeDto>
             {
@@ -484,6 +542,36 @@ WHERE  d.date_oper BETWEEN TO_DATE('{BAS}','dd/mm/yyyy') AND TO_DATE('{SON}','dd
             dto.SatisAzn = Math.Round(satisA.Values.Sum(), 2);
             dto.Xalis = Math.Round(dto.SatisAzn - dto.AlisAzn, 2);
             dto.EmeliyyatSayi = sayA + sayS;
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    public async Task<MuhasibatRezidentDto> RezidentAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatRezidentDto { Tarix = t };
+
+        try
+        {
+            var sql = RezidentSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 10);
+            foreach (var r in rows)
+            {
+                var tip = Val(r, "tip")?.ToString() ?? "";
+                var meb = Dec(Val(r, "mebleg"));
+                var say = (int)Dec(Val(r, "say"));
+                if (tip == "qr") { dto.QeyriRezident = Math.Round(meb, 2); dto.QeyriRezidentSay = say; }
+                else { dto.Rezident = Math.Round(meb, 2); dto.RezidentSay = say; }
+            }
+            dto.Umumi = Math.Round(dto.Rezident + dto.QeyriRezident, 2);
+            dto.QeyriRezidentPay = dto.Umumi != 0 ? Math.Round(dto.QeyriRezident / dto.Umumi * 100, 2) : 0;
             dto.Ugurlu = true;
         }
         catch (Exception ex)

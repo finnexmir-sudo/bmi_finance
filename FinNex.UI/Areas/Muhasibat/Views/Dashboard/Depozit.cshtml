@@ -106,6 +106,22 @@
             </div>
         </div>
 
+        <div class="mh-conc mh-conc--el">
+            <div class="mh-conc-h"><i class="bi bi-people-fill"></i> Əlaqəli tərəf depozitləri (normativ)</div>
+            <div class="mh-conc-b">
+                <div class="mh-conc-item">
+                    <div class="mh-conc-v">@Fmt(Model.ElaqeliDepozit) <span>₼</span></div>
+                    <div class="mh-conc-l">Əlaqəli tərəf depoziti (şirkət + təsisçi/imza sahibi)</div>
+                </div>
+                <div class="mh-conc-item">
+                    <div class="mh-conc-v">@Model.ElaqeliXususiCeki<span>%</span></div>
+                    <div class="mh-conc-l">Xüsusi çəki — portfeldə payı (məxrəc 35-49)</div>
+                    <div class="mh-conc-bar mh-conc-bar--2"><span style="width:@(Model.ElaqeliXususiCeki)%"></span></div>
+                </div>
+                <div class="mh-conc-note"><i class="bi bi-exclamation-triangle"></i> v1 — <b>işçi komponenti hələ yox</b>. Normativ hesabat üçün frm_elaqeli_dep_cem ilə yoxlanmalıdır.</div>
+            </div>
+        </div>
+
         <div class="mh-grid">
             <div class="mh-card">
                 <div class="mh-card-h"><span class="mh-dot mh-dot--k"></span> Ən böyük 10 hüquqi depozitor</div>

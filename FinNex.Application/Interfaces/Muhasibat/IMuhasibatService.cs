@@ -18,4 +18,7 @@ public interface IMuhasibatService
 
     // Valyuta əməliyyatları — tarix aralığında alış/satış, spred, açıq mövqe.
     Task<MuhasibatValyutaDto> ValyutaAsync(DateTime? bas = null, DateTime? son = null);
+
+    // Rezident / qeyri-rezident — hesab qalıqlarının rezidentlik bölgüsü.
+    Task<MuhasibatRezidentDto> RezidentAsync(DateTime? tarix = null);
 }

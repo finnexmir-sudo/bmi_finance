@@ -97,6 +97,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Rezident / qeyri-rezident.
+    public async Task<IActionResult> Rezident(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.RezidentAsync(ParseTarix(t));
+        return View(model);
+    }
+
     private static DateTime? ParseTarix(string? t)
     {
         if (!string.IsNullOrWhiteSpace(t) &&
@@ -228,6 +238,24 @@ public class DashboardController : Controller
             row.CreateCell(8).SetCellValue((double)s.AcigMovqe);
         }
         return Yukle(wb, "Valyuta_Emeliyyatlari");
+    }
+
+    public async Task<IActionResult> RezidentExcel(string? t)
+    {
+        if (!await IcazeVarAsync()) return Forbid();
+        var m = await _service.RezidentAsync(ParseTarix(t));
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Rezident");
+        int r = 0;
+        Setir(sh, r++, $"Rezident / Qeyri-rezident — {m.Tarix:dd.MM.yyyy}");
+        r++;
+        KV(sh, r++, "Rezident", m.Rezident);
+        KV(sh, r++, "Qeyri-rezident", m.QeyriRezident);
+        KV(sh, r++, "Ümumi", m.Umumi);
+        KV(sh, r++, "Qeyri-rezident payı %", m.QeyriRezidentPay);
+        KV(sh, r++, "Rezident hesab sayı", m.RezidentSay);
+        KV(sh, r++, "Qeyri-rezident hesab sayı", m.QeyriRezidentSay);
+        return Yukle(wb, "Rezident_Qeyri_Rezident");
     }
 
     // ── Excel köməkçiləri ──────────────────────────────────────────────────

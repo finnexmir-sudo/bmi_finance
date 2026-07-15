@@ -1004,6 +1004,10 @@
                                    class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Valyuta" ? "active" : "")">
                                     <i class="bi bi-currency-exchange"></i> Valyuta
                                 </a>
+                                <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Rezident"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentAction == "Rezident" ? "active" : "")">
+                                    <i class="bi bi-globe"></i> Rezidentlik
+                                </a>
                                 <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">
                                     <i class="bi bi-speedometer2"></i> Maliyyə Dashboard
