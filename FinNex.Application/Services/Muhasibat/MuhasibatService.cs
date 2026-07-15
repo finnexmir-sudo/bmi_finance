@@ -740,12 +740,17 @@ public class MuhasibatService : IMuhasibatService
                     {
                         var meb = Dec(Val(r, "mebleg"));
                         if (meb == 0m) continue;
-                        dto.Setirler.Add(DSetir(Val(r, "hesab")?.ToString() ?? "",
-                            Val(r, "ad")?.ToString() ?? "", ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""),
-                            Math.Round(meb, 2)));
+                        dto.Setirler.Add(new MuhasibatDetalSetirDto
+                        {
+                            Kod = Val(r, "hesab")?.ToString() ?? "",
+                            Ad = Val(r, "ad")?.ToString() ?? "",
+                            Valyuta = ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""),
+                            Mebleg = Math.Round(meb, 2),
+                            Elave = Val(r, "elave")?.ToString() ?? ""   // "Şirkət" / "İmza sahibi: <şirkət>"
+                        });
                     }
                     dto.Baslik = "Əlaqəli tərəf hesabları";
-                    break;
+                    break;   // SQL-dəki qrup sıralaması saxlanılır (abs re-sort yox)
                 }
 
                 case "rezident":
@@ -768,7 +773,8 @@ public class MuhasibatService : IMuhasibatService
                     throw new InvalidOperationException($"Naməlum sahə: {sahe}");
             }
 
-            if (s0 is "balans" or "balans-valyuta" or "balans-menfeet" or "likvidlik" or "rezident" or "elaqeli")
+            // "elaqeli" SQL-də qrupla sıralanır — burada re-sort etmə.
+            if (s0 is "balans" or "balans-valyuta" or "balans-menfeet" or "likvidlik" or "rezident")
                 dto.Setirler = dto.Setirler.OrderByDescending(x => Math.Abs(x.Mebleg)).ToList();
 
             dto.Cem = Math.Round(dto.Setirler.Sum(x => x.Mebleg), 2);
