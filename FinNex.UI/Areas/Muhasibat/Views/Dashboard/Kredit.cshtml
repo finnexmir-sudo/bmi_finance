@@ -1,0 +1,226 @@
+@using System.Text.Json
+@model MuhasibatKreditDto
+@{
+    ViewData["Title"] = "Mühasibat — Kredit portfeli";
+    string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    var tipJson = Html.Raw(JsonSerializer.Serialize(Model.TipBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var valJson = Html.Raw(JsonSerializer.Serialize(Model.ValyutaBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var ageJson = Html.Raw(JsonSerializer.Serialize(Model.GecikmeBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+}
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--kr">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-credit-card"></i> Mühasibat / Kredit</div>
+            <h1 class="mh-title">Kredit Portfeli</h1>
+            <div class="mh-sub"><i class="bi bi-broadcast"></i> Cari vəziyyət · @Model.Tarix.ToString("dd.MM.yyyy")</div>
+        </div>
+    </div>
+
+    <partial name="_MhTabs" />
+
+    @if (!Model.Ugurlu)
+    {
+        <div class="mh-alert"><i class="bi bi-x-octagon"></i> Portfel yüklənmədi: @Model.Xeta</div>
+    }
+    else
+    {
+        <div class="mh-kpis">
+            <div class="mh-kpi mh-kpi--a">
+                <div class="mh-kpi-ic"><i class="bi bi-cash-stack"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.UmumiPortfel) <span>₼</span></div>
+                <div class="mh-kpi-l">Ümumi kredit portfeli</div>
+            </div>
+            <div class="mh-kpi mh-kpi--b">
+                <div class="mh-kpi-ic"><i class="bi bi-file-earmark-text"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.MuqavileSayi)</div>
+                <div class="mh-kpi-l">Aktiv müqavilə sayı</div>
+            </div>
+            <div class="mh-kpi mh-kpi--w">
+                <div class="mh-kpi-ic"><i class="bi bi-hourglass-split"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.VkMebleg) <span>₼</span></div>
+                <div class="mh-kpi-l">Vaxtı keçmiş (VK) qalıq</div>
+            </div>
+            <div class="mh-kpi mh-kpi--r">
+                <div class="mh-kpi-ic"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.NplMebleg) <span>₼</span></div>
+                <div class="mh-kpi-l">NPL (90+ gün) · <b>@Model.NplFaiz%</b></div>
+            </div>
+        </div>
+
+        <div class="mh-grid">
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--a"></span> Müştəri seqmenti</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chTip"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var a in Model.TipBolgusu)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
+                                <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
+                                <div class="mh-row-p">@a.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--r"></span> Gecikmə strukturu (aging)</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chAge"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var g in Model.GecikmeBolgusu)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@g.Ad</span><b>@Fmt(g.Mebleg) ₼</b></div>
+                                <div class="mh-bar mh-bar--r"><span style="width:@(g.Faiz)%"></span></div>
+                                <div class="mh-row-p">@g.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mh-grid">
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--p"></span> Təyinat üzrə</div>
+                <div class="mh-list mh-list--full">
+                    @foreach (var t in Model.TeyinatBolgusu)
+                    {
+                        <div class="mh-row">
+                            <div class="mh-row-t"><span>@t.Ad</span><b>@Fmt(t.Mebleg) ₼</b></div>
+                            <div class="mh-bar mh-bar--p"><span style="width:@(t.Faiz)%"></span></div>
+                            <div class="mh-row-p">@t.Faiz%</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--v"></span> Valyuta strukturu</div>
+                <div class="mh-card-b">
+                    <div class="mh-chart"><canvas id="chVal"></canvas></div>
+                    <div class="mh-list">
+                        @foreach (var v in Model.ValyutaBolgusu)
+                        {
+                            <div class="mh-row">
+                                <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
+                                <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
+                                <div class="mh-row-p">@v.Faiz%</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mh-note">
+            <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
+            <ul>
+                <li>Mənbə: <code>odb.licschkre</code> + <code>view_nacpogprokre_all</code> (cari iş günü snapshot). Qalıq = (əsas + VK) × valyuta kursu.</li>
+                <li>Gecikmə günü (DPD): <code>odb.tar_ferq360</code>; <b>NPL</b> = 90+ gün gecikən qalıq. Bu, Risk Vintage/Müddət hesabatları ilə eyni məntiqdir.</li>
+                <li>Portfel yalnız <b>cari</b> vəziyyəti göstərir (tarixçə yox) — view sysdate-ə bağlıdır.</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script>
+        (function () {
+            if (typeof Chart === 'undefined') return;
+            const palTip = ['#1d4ed8', '#7c3aed', '#0d9488', '#64748b'];
+            const palVal = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#a855f7', '#64748b'];
+            const palAge = ['#16a34a', '#eab308', '#f97316', '#dc2626'];
+
+            function donut(id, rows, pal) {
+                const el = document.getElementById(id);
+                if (!el || !rows || !rows.length) return;
+                new Chart(el, {
+                    type: 'doughnut',
+                    data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderWidth: 0 }] },
+                    options: {
+                        cutout: '62%', responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                            tooltip: { callbacks: { label: c => c.label + ': ' + Number(c.raw).toLocaleString('az-AZ') + ' ₼' } }
+                        }
+                    }
+                });
+            }
+            function bar(id, rows, pal) {
+                const el = document.getElementById(id);
+                if (!el || !rows || !rows.length) return;
+                new Chart(el, {
+                    type: 'bar',
+                    data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderRadius: 6 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => Number(c.raw).toLocaleString('az-AZ') + ' ₼' } } },
+                        scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { callback: v => (v / 1000000).toFixed(0) + 'M' } } }
+                    }
+                });
+            }
+            donut('chTip', @tipJson, palTip);
+            donut('chVal', @valJson, palVal);
+            bar('chAge', @ageJson, palAge);
+        })();
+    </script>
+}
+
+<style>
+    .mh-wrap { max-width: 1280px; margin: 0 auto; padding: 8px 0 40px; color: #1e293b; }
+    .mh-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;
+        background: linear-gradient(120deg, #0f2f5c 0%, #16478a 55%, #1e63b8 100%); color: #fff;
+        border-radius: 18px; padding: 26px 30px; box-shadow: 0 12px 30px rgba(16,71,138,.28); flex-wrap: wrap; }
+    .mh-hero--kr { background: linear-gradient(120deg, #3b0764 0%, #6d28d9 55%, #7c3aed 100%); box-shadow: 0 12px 30px rgba(109,40,217,.28); }
+    .mh-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.16); padding: 5px 13px; border-radius: 30px; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+    .mh-title { font-size: 30px; font-weight: 800; margin: 0 0 6px; letter-spacing: -.5px; }
+    .mh-sub { font-size: 13.5px; opacity: .92; }
+    .mh-alert { margin-top: 18px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; }
+
+    .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+    .mh-kpi { position: relative; border-radius: 16px; padding: 20px; color: #fff; overflow: hidden; box-shadow: 0 8px 22px rgba(2,6,23,.12); }
+    .mh-kpi--a { background: linear-gradient(135deg, #6d28d9, #a855f7); }
+    .mh-kpi--b { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+    .mh-kpi--w { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .mh-kpi--r { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+    .mh-kpi-ic { position: absolute; right: 14px; top: 12px; font-size: 30px; opacity: .28; }
+    .mh-kpi-v { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+    .mh-kpi-v span { font-size: 14px; font-weight: 600; opacity: .85; }
+    .mh-kpi-l { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+    .mh-kpi-l b { font-weight: 800; }
+
+    .mh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .mh-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(2,6,23,.05); }
+    .mh-card-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
+    .mh-dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
+    .mh-dot--a { background: #7c3aed; } .mh-dot--r { background: #dc2626; } .mh-dot--p { background: #6366f1; } .mh-dot--v { background: #16a34a; }
+    .mh-card-b { display: grid; grid-template-columns: 240px 1fr; gap: 18px; padding: 18px 20px; align-items: center; }
+    .mh-chart { height: 230px; position: relative; }
+    .mh-list { display: flex; flex-direction: column; gap: 12px; }
+    .mh-list--full { padding: 18px 20px; }
+    .mh-row-t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+    .mh-row-t span { color: #475569; } .mh-row-t b { color: #0f172a; }
+    .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
+    .mh-bar span { display: block; height: 100%; background: linear-gradient(90deg, #6d28d9, #a855f7); border-radius: 6px; }
+    .mh-bar--r span { background: linear-gradient(90deg, #dc2626, #f87171); }
+    .mh-bar--p span { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+    .mh-bar--v span { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .mh-row-p { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 2px; }
+
+    .mh-note { margin-top: 18px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 14px; padding: 16px 22px; }
+    .mh-note-h { font-weight: 700; color: #7c3aed; margin-bottom: 8px; }
+    .mh-note ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.7; }
+    .mh-note code { background: #ede9fe; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+
+    @@media (max-width: 900px) {
+        .mh-kpis { grid-template-columns: 1fr 1fr; }
+        .mh-grid { grid-template-columns: 1fr; }
+        .mh-card-b { grid-template-columns: 1fr; }
+    }
+</style>

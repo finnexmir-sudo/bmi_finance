@@ -46,6 +46,21 @@ WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
   AND  SUBSTR(l.licsch,10,6) <> '000004'
   AND  l.saldo_ish_nacval <> 0";
 
+    // Cari kredit portfeli — sysdate snapshot. summa=əsas, summa_19=VK.
+    // kurs bir dəfə çıxarılır; qalıq C#-da (esas+vk)*kurs kimi hesablanır.
+    private const string KreditSql = @"
+SELECT lk.tipkredita tip,
+       lk.index_otrasli teyinat,
+       SUBSTR(lk.licschkre,6,2) valyuta,
+       ROUND(odb.func_get_kurval(SUBSTR(lk.licschkre,6,2), to_date(sysdate)), 6) kurs,
+       lk.summa esas,
+       lk.summa_19 vk,
+       odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate, x.date_oper)) gec_gun
+FROM   odb.licschkre lk, view_nacpogprokre_all x
+WHERE  lk.licschpkre = x.licschpkre AND lk.subschkre = x.subschkre
+  AND  x.date_oper = to_date(sysdate)
+  AND  lk.date_close IS NULL AND LENGTH(lk.licschkre) = 20";
+
     public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
     {
         var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
@@ -211,6 +226,106 @@ WHERE  l.date_oper = TO_DATE('{TARIX}','dd/mm/yyyy')
 
         return dto;
     }
+
+    public async Task<MuhasibatKreditDto> KreditPortfelAsync()
+    {
+        var dto = new MuhasibatKreditDto { Tarix = DateTime.Now.Date };
+
+        try
+        {
+            var rows = await _oracle.SelectAsync(KreditSql, maxRows: 300000);
+
+            var tipD = new Dictionary<string, decimal>();
+            var teyinatD = new Dictionary<string, decimal>();
+            var valyutaD = new Dictionary<string, decimal>();
+            var gecikmeD = new Dictionary<string, decimal>();
+            decimal total = 0m, vkTotal = 0m, npl = 0m;
+            int say = 0;
+
+            foreach (var r in rows)
+            {
+                var kurs = Dec(Val(r, "kurs"));
+                var esas = Dec(Val(r, "esas"));
+                var vk = Dec(Val(r, "vk"));
+                var gec = (int)Dec(Val(r, "gec_gun"));
+                var qaliq = (esas + vk) * kurs;
+                if (qaliq == 0m) continue;
+
+                total += qaliq;
+                vkTotal += vk * kurs;
+                say++;
+                if (gec >= 90) npl += qaliq;
+
+                var tip = TipAd((int)Dec(Val(r, "tip")));
+                tipD[tip] = tipD.GetValueOrDefault(tip) + qaliq;
+
+                var tey = TeyinatAd((int)Dec(Val(r, "teyinat")));
+                teyinatD[tey] = teyinatD.GetValueOrDefault(tey) + qaliq;
+
+                var vad = ValyutaAd(Val(r, "valyuta")?.ToString() ?? "");
+                valyutaD[vad] = valyutaD.GetValueOrDefault(vad) + qaliq;
+
+                var age = AgeAd(gec);
+                gecikmeD[age] = gecikmeD.GetValueOrDefault(age) + qaliq;
+            }
+
+            dto.UmumiPortfel = Math.Round(total, 2);
+            dto.VkMebleg = Math.Round(vkTotal, 2);
+            dto.MuqavileSayi = say;
+            dto.NplMebleg = Math.Round(npl, 2);
+            dto.NplFaiz = total != 0 ? Math.Round(npl / total * 100, 2) : 0;
+
+            dto.TipBolgusu     = ToMadde(tipD, total);
+            dto.TeyinatBolgusu = ToMadde(teyinatD, total);
+            dto.ValyutaBolgusu = ToMadde(valyutaD, total);
+            dto.GecikmeBolgusu = ToMaddeSira(gecikmeD, total);
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    private static List<BalansMaddeDto> ToMadde(Dictionary<string, decimal> d, decimal total) =>
+        d.Where(x => Math.Abs(x.Value) > 0.005m).OrderByDescending(x => x.Value)
+         .Select(x => new BalansMaddeDto { Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
+             Faiz = total != 0 ? Math.Round(x.Value / total * 100, 1) : 0 }).ToList();
+
+    // Gecikmə (aging) — məntiqi sıra ilə (cari → 90+).
+    private static readonly string[] AgeSira = { "Cari (0 gün)", "1–30 gün", "31–90 gün", "90+ gün (NPL)" };
+    private static List<BalansMaddeDto> ToMaddeSira(Dictionary<string, decimal> d, decimal total) =>
+        AgeSira.Where(a => d.ContainsKey(a))
+               .Select(a => new BalansMaddeDto { Ad = a, Mebleg = Math.Round(d[a], 2),
+                   Faiz = total != 0 ? Math.Round(d[a] / total * 100, 1) : 0 }).ToList();
+
+    private static string TipAd(int kod) => kod switch
+    {
+        1 => "Hüquqi şəxs",
+        2 => "Fiziki şəxs",
+        3 => "Sahibkar",
+        _ => "Digər"
+    };
+
+    private static string TeyinatAd(int kod) => kod switch
+    {
+        1901 or 1902 => "İpoteka / daşınmaz",
+        1903 or 1904 => "Təmir",
+        1905 => "Avtomobil",
+        1906 => "Məişət",
+        1907 => "Kart krediti",
+        _ => "Digər təyinat"
+    };
+
+    private static string AgeAd(int gec) =>
+        gec <= 0 ? "Cari (0 gün)" :
+        gec <= 30 ? "1–30 gün" :
+        gec <= 90 ? "31–90 gün" :
+        "90+ gün (NPL)";
 
     // Hesab kodunun ilk rəqəmi/ilk 2 rəqəmi üzrə təsnifat.
     // 1,2 → aktiv;  3,4 → öhdəlik (44/45 və 5x istisna → kapital);  qalanı → təsnifsiz.

@@ -9,4 +9,7 @@ public interface IMuhasibatService
 
     // Depozitlər — portfel, TOP-10, valyuta bölgüsü.
     Task<MuhasibatDepozitDto> DepozitAsync(DateTime? tarix = null);
+
+    // Kredit portfeli — cari vəziyyət (tip/təyinat/valyuta/gecikmə bölgüsü, NPL).
+    Task<MuhasibatKreditDto> KreditPortfelAsync();
 }

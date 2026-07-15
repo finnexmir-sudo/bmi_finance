@@ -63,6 +63,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Kredit portfeli (cari vəziyyət).
+    public async Task<IActionResult> Kredit()
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.KreditPortfelAsync();
+        return View(model);
+    }
+
     private static DateTime? ParseTarix(string? t)
     {
         if (!string.IsNullOrWhiteSpace(t) &&
