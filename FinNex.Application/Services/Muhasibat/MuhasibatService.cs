@@ -566,11 +566,18 @@ public class MuhasibatService : IMuhasibatService
                         var qaliq = Dec(Val(r, "qaliq"));
                         if (qaliq == 0m) continue;
                         var depTip = Val(r, "dep_tip")?.ToString() ?? "X";
+                        // Öz valyutası: saldo_ish_inval AZN hesablarda 0-dır (yalnız xarici valyutada dolu),
+                        // ona görə AZN-də manat qalığını göstəririk. Digər valyutalarda inval-ı disp-in
+                        // işarəsi ilə uyğunlaşdırıb veririk (disp = ±qaliq → ±qaliq_inval).
+                        var qaliqInval = Dec(Val(r, "qaliq_inval"));
+                        decimal? InvalDisp(decimal disp) =>
+                            ValyutaAd(valKod) == "AZN" ? disp
+                            : (qaliq == 0m ? (decimal?)null : disp / qaliq * qaliqInval);
 
                         if (s0 == "balans-menfeet")
                         {
                             if (!hesab.StartsWith("50130")) continue;
-                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), -qaliq));
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), -qaliq, InvalDisp(-qaliq)));
                             continue;
                         }
                         if (s0 == "likvidlik")
@@ -578,7 +585,7 @@ public class MuhasibatService : IMuhasibatService
                             var lq = LikvidQrup(hesab);
                             if (lq == null) continue;
                             if (madde != "*" && lq != madde) continue;   // "*" → bütün likvid aktivlər
-                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq));
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq, InvalDisp(qaliq)));
                             continue;
                         }
                         if (s0 == "balans-valyuta")
@@ -587,7 +594,7 @@ public class MuhasibatService : IMuhasibatService
                             var (kat0, _) = Tesnif(hesab, ad);
                             if (kat0 != "aktiv") continue;
                             if (ValyutaAd(valKod) != madde) continue;
-                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq));
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq, InvalDisp(qaliq)));
                             continue;
                         }
 
@@ -610,7 +617,7 @@ public class MuhasibatService : IMuhasibatService
                         }
                         bool match = madde.StartsWith("*") ? ("*" + kat2 == madde) : (bucket == madde);
                         if (!match) continue;
-                        dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), disp));
+                        dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), disp, InvalDisp(disp)));
                     }
                     break;
                 }
@@ -803,8 +810,13 @@ public class MuhasibatService : IMuhasibatService
         return dto;
     }
 
-    private static MuhasibatDetalSetirDto DSetir(string kod, string ad, string? val, decimal meb) =>
-        new() { Kod = kod, Ad = ad, Valyuta = val, Mebleg = Math.Round(meb, 2) };
+    private static MuhasibatDetalSetirDto DSetir(string kod, string ad, string? val, decimal meb, decimal? invalMeb = null) =>
+        new()
+        {
+            Kod = kod, Ad = ad, Valyuta = val,
+            Mebleg = Math.Round(meb, 2),
+            MeblegInval = invalMeb.HasValue ? Math.Round(invalMeb.Value, 2) : (decimal?)null
+        };
 
     // Balans strukturunun kanonik ardıcıllığı (məbləğə görə yox — mühasibat sırası).
     private static readonly string[] AktivSira =

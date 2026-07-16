@@ -68,6 +68,13 @@
             s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
             return (neg ? '-' : '') + s[0] + ',' + s[1] + ' ₼';
         }
+        // valyutasız — öz valyutası sütunu üçün (rəqəm + valyuta kodu ayrıca əlavə olunur)
+        function mhNum(n) {
+            var neg = n < 0; n = Math.abs(Math.round(n * 100) / 100);
+            var s = n.toFixed(2).split('.');
+            s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            return (neg ? '-' : '') + s[0] + ',' + s[1];
+        }
         function esc(x) { return (x == null ? '' : String(x)).replace(/[&<>"]/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
@@ -111,11 +118,16 @@
                             '<div class="mh-dload">Bu maddə üçün hesab tapılmadı.</div>';
                     } else {
                         var html = '<table><thead><tr><th>Hesab / kod</th><th>Ad</th>' +
-                            '<th>Val.</th><th class="num">Məbləğ</th><th>Qeyd / əlaqə</th></tr></thead><tbody>';
+                            '<th>Val.</th><th class="num">Öz valyutası</th><th class="num">Manat qarşılığı</th>' +
+                            '<th>Qeyd / əlaqə</th></tr></thead><tbody>';
                         rows.forEach(function (x) {
+                            var oz = (x.meblegInval == null)
+                                ? '<span class="muted">—</span>'
+                                : mhNum(x.meblegInval) + ' <span class="muted">' + esc(x.valyuta || '') + '</span>';
                             html += '<tr><td class="kod">' + esc(x.kod) + '</td>' +
                                 '<td>' + (x.ad ? esc(x.ad) : '<span class="muted">—</span>') + '</td>' +
                                 '<td class="muted">' + esc(x.valyuta || '') + '</td>' +
+                                '<td class="num">' + oz + '</td>' +
                                 '<td class="num">' + mhFmt(x.mebleg) + '</td>' +
                                 '<td class="muted">' + esc(x.elave || '') + '</td></tr>';
                         });

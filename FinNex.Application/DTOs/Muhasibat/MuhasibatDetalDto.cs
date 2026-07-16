@@ -22,7 +22,8 @@ public class MuhasibatDetalSetirDto
 {
     public string   Kod     { get; set; } = "";    // hesab kodu / müqavilə / müştəri qeydi / valyuta
     public string   Ad      { get; set; } = "";    // hesab adı / müştəri adı / təsvir
-    public string?  Valyuta { get; set; }
-    public decimal  Mebleg  { get; set; }
-    public string?  Elave   { get; set; }           // DPD / kurs / tarix və s. (istəyə bağlı)
+    public string?  Valyuta     { get; set; }
+    public decimal  Mebleg      { get; set; }        // manat qarşılığı (saldo_ish_nacval)
+    public decimal? MeblegInval { get; set; }        // öz valyutası (saldo_ish_inval) — AZN-də null/manatla eyni
+    public string?  Elave       { get; set; }        // DPD / kurs / tarix və s. (istəyə bağlı)
 }
