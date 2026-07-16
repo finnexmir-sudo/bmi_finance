@@ -4,7 +4,7 @@
    Bir dəfə işlət. "Muhasibat — Balans qaliqlari" sorğusuna 'kredit_novu' sütunu
    əlavə edir: hesab arh_licschkre-nin FAİZ sütunlarında (licschpkre / licschppkre)
    varsa 'F', əks halda 'E'. Servis 20-23 kredit hesablarını buna görə ayırır:
-   faiz → "Hesablanmış faizlər və digər aktivlər" (öz təbii yeri), əsas → "Müştərilərə kreditlər".
+   faiz → ayrıca "Kredit üzrə faizlər" sətri, əsas → "Müştərilərə kreditlər".
    REPLACE ilə cərrahi, idempotent.
    ============================================================================ */
 SET NOCOUNT ON;
