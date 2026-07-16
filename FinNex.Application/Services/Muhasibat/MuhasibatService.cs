@@ -85,10 +85,11 @@ public class MuhasibatService : IMuhasibatService
 
                 var (kat, qrup) = Tesnif(hesab, ad);
                 // Kredit hesabı faizdirsə (arh_licschkre-nin licschpkre/licschppkre sütunları)
-                // əsas borcdan ayrılıb "Kredit üzrə faizlər" sətrinə keçir.
+                // əsas borcdan ayrılıb "Hesablanmış faizlər"ə keçir (öz təbii yeri — interest
+                // receivable). Beləliklə "Müştərilərə kreditlər" yalnız əsas borc qalır.
                 if (qrup == "Müştərilərə kreditlər"
                     && (Val(r, "kredit_novu")?.ToString() ?? "E") == "F")
-                    qrup = "Kredit üzrə faizlər";
+                    qrup = "Hesablanmış faizlər və digər aktivlər";
                 switch (kat)
                 {
                     case "aktiv":
@@ -600,7 +601,7 @@ public class MuhasibatService : IMuhasibatService
                             var (kat, qrup) = Tesnif(hesab, ad);
                             if (qrup == "Müştərilərə kreditlər"
                                 && (Val(r, "kredit_novu")?.ToString() ?? "E") == "F")
-                                qrup = "Kredit üzrə faizlər";   // faiz — əsas borcdan ayrı
+                                qrup = "Hesablanmış faizlər və digər aktivlər";   // faiz — əsas borcdan ayrı, öz təbii yerinə
                             kat2 = kat;
                             if (kat == "aktiv") { bucket = qrup; disp = qaliq; }
                             else if (kat == "ohdelik") { bucket = qrup; disp = -qaliq; }
@@ -814,7 +815,6 @@ public class MuhasibatService : IMuhasibatService
         "Banklararası yerləşdirmələr",
         "Digər yerləşdirmələr / likvid aktivlər",
         "Müştərilərə kreditlər",
-        "Kredit üzrə faizlər",
         "Aktiv üzrə ehtiyatlar",
         "Hesablanmış faizlər və digər aktivlər",
         "Əsas vəsaitlər və qeyri-maddi aktivlər",
