@@ -883,20 +883,12 @@ public class MuhasibatService : IMuhasibatService
                 && p2 is "20" or "21" or "22" or "23")
                 return ("aktiv", "Aktiv üzrə ehtiyatlar");
 
-            // Class 11 (Mərkəzi Bank) — müxbir/nostro hesablar ada görə ayrılır:
-            // adında NOSTRO/MÜX olan → "Müxbir hesablar"; məcburi ehtiyat/overnight → "AMB".
-            if (p2 == "11")
-            {
-                var u = (ad ?? "").ToUpperInvariant();
-                return ("aktiv", (u.Contains("NOSTRO") || u.Contains("MÜX") || u.Contains("MUX"))
-                    ? "Müxbir hesablar" : "AMB (Mərkəzi Bank)");
-            }
-
             string q = p2 switch
             {
                 "10" => "Kassa (nağd vəsaitlər)",
+                "11" => "AMB (Mərkəzi Bank)",             // mühasib: ilk 2 rəqəm 11 → AMB (NOSTRO daxil)
+                "15" => "Müxbir hesablar",                 // mühasib: ilk 2 rəqəm 15 → M/H (müxbir hesab)
                 "12" or "13" or "14" => "Banklararası yerləşdirmələr",
-                "15" => "Digər yerləşdirmələr / likvid aktivlər",
                 "20" or "21" or "22" or "23" => "Müştərilərə kreditlər",
                 "24" or "25" or "26" => "Hesablanmış faizlər və digər aktivlər",
                 "27" or "28" => "Əsas vəsaitlər və qeyri-maddi aktivlər",
