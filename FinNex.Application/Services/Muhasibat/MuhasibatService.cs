@@ -133,7 +133,7 @@ public class MuhasibatService : IMuhasibatService
             catch { /* müqayisə alınmadı — oxlar göstərilməz */ }
 
             dto.Aktivler = aktiv.Where(x => Math.Abs(x.Value) > 0.005m)
-                .OrderByDescending(x => x.Value)
+                .OrderBy(x => SiraNo(AktivSira, x.Key)).ThenByDescending(x => x.Value)
                 .Select(x => new BalansMaddeDto
                 {
                     Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
@@ -141,7 +141,7 @@ public class MuhasibatService : IMuhasibatService
                 }).ToList();
 
             dto.Ohdelikler = ohdelik.Where(x => Math.Abs(x.Value) > 0.005m)
-                .OrderByDescending(x => x.Value)
+                .OrderBy(x => SiraNo(OhdelikSira, x.Key)).ThenByDescending(x => x.Value)
                 .Select(x => new BalansMaddeDto
                 {
                     Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
@@ -795,6 +795,32 @@ public class MuhasibatService : IMuhasibatService
 
     private static MuhasibatDetalSetirDto DSetir(string kod, string ad, string? val, decimal meb) =>
         new() { Kod = kod, Ad = ad, Valyuta = val, Mebleg = Math.Round(meb, 2) };
+
+    // Balans strukturunun kanonik ardıcıllığı (məbləğə görə yox — mühasibat sırası).
+    private static readonly string[] AktivSira =
+    {
+        "Kassa (nağd vəsaitlər)",
+        "AMB və müxbir hesablar",
+        "Banklararası yerləşdirmələr",
+        "Digər yerləşdirmələr / likvid aktivlər",
+        "Müştərilərə kreditlər",
+        "Aktiv üzrə ehtiyatlar",
+        "Hesablanmış faizlər və digər aktivlər",
+        "Əsas vəsaitlər və qeyri-maddi aktivlər",
+        "Digər aktivlər",
+    };
+    private static readonly string[] OhdelikSira =
+    {
+        "Hüquqi şəxs depozitləri",
+        "Fiziki şəxs depozitləri",
+        "Bank və maliyyə öhdəlikləri",
+        "Digər öhdəliklər",
+    };
+    private static int SiraNo(string[] order, string ad)
+    {
+        var i = Array.IndexOf(order, ad);
+        return i < 0 ? int.MaxValue : i;
+    }
 
     private static List<BalansMaddeDto> ToMadde(Dictionary<string, decimal> d, decimal total) =>
         d.Where(x => Math.Abs(x.Value) > 0.005m).OrderByDescending(x => x.Value)
