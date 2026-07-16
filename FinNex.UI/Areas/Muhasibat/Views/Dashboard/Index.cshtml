@@ -5,7 +5,9 @@
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string Fmt2(decimal v) => v.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var ferqOk = Math.Abs(Model.BalansFerqi) < (Model.UmumiAktiv == 0 ? 1 : Model.UmumiAktiv * 0.005m);
-    var aktivJson = Html.Raw(JsonSerializer.Serialize(Model.Aktivler.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    // Donut yalnız müsbət aktivləri göstərir (mənfi contra-aktiv sətirlər — məs. "Aktiv üzrə
+    // ehtiyatlar" — donutda seqment kimi düzgün görünmür; siyahıda tam qalır).
+    var aktivJson = Html.Raw(JsonSerializer.Serialize(Model.Aktivler.Where(x => x.Mebleg > 0).Select(x => new { l = x.Ad, v = x.Mebleg })));
     var ohdeJson = Html.Raw(JsonSerializer.Serialize(Model.Ohdelikler.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var valyutaJson = Html.Raw(JsonSerializer.Serialize(Model.ValyutaBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
 }

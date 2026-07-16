@@ -848,6 +848,13 @@ public class MuhasibatService : IMuhasibatService
 
         if (d1 == '1' || d1 == '2')
         {
+            // Ehtiyat / provision alt-qrupu (3-4-cü rəqəm "91", məs. 20910, 21910, 23911) —
+            // kredit qalıqlı (mənfi), aktivin azaldıcısıdır. Brutto kreditlərlə qarışmasın deyə
+            // ayrıca "Aktiv üzrə ehtiyatlar" sətrində göstərilir (kat=aktiv → ümumi aktiv dəyişmir).
+            if (hesab.Length >= 4 && hesab.Substring(2, 2) == "91"
+                && p2 is "20" or "21" or "22" or "23")
+                return ("aktiv", "Aktiv üzrə ehtiyatlar");
+
             string q = p2 switch
             {
                 "10" => "Kassa (nağd vəsaitlər)",
