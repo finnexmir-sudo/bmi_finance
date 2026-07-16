@@ -12,11 +12,13 @@ SET NOCOUNT ON;
 BEGIN TRY
 BEGIN TRAN;
 
+-- Anchor vergüldən asılı deyil: 'ar.saldo_ish_nacval AS qaliq' (vergülsüz) tutulur,
+-- yeni sütun onun ardınca qoyulur; orijinal vergül CASE-dən ayırıcı olaraq qalır.
 UPDATE OracleSorgular
 SET    SorguMetni = REPLACE(SorguMetni,
-       'ar.saldo_ish_nacval AS qaliq,',
+       'ar.saldo_ish_nacval AS qaliq',
        'ar.saldo_ish_nacval AS qaliq,
-       ar.saldo_ish_inval AS qaliq_inval,')
+       ar.saldo_ish_inval AS qaliq_inval')
 WHERE  SorguAdi = N'Muhasibat — Balans qaliqlari'
   AND  SorguMetni NOT LIKE '%qaliq_inval%';
 
