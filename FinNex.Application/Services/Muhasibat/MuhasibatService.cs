@@ -62,6 +62,7 @@ public class MuhasibatService : IMuhasibatService
             foreach (var r in rows)
             {
                 var hesab = Val(r, "hesab")?.ToString() ?? "";
+                var ad = Val(r, "ad")?.ToString() ?? "";
                 var valKod = Val(r, "valyuta")?.ToString() ?? "";
                 var qaliq = Dec(Val(r, "qaliq"));
                 if (qaliq == 0m) continue;
@@ -82,7 +83,7 @@ public class MuhasibatService : IMuhasibatService
                     continue;
                 }
 
-                var (kat, qrup) = Tesnif(hesab);
+                var (kat, qrup) = Tesnif(hesab, ad);
                 switch (kat)
                 {
                     case "aktiv":
@@ -577,7 +578,7 @@ public class MuhasibatService : IMuhasibatService
                         if (s0 == "balans-valyuta")
                         {
                             if (depTip is "H" or "F") continue;      // valyuta bölgüsü yalnız aktivlərdən
-                            var (kat0, _) = Tesnif(hesab);
+                            var (kat0, _) = Tesnif(hesab, ad);
                             if (kat0 != "aktiv") continue;
                             if (ValyutaAd(valKod) != madde) continue;
                             dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq));
@@ -591,7 +592,7 @@ public class MuhasibatService : IMuhasibatService
                         else if (depTip == "F") { kat2 = "ohdelik"; bucket = "Fiziki şəxs depozitləri"; disp = -qaliq; }
                         else
                         {
-                            var (kat, qrup) = Tesnif(hesab);
+                            var (kat, qrup) = Tesnif(hesab, ad);
                             kat2 = kat;
                             if (kat == "aktiv") { bucket = qrup; disp = qaliq; }
                             else if (kat == "ohdelik") { bucket = qrup; disp = -qaliq; }
@@ -800,7 +801,8 @@ public class MuhasibatService : IMuhasibatService
     private static readonly string[] AktivSira =
     {
         "Kassa (nağd vəsaitlər)",
-        "AMB və müxbir hesablar",
+        "AMB (Mərkəzi Bank)",
+        "Müxbir hesablar",
         "Banklararası yerləşdirmələr",
         "Digər yerləşdirmələr / likvid aktivlər",
         "Müştərilərə kreditlər",
@@ -860,7 +862,7 @@ public class MuhasibatService : IMuhasibatService
 
     // Hesab kodunun ilk rəqəmi/ilk 2 rəqəmi üzrə təsnifat.
     // 1,2 → aktiv;  3,4 → öhdəlik (44/45 və 5x istisna → kapital);  qalanı → təsnifsiz.
-    private static (string kat, string qrup) Tesnif(string hesab)
+    private static (string kat, string qrup) Tesnif(string hesab, string ad = "")
     {
         if (string.IsNullOrEmpty(hesab) || hesab.Length < 2)
             return ("tesnifsiz", "Təsnif edilməmiş");
@@ -881,10 +883,18 @@ public class MuhasibatService : IMuhasibatService
                 && p2 is "20" or "21" or "22" or "23")
                 return ("aktiv", "Aktiv üzrə ehtiyatlar");
 
+            // Class 11 (Mərkəzi Bank) — müxbir/nostro hesablar ada görə ayrılır:
+            // adında NOSTRO/MÜX olan → "Müxbir hesablar"; məcburi ehtiyat/overnight → "AMB".
+            if (p2 == "11")
+            {
+                var u = (ad ?? "").ToUpperInvariant();
+                return ("aktiv", (u.Contains("NOSTRO") || u.Contains("MÜX") || u.Contains("MUX"))
+                    ? "Müxbir hesablar" : "AMB (Mərkəzi Bank)");
+            }
+
             string q = p2 switch
             {
                 "10" => "Kassa (nağd vəsaitlər)",
-                "11" => "AMB və müxbir hesablar",
                 "12" or "13" or "14" => "Banklararası yerləşdirmələr",
                 "15" => "Digər yerləşdirmələr / likvid aktivlər",
                 "20" or "21" or "22" or "23" => "Müştərilərə kreditlər",
