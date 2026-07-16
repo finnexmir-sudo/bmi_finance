@@ -120,6 +120,29 @@ kanonik nümunə: `IsciSiralamaService`.
 - Yeni işçi siyahısı yazanda bu iki qaydanı **əl ilə əlavə etmə** — mövcud
   `IsciSiralamaService` / `IsciService.HamisiniGetirAsync` sıralamasını təkrarla.
 
+## Balans — Bağlı Hesab (date_close_licsch) Filtri (KRİTİK)
+
+Oracle GL balans sorğularında hesab adı/dep_tip üçün `licsch` cədvəlinə join edilir.
+Bu join-a **`(ch.date_close_licsch IS NULL OR ar.date_oper <= ch.date_close_licsch)`**
+şərti əlavə etmək TƏHLÜKƏLİDİR: `arh_saldo_ls`-də sətri (qalığı) olan bağlı hesab
+**real aktivdir** — GL-də qalıq varsa, pul oradadır. Bu filtr onu balansdan atır və
+balansı pozur.
+
+Real nümunə (2026-07, 15/07/2026): filtr bağlı, amma qalığı olan **1 kredit-faiz
+hesabını (49.92 AZN)** aktivlərdən atırdı. Nəticədə "Kredit üzrə faizlər" 188 522.52
+əvəzinə 188 472.60 görünürdü **və** balans yoxlaması `Aktiv − (Öhdəlik+Kapital) =
+−49.92` verirdi (bağlanmırdı). Atılan məbləğ (49.92) düz balans fərqinə (−49.92)
+bərabər idi — filtri götürəndə həm faiz düzəldi, həm balans dəqiq bağlandı.
+
+**Qaydalar:**
+- Balans (Aktiv=Öhdəlik+Kapital) sorğularında `date_close_licsch` ilə **filtrləmə**.
+  `saldo_ish_nacval <> 0` özü kifayətdir — qalığı olmayan artıq düşür.
+- Bir balans sətrinin rəqəmi report ilə tutuşmursa, əvvəlcə **balans yoxlaması
+  fərqini** yoxla: sətir fərqi çox vaxt həmin fərqə bərabərdir və kök səbəb ümumi
+  bir filtrdir.
+- Diaqnostik SELECT verəndə dashboard-un **bütün** filtrlərini təkrarla — natamam
+  diaqnostik yanlış "düz/səhv" nəticəsinə aparır.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
