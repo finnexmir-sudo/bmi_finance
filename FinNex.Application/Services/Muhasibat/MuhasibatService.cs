@@ -638,6 +638,7 @@ public class MuhasibatService : IMuhasibatService
                     var parts = (madde ?? "").Split(':');
                     var mod = parts.Length > 0 ? parts[0] : "";
 
+                    // Öz valyutası: AZN-də manat qalığı (inval 0-dır), digər valyutada qaliq_inval.
                     if (mod == "musteri")
                     {
                         var mtip = parts.Length > 1 ? parts[1] : "";
@@ -649,39 +650,51 @@ public class MuhasibatService : IMuhasibatService
                             var q = Dec(Val(r, "qaliq"));
                             if (q == 0m) continue;
                             var ad = Val(r, "musteri")?.ToString() ?? "(adsız)";
+                            var vk = Val(r, "valyuta")?.ToString() ?? "";
                             var hesab = Val(r, "hesab")?.ToString() ?? mqeyd;
-                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""), q));
+                            decimal? inval = ValyutaAd(vk) == "AZN" ? q : Dec(Val(r, "qaliq_inval"));
+                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(vk), q, inval));
                         }
                         dto.Baslik = "Depozitor hesabları";
                     }
                     else
                     {
                         var arg = parts.Length > 1 ? parts[1] : "";
-                        var musteriler = new Dictionary<string, (string ad, string tip, decimal meb)>();
+                        // Müştəri üzrə aqreqasiya + valyuta izlənir: tək valyutalıdırsa öz valyutası,
+                        // qarışıqdırsa "qarışıq" (öz valyutası göstərilmir).
+                        var musteriler = new Dictionary<string, (string ad, string tip, decimal meb, decimal inval, string val, bool mixed)>();
                         foreach (var r in rows)
                         {
                             var tip = Val(r, "tip")?.ToString() ?? "";
                             var qeyd = Val(r, "qeyd")?.ToString() ?? "";
                             var vk = Val(r, "valyuta")?.ToString() ?? "";
+                            var vad = ValyutaAd(vk);
                             var q = Dec(Val(r, "qaliq"));
                             if (q == 0m) continue;
                             if (mod == "tip" && tip != arg) continue;
-                            if (mod == "valyuta" && ValyutaAd(vk) != arg) continue;
+                            if (mod == "valyuta" && vad != arg) continue;
                             var ad = Val(r, "musteri")?.ToString() ?? "(adsız)";
+                            var qInval = vad == "AZN" ? q : Dec(Val(r, "qaliq_inval"));
                             var key = tip + "|" + qeyd;
                             if (musteriler.TryGetValue(key, out var cur))
-                                musteriler[key] = (cur.ad, cur.tip, cur.meb + q);
+                            {
+                                var mix = cur.mixed || cur.val != vad;
+                                musteriler[key] = (cur.ad, cur.tip, cur.meb + q, cur.inval + qInval, mix ? "" : vad, mix);
+                            }
                             else
-                                musteriler[key] = (ad, tip, q);
+                                musteriler[key] = (ad, tip, q, qInval, vad, false);
                         }
                         foreach (var m in musteriler.OrderByDescending(x => x.Value.meb))
                         {
                             var qeyd = m.Key.Contains('|') ? m.Key.Split('|')[1] : m.Key;
+                            var v = m.Value;
                             dto.Setirler.Add(new MuhasibatDetalSetirDto
                             {
-                                Kod = qeyd, Ad = m.Value.ad, Mebleg = Math.Round(m.Value.meb, 2),
-                                Elave = m.Value.tip == "fiziki" ? "fiziki"
-                                      : m.Value.tip == "sahibkar" ? "sahibkar" : "hüquqi"
+                                Kod = qeyd, Ad = v.ad, Valyuta = v.mixed ? "qarışıq" : v.val,
+                                Mebleg = Math.Round(v.meb, 2),
+                                MeblegInval = v.mixed ? (decimal?)null : Math.Round(v.inval, 2),
+                                Elave = v.tip == "fiziki" ? "fiziki"
+                                      : v.tip == "sahibkar" ? "sahibkar" : "hüquqi"
                             });
                         }
                     }
