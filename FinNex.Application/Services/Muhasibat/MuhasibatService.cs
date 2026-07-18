@@ -398,6 +398,17 @@ public class MuhasibatService : IMuhasibatService
                 else xercD[kat] = xercD.GetValueOrDefault(kat) + meb;
             }
 
+            // Valyuta/ticarət (66/68 gəlir, 86/88 zərər) — gündəlik yenidən qiymətləndirmə
+            // olduğu üçün GROSS böyükdür, amma bir-birini kompensasiya edir. NET göstərilir
+            // ki, struktur və Cost/Income təhrif olunmasın (pre-provision mənfəət dəyişmir).
+            var vGelir = gelirD.GetValueOrDefault("Valyuta/ticarət gəliri");
+            var vZerer = xercD.GetValueOrDefault("Valyuta/ticarət zərəri");
+            gelirD.Remove("Valyuta/ticarət gəliri");
+            xercD.Remove("Valyuta/ticarət zərəri");
+            var netFx = vGelir - vZerer;
+            if (netFx >= 0m) gelirD["Valyuta/ticarət (net)"] = netFx;
+            else             xercD["Valyuta/ticarət (net)"]  = -netFx;
+
             dto.FaizGeliri   = Math.Round(gelirD.GetValueOrDefault("Faiz gəliri"), 2);
             dto.FaizXerci    = Math.Round(xercD.GetValueOrDefault("Faiz xərci"), 2);
             dto.EhtiyatGross = Math.Round(ehtiyatGross, 2);
@@ -934,12 +945,24 @@ public class MuhasibatService : IMuhasibatService
                         .Replace("{BAS}", bb.ToString("dd/MM/yyyy"))
                         .Replace("{SON}", ss.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
+                    var fxNet = madde == "Valyuta/ticarət (net)";
                     foreach (var r in rows)
                     {
                         var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
                         var (kat, gelir) = MenfeetTesnif(sinif2);
-                        if (kat != madde) continue;
-                        var meb = gelir ? Dec(Val(r, "kredit")) : Dec(Val(r, "debet"));
+                        decimal meb;
+                        if (fxNet)
+                        {
+                            // net kateqoriya: gəlir tərəf (66/68) +kredit, zərər tərəf (86/88) −debet.
+                            if (kat == "Valyuta/ticarət gəliri") meb = Dec(Val(r, "kredit"));
+                            else if (kat == "Valyuta/ticarət zərəri") meb = -Dec(Val(r, "debet"));
+                            else continue;
+                        }
+                        else
+                        {
+                            if (kat != madde) continue;
+                            meb = gelir ? Dec(Val(r, "kredit")) : Dec(Val(r, "debet"));
+                        }
                         if (meb == 0m) continue;
                         dto.Setirler.Add(DSetir(Val(r, "hesab")?.ToString() ?? "",
                             Val(r, "ad")?.ToString() ?? "", null, Math.Round(meb, 2)));
