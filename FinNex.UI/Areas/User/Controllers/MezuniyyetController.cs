@@ -415,7 +415,7 @@ namespace FinNex.UI.Areas.User.Controllers
         // ── POST /User/Mezuniyyet/LegvTelebi — təsdiqlənmişi ləğv üçün HR-a müraciət ──
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> LegvTelebi(int id, string sebeb)
+        public async Task<IActionResult> LegvTelebi(int id, string sebeb, string? donis = null)
         {
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null) return RedirectToLogin();
@@ -423,7 +423,10 @@ namespace FinNex.UI.Areas.User.Controllers
             var result = await _mezuniyyetService.LegvTelebiEtAsync(id, isciId.Value, sebeb);
 
             TempData[result.Success ? "Success" : "Error"] = result.Message;
-            return RedirectToAction("Index", "Muraciet");
+            // Hansı səhifədən gəldiyinə görə qayıt (Məzuniyyət / Müraciətlər).
+            return donis == "mezuniyyet"
+                ? RedirectToAction("Index", "Mezuniyyet")
+                : RedirectToAction("Index", "Muraciet");
         }
 
         // ══ Köməkçi metodlar ══════════════════════════════════
