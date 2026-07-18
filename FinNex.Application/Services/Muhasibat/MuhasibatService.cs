@@ -707,7 +707,7 @@ public class MuhasibatService : IMuhasibatService
                 case "kredit":
                 {
                     // madde: "tip:<Ad>" | "teyinat:<Ad>" | "valyuta:<VAL>" | "age:<Ad>"
-                    var sql = await SqlAl(AdKredit);
+                    var sql = (await SqlAl(AdKredit)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
                     var parts = (madde ?? "").Split(':', 2);
                     var mod = parts.Length > 0 ? parts[0] : "";
@@ -723,7 +723,7 @@ public class MuhasibatService : IMuhasibatService
                         bool uygun = mod switch
                         {
                             "tip"      => TipAd((int)Dec(Val(r, "tip"))) == mval,
-                            "teyinat"  => TeyinatAd((int)Dec(Val(r, "teyinat"))) == mval,
+                            "teyinat"  => (Val(r, "teyinat")?.ToString() ?? "(təyinatsız)") == mval,
                             "valyuta"  => ValyutaAd(Val(r, "valyuta")?.ToString() ?? "") == mval,
                             "age"      => AgeAd(gec) == mval,
                             _          => false

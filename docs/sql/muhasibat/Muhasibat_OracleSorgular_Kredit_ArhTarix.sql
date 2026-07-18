@@ -25,7 +25,8 @@ SET    SorguMetni = 'SELECT al.tipkredita tip,
        ROUND(odb.func_get_kurval(SUBSTR(al.licschkre,6,2), al.date_oper), 6) kurs,
        al.summa esas,
        al.summa_19 vk,
-       0 gec_gun
+       0 gec_gun,
+       al.licschkre muqavile
 FROM   arh_licschkre al, index_otrasli io
 WHERE  al.index_otrasli = io.index_otrasli(+)
   AND  al.date_oper = TO_DATE(''{TARIX}'',''dd/mm/yyyy'')
