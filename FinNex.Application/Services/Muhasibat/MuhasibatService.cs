@@ -325,7 +325,9 @@ public class MuhasibatService : IMuhasibatService
                 var tip = TipAd((int)Dec(Val(r, "tip")));
                 tipD[tip] = tipD.GetValueOrDefault(tip) + qaliq;
 
-                var tey = TeyinatAd((int)Dec(Val(r, "teyinat")));
+                // teyinat artıq index_otrasli cədvəlinin ADI-dır (sorğuda join olunub), kod yox.
+                var tey = Val(r, "teyinat")?.ToString();
+                if (string.IsNullOrWhiteSpace(tey)) tey = "(təyinatsız)";
                 teyinatD[tey] = teyinatD.GetValueOrDefault(tey) + qaliq;
 
                 var vad = ValyutaAd(Val(r, "valyuta")?.ToString() ?? "");
