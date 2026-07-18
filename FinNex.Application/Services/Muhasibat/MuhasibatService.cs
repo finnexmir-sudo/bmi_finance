@@ -819,7 +819,7 @@ public class MuhasibatService : IMuhasibatService
         "Kassa (nağd vəsaitlər)",
         "AMB (Mərkəzi Bank)",
         "Müxbir hesablar",
-        "Banklararası yerləşdirmələr",
+        "Qiymətli kağızlar",
         "Digər yerləşdirmələr / likvid aktivlər",
         "Müştərilərə kreditlər",
         "Digər ehtiyyat",
@@ -909,7 +909,7 @@ public class MuhasibatService : IMuhasibatService
                 "10" => "Kassa (nağd vəsaitlər)",
                 "11" => "AMB (Mərkəzi Bank)",             // mühasib: ilk 2 rəqəm 11 → AMB (NOSTRO daxil)
                 "15" => "Müxbir hesablar",                 // mühasib: ilk 2 rəqəm 15 → M/H (müxbir hesab)
-                "12" or "13" or "14" => "Banklararası yerləşdirmələr",
+                "12" or "13" or "14" => "Qiymətli kağızlar",
                 "20" or "21" or "22" or "23" => "Müştərilərə kreditlər",
                 "24" or "25" or "26" => "Hesablanmış faizlər və digər aktivlər",
                 "27" or "28" => "Əsas vəsaitlər və qeyri-maddi aktivlər",
