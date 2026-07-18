@@ -18,10 +18,16 @@
    qeyri-rezident" qaydasına bərabərdir (40065 də tək) — amma sabit siyahı
    kimi saxlanılır (istifadəçi seçimi).
 
-   VACİB — hesab universumu (join + date_close filtri) DƏYİŞMİR:
-   yalnız təsnifat CASE-i dəyişir. Beləliklə Rezident+Qeyri-rezident CƏMİ
-   əvvəlki ilə eyni qalır, sadəcə iki qrup arasında düzgün bölünür.
+   SCOPE — bölgü YALNIZ müştəri hesablarına aiddir:
+   substr(s.licsch,1,2) in ('40','41')  (40=hüquqi, 41=fiziki müştəri hesabları).
+   Bankın öz kassa/aktiv/kapital hesabları (10*, 11*, 14*, 15*, 27*, 28*, 30*,
+   39*, 49*, 50* və s.) rezident/qeyri-rezident bölgüsünə DAXİL EDİLMİR —
+   əks halda "Rezident" bütün balans hesablarını udur (proqram diaqnostikdən
+   fərqli çıxırdı, səbəb bu idi).
+
    Tam UPDATE (REPLACE deyil — case ifadəsi bütövlükdə əvəz olunur).
+   QEYD: bu fayl idempotentdir — əvvəlki (scope-suz) versiyanı işlətmisinizsə,
+   bu yenilənmiş faylı BİR DƏ işlədin ki, 40/41 scope-u tətbiq olunsun.
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -66,10 +72,11 @@ from odb.arh_saldo_ls s, licsch l
 where l.licsch = s.licsch
   and s.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (l.date_close_licsch is null or l.date_close_licsch >= to_date(''{TARIX}'',''dd/mm/yyyy''))
+  and substr(s.licsch,1,2) in (''40'',''41'')
 group by case when (substr(s.licsch,1,3)=''409'' and substr(rtrim(s.licsch),-1,1)=''1'')
             or substr(s.licsch,1,5) in (''40065'',''41015'',''41025'',''41045'',''41931'',''41941'',''41943'')
        then ''qr'' else ''r'' end',
-       Mahiyyet = N'Rezident/qeyri-rezident bölgüsü (ABS qalıq) — 409 son rəqəm + qeyri-rez sxem siyahısı'
+       Mahiyyet = N'Rezident/qeyri-rezident bölgüsü (müştəri hesabları 40/41; ABS qalıq) — 409 son rəqəm + qeyri-rez sxem siyahısı'
 WHERE  SorguAdi = N'Muhasibat — Rezident' AND ISNULL(Silinib,0)=0;
 
 /* ── 2. Detal (drill-down): "Muhasibat — Rezident detal" — EYNİ case ─────── */
@@ -84,6 +91,7 @@ from odb.arh_saldo_ls s, licsch l
 where l.licsch = s.licsch
   and s.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (l.date_close_licsch is null or l.date_close_licsch >= to_date(''{TARIX}'',''dd/mm/yyyy''))
+  and substr(s.licsch,1,2) in (''40'',''41'')
   and abs(s.saldo_ish_nacval) <> 0'
 WHERE  SorguAdi = N'Muhasibat — Rezident detal' AND ISNULL(Silinib,0)=0;
 

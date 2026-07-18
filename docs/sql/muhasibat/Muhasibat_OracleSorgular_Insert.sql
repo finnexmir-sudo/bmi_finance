@@ -156,6 +156,7 @@ from odb.arh_saldo_ls s, licsch l
 where l.licsch = s.licsch
   and s.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (l.date_close_licsch is null or l.date_close_licsch >= to_date(''{TARIX}'',''dd/mm/yyyy''))
+  and substr(s.licsch,1,2) in (''40'',''41'')
 group by case when (substr(s.licsch,1,3)=''409'' and substr(rtrim(s.licsch),-1,1)=''1'')
             or substr(s.licsch,1,5) in (''40065'',''41015'',''41025'',''41045'',''41931'',''41941'',''41943'')
        then ''qr'' else ''r'' end', 1, @DepId, GETDATE(), 0);

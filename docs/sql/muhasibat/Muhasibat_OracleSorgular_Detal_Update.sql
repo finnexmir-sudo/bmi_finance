@@ -57,6 +57,7 @@ from odb.arh_saldo_ls s, licsch l
 where l.licsch = s.licsch
   and s.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (l.date_close_licsch is null or l.date_close_licsch >= to_date(''{TARIX}'',''dd/mm/yyyy''))
+  and substr(s.licsch,1,2) in (''40'',''41'')
   and abs(s.saldo_ish_nacval) <> 0', 1, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
