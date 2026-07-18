@@ -46,6 +46,11 @@
                 <div class="mh-kpi-v">@Fmt(Model.FizikiCem) <span>₼</span></div>
                 <div class="mh-kpi-l">Fiziki şəxs depozitləri</div>
             </div>
+            <div class="mh-kpi mh-kpi--k mh-click" data-mhsahe="depozit" data-mhmadde="tip:sahibkar" data-mhbaslik="Sahibkar depozitorları">
+                <div class="mh-kpi-ic"><i class="bi bi-briefcase"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.SahibkarCem) <span>₼</span></div>
+                <div class="mh-kpi-l">Sahibkar depozitləri</div>
+            </div>
             <div class="mh-kpi mh-kpi--o">
                 <div class="mh-kpi-ic"><i class="bi bi-people"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.MusteriSayi)</div>
@@ -156,6 +161,24 @@
                         </div>
                     }
                     @if (!Model.TopFiziki.Any()) { <div class="mh-empty2">Məlumat yoxdur</div> }
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--k"></span> Ən böyük 10 sahibkar depozitor</div>
+                <div class="mh-toplist">
+                    @{ var i3 = 0; }
+                    @foreach (var d in Model.TopSahibkar)
+                    {
+                        i3++;
+                        <div class="mh-toprow">
+                            <span class="mh-toprank">@i3</span>
+                            <span class="mh-topname">@d.Ad</span>
+                            <b class="mh-topmeb">@Fmt(d.Mebleg) ₼</b>
+                            <i class="mh-toppct">@d.Faiz%</i>
+                        </div>
+                    }
+                    @if (!Model.TopSahibkar.Any()) { <div class="mh-empty2">Məlumat yoxdur</div> }
                 </div>
             </div>
         </div>

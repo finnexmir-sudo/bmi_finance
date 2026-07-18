@@ -181,7 +181,7 @@ public class MuhasibatService : IMuhasibatService
             var sql = (await SqlAl(AdDepozit)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
 
-            decimal huquqi = 0m, fiziki = 0m;
+            decimal huquqi = 0m, fiziki = 0m, sahibkar = 0m;
             var valyuta = new Dictionary<string, decimal>();
             // müştəri açarı (tip|qeyd) → (ad, tip, cəm)
             var musteriler = new Dictionary<string, (string ad, string tip, decimal meb)>();
@@ -195,7 +195,9 @@ public class MuhasibatService : IMuhasibatService
                 var q = Dec(Val(r, "qaliq"));
                 if (q == 0m) continue;
 
-                if (tip == "fiziki") fiziki += q; else huquqi += q;
+                if (tip == "sahibkar") sahibkar += q;
+                else if (tip == "fiziki") fiziki += q;
+                else huquqi += q;
 
                 var vad = ValyutaAd(vk);
                 valyuta[vad] = valyuta.GetValueOrDefault(vad) + q;
@@ -209,7 +211,8 @@ public class MuhasibatService : IMuhasibatService
 
             dto.HuquqiCem    = Math.Round(huquqi, 2);
             dto.FizikiCem    = Math.Round(fiziki, 2);
-            dto.UmumiPortfel = Math.Round(huquqi + fiziki, 2);
+            dto.SahibkarCem  = Math.Round(sahibkar, 2);
+            dto.UmumiPortfel = Math.Round(huquqi + fiziki + sahibkar, 2);
             dto.MusteriSayi  = musteriler.Count;
 
             // Konsentrasiya — bütün depozitorlar üzrə ən böyükləri
@@ -241,6 +244,8 @@ public class MuhasibatService : IMuhasibatService
                         Faiz = dto.UmumiPortfel != 0 ? Math.Round(dto.HuquqiCem / dto.UmumiPortfel * 100, 1) : 0 },
                 new() { Ad = "Fiziki şəxslər", Mebleg = dto.FizikiCem,
                         Faiz = dto.UmumiPortfel != 0 ? Math.Round(dto.FizikiCem / dto.UmumiPortfel * 100, 1) : 0 },
+                new() { Ad = "Sahibkarlar", Mebleg = dto.SahibkarCem,
+                        Faiz = dto.UmumiPortfel != 0 ? Math.Round(dto.SahibkarCem / dto.UmumiPortfel * 100, 1) : 0 },
             };
 
             dto.ValyutaBolgusu = valyuta.Where(x => Math.Abs(x.Value) > 0.005m)
@@ -265,6 +270,14 @@ public class MuhasibatService : IMuhasibatService
                 {
                     Ad = m.ad, Mebleg = Math.Round(m.meb, 2),
                     Faiz = dto.FizikiCem != 0 ? Math.Round(m.meb / dto.FizikiCem * 100, 1) : 0
+                }).ToList();
+
+            dto.TopSahibkar = musteriler.Values.Where(m => m.tip == "sahibkar")
+                .OrderByDescending(m => m.meb).Take(10)
+                .Select(m => new BalansMaddeDto
+                {
+                    Ad = m.ad, Mebleg = Math.Round(m.meb, 2),
+                    Faiz = dto.SahibkarCem != 0 ? Math.Round(m.meb / dto.SahibkarCem * 100, 1) : 0
                 }).ToList();
 
             dto.Ugurlu = true;
@@ -667,7 +680,8 @@ public class MuhasibatService : IMuhasibatService
                             dto.Setirler.Add(new MuhasibatDetalSetirDto
                             {
                                 Kod = qeyd, Ad = m.Value.ad, Mebleg = Math.Round(m.Value.meb, 2),
-                                Elave = m.Value.tip == "fiziki" ? "fiziki" : "hüquqi"
+                                Elave = m.Value.tip == "fiziki" ? "fiziki"
+                                      : m.Value.tip == "sahibkar" ? "sahibkar" : "hüquqi"
                             });
                         }
                     }

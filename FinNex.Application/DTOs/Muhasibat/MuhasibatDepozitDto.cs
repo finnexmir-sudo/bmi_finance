@@ -12,6 +12,7 @@ public class MuhasibatDepozitDto
     public decimal  UmumiPortfel { get; set; }
     public decimal  HuquqiCem    { get; set; }
     public decimal  FizikiCem    { get; set; }
+    public decimal  SahibkarCem  { get; set; }   // fərdi sahibkar (regnom.predprinimatel=1)
     public int      MusteriSayi  { get; set; }
 
     // Konsentrasiya (risk): ən böyük depozitorların portfeldəki payı
@@ -27,4 +28,5 @@ public class MuhasibatDepozitDto
     public List<BalansMaddeDto> ValyutaBolgusu { get; set; } = new();   // AZN / USD / Digər
     public List<BalansMaddeDto> TopHuquqi      { get; set; } = new();   // ən böyük 10 hüquqi
     public List<BalansMaddeDto> TopFiziki      { get; set; } = new();   // ən böyük 10 fiziki
+    public List<BalansMaddeDto> TopSahibkar    { get; set; } = new();   // ən böyük 10 sahibkar
 }
