@@ -2,6 +2,9 @@
     var act = ViewContext.RouteData.Values["action"]?.ToString();
 }
 <div class="mh-tabs">
+    <a asp-action="Icmal" class="mh-tab @(act == "Icmal" ? "on" : "")">
+        <i class="bi bi-speedometer2"></i> Günlük İcmal
+    </a>
     <a asp-action="Index" class="mh-tab @(act == "Index" ? "on" : "")">
         <i class="bi bi-clipboard-data"></i> Balans İcmalı
     </a>

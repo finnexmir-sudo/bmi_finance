@@ -4,6 +4,9 @@ namespace FinNex.Application.Interfaces.Muhasibat;
 
 public interface IMuhasibatService
 {
+    // Günlük İcmal (executive) — bütün bölmələrin əsas göstəriciləri bir səhifədə.
+    Task<MuhasibatIcmalDto> GunlukIcmalAsync(DateTime? tarix = null);
+
     // Balans İcmalı — verilmiş tarixə (default: dünən / son iş günü).
     Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null);
 

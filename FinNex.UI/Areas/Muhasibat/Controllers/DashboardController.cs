@@ -107,6 +107,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Günlük İcmal (executive) — bütün bölmələrin əsas göstəriciləri.
+    public async Task<IActionResult> Icmal(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.GunlukIcmalAsync(ParseTarix(t));
+        return View(model);
+    }
+
     // Mənfəət / Zərər (P&L) — tarix aralığı: bt=başlanğıc, st=son (default YTD).
     public async Task<IActionResult> Menfeet(string? bt, string? st)
     {

@@ -47,6 +47,64 @@ public class MuhasibatService : IMuhasibatService
         return q.SorguMetni;
     }
 
+    public async Task<MuhasibatIcmalDto> GunlukIcmalAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatIcmalDto { Tarix = t };
+
+        try
+        {
+            // Bölmələri ARDICIL çağır — rəqəmlər tab-larla eynidir.
+            // (Paralel OLMAZ: sorğu mətnləri EF Core DbContext-dən oxunur, o isə
+            // thread-safe deyil — paralel çağırış "second operation on context" atır.
+            // Oracle sorğuları özləri yeni bağlantı açır, amma SqlAl DbContext-ə vurur.)
+            var bal     = await BalansAsync(t);
+            var dep     = await DepozitAsync(t);
+            var krd     = await KreditPortfelAsync(t);
+            var lkv     = await LikvidlikAsync(t);
+            var pnl     = await MenfeetAsync(new DateTime(t.Year, 1, 1), t);
+
+            dto.UmumiAktiv     = bal.UmumiAktiv;
+            dto.UmumiOhdelik   = bal.UmumiOhdelik;
+            dto.Kapital        = bal.Kapital;
+            dto.XalisMenfeet   = bal.XalisMenfeet;
+            dto.Roa            = bal.Roa;
+            dto.Roe            = bal.Roe;
+            dto.KapitalAktiv   = bal.UmumiAktiv != 0 ? Math.Round(bal.Kapital / bal.UmumiAktiv * 100, 2) : 0;
+            dto.AktivDeyisme   = bal.AktivDeyisme;
+            dto.OhdelikDeyisme = bal.OhdelikDeyisme;
+            dto.KapitalDeyisme = bal.KapitalDeyisme;
+            dto.MenfeetDeyisme = bal.MenfeetDeyisme;
+            dto.MuqayiseVar    = bal.MuqayiseVar;
+
+            dto.DepozitPortfel = dep.UmumiPortfel;
+            dto.DepozitorSayi  = dep.MusteriSayi;
+
+            dto.KreditPortfel = krd.UmumiPortfel;
+            dto.KreditSayi    = krd.MuqavileSayi;
+            dto.Npl           = krd.NplMebleg;
+            dto.NplFaiz       = krd.NplFaiz;
+
+            dto.Lcr          = lkv.Lcr;
+            dto.Hqla         = lkv.Hqla;
+            dto.AniLikvidlik = lkv.AniLikvidlik;
+
+            dto.Nii                   = pnl.XalisFaizGeliri;
+            dto.Nim                   = pnl.Nim;
+            dto.EhtiyatdanEvvelMenfeet = pnl.EhtiyatdanEvvelMenfeet;
+
+            dto.Ugurlu = bal.Ugurlu;
+            if (!bal.Ugurlu) dto.Xeta = bal.Xeta;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
     public async Task<MuhasibatBalansDto> BalansAsync(DateTime? tarix = null)
     {
         var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
