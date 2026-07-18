@@ -187,6 +187,12 @@
     .mh-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.16); padding: 5px 13px; border-radius: 30px; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
     .mh-title { font-size: 30px; font-weight: 800; margin: 0 0 6px; letter-spacing: -.5px; }
     .mh-sub { font-size: 13.5px; opacity: .92; }
+    .mh-xls { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; background: rgba(255,255,255,.16); color: #fff; text-decoration: none; padding: 7px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; }
+    .mh-xls:hover { background: rgba(255,255,255,.26); color: #fff; }
+    .mh-datef { display: flex; align-items: flex-end; gap: 8px; background: rgba(255,255,255,.12); padding: 12px 14px; border-radius: 14px; }
+    .mh-datef label { display: block; font-size: 11px; opacity: .85; margin-bottom: 3px; width: 100%; }
+    .mh-datef input { border: none; border-radius: 9px; padding: 8px 10px; font-size: 13px; }
+    .mh-datef button { border: none; background: #ffb703; color: #1a1a1a; font-weight: 700; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
     .mh-alert { margin-top: 18px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; }
 
     .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
@@ -209,7 +215,9 @@
     .mh-card-b { display: grid; grid-template-columns: 240px 1fr; gap: 18px; padding: 18px 20px; align-items: center; }
     .mh-chart { height: 230px; position: relative; }
     .mh-list { display: flex; flex-direction: column; gap: 12px; }
-    .mh-list--full { padding: 18px 20px; }
+    .mh-list--full { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; padding: 18px 20px; max-height: 430px; overflow-y: auto; }
+    .mh-list--full::-webkit-scrollbar { width: 8px; }
+    .mh-list--full::-webkit-scrollbar-thumb { background: #d8dee8; border-radius: 6px; }
     .mh-row-t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
     .mh-row-t span { color: #475569; } .mh-row-t b { color: #0f172a; }
     .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
@@ -228,5 +236,6 @@
         .mh-kpis { grid-template-columns: 1fr 1fr; }
         .mh-grid { grid-template-columns: 1fr; }
         .mh-card-b { grid-template-columns: 1fr; }
+        .mh-list--full { grid-template-columns: 1fr; }
     }
 </style>
