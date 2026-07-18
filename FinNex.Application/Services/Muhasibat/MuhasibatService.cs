@@ -664,9 +664,9 @@ public class MuhasibatService : IMuhasibatService
                     else
                     {
                         var arg = parts.Length > 1 ? parts[1] : "";
-                        // Müştəri üzrə aqreqasiya + valyuta izlənir: tək valyutalıdırsa öz valyutası,
-                        // qarışıqdırsa "qarışıq" (öz valyutası göstərilmir).
-                        var musteriler = new Dictionary<string, (string ad, string tip, decimal meb, decimal inval, string val, bool mixed)>();
+                        // Müştəri + VALYUTA üzrə aqreqasiya — hər valyuta AYRICA sətir (qarışıq yoxdur),
+                        // öz valyutası həmişə dolur.
+                        var qruplar = new Dictionary<string, (string qeyd, string ad, string tip, string val, decimal meb, decimal inval)>();
                         foreach (var r in rows)
                         {
                             var tip = Val(r, "tip")?.ToString() ?? "";
@@ -679,26 +679,22 @@ public class MuhasibatService : IMuhasibatService
                             if (mod == "valyuta" && vad != arg) continue;
                             var ad = Val(r, "musteri")?.ToString() ?? "(adsız)";
                             var qInval = vad == "AZN" ? q : Dec(Val(r, "qaliq_inval"));
-                            var key = tip + "|" + qeyd;
-                            if (musteriler.TryGetValue(key, out var cur))
-                            {
-                                var mix = cur.mixed || cur.val != vad;
-                                musteriler[key] = (cur.ad, cur.tip, cur.meb + q, cur.inval + qInval, mix ? "" : vad, mix);
-                            }
+                            var key = tip + "|" + qeyd + "|" + vad;
+                            if (qruplar.TryGetValue(key, out var cur))
+                                qruplar[key] = (cur.qeyd, cur.ad, cur.tip, cur.val, cur.meb + q, cur.inval + qInval);
                             else
-                                musteriler[key] = (ad, tip, q, qInval, vad, false);
+                                qruplar[key] = (qeyd, ad, tip, vad, q, qInval);
                         }
-                        foreach (var m in musteriler.OrderBy(x => x.Key.Contains('|') ? x.Key.Split('|')[1] : x.Key, StringComparer.Ordinal))
+                        foreach (var g in qruplar.Values
+                                     .OrderBy(x => x.qeyd, StringComparer.Ordinal).ThenBy(x => x.val, StringComparer.Ordinal))
                         {
-                            var qeyd = m.Key.Contains('|') ? m.Key.Split('|')[1] : m.Key;
-                            var v = m.Value;
                             dto.Setirler.Add(new MuhasibatDetalSetirDto
                             {
-                                Kod = qeyd, Ad = v.ad, Valyuta = v.mixed ? "qarışıq" : v.val,
-                                Mebleg = Math.Round(v.meb, 2),
-                                MeblegInval = v.mixed ? (decimal?)null : Math.Round(v.inval, 2),
-                                Elave = v.tip == "fiziki" ? "fiziki"
-                                      : v.tip == "sahibkar" ? "sahibkar" : "hüquqi"
+                                Kod = g.qeyd, Ad = g.ad, Valyuta = g.val,
+                                Mebleg = Math.Round(g.meb, 2),
+                                MeblegInval = Math.Round(g.inval, 2),
+                                Elave = g.tip == "fiziki" ? "fiziki"
+                                      : g.tip == "sahibkar" ? "sahibkar" : "hüquqi"
                             });
                         }
                     }
