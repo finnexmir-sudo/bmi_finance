@@ -46,7 +46,7 @@
                 <div class="mh-kpi-v">@Fmt(Model.FizikiCem) <span>₼</span></div>
                 <div class="mh-kpi-l">Fiziki şəxs depozitləri</div>
             </div>
-            <div class="mh-kpi mh-kpi--k mh-click" data-mhsahe="depozit" data-mhmadde="tip:sahibkar" data-mhbaslik="Sahibkar depozitorları">
+            <div class="mh-kpi mh-kpi--s mh-click" data-mhsahe="depozit" data-mhmadde="tip:sahibkar" data-mhbaslik="Sahibkar depozitorları">
                 <div class="mh-kpi-ic"><i class="bi bi-briefcase"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.SahibkarCem) <span>₼</span></div>
                 <div class="mh-kpi-l">Sahibkar depozitləri</div>
@@ -66,9 +66,11 @@
                     <div class="mh-list">
                         @foreach (var a in Model.TipBolgusu)
                         {
-                            <div class="mh-row mh-click" data-mhsahe="depozit" data-mhmadde="tip:@(a.Ad.StartsWith("Hüquqi") ? "huquqi" : "fiziki")" data-mhbaslik="@a.Ad — depozitorlar">
+                            var seg = a.Ad.StartsWith("Hüquqi") ? "h" : a.Ad.StartsWith("Sahibkar") ? "s" : "f";
+                            var tipKod = a.Ad.StartsWith("Hüquqi") ? "huquqi" : a.Ad.StartsWith("Sahibkar") ? "sahibkar" : "fiziki";
+                            <div class="mh-row mh-click" data-mhsahe="depozit" data-mhmadde="tip:@tipKod" data-mhbaslik="@a.Ad — depozitorlar">
                                 <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
-                                <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--@seg"><span style="width:@(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
                         }
@@ -199,7 +201,7 @@
     <script>
         (function () {
             if (typeof Chart === 'undefined') return;
-            const palTip = ['#047857', '#a855f7'];
+            const palTip = ['#3b82f6', '#a855f7', '#06b6d4']; // Hüquqi=mavi, Fiziki=bənövşəyi, Sahibkar=teal
             const palVal = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#a855f7', '#64748b'];
             function bar(id, rows, pal) {
                 const el = document.getElementById(id);
@@ -241,6 +243,7 @@
     .mh-kpi--a { background: linear-gradient(135deg, #047857, #10b981); }
     .mh-kpi--k { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
     .mh-kpi--c { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+    .mh-kpi--s { background: linear-gradient(135deg, #0e7490, #06b6d4); }
     .mh-kpi--o { background: linear-gradient(135deg, #b45309, #f59e0b); }
     .mh-kpi-ic { position: absolute; right: 14px; top: 12px; font-size: 30px; opacity: .28; }
     .mh-kpi-v { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
@@ -260,6 +263,10 @@
     .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
     .mh-bar span { display: block; height: 100%; background: linear-gradient(90deg, #047857, #34d399); border-radius: 6px; }
     .mh-bar--v span { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+    /* Depozit seqment rəngləri — qrafik və kartlarla eyni */
+    .mh-bar--h span { background: linear-gradient(90deg, #1d4ed8, #3b82f6); } /* Hüquqi — mavi */
+    .mh-bar--f span { background: linear-gradient(90deg, #7c3aed, #a855f7); } /* Fiziki — bənövşəyi */
+    .mh-bar--s span { background: linear-gradient(90deg, #0e7490, #06b6d4); } /* Sahibkar — teal */
     .mh-row-p { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 2px; }
 
     .mh-toplist { padding: 8px 12px 14px; }
