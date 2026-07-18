@@ -107,6 +107,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Mənfəət / Zərər (P&L) — tarix aralığı: bt=başlanğıc, st=son (default YTD).
+    public async Task<IActionResult> Menfeet(string? bt, string? st)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.MenfeetAsync(ParseTarix(bt), ParseTarix(st));
+        return View(model);
+    }
+
     // Drill-down — kart/sətrin arxasındakı hesab detalı (JSON).
     // sahe: balans / balans-valyuta / balans-menfeet / likvidlik / depozit / kredit / valyuta / rezident.
     [HttpGet]
@@ -244,6 +254,32 @@ public class DashboardController : Controller
         r = Bolme(sh, r, "Gecikmə (aging)", m.GecikmeBolgusu);
         r = Bolme(sh, r, "Valyuta strukturu", m.ValyutaBolgusu);
         return Yukle(wb, "Kredit_Portfeli");
+    }
+
+    public async Task<IActionResult> MenfeetExcel(string? bt, string? st)
+    {
+        if (!await IcazeVarAsync()) return Forbid();
+        var m = await _service.MenfeetAsync(ParseTarix(bt), ParseTarix(st));
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Menfeet");
+        int r = 0;
+        Setir(sh, r++, $"Mənfəət / Zərər — {m.BasTarix:dd.MM.yyyy} — {m.SonTarix:dd.MM.yyyy}");
+        r++;
+        KV(sh, r++, "Faiz gəliri", m.FaizGeliri);
+        KV(sh, r++, "Faiz xərci", m.FaizXerci);
+        KV(sh, r++, "Xalis faiz gəliri (NII)", m.XalisFaizGeliri);
+        KV(sh, r++, "NIM % (illik, təxmini)", m.Nim);
+        KV(sh, r++, "Ümumi gəlir", m.UmumiGelir);
+        KV(sh, r++, "Ümumi xərc", m.UmumiXerc);
+        KV(sh, r++, "Ehtiyat xərci", m.EhtiyatXerci);
+        KV(sh, r++, "Xərc/Gəlir %", m.XercGelirNisbeti);
+        KV(sh, r++, "Xalis mənfəət (hesablanmış)", m.XalisMenfeet);
+        KV(sh, r++, "GL mənfəəti (50130)", m.MenfeetGL);
+        KV(sh, r++, "Fərq (yoxlama)", m.Ferq);
+        r++;
+        r = Bolme(sh, r, "Gəlir strukturu", m.GelirBolgusu);
+        r = Bolme(sh, r, "Xərc strukturu", m.XercBolgusu);
+        return Yukle(wb, "Menfeet_Zerer");
     }
 
     public async Task<IActionResult> LikvidlikExcel(string? t)

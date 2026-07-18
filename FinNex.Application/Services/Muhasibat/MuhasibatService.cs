@@ -30,6 +30,8 @@ public class MuhasibatService : IMuhasibatService
     private const string AdRezident = "Muhasibat — Rezident";
     private const string AdRezidentDetal = "Muhasibat — Rezident detal";
     private const string AdElaqeliDetal  = "Muhasibat — Elaqeli detal";
+    private const string AdMenfeet       = "Muhasibat — Menfeet zerer";
+    private const string AdMenfeetDetal  = "Muhasibat — Menfeet detal";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -358,6 +360,97 @@ public class MuhasibatService : IMuhasibatService
 
         return dto;
     }
+
+    public async Task<MuhasibatMenfeetDto> MenfeetAsync(DateTime? bas = null, DateTime? son = null)
+    {
+        var s = (son ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var b = (bas ?? new DateTime(s.Year, 1, 1)).Date;   // default: il əvvəli → hesabat tarixi (YTD)
+        var dto = new MuhasibatMenfeetDto { BasTarix = b, SonTarix = s };
+
+        try
+        {
+            // 1) P&L dövriyyə (sinif 6/7 gəlir = kredit; sinif 8 xərc = debet), kateqoriya üzrə.
+            var sql = (await SqlAl(AdMenfeet))
+                .Replace("{BAS}", b.ToString("dd/MM/yyyy"))
+                .Replace("{SON}", s.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 200);
+
+            var gelirD = new Dictionary<string, decimal>();
+            var xercD  = new Dictionary<string, decimal>();
+            foreach (var r in rows)
+            {
+                var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
+                var debet  = Dec(Val(r, "debet"));
+                var kredit = Dec(Val(r, "kredit"));
+                var (kat, gelir) = MenfeetTesnif(sinif2);
+                var meb = gelir ? kredit : debet;
+                if (meb == 0m) continue;
+                if (gelir) gelirD[kat] = gelirD.GetValueOrDefault(kat) + meb;
+                else       xercD[kat]  = xercD.GetValueOrDefault(kat) + meb;
+            }
+
+            dto.FaizGeliri   = Math.Round(gelirD.GetValueOrDefault("Faiz gəliri"), 2);
+            dto.FaizXerci    = Math.Round(xercD.GetValueOrDefault("Faiz xərci"), 2);
+            dto.EhtiyatXerci = Math.Round(xercD.GetValueOrDefault("Ehtiyat xərci"), 2);
+            dto.UmumiGelir   = Math.Round(gelirD.Values.Sum(), 2);
+            dto.UmumiXerc    = Math.Round(xercD.Values.Sum(), 2);
+            dto.XalisFaizGeliri = Math.Round(dto.FaizGeliri - dto.FaizXerci, 2);
+            dto.XalisMenfeet    = Math.Round(dto.UmumiGelir - dto.UmumiXerc, 2);
+            dto.XercGelirNisbeti = dto.UmumiGelir != 0 ? Math.Round(dto.UmumiXerc / dto.UmumiGelir * 100, 2) : 0;
+            dto.GelirBolgusu = ToMadde(gelirD, dto.UmumiGelir);
+            dto.XercBolgusu  = ToMadde(xercD, dto.UmumiXerc);
+
+            // 2) SON tarixə balans — işləyən aktiv (NIM məxrəci) + 50130 mənfəəti (yoxlama).
+            var bsql = (await SqlAl(AdBalans)).Replace("{TARIX}", s.ToString("dd/MM/yyyy"));
+            var brows = await _oracle.SelectAsync(bsql, maxRows: 200000);
+            decimal isleyen = 0m, menfeetGL = 0m;
+            foreach (var r in brows)
+            {
+                var hesab = Val(r, "hesab")?.ToString() ?? "";
+                var q = Dec(Val(r, "qaliq"));
+                if (q == 0m) continue;
+                if (hesab.StartsWith("50130")) menfeetGL += -q;   // kredit qalıqlı → müsbətə
+                var p2 = hesab.Length >= 2 ? hesab.Substring(0, 2) : "";
+                // Faiz gətirən aktivlər: müxbir/banklararası (11-15) + kreditlər (20-23), yalnız aktiv (q>0).
+                if (q > 0 && p2 is "11" or "12" or "13" or "14" or "15"
+                                   or "20" or "21" or "22" or "23")
+                    isleyen += q;
+            }
+            dto.IsleyenAktiv = Math.Round(isleyen, 2);
+            dto.MenfeetGL    = Math.Round(menfeetGL, 2);
+            dto.Ferq         = Math.Round(dto.XalisMenfeet - dto.MenfeetGL, 2);
+
+            // NIM (illik, təxmini) = xalis faiz gəliri / işləyən aktiv × (365/gün).
+            var gun = (s - b).Days + 1;
+            dto.Nim = (isleyen != 0m && gun > 0)
+                ? Math.Round(dto.XalisFaizGeliri / isleyen * (365m / gun) * 100m, 2)
+                : 0;
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    // P&L kateqoriya təsnifatı hesab sinifinə (ilk 2 rəqəm) görə.
+    // gelir=true → sinif 6/7 (kredit dövriyyəsi); gelir=false → sinif 8 (debet dövriyyəsi).
+    private static (string kat, bool gelir) MenfeetTesnif(string sinif2) => sinif2 switch
+    {
+        "60" or "61" or "63" or "64" or "65" => ("Faiz gəliri", true),
+        "66" or "68"                          => ("Valyuta/ticarət gəliri", true),
+        "67"                                  => ("Komissiya gəliri", true),
+        "70" or "72"                          => ("Digər gəlir", true),
+        "81" or "82" or "84" or "85"          => ("Faiz xərci", false),
+        "86" or "88"                          => ("Valyuta/ticarət zərəri", false),
+        "87"                                  => ("Komissiya xərci", false),
+        "89"                                  => ("Ehtiyat xərci", false),
+        _ => sinif2.StartsWith("8") ? ("Digər xərc", false) : ("Digər gəlir", true)
+    };
 
     public async Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null)
     {
@@ -828,6 +921,30 @@ public class MuhasibatService : IMuhasibatService
                         dto.Setirler.Add(DSetir(Val(r, "hesab")?.ToString() ?? "",
                             Val(r, "ad")?.ToString() ?? "", null, Math.Round(meb, 2)));
                     }
+                    break;
+                }
+
+                case "menfeet":
+                {
+                    // P&L drill-down — madde = kateqoriya adı (məs. "Faiz gəliri").
+                    // Hesab-səviyyə dövriyyə, aqreqat ilə EYNİ MenfeetTesnif təsnifatı.
+                    var bb = (bas ?? new DateTime((son ?? t).Year, 1, 1)).Date;
+                    var ss = (son ?? t).Date;
+                    var sql = (await SqlAl(AdMenfeetDetal))
+                        .Replace("{BAS}", bb.ToString("dd/MM/yyyy"))
+                        .Replace("{SON}", ss.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
+                    foreach (var r in rows)
+                    {
+                        var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
+                        var (kat, gelir) = MenfeetTesnif(sinif2);
+                        if (kat != madde) continue;
+                        var meb = gelir ? Dec(Val(r, "kredit")) : Dec(Val(r, "debet"));
+                        if (meb == 0m) continue;
+                        dto.Setirler.Add(DSetir(Val(r, "hesab")?.ToString() ?? "",
+                            Val(r, "ad")?.ToString() ?? "", null, Math.Round(meb, 2)));
+                    }
+                    dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
                     break;
                 }
 
