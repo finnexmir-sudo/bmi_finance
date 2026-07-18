@@ -371,7 +371,7 @@ public class MuhasibatService : IMuhasibatService
 
             var likvidD = new Dictionary<string, decimal>();
             var valyutaD = new Dictionary<string, decimal>();
-            decimal likvid = 0m, aktiv = 0m, ohdelik = 0m, level2 = 0m;
+            decimal likvid = 0m, aktiv = 0m, ohdelik = 0m, level2Kesir = 0m;
             decimal fizikiDep = 0m, huquqiDep = 0m;
 
             foreach (var r in rows)
@@ -393,7 +393,13 @@ public class MuhasibatService : IMuhasibatService
                 if (lq != null)
                 {
                     likvid += qaliq;
-                    if (lq == "Cari likvid vəsaitlər") level2 += qaliq;   // Level 2 (haircut)
+                    if (lq == "Cari likvid vəsaitlər")
+                    {
+                        // Level 2 haircut — valyutaya görə: IRR yalnız 50% sayılır (50% kəsir),
+                        // qalan valyutalar 75% sayılır (25% kəsir).
+                        var kesir = ValyutaAd(valKod) == "IRR" ? 0.50m : 0.25m;
+                        level2Kesir += qaliq * kesir;
+                    }
                     likvidD[lq] = likvidD.GetValueOrDefault(lq) + qaliq;
                     var vad = ValyutaAd(valKod);
                     valyutaD[vad] = valyutaD.GetValueOrDefault(vad) + qaliq;
@@ -407,8 +413,8 @@ public class MuhasibatService : IMuhasibatService
             dto.LikvidStruktur = ToMadde(likvidD, likvid);
             dto.ValyutaBolgusu = ToMadde(valyutaD, likvid);
 
-            // Təxmini LCR — Level 2 haircut 25%; net outflow = fiziki×10% + hüquqi×40%
-            var hqla = likvid - 0.25m * level2;
+            // Təxmini LCR — Level 2 haircut valyutaya görə (IRR 50%, digər 25%); net outflow = fiziki×10% + hüquqi×40%
+            var hqla = likvid - level2Kesir;
             var netMex = fizikiDep * 0.10m + huquqiDep * 0.40m;
             dto.Hqla          = Math.Round(hqla, 2);
             dto.FizikiDepozit = Math.Round(fizikiDep, 2);
@@ -435,7 +441,7 @@ public class MuhasibatService : IMuhasibatService
         if (hesab.Length < 5) return null;
         var p5 = hesab.Substring(0, 5);
         if (p5 is "11010" or "11020" or "11110" or "11710") return "AMB / müxbir (NOSTRO)";
-        if (p5 is "14010" or "14012" or "14014" or "14030" or "14032" or "14034") return "Banklararası / Mərkəzi Bank";
+        if (p5 is "14010" or "14012" or "14014" or "14030" or "14032" or "14034") return "Qiymətli kağızlar";
         if (p5 is "15020" or "15025") return "Cari likvid vəsaitlər";
         if (p5 == "15770") return "Yüksək likvid aktivlər (HQLA)";
         return null;
@@ -598,7 +604,17 @@ public class MuhasibatService : IMuhasibatService
                             var lq = LikvidQrup(hesab);
                             if (lq == null) continue;
                             if (madde != "*" && lq != madde) continue;   // "*" → bütün likvid aktivlər
-                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), qaliq, InvalDisp(qaliq)));
+                            var setir = DSetir(hesab, ad, ValyutaAd(valKod), qaliq, InvalDisp(qaliq));
+                            if (lq == "Cari likvid vəsaitlər")
+                            {
+                                // LCR haircut: IRR yalnız 50% sayılır, qalan valyutalar 75%.
+                                var ceki = ValyutaAd(valKod) == "IRR" ? 0.50m : 0.75m;
+                                var sayilan = Math.Round(qaliq * ceki, 2)
+                                    .ToString("#,##0.##", System.Globalization.CultureInfo.InvariantCulture)
+                                    .Replace(",", " ");
+                                setir.Elave = $"× {(ceki * 100):0}% = {sayilan} ₼";
+                            }
+                            dto.Setirler.Add(setir);
                             continue;
                         }
                         if (s0 == "balans-valyuta")
