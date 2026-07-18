@@ -67,13 +67,13 @@ public class DashboardController : Controller
         return View(model);
     }
 
-    // Kredit portfeli (cari vəziyyət).
-    public async Task<IActionResult> Kredit()
+    // Kredit portfeli (tarix üzrə — arh_licschkre).
+    public async Task<IActionResult> Kredit(string? t)
     {
         if (!await IcazeVarAsync())
             return Forbid();
 
-        var model = await _service.KreditPortfelAsync();
+        var model = await _service.KreditPortfelAsync(ParseTarix(t));
         return View(model);
     }
 
@@ -219,10 +219,10 @@ public class DashboardController : Controller
         return Yukle(wb, "Depozit_Portfeli");
     }
 
-    public async Task<IActionResult> KreditExcel()
+    public async Task<IActionResult> KreditExcel(string? t)
     {
         if (!await IcazeVarAsync()) return Forbid();
-        var m = await _service.KreditPortfelAsync();
+        var m = await _service.KreditPortfelAsync(ParseTarix(t));
         var wb = new HSSFWorkbook();
         var sh = wb.CreateSheet("Kredit");
         int r = 0;

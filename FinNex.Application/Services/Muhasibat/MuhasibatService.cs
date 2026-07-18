@@ -291,13 +291,14 @@ public class MuhasibatService : IMuhasibatService
         return dto;
     }
 
-    public async Task<MuhasibatKreditDto> KreditPortfelAsync()
+    public async Task<MuhasibatKreditDto> KreditPortfelAsync(DateTime? tarix = null)
     {
-        var dto = new MuhasibatKreditDto { Tarix = DateTime.Now.Date };
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatKreditDto { Tarix = t };
 
         try
         {
-            var sql = await SqlAl(AdKredit);
+            var sql = (await SqlAl(AdKredit)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 300000);
 
             var tipD = new Dictionary<string, decimal>();
