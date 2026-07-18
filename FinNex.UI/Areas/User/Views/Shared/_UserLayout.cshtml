@@ -433,13 +433,9 @@
                                class="fn-nav-item @(currentController == "Takvim" ? "active" : "")">
                                 <i class="bi bi-calendar3"></i> Təqvim
                             </a>
-                            @* Məzuniyyət və İcazə ayrıca bənd kimi silindi — Müraciətlər səhifəsində tab kimidir *@
-                            <a asp-area="User" asp-controller="EzamiyyetMuraciet" asp-action="Index"
-                               class="fn-nav-item @(currentController == "EzamiyyetMuraciet" ? "active" : "")">
-                                <i class="bi bi-briefcase"></i> Ezamiyyət
-                            </a>
+                            @* Məzuniyyət, İcazə və Ezamiyyət ayrıca bənd kimi silindi — Müraciətlər səhifəsində tab kimidir *@
                             <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
-                               class="fn-nav-item @(currentArea == "User" && (currentController == "Muraciet" || currentController == "Mezuniyyet" || currentController == "Icaze") ? "active" : "")">
+                               class="fn-nav-item @(currentArea == "User" && (currentController == "Muraciet" || currentController == "Mezuniyyet" || currentController == "Icaze" || currentController == "EzamiyyetMuraciet") ? "active" : "")">
                                 <i class="bi bi-envelope-paper"></i> Müraciətlər
                             </a>
                             <a asp-area="User" asp-controller="Tapshiriq" asp-action="Index"

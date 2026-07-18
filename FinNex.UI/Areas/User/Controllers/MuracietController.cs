@@ -1,5 +1,6 @@
 ﻿
 using FinNex.Application.Interfaces;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -16,17 +17,20 @@ namespace FinNex.UI.Areas.User.Controllers
     {
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IIcazeService _icazeService;
+        private readonly IEzamiyyetService _ezamiyyetService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _unitOfWork;
 
         public MuracietController(
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
+            IEzamiyyetService ezamiyyetService,
             UserManager<AppUser> userManager,
             IUnitOfWork unitOfWork)
         {
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
+            _ezamiyyetService = ezamiyyetService;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
         }
@@ -39,6 +43,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var mezResult = await _mezuniyyetService.GetIsciMezuniyyetleriAsync(isci.Id);
             var icazeResult = await _icazeService.GetIsciIcazeleriAsync(isci.Id);
+            var ezamList = await _ezamiyyetService.IsciMuracietleriAsync(isci.Id);
 
             var rehberdirmi = User.IsInRole(RoleNames.Rehber);
             var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
@@ -52,6 +57,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 AktivTab = tab,
                 Mezuniyyetler = mezList,
                 Icazeler = icazeList,
+                Ezamiyyetler = ezamList?.ToList() ?? new(),
             };
 
             return View(model);

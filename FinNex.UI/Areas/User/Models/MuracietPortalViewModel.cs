@@ -1,11 +1,12 @@
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
+using FinNex.Application.DTOs.HR.Ezamiyyet;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.UI.Areas.User.Models
 {
     /// <summary>
-    /// Müraciət portalı (Məzuniyyət + İcazə) ViewModel.
-    /// Domain entity-lərinə birbaşa istinad yoxdur — statistika string müqayisəsi ilə hesablanır.
+    /// Müraciət portalı (Məzuniyyət + İcazə + Ezamiyyət) ViewModel.
     /// </summary>
     public class MuracietPortalViewModel
     {
@@ -13,6 +14,7 @@ namespace FinNex.UI.Areas.User.Models
 
         public List<MezuniyyetListDto> Mezuniyyetler { get; set; } = new();
         public List<IcazeListDto> Icazeler { get; set; } = new();
+        public List<EzamiyyetMuracietListDto> Ezamiyyetler { get; set; } = new();
 
         // ── Məzuniyyət statistikası ────────────────────────────
         public int MezuniyyetCemi => Mezuniyyetler.Count;
@@ -33,5 +35,10 @@ namespace FinNex.UI.Areas.User.Models
         public int IcazeGozlemede => Icazeler
             .Count(x => x.WorkflowMerhele != "Təsdiqlənib"
                      && x.WorkflowMerhele != "İmtina edildi");
+
+        // ── Ezamiyyət statistikası ─────────────────────────────
+        public int EzamiyyetCemi => Ezamiyyetler.Count;
+        public int EzamiyyetTesdiq => Ezamiyyetler.Count(x => x.Status == EzamiyyetStatus.Tesdiqlendi);
+        public int EzamiyyetGozlemede => Ezamiyyetler.Count(x => x.Status == EzamiyyetStatus.Gozleyir);
     }
 }

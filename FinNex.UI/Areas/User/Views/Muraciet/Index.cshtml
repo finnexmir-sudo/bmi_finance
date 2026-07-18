@@ -1,10 +1,14 @@
 @model FinNex.UI.Areas.User.Models.MuracietPortalViewModel
+@using FinNex.Domain.Entities.HR
+@using FinNex.Application.DTOs.HR.Ezamiyyet
 @{
     ViewData["Title"] = "Müraciətlərim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     bool mezTab  = Model.AktivTab == "mezuniyyet";
     bool icazeTab = Model.AktivTab == "icaze";
+    bool ezamiyyetTab = Model.AktivTab == "ezamiyyet";
+    var bugun = DateTime.Today;
 
     // Workflow addımı: string → int (entity enum yox)
     int WorkflowStep(string merhele) => merhele switch
@@ -40,25 +44,30 @@
             <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
                class="fn-btn fn-btn--primary">+ Məzuniyyət müraciəti</a>
         }
-        else
+        else if (icazeTab)
         {
             <a asp-area="User" asp-controller="Icaze" asp-action="Create"
                class="fn-btn fn-btn--primary">+ İcazə müraciəti</a>
+        }
+        else
+        {
+            <a asp-area="User" asp-controller="EzamiyyetMuraciet" asp-action="Create"
+               class="fn-btn fn-btn--primary">+ Ezamiyyət müraciəti</a>
         }
     </div>
 
     @* ── Ümumi statistika ── *@
     <div class="fn-stat-row">
         <div class="fn-stat">
-            <div class="fn-stat-val">@(Model.MezuniyyetCemi + Model.IcazeCemi)</div>
+            <div class="fn-stat-val">@(Model.MezuniyyetCemi + Model.IcazeCemi + Model.EzamiyyetCemi)</div>
             <div class="fn-stat-lbl">Cəmi</div>
         </div>
         <div class="fn-stat">
-            <div class="fn-stat-val" style="color:#1e9b6b">@(Model.MezuniyyetTesdiq + Model.IcazeTesdiq)</div>
+            <div class="fn-stat-val" style="color:#1e9b6b">@(Model.MezuniyyetTesdiq + Model.IcazeTesdiq + Model.EzamiyyetTesdiq)</div>
             <div class="fn-stat-lbl">Təsdiqlənib</div>
         </div>
         <div class="fn-stat">
-            <div class="fn-stat-val" style="color:#c9900a">@(Model.MezuniyyetGozlemede + Model.IcazeGozlemede)</div>
+            <div class="fn-stat-val" style="color:#c9900a">@(Model.MezuniyyetGozlemede + Model.IcazeGozlemede + Model.EzamiyyetGozlemede)</div>
             <div class="fn-stat-lbl">Gözləmədə</div>
         </div>
         <div class="fn-stat">
@@ -68,6 +77,10 @@
         <div class="fn-stat">
             <div class="fn-stat-val" style="color:#7c5cbf">@Model.IcazeCemi</div>
             <div class="fn-stat-lbl">İcazə</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#0d9488">@Model.EzamiyyetCemi</div>
+            <div class="fn-stat-lbl">Ezamiyyət</div>
         </div>
     </div>
 
@@ -93,6 +106,16 @@
                 </svg>
                 İcazə
                 <span class="fn-tab-count">@Model.IcazeCemi</span>
+            </a>
+            <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+               asp-route-tab="ezamiyyet"
+               class="fn-tab @(ezamiyyetTab ? "fn-tab--active" : "")">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="2" y="4" width="10" height="8" rx="1.2" stroke="currentColor" stroke-width="1.2" />
+                    <path d="M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+                Ezamiyyət
+                <span class="fn-tab-count">@Model.EzamiyyetCemi</span>
             </a>
         </div>
 
@@ -336,6 +359,111 @@
                         </div>
                     }
                 </div>
+            }
+        }
+
+        @* ══ EZAMİYYƏT TAB-I ══ *@
+        @if (ezamiyyetTab)
+        {
+            @if (!Model.Ezamiyyetler.Any())
+            {
+                <div class="fn-tab-empty">
+                    <div class="fn-empty-title">Ezamiyyət müraciətiniz yoxdur</div>
+                    <div class="fn-empty-sub">
+                        <a asp-area="User" asp-controller="EzamiyyetMuraciet" asp-action="Create"
+                           style="color:#e8b84b">Yeni müraciət göndər →</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="fn-icaze-list">
+                    @foreach (var e in Model.Ezamiyyetler)
+                    {
+                        var (ebg, etxt, elbl) = e.Status switch
+                        {
+                            EzamiyyetStatus.Gozleyir    => ("#fef3c7", "#b45309", "Gözləyir"),
+                            EzamiyyetStatus.Tesdiqlendi => ("#dcfce7", "#15803d", "Təsdiqləndi"),
+                            EzamiyyetStatus.Reddedildi  => ("#fee2e2", "#dc2626", "Rədd edildi"),
+                            _                           => ("#f1f5f9", "#64748b", "Ləğv edildi")
+                        };
+                        var eNotElave = e.Status == EzamiyyetStatus.Tesdiqlendi && e.BitmeTarixi.Date < bugun;
+                        <div class="fn-icaze-item">
+                            <div class="fn-icaze-date-block">
+                                <div class="fn-icaze-day">@e.BaslamaTarixi.ToString("dd")</div>
+                                <div class="fn-icaze-month">@e.BaslamaTarixi.ToString("MMM")</div>
+                            </div>
+                            <div class="fn-icaze-info">
+                                <div class="fn-icaze-title">
+                                    @e.Baslig
+                                    <span class="fn-icaze-dur">
+                                        (@e.BaslamaTarixi.ToString("dd.MM")@(e.BaslamaTarixi.Date != e.BitmeTarixi.Date ? " – " + e.BitmeTarixi.ToString("dd.MM.yyyy") : "") · @e.GunSayi gün)
+                                    </span>
+                                </div>
+                                <div class="fn-icaze-meta">
+                                    <span class="fn-icaze-evez"><i class="bi bi-geo-alt"></i> @e.MekanAd</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(e.Qeyd))
+                                {
+                                    <div style="font-size:12px;color:#94a3b8;margin-top:2px">@e.Qeyd</div>
+                                }
+                                @if (e.Status == EzamiyyetStatus.Reddedildi && !string.IsNullOrWhiteSpace(e.RehberQeydi))
+                                {
+                                    <div style="font-size:12px;color:#dc2626;margin-top:4px">Rədd səbəbi: @e.RehberQeydi</div>
+                                }
+                                @if (eNotElave)
+                                {
+                                    <div style="margin-top:6px">
+                                        @if (!string.IsNullOrWhiteSpace(e.GeriDonusQeydi))
+                                        {
+                                            <div style="padding:6px 8px;background:#f0fdf4;border-radius:6px;font-size:12px;color:#166534">
+                                                <i class="bi bi-check2-circle"></i> <em>@e.GeriDonusQeydi</em>
+                                                <a href="#" onclick="ezamNotAc(@e.Id);return false;" style="margin-left:6px;font-size:11px;color:#6366f1">düzəlt</a>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <a href="#" onclick="ezamNotAc(@e.Id);return false;" style="font-size:12px;color:#6366f1"><i class="bi bi-plus-circle"></i> Geri dönüş notu</a>
+                                        }
+                                        <div id="ezamNot-@e.Id" style="display:none;margin-top:6px">
+                                            <form asp-area="User" asp-controller="EzamiyyetMuraciet" asp-action="GeriQeyd" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@e.Id" />
+                                                <textarea name="qeyd" rows="2" placeholder="Ezamiyyət nəticəsi, görülən işlər…"
+                                                          style="width:100%;border:1.5px solid #d1d5db;border-radius:6px;padding:6px 8px;font-size:12px;margin-bottom:4px">@e.GeriDonusQeydi</textarea>
+                                                <div style="display:flex;gap:6px">
+                                                    <button type="submit" class="fn-btn fn-btn--primary" style="font-size:11px;padding:4px 10px">Saxla</button>
+                                                    <button type="button" class="fn-btn fn-btn--ghost-sm" onclick="ezamNotAc(@e.Id)">İmtina</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="fn-icaze-actions">
+                                <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;background:@ebg;color:@etxt">@elbl</span>
+                                @if (!string.IsNullOrEmpty(e.SenedYolu))
+                                {
+                                    <a href="/dms/@e.SenedYolu" download="@(e.SenedAd ?? "sened")" class="fn-btn fn-btn--ghost-sm" style="margin-top:6px"><i class="bi bi-paperclip"></i> Sənəd</a>
+                                }
+                                @if (e.Status == EzamiyyetStatus.Gozleyir)
+                                {
+                                    <form asp-area="User" asp-controller="EzamiyyetMuraciet" asp-action="Legvet" asp-route-id="@e.Id" method="post" style="margin-top:4px"
+                                          onsubmit="return confirm('Bu müraciəti ləğv etmək istəyirsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv et</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <script>
+                    function ezamNotAc(id) {
+                        var el = document.getElementById('ezamNot-' + id);
+                        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                    }
+                </script>
             }
         }
     </div>
