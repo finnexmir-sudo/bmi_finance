@@ -139,12 +139,15 @@ namespace FinNex.UI.Areas.User.Controllers
             var icazeResult = await _icazeService.GetHrTesdiqindeAsync();
             // Ezamiyyət tək mərhələlidir — gözləyənlər HR panelində də görünsün.
             var ezamlar = await _ezamiyyetService.GozleyenlerAsync();
+            // Təsdiq gözləyən ləğv müraciətləri (HR panelində xəbərdarlıq üçün).
+            var legvResult = await _mezuniyyetService.GetLegvTelebleriAsync();
 
             var vm = new TesdiqIndexVM
             {
                 Mezuniyyetler = mezResult.Success ? mezResult.Data!.ToList() : new(),
                 Icazeler = icazeResult.Success ? icazeResult.Data!.ToList() : new(),
                 Ezamiyyetler = ezamlar.ToList(),
+                LegvTelebSayi = legvResult.Success ? legvResult.Data!.Count : 0,
                 RolBasliq = "HR Paneli",
                 RolAciqlamasi = "Son mərhələ — müraciətləri rəsmiləşdirin",
                 Rol = StrukturRolTipi.Hr

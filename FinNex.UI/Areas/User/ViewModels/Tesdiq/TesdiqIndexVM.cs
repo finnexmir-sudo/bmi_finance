@@ -14,6 +14,9 @@ namespace FinNex.UI.Areas.User.ViewModels.Tesdiq
         public string RolAciqlamasi { get; set; } = "";
         public StrukturRolTipi Rol { get; set; }
 
+        // HR panelində: təsdiq gözləyən ləğv müraciətləri sayı (yalnız HR üçün doldurulur).
+        public int LegvTelebSayi { get; set; }
+
         public int MezuniyyetSayi => Mezuniyyetler.Count;
         public int IcazeSayi => Icazeler.Count;
         public int EzamiyyetSayi => Ezamiyyetler.Count;
