@@ -69,15 +69,21 @@
                     <i class="bi bi-shield-check"></i> Dövlət Vəzifəsi Korreksiyası
                 </button>
             }
+            @* HR ləğvi YALNIZ işçinin ləğv müraciəti əsasında — müraciət yoxdursa düymə görünmür *@
             @if ((User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin))
                  && m.Status == MezuniyyetStatus.Tesdiqlenib
                  && m.BaslamaTarixi.Date > DateTime.Today
                  && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
-                 && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+                 && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis
+                 && m.LegvTelebEdilib)
             {
                 <button type="button" onclick="legvModalAc()"
                         style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #ef4444;background:#fef2f2;color:#b91c1c;font-size:13px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-x-circle"></i> Ləğv et
+                    <i class="bi bi-check-circle"></i> Ləğvi təsdiqlə
+                </button>
+                <button type="button" onclick="legvRedModalAc()"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #e8b84b;background:#fffbea;color:#b45309;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-x-circle"></i> Ləğvi rədd et
                 </button>
             }
             @if ((User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin))
@@ -298,7 +304,8 @@
          && m.Status == MezuniyyetStatus.Tesdiqlenib
          && m.BaslamaTarixi.Date > DateTime.Today
          && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
-         && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+         && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis
+         && m.LegvTelebEdilib)
     {
         var qabaqcadanGozleyir = m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
                               && m.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir;
@@ -307,14 +314,19 @@
             <div style="background:#fff;border-radius:12px;width:100%;max-width:460px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
                     <div style="font-size:15px;font-weight:700;color:#b91c1c;">
-                        <i class="bi bi-x-circle" style="margin-right:6px;"></i>
-                        Məzuniyyəti ləğv et
+                        <i class="bi bi-check-circle" style="margin-right:6px;"></i>
+                        İşçinin ləğv müraciətini təsdiqlə
                     </div>
                     <button type="button" onclick="legvModalBag()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
                 </div>
                 <form asp-area="HR" asp-controller="Mezuniyyet" asp-action="HrLegvEt" method="post">
                     <input type="hidden" name="id" value="@m.Id" />
                     <div style="padding:20px;">
+                        <div style="margin-bottom:14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#9a3412;line-height:1.7;">
+                            <i class="bi bi-person-exclamation" style="margin-right:5px;"></i>
+                            <b>İşçinin ləğv müraciəti</b>@(m.LegvTelebTarixi.HasValue ? $" ({m.LegvTelebTarixi:dd.MM.yyyy HH:mm})" : "")<br />
+                            <span style="color:#7c2d12;">Səbəb:</span> @(string.IsNullOrWhiteSpace(m.LegvTelebSebebi) ? "—" : m.LegvTelebSebebi)
+                        </div>
                         <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px;">
                             <b>@m.IsciAdSoyad</b> üçün <b>@m.BaslamaTarixi.ToString("dd.MM.yyyy") – @m.BitmeTarixi.ToString("dd.MM.yyyy")</b>
                             təsdiqlənmiş məzuniyyət ləğv ediləcək. Balans geri qaytarılacaq, davamiyyət qeydləri silinəcək.
@@ -326,8 +338,8 @@
                                 Bu məzuniyyətin <b>gözləyən qabaqcadan ödənişi</b> var — sıfırlanacaq və Mühasibə bildiriş göndəriləcək.
                             </div>
                         }
-                        <label class="fn-sbi-label">Ləğv səbəbi (opsional)</label>
-                        <textarea name="sebeb" class="fn-input" rows="2" placeholder="Səbəbi qeyd edin..."></textarea>
+                        <label class="fn-sbi-label">HR qeydi (opsional)</label>
+                        <textarea name="sebeb" class="fn-input" rows="2" placeholder="Qeyd (opsional)..."></textarea>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
                         <button type="button" onclick="legvModalBag()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">İmtina</button>
@@ -336,9 +348,37 @@
                 </form>
             </div>
         </div>
+
+        @* ── Ləğv müraciətini RƏDD modalı ── *@
+        <div id="legvRedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:12px;width:100%;max-width:440px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
+                    <div style="font-size:15px;font-weight:700;color:#b45309;">
+                        <i class="bi bi-x-circle" style="margin-right:6px;"></i> Ləğv müraciətini rədd et
+                    </div>
+                    <button type="button" onclick="legvRedModalBag()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
+                </div>
+                <form asp-area="HR" asp-controller="Mezuniyyet" asp-action="LegvTelebiRedEt" method="post">
+                    <input type="hidden" name="id" value="@m.Id" />
+                    <div style="padding:20px;">
+                        <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px;">
+                            İşçinin ləğv müraciəti rədd ediləcək — <b>məzuniyyət qüvvədə qalır</b>. İşçiyə bildiriş göndəriləcək.
+                        </div>
+                        <label class="fn-sbi-label">Rədd səbəbi (opsional)</label>
+                        <textarea name="sebeb" class="fn-input" rows="2" placeholder="Səbəbi qeyd edin..."></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
+                        <button type="button" onclick="legvRedModalBag()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">İmtina</button>
+                        <button type="submit" style="padding:8px 18px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Rədd et</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <script>
             function legvModalAc() { document.getElementById('legvModal').style.display = 'flex'; }
             function legvModalBag() { document.getElementById('legvModal').style.display = 'none'; }
+            function legvRedModalAc() { document.getElementById('legvRedModal').style.display = 'flex'; }
+            function legvRedModalBag() { document.getElementById('legvRedModal').style.display = 'none'; }
         </script>
     }
 

@@ -24,6 +24,15 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetIsciMezuniyyetleriAsync(int isciId);
         Task<Result> LegvEtAsync(int id, int isciId);
 
+        // ── İşçi ləğv müraciəti → HR təsdiqi ilə ləğv ──
+        // İşçi təsdiqlənmiş (başlamamış + ödənilməmiş) məzuniyyəti ləğv üçün müraciət
+        // göndərir (səbəblə). Ləğv ETMİR — yalnız bayraq qoyur, HR-a bildiriş gedir.
+        Task<Result> LegvTelebiEtAsync(int id, int isciId, string sebeb);
+        // HR ləğv müraciətini rədd edir — bayraq təmizlənir, işçiyə bildiriş.
+        Task<Result> LegvTelebiRedEtAsync(int id, int hrId, string? sebeb);
+        // HR üçün gözləyən ləğv müraciətləri (LegvTelebEdilib + təsdiqlənmiş).
+        Task<Result<IList<MezuniyyetListDto>>> GetLegvTelebleriAsync();
+
         // ── HR Düzəliş (təsdiqdən sonra, başlanğıc keçməyib) ──
         // Kərpic 1: ödəniş tipini dəyiş (ay-sonu ↔ qabaqcadan).
         // Avans artıq icra olunubsa (Odenilib/PlanliOdenis) bloklanır.

@@ -601,6 +601,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         if (m.Status != MezuniyyetStatus.Tesdiqlenib)
             return Result.Fail("Yalnız təsdiqlənmiş məzuniyyət HR tərəfindən ləğv edilə bilər.");
 
+        // HR YALNIZ işçinin ləğv müraciəti əsasında ləğv edə bilər.
+        if (!m.LegvTelebEdilib)
+            return Result.Fail("HR yalnız işçinin ləğv müraciəti əsasında ləğv edə bilər — əvvəlcə işçi ləğv müraciəti göndərməlidir.");
+
         if (m.BaslamaTarixi.Date <= DateTime.Today)
             return Result.Fail("Məzuniyyət başlayıb (və ya bu gün başlayır) — HR ləğvi mümkün deyil.");
 
@@ -654,6 +658,125 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         return Result.Ok(avansGozleyirdi
             ? "Məzuniyyət ləğv edildi. Gözləyən ödəniş sıfırlandı, Mühasibə bildiriş göndərildi."
             : "Məzuniyyət ləğv edildi.");
+    }
+
+    // ── İşçi ləğv müraciəti — ləğv ETMİR, yalnız bayraq + səbəb + HR-a bildiriş ──
+    public async Task<Result> LegvTelebiEtAsync(int id, int isciId, string sebeb)
+    {
+        if (string.IsNullOrWhiteSpace(sebeb))
+            return Result.Fail("Ləğv səbəbi qeyd edilməlidir.");
+
+        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        if (m == null) return Result.Fail("Müraciət tapılmadı.");
+        if (m.IsciId != isciId) return Result.Fail("Bu müraciət sizə aid deyil.");
+
+        if (m.Status != MezuniyyetStatus.Tesdiqlenib)
+            return Result.Fail("Yalnız təsdiqlənmiş məzuniyyət üçün ləğv müraciəti göndərilə bilər.");
+        if (m.BaslamaTarixi.Date <= DateTime.Today)
+            return Result.Fail("Məzuniyyət başlayıb (və ya bu gün başlayır) — ləğv müraciəti mümkün deyil.");
+        if (m.OdenisStatus == MezuniyyetOdenisStatus.Odenilib ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis)
+            return Result.Fail("Qabaqcadan ödəniş artıq icra olunub/planlanıb — ləğv müraciəti mümkün deyil. HR ilə əlaqə saxlayın.");
+        if (m.LegvTelebEdilib)
+            return Result.Fail("Bu məzuniyyət üçün ləğv müraciəti artıq göndərilib.");
+
+        m.LegvTelebEdilib = true;
+        m.LegvTelebSebebi = sebeb.Trim();
+        m.LegvTelebTarixi = DateTime.Now;
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        await NotifyHrForLegvTelebiAsync(m);
+        return Result.Ok("Ləğv müraciəti HR-a göndərildi. Təsdiqləndikdən sonra məzuniyyət ləğv ediləcək.");
+    }
+
+    // ── HR ləğv müraciətini RƏDD edir — bayraq təmizlənir, işçiyə bildiriş ──
+    public async Task<Result> LegvTelebiRedEtAsync(int id, int hrId, string? sebeb)
+    {
+        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        if (m == null) return Result.Fail("Müraciət tapılmadı.");
+        if (!m.LegvTelebEdilib)
+            return Result.Fail("Bu məzuniyyət üçün ləğv müraciəti yoxdur.");
+
+        m.LegvTelebEdilib = false;
+        m.LegvTelebSebebi = null;
+        m.LegvTelebTarixi = null;
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        await NotifyIsciForLegvRedAsync(m, sebeb);
+        return Result.Ok("Ləğv müraciəti rədd edildi.");
+    }
+
+    // ── HR üçün gözləyən ləğv müraciətləri ──
+    public async Task<Result<IList<MezuniyyetListDto>>> GetLegvTelebleriAsync()
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x => x.LegvTelebEdilib && x.Status == MezuniyyetStatus.Tesdiqlenib,
+                    include: q => q
+                        .Include(m => m.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                        .Include(m => m.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderBy(x => x.LegvTelebTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari.Where(t => t.Aktivdir).Select(t => t.Departament.Ad).FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari.Where(t => t.Aktivdir).Select(t => t.Vezife.Ad).FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
+                    OdenisStatus = m.OdenisStatus,
+                    LegvTelebEdilib = m.LegvTelebEdilib,
+                    LegvTelebSebebi = m.LegvTelebSebebi,
+                    LegvTelebTarixi = m.LegvTelebTarixi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Ləğv müraciətləri gətirilmədi: {ex.Message}");
+        }
+    }
+
+    private async Task NotifyHrForLegvTelebiAsync(Mezuniyyet m)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.HR, RoleNames.Admin },
+            BildirisNovu.MezuniyyetMuraciet,
+            "Məzuniyyət ləğv müraciəti — HR təsdiqi gözləyir",
+            $"{isciAd} ({dovr}) təsdiqlənmiş məzuniyyətinin ləğvini istəyir. Səbəb: {m.LegvTelebSebebi}",
+            redirectUrl: $"/HR/Mezuniyyet/Detal/{m.Id}?returnAction=LegvTelebleri",
+            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+    }
+
+    private async Task NotifyIsciForLegvRedAsync(Mezuniyyet m, string? sebeb)
+    {
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        var sebebMetn = string.IsNullOrWhiteSpace(sebeb) ? "" : $" Səbəb: {sebeb.Trim()}";
+        await _bildirisRouter.NotifyIsciAsync(
+            m.IsciId,
+            BildirisNovu.MezuniyyetMuraciet,
+            "Məzuniyyət ləğv müraciəti rədd edildi",
+            $"{dovr} məzuniyyətiniz üçün ləğv müraciətiniz HR tərəfindən rədd edildi — məzuniyyət qüvvədə qalır.{sebebMetn}",
+            redirectUrl: "/User/Mezuniyyet/Index",
+            mezuniyyetId: m.Id);
     }
 
     /// <summary>
@@ -1187,6 +1310,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     EmrRegem = m.EmrRegem,
                     EmrSuffiks = m.EmrSuffiks,
                     EmrIl = m.EmrIl,
+                    OdenisStatus = m.OdenisStatus,
+                    LegvTelebEdilib = m.LegvTelebEdilib,
+                    LegvTelebSebebi = m.LegvTelebSebebi,
+                    LegvTelebTarixi = m.LegvTelebTarixi,
                 }).ToList();
 
             return Result<IList<MezuniyyetListDto>>.Ok(dtos);
@@ -1697,6 +1824,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             EmrIl = entity.EmrIl,
             SenedYolu = entity.SenedYolu,
             KorreksiyaSebebi = entity.KorreksiyaSebebi,
+            LegvTelebEdilib = entity.LegvTelebEdilib,
+            LegvTelebSebebi = entity.LegvTelebSebebi,
+            LegvTelebTarixi = entity.LegvTelebTarixi,
         };
 
         return Result<MezuniyyetDto>.Ok(dto);

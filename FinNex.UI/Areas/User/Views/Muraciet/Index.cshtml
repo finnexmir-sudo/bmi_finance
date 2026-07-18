@@ -187,10 +187,59 @@
                                         <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv et</button>
                                     </form>
                                 }
+                                else if (m.LegvTelebiMumkun)
+                                {
+                                    <button type="button" class="fn-btn fn-btn--danger-sm" style="margin-top:4px"
+                                            onclick="legvTelebAc(@m.Id)">Ləğv müraciəti</button>
+                                }
+                                else if (m.LegvTelebEdilib)
+                                {
+                                    <span class="fn-badge" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;margin-top:6px">
+                                        <i class="bi bi-hourglass-split"></i> Ləğv tələb olunub
+                                    </span>
+                                }
                             </div>
                         </div>
                     }
                 </div>
+
+                @* ── İşçi ləğv müraciəti modalı (paylaşılan) ── *@
+                <div id="legvTelebModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
+                    <div style="background:#fff;border-radius:12px;width:100%;max-width:440px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
+                            <div style="font-size:15px;font-weight:700;color:#b91c1c;">
+                                <i class="bi bi-x-circle" style="margin-right:6px;"></i> Məzuniyyəti ləğv üçün müraciət
+                            </div>
+                            <button type="button" onclick="legvTelebBag()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
+                        </div>
+                        <form asp-area="User" asp-controller="Mezuniyyet" asp-action="LegvTelebi" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" id="legvTelebId" value="" />
+                            <div style="padding:20px;">
+                                <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px;">
+                                    Bu <b>təsdiqlənmiş</b> məzuniyyətin ləğvi üçün HR-a müraciət göndərilir.
+                                    HR təsdiqlədikdən sonra məzuniyyət ləğv olunacaq və balans geri qaytarılacaq.
+                                </div>
+                                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Ləğv səbəbi <span style="color:#b91c1c">*</span></label>
+                                <textarea name="sebeb" required rows="3" placeholder="Nə üçün ləğv etmək istəyirsiniz?"
+                                          style="width:100%;border:1.5px solid #d1d5db;border-radius:8px;padding:9px 11px;font-size:13px;resize:vertical;"></textarea>
+                            </div>
+                            <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
+                                <button type="button" onclick="legvTelebBag()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">İmtina</button>
+                                <button type="submit" style="padding:8px 18px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Müraciət göndər</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <script>
+                    function legvTelebAc(id) {
+                        document.getElementById('legvTelebId').value = id;
+                        document.getElementById('legvTelebModal').style.display = 'flex';
+                    }
+                    function legvTelebBag() {
+                        document.getElementById('legvTelebModal').style.display = 'none';
+                    }
+                </script>
             }
         }
 

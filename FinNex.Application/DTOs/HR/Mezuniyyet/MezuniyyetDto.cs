@@ -55,6 +55,11 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public string? SenedYolu { get; set; }
         public string? KorreksiyaSebebi { get; set; }
 
+        // İşçinin ləğv müraciəti (HR yalnız bu müraciət əsasında ləğv edir)
+        public bool      LegvTelebEdilib { get; set; }
+        public string?   LegvTelebSebebi { get; set; }
+        public DateTime? LegvTelebTarixi { get; set; }
+
         /// <summary>
         /// SenedYolu-nu ayrı-ayrı yollara parçalayır ("|" ayırıcı ilə).
         /// </summary>

@@ -790,12 +790,16 @@
                                     @if (isHR)
                                     {
                                         <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr"
-                                           class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" && currentAction != "Yenilenmeler" ? "active" : "")">
+                                           class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" && currentAction != "Yenilenmeler" && currentAction != "LegvTelebleri" ? "active" : "")">
                                             <i class="bi bi-tree"></i> Müraciətlər
                                         </a>
                                         <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Aktiv"
                                            class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Aktiv" ? "active" : "")">
                                             <i class="bi bi-airplane"></i> Aktiv Məzuniyyətlər
+                                        </a>
+                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="LegvTelebleri"
+                                           class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "LegvTelebleri" ? "active" : "")">
+                                            <i class="bi bi-x-octagon"></i> Ləğv Müraciətləri
                                         </a>
                                         <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Yenilenmeler"
                                            class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Yenilenmeler" ? "active" : "")">

@@ -212,8 +212,30 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _mezuniyyetService.HrLegvEtAsync(id, sebeb, isciId.Value);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return result.Success
-                ? RedirectToAction(nameof(Hr))
+                ? RedirectToAction(nameof(LegvTelebleri))
                 : RedirectToAction(nameof(Detal), new { id });
+        }
+
+        // İşçinin ləğv müraciətini HR RƏDD edir — məzuniyyət qalır, bayraq təmizlənir.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> LegvTelebiRedEt(int id, string? sebeb)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null) return Forbid();
+            var result = await _mezuniyyetService.LegvTelebiRedEtAsync(id, isciId.Value, sebeb);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(LegvTelebleri));
+        }
+
+        // HR — gözləyən ləğv müraciətləri siyahısı.
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> LegvTelebleri()
+        {
+            var result = await _mezuniyyetService.GetLegvTelebleriAsync();
+            ViewData["Title"] = "Ləğv Müraciətləri";
+            return View("LegvTelebleri", result.Success ? result.Data! : new List<MezuniyyetListDto>());
         }
 
         // HR təsdiqlənmiş məzuniyyətin tarixlərini dəyişir. Qeyd qalır → Detal-a qayıt.

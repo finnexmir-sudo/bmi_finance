@@ -122,5 +122,13 @@ namespace FinNex.Domain.Entities.HR
         //   IstifadeOlunanJetonSaat — neçə jeton saatı xərcləndi (audit üçün)
         public bool     JetonIleOdendi         { get; set; } = false;
         public decimal? IstifadeOlunanJetonSaat { get; set; }
+
+        // ── İşçinin ləğv müraciəti ─────────────────────────────────
+        // İşçi təsdiqlənmiş (başlamamış + ödənilməmiş) məzuniyyəti ləğv etmək
+        // üçün müraciət göndərir. Ləğv YALNIZ HR tərəfindən, bu müraciət əsasında
+        // edilir (HrLegvEtAsync). HR rədd edərsə bayraq təmizlənir.
+        public bool     LegvTelebEdilib { get; set; } = false;
+        public string?  LegvTelebSebebi { get; set; }
+        public DateTime? LegvTelebTarixi { get; set; }
     }
 }

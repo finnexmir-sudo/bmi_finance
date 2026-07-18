@@ -64,6 +64,20 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public bool JetonIleOdendi { get; set; }
         public decimal? IstifadeOlunanJetonSaat { get; set; }
 
+        // ── Ləğv müraciəti ──────────────────────────────────
+        public MezuniyyetOdenisStatus OdenisStatus { get; set; }
+        public bool      LegvTelebEdilib { get; set; }
+        public string?   LegvTelebSebebi { get; set; }
+        public DateTime? LegvTelebTarixi { get; set; }
+
+        // İşçi ləğv müraciəti göndərə bilər: təsdiqlənmiş + başlamamış + ödənilməmiş + hələ tələb edilməmiş
+        public bool LegvTelebiMumkun =>
+            Status == MezuniyyetStatus.Tesdiqlenib
+            && BaslamaTarixi.Date > DateTime.Today
+            && OdenisStatus != MezuniyyetOdenisStatus.Odenilib
+            && OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis
+            && !LegvTelebEdilib;
+
         // Keçilmiş addımlar — rol əsaslı workflow üçün
         public bool SobeReisiKecildi => MuracietSahibiRehberdirmi || MuracietSahibiSobeReisidirmi || MuracietSahibiHrdirmi
             || (SobeReisiTesdiq == null && (int)Status >= 3);

@@ -4262,6 +4262,15 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("KorreksiyaSebebi")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("LegvTelebEdilib")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LegvTelebSebebi")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LegvTelebTarixi")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Nov")
                         .HasColumnType("int");
 
