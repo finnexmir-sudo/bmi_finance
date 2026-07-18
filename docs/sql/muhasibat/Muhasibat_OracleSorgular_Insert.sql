@@ -146,10 +146,9 @@ WHERE  d.date_oper BETWEEN TO_DATE(''{BAS}'',''dd/mm/yyyy'') AND TO_DATE(''{SON}
 /* ── 7. Rezident / qeyri-rezident ────────────────────────────────────── */
 IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Rezident' AND ISNULL(Silinib,0)=0)
 INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'Muhasibat — Rezident', N'Rezident/qeyri-rezident bölgüsü (ABS qalıq)', N'select
-  case when (substr(s.licsch,0,3)=''409''
-             and substr(regexp_substr(l.name_licsch,''\(([^()]*)\)\s*$'',1,1,null,1),5,1)=''5'')
-            or substr(s.licsch,0,5)=''45029''
+VALUES (N'Muhasibat — Rezident', N'Rezident/qeyri-rezident bölgüsü (ABS qalıq) — 409 son rəqəm + qeyri-rez sxem siyahısı', N'select
+  case when (substr(s.licsch,1,3)=''409'' and substr(rtrim(s.licsch),-1,1)=''1'')
+            or substr(s.licsch,1,5) in (''40065'',''41015'',''41025'',''41045'',''41931'',''41941'',''41943'')
        then ''qr'' else ''r'' end tip,
   round(sum(abs(s.saldo_ish_nacval)),2) mebleg,
   count(*) say
@@ -157,9 +156,8 @@ from odb.arh_saldo_ls s, licsch l
 where l.licsch = s.licsch
   and s.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (l.date_close_licsch is null or l.date_close_licsch >= to_date(''{TARIX}'',''dd/mm/yyyy''))
-group by case when (substr(s.licsch,0,3)=''409''
-             and substr(regexp_substr(l.name_licsch,''\(([^()]*)\)\s*$'',1,1,null,1),5,1)=''5'')
-            or substr(s.licsch,0,5)=''45029''
+group by case when (substr(s.licsch,1,3)=''409'' and substr(rtrim(s.licsch),-1,1)=''1'')
+            or substr(s.licsch,1,5) in (''40065'',''41015'',''41025'',''41045'',''41931'',''41941'',''41943'')
        then ''qr'' else ''r'' end', 1, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;

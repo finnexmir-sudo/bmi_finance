@@ -48,9 +48,8 @@ IF @DepId IS NULL
 IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Rezident detal' AND ISNULL(Silinib,0)=0)
 INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
 VALUES (N'Muhasibat — Rezident detal', N'Rezident/qeyri-rezident — hesab-səviyyə detalı (drill-down)', N'select
-  case when (substr(s.licsch,0,3)=''409''
-             and substr(regexp_substr(l.name_licsch,''\(([^()]*)\)\s*$'',1,1,null,1),5,1)=''5'')
-            or substr(s.licsch,0,5)=''45029''
+  case when (substr(s.licsch,1,3)=''409'' and substr(rtrim(s.licsch),-1,1)=''1'')
+            or substr(s.licsch,1,5) in (''40065'',''41015'',''41025'',''41045'',''41931'',''41941'',''41943'')
        then ''qr'' else ''r'' end tip,
   s.licsch hesab, l.name_licsch ad,
   round(abs(s.saldo_ish_nacval),2) mebleg
