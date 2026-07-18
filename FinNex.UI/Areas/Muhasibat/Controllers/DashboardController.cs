@@ -140,7 +140,7 @@ public class DashboardController : Controller
         h.CreateCell(2).SetCellValue("Valyuta");
         h.CreateCell(3).SetCellValue("Öz valyutası");
         h.CreateCell(4).SetCellValue("Manat qarşılığı (AZN)");
-        h.CreateCell(5).SetCellValue("Əlavə");
+        h.CreateCell(5).SetCellValue(string.IsNullOrWhiteSpace(d.ElaveBaslik) ? "Əlavə" : d.ElaveBaslik);
         foreach (var x in d.Setirler)
         {
             var row = sh.CreateRow(r++);
@@ -150,7 +150,12 @@ public class DashboardController : Controller
             if (x.MeblegInval.HasValue) row.CreateCell(3).SetCellValue((double)x.MeblegInval.Value);
             else row.CreateCell(3).SetCellValue("");
             row.CreateCell(4).SetCellValue((double)x.Mebleg);
-            row.CreateCell(5).SetCellValue(x.Elave ?? "");
+            if (d.ElaveReqem)
+            {
+                if (x.ElaveMebleg.HasValue) row.CreateCell(5).SetCellValue((double)x.ElaveMebleg.Value);
+                else row.CreateCell(5).SetCellValue("");
+            }
+            else row.CreateCell(5).SetCellValue(x.Elave ?? "");
         }
         r++;
         KV(sh, r++, "CƏMI", d.Cem);

@@ -15,6 +15,12 @@ public class MuhasibatDetalDto
     public decimal  Cem     { get; set; }          // sətirlərin cəmi = kartdakı rəqəm
     public int      Say     { get; set; }          // sətir sayı
 
+    // Sonuncu sütun ("Qeyd / əlaqə") konfiqurasiyası. Adətən sərbəst mətn (Elave),
+    // amma bəzi drill-down-larda rəqəm sütunu kimi göstərilir (məs. likvidlik
+    // "Cari likvid vəsaitlər" — valyutaya görə sayılan/haircut məbləği).
+    public string?  ElaveBaslik { get; set; }       // sonuncu sütunun başlığı (null → "Qeyd / əlaqə")
+    public bool     ElaveReqem  { get; set; }       // true → sonuncu sütun rəqəmdir (ElaveMebleg, ₼), CƏMİ ona görə
+
     public List<MuhasibatDetalSetirDto> Setirler { get; set; } = new();
 }
 
@@ -25,5 +31,6 @@ public class MuhasibatDetalSetirDto
     public string?  Valyuta     { get; set; }
     public decimal  Mebleg      { get; set; }        // manat qarşılığı (saldo_ish_nacval)
     public decimal? MeblegInval { get; set; }        // öz valyutası (saldo_ish_inval) — AZN-də null/manatla eyni
-    public string?  Elave       { get; set; }        // DPD / kurs / tarix və s. (istəyə bağlı)
+    public string?  Elave       { get; set; }        // DPD / kurs / tarix və s. (istəyə bağlı — mətn)
+    public decimal? ElaveMebleg { get; set; }        // sonuncu sütun rəqəm olanda (məs. sayılan/haircut məbləği ₼)
 }

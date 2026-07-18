@@ -608,11 +608,12 @@ public class MuhasibatService : IMuhasibatService
                             if (lq == "Cari likvid vəsaitlər")
                             {
                                 // LCR haircut: IRR yalnız 50% sayılır, qalan valyutalar 75%.
+                                // Sonuncu sütun rəqəmdir (sayılan məbləğ) — başlıqda qısa qeyd,
+                                // CƏMİ də sayılan məbləğə görə hesablanır.
                                 var ceki = ValyutaAd(valKod) == "IRR" ? 0.50m : 0.75m;
-                                var sayilan = Math.Round(qaliq * ceki, 2)
-                                    .ToString("#,##0.##", System.Globalization.CultureInfo.InvariantCulture)
-                                    .Replace(",", " ");
-                                setir.Elave = $"× {(ceki * 100):0}% = {sayilan} ₼";
+                                setir.ElaveMebleg = Math.Round(qaliq * ceki, 2);
+                                dto.ElaveReqem = true;
+                                dto.ElaveBaslik = "Sayılan (IRR 50% / digər 75%)";
                             }
                             dto.Setirler.Add(setir);
                             continue;
@@ -838,7 +839,11 @@ public class MuhasibatService : IMuhasibatService
             if (s0 is "balans" or "balans-valyuta" or "balans-menfeet" or "likvidlik" or "rezident")
                 dto.Setirler = dto.Setirler.OrderByDescending(x => Math.Abs(x.Mebleg)).ToList();
 
-            dto.Cem = Math.Round(dto.Setirler.Sum(x => x.Mebleg), 2);
+            // Sonuncu sütun rəqəm olanda (məs. likvidlik "Cari likvid vəsaitlər" —
+            // valyutaya görə sayılan/haircut) CƏMİ də həmin yanaşmaya görə sayılır.
+            dto.Cem = dto.ElaveReqem
+                ? Math.Round(dto.Setirler.Sum(x => x.ElaveMebleg ?? x.Mebleg), 2)
+                : Math.Round(dto.Setirler.Sum(x => x.Mebleg), 2);
             dto.Say = dto.Setirler.Count;
             dto.Ugurlu = true;
         }

@@ -117,19 +117,24 @@
                         document.getElementById('mhDB').innerHTML =
                             '<div class="mh-dload">Bu maddə üçün hesab tapılmadı.</div>';
                     } else {
+                        var lastNum = !!d.elaveReqem;
+                        var lastHdr = esc(d.elaveBaslik || 'Qeyd / əlaqə');
                         var html = '<table><thead><tr><th>Hesab / kod</th><th>Ad</th>' +
                             '<th>Val.</th><th class="num">Öz valyutası</th><th class="num">Manat qarşılığı</th>' +
-                            '<th>Qeyd / əlaqə</th></tr></thead><tbody>';
+                            '<th' + (lastNum ? ' class="num"' : '') + '>' + lastHdr + '</th></tr></thead><tbody>';
                         rows.forEach(function (x) {
                             var oz = (x.meblegInval == null)
                                 ? '<span class="muted">—</span>'
                                 : mhNum(x.meblegInval) + ' <span class="muted">' + esc(x.valyuta || '') + '</span>';
+                            var last = lastNum
+                                ? '<td class="num">' + (x.elaveMebleg == null ? '<span class="muted">—</span>' : mhFmt(x.elaveMebleg)) + '</td>'
+                                : '<td class="muted">' + esc(x.elave || '') + '</td>';
                             html += '<tr><td class="kod">' + esc(x.kod) + '</td>' +
                                 '<td>' + (x.ad ? esc(x.ad) : '<span class="muted">—</span>') + '</td>' +
                                 '<td class="muted">' + esc(x.valyuta || '') + '</td>' +
                                 '<td class="num">' + oz + '</td>' +
                                 '<td class="num">' + mhFmt(x.mebleg) + '</td>' +
-                                '<td class="muted">' + esc(x.elave || '') + '</td></tr>';
+                                last + '</tr>';
                         });
                         html += '</tbody></table>';
                         document.getElementById('mhDB').innerHTML = html;
