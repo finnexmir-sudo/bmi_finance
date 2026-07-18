@@ -269,16 +269,16 @@ public class DashboardController : Controller
         KV(sh, r++, "Faiz xərci", m.FaizXerci);
         KV(sh, r++, "Xalis faiz gəliri (NII)", m.XalisFaizGeliri);
         KV(sh, r++, "NIM % (illik, təxmini)", m.Nim);
-        KV(sh, r++, "Ümumi gəlir", m.UmumiGelir);
-        KV(sh, r++, "Ümumi xərc", m.UmumiXerc);
-        KV(sh, r++, "Ehtiyat xərci", m.EhtiyatXerci);
+        KV(sh, r++, "Əməliyyat gəliri (sinif 6/7)", m.UmumiGelir);
+        KV(sh, r++, "Əməliyyat xərci (ehtiyatsız)", m.UmumiXerc);
+        KV(sh, r++, "Ehtiyatdan əvvəl mənfəət", m.EhtiyatdanEvvelMenfeet);
+        KV(sh, r++, "Xalis ehtiyat (net, törədilmiş)", m.XalisEhtiyat);
+        KV(sh, r++, "Xalis mənfəət (GL 50130)", m.XalisMenfeet);
+        KV(sh, r++, "Ehtiyat (gross churn)", m.EhtiyatGross);
         KV(sh, r++, "Xərc/Gəlir %", m.XercGelirNisbeti);
-        KV(sh, r++, "Xalis mənfəət (hesablanmış)", m.XalisMenfeet);
-        KV(sh, r++, "GL mənfəəti (50130)", m.MenfeetGL);
-        KV(sh, r++, "Fərq (yoxlama)", m.Ferq);
         r++;
         r = Bolme(sh, r, "Gəlir strukturu", m.GelirBolgusu);
-        r = Bolme(sh, r, "Xərc strukturu", m.XercBolgusu);
+        r = Bolme(sh, r, "Əməliyyat xərci strukturu", m.XercBolgusu);
         return Yukle(wb, "Menfeet_Zerer");
     }
 

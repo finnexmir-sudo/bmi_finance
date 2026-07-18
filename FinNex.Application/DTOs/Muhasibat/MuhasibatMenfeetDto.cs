@@ -17,15 +17,16 @@ public class MuhasibatMenfeetDto
     public decimal  XalisFaizGeliri  { get; set; }   // NII = faiz gəliri − faiz xərci
     public decimal  Nim              { get; set; }   // xalis faiz marjası % (illik, təxmini)
 
-    public decimal  UmumiGelir       { get; set; }   // bütün gəlir
-    public decimal  UmumiXerc        { get; set; }   // bütün xərc
-    public decimal  XalisMenfeet     { get; set; }   // gəlir − xərc (hesablanmış)
-    public decimal  EhtiyatXerci     { get; set; }   // provision (89)
-    public decimal  XercGelirNisbeti { get; set; }   // Cost/Income % = xərc / gəlir
+    public decimal  UmumiGelir       { get; set; }   // əməliyyat gəliri (sinif 6/7)
+    public decimal  UmumiXerc        { get; set; }   // əməliyyat xərci (sinif 8, EHTİYATSIZ)
+    public decimal  EhtiyatdanEvvelMenfeet { get; set; } // əməliyyat gəliri − əməliyyat xərci
+    public decimal  XalisEhtiyat     { get; set; }   // XALİS ehtiyat = ehtiyatdan əvvəl mənfəət − 50130 (törədilir)
+    public decimal  XalisMenfeet     { get; set; }   // = MenfeetGL (50130) — GL ilə tutuşur
+    public decimal  EhtiyatGross     { get; set; }   // provision (89) GROSS churn — yalnız qeyd üçün
+    public decimal  XercGelirNisbeti { get; set; }   // Cost/Income % = əməliyyat xərci / əməliyyat gəliri
 
     public decimal  IsleyenAktiv     { get; set; }   // NIM məxrəci (faiz gətirən aktiv, SON tarixə)
-    public decimal  MenfeetGL        { get; set; }   // 50130 GL mənfəəti (yoxlama üçün)
-    public decimal  Ferq             { get; set; }   // hesablanmış − GL (reconciliation)
+    public decimal  MenfeetGL        { get; set; }   // 50130 GL mənfəəti
 
     public List<BalansMaddeDto> GelirBolgusu { get; set; } = new();  // gəlir strukturu
     public List<BalansMaddeDto> XercBolgusu  { get; set; } = new();  // xərc strukturu

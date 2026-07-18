@@ -5,7 +5,6 @@
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var gelirJson = Html.Raw(JsonSerializer.Serialize(Model.GelirBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var xercJson = Html.Raw(JsonSerializer.Serialize(Model.XercBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
-    var ferqOk = Math.Abs(Model.Ferq) <= 1m;
 }
 
 <div class="mh-wrap">
@@ -45,26 +44,26 @@
             <div class="mh-kpi mh-kpi--b">
                 <div class="mh-kpi-ic"><i class="bi bi-box-arrow-in-down"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiGelir) <span>₼</span></div>
-                <div class="mh-kpi-l">Ümumi gəlir</div>
+                <div class="mh-kpi-l">Əməliyyat gəliri</div>
             </div>
             <div class="mh-kpi mh-kpi--w">
-                <div class="mh-kpi-ic"><i class="bi bi-box-arrow-up"></i></div>
-                <div class="mh-kpi-v">@Fmt(Model.UmumiXerc) <span>₼</span></div>
-                <div class="mh-kpi-l">Ümumi xərc</div>
+                <div class="mh-kpi-ic"><i class="bi bi-clipboard-check"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.EhtiyatdanEvvelMenfeet) <span>₼</span></div>
+                <div class="mh-kpi-l">Ehtiyatdan əvvəl mənfəət</div>
             </div>
         </div>
 
         <div class="mh-lcr">
             <div class="mh-lcr-main">
-                <div class="mh-lcr-t">Xalis mənfəət (hesablanmış)</div>
+                <div class="mh-lcr-t">Xalis mənfəət (GL — hesab 50130)</div>
                 <div class="mh-lcr-v">@Fmt(Model.XalisMenfeet) <span>₼</span></div>
-                <div class="mh-lcr-s">Xərc/Gəlir <b>@Model.XercGelirNisbeti%</b> · Ehtiyat xərci <b>@Fmt(Model.EhtiyatXerci) ₼</b></div>
+                <div class="mh-lcr-s">Ehtiyatdan əvvəl <b>@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b> · Xərc/Gəlir <b>@Model.XercGelirNisbeti%</b></div>
             </div>
             <div class="mh-lcr-comp">
-                <div><span>GL mənfəəti (hesab 50130)</span><b>@Fmt(Model.MenfeetGL) ₼</b></div>
-                <div><span>Fərq (yoxlama)</span><b class="@(ferqOk ? "mh-ok" : "mh-warn")">@Fmt(Model.Ferq) ₼ @(ferqOk ? "✓" : "⚠")</b></div>
-                <div><span>Faiz gəliri</span><b>@Fmt(Model.FaizGeliri) ₼</b></div>
-                <div><span>Faiz xərci</span><b>@Fmt(Model.FaizXerci) ₼</b></div>
+                <div><span>Əməliyyat gəliri (sinif 6/7)</span><b>@Fmt(Model.UmumiGelir) ₼</b></div>
+                <div><span>Əməliyyat xərci (ehtiyatsız)</span><b>@Fmt(Model.UmumiXerc) ₼</b></div>
+                <div><span>Ehtiyatdan əvvəl mənfəət</span><b class="mh-ok">@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b></div>
+                <div><span>Xalis ehtiyat (net)</span><b class="mh-warn">− @Fmt(Model.XalisEhtiyat) ₼</b></div>
             </div>
         </div>
 
@@ -87,7 +86,7 @@
             </div>
 
             <div class="mh-card">
-                <div class="mh-card-h"><span class="mh-dot mh-dot--r"></span> Xərc strukturu</div>
+                <div class="mh-card-h"><span class="mh-dot mh-dot--r"></span> Əməliyyat xərci (ehtiyatsız)</div>
                 <div class="mh-card-b">
                     <div class="mh-chart"><canvas id="chXerc"></canvas></div>
                     <div class="mh-list">
@@ -107,9 +106,10 @@
         <div class="mh-note">
             <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
             <ul>
-                <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 kredit dövriyyəsi; <b>xərc</b> = sinif 8 debet dövriyyəsi (hesablar hər gün mənfəətə bağlandığı üçün bir tərəf götürülür). Dövr: seçilmiş <b>başlanğıc–son</b> (default YTD).</li>
-                <li><b>NII</b> = faiz gəliri − faiz xərci. <b>NIM</b> = NII / işləyən aktiv (müxbir+banklararası+kredit, SON tarixə) × (365/gün) — illik təxmini.</li>
-                <li><b>Yoxlama:</b> hesablanmış xalis mənfəət, GL-dəki <code>50130</code> "cari ilin mənfəəti" ilə tutuşdurulur. Fərq ≈ 0 olmalıdır (✓); böyük fərq inzibati/əməliyyat xərcinin ayrı yerdə olduğunu göstərə bilər.</li>
+                <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 (kredit); <b>əməliyyat xərci</b> = sinif 8 EHTİYATSIZ (debet). Dövr: <b>başlanğıc–son</b> (default YTD).</li>
+                <li><b>NII</b> = faiz gəliri − faiz xərci. <b>NIM</b> = NII / işləyən aktiv (müxbir+banklararası+kredit, son iş gününə) × (365/gün) — illik təxmini.</li>
+                <li><b>Ehtiyat (sinif 89):</b> hər gün yenidən hesablandığı üçün "gross churn" böyük çıxır (<b>@Fmt(Model.EhtiyatGross) ₼</b>). Ona görə <b>xalis ehtiyat</b> = (ehtiyatdan əvvəl mənfəət − GL mənfəəti) kimi <b>törədilir</b> = <b>@Fmt(Model.XalisEhtiyat) ₼</b>.</li>
+                <li><b>Xalis mənfəət = <code>50130</code></b> (GL). Konstruksiyaya görə: ehtiyatdan əvvəl mənfəət − xalis ehtiyat = 50130. Valyuta/ticarət (66/86, 68/88) gəlir və xərcdə "gross" görünür, amma bir-birini kompensasiya etdiyi üçün cəmi pozmur.</li>
             </ul>
         </div>
     }

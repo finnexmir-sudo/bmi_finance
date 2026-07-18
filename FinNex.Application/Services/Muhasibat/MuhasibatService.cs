@@ -383,7 +383,8 @@ public class MuhasibatService : IMuhasibatService
             var brows = bazaTask.Result;
 
             var gelirD = new Dictionary<string, decimal>();
-            var xercD  = new Dictionary<string, decimal>();
+            var xercD  = new Dictionary<string, decimal>();   // ƏMƏLİYYAT xərci (ehtiyatsız)
+            decimal ehtiyatGross = 0m;                          // 89 provision — gross churn (ayrıca)
             foreach (var r in rows)
             {
                 var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
@@ -393,16 +394,17 @@ public class MuhasibatService : IMuhasibatService
                 var meb = gelir ? kredit : debet;
                 if (meb == 0m) continue;
                 if (gelir) gelirD[kat] = gelirD.GetValueOrDefault(kat) + meb;
-                else       xercD[kat]  = xercD.GetValueOrDefault(kat) + meb;
+                else if (kat == "Ehtiyat xərci") ehtiyatGross += meb;   // gross — hər gün yenidən hesablanır (şişir)
+                else xercD[kat] = xercD.GetValueOrDefault(kat) + meb;
             }
 
             dto.FaizGeliri   = Math.Round(gelirD.GetValueOrDefault("Faiz gəliri"), 2);
             dto.FaizXerci    = Math.Round(xercD.GetValueOrDefault("Faiz xərci"), 2);
-            dto.EhtiyatXerci = Math.Round(xercD.GetValueOrDefault("Ehtiyat xərci"), 2);
-            dto.UmumiGelir   = Math.Round(gelirD.Values.Sum(), 2);
-            dto.UmumiXerc    = Math.Round(xercD.Values.Sum(), 2);
+            dto.EhtiyatGross = Math.Round(ehtiyatGross, 2);
+            dto.UmumiGelir   = Math.Round(gelirD.Values.Sum(), 2);            // əməliyyat gəliri
+            dto.UmumiXerc    = Math.Round(xercD.Values.Sum(), 2);            // əməliyyat xərci (ehtiyatsız)
             dto.XalisFaizGeliri = Math.Round(dto.FaizGeliri - dto.FaizXerci, 2);
-            dto.XalisMenfeet    = Math.Round(dto.UmumiGelir - dto.UmumiXerc, 2);
+            dto.EhtiyatdanEvvelMenfeet = Math.Round(dto.UmumiGelir - dto.UmumiXerc, 2);
             dto.XercGelirNisbeti = dto.UmumiGelir != 0 ? Math.Round(dto.UmumiXerc / dto.UmumiGelir * 100, 2) : 0;
             dto.GelirBolgusu = ToMadde(gelirD, dto.UmumiGelir);
             dto.XercBolgusu  = ToMadde(xercD, dto.UmumiXerc);
@@ -414,7 +416,9 @@ public class MuhasibatService : IMuhasibatService
             decimal menfeetGL = bazaRow != null ? Dec(Val(bazaRow, "menfeet")) : 0m;
             dto.IsleyenAktiv = Math.Round(isleyen, 2);
             dto.MenfeetGL    = Math.Round(menfeetGL, 2);
-            dto.Ferq         = Math.Round(dto.XalisMenfeet - dto.MenfeetGL, 2);
+            // Xalis ehtiyat TÖRƏDİLİR: ehtiyatdan əvvəl mənfəət − GL mənfəəti (89 gross churn əvəzinə real net).
+            dto.XalisEhtiyat = Math.Round(dto.EhtiyatdanEvvelMenfeet - dto.MenfeetGL, 2);
+            dto.XalisMenfeet = dto.MenfeetGL;   // GL ilə tutuşur (konstruksiyaya görə)
 
             // NIM (illik, təxmini) = xalis faiz gəliri / işləyən aktiv × (365/gün).
             var gun = (s - b).Days + 1;
