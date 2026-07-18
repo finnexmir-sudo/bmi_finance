@@ -643,6 +643,7 @@ public class MuhasibatService : IMuhasibatService
                     {
                         var mtip = parts.Length > 1 ? parts[1] : "";
                         var mqeyd = parts.Length > 2 ? parts[2] : "";
+                        var accs = new List<(string hesab, string ad, string vk, decimal q, decimal? inval)>();
                         foreach (var r in rows)
                         {
                             if ((Val(r, "tip")?.ToString() ?? "") != mtip) continue;
@@ -653,8 +654,11 @@ public class MuhasibatService : IMuhasibatService
                             var vk = Val(r, "valyuta")?.ToString() ?? "";
                             var hesab = Val(r, "hesab")?.ToString() ?? mqeyd;
                             decimal? inval = ValyutaAd(vk) == "AZN" ? q : Dec(Val(r, "qaliq_inval"));
-                            dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(vk), q, inval));
+                            accs.Add((hesab, ad, vk, q, inval));
                         }
+                        // Hesab koduna görə sıralı
+                        foreach (var a in accs.OrderBy(a => a.hesab, StringComparer.Ordinal))
+                            dto.Setirler.Add(DSetir(a.hesab, a.ad, ValyutaAd(a.vk), a.q, a.inval));
                         dto.Baslik = "Depozitor hesabları";
                     }
                     else
@@ -684,7 +688,7 @@ public class MuhasibatService : IMuhasibatService
                             else
                                 musteriler[key] = (ad, tip, q, qInval, vad, false);
                         }
-                        foreach (var m in musteriler.OrderByDescending(x => x.Value.meb))
+                        foreach (var m in musteriler.OrderBy(x => x.Key.Contains('|') ? x.Key.Split('|')[1] : x.Key, StringComparer.Ordinal))
                         {
                             var qeyd = m.Key.Contains('|') ? m.Key.Split('|')[1] : m.Key;
                             var v = m.Value;

@@ -83,11 +83,13 @@
                 <div class="mh-card-b">
                     <div class="mh-chart"><canvas id="chVal"></canvas></div>
                     <div class="mh-list">
+                        @{ var vi = 0; var valPal = new[] { "#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#a855f7", "#64748b" }; }
                         @foreach (var v in Model.ValyutaBolgusu)
                         {
+                            var vc = valPal[vi % valPal.Length]; vi++;
                             <div class="mh-row mh-click" data-mhsahe="depozit" data-mhmadde="valyuta:@v.Ad" data-mhbaslik="Depozit — @v.Ad valyutası">
                                 <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
+                                <div class="mh-bar"><span style="width:@(v.Faiz)%;background:@vc"></span></div>
                                 <div class="mh-row-p">@v.Faiz%</div>
                             </div>
                         }
