@@ -32,6 +32,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdElaqeliDetal  = "Muhasibat — Elaqeli detal";
     private const string AdMenfeet       = "Muhasibat — Menfeet zerer";
     private const string AdMenfeetDetal  = "Muhasibat — Menfeet detal";
+    private const string AdMenfeetBaza   = "Muhasibat — Menfeet baza";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -369,11 +370,17 @@ public class MuhasibatService : IMuhasibatService
 
         try
         {
-            // 1) P&L dövriyyə (sinif 6/7 gəlir = kredit; sinif 8 xərc = debet), kateqoriya üzrə.
-            var sql = (await SqlAl(AdMenfeet))
+            // 1) P&L dövriyyə (kateqoriya) + 2) baza (işləyən aktiv + 50130) — PARALEL.
+            var plSql = (await SqlAl(AdMenfeet))
                 .Replace("{BAS}", b.ToString("dd/MM/yyyy"))
                 .Replace("{SON}", s.ToString("dd/MM/yyyy"));
-            var rows = await _oracle.SelectAsync(sql, maxRows: 200);
+            var bazaSql = (await SqlAl(AdMenfeetBaza)).Replace("{SON}", s.ToString("dd/MM/yyyy"));
+
+            var plTask   = _oracle.SelectAsync(plSql, maxRows: 200);
+            var bazaTask = _oracle.SelectAsync(bazaSql, maxRows: 5);
+            await Task.WhenAll(plTask, bazaTask);
+            var rows  = plTask.Result;
+            var brows = bazaTask.Result;
 
             var gelirD = new Dictionary<string, decimal>();
             var xercD  = new Dictionary<string, decimal>();
@@ -400,22 +407,11 @@ public class MuhasibatService : IMuhasibatService
             dto.GelirBolgusu = ToMadde(gelirD, dto.UmumiGelir);
             dto.XercBolgusu  = ToMadde(xercD, dto.UmumiXerc);
 
-            // 2) SON tarixə balans — işləyən aktiv (NIM məxrəci) + 50130 mənfəəti (yoxlama).
-            var bsql = (await SqlAl(AdBalans)).Replace("{TARIX}", s.ToString("dd/MM/yyyy"));
-            var brows = await _oracle.SelectAsync(bsql, maxRows: 200000);
-            decimal isleyen = 0m, menfeetGL = 0m;
-            foreach (var r in brows)
-            {
-                var hesab = Val(r, "hesab")?.ToString() ?? "";
-                var q = Dec(Val(r, "qaliq"));
-                if (q == 0m) continue;
-                if (hesab.StartsWith("50130")) menfeetGL += -q;   // kredit qalıqlı → müsbətə
-                var p2 = hesab.Length >= 2 ? hesab.Substring(0, 2) : "";
-                // Faiz gətirən aktivlər: müxbir/banklararası (11-15) + kreditlər (20-23), yalnız aktiv (q>0).
-                if (q > 0 && p2 is "11" or "12" or "13" or "14" or "15"
-                                   or "20" or "21" or "22" or "23")
-                    isleyen += q;
-            }
+            // 2) Baza nəticəsi — işləyən aktiv (NIM məxrəci) + 50130 mənfəəti (yoxlama).
+            // Kiçik aqreqat (2 rəqəm), ≤SON son iş günü — 200k sətir çəkilmir.
+            var bazaRow = brows.FirstOrDefault();
+            decimal isleyen = bazaRow != null ? Dec(Val(bazaRow, "isleyen")) : 0m;
+            decimal menfeetGL = bazaRow != null ? Dec(Val(bazaRow, "menfeet")) : 0m;
             dto.IsleyenAktiv = Math.Round(isleyen, 2);
             dto.MenfeetGL    = Math.Round(menfeetGL, 2);
             dto.Ferq         = Math.Round(dto.XalisMenfeet - dto.MenfeetGL, 2);

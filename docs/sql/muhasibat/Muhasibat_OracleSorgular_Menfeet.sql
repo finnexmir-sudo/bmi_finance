@@ -55,11 +55,24 @@ where s.date_oper between to_date(''{BAS}'',''dd/mm/yyyy'') and to_date(''{SON}'
   and substr(s.licsch,1,1) in (''6'',''7'',''8'')
 group by s.licsch, substr(s.licsch,1,2)', 1, @DepId, GETDATE(), 0);
 
+/* ── 3. Baza — işləyən aktiv (NIM məxrəci) + 50130 mənfəəti (yoxlama) ─────
+   200k-sətirli tam balansı çəkmək əvəzinə yalnız 2 rəqəm qaytarır (SÜRƏT).
+   date_oper = ≤SON SON İŞ GÜNÜ (şənbə/bazar boş olsa da düzgün gün tapılır). */
+IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Menfeet baza' AND ISNULL(Silinib,0)=0)
+INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
+VALUES (N'Muhasibat — Menfeet baza', N'P&L bazası — işləyən aktiv + 50130 (son iş günü ≤ SON)', N'select
+  round(sum(case when substr(s.licsch,1,2) in (''11'',''12'',''13'',''14'',''15'',''20'',''21'',''22'',''23'')
+                  and s.saldo_ish_nacval > 0 then s.saldo_ish_nacval else 0 end),2) isleyen,
+  round(sum(case when substr(s.licsch,1,5)=''50130'' then -s.saldo_ish_nacval else 0 end),2) menfeet
+from odb.arh_saldo_ls s
+where s.date_oper = (select max(date_oper) from odb.arh_saldo_ls
+                     where date_oper <= to_date(''{SON}'',''dd/mm/yyyy''))', 1, @DepId, GETDATE(), 0);
+
 COMMIT TRAN;
 PRINT N'Mənfəət/Zərər sorğuları əlavə olundu.';
 
 SELECT SorguAdi, DepartamentId, Aktiv FROM OracleSorgular
-WHERE  SorguAdi IN (N'Muhasibat — Menfeet zerer', N'Muhasibat — Menfeet detal');
+WHERE  SorguAdi IN (N'Muhasibat — Menfeet zerer', N'Muhasibat — Menfeet detal', N'Muhasibat — Menfeet baza');
 
 END TRY
 BEGIN CATCH
