@@ -613,7 +613,7 @@ public class MuhasibatService : IMuhasibatService
                                 var ceki = ValyutaAd(valKod) == "IRR" ? 0.50m : 0.75m;
                                 setir.ElaveMebleg = Math.Round(qaliq * ceki, 2);
                                 dto.ElaveReqem = true;
-                                dto.ElaveBaslik = "Sayılan (IRR 50% / digər 75%)";
+                                dto.ElaveBaslik = "Sayılan";
                             }
                             dto.Setirler.Add(setir);
                             continue;
