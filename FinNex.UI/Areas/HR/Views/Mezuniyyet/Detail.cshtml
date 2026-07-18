@@ -62,7 +62,8 @@
             <div class="fn-page-sub">@m.IsciAdSoyad · @NovText(m.Nov)</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-            @if (m.Status == MezuniyyetStatus.Tesdiqlenib && m.Nov == MezuniyyetNovu.Illik)
+            @* Ləğv müraciəti gözləyəndə digər əməliyyat düymələri gizlənir — HR yalnız ləğvi təsdiq/rədd edir *@
+            @if (m.Status == MezuniyyetStatus.Tesdiqlenib && m.Nov == MezuniyyetNovu.Illik && !m.LegvTelebEdilib)
             {
                 <button type="button" onclick="korreksiyaModalAc()"
                         style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #e8b84b;background:#fffbea;color:#b45309;font-size:13px;font-weight:600;cursor:pointer;">
@@ -90,7 +91,8 @@
                  && m.Status == MezuniyyetStatus.Tesdiqlenib
                  && m.BaslamaTarixi.Date > DateTime.Today
                  && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
-                 && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+                 && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis
+                 && !m.LegvTelebEdilib)
             {
                 <button type="button" onclick="tarixModalAc()"
                         style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #6366f1;background:#eef2ff;color:#4338ca;font-size:13px;font-weight:600;cursor:pointer;">
