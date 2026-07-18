@@ -9,7 +9,8 @@
      - valyuta  = SUBSTR(al.licschkre,6,2)
      - kurs     = func_get_kurval(..., al.date_oper)
      - esas     = al.summa,  vk = al.summa_19
-     - gec_gun  = 0  (DPD/NPL tarixli mənbə sonra əlavə olunacaq)
+     - gec_gun  = odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate, x.date_oper))
+                  — view_nacpogprokre_all (x) həmin date_oper üzrə join olunur (tarixli DPD)
 
    Test (16/07/2026): 317 müqavilə, esas+vk ≈ 3 302 470.53.
    Servis {TARIX}-i seçilmiş hesabat tarixi ilə əvəz edir. Tam UPDATE.
@@ -25,14 +26,16 @@ SET    SorguMetni = 'SELECT al.tipkredita tip,
        ROUND(odb.func_get_kurval(SUBSTR(al.licschkre,6,2), al.date_oper), 6) kurs,
        al.summa esas,
        al.summa_19 vk,
-       0 gec_gun,
+       odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate, x.date_oper)) gec_gun,
        al.licschkre muqavile
-FROM   arh_licschkre al, index_otrasli io
+FROM   arh_licschkre al, index_otrasli io, view_nacpogprokre_all x
 WHERE  al.index_otrasli = io.index_otrasli(+)
   AND  al.date_oper = TO_DATE(''{TARIX}'',''dd/mm/yyyy'')
   AND  (al.date_close IS NULL OR al.date_close > TO_DATE(''{TARIX}'',''dd/mm/yyyy''))
-  AND  LENGTH(al.licschkre) = 20',
-       Mahiyyet = N'Kredit portfeli (arh_licschkre, tarix üzrə — tip/təyinat=index_otrasli adı/valyuta)',
+  AND  LENGTH(al.licschkre) = 20
+  AND  al.licschpkre = x.licschpkre AND al.subschkre = x.subschkre
+  AND  x.date_oper = al.date_oper',
+       Mahiyyet = N'Kredit portfeli (arh_licschkre, tarix üzrə — tip/təyinat=index_otrasli/valyuta/DPD)',
        Aktiv = 1, Silinib = 0
 WHERE  SorguAdi = N'Muhasibat — Kredit portfeli';
 
