@@ -83,13 +83,10 @@ public class MuhasibatService : IMuhasibatService
                     continue;
                 }
 
+                // Kredit faizi artıq ayrıca sətir DEYİL — "Müştərilərə kreditlər"ə qatılır
+                // (əsas + faiz + kredit ehtiyatları = xalis kredit). Ona görə kredit_novu
+                // override götürülüb; faiz Tesnif-dən birbaşa "Müştərilərə kreditlər" qalır.
                 var (kat, qrup) = Tesnif(hesab, ad);
-                // Kredit hesabı faizdirsə (arh_licschkre-nin licschpkre/licschppkre sütunları)
-                // əsas borcdan ayrılıb ayrıca "Kredit üzrə faizlər" sətrinə keçir.
-                // Beləliklə "Müştərilərə kreditlər" yalnız əsas borc qalır.
-                if (qrup == "Müştərilərə kreditlər"
-                    && (Val(r, "kredit_novu")?.ToString() ?? "E") == "F")
-                    qrup = "Kredit üzrə faizlər";
                 switch (kat)
                 {
                     case "aktiv":
@@ -605,10 +602,8 @@ public class MuhasibatService : IMuhasibatService
                         else if (depTip == "F") { kat2 = "ohdelik"; bucket = "Fiziki şəxs depozitləri"; disp = -qaliq; }
                         else
                         {
+                            // Faiz artıq ayrıca sətir deyil — Tesnif-dən "Müştərilərə kreditlər" qalır.
                             var (kat, qrup) = Tesnif(hesab, ad);
-                            if (qrup == "Müştərilərə kreditlər"
-                                && (Val(r, "kredit_novu")?.ToString() ?? "E") == "F")
-                                qrup = "Kredit üzrə faizlər";   // faiz — əsas borcdan ayrı sətir
                             kat2 = kat;
                             if (kat == "aktiv") { bucket = qrup; disp = qaliq; }
                             else if (kat == "ohdelik") { bucket = qrup; disp = -qaliq; }
@@ -827,8 +822,7 @@ public class MuhasibatService : IMuhasibatService
         "Banklararası yerləşdirmələr",
         "Digər yerləşdirmələr / likvid aktivlər",
         "Müştərilərə kreditlər",
-        "Kredit üzrə faizlər",
-        "Aktiv üzrə ehtiyatlar",
+        "Digər ehtiyyat",
         "Hesablanmış faizlər və digər aktivlər",
         "Əsas vəsaitlər və qeyri-maddi aktivlər",
         "Digər aktivlər",
@@ -899,11 +893,16 @@ public class MuhasibatService : IMuhasibatService
         if (d1 == '1' || d1 == '2')
         {
             // Ehtiyat / provision alt-qrupu (3-4-cü rəqəm "91", məs. 20910, 21910, 23911) —
-            // kredit qalıqlı (mənfi), aktivin azaldıcısıdır. Brutto kreditlərlə qarışmasın deyə
-            // ayrıca "Aktiv üzrə ehtiyatlar" sətrində göstərilir (kat=aktiv → ümumi aktiv dəyişmir).
+            // kredit qalıqlı (mənfi), aktivin azaldıcısıdır.
+            //  • 20-21 "91" → KREDİT ehtiyatı: kreditin xalis dəyərinə qatılır
+            //    (Müştərilərə kreditlər = əsas + faiz + kredit ehtiyatları).
+            //  • 22-23 "91" (məs. 23911) → kreditlə bağlı DEYİL: ayrıca "Digər ehtiyyat".
             if (hesab.Length >= 4 && hesab.Substring(2, 2) == "91"
-                && p2 is "20" or "21" or "22" or "23")
-                return ("aktiv", "Aktiv üzrə ehtiyatlar");
+                && (p2 == "20" || p2 == "21"))
+                return ("aktiv", "Müştərilərə kreditlər");
+            if (hesab.Length >= 4 && hesab.Substring(2, 2) == "91"
+                && (p2 == "22" || p2 == "23"))
+                return ("aktiv", "Digər ehtiyyat");
 
             string q = p2 switch
             {
