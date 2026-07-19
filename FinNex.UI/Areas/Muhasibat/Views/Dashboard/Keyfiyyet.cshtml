@@ -73,11 +73,17 @@
             <div class="mh-card">
                 <div class="mh-card-h"><span class="mh-dot mh-dot--v"></span> Girov / LTV & Restrukturizasiya</div>
                 <div class="mh-ctx">
-                    <div class="mh-ctx-row"><span>Girovlu kreditlər</span><b>@Fmt(Model.GirovluSay) · @Fmt(Model.GirovluQaliq) ₼</b></div>
-                    <div class="mh-ctx-row"><span>Girovsuz (təminatsız)</span><b class="mh-warn">@Fmt(Model.GirovsuzSay) · @Fmt(Model.GirovsuzQaliq) ₼</b></div>
+                    <div class="mh-ctx-row mh-click" data-mhsahe="kredit-keyfiyyet" data-mhmadde="girovlu" data-mhbaslik="Girovlu kreditlər">
+                        <span><i class="bi bi-shield-lock"></i> Girovlu kreditlər</span><b>@Fmt(Model.GirovluSay) · @Fmt(Model.GirovluQaliq) ₼ <i class="bi bi-chevron-right mh-cr"></i></b>
+                    </div>
+                    <div class="mh-ctx-row mh-click" data-mhsahe="kredit-keyfiyyet" data-mhmadde="girovsuz" data-mhbaslik="Girovsuz (təminatsız) kreditlər">
+                        <span><i class="bi bi-shield-slash"></i> Girovsuz (təminatsız)</span><b class="mh-warn">@Fmt(Model.GirovsuzSay) · @Fmt(Model.GirovsuzQaliq) ₼ <i class="bi bi-chevron-right mh-cr"></i></b>
+                    </div>
                     <div class="mh-ctx-row"><span>Ümumi girov (bazar dəyəri)</span><b class="mh-good">@Fmt(Model.GirovCem) ₼</b></div>
                     <div class="mh-ctx-row"><span>Orta LTV (təminatlı üzrə)</span><b>@Model.OrtaLtv%</b></div>
-                    <div class="mh-ctx-row"><span>Restrukturizasiya edilmiş</span><b>@Fmt(Model.RestruktSay) · @Fmt(Model.RestruktQaliq) ₼</b></div>
+                    <div class="mh-ctx-row mh-click" data-mhsahe="kredit-keyfiyyet" data-mhmadde="restrukt" data-mhbaslik="Restrukturizasiya edilmiş kreditlər">
+                        <span><i class="bi bi-arrow-repeat"></i> Restrukturizasiya edilmiş</span><b>@Fmt(Model.RestruktSay) · @Fmt(Model.RestruktQaliq) ₼ <i class="bi bi-chevron-right mh-cr"></i></b>
+                    </div>
                     <div class="mh-ctx-note">
                         <i class="bi bi-info-circle"></i>
                         <b>Orta LTV</b> = təminatlı kreditlərin qalığı / girovun bazar dəyəri. LTV nə qədər aşağıdırsa,
@@ -168,6 +174,9 @@
     .mh-ctx { padding: 16px 20px; }
     .mh-ctx-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; }
     .mh-ctx-row span { color: #475569; } .mh-ctx-row b { color: #0f172a; }
+    .mh-ctx-row.mh-click { cursor: pointer; margin: 0 -20px; padding-left: 20px; padding-right: 20px; transition: .12s; }
+    .mh-ctx-row.mh-click:hover { background: #f8fafc; }
+    .mh-cr { font-size: 11px; color: #94a3b8; margin-left: 6px; }
     .mh-good { color: #059669; } .mh-warn { color: #dc2626; }
     .mh-ctx-note { margin-top: 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #334155; line-height: 1.6; }
 

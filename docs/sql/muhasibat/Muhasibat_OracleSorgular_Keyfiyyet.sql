@@ -60,23 +60,27 @@ VALUES (N'Muhasibat — Kredit keyfiyyet baza', N'Restrukt + girov/LTV (girovun_
   round(sum(case when g.girov is null then (al.summa+al.summa_19)*round(odb.func_get_kurval(substr(al.licschkre,6,2),al.date_oper),6) else 0 end),2) girovsuz_qaliq,
   round(sum(nvl(g.girov,0)),2) girov_cem
 from arh_licschkre al,
-     (select licschkre, subschkre, sum(girovun_bazar_deyeri) girov from girovun_bazar_deyeri group by licschkre, subschkre) g
+     (select licschkre, sum(girovun_bazar_deyeri) girov from girovun_bazar_deyeri group by licschkre) g
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
   and length(al.licschkre) = 20
-  and al.licschkre = g.licschkre(+) and al.subschkre = g.subschkre(+)', 1, @DepId, GETDATE(), 0);
+  and al.licschkre = g.licschkre(+)', 1, @DepId, GETDATE(), 0);
 
 /* ── 3. Detal (drill-down) ──────────────────────────────────────────────── */
 IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Kredit keyfiyyet detal' AND ISNULL(Silinib,0)=0)
 INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'Muhasibat — Kredit keyfiyyet detal', N'Kredit keyfiyyəti — müqavilə-səviyyə (drill-down)', N'select
+VALUES (N'Muhasibat — Kredit keyfiyyet detal', N'Kredit keyfiyyəti — müqavilə-səviyyə (drill-down: kateqoriya/girov/restrukt)', N'select
   al.licschkre muqavile, al.tipkredita tip,
   greatest(nvl(al.procstavrez,0),nvl(al.procstavrez_19,0)) rez,
-  round((al.summa+al.summa_19)*round(odb.func_get_kurval(substr(al.licschkre,6,2),al.date_oper),6),2) qaliq
-from arh_licschkre al
+  round((al.summa+al.summa_19)*round(odb.func_get_kurval(substr(al.licschkre,6,2),al.date_oper),6),2) qaliq,
+  round(nvl(g.girov,0),2) girov,
+  case when al.date_restructure is not null then 1 else 0 end restrukt
+from arh_licschkre al,
+     (select licschkre, sum(girovun_bazar_deyeri) girov from girovun_bazar_deyeri group by licschkre) g
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
-  and length(al.licschkre) = 20', 1, @DepId, GETDATE(), 0);
+  and length(al.licschkre) = 20
+  and al.licschkre = g.licschkre(+)', 1, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
 PRINT N'Kredit keyfiyyəti sorğuları əlavə olundu.';

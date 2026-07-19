@@ -1180,7 +1180,7 @@ public class MuhasibatService : IMuhasibatService
 
                 case "kredit-keyfiyyet":
                 {
-                    // madde = təsnifat kateqoriyası adı (Standart / Şübhəli / ...).
+                    // madde = təsnifat kateqoriyası (Standart/Şübhəli/...) və ya girovlu/girovsuz/restrukt.
                     var adlar = new Dictionary<int, string>
                     {
                         [1] = "Standart", [2] = "Nəzarət altında", [3] = "Qeyri-standart",
@@ -1190,18 +1190,43 @@ public class MuhasibatService : IMuhasibatService
                     var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
                     foreach (var r in rows)
                     {
-                        var rez = Dec(Val(r, "rez"));
-                        var kat = KeyfiyyetKat(rez);
-                        if (adlar[kat] != madde) continue;
                         var qaliq = Dec(Val(r, "qaliq"));
                         if (qaliq == 0m) continue;
+                        var rez = Dec(Val(r, "rez"));
+                        var girov = Dec(Val(r, "girov"));
+                        var restrukt = (int)Dec(Val(r, "restrukt"));
+                        string? elave;
+                        if (madde == "girovlu")
+                        {
+                            if (girov <= 0m) continue;
+                            var ltv = girov != 0m ? Math.Round(qaliq / girov * 100, 0) : 0;
+                            var girovStr = girov.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+                            elave = $"Girov: {girovStr} ₼ · LTV {ltv:0}%";
+                        }
+                        else if (madde == "girovsuz")
+                        {
+                            if (girov > 0m) continue;
+                            elave = "Təminatsız";
+                        }
+                        else if (madde == "restrukt")
+                        {
+                            if (restrukt != 1) continue;
+                            elave = $"Ehtiyat: {rez:0}%";
+                        }
+                        else
+                        {
+                            if (adlar[KeyfiyyetKat(rez)] != madde) continue;
+                            elave = $"Ehtiyat: {rez:0}%";
+                        }
                         var setir = DSetir(Val(r, "muqavile")?.ToString() ?? "",
                             "Tip " + (Val(r, "tip")?.ToString() ?? ""), null, Math.Round(qaliq, 2));
-                        setir.Elave = $"Ehtiyat: {rez:0}%";
+                        setir.Elave = elave;
                         dto.Setirler.Add(setir);
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
-                    dto.ElaveBaslik = "Ehtiyat dərəcəsi";
+                    dto.ElaveBaslik = madde == "girovlu" ? "Girov / LTV"
+                                    : madde == "girovsuz" ? "Qeyd"
+                                    : "Ehtiyat dərəcəsi";
                     break;
                 }
 
