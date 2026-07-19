@@ -1,49 +1,95 @@
 @{
     var act = ViewContext.RouteData.Values["action"]?.ToString();
+    bool In(params string[] a) => a.Contains(act);
+    string On(string a) => act == a ? "on" : "";
 }
 <div class="mh-tabs">
-    <a asp-action="Icmal" class="mh-tab @(act == "Icmal" ? "on" : "")">
-        <i class="bi bi-speedometer2"></i> Günlük İcmal
-    </a>
-    <a asp-action="Index" class="mh-tab @(act == "Index" ? "on" : "")">
-        <i class="bi bi-clipboard-data"></i> Balans İcmalı
-    </a>
-    <a asp-action="Depozit" class="mh-tab @(act == "Depozit" ? "on" : "")">
-        <i class="bi bi-safe2"></i> Depozitlər
-    </a>
-    <a asp-action="Kredit" class="mh-tab @(act == "Kredit" ? "on" : "")">
-        <i class="bi bi-credit-card"></i> Kredit portfeli
-    </a>
-    <a asp-action="Menfeet" class="mh-tab @(act == "Menfeet" ? "on" : "")">
-        <i class="bi bi-graph-up-arrow"></i> Mənfəət/Zərər
-    </a>
-    <a asp-action="Maturity" class="mh-tab @(act == "Maturity" ? "on" : "")">
-        <i class="bi bi-bar-chart-steps"></i> Pul Axını
-    </a>
-    <a asp-action="Likvidlik" class="mh-tab @(act == "Likvidlik" ? "on" : "")">
-        <i class="bi bi-droplet"></i> Likvidlik
-    </a>
-    <a asp-action="Valyuta" class="mh-tab @(act == "Valyuta" ? "on" : "")">
-        <i class="bi bi-currency-exchange"></i> Valyuta
-    </a>
-    <a asp-action="Rezident" class="mh-tab @(act == "Rezident" ? "on" : "")">
-        <i class="bi bi-globe"></i> Rezidentlik
-    </a>
+    <!-- İcmal -->
+    <div class="mh-tg @(In("Icmal", "Index") ? "act" : "")">
+        <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-speedometer2"></i> İcmal <i class="bi bi-chevron-down mh-cv"></i></button>
+        <div class="mh-tg-menu">
+            <a asp-action="Icmal" class="@On("Icmal")"><i class="bi bi-speedometer2"></i> Günlük İcmal</a>
+            <a asp-action="Index" class="@On("Index")"><i class="bi bi-clipboard-data"></i> Balans İcmalı</a>
+        </div>
+    </div>
+
+    <!-- Kreditlər -->
+    <div class="mh-tg @(In("Kredit", "Maturity") ? "act" : "")">
+        <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-credit-card"></i> Kreditlər <i class="bi bi-chevron-down mh-cv"></i></button>
+        <div class="mh-tg-menu">
+            <a asp-action="Kredit" class="@On("Kredit")"><i class="bi bi-credit-card"></i> Kredit portfeli</a>
+            <a asp-action="Maturity" class="@On("Maturity")"><i class="bi bi-bar-chart-steps"></i> Pul Axını</a>
+        </div>
+    </div>
+
+    <!-- Depozit & Müştəri -->
+    <div class="mh-tg @(In("Depozit", "Rezident") ? "act" : "")">
+        <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-safe2"></i> Depozit & Müştəri <i class="bi bi-chevron-down mh-cv"></i></button>
+        <div class="mh-tg-menu">
+            <a asp-action="Depozit" class="@On("Depozit")"><i class="bi bi-safe2"></i> Depozitlər</a>
+            <a asp-action="Rezident" class="@On("Rezident")"><i class="bi bi-globe"></i> Rezidentlik</a>
+        </div>
+    </div>
+
+    <!-- Gəlirlilik -->
+    <a asp-action="Menfeet" class="mh-tab @On("Menfeet")"><i class="bi bi-graph-up-arrow"></i> Mənfəət/Zərər</a>
+
+    <!-- Likvidlik & Bazar -->
+    <div class="mh-tg @(In("Likvidlik", "Valyuta") ? "act" : "")">
+        <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-droplet"></i> Likvidlik & Bazar <i class="bi bi-chevron-down mh-cv"></i></button>
+        <div class="mh-tg-menu">
+            <a asp-action="Likvidlik" class="@On("Likvidlik")"><i class="bi bi-droplet"></i> Likvidlik</a>
+            <a asp-action="Valyuta" class="@On("Valyuta")"><i class="bi bi-currency-exchange"></i> Valyuta</a>
+        </div>
+    </div>
 </div>
 
 <style>
-    .mh-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 4px; }
+    .mh-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 4px; position: relative; z-index: 20; }
     .mh-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 11px;
         background: #eef2f7; color: #475569; font-size: 13.5px; font-weight: 600; text-decoration: none;
-        border: 1px solid transparent; transition: .15s; }
+        border: 1px solid transparent; transition: .15s; cursor: pointer; }
     .mh-tab:hover { background: #e2e8f0; color: #1e293b; }
     .mh-tab.on { background: linear-gradient(135deg, #16478a, #1e63b8); color: #fff; box-shadow: 0 6px 16px rgba(16,71,138,.28); }
-    .mh-tab--soon { background: transparent; color: #94a3b8; border: 1px dashed #cbd5e1; cursor: default; }
-    .mh-tab--soon em { font-style: normal; font-size: 10.5px; background: #f1f5f9; padding: 1px 6px; border-radius: 20px; margin-left: 2px; }
+    .mh-tab--grp { font-family: inherit; }
+    .mh-cv { font-size: 10px; opacity: .7; transition: transform .15s; }
+
+    /* Qrup dropdown */
+    .mh-tg { position: relative; }
+    .mh-tg.act > .mh-tab--grp { background: linear-gradient(135deg, #16478a, #1e63b8); color: #fff; box-shadow: 0 6px 16px rgba(16,71,138,.28); }
+    .mh-tg-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; background: #fff;
+        border: 1px solid #e6ebf2; border-radius: 12px; box-shadow: 0 14px 34px rgba(2,6,23,.16); padding: 6px;
+        display: none; flex-direction: column; gap: 2px; z-index: 30; }
+    .mh-tg:hover .mh-tg-menu, .mh-tg.open .mh-tg-menu { display: flex; }
+    .mh-tg:hover .mh-cv, .mh-tg.open .mh-cv { transform: rotate(180deg); }
+    .mh-tg-menu a { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 9px;
+        font-size: 13.5px; font-weight: 600; color: #475569; text-decoration: none; white-space: nowrap; }
+    .mh-tg-menu a:hover { background: #eef2f7; color: #16478a; }
+    .mh-tg-menu a.on { background: #eaf1fb; color: #16478a; }
+    .mh-tg-menu a i { font-size: 15px; opacity: .8; }
+
     .mh-xls { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; background: rgba(255,255,255,.16);
         color: #fff; padding: 7px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; text-decoration: none;
         border: 1px solid rgba(255,255,255,.28); width: fit-content; }
     .mh-xls:hover { background: rgba(255,255,255,.3); color: #fff; }
 </style>
+
+<script>
+    (function () {
+        // Klik ilə aç/bağla (mobil + toxunma üçün — desktop-da hover onsuz işləyir).
+        document.querySelectorAll('.mh-tg > .mh-tab--grp').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var tg = btn.parentElement;
+                var acig = tg.classList.contains('open');
+                document.querySelectorAll('.mh-tg.open').forEach(function (x) { x.classList.remove('open'); });
+                if (!acig) tg.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.mh-tg.open').forEach(function (x) { x.classList.remove('open'); });
+        });
+    })();
+</script>
 
 @await Html.PartialAsync("_MhDetal")
