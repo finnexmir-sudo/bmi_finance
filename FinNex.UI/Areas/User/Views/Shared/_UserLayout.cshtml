@@ -1,5 +1,6 @@
 @inject FinNex.Application.Interfaces.IDashboardService _layoutDashSvc
 @inject FinNex.Application.Interfaces.Pid.IMehkemeIsiService _pidSorguSvc
+@inject FinNex.Application.Interfaces.IUserPermissionService _permSvc
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
@@ -15,6 +16,23 @@
 
     var tesdiqGorunur = isSobeReisi || isRehberRol || isHR;
     var hrGorunur = isHR || isRehberRol;
+
+    // Maliyyə & Risk Paneli girişi:
+    //  - Tam maliyyə işçisi (Admin/Muhasib/HR) BÜTÜN mühasibat menyusunu görür.
+    //  - Rəhbər / risk (icazə ilə) YALNIZ paneli görür — maaş/büdcə/xərc yox.
+    var isTamMaliyye = isAdmin || User.IsInRole(RoleNames.Muhasib) || isHR;
+    var hasPanelPerm = false;
+    if (!isTamMaliyye && !isRehberRol && User.Identity?.IsAuthenticated == true)
+    {
+        var _pid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(_pid, out var _puid))
+        {
+            var _pr = await _permSvc.HasPermissionAsync(_puid, "muhasibat_dashboard_bax");
+            hasPanelPerm = _pr.Success && _pr.Data;
+        }
+    }
+    var canPanel = isTamMaliyye || isRehberRol || hasPanelPerm;   // paneli görə bilər
+    var panelYalniz = canPanel && !isTamMaliyye;                  // YALNIZ paneli görür
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
     if (string.IsNullOrEmpty(_layoutVezife) && User.Identity?.IsAuthenticated == true)
@@ -203,14 +221,14 @@
                             </div>
                         </a>
                     }
-                    @if (isMuhasib)
+                    @if (canPanel)
                     {
                         <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Index"
                            class="fn-topnav-dd-item @(activeModule == "muhasibat" ? "fn-topnav-dd-item--active" : "")">
                             <i class="bi bi-bank2"></i>
                             <div>
-                                <div class="fn-topnav-dd-title">Mühasibatlıq</div>
-                                <div class="fn-topnav-dd-sub">Balans, likvidlik · maaş, avans, büdcə</div>
+                                <div class="fn-topnav-dd-title">@(panelYalniz ? "Maliyyə & Risk Paneli" : "Mühasibatlıq")</div>
+                                <div class="fn-topnav-dd-sub">@(panelYalniz ? "Balans, kredit keyfiyyəti, likvidlik, risk" : "Balans, likvidlik · maaş, avans, büdcə")</div>
                             </div>
                         </a>
                     }
@@ -911,7 +929,23 @@
                     var mhMaliyyeActive = currentArea == "Muhasibat" || currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat" || currentController == "DovriOdenis" || currentController == "GozlenilenXerc" || currentController == "MaliyyeDashboard"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
 
-                    @if (!isRehberOnly)
+                    @if (panelYalniz)
+                    {
+                        <div class="fn-nav-g open">
+                            <button type="button" class="fn-nav-g-head">
+                                <span>Maliyyə & Risk</span>
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                            <div class="fn-nav-g-body">
+                                <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" ? "active" : "")">
+                                    <i class="bi bi-bank2"></i> Maliyyə & Risk Paneli
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!panelYalniz && !isRehberOnly)
                     {
                         <div class="fn-nav-g @(mhMaliyyeActive ? "open" : "")">
                             <button type="button" class="fn-nav-g-head">
@@ -921,7 +955,7 @@
                             <div class="fn-nav-g-body">
                                 <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "Muhasibat" ? "active" : "")">
-                                    <i class="bi bi-bank2"></i> Mühasibat Dashboard
+                                    <i class="bi bi-bank2"></i> Maliyyə & Risk Paneli
                                 </a>
                                 <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">
@@ -955,6 +989,8 @@
                         </div>
                     }
 
+                    @if (!panelYalniz)
+                    {
                     <div class="fn-nav-g @(mhMaasActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Əmək Haqqı</span>
@@ -991,8 +1027,9 @@
                             </a>
                         </div>
                     </div>
+                    }
 
-                    @if (!isRehberOnly)
+                    @if (!panelYalniz && !isRehberOnly)
                     {
                         <div class="fn-nav-g @(mhParamActive ? "open" : "")">
                             <button type="button" class="fn-nav-g-head">

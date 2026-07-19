@@ -37,7 +37,9 @@ public class DashboardController : Controller
 
     private async Task<bool> IcazeVarAsync()
     {
-        if (User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Muhasib))
+        // Admin/Muhasib — tam giriş; Rehber — panel (icmal/risk) görüntüsü;
+        // qıraqdan icazə (muhasibat_dashboard_bax) — yalnız bu panel.
+        if (User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Muhasib) || User.IsInRole(RoleNames.Rehber))
             return true;
 
         var u = await _userManager.GetUserAsync(User);
