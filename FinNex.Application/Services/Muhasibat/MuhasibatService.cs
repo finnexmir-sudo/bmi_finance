@@ -36,6 +36,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdMaturity          = "Muhasibat — Maturity ladder";
     private const string AdMaturityKontekst  = "Muhasibat — Maturity kontekst";
     private const string AdKeyfiyyet       = "Muhasibat — Kredit keyfiyyet";
+    private const string AdKeyfiyyetGirov  = "Muhasibat — Kredit girov";
     private const string AdKeyfiyyetBaza   = "Muhasibat — Kredit keyfiyyet baza";
     private const string AdKeyfiyyetDetal  = "Muhasibat — Kredit keyfiyyet detal";
 
@@ -578,7 +579,37 @@ public class MuhasibatService : IMuhasibatService
                     dto.Kateqoriyalar.Add(kd);
                 }
 
-            // 2) Baza — restrukt + girov/LTV (bir sətir).
+            // 2) Girov strukturu — növ üzrə (tipzaloga → tipzal.name). Təminatsız = tipzaloga 8.
+            var gsql = (await SqlAl(AdKeyfiyyetGirov)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var grows = await _oracle.SelectAsync(gsql, maxRows: 100);
+            foreach (var r in grows)
+            {
+                var kod = (int)Dec(Val(r, "kod"));
+                var qaliq = Math.Round(Dec(Val(r, "qaliq")), 2);
+                if (qaliq == 0m) continue;
+                var ad = Val(r, "ad")?.ToString();
+                if (string.IsNullOrWhiteSpace(ad)) ad = kod == 8 ? "Girovsuz" : $"Digər (#{kod})";
+                var girov = Math.Round(Dec(Val(r, "girov")), 2);
+                var say = (int)Dec(Val(r, "say"));
+                // Girovsuz (tipzaloga 8) — təminatsız; qalanı təminatlı.
+                if (kod == 8) { dto.GirovsuzSay += say; dto.GirovsuzQaliq += qaliq; }
+                else { dto.GirovluSay += say; dto.GirovluQaliq += qaliq; dto.GirovCem += girov; }
+                dto.GirovStrukturu.Add(new KeyfiyyetKatDto
+                {
+                    Ad = ad, Say = say, Qaliq = qaliq, Ehtiyat = girov,
+                    Reng = kod == 8 ? "#94a3b8" : "#7c3aed"
+                });
+            }
+            dto.GirovluQaliq  = Math.Round(dto.GirovluQaliq, 2);
+            dto.GirovsuzQaliq = Math.Round(dto.GirovsuzQaliq, 2);
+            dto.GirovCem      = Math.Round(dto.GirovCem, 2);
+            dto.OrtaLtv       = dto.GirovCem != 0 ? Math.Round(dto.GirovluQaliq / dto.GirovCem * 100, 1) : 0;
+            var gtotal = dto.GirovluQaliq + dto.GirovsuzQaliq;
+            foreach (var g in dto.GirovStrukturu)
+                g.Faiz = gtotal != 0 ? Math.Round(g.Qaliq / gtotal * 100, 1) : 0;
+            dto.GirovStrukturu = dto.GirovStrukturu.OrderByDescending(x => x.Qaliq).ToList();
+
+            // 3) Restrukt (bir sətir).
             var bsql = (await SqlAl(AdKeyfiyyetBaza)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var brows = await _oracle.SelectAsync(bsql, maxRows: 5);
             var br = brows.FirstOrDefault();
@@ -586,12 +617,6 @@ public class MuhasibatService : IMuhasibatService
             {
                 dto.RestruktSay   = (int)Dec(Val(br, "restrukt_say"));
                 dto.RestruktQaliq = Math.Round(Dec(Val(br, "restrukt_qaliq")), 2);
-                dto.GirovluSay    = (int)Dec(Val(br, "girovlu_say"));
-                dto.GirovluQaliq  = Math.Round(Dec(Val(br, "girovlu_qaliq")), 2);
-                dto.GirovsuzSay   = (int)Dec(Val(br, "girovsuz_say"));
-                dto.GirovsuzQaliq = Math.Round(Dec(Val(br, "girovsuz_qaliq")), 2);
-                dto.GirovCem      = Math.Round(Dec(Val(br, "girov_cem")), 2);
-                dto.OrtaLtv       = dto.GirovCem != 0 ? Math.Round(dto.GirovluQaliq / dto.GirovCem * 100, 1) : 0;
             }
 
             dto.Ugurlu = true;
@@ -1191,6 +1216,7 @@ public class MuhasibatService : IMuhasibatService
                         [1] = "Standart", [2] = "Nəzarət altında", [3] = "Qeyri-standart",
                         [4] = "Şübhəli", [5] = "Ümidsiz (zərər)"
                     };
+                    var kateqoriyaMi = adlar.Values.Contains(madde);
                     var sql = (await SqlAl(AdKeyfiyyetDetal)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
                     foreach (var r in rows)
@@ -1198,20 +1224,16 @@ public class MuhasibatService : IMuhasibatService
                         var qaliq = Dec(Val(r, "qaliq"));
                         if (qaliq == 0m) continue;
                         var rez = Dec(Val(r, "rez"));
-                        var girov = Dec(Val(r, "girov"));
                         var restrukt = (int)Dec(Val(r, "restrukt"));
+                        var kod = (int)Dec(Val(r, "kod"));
+                        var girov = Dec(Val(r, "girov"));
+                        var girovnov = Val(r, "ad")?.ToString();
+                        if (string.IsNullOrWhiteSpace(girovnov)) girovnov = kod == 8 ? "Girovsuz" : $"Digər (#{kod})";
                         string? elave;
-                        if (madde == "girovlu")
+                        if (kateqoriyaMi)
                         {
-                            if (girov <= 0m) continue;
-                            var ltv = girov != 0m ? Math.Round(qaliq / girov * 100, 0) : 0;
-                            var girovStr = girov.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
-                            elave = $"Girov: {girovStr} ₼ · LTV {ltv:0}%";
-                        }
-                        else if (madde == "girovsuz")
-                        {
-                            if (girov > 0m) continue;
-                            elave = "Təminatsız";
+                            if (adlar[KeyfiyyetKat(rez)] != madde) continue;
+                            elave = $"Ehtiyat: {rez:0}%";
                         }
                         else if (madde == "restrukt")
                         {
@@ -1220,8 +1242,11 @@ public class MuhasibatService : IMuhasibatService
                         }
                         else
                         {
-                            if (adlar[KeyfiyyetKat(rez)] != madde) continue;
-                            elave = $"Ehtiyat: {rez:0}%";
+                            // Girov növü üzrə.
+                            if (girovnov != madde) continue;
+                            var girovStr = girov.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+                            var ltv = girov > 0m ? $" · LTV {Math.Round(qaliq / girov * 100, 0):0}%" : "";
+                            elave = girov > 0m ? $"Girov: {girovStr} ₼{ltv}" : "—";
                         }
                         var setir = DSetir(Val(r, "muqavile")?.ToString() ?? "",
                             "Tip " + (Val(r, "tip")?.ToString() ?? ""), null, Math.Round(qaliq, 2));
@@ -1229,9 +1254,7 @@ public class MuhasibatService : IMuhasibatService
                         dto.Setirler.Add(setir);
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
-                    dto.ElaveBaslik = madde == "girovlu" ? "Girov / LTV"
-                                    : madde == "girovsuz" ? "Qeyd"
-                                    : "Ehtiyat dərəcəsi";
+                    dto.ElaveBaslik = kateqoriyaMi || madde == "restrukt" ? "Ehtiyat dərəcəsi" : "Girov / LTV";
                     break;
                 }
 

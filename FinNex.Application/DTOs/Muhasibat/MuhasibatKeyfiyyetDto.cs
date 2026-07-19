@@ -22,13 +22,16 @@ public class MuhasibatKeyfiyyetDto
     public int     RestruktSay   { get; set; }
     public decimal RestruktQaliq { get; set; }
 
-    // Girov / LTV
+    // Girov / LTV (mənbə: arh_licschkre.tipzaloga + summa_zaloga/summa_pereocen_zaloga)
     public int     GirovluSay    { get; set; }
     public decimal GirovluQaliq  { get; set; }
     public int     GirovsuzSay   { get; set; }
     public decimal GirovsuzQaliq { get; set; }
-    public decimal GirovCem      { get; set; }
-    public decimal OrtaLtv       { get; set; }   // təminatlı qalıq / girov, %
+    public decimal GirovCem      { get; set; }   // girov dəyəri cəmi (yenidən qiymətləndirmə üstün)
+    public decimal OrtaLtv       { get; set; }   // təminatlı qalıq / girov dəyəri, %
+
+    // Girov strukturu — növ üzrə (tipzaloga → tipzal.name).
+    public List<KeyfiyyetKatDto> GirovStrukturu { get; set; } = new();
 }
 
 public class KeyfiyyetKatDto
