@@ -35,20 +35,20 @@
                 <div class="mh-kpi-v">@Fmt(Model.UmumiPortfel) <span>₼</span></div>
                 <div class="mh-kpi-l">Ümumi portfel · @Model.Say açıq yerləşdirmə</div>
             </div>
-            <div class="mh-kpi mh-kpi--f">
-                <div class="mh-kpi-ic"><i class="bi bi-percent"></i></div>
-                <div class="mh-kpi-v">@Model.OrtaFaiz%</div>
-                <div class="mh-kpi-l">Orta faiz (portfel gəlirliliyi)</div>
-            </div>
             <div class="mh-kpi mh-kpi--g">
-                <div class="mh-kpi-ic"><i class="bi bi-graph-up-arrow"></i></div>
-                <div class="mh-kpi-v">@Fmt(Model.IllikGelir) <span>₼</span></div>
-                <div class="mh-kpi-l">İllik gözlənilən faiz gəliri</div>
+                <div class="mh-kpi-ic"><i class="bi bi-shield-check"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.XalisPortfel) <span>₼</span></div>
+                <div class="mh-kpi-l">Xalis portfel (ehtiyatdan sonra)</div>
             </div>
-            <div class="mh-kpi mh-kpi--b mh-click" data-mhsahe="yerlesdirme" data-mhmadde="banklararasi" data-mhbaslik="Banklararası yerləşdirmələr">
-                <div class="mh-kpi-ic"><i class="bi bi-arrow-left-right"></i></div>
-                <div class="mh-kpi-v">@Fmt(Model.BanklararasiMebleg) <span>₼</span></div>
-                <div class="mh-kpi-l">Banklararası (AMB xaric) · @Model.BanklararasiSay</div>
+            <div class="mh-kpi mh-kpi--w">
+                <div class="mh-kpi-ic"><i class="bi bi-shield-shaded"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.Ehtiyat) <span>₼</span></div>
+                <div class="mh-kpi-l">Ehtiyat (qarşılıq) · @Model.EhtiyatFaiz%</div>
+            </div>
+            <div class="mh-kpi mh-kpi--r mh-click" data-mhsahe="yerlesdirme" data-mhmadde="vaxti-kecmis" data-mhbaslik="Vaxtı keçmiş / problemli yerləşdirmələr">
+                <div class="mh-kpi-ic"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.VaxtiKecmisMebleg) <span>₼</span></div>
+                <div class="mh-kpi-l">Vaxtı keçmiş (qayıtmayıb) · @Model.VaxtiKecmisSay</div>
             </div>
         </div>
 
@@ -63,7 +63,7 @@
                             <div class="mh-row mh-click" data-mhsahe="yerlesdirme" data-mhmadde="kontragent:@k.Ad" data-mhbaslik="Yerləşdirmə — @k.Ad">
                                 <div class="mh-row-t"><span><i class="bi bi-circle-fill" style="color:@k.Reng;font-size:9px"></i> @k.Ad <em>· @k.Say</em></span><b>@Fmt(k.Qaliq) ₼</b></div>
                                 <div class="mh-bar"><span style="width:@(k.Pay)%;background:@k.Reng"></span></div>
-                                <div class="mh-row-p">Faiz: @k.Faiz% · @k.Pay%</div>
+                                <div class="mh-row-p">Faiz: @k.Faiz% · Pay @k.Pay%@(k.Ehtiyat > 0 ? $" · ⚠ ehtiyat {Fmt(k.Ehtiyat)} ₼" : "")</div>
                             </div>
                         }
                     </div>
@@ -71,9 +71,23 @@
             </div>
 
             <div class="mh-card">
-                <div class="mh-card-h"><span class="mh-dot mh-dot--t"></span> Struktur & Müddət</div>
+                <div class="mh-card-h"><span class="mh-dot mh-dot--t"></span> Gəlirlilik, konsentrasiya & struktur</div>
                 <div class="mh-ctx">
-                    <div class="mh-gt">AMB & banklararası</div>
+                    <div class="mh-gt">Gəlirlilik</div>
+                    <div class="mh-ctx-row"><span>Orta faiz (portfel gəlirliliyi)</span><b class="mh-good">@Model.OrtaFaiz%</b></div>
+                    <div class="mh-ctx-row"><span>İllik gözlənilən faiz gəliri</span><b>@Fmt(Model.IllikGelir) ₼</b></div>
+
+                    <div class="mh-gt" style="margin-top:14px">Konsentrasiya</div>
+                    <div class="mh-ctx-row"><span>Ən böyük kontragent (@Model.EnBoyukAd)</span><b class="@(Model.EnBoyukPay >= 50 ? "mh-warn" : "")">@Model.EnBoyukPay%</b></div>
+                    <div class="mh-ctx-row"><span>TOP-3 kontragent payı</span><b>@Model.Top3Pay%</b></div>
+                    @if (!string.IsNullOrEmpty(Model.EnBoyukBankAd))
+                    {
+                        <div class="mh-ctx-row mh-click" data-mhsahe="yerlesdirme" data-mhmadde="kontragent:@Model.EnBoyukBankAd" data-mhbaslik="Yerləşdirmə — @Model.EnBoyukBankAd">
+                            <span>AMB xaric ən böyük (@Model.EnBoyukBankAd)</span><b>@Fmt(Model.EnBoyukBankMebleg) ₼ <i class="bi bi-chevron-right mh-cr"></i></b>
+                        </div>
+                    }
+
+                    <div class="mh-gt" style="margin-top:14px">AMB & banklararası</div>
                     <div class="mh-ctx-row mh-click" data-mhsahe="yerlesdirme" data-mhmadde="amb" data-mhbaslik="AMB overnight yerləşdirmələr">
                         <span><i class="bi bi-bank2"></i> AMB (overnight) <em>· @Model.AmbSay</em></span>
                         <b>@Fmt(Model.AmbMebleg) ₼ <i class="bi bi-chevron-right mh-cr"></i></b>
@@ -113,8 +127,9 @@
             <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
             <ul>
                 <li>Yerləşdirilmiş vəsaitlər — bankın <b>başqa banklara / AMB-yə</b> qoyduğu vəsaitlər (aktivin o biri tərəfi, kredit portfelinin güzgüsü). Açıq üzrə (<code>date_close</code> boş) sayılır.</li>
-                <li><b>Orta faiz</b> AZN-qalıqla ölçülüdür (portfelin real gəlirliliyi). <b>İllik gəlir</b> = Σ(qalıq × faiz / 100) — cari portfelin illik gözlənilən faiz gəliri.</li>
-                <li>İstənilən sətrə/karta klik → arxasındakı yerləşdirmə müqavilələri (faiz, müddət, plan-bağlanma tarixi ilə).</li>
+                <li><b>Ehtiyat</b> = <code>procstavrez</code> (problemli kontragent qarşılığı); <b>Xalis portfel</b> = portfel − ehtiyat (real geri qaytarıla bilən). <b>Vaxtı keçmiş</b> = plan-bağlanma tarixi keçib, amma yerləşdirmə hələ açıqdır (pul qayıtmayıb).</li>
+                <li><b>Orta faiz</b> AZN-qalıqla ölçülüdür (gəlirlilik). <b>İllik gəlir</b> = Σ(qalıq × faiz / 100). <b>Konsentrasiya</b> — bir kontragentə həddindən artıq bağlılıq riski.</li>
+                <li>İstənilən sətrə/karta klik → arxasındakı yerləşdirmə müqavilələri (faiz, ehtiyat, plan-bağlanma tarixi ilə).</li>
             </ul>
         </div>
     }
@@ -163,9 +178,9 @@
     .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
     .mh-kpi { position: relative; border-radius: 16px; padding: 20px; color: #fff; overflow: hidden; box-shadow: 0 8px 22px rgba(2,6,23,.12); }
     .mh-kpi--p { background: linear-gradient(135deg, #0f766e, #14b8a6); }
-    .mh-kpi--f { background: linear-gradient(135deg, #0369a1, #0ea5e9); }
     .mh-kpi--g { background: linear-gradient(135deg, #047857, #10b981); }
-    .mh-kpi--b { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+    .mh-kpi--w { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .mh-kpi--r { background: linear-gradient(135deg, #b91c1c, #ef4444); }
     .mh-kpi.mh-click { cursor: pointer; transition: transform .12s; }
     .mh-kpi.mh-click:hover { transform: translateY(-2px); }
     .mh-kpi-ic { position: absolute; right: 14px; top: 12px; font-size: 30px; opacity: .28; }
@@ -196,6 +211,7 @@
     .mh-ctx-row em { font-style: normal; color: #94a3b8; font-size: 11.5px; }
     .mh-cr { font-size: 11px; color: #94a3b8; margin-left: 6px; }
     .mh-gt { font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .3px; margin-bottom: 4px; }
+    .mh-good { color: #059669; } .mh-warn { color: #dc2626; }
     .mh-ctx-note { margin-top: 12px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #334155; line-height: 1.6; }
 
     .mh-note { margin-top: 18px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 14px; padding: 16px 22px; }

@@ -645,11 +645,11 @@ public class MuhasibatService : IMuhasibatService
             var sql = (await SqlAl(AdYerlesdirme)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 5000);
 
-            // kontragent adı → (AZN qalıq, say, faiz×qalıq ağırlığı)
-            var kontragentD = new Dictionary<string, (decimal qaliq, int say, decimal faizAgirliq)>();
+            // kontragent adı → (AZN qalıq, say, faiz×qalıq ağırlığı, ehtiyat AZN, AMB-mi)
+            var kontragentD = new Dictionary<string, (decimal qaliq, int say, decimal faizAgirliq, decimal ehtiyat, bool amb)>();
             var valyutaD = new Dictionary<string, decimal>();
             var muddetD  = new Dictionary<string, decimal>();
-            decimal total = 0m, faizAgirliqCem = 0m, illikGelir = 0m;
+            decimal total = 0m, faizAgirliqCem = 0m, illikGelir = 0m, ehtiyatCem = 0m;
             int say = 0;
 
             foreach (var r in rows)
@@ -658,22 +658,30 @@ public class MuhasibatService : IMuhasibatService
                 var kurs = Dec(Val(r, "kurs"));
                 var esas = Dec(Val(r, "esas"));
                 var faiz = Dec(Val(r, "faiz"));
+                var ehtiyatFaiz = Dec(Val(r, "ehtiyat_faiz"));
                 var qaliq = esas * kurs;
+                var ehtiyat = qaliq * ehtiyatFaiz / 100m;
+                var amb = hesab5.StartsWith("11");
                 // Açıq yerləşdirmə (date_close null) qalığı 0 olsa belə sayılır.
 
                 total += qaliq;
                 say++;
                 faizAgirliqCem += qaliq * faiz;      // AZN-qalıqla ölçülü faiz
                 illikGelir += qaliq * faiz / 100m;
+                ehtiyatCem += ehtiyat;
 
                 // AMB overnight (11xxx) vs banklararası (15xxx / digər)
-                if (hesab5.StartsWith("11")) { dto.AmbMebleg += qaliq; dto.AmbSay++; }
+                if (amb) { dto.AmbMebleg += qaliq; dto.AmbSay++; }
                 else { dto.BanklararasiMebleg += qaliq; dto.BanklararasiSay++; }
+
+                // Vaxtı keçmiş / problemli: plan-bağlanma keçib, amma hələ açıq (pul qayıtmayıb).
+                if (Val(r, "planbaglanma") is DateTime pb && pb.Date < t)
+                { dto.VaxtiKecmisSay++; dto.VaxtiKecmisMebleg += qaliq; }
 
                 var ad = Val(r, "ad")?.ToString();
                 if (string.IsNullOrWhiteSpace(ad)) ad = $"Hesab {hesab5}";
                 var cur = kontragentD.GetValueOrDefault(ad);
-                kontragentD[ad] = (cur.qaliq + qaliq, cur.say + 1, cur.faizAgirliq + qaliq * faiz);
+                kontragentD[ad] = (cur.qaliq + qaliq, cur.say + 1, cur.faizAgirliq + qaliq * faiz, cur.ehtiyat + ehtiyat, amb);
 
                 var vad = ValyutaAd(Val(r, "valyuta")?.ToString() ?? "");
                 valyutaD[vad] = valyutaD.GetValueOrDefault(vad) + qaliq;
@@ -688,20 +696,40 @@ public class MuhasibatService : IMuhasibatService
             dto.IllikGelir          = Math.Round(illikGelir, 2);
             dto.AmbMebleg           = Math.Round(dto.AmbMebleg, 2);
             dto.BanklararasiMebleg  = Math.Round(dto.BanklararasiMebleg, 2);
+            dto.VaxtiKecmisMebleg   = Math.Round(dto.VaxtiKecmisMebleg, 2);
+            dto.Ehtiyat             = Math.Round(ehtiyatCem, 2);
+            dto.XalisPortfel        = Math.Round(total - ehtiyatCem, 2);
+            dto.EhtiyatFaiz         = total != 0 ? Math.Round(ehtiyatCem / total * 100, 2) : 0;
 
             // Kontragent (bank) siyahısı — məbləğə görə, sabit rənglərlə.
             var renglar = new[] { "#0ea5e9", "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#64748b" };
+            var sirali = kontragentD.OrderByDescending(x => x.Value.qaliq).ToList();
             int idx = 0;
-            foreach (var k in kontragentD.OrderByDescending(x => x.Value.qaliq))
+            foreach (var k in sirali)
             {
                 dto.Kontragentler.Add(new YerlesdirmeKatDto
                 {
                     Ad = k.Key, Say = k.Value.say, Qaliq = Math.Round(k.Value.qaliq, 2),
                     Faiz = k.Value.qaliq != 0 ? Math.Round(k.Value.faizAgirliq / k.Value.qaliq, 2) : 0,
+                    Ehtiyat = Math.Round(k.Value.ehtiyat, 2),
                     Pay = total != 0 ? Math.Round(k.Value.qaliq / total * 100, 1) : 0,
                     Reng = renglar[idx % renglar.Length]
                 });
                 idx++;
+            }
+
+            // Konsentrasiya: ən böyük kontragent (adətən AMB), TOP-3 pay, AMB xaric ən böyük.
+            if (sirali.Count > 0)
+            {
+                dto.EnBoyukAd  = sirali[0].Key;
+                dto.EnBoyukPay = total != 0 ? Math.Round(sirali[0].Value.qaliq / total * 100, 1) : 0;
+                dto.Top3Pay    = total != 0 ? Math.Round(sirali.Take(3).Sum(x => x.Value.qaliq) / total * 100, 1) : 0;
+                var enBoyukBank = sirali.FirstOrDefault(x => !x.Value.amb);
+                if (enBoyukBank.Key != null)
+                {
+                    dto.EnBoyukBankAd     = enBoyukBank.Key;
+                    dto.EnBoyukBankMebleg = Math.Round(enBoyukBank.Value.qaliq, 2);
+                }
             }
 
             dto.ValyutaBolgusu = ToMadde(valyutaD, total);
@@ -1364,7 +1392,7 @@ public class MuhasibatService : IMuhasibatService
 
                 case "yerlesdirme":
                 {
-                    // madde: "kontragent:<Ad>" | "valyuta:<VAL>" | "muddet:<qutu>" | "amb" | "banklararasi"
+                    // madde: "kontragent:<Ad>" | "valyuta:<VAL>" | "muddet:<qutu>" | "amb" | "banklararasi" | "vaxti-kecmis"
                     var sql = (await SqlAl(AdYerlesdirme)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 5000);
                     var parts = (madde ?? "").Split(':', 2);
@@ -1376,11 +1404,13 @@ public class MuhasibatService : IMuhasibatService
                         var kurs = Dec(Val(r, "kurs"));
                         var esas = Dec(Val(r, "esas"));
                         var faiz = Dec(Val(r, "faiz"));
+                        var ehtiyatFaiz = Dec(Val(r, "ehtiyat_faiz"));
                         var qaliq = esas * kurs;
                         var ad = Val(r, "ad")?.ToString();
                         if (string.IsNullOrWhiteSpace(ad)) ad = $"Hesab {hesab5}";
                         var vad = ValyutaAd(Val(r, "valyuta")?.ToString() ?? "");
                         var mad = MuddetQrup(Val(r, "planbaglanma"), t);
+                        var vaxtiKecmis = Val(r, "planbaglanma") is DateTime pbd && pbd.Date < t;
                         // Açıq yerləşdirmə qalığı 0 olsa belə görünür (say drill-down ilə tutuşsun).
                         bool uygun = mod switch
                         {
@@ -1389,6 +1419,7 @@ public class MuhasibatService : IMuhasibatService
                             "muddet"       => mad == mval,
                             "amb"          => hesab5.StartsWith("11"),
                             "banklararasi" => !hesab5.StartsWith("11"),
+                            "vaxti-kecmis" => vaxtiKecmis,
                             _              => false
                         };
                         if (!uygun) continue;
@@ -1396,11 +1427,13 @@ public class MuhasibatService : IMuhasibatService
                         // öz valyutası = esas (öz valyutasında qalıq); AZN-də manata bərabər.
                         var setir = DSetir(muq, ad, vad, Math.Round(qaliq, 2), Math.Round(esas, 2));
                         var pb = Val(r, "planbaglanma") is DateTime dtp ? dtp.ToString("dd.MM.yyyy") : "müddətsiz";
-                        setir.Elave = $"Faiz {faiz:0.##}% · {mad} · plan: {pb}";
+                        var ehtiyatStr = ehtiyatFaiz > 0 ? $" · ehtiyat {ehtiyatFaiz:0.##}%" : "";
+                        var kecmisStr = vaxtiKecmis ? " · ⚠ vaxtı keçib" : "";
+                        setir.Elave = $"Faiz {faiz:0.##}%{ehtiyatStr} · plan: {pb}{kecmisStr}";
                         dto.Setirler.Add(setir);
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
-                    dto.ElaveBaslik = "Faiz / müddət";
+                    dto.ElaveBaslik = "Faiz / ehtiyat / müddət";
                     break;
                 }
 

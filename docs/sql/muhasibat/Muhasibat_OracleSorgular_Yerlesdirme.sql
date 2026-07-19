@@ -12,16 +12,18 @@
      - kurs   = func_get_kurval(valyuta, date_oper) → AZN
      - esas   = al.summa (cari qalıq; AZN valyutada kurs=1)
      - faiz   = al.procstav_rs (yerləşdirmə faiz dərəcəsi — gəlir)
-     - planbaglanma = date_planclose (qalıq müddət/maturity üçün)
+     - ehtiyat_faiz = al.procstavrez (ehtiyat dərəcəsi — problemli kontragent)
+     - planbaglanma = date_planclose (qalıq müddət/maturity + vaxtı keçmiş üçün)
 
    Açıq üzrə (date_close is null) — Kredit prinsipinin eynisi (CLAUDE.md):
    qalığı 0 olsa belə açıqdırsa görünür. Drill-down eyni sorğunu işlədir.
 
    Test (16/07/2026): 15 açıq yerləşdirmə, ~46.28M AZN
-     - 11110 AMB overnight ≈ 40.82M (1)
-     - 15213 Atrabank       ≈  5.38M (6)
-     - 15025 Bank Melli İran≈  0.09M (8)
+     - 11110 AMB overnight ≈ 40.82M (1, ehtiyatsız)
+     - banklararası ≈ 5.47M (14, ~99% ehtiyatlanmış, 6-sı vaxtı keçmiş)
    Oracle YALNIZ SELECT. Azərbaycan hərfi YOXDUR. {TARIX} servis tərəfindən əvəz olunur.
+
+   İdempotent: yoxdursa INSERT, varsa SorguMetni UPDATE (yeni ehtiyat_faiz sütunu üçün).
    ============================================================================ */
 SET NOCOUNT ON;
 BEGIN TRY
@@ -34,9 +36,7 @@ IF @DepId IS NULL
     SELECT TOP 1 @DepId = Id FROM Departamentler
     WHERE (Ad LIKE N'%ühasib%' OR Ad LIKE N'%aliyy%') AND ISNULL(Silinib,0)=0 ORDER BY Id;
 
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Yerlesdirme' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'Muhasibat — Yerlesdirme', N'Yerləşdirilmiş vəsaitlər (arh_licsch_rs) — kontragent/valyuta/faiz/müddət', N'select
+DECLARE @Sql NVARCHAR(MAX) = N'select
   al.licsch_rs muqavile,
   substr(al.licsch_rs,1,5) hesab5,
   l.name_licsch ad,
@@ -44,6 +44,7 @@ VALUES (N'Muhasibat — Yerlesdirme', N'Yerləşdirilmiş vəsaitlər (arh_licsc
   round(odb.func_get_kurval(substr(al.licsch_rs,6,2),al.date_oper),6) kurs,
   al.summa esas,
   nvl(al.procstav_rs,0) faiz,
+  nvl(al.procstavrez,0) ehtiyat_faiz,
   al.date_open acilma,
   al.date_planclose planbaglanma,
   al.srok muddet
@@ -51,13 +52,24 @@ from arh_licsch_rs al, licsch l
 where al.licsch_rs = l.licsch(+)
   and al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
-  and length(al.licsch_rs) = 20', 1, @DepId, GETDATE(), 0);
+  and length(al.licsch_rs) = 20';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Yerlesdirme' AND ISNULL(Silinib,0)=0)
+    UPDATE OracleSorgular
+    SET    SorguMetni = @Sql,
+           Mahiyyet = N'Yerləşdirilmiş vəsaitlər (arh_licsch_rs) — kontragent/valyuta/faiz/ehtiyat/müddət',
+           Aktiv = 1
+    WHERE  SorguAdi = N'Muhasibat — Yerlesdirme' AND ISNULL(Silinib,0)=0;
+ELSE
+    INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (N'Muhasibat — Yerlesdirme', N'Yerləşdirilmiş vəsaitlər (arh_licsch_rs) — kontragent/valyuta/faiz/ehtiyat/müddət',
+            @Sql, 1, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
-PRINT N'Yerləşdirmə sorğusu əlavə olundu.';
+PRINT N'Yerləşdirmə sorğusu əlavə olundu / yeniləndi (ehtiyat_faiz daxil).';
 
-SELECT SorguAdi, DepartamentId, Aktiv FROM OracleSorgular
-WHERE  SorguAdi = N'Muhasibat — Yerlesdirme';
+SELECT CASE WHEN SorguMetni LIKE '%ehtiyat_faiz%' THEN 'YENİ (ehtiyat_faiz var)' ELSE 'KÖHNƏ' END AS veziyyet
+FROM   OracleSorgular WHERE SorguAdi = N'Muhasibat — Yerlesdirme' AND ISNULL(Silinib,0)=0;
 
 END TRY
 BEGIN CATCH

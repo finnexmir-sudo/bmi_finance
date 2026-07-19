@@ -369,15 +369,22 @@ public class DashboardController : Controller
         r++;
         KV(sh, r++, "Ümumi portfel", m.UmumiPortfel);
         KV(sh, r++, "Açıq yerləşdirmə sayı", m.Say);
+        KV(sh, r++, "Ehtiyat (qarşılıq)", m.Ehtiyat);
+        KV(sh, r++, "Ehtiyat / Portfel %", m.EhtiyatFaiz);
+        KV(sh, r++, "Xalis portfel (ehtiyatdan sonra)", m.XalisPortfel);
+        KV(sh, r++, "Vaxtı keçmiş (qayıtmayıb)", m.VaxtiKecmisMebleg);
+        KV(sh, r++, "Vaxtı keçmiş sayı", m.VaxtiKecmisSay);
         KV(sh, r++, "Orta faiz %", m.OrtaFaiz);
         KV(sh, r++, "İllik gözlənilən faiz gəliri", m.IllikGelir);
+        KV(sh, r++, "Ən böyük kontragent payı %", m.EnBoyukPay);
+        KV(sh, r++, "TOP-3 kontragent payı %", m.Top3Pay);
         KV(sh, r++, "AMB overnight", m.AmbMebleg);
         KV(sh, r++, "AMB overnight sayı", m.AmbSay);
         KV(sh, r++, "Banklararası (AMB xaric)", m.BanklararasiMebleg);
         KV(sh, r++, "Banklararası sayı", m.BanklararasiSay);
         r++;
         var h = sh.CreateRow(r++);
-        string[] basliqlar = { "Kontragent", "Say", "Qalıq (AZN)", "Orta faiz %", "Pay %" };
+        string[] basliqlar = { "Kontragent", "Say", "Qalıq (AZN)", "Orta faiz %", "Ehtiyat (AZN)", "Pay %" };
         for (int c = 0; c < basliqlar.Length; c++) h.CreateCell(c).SetCellValue(basliqlar[c]);
         foreach (var k in m.Kontragentler)
         {
@@ -386,7 +393,8 @@ public class DashboardController : Controller
             row.CreateCell(1).SetCellValue(k.Say);
             row.CreateCell(2).SetCellValue((double)k.Qaliq);
             row.CreateCell(3).SetCellValue((double)k.Faiz);
-            row.CreateCell(4).SetCellValue((double)k.Pay);
+            row.CreateCell(4).SetCellValue((double)k.Ehtiyat);
+            row.CreateCell(5).SetCellValue((double)k.Pay);
         }
         r++;
         r = Bolme(sh, r, "Valyuta strukturu", m.ValyutaBolgusu);
