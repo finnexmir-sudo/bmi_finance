@@ -1,0 +1,119 @@
+@model FinNex.UI.Areas.Admin.ViewModels.SistemIcazeIdareVM
+@{
+    ViewData["Title"] = $"İcazə — {Model.PermissionAd}";
+    var secili = Model.Users.Count(u => u.Var);
+}
+
+<div class="si-wrap">
+    <a class="si-back" asp-action="Index"><i class="bi bi-arrow-left"></i> Bütün icazələr</a>
+
+    <div class="si-head">
+        <h1>@Model.PermissionAd</h1>
+        <p><code>@Model.PermissionKod</code> — bu icazəni hansı işçilər görəcək? Seç və yadda saxla.</p>
+    </div>
+
+    @if (TempData["Status"] != null)
+    {
+        <div class="si-alert si-ok"><i class="bi bi-check-circle"></i> @TempData["Status"]</div>
+    }
+
+    <form method="post" asp-action="Saxla">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="permissionId" value="@Model.PermissionId" />
+
+        <div class="si-card">
+            <div class="si-card-h">
+                <span>İşçilər <em id="siCount">@secili</em> / @Model.Users.Count seçili</span>
+                <div class="si-toolbar">
+                    <input type="search" id="siSearch" placeholder="Axtar (ad / login)…" />
+                    <button type="button" class="si-btn" id="siAll">Hamısını seç</button>
+                    <button type="button" class="si-btn" id="siNone">Təmizlə</button>
+                </div>
+            </div>
+            <table class="si-table" id="siTable">
+                <thead>
+                    <tr><th style="width:44px"></th><th>Ad Soyad</th><th>Login</th><th>Rollar</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Users)
+                    {
+                        <tr class="si-urow" data-ad="@u.AdSoyad.ToLower() @u.UserName.ToLower()">
+                            <td style="text-align:center">
+                                <input class="si-chk" type="checkbox" name="userIds" value="@u.UserId" @(u.Var ? "checked" : "") />
+                            </td>
+                            <td><b>@u.AdSoyad</b></td>
+                            <td class="si-muted">@u.UserName</td>
+                            <td>
+                                @if (u.Roller.Any())
+                                {
+                                    foreach (var r in u.Roller)
+                                    {
+                                        <span class="si-role">@r</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="si-muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="si-foot">
+                <button type="submit" class="si-btn si-primary"><i class="bi bi-check-lg"></i> Yadda saxla</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var chks = Array.prototype.slice.call(document.querySelectorAll('.si-chk'));
+            var count = document.getElementById('siCount');
+            function refresh() { count.textContent = chks.filter(function (c) { return c.checked; }).length; }
+            chks.forEach(function (c) { c.addEventListener('change', refresh); });
+            document.getElementById('siAll').addEventListener('click', function () {
+                document.querySelectorAll('.si-urow:not([hidden]) .si-chk').forEach(function (c) { c.checked = true; }); refresh();
+            });
+            document.getElementById('siNone').addEventListener('click', function () {
+                document.querySelectorAll('.si-urow:not([hidden]) .si-chk').forEach(function (c) { c.checked = false; }); refresh();
+            });
+            var search = document.getElementById('siSearch');
+            search.addEventListener('input', function () {
+                var q = this.value.trim().toLowerCase();
+                document.querySelectorAll('.si-urow').forEach(function (row) {
+                    row.hidden = q && row.getAttribute('data-ad').indexOf(q) === -1;
+                });
+            });
+        })();
+    </script>
+}
+
+<style>
+    .si-wrap { max-width: 900px; }
+    .si-back { display: inline-flex; align-items: center; gap: 6px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .si-back:hover { color: #0f766e; }
+    .si-head h1 { font-size: 22px; font-weight: 800; margin: 0 0 4px; }
+    .si-head p { color: #64748b; font-size: 13.5px; margin: 0 0 16px; }
+    .si-alert { border-radius: 10px; padding: 11px 15px; font-size: 13.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .si-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .si-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(2,6,23,.05); }
+    .si-card-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; }
+    .si-card-h em { font-style: normal; color: #0f766e; }
+    .si-toolbar { display: flex; gap: 8px; }
+    .si-toolbar input { border: 1px solid #d7dee8; border-radius: 8px; padding: 6px 10px; font-size: 12.5px; }
+    .si-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .si-table th { text-align: left; padding: 9px 14px; background: #f8fafc; color: #64748b; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+    .si-table td { padding: 10px 14px; border-top: 1px solid #eef2f7; }
+    .si-chk { width: 17px; height: 17px; cursor: pointer; }
+    .si-muted { color: #94a3b8; }
+    .si-role { display: inline-block; background: #eef2f7; color: #475569; border-radius: 6px; padding: 1px 8px; font-size: 11.5px; font-weight: 600; margin: 1px 3px 1px 0; }
+    code { background: #f1f5f9; padding: 1px 6px; border-radius: 5px; font-size: 12px; color: #0f766e; }
+    .si-btn { display: inline-flex; align-items: center; gap: 6px; background: #eef2f7; color: #334155; border: none; border-radius: 9px; padding: 7px 13px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+    .si-btn:hover { background: #e2e8f0; }
+    .si-primary { background: linear-gradient(135deg,#0f766e,#14b8a6); color: #fff; }
+    .si-primary:hover { filter: brightness(1.05); }
+    .si-foot { padding: 14px 18px; border-top: 1px solid #eef2f7; background: #f8fafc; text-align: right; }
+</style>

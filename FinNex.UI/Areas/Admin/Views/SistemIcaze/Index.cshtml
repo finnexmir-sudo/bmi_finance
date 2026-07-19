@@ -1,0 +1,99 @@
+@model FinNex.UI.Areas.Admin.ViewModels.SistemIcazeIndexVM
+@{
+    ViewData["Title"] = "Sistem İcazələri";
+}
+
+<div class="si-wrap">
+    <div class="si-head">
+        <div>
+            <h1>Sistem İcazələri</h1>
+            <p>İcazə seç → hansı işçilərin görəcəyini təyin et. Yeni sahələr üçün yeni icazə əlavə edə bilərsən.</p>
+        </div>
+    </div>
+
+    @if (TempData["Status"] != null)
+    {
+        <div class="si-alert si-ok"><i class="bi bi-check-circle"></i> @TempData["Status"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="si-alert si-err"><i class="bi bi-exclamation-triangle"></i> @TempData["Error"]</div>
+    }
+
+    <div class="si-grid">
+        <div class="si-card">
+            <div class="si-card-h">İcazələr</div>
+            <table class="si-table">
+                <thead>
+                    <tr><th>Ad</th><th>Kod</th><th>Açıqlama</th><th style="text-align:center">İstifadəçi</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Icazeler.Any())
+                    {
+                        <tr><td colspan="5" class="si-empty">Hələ icazə yoxdur — sağdan əlavə et.</td></tr>
+                    }
+                    @foreach (var p in Model.Icazeler)
+                    {
+                        <tr>
+                            <td><b>@p.Ad</b></td>
+                            <td><code>@p.Kod</code></td>
+                            <td class="si-muted">@(string.IsNullOrWhiteSpace(p.Aciqlama) ? "—" : p.Aciqlama)</td>
+                            <td style="text-align:center"><span class="si-badge">@p.UserSayi</span></td>
+                            <td style="text-align:right">
+                                <a class="si-btn" asp-action="Idare" asp-route-id="@p.Id"><i class="bi bi-people"></i> İdarə et</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="si-card">
+            <div class="si-card-h">Yeni icazə</div>
+            <form method="post" asp-action="Yarat" class="si-form">
+                @Html.AntiForgeryToken()
+                <label>Kod <span>(dəyişməz açar, məs. <code>risk_panel_bax</code>)</span></label>
+                <input name="kod" maxlength="100" placeholder="modul_ehval_bax" required />
+                <label>Ad <span>(göstərilən ad)</span></label>
+                <input name="ad" maxlength="150" placeholder="Risk Paneli" required />
+                <label>Açıqlama <span>(istəyə bağlı)</span></label>
+                <textarea name="aciqlama" maxlength="500" rows="2" placeholder="Bu icazə nəyə giriş verir"></textarea>
+                <button type="submit" class="si-btn si-primary"><i class="bi bi-plus-lg"></i> Əlavə et</button>
+            </form>
+            <div class="si-note">
+                <i class="bi bi-info-circle"></i> İcazəni yaratdıqdan sonra <b>İdarə et</b> ilə işçilərə ver.
+                Controller-də <code>[Authorize]</code> yerinə həmin kodu yoxlamaqla istənilən yeni sahəni buradan idarə edə bilərsən.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .si-wrap { max-width: 1100px; }
+    .si-head h1 { font-size: 22px; font-weight: 800; margin: 0 0 4px; }
+    .si-head p { color: #64748b; font-size: 13.5px; margin: 0 0 16px; }
+    .si-alert { border-radius: 10px; padding: 11px 15px; font-size: 13.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .si-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .si-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .si-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items: start; }
+    .si-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(2,6,23,.05); }
+    .si-card-h { font-weight: 700; font-size: 14px; padding: 14px 18px; border-bottom: 1px solid #eef2f7; }
+    .si-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .si-table th { text-align: left; padding: 10px 14px; background: #f8fafc; color: #64748b; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+    .si-table td { padding: 11px 14px; border-top: 1px solid #eef2f7; }
+    .si-muted { color: #94a3b8; }
+    .si-empty { text-align: center; color: #94a3b8; padding: 26px; }
+    .si-badge { background: #eef2f7; color: #334155; border-radius: 20px; padding: 2px 10px; font-weight: 700; font-size: 12.5px; }
+    code { background: #f1f5f9; padding: 1px 6px; border-radius: 5px; font-size: 12px; color: #0f766e; }
+    .si-btn { display: inline-flex; align-items: center; gap: 6px; background: #eef2f7; color: #334155; border: none; border-radius: 9px; padding: 7px 13px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+    .si-btn:hover { background: #e2e8f0; }
+    .si-primary { background: linear-gradient(135deg,#0f766e,#14b8a6); color: #fff; }
+    .si-primary:hover { filter: brightness(1.05); }
+    .si-form { padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+    .si-form label { font-size: 12.5px; font-weight: 600; color: #334155; margin-top: 6px; }
+    .si-form label span { font-weight: 400; color: #94a3b8; }
+    .si-form input, .si-form textarea { border: 1px solid #d7dee8; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+    .si-form button { margin-top: 12px; justify-content: center; }
+    .si-note { margin: 0 18px 16px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 11px 13px; font-size: 12px; color: #334155; line-height: 1.5; }
+    @@media (max-width: 860px) { .si-grid { grid-template-columns: 1fr; } }
+</style>
