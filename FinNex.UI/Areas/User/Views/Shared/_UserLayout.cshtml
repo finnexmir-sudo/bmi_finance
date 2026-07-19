@@ -32,7 +32,9 @@
         }
     }
     var canPanel = isTamMaliyye || isRehberRol || hasPanelPerm;   // paneli görə bilər
-    var panelYalniz = canPanel && !isTamMaliyye;                  // YALNIZ paneli görür
+    // YALNIZ panel = qıraqdan icazə verilən (rolu olmayan). Rəhbər tam mühasibat
+    // menyusunu saxlayır ki, maaş təsdiqi naviqasiyası pozulmasın.
+    var panelYalniz = hasPanelPerm && !isTamMaliyye && !isRehberRol;
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
     if (string.IsNullOrEmpty(_layoutVezife) && User.Identity?.IsAuthenticated == true)
