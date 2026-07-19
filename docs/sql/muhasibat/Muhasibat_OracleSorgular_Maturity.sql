@@ -45,9 +45,14 @@ where g.date_pog > to_date(''{TARIX}'',''dd/mm/yyyy'')', 1, @DepId, GETDATE(), 0
 /* ── 2. Kontekst — tələbli depozit bazası + HQLA ────────────────────────── */
 IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'Muhasibat — Maturity kontekst' AND ISNULL(Silinib,0)=0)
 INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'Muhasibat — Maturity kontekst', N'Tələbli depozit bazası (35-49) + HQLA (15770/11710)', N'select
+VALUES (N'Muhasibat — Maturity kontekst', N'Tələbli depozit bazası (35-49) + likvid aktivlər (LikvidQrup ilə eyni)', N'select
   round(sum(case when substr(s.licsch,1,2) in (''35'',''36'',''38'',''39'',''40'',''41'',''49'') then abs(s.saldo_ish_nacval) else 0 end),2) depozit,
-  round(sum(case when substr(s.licsch,1,5) in (''15770'',''11710'') then s.saldo_ish_nacval else 0 end),2) hqla
+  round(sum(case when s.saldo_ish_nacval > 0 and (
+                 substr(s.licsch,1,3) = ''100''
+              or substr(s.licsch,1,5) in (''11010'',''11020'',''11110'',''11710'')
+              or substr(s.licsch,1,5) in (''14010'',''14012'',''14014'',''14030'',''14032'',''14034'')
+              or substr(s.licsch,1,5) in (''15020'',''15025'',''15770'')
+            ) then s.saldo_ish_nacval else 0 end),2) hqla
 from odb.arh_saldo_ls s
 where s.date_oper = (select max(date_oper) from odb.arh_saldo_ls
                      where date_oper <= to_date(''{TARIX}'',''dd/mm/yyyy''))', 1, @DepId, GETDATE(), 0);

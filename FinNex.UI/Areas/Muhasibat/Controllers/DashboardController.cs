@@ -318,7 +318,7 @@ public class DashboardController : Controller
         KV(sh, r++, "Növbəti 3 ay (kum.)", m.Axin3Ay);
         KV(sh, r++, "Növbəti 12 ay (kum.)", m.Axin12Ay);
         KV(sh, r++, "Tələbli depozit bazası", m.TelebliDepozit);
-        KV(sh, r++, "HQLA (likvid tampon)", m.Hqla);
+        KV(sh, r++, "Likvid aktivlər (tampon)", m.Hqla);
         r++;
         var h = sh.CreateRow(r++);
         string[] basliqlar = { "Müddət", "Əsas", "Faiz", "Cəmi", "Kumulyativ", "Pay %" };
