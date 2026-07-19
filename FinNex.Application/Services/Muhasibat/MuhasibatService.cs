@@ -1427,13 +1427,15 @@ public class MuhasibatService : IMuhasibatService
                         // öz valyutası = esas (öz valyutasında qalıq); AZN-də manata bərabər.
                         var setir = DSetir(muq, ad, vad, Math.Round(qaliq, 2), Math.Round(esas, 2));
                         var pb = Val(r, "planbaglanma") is DateTime dtp ? dtp.ToString("dd.MM.yyyy") : "müddətsiz";
-                        var ehtiyatStr = ehtiyatFaiz > 0 ? $" · ehtiyat {ehtiyatFaiz:0.##}%" : "";
-                        var kecmisStr = vaxtiKecmis ? " · ⚠ vaxtı keçib" : "";
-                        setir.Elave = $"Faiz {faiz:0.##}%{ehtiyatStr} · plan: {pb}{kecmisStr}";
+                        // Kompakt: faiz · ehtiyat (varsa) · plan/⚠tarix.
+                        var bits = new List<string> { $"{faiz:0.##}%" };
+                        if (ehtiyatFaiz > 0) bits.Add($"ehtiyat {ehtiyatFaiz:0.##}%");
+                        bits.Add(vaxtiKecmis ? $"⚠ {pb}" : pb);
+                        setir.Elave = string.Join(" · ", bits);
                         dto.Setirler.Add(setir);
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
-                    dto.ElaveBaslik = "Faiz / ehtiyat / müddət";
+                    dto.ElaveBaslik = "Faiz · ehtiyat · müddət";
                     break;
                 }
 
