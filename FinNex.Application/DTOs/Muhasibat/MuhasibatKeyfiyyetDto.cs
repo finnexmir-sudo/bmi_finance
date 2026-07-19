@@ -38,4 +38,5 @@ public class KeyfiyyetKatDto
     public decimal Qaliq   { get; set; }
     public decimal Ehtiyat { get; set; }
     public decimal Faiz    { get; set; }          // qalığın portfeldə payı %
+    public string  Reng    { get; set; } = "";    // ciddiliyə görə rəng (yaşıl→qırmızı)
 }

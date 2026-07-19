@@ -565,11 +565,16 @@ public class MuhasibatService : IMuhasibatService
                 new[] { 3, 4, 5 }.Where(katMap.ContainsKey).Sum(k => katMap[k].Qaliq), 2);
             dto.Ortuyu = dto.ProblemliQaliq != 0 ? Math.Round(dto.Ehtiyat / dto.ProblemliQaliq * 100, 1) : 0;
 
-            // Kanonik sıra (1→5), payla.
+            // Kanonik sıra (1→5), rəng (yaşıl→qırmızı) + payla.
+            var renglar = new Dictionary<int, string>
+            {
+                [1] = "#16a34a", [2] = "#84cc16", [3] = "#f59e0b", [4] = "#f97316", [5] = "#dc2626"
+            };
             foreach (var k in new[] { 1, 2, 3, 4, 5 })
                 if (katMap.TryGetValue(k, out var kd))
                 {
                     kd.Faiz = dto.Portfel != 0 ? Math.Round(kd.Qaliq / dto.Portfel * 100, 1) : 0;
+                    kd.Reng = renglar[k];
                     dto.Kateqoriyalar.Add(kd);
                 }
 

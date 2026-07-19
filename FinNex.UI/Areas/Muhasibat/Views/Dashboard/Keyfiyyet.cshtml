@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Mühasibat — Kredit Keyfiyyəti";
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
-    var katJson = Html.Raw(JsonSerializer.Serialize(Model.Kateqoriyalar.Select(x => new { l = x.Ad, v = x.Qaliq })));
+    var katJson = Html.Raw(JsonSerializer.Serialize(Model.Kateqoriyalar.Select(x => new { l = x.Ad, v = x.Qaliq, c = x.Reng })));
 }
 
 <div class="mh-wrap">
@@ -61,8 +61,8 @@
                         @foreach (var k in Model.Kateqoriyalar)
                         {
                             <div class="mh-row mh-click" data-mhsahe="kredit-keyfiyyet" data-mhmadde="@k.Ad" data-mhbaslik="Keyfiyyət — @k.Ad">
-                                <div class="mh-row-t"><span>@k.Ad <em>· @k.Say</em></span><b>@Fmt(k.Qaliq) ₼</b></div>
-                                <div class="mh-bar"><span style="width:@(k.Faiz)%"></span></div>
+                                <div class="mh-row-t"><span><i class="bi bi-circle-fill" style="color:@k.Reng;font-size:9px"></i> @k.Ad <em>· @k.Say</em></span><b>@Fmt(k.Qaliq) ₼</b></div>
+                                <div class="mh-bar"><span style="width:@(k.Faiz)%;background:@k.Reng"></span></div>
                                 <div class="mh-row-p">Ehtiyat: @Fmt(k.Ehtiyat) ₼ · @k.Faiz%</div>
                             </div>
                         }
@@ -112,11 +112,10 @@
             const el = document.getElementById('chKat');
             const rows = @katJson;
             if (!el || !rows.length) return;
-            // Standart→Ümidsiz: yaşıldan qırmızıya.
-            const pal = ['#16a34a', '#84cc16', '#f59e0b', '#f97316', '#dc2626'];
+            // Rəng hər kateqoriyanın öz ciddilik rəngindən gəlir (server) — sürüşmür.
             new Chart(el, {
                 type: 'doughnut',
-                data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: pal, borderWidth: 0 }] },
+                data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v), backgroundColor: rows.map(r => r.c), borderWidth: 0 }] },
                 options: {
                     cutout: '62%', responsive: true, maintainAspectRatio: false,
                     plugins: {
