@@ -586,7 +586,7 @@ public class MuhasibatService : IMuhasibatService
             {
                 var kod = (int)Dec(Val(r, "kod"));
                 var qaliq = Math.Round(Dec(Val(r, "qaliq")), 2);
-                if (qaliq == 0m) continue;
+                // Açıq kredit (date_close null) qalığı 0 olsa belə görünür — say düz gəlsin.
                 var ad = Val(r, "ad")?.ToString();
                 if (string.IsNullOrWhiteSpace(ad)) ad = kod == 8 ? "Girovsuz" : $"Digər (#{kod})";
                 var girov = Math.Round(Dec(Val(r, "girov")), 2);
@@ -1221,8 +1221,8 @@ public class MuhasibatService : IMuhasibatService
                     var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
                     foreach (var r in rows)
                     {
+                        // Açıq kredit (date_close null) qalığı 0 olsa belə görünür.
                         var qaliq = Dec(Val(r, "qaliq"));
-                        if (qaliq == 0m) continue;
                         var rez = Dec(Val(r, "rez"));
                         var restrukt = (int)Dec(Val(r, "restrukt"));
                         var kod = (int)Dec(Val(r, "kod"));

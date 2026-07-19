@@ -120,6 +120,20 @@ kanonik nümunə: `IsciSiralamaService`.
 - Yeni işçi siyahısı yazanda bu iki qaydanı **əl ilə əlavə etmə** — mövcud
   `IsciSiralamaService` / `IsciService.HamisiniGetirAsync` sıralamasını təkrarla.
 
+## Kredit Hesabatları — Açıq/Bağlı (date_close) vs Qalıq (KRİTİK)
+
+Kredit siyahılarında/saylarında filtr **`date_close IS NULL` (açıq müqavilə)**
+üzrə olmalıdır — **qalığa (`summa+summa_19 = 0`) görə YOX**. Kreditin əsas qalığı
+0 olsa belə, müqavilə **açıqdırsa** hesabatda görünməli və sayılmalıdır (balansdankənar
+`b/k`-da və ya faizdə qalığı ola bilər). Aqreqat `count(*)` (açıq üzrə) ilə drill-down
+siyahısı **eyni prinsiplə** getməlidir — biri qalığı 0 olanı atsa, say ≠ siyahı olur.
+
+Real nümunə (2026-07, Kredit Keyfiyyəti): aqreqat "GİROVSUZ · 3" göstərdi, drill-down
+isə 1 sətir (2 kreditin əsas qalığı 0 idi). Səhv həll: `qaliq<>0` filtri (say düşdü).
+Düzgün həll: hər ikisi `date_close` (açıq) üzrə — qalığı 0 olan açıq kredit də görünür,
+say tutuşur. `arh_licschkre` sorğularında `(date_close is null or date_close > TARIX)`
+kifayətdir; drill-down servisində `if (qaliq == 0) continue` **qoyma**.
+
 ## Balans — Bağlı Hesab (date_close_licsch) Filtri (KRİTİK)
 
 Oracle GL balans sorğularında hesab adı/dep_tip üçün `licsch` cədvəlinə join edilir.

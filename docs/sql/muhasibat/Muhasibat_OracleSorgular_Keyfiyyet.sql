@@ -42,7 +42,6 @@ from arh_licschkre al
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
   and length(al.licschkre) = 20
-  and (al.summa+al.summa_19) <> 0
 group by case when greatest(nvl(al.procstavrez,0),nvl(al.procstavrez_19,0)) <= 5  then 1
               when greatest(nvl(al.procstavrez,0),nvl(al.procstavrez_19,0)) <= 20 then 2
               when greatest(nvl(al.procstavrez,0),nvl(al.procstavrez_19,0)) <= 50 then 3
@@ -65,7 +64,6 @@ from arh_licschkre al,
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
   and length(al.licschkre) = 20
-  and (al.summa+al.summa_19) <> 0
   and al.licschkre = g.licschkre(+)', 1, @DepId, GETDATE(), 0);
 
 /* ── 3. Detal (drill-down) ──────────────────────────────────────────────── */
@@ -82,7 +80,6 @@ from arh_licschkre al,
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
   and length(al.licschkre) = 20
-  and (al.summa+al.summa_19) <> 0
   and al.licschkre = g.licschkre(+)', 1, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
