@@ -19,6 +19,9 @@ public interface IMuhasibatService
     // Mənfəət/Zərər (P&L) — tarix aralığında gəlir/xərc, NII, NIM, Cost/Income.
     Task<MuhasibatMenfeetDto> MenfeetAsync(DateTime? bas = null, DateTime? son = null);
 
+    // Kredit Pul Axını (Maturity Ladder) — gözlənilən ödənişlər müddət qutularında.
+    Task<MuhasibatMaturityDto> MaturityAsync(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 

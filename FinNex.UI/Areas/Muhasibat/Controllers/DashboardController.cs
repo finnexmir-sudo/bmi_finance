@@ -117,6 +117,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Kredit Pul Axını (Maturity Ladder).
+    public async Task<IActionResult> Maturity(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.MaturityAsync(ParseTarix(t));
+        return View(model);
+    }
+
     // Mənfəət / Zərər (P&L) — tarix aralığı: bt=başlanğıc, st=son (default YTD).
     public async Task<IActionResult> Menfeet(string? bt, string? st)
     {
@@ -290,6 +300,40 @@ public class DashboardController : Controller
         r = Bolme(sh, r, "Gəlir strukturu", m.GelirBolgusu);
         r = Bolme(sh, r, "Əməliyyat xərci strukturu", m.XercBolgusu);
         return Yukle(wb, "Menfeet_Zerer");
+    }
+
+    public async Task<IActionResult> MaturityExcel(string? t)
+    {
+        if (!await IcazeVarAsync()) return Forbid();
+        var m = await _service.MaturityAsync(ParseTarix(t));
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Maturity");
+        int r = 0;
+        Setir(sh, r++, $"Kredit Pul Axını (Maturity Ladder) — {m.Tarix:dd.MM.yyyy}");
+        r++;
+        KV(sh, r++, "Gələcək əsas cəmi", m.EsasCem);
+        KV(sh, r++, "Gələcək faiz cəmi", m.FaizCem);
+        KV(sh, r++, "Ümumi axın (əsas+faiz)", m.CemAxin);
+        KV(sh, r++, "Növbəti 1 ay", m.Axin1Ay);
+        KV(sh, r++, "Növbəti 3 ay (kum.)", m.Axin3Ay);
+        KV(sh, r++, "Növbəti 12 ay (kum.)", m.Axin12Ay);
+        KV(sh, r++, "Tələbli depozit bazası", m.TelebliDepozit);
+        KV(sh, r++, "HQLA (likvid tampon)", m.Hqla);
+        r++;
+        var h = sh.CreateRow(r++);
+        string[] basliqlar = { "Müddət", "Əsas", "Faiz", "Cəmi", "Kumulyativ", "Pay %" };
+        for (int c = 0; c < basliqlar.Length; c++) h.CreateCell(c).SetCellValue(basliqlar[c]);
+        foreach (var q in m.Qutular)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(q.Ad);
+            row.CreateCell(1).SetCellValue((double)q.Esas);
+            row.CreateCell(2).SetCellValue((double)q.Faiz);
+            row.CreateCell(3).SetCellValue((double)q.Cem);
+            row.CreateCell(4).SetCellValue((double)q.Kumulyativ);
+            row.CreateCell(5).SetCellValue((double)q.Faiz_Pay);
+        }
+        return Yukle(wb, "Maturity_Ladder");
     }
 
     public async Task<IActionResult> LikvidlikExcel(string? t)

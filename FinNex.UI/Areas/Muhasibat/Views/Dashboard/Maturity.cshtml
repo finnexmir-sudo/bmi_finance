@@ -1,0 +1,205 @@
+@using System.Text.Json
+@model MuhasibatMaturityDto
+@{
+    ViewData["Title"] = "Mühasibat — Kredit Pul Axını";
+    string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    var labels = Html.Raw(JsonSerializer.Serialize(Model.Qutular.Select(x => x.Ad)));
+    var esasD = Html.Raw(JsonSerializer.Serialize(Model.Qutular.Select(x => x.Esas)));
+    var faizD = Html.Raw(JsonSerializer.Serialize(Model.Qutular.Select(x => x.Faiz)));
+    var kumD = Html.Raw(JsonSerializer.Serialize(Model.Qutular.Select(x => x.Kumulyativ)));
+}
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--mt">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-bar-chart-steps"></i> Mühasibat / Pul Axını</div>
+            <h1 class="mh-title">Kredit Pul Axını (Maturity Ladder)</h1>
+            <div class="mh-sub"><i class="bi bi-calendar3"></i> Hesabat tarixi: <b>@Model.Tarix.ToString("dd.MM.yyyy")</b></div>
+            <a asp-action="MaturityExcel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə yüklə</a>
+        </div>
+        <form method="get" class="mh-datef">
+            <label>Tarix</label>
+            <input type="date" name="t" value="@Model.Tarix.ToString("yyyy-MM-dd")" />
+            <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
+        </form>
+    </div>
+
+    <partial name="_MhTabs" />
+
+    @if (!Model.Ugurlu)
+    {
+        <div class="mh-alert"><i class="bi bi-x-octagon"></i> Pul axını yüklənmədi: @Model.Xeta</div>
+    }
+    else
+    {
+        <div class="mh-kpis">
+            <div class="mh-kpi mh-kpi--a">
+                <div class="mh-kpi-ic"><i class="bi bi-cash-stack"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.CemAxin) <span>₼</span></div>
+                <div class="mh-kpi-l">Ümumi gözlənilən axın (əsas+faiz)</div>
+            </div>
+            <div class="mh-kpi mh-kpi--b">
+                <div class="mh-kpi-ic"><i class="bi bi-1-circle"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.Axin1Ay) <span>₼</span></div>
+                <div class="mh-kpi-l">Növbəti 1 ay</div>
+            </div>
+            <div class="mh-kpi mh-kpi--t">
+                <div class="mh-kpi-ic"><i class="bi bi-3-circle"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.Axin3Ay) <span>₼</span></div>
+                <div class="mh-kpi-l">Növbəti 3 ay (kumulyativ)</div>
+            </div>
+            <div class="mh-kpi mh-kpi--w">
+                <div class="mh-kpi-ic"><i class="bi bi-calendar-check"></i></div>
+                <div class="mh-kpi-v">@Fmt(Model.Axin12Ay) <span>₼</span></div>
+                <div class="mh-kpi-l">Növbəti 12 ay (kumulyativ)</div>
+            </div>
+        </div>
+
+        <div class="mh-card mh-card--wide">
+            <div class="mh-card-h"><span class="mh-dot mh-dot--a"></span> Müddət qutuları — əsas + faiz və kumulyativ axın</div>
+            <div class="mh-chart-wide"><canvas id="chMat"></canvas></div>
+        </div>
+
+        <div class="mh-grid">
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--a"></span> Cədvəl</div>
+                <div class="mh-tbl">
+                    <table>
+                        <thead><tr><th>Müddət</th><th class="num">Əsas</th><th class="num">Faiz</th><th class="num">Cəmi</th><th class="num">Kumulyativ</th><th class="num">Pay</th></tr></thead>
+                        <tbody>
+                            @foreach (var q in Model.Qutular)
+                            {
+                                <tr>
+                                    <td>@q.Ad</td>
+                                    <td class="num">@Fmt(q.Esas)</td>
+                                    <td class="num">@Fmt(q.Faiz)</td>
+                                    <td class="num"><b>@Fmt(q.Cem)</b></td>
+                                    <td class="num">@Fmt(q.Kumulyativ)</td>
+                                    <td class="num">@q.Faiz_Pay%</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot><tr><td>Cəmi</td><td class="num">@Fmt(Model.EsasCem)</td><td class="num">@Fmt(Model.FaizCem)</td><td class="num"><b>@Fmt(Model.CemAxin)</b></td><td class="num">—</td><td class="num">100%</td></tr></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mh-card">
+                <div class="mh-card-h"><span class="mh-dot mh-dot--r"></span> Likvidlik konteksti</div>
+                <div class="mh-ctx">
+                    <div class="mh-ctx-row"><span>Tələbli depozit bazası (öhdəlik)</span><b>@Fmt(Model.TelebliDepozit) ₼</b></div>
+                    <div class="mh-ctx-row"><span>HQLA (likvid tampon)</span><b class="mh-good">@Fmt(Model.Hqla) ₼</b></div>
+                    <div class="mh-ctx-row"><span>1 aylıq kredit girişi</span><b>@Fmt(Model.Axin1Ay) ₼</b></div>
+                    <div class="mh-ctx-note">
+                        <i class="bi bi-info-circle"></i>
+                        Bu bankda depozitlər <b>müddətsiz/tələbli</b>dir (vaxt strukturu yoxdur) — ona görə klassik
+                        aktiv/öhdəlik <b>GAP</b> qurulmur. Tələbli depozitlərin qarşısında likvidlik tamponu <b>HQLA</b>-dır;
+                        kredit girişləri əlavə axındır.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mh-note">
+            <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
+            <ul>
+                <li>Mənbə: <code>graphpogkre</code> (kredit ödəniş qrafiki). Yalnız <b>gələcək</b> ödənişlər (<code>date_pog</code> > hesabat tarixi) — əsas (<code>summa_pog_kre</code>) və faiz (<code>summa_pog_pro</code>) <code>date_pog</code> üzrə müddət qutularına bölünür.</li>
+                <li><b>Kumulyativ</b> = həmin qutuya qədər gözlənilən ümumi pul girişi — likvidlik planlaması üçün.</li>
+                <li>Öhdəlik tərəf (depozit vaxtı) mövcud olmadığı üçün bu, <b>aktiv tərəf pul axını proqnozudur</b>, tam GAP deyil.</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script>
+        (function () {
+            if (typeof Chart === 'undefined') return;
+            const el = document.getElementById('chMat');
+            if (!el) return;
+            new Chart(el, {
+                data: {
+                    labels: @labels,
+                    datasets: [
+                        { type: 'bar', label: 'Əsas', data: @esasD, backgroundColor: '#0e7490', stack: 's', borderRadius: 4 },
+                        { type: 'bar', label: 'Faiz', data: @faizD, backgroundColor: '#22d3ee', stack: 's', borderRadius: 4 },
+                        { type: 'line', label: 'Kumulyativ', data: @kumD, borderColor: '#6d28d9', backgroundColor: 'rgba(109,40,217,.1)', borderWidth: 2, tension: .3, yAxisID: 'y2', pointRadius: 3, fill: true }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
+                        tooltip: { callbacks: { label: c => c.dataset.label + ': ' + Number(c.raw).toLocaleString('az-AZ') + ' ₼' } }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, ticks: { callback: v => (v / 1000).toFixed(0) + 'k' } },
+                        y2: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => (v / 1000000).toFixed(1) + 'M' } }
+                    }
+                }
+            });
+        })();
+    </script>
+}
+
+<style>
+    .mh-wrap { max-width: 1280px; margin: 0 auto; padding: 8px 0 40px; color: #1e293b; }
+    .mh-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;
+        background: linear-gradient(120deg, #0f2f5c 0%, #16478a 55%, #1e63b8 100%); color: #fff;
+        border-radius: 18px; padding: 26px 30px; box-shadow: 0 12px 30px rgba(16,71,138,.28); flex-wrap: wrap; }
+    .mh-hero--mt { background: linear-gradient(120deg, #083344 0%, #0e7490 55%, #0891b2 100%); box-shadow: 0 12px 30px rgba(8,145,178,.28); }
+    .mh-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.16); padding: 5px 13px; border-radius: 30px; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+    .mh-title { font-size: 28px; font-weight: 800; margin: 0 0 6px; letter-spacing: -.5px; }
+    .mh-sub { font-size: 13.5px; opacity: .92; }
+    .mh-xls { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; background: rgba(255,255,255,.16); color: #fff; text-decoration: none; padding: 7px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; }
+    .mh-xls:hover { background: rgba(255,255,255,.26); color: #fff; }
+    .mh-datef { display: flex; align-items: flex-end; gap: 8px; background: rgba(255,255,255,.12); padding: 12px 14px; border-radius: 14px; }
+    .mh-datef label { display: block; font-size: 11px; opacity: .85; margin-bottom: 3px; width: 100%; }
+    .mh-datef input { border: none; border-radius: 9px; padding: 8px 10px; font-size: 13px; }
+    .mh-datef button { border: none; background: #ffb703; color: #1a1a1a; font-weight: 700; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .mh-alert { margin-top: 18px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; }
+
+    .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+    .mh-kpi { position: relative; border-radius: 16px; padding: 20px; color: #fff; overflow: hidden; box-shadow: 0 8px 22px rgba(2,6,23,.12); }
+    .mh-kpi--a { background: linear-gradient(135deg, #0e7490, #06b6d4); }
+    .mh-kpi--b { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+    .mh-kpi--t { background: linear-gradient(135deg, #0e7490, #14b8a6); }
+    .mh-kpi--w { background: linear-gradient(135deg, #6d28d9, #a855f7); }
+    .mh-kpi-ic { position: absolute; right: 14px; top: 12px; font-size: 30px; opacity: .28; }
+    .mh-kpi-v { font-size: 23px; font-weight: 800; letter-spacing: -.5px; }
+    .mh-kpi-v span { font-size: 14px; font-weight: 600; opacity: .85; }
+    .mh-kpi-l { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+
+    .mh-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(2,6,23,.05); }
+    .mh-card--wide { margin-top: 18px; }
+    .mh-card-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
+    .mh-dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
+    .mh-dot--a { background: #0e7490; } .mh-dot--r { background: #7c3aed; }
+    .mh-chart-wide { height: 340px; padding: 18px 20px; }
+
+    .mh-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 18px; }
+    .mh-tbl { padding: 6px 8px 12px; overflow-x: auto; }
+    .mh-tbl table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .mh-tbl th { text-align: left; color: #64748b; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; padding: 9px 12px; border-bottom: 1px solid #eef2f7; }
+    .mh-tbl td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+    .mh-tbl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .mh-tbl tfoot td { font-weight: 700; border-top: 2px solid #e2e8f0; color: #0f172a; }
+
+    .mh-ctx { padding: 16px 20px; }
+    .mh-ctx-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; }
+    .mh-ctx-row span { color: #475569; } .mh-ctx-row b { color: #0f172a; }
+    .mh-good { color: #059669; }
+    .mh-ctx-note { margin-top: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #334155; line-height: 1.6; }
+
+    .mh-note { margin-top: 18px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 14px; padding: 16px 22px; }
+    .mh-note-h { font-weight: 700; color: #0e7490; margin-bottom: 8px; }
+    .mh-note ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.7; }
+    .mh-note code { background: #cffafe; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+
+    @@media (max-width: 900px) {
+        .mh-kpis { grid-template-columns: 1fr 1fr; }
+        .mh-grid { grid-template-columns: 1fr; }
+    }
+</style>

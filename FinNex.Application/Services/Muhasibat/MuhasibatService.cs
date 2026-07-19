@@ -33,6 +33,8 @@ public class MuhasibatService : IMuhasibatService
     private const string AdMenfeet       = "Muhasibat — Menfeet zerer";
     private const string AdMenfeetDetal  = "Muhasibat — Menfeet detal";
     private const string AdMenfeetBaza   = "Muhasibat — Menfeet baza";
+    private const string AdMaturity          = "Muhasibat — Maturity ladder";
+    private const string AdMaturityKontekst  = "Muhasibat — Maturity kontekst";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -520,6 +522,72 @@ public class MuhasibatService : IMuhasibatService
         "89"                                  => ("Ehtiyat xərci", false),
         _ => sinif2.StartsWith("8") ? ("Digər xərc", false) : ("Digər gəlir", true)
     };
+
+    public async Task<MuhasibatMaturityDto> MaturityAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatMaturityDto { Tarix = t };
+
+        try
+        {
+            // Aktiv tərəf — kredit ödəniş qrafiki (graphpogkre), date_pog qutuları.
+            var sql = (await SqlAl(AdMaturity)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 5);
+            var r = rows.FirstOrDefault();
+
+            var adlar = new[] { "0–1 ay", "1–3 ay", "3–6 ay", "6–12 ay", "1–2 il", "2 il+" };
+            var esas = new decimal[6];
+            var faiz = new decimal[6];
+            if (r != null)
+                for (int i = 0; i < 6; i++)
+                {
+                    esas[i] = Dec(Val(r, $"e{i + 1}"));
+                    faiz[i] = Dec(Val(r, $"f{i + 1}"));
+                }
+
+            dto.EsasCem = Math.Round(esas.Sum(), 2);
+            dto.FaizCem = Math.Round(faiz.Sum(), 2);
+            dto.CemAxin = Math.Round(dto.EsasCem + dto.FaizCem, 2);
+
+            decimal kum = 0m;
+            for (int i = 0; i < 6; i++)
+            {
+                var cem = esas[i] + faiz[i];
+                kum += cem;
+                dto.Qutular.Add(new MaturityQutuDto
+                {
+                    Ad = adlar[i],
+                    Esas = Math.Round(esas[i], 2),
+                    Faiz = Math.Round(faiz[i], 2),
+                    Cem = Math.Round(cem, 2),
+                    Kumulyativ = Math.Round(kum, 2),
+                    Faiz_Pay = dto.CemAxin != 0 ? Math.Round(cem / dto.CemAxin * 100, 1) : 0
+                });
+            }
+            dto.Axin1Ay  = dto.Qutular[0].Cem;
+            dto.Axin3Ay  = dto.Qutular[1].Kumulyativ;
+            dto.Axin12Ay = dto.Qutular[3].Kumulyativ;
+
+            // Kontekst — tələbli depozit bazası + HQLA (likvid tampon).
+            var csql = (await SqlAl(AdMaturityKontekst)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var crows = await _oracle.SelectAsync(csql, maxRows: 5);
+            var cr = crows.FirstOrDefault();
+            if (cr != null)
+            {
+                dto.TelebliDepozit = Math.Round(Dec(Val(cr, "depozit")), 2);
+                dto.Hqla           = Math.Round(Dec(Val(cr, "hqla")), 2);
+            }
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
 
     public async Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null)
     {
