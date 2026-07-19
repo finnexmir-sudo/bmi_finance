@@ -35,6 +35,9 @@ public class MuhasibatService : IMuhasibatService
     private const string AdMenfeetBaza   = "Muhasibat — Menfeet baza";
     private const string AdMaturity          = "Muhasibat — Maturity ladder";
     private const string AdMaturityKontekst  = "Muhasibat — Maturity kontekst";
+    private const string AdKeyfiyyet       = "Muhasibat — Kredit keyfiyyet";
+    private const string AdKeyfiyyetBaza   = "Muhasibat — Kredit keyfiyyet baza";
+    private const string AdKeyfiyyetDetal  = "Muhasibat — Kredit keyfiyyet detal";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -522,6 +525,84 @@ public class MuhasibatService : IMuhasibatService
         "89"                                  => ("Ehtiyat xərci", false),
         _ => sinif2.StartsWith("8") ? ("Digər xərc", false) : ("Digər gəlir", true)
     };
+
+    public async Task<MuhasibatKeyfiyyetDto> KreditKeyfiyyetAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatKeyfiyyetDto { Tarix = t };
+
+        try
+        {
+            // 1) Təsnifat qrupları (ehtiyat dərəcəsi üzrə): say/qalıq/ehtiyat.
+            var sql = (await SqlAl(AdKeyfiyyet)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 20);
+
+            var adlar = new Dictionary<int, string>
+            {
+                [1] = "Standart", [2] = "Nəzarət altında", [3] = "Qeyri-standart",
+                [4] = "Şübhəli", [5] = "Ümidsiz (zərər)"
+            };
+            var katMap = new Dictionary<int, KeyfiyyetKatDto>();
+            foreach (var r in rows)
+            {
+                var kat = (int)Dec(Val(r, "kat"));
+                if (!adlar.ContainsKey(kat)) continue;
+                katMap[kat] = new KeyfiyyetKatDto
+                {
+                    Ad = adlar[kat],
+                    Say = (int)Dec(Val(r, "say")),
+                    Qaliq = Math.Round(Dec(Val(r, "qaliq")), 2),
+                    Ehtiyat = Math.Round(Dec(Val(r, "ehtiyat")), 2)
+                };
+            }
+
+            dto.Portfel      = Math.Round(katMap.Values.Sum(x => x.Qaliq), 2);
+            dto.Ehtiyat      = Math.Round(katMap.Values.Sum(x => x.Ehtiyat), 2);
+            dto.MuqavileSayi = katMap.Values.Sum(x => x.Say);
+            dto.EhtiyatFaiz  = dto.Portfel != 0 ? Math.Round(dto.Ehtiyat / dto.Portfel * 100, 2) : 0;
+            // Problemli (impaired) = qeyri-standart + şübhəli + ümidsiz (kat 3-5).
+            dto.ProblemliQaliq = Math.Round(
+                new[] { 3, 4, 5 }.Where(katMap.ContainsKey).Sum(k => katMap[k].Qaliq), 2);
+            dto.Ortuyu = dto.ProblemliQaliq != 0 ? Math.Round(dto.Ehtiyat / dto.ProblemliQaliq * 100, 1) : 0;
+
+            // Kanonik sıra (1→5), payla.
+            foreach (var k in new[] { 1, 2, 3, 4, 5 })
+                if (katMap.TryGetValue(k, out var kd))
+                {
+                    kd.Faiz = dto.Portfel != 0 ? Math.Round(kd.Qaliq / dto.Portfel * 100, 1) : 0;
+                    dto.Kateqoriyalar.Add(kd);
+                }
+
+            // 2) Baza — restrukt + girov/LTV (bir sətir).
+            var bsql = (await SqlAl(AdKeyfiyyetBaza)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var brows = await _oracle.SelectAsync(bsql, maxRows: 5);
+            var br = brows.FirstOrDefault();
+            if (br != null)
+            {
+                dto.RestruktSay   = (int)Dec(Val(br, "restrukt_say"));
+                dto.RestruktQaliq = Math.Round(Dec(Val(br, "restrukt_qaliq")), 2);
+                dto.GirovluSay    = (int)Dec(Val(br, "girovlu_say"));
+                dto.GirovluQaliq  = Math.Round(Dec(Val(br, "girovlu_qaliq")), 2);
+                dto.GirovsuzSay   = (int)Dec(Val(br, "girovsuz_say"));
+                dto.GirovsuzQaliq = Math.Round(Dec(Val(br, "girovsuz_qaliq")), 2);
+                dto.GirovCem      = Math.Round(Dec(Val(br, "girov_cem")), 2);
+                dto.OrtaLtv       = dto.GirovCem != 0 ? Math.Round(dto.GirovluQaliq / dto.GirovCem * 100, 1) : 0;
+            }
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    // Ehtiyat dərəcəsini (0-100 %) təsnifat kateqoriyasına (1-5) çevir.
+    private static int KeyfiyyetKat(decimal rez) =>
+        rez <= 5 ? 1 : rez <= 20 ? 2 : rez <= 50 ? 3 : rez < 100 ? 4 : 5;
 
     public async Task<MuhasibatMaturityDto> MaturityAsync(DateTime? tarix = null)
     {
@@ -1094,6 +1175,33 @@ public class MuhasibatService : IMuhasibatService
                             Val(r, "ad")?.ToString() ?? "", null, Math.Round(meb, 2)));
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
+                    break;
+                }
+
+                case "kredit-keyfiyyet":
+                {
+                    // madde = təsnifat kateqoriyası adı (Standart / Şübhəli / ...).
+                    var adlar = new Dictionary<int, string>
+                    {
+                        [1] = "Standart", [2] = "Nəzarət altında", [3] = "Qeyri-standart",
+                        [4] = "Şübhəli", [5] = "Ümidsiz (zərər)"
+                    };
+                    var sql = (await SqlAl(AdKeyfiyyetDetal)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+                    foreach (var r in rows)
+                    {
+                        var rez = Dec(Val(r, "rez"));
+                        var kat = KeyfiyyetKat(rez);
+                        if (adlar[kat] != madde) continue;
+                        var qaliq = Dec(Val(r, "qaliq"));
+                        if (qaliq == 0m) continue;
+                        var setir = DSetir(Val(r, "muqavile")?.ToString() ?? "",
+                            "Tip " + (Val(r, "tip")?.ToString() ?? ""), null, Math.Round(qaliq, 2));
+                        setir.Elave = $"Ehtiyat: {rez:0}%";
+                        dto.Setirler.Add(setir);
+                    }
+                    dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
+                    dto.ElaveBaslik = "Ehtiyat dərəcəsi";
                     break;
                 }
 

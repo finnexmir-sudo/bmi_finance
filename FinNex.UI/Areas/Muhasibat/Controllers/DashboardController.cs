@@ -127,6 +127,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Kredit Keyfiyyəti & Ehtiyat.
+    public async Task<IActionResult> Keyfiyyet(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.KreditKeyfiyyetAsync(ParseTarix(t));
+        return View(model);
+    }
+
     // Mənfəət / Zərər (P&L) — tarix aralığı: bt=başlanğıc, st=son (default YTD).
     public async Task<IActionResult> Menfeet(string? bt, string? st)
     {
@@ -300,6 +310,42 @@ public class DashboardController : Controller
         r = Bolme(sh, r, "Gəlir strukturu", m.GelirBolgusu);
         r = Bolme(sh, r, "Əməliyyat xərci strukturu", m.XercBolgusu);
         return Yukle(wb, "Menfeet_Zerer");
+    }
+
+    public async Task<IActionResult> KeyfiyyetExcel(string? t)
+    {
+        if (!await IcazeVarAsync()) return Forbid();
+        var m = await _service.KreditKeyfiyyetAsync(ParseTarix(t));
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Keyfiyyet");
+        int r = 0;
+        Setir(sh, r++, $"Kredit Keyfiyyəti & Ehtiyat — {m.Tarix:dd.MM.yyyy}");
+        r++;
+        KV(sh, r++, "Portfel", m.Portfel);
+        KV(sh, r++, "Ümumi ehtiyat", m.Ehtiyat);
+        KV(sh, r++, "Ehtiyat / Portfel %", m.EhtiyatFaiz);
+        KV(sh, r++, "Problemli qalıq (≥20%)", m.ProblemliQaliq);
+        KV(sh, r++, "Ehtiyat örtüyü %", m.Ortuyu);
+        KV(sh, r++, "Restrukt sayı", m.RestruktSay);
+        KV(sh, r++, "Restrukt qalıq", m.RestruktQaliq);
+        KV(sh, r++, "Girovlu qalıq", m.GirovluQaliq);
+        KV(sh, r++, "Girovsuz qalıq", m.GirovsuzQaliq);
+        KV(sh, r++, "Ümumi girov", m.GirovCem);
+        KV(sh, r++, "Orta LTV %", m.OrtaLtv);
+        r++;
+        var h = sh.CreateRow(r++);
+        string[] basliqlar = { "Kateqoriya", "Say", "Qalıq", "Ehtiyat", "Pay %" };
+        for (int c = 0; c < basliqlar.Length; c++) h.CreateCell(c).SetCellValue(basliqlar[c]);
+        foreach (var k in m.Kateqoriyalar)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(k.Ad);
+            row.CreateCell(1).SetCellValue(k.Say);
+            row.CreateCell(2).SetCellValue((double)k.Qaliq);
+            row.CreateCell(3).SetCellValue((double)k.Ehtiyat);
+            row.CreateCell(4).SetCellValue((double)k.Faiz);
+        }
+        return Yukle(wb, "Kredit_Keyfiyyet");
     }
 
     public async Task<IActionResult> MaturityExcel(string? t)

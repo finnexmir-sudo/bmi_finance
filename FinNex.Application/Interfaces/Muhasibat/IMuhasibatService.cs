@@ -22,6 +22,9 @@ public interface IMuhasibatService
     // Kredit Pul Axını (Maturity Ladder) — gözlənilən ödənişlər müddət qutularında.
     Task<MuhasibatMaturityDto> MaturityAsync(DateTime? tarix = null);
 
+    // Kredit Keyfiyyəti & Ehtiyat — təsnifat, ehtiyat örtüyü, girov/LTV, restrukt.
+    Task<MuhasibatKeyfiyyetDto> KreditKeyfiyyetAsync(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 

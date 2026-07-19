@@ -14,10 +14,11 @@
     </div>
 
     <!-- Kreditlər -->
-    <div class="mh-tg @(In("Kredit", "Maturity") ? "act" : "")">
+    <div class="mh-tg @(In("Kredit", "Maturity", "Keyfiyyet") ? "act" : "")">
         <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-credit-card"></i> Kreditlər <i class="bi bi-chevron-down mh-cv"></i></button>
         <div class="mh-tg-menu">
             <a asp-action="Kredit" class="@On("Kredit")"><i class="bi bi-credit-card"></i> Kredit portfeli</a>
+            <a asp-action="Keyfiyyet" class="@On("Keyfiyyet")"><i class="bi bi-shield-check"></i> Keyfiyyət & Ehtiyat</a>
             <a asp-action="Maturity" class="@On("Maturity")"><i class="bi bi-bar-chart-steps"></i> Pul Axını</a>
         </div>
     </div>
