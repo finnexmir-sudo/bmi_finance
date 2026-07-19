@@ -21,20 +21,21 @@ BEGIN TRAN;
 
 UPDATE OracleSorgular
 SET    SorguMetni = 'SELECT al.tipkredita tip,
-       NVL(io.name_index_otrasli, ''(təyinatsız)'') teyinat,
+       io.name_index_otrasli teyinat,
        SUBSTR(al.licschkre,6,2) valyuta,
        ROUND(odb.func_get_kurval(SUBSTR(al.licschkre,6,2), al.date_oper), 6) kurs,
        al.summa esas,
        al.summa_19 vk,
-       odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate, x.date_oper)) gec_gun,
+       CASE WHEN x.licschpkre IS NULL THEN 0
+            ELSE odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate, x.date_oper)) END gec_gun,
        al.licschkre muqavile
 FROM   arh_licschkre al, index_otrasli io, view_nacpogprokre_all x
 WHERE  al.index_otrasli = io.index_otrasli(+)
   AND  al.date_oper = TO_DATE(''{TARIX}'',''dd/mm/yyyy'')
   AND  (al.date_close IS NULL OR al.date_close > TO_DATE(''{TARIX}'',''dd/mm/yyyy''))
   AND  LENGTH(al.licschkre) = 20
-  AND  al.licschpkre = x.licschpkre AND al.subschkre = x.subschkre
-  AND  x.date_oper = al.date_oper',
+  AND  al.licschpkre = x.licschpkre(+) AND al.subschkre = x.subschkre(+)
+  AND  x.date_oper(+) = al.date_oper',
        Mahiyyet = N'Kredit portfeli (arh_licschkre, tarix üzrə — tip/təyinat=index_otrasli/valyuta/DPD)',
        Aktiv = 1, Silinib = 0
 WHERE  SorguAdi = N'Muhasibat — Kredit portfeli';

@@ -382,7 +382,7 @@ public class MuhasibatService : IMuhasibatService
                 var vk = Dec(Val(r, "vk"));
                 var gec = (int)Dec(Val(r, "gec_gun"));
                 var qaliq = (esas + vk) * kurs;
-                if (qaliq == 0m) continue;
+                // Açıq müqavilə (date_close null) qalığı 0 olsa belə sayılır (b/k/faizdə ola bilər).
 
                 total += qaliq;
                 vkTotal += vk * kurs;
@@ -1077,7 +1077,7 @@ public class MuhasibatService : IMuhasibatService
                         var vk = Dec(Val(r, "vk"));
                         var gec = (int)Dec(Val(r, "gec_gun"));
                         var qaliq = (esas + vk) * kurs;
-                        if (qaliq == 0m) continue;
+                        // Açıq müqavilə qalığı 0 olsa belə görünür — say drill-down ilə tutuşsun.
                         bool uygun = mod switch
                         {
                             "tip"      => TipAd((int)Dec(Val(r, "tip"))) == mval,
