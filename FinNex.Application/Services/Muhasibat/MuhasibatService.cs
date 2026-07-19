@@ -39,6 +39,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdKeyfiyyetGirov  = "Muhasibat — Kredit girov";
     private const string AdKeyfiyyetBaza   = "Muhasibat — Kredit keyfiyyet baza";
     private const string AdKeyfiyyetDetal  = "Muhasibat — Kredit keyfiyyet detal";
+    private const string AdYerlesdirme     = "Muhasibat — Yerlesdirme";
 
     // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
@@ -633,6 +634,109 @@ public class MuhasibatService : IMuhasibatService
     // Ehtiyat dərəcəsini (0-100 %) təsnifat kateqoriyasına (1-5) çevir.
     private static int KeyfiyyetKat(decimal rez) =>
         rez <= 5 ? 1 : rez <= 20 ? 2 : rez <= 50 ? 3 : rez < 100 ? 4 : 5;
+
+    public async Task<MuhasibatYerlesdirmeDto> YerlesdirmeAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatYerlesdirmeDto { Tarix = t };
+
+        try
+        {
+            var sql = (await SqlAl(AdYerlesdirme)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 5000);
+
+            // kontragent adı → (AZN qalıq, say, faiz×qalıq ağırlığı)
+            var kontragentD = new Dictionary<string, (decimal qaliq, int say, decimal faizAgirliq)>();
+            var valyutaD = new Dictionary<string, decimal>();
+            var muddetD  = new Dictionary<string, decimal>();
+            decimal total = 0m, faizAgirliqCem = 0m, illikGelir = 0m;
+            int say = 0;
+
+            foreach (var r in rows)
+            {
+                var hesab5 = Val(r, "hesab5")?.ToString() ?? "";
+                var kurs = Dec(Val(r, "kurs"));
+                var esas = Dec(Val(r, "esas"));
+                var faiz = Dec(Val(r, "faiz"));
+                var qaliq = esas * kurs;
+                // Açıq yerləşdirmə (date_close null) qalığı 0 olsa belə sayılır.
+
+                total += qaliq;
+                say++;
+                faizAgirliqCem += qaliq * faiz;      // AZN-qalıqla ölçülü faiz
+                illikGelir += qaliq * faiz / 100m;
+
+                // AMB overnight (11xxx) vs banklararası (15xxx / digər)
+                if (hesab5.StartsWith("11")) { dto.AmbMebleg += qaliq; dto.AmbSay++; }
+                else { dto.BanklararasiMebleg += qaliq; dto.BanklararasiSay++; }
+
+                var ad = Val(r, "ad")?.ToString();
+                if (string.IsNullOrWhiteSpace(ad)) ad = $"Hesab {hesab5}";
+                var cur = kontragentD.GetValueOrDefault(ad);
+                kontragentD[ad] = (cur.qaliq + qaliq, cur.say + 1, cur.faizAgirliq + qaliq * faiz);
+
+                var vad = ValyutaAd(Val(r, "valyuta")?.ToString() ?? "");
+                valyutaD[vad] = valyutaD.GetValueOrDefault(vad) + qaliq;
+
+                var mad = MuddetQrup(Val(r, "planbaglanma"), t);
+                muddetD[mad] = muddetD.GetValueOrDefault(mad) + qaliq;
+            }
+
+            dto.UmumiPortfel        = Math.Round(total, 2);
+            dto.Say                 = say;
+            dto.OrtaFaiz            = total != 0 ? Math.Round(faizAgirliqCem / total, 2) : 0;
+            dto.IllikGelir          = Math.Round(illikGelir, 2);
+            dto.AmbMebleg           = Math.Round(dto.AmbMebleg, 2);
+            dto.BanklararasiMebleg  = Math.Round(dto.BanklararasiMebleg, 2);
+
+            // Kontragent (bank) siyahısı — məbləğə görə, sabit rənglərlə.
+            var renglar = new[] { "#0ea5e9", "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#64748b" };
+            int idx = 0;
+            foreach (var k in kontragentD.OrderByDescending(x => x.Value.qaliq))
+            {
+                dto.Kontragentler.Add(new YerlesdirmeKatDto
+                {
+                    Ad = k.Key, Say = k.Value.say, Qaliq = Math.Round(k.Value.qaliq, 2),
+                    Faiz = k.Value.qaliq != 0 ? Math.Round(k.Value.faizAgirliq / k.Value.qaliq, 2) : 0,
+                    Pay = total != 0 ? Math.Round(k.Value.qaliq / total * 100, 1) : 0,
+                    Reng = renglar[idx % renglar.Length]
+                });
+                idx++;
+            }
+
+            dto.ValyutaBolgusu = ToMadde(valyutaD, total);
+            dto.MuddetBolgusu  = ToMaddeMuddet(muddetD, total);
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    // Qalıq müddət qutuları (date_planclose − hesabat tarixi). null → müddətsiz/tələbli.
+    private static readonly string[] MuddetSira =
+        { "≤7 gün (overnight/qısa)", "8–30 gün", "1–3 ay", "3–12 ay", "12 ay+", "Müddətsiz / tələbli" };
+
+    private static string MuddetQrup(object? planbaglanma, DateTime t)
+    {
+        if (planbaglanma is not DateTime dt) return "Müddətsiz / tələbli";
+        var gun = (dt.Date - t).Days;
+        if (gun <= 7)   return "≤7 gün (overnight/qısa)";
+        if (gun <= 30)  return "8–30 gün";
+        if (gun <= 90)  return "1–3 ay";
+        if (gun <= 365) return "3–12 ay";
+        return "12 ay+";
+    }
+
+    private static List<BalansMaddeDto> ToMaddeMuddet(Dictionary<string, decimal> d, decimal total) =>
+        MuddetSira.Where(a => d.ContainsKey(a))
+                  .Select(a => new BalansMaddeDto { Ad = a, Mebleg = Math.Round(d[a], 2),
+                      Faiz = total != 0 ? Math.Round(d[a] / total * 100, 1) : 0 }).ToList();
 
     public async Task<MuhasibatMaturityDto> MaturityAsync(DateTime? tarix = null)
     {
@@ -1255,6 +1359,48 @@ public class MuhasibatService : IMuhasibatService
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
                     dto.ElaveBaslik = kateqoriyaMi || madde == "restrukt" ? "Ehtiyat dərəcəsi" : "Girov / LTV";
+                    break;
+                }
+
+                case "yerlesdirme":
+                {
+                    // madde: "kontragent:<Ad>" | "valyuta:<VAL>" | "muddet:<qutu>" | "amb" | "banklararasi"
+                    var sql = (await SqlAl(AdYerlesdirme)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+                    var rows = await _oracle.SelectAsync(sql, maxRows: 5000);
+                    var parts = (madde ?? "").Split(':', 2);
+                    var mod = parts.Length > 0 ? parts[0] : "";
+                    var mval = parts.Length > 1 ? parts[1] : "";
+                    foreach (var r in rows)
+                    {
+                        var hesab5 = Val(r, "hesab5")?.ToString() ?? "";
+                        var kurs = Dec(Val(r, "kurs"));
+                        var esas = Dec(Val(r, "esas"));
+                        var faiz = Dec(Val(r, "faiz"));
+                        var qaliq = esas * kurs;
+                        var ad = Val(r, "ad")?.ToString();
+                        if (string.IsNullOrWhiteSpace(ad)) ad = $"Hesab {hesab5}";
+                        var vad = ValyutaAd(Val(r, "valyuta")?.ToString() ?? "");
+                        var mad = MuddetQrup(Val(r, "planbaglanma"), t);
+                        // Açıq yerləşdirmə qalığı 0 olsa belə görünür (say drill-down ilə tutuşsun).
+                        bool uygun = mod switch
+                        {
+                            "kontragent"   => ad == mval,
+                            "valyuta"      => vad == mval,
+                            "muddet"       => mad == mval,
+                            "amb"          => hesab5.StartsWith("11"),
+                            "banklararasi" => !hesab5.StartsWith("11"),
+                            _              => false
+                        };
+                        if (!uygun) continue;
+                        var muq = Val(r, "muqavile")?.ToString() ?? "";
+                        // öz valyutası = esas (öz valyutasında qalıq); AZN-də manata bərabər.
+                        var setir = DSetir(muq, ad, vad, Math.Round(qaliq, 2), Math.Round(esas, 2));
+                        var pb = Val(r, "planbaglanma") is DateTime dtp ? dtp.ToString("dd.MM.yyyy") : "müddətsiz";
+                        setir.Elave = $"Faiz {faiz:0.##}% · {mad} · plan: {pb}";
+                        dto.Setirler.Add(setir);
+                    }
+                    dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
+                    dto.ElaveBaslik = "Faiz / müddət";
                     break;
                 }
 

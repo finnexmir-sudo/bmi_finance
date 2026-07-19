@@ -25,6 +25,9 @@ public interface IMuhasibatService
     // Kredit Keyfiyyəti & Ehtiyat — təsnifat, ehtiyat örtüyü, girov/LTV, restrukt.
     Task<MuhasibatKeyfiyyetDto> KreditKeyfiyyetAsync(DateTime? tarix = null);
 
+    // Yerləşdirilmiş vəsaitlər — bank yerləşdirmələri (arh_licsch_rs): kontragent/valyuta/faiz/müddət.
+    Task<MuhasibatYerlesdirmeDto> YerlesdirmeAsync(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 

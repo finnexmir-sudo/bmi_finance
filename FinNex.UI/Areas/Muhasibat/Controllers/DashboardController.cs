@@ -137,6 +137,16 @@ public class DashboardController : Controller
         return View(model);
     }
 
+    // Yerləşdirilmiş vəsaitlər (bank yerləşdirmələri — arh_licsch_rs).
+    public async Task<IActionResult> Yerlesdirme(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var model = await _service.YerlesdirmeAsync(ParseTarix(t));
+        return View(model);
+    }
+
     // Mənfəət / Zərər (P&L) — tarix aralığı: bt=başlanğıc, st=son (default YTD).
     public async Task<IActionResult> Menfeet(string? bt, string? st)
     {
@@ -346,6 +356,42 @@ public class DashboardController : Controller
             row.CreateCell(4).SetCellValue((double)k.Faiz);
         }
         return Yukle(wb, "Kredit_Keyfiyyet");
+    }
+
+    public async Task<IActionResult> YerlesdirmeExcel(string? t)
+    {
+        if (!await IcazeVarAsync()) return Forbid();
+        var m = await _service.YerlesdirmeAsync(ParseTarix(t));
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Yerlesdirme");
+        int r = 0;
+        Setir(sh, r++, $"Yerləşdirilmiş vəsaitlər — {m.Tarix:dd.MM.yyyy}");
+        r++;
+        KV(sh, r++, "Ümumi portfel", m.UmumiPortfel);
+        KV(sh, r++, "Açıq yerləşdirmə sayı", m.Say);
+        KV(sh, r++, "Orta faiz %", m.OrtaFaiz);
+        KV(sh, r++, "İllik gözlənilən faiz gəliri", m.IllikGelir);
+        KV(sh, r++, "AMB overnight", m.AmbMebleg);
+        KV(sh, r++, "AMB overnight sayı", m.AmbSay);
+        KV(sh, r++, "Banklararası (AMB xaric)", m.BanklararasiMebleg);
+        KV(sh, r++, "Banklararası sayı", m.BanklararasiSay);
+        r++;
+        var h = sh.CreateRow(r++);
+        string[] basliqlar = { "Kontragent", "Say", "Qalıq (AZN)", "Orta faiz %", "Pay %" };
+        for (int c = 0; c < basliqlar.Length; c++) h.CreateCell(c).SetCellValue(basliqlar[c]);
+        foreach (var k in m.Kontragentler)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(k.Ad);
+            row.CreateCell(1).SetCellValue(k.Say);
+            row.CreateCell(2).SetCellValue((double)k.Qaliq);
+            row.CreateCell(3).SetCellValue((double)k.Faiz);
+            row.CreateCell(4).SetCellValue((double)k.Pay);
+        }
+        r++;
+        r = Bolme(sh, r, "Valyuta strukturu", m.ValyutaBolgusu);
+        r = Bolme(sh, r, "Qalıq müddət (maturity)", m.MuddetBolgusu);
+        return Yukle(wb, "Yerlesdirilmis_Vesaitler");
     }
 
     public async Task<IActionResult> MaturityExcel(string? t)

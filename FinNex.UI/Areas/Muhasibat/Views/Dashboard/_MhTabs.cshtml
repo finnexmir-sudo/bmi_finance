@@ -36,10 +36,11 @@
     <a asp-action="Menfeet" class="mh-tab @On("Menfeet")"><i class="bi bi-graph-up-arrow"></i> Mənfəət/Zərər</a>
 
     <!-- Likvidlik & Bazar -->
-    <div class="mh-tg @(In("Likvidlik", "Valyuta") ? "act" : "")">
+    <div class="mh-tg @(In("Likvidlik", "Valyuta", "Yerlesdirme") ? "act" : "")">
         <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-droplet"></i> Likvidlik & Bazar <i class="bi bi-chevron-down mh-cv"></i></button>
         <div class="mh-tg-menu">
             <a asp-action="Likvidlik" class="@On("Likvidlik")"><i class="bi bi-droplet"></i> Likvidlik</a>
+            <a asp-action="Yerlesdirme" class="@On("Yerlesdirme")"><i class="bi bi-bank"></i> Yerləşdirmələr</a>
             <a asp-action="Valyuta" class="@On("Valyuta")"><i class="bi bi-currency-exchange"></i> Valyuta</a>
         </div>
     </div>
