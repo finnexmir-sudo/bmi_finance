@@ -36,6 +36,7 @@ from arh_licschkre al, tipzal z
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
   and length(al.licschkre) = 20
+  and (al.summa+al.summa_19) <> 0
   and al.tipzaloga = z.code(+)
 group by z.name, al.tipzaloga', 1, @DepId, GETDATE(), 0);
 
@@ -47,7 +48,8 @@ SET    SorguMetni = N'select
 from arh_licschkre al
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
-  and length(al.licschkre) = 20',
+  and length(al.licschkre) = 20
+  and (al.summa+al.summa_19) <> 0',
        Mahiyyet = N'Kredit keyfiyyəti — restrukt (girov ayrıca sorğuya keçdi)'
 WHERE  SorguAdi = N'Muhasibat — Kredit keyfiyyet baza' AND ISNULL(Silinib,0)=0;
 
@@ -64,6 +66,7 @@ from arh_licschkre al, tipzal z
 where al.date_oper = to_date(''{TARIX}'',''dd/mm/yyyy'')
   and (al.date_close is null or al.date_close > to_date(''{TARIX}'',''dd/mm/yyyy''))
   and length(al.licschkre) = 20
+  and (al.summa+al.summa_19) <> 0
   and al.tipzaloga = z.code(+)'
 WHERE  SorguAdi = N'Muhasibat — Kredit keyfiyyet detal' AND ISNULL(Silinib,0)=0;
 
