@@ -29,6 +29,34 @@ public class AmbDpdSetir
     public decimal D90 { get; set; }     // 90 gündən artıq
 }
 
+// AMB MHBS 9 — Cədvəl A1.1: kredit qalığının mərhələlərarası dəyişməsi (roll-forward).
+// Dövr: cari ilin əvvəli (açılış snapshot) → hesabat tarixi (bağlanış).
+public class MuhasibatAmbA1_1Dto
+{
+    public DateTime Tarix { get; set; }
+    public DateTime AcilisTarix { get; set; }
+    public bool Ugurlu { get; set; } = true;
+    public string? Xeta { get; set; }
+
+    // Qrup (biznes/istehlak/dasinmaz/diger) → brüt roll-forward.
+    public Dictionary<string, AmbRollForward> Qruplar { get; set; } = new();
+
+    // ECL bölməsi (A2): qrup → mərhələ üzrə ECL (E1/E2/E3 istifadə olunur).
+    public Dictionary<string, AmbHuceyre> EclAcilis { get; set; } = new();   // dövr əvvəli ECL
+    public Dictionary<string, AmbHuceyre> EclBaglanis { get; set; } = new(); // dövr sonu ECL
+}
+
+// Bir qrup üçün brüt roll-forward (min manat AZN; ixracda ÷1000). Mərhələ 1/2/3.
+public class AmbRollForward
+{
+    public decimal A1, A2, A3;   // açılış qalığı (opening) mərhələ 1/2/3
+    public decimal V1, V2, V3;   // dövr ərzində verilmiş (issued)
+    public decimal O1, O2, O3;   // dövr ərzində ödənilmiş (repaid, müsbət)
+    public decimal T12, T13;     // köçürmə: mərhələ 1 → 2, 1 → 3
+    public decimal T21, T23;     // 2 → 1, 2 → 3
+    public decimal T31, T32;     // 3 → 1, 3 → 2
+}
+
 // Bir AMB kateqoriyası üçün brüt (G) və ECL (E) — mərhələ 1/2/3 üzrə (min manat AZN saxlanılır; ixracda ÷1000).
 public class AmbHuceyre
 {

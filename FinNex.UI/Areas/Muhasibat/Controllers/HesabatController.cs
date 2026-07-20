@@ -151,7 +151,9 @@ public class HesabatController : Controller
         if (!await IcazeVarAsync())
             return Forbid();
 
-        var m = await _service.AmbA1Async(ParseTarix(t));
+        var pt = ParseTarix(t);
+        var m = await _service.AmbA1Async(pt);
+        var rf = await _service.AmbA1_1Async(pt);
 
         // DMS-də rəsmi AMB şablonu varsa onu doldur (formatlaşdırma + formullar qorunur),
         // yoxdursa təzə cədvəl generasiya et (fallback).
@@ -159,7 +161,7 @@ public class HesabatController : Controller
         var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "amb-mhbs9", "AMB_MHBS9.xlsx");
         if (System.IO.File.Exists(sablonPath))
         {
-            var dolu = AmbA1SablonDoldur(sablonPath, m);
+            var dolu = AmbA1SablonDoldur(sablonPath, m, rf);
             return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         $"AMB_MHBS9_{m.Tarix:yyyyMMdd}.xlsx");
         }
@@ -255,7 +257,7 @@ public class HesabatController : Controller
     // Rəsmi AMB şablonunu (xlsx) doldur: A1 vərəqində alt-sahə sətirlərinin yalnız
     // E-H (brüt Mərhələ 1/2/3/POCI) və J-M (ECL) xanaları. D/I və cəm/qrup sətirləri
     // şablonun öz =SUM() formulları ilə avtomatik hesablanır (əl vurulmur).
-    private static byte[] AmbA1SablonDoldur(string sablonPath, MuhasibatAmbA1Dto m)
+    private static byte[] AmbA1SablonDoldur(string sablonPath, MuhasibatAmbA1Dto m, MuhasibatAmbA1_1Dto rf)
     {
         IWorkbook wb;
         using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
@@ -289,6 +291,42 @@ public class HesabatController : Controller
             foreach (var (satir, qrup, stage) in dpdLeaf) AmbDpdYaz(ws12, satir - 1 + 23, AmbDpdAl(m.DpdXarici, qrup, stage));  // B
         }
 
+        // A1.1 — roll-forward (brüt) + A2 (ECL). Qrup bazaları (şablon sətirləri, 1-əsaslı).
+        var ws11 = wb.GetSheet("A1.1");
+        if (ws11 != null && rf.Ugurlu)
+        {
+            var qruplar = new (string qrup, int acilisRow, int eclAcRow, int eclBagRow)[]
+            {
+                ("biznes",   11, 57, 58),
+                ("istehlak", 21, 60, 61),
+                ("dasinmaz", 31, 63, 64),
+                ("diger",    41, 66, 67),
+            };
+            foreach (var (qrup, aRow, ecA, ecB) in qruplar)
+            {
+                var g = rf.Qruplar.TryGetValue(qrup, out var x) ? x : new AmbRollForward();
+                int b = aRow - 1;   // NPOI 0-əsaslı açılış sətri
+                // Cari ilin əvvəlinə qalıq / Verilmiş / Ödənilmiş — E(M1) F(M2) G(M3)
+                AmbCell(ws11, b,     4, g.A1); AmbCell(ws11, b,     5, g.A2); AmbCell(ws11, b,     6, g.A3);
+                AmbCell(ws11, b + 1, 4, g.V1); AmbCell(ws11, b + 1, 5, g.V2); AmbCell(ws11, b + 1, 6, g.V3);
+                AmbCell(ws11, b + 2, 4, g.O1); AmbCell(ws11, b + 2, 5, g.O2); AmbCell(ws11, b + 2, 6, g.O3);
+                // Köçürmələr — mənbə mərhələ sütunu MƏNFİ, hədəf sütunu şablon formulu ilə (əl vurma).
+                // Mərhələ 1-ə köçürmə (b+3): F=-T21, G=-T31 (E formul)
+                AmbCell(ws11, b + 3, 5, -g.T21); AmbCell(ws11, b + 3, 6, -g.T31);
+                // Mərhələ 2-ə köçürmə (b+4): E=-T12, G=-T32 (F formul)
+                AmbCell(ws11, b + 4, 4, -g.T12); AmbCell(ws11, b + 4, 6, -g.T32);
+                // Mərhələ 3-ə köçürmə (b+5): E=-T13, F=-T23 (G formul)
+                AmbCell(ws11, b + 5, 4, -g.T13); AmbCell(ws11, b + 5, 5, -g.T23);
+                // Qaytarılmış (b+6), Silinmiş (b+7) — 0, toxunulmur. Dövr sonu qalıq (b+8) — formul.
+
+                // A2 — ECL: dövr əvvəli + dövr sonu (E/F/G = Mərhələ 1/2/3)
+                var ea = rf.EclAcilis.TryGetValue(qrup, out var y) ? y : new AmbHuceyre();
+                var eb = rf.EclBaglanis.TryGetValue(qrup, out var z) ? z : new AmbHuceyre();
+                AmbCell(ws11, ecA - 1, 4, ea.E1); AmbCell(ws11, ecA - 1, 5, ea.E2); AmbCell(ws11, ecA - 1, 6, ea.E3);
+                AmbCell(ws11, ecB - 1, 4, eb.E1); AmbCell(ws11, ecB - 1, 5, eb.E2); AmbCell(ws11, ecB - 1, 6, eb.E3);
+            }
+        }
+
         // Cəm/qrup =SUM() formullarını server tərəfdə hesabla ki, hansı proqram açsa da
         // düzgün rəqəm görünsün (bu NPOI versiyasında IWorkbook.SetForceFormulaRecalculation yoxdur).
         try { wb.GetCreationHelper().CreateFormulaEvaluator().EvaluateAll(); } catch { /* formul yoxdursa keç */ }
@@ -315,6 +353,14 @@ public class HesabatController : Controller
         Set(ws, rIdx, 10, h.E2);  // K — ECL Mərhələ 2
         Set(ws, rIdx, 11, h.E3);  // L — ECL Mərhələ 3
         Set(ws, rIdx, 12, 0m);    // M — ECL POCI
+    }
+
+    // Bir xanaya min-manat dəyəri yaz (NPOI 0-əsaslı r,c). Formul xanalarına ÇAĞIRILMIR.
+    private static void AmbCell(ISheet ws, int r, int c, decimal v)
+    {
+        var row = ws.GetRow(r) ?? ws.CreateRow(r);
+        var cell = row.GetCell(c) ?? row.CreateCell(c);
+        cell.SetCellValue((double)Math.Round(v / 1000m, 1));
     }
 
     private static AmbDpdSetir AmbDpdAl(Dictionary<string, AmbDpdSetir> m, string qrup, int stage)

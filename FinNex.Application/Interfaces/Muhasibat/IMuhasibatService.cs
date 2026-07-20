@@ -35,6 +35,10 @@ public interface IMuhasibatService
     // AMB MHBS 9 — Cədvəl A1: IFRS 9 ECL nəticəsini AMB kredit-növü kateqoriyalarına aqreqasiya edir.
     Task<MuhasibatAmbA1Dto> AmbA1Async(DateTime? tarix = null);
 
+    // AMB MHBS 9 — Cədvəl A1.1: kredit qalığının mərhələlərarası dəyişməsi (roll-forward,
+    // dövr əvvəli → dövr sonu snapshot müqayisəsi).
+    Task<MuhasibatAmbA1_1Dto> AmbA1_1Async(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 

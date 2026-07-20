@@ -1019,6 +1019,131 @@ ORDER BY c.stage, c.sahe_kodu";
         _ => "diger"
     };
 
+    // A1.1 roll-forward: dövr əvvəli (2025 sonu) və dövr sonu (hesabat tarixi) snapshot-larını
+    // loan-səviyyəsində tutuşdurur. os NULL→yeni, cs NULL→bağlanmış, os≠cs→köçürmə.
+    private const string Ifrs9RollForwardSql = @"
+WITH acilis_snap AS (
+    SELECT MAX(date_oper) d FROM arh_licschkre
+    WHERE date_oper < TRUNC(TO_DATE('{TARIX}','dd/mm/yyyy'),'YYYY')
+),
+baglanis_snap AS (
+    SELECT MAX(date_oper) d FROM arh_licschkre
+    WHERE date_oper <= TO_DATE('{TARIX}','dd/mm/yyyy')
+),
+acilis AS (
+    SELECT ar.licschpkre, ar.subschkre, ar.index_otrasli sahe,
+           CASE WHEN odb.tar_ferq360(x.date_oper,NVL(x.lastoverduedate,x.date_oper)) BETWEEN 0 AND 30 THEN 1
+                WHEN odb.tar_ferq360(x.date_oper,NVL(x.lastoverduedate,x.date_oper)) BETWEEN 31 AND 90 THEN 2
+                ELSE 3 END st,
+           (ar.summa+ar.summa_19)*ROUND(odb.func_get_kurval(substr(ar.licschkre,6,2),ar.date_oper),6) bal
+    FROM acilis_snap cs JOIN arh_licschkre ar ON ar.date_oper=cs.d
+    LEFT JOIN view_nacpogprokre_all x ON x.licschpkre=ar.licschpkre AND x.subschkre=ar.subschkre AND x.date_oper=ar.date_oper
+    WHERE ar.date_close IS NULL AND LENGTH(ar.licschkre)=20
+),
+baglanis AS (
+    SELECT ar.licschpkre, ar.subschkre, ar.index_otrasli sahe,
+           CASE WHEN odb.tar_ferq360(x.date_oper,NVL(x.lastoverduedate,x.date_oper)) BETWEEN 0 AND 30 THEN 1
+                WHEN odb.tar_ferq360(x.date_oper,NVL(x.lastoverduedate,x.date_oper)) BETWEEN 31 AND 90 THEN 2
+                ELSE 3 END st,
+           (ar.summa+ar.summa_19)*ROUND(odb.func_get_kurval(substr(ar.licschkre,6,2),ar.date_oper),6) bal
+    FROM baglanis_snap cs JOIN arh_licschkre ar ON ar.date_oper=cs.d
+    LEFT JOIN view_nacpogprokre_all x ON x.licschpkre=ar.licschpkre AND x.subschkre=ar.subschkre AND x.date_oper=ar.date_oper
+    WHERE ar.date_close IS NULL AND LENGTH(ar.licschkre)=20
+),
+birlesme AS (
+    SELECT NVL(a.sahe,b.sahe) sahe, a.st os, b.st cs, NVL(a.bal,0) obal, NVL(b.bal,0) cbal
+    FROM acilis a FULL OUTER JOIN baglanis b
+      ON a.licschpkre=b.licschpkre AND a.subschkre=b.subschkre
+)
+SELECT sahe, NVL(os,0) os, NVL(cs,0) cs, ROUND(SUM(obal),2) obal, ROUND(SUM(cbal),2) cbal
+FROM birlesme GROUP BY sahe, os, cs";
+
+    public async Task<MuhasibatAmbA1_1Dto> AmbA1_1Async(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatAmbA1_1Dto { Tarix = t, AcilisTarix = new DateTime(t.Year, 1, 1).AddDays(-1) };
+
+        try
+        {
+            var sql = Ifrs9RollForwardSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
+
+            foreach (var g in new[] { "biznes", "istehlak", "dasinmaz", "diger" })
+                dto.Qruplar[g] = new AmbRollForward();
+
+            foreach (var r in rows)
+            {
+                var sahe = Val(r, "sahe")?.ToString()?.Trim() ?? "";
+                var os = (int)Dec(Val(r, "os"));   // 0 = yeni verilmiş
+                var cs = (int)Dec(Val(r, "cs"));   // 0 = tam ödənilmiş/bağlanmış
+                var obal = Dec(Val(r, "obal"));
+                var cbal = Dec(Val(r, "cbal"));
+                var rf = dto.Qruplar[AmbQrup(AmbKateqoriya(sahe))];
+
+                if (os == 0)                        // dövr ərzində verilmiş (yeni), bağlanış mərhələsi cs
+                {
+                    if (cs == 1) rf.V1 += cbal; else if (cs == 2) rf.V2 += cbal; else rf.V3 += cbal;
+                }
+                else                                // açılışda mövcud (os>0)
+                {
+                    if (os == 1) rf.A1 += obal; else if (os == 2) rf.A2 += obal; else rf.A3 += obal;
+
+                    if (cs == 0)                    // tam ödənilmiş
+                    {
+                        if (os == 1) rf.O1 += obal; else if (os == 2) rf.O2 += obal; else rf.O3 += obal;
+                    }
+                    else                            // davam edir (cs>0) — qismən ödəniş + mümkün köçürmə
+                    {
+                        var odenis = obal - cbal;
+                        if (os == 1) rf.O1 += odenis; else if (os == 2) rf.O2 += odenis; else rf.O3 += odenis;
+
+                        if (os != cs)
+                        {
+                            if (os == 1 && cs == 2) rf.T12 += cbal;
+                            else if (os == 1 && cs == 3) rf.T13 += cbal;
+                            else if (os == 2 && cs == 1) rf.T21 += cbal;
+                            else if (os == 2 && cs == 3) rf.T23 += cbal;
+                            else if (os == 3 && cs == 1) rf.T31 += cbal;
+                            else if (os == 3 && cs == 2) rf.T32 += cbal;
+                        }
+                    }
+                }
+            }
+
+            // A2 — ECL bölməsi: dövr sonu + dövr əvvəli (mühərrik iki tarixdə), qrup×mərhələ.
+            dto.EclBaglanis = await EclQrupUzreAsync(t);
+            dto.EclAcilis   = await EclQrupUzreAsync(dto.AcilisTarix);
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    // IFRS 9 ECL-i bir tarixdə hesablayıb qrup×mərhələ üzrə (E1/E2/E3-ə) yığır.
+    private async Task<Dictionary<string, AmbHuceyre>> EclQrupUzreAsync(DateTime t)
+    {
+        var map = new Dictionary<string, AmbHuceyre>();
+        foreach (var g in new[] { "biznes", "istehlak", "dasinmaz", "diger" }) map[g] = new AmbHuceyre();
+
+        var ecl = await Ifrs9EclAsync(t);
+        if (!ecl.Ugurlu) return map;
+
+        foreach (var s in ecl.Setirler)
+        {
+            var h = map[AmbQrup(AmbKateqoriya(s.SaheKodu))];
+            if (s.Stage == "Stage 1") h.E1 += s.Ecl;
+            else if (s.Stage == "Stage 2") h.E2 += s.Ecl;
+            else h.E3 += s.Ecl;
+        }
+        return map;
+    }
+
     // Sahə kodu (index_otrasli) → AMB A1 kateqoriya açarı.
     // İstehlak (fiziki şəxs, 19xx) sahələri ada görə; biznes (31xx–37xx) prefiksə görə.
     // QEYD: 01904 (yaşayış təmiri, əmlakla təmin) default "2_1"-dədir; AMB "3. Daşınmaz əmlak"
