@@ -14,8 +14,10 @@
             <h1 class="mh-title">IFRS 9 — Gözlənilən Kredit İtkiləri (ECL)</h1>
             <div class="mh-sub"><i class="bi bi-calendar3"></i> Hesabat tarixi: <b>@Model.Tarix.ToString("dd.MM.yyyy")</b></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <a asp-action="Ifrs9Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> ECL detalı (Excel)</a>
+                <a asp-action="Ifrs9Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> ECL detalı</a>
+                <a asp-action="Ifrs9IsKagizlari" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-journal-check"></i> İş kağızları (audit)</a>
                 <a asp-action="AmbA1Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-bank2"></i> AMB MHBS 9 · A1</a>
+                <button type="button" class="mh-xls" onclick="document.getElementById('metodPanel').classList.toggle('acik')"><i class="bi bi-info-circle"></i> Metodologiya</button>
             </div>
         </div>
         <form method="get" class="mh-datef">
@@ -26,6 +28,37 @@
     </div>
 
     <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhTabs.cshtml" />
+
+    <div id="metodPanel" class="metod-panel">
+        <div class="metod-h"><i class="bi bi-diagram-3"></i> Metodologiya — bu rəqəmlərə necə gəlinir</div>
+        <div class="metod-grid">
+            <div class="metod-b">
+                <div class="metod-t">1 · Mərhələ (staging)</div>
+                Gecikmə günündən: <b>0–30</b> = Mərhələ 1 · <b>31–90</b> = Mərhələ 2 · <b>90+</b> = Mərhələ 3.
+            </div>
+            <div class="metod-b">
+                <div class="metod-t">2 · Tarixi risk faizi</div>
+                Son <b>5 il</b>, sahə×mərhələ üzrə keçid: risk% = tarixi risk məbləği (M) / tarixi qalıq (F), illər üzrə orta (N).
+            </div>
+            <div class="metod-b">
+                <div class="metod-t">3 · Floor (aşağı hədd)</div>
+                Mənzil (1902/1904) <b>0.1%</b> · Mərhələ 1 <b>1%</b> · Mərhələ 2 <b>2%</b>. Heç bir kredit tam risksiz deyil.
+            </div>
+            <div class="metod-b">
+                <div class="metod-t">4 · Bərpa (recovery)</div>
+                Mərhələ 3-də təminatdan gələcək pul: mənzil <b>Q2</b>, digər <b>P2</b> (son 5 ilin real (J+K)/F ortalaması). Dəqiq dəyərlər — İş kağızlarında.
+            </div>
+            <div class="metod-b">
+                <div class="metod-t">5 · EAD (ekspozisiya)</div>
+                Əsas borc + balansdankənar (<code>summa + summa_19</code>), AZN-ə çevrilmiş. Qalığı 0 olan açıq kredit də daxil.
+            </div>
+            <div class="metod-b">
+                <div class="metod-t">6 · Nəticə</div>
+                <b>ECL = cari EAD × risk faizi(sahə, mərhələ)</b>. Auditə tam izlənir → <b>İş kağızları</b> düyməsi.
+            </div>
+        </div>
+        <div class="metod-f"><i class="bi bi-book"></i> Əsas: IFRS 9 bənd 5.5.17 (gələcəyə yönümlü proqnoz), B5.5.54 (sıfır risk yoxdur), B5.5.55 (təminatın rolu).</div>
+    </div>
 
     @if (!Model.Ugurlu)
     {
@@ -144,4 +177,13 @@
     .if-tbl em { font-style: normal; font-size: 12px; color: #64748b; }
     .if-note { display: flex; gap: 10px; margin-top: 16px; padding: 13px 16px; background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 12px; font-size: 12.5px; color: #64748b; line-height: 1.55; }
     .if-note i { color: #b91c1c; font-size: 16px; margin-top: 1px; }
+    .metod-panel { display: none; margin-top: 14px; background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; }
+    .metod-panel.acik { display: block; }
+    .metod-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; background: #fef2f2; color: #b91c1c; }
+    .metod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; padding: 16px 18px; }
+    .metod-b { font-size: 12.5px; color: #475569; line-height: 1.55; }
+    .metod-t { font-weight: 700; color: #1e293b; margin-bottom: 3px; font-size: 13px; }
+    .metod-b code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; color: #b91c1c; }
+    .metod-f { padding: 11px 18px; border-top: 1px solid #eef2f7; background: #f8fafc; font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 7px; }
+    .metod-f i { color: #b91c1c; }
 </style>

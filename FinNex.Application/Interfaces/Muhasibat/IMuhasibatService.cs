@@ -39,6 +39,10 @@ public interface IMuhasibatService
     // dövr əvvəli → dövr sonu snapshot müqayisəsi).
     Task<MuhasibatAmbA1_1Dto> AmbA1_1Async(DateTime? tarix = null);
 
+    // IFRS 9 iş kağızları (audit izi): tarixi keçid matrisi + risk faizləri + cari portfel + nəticə.
+    // "Bu rəqəmə necə gəlindi?" sualına addım-addım cavab (auditor/müfəttiş üçün).
+    Task<MuhasibatIfrs9AuditDto> Ifrs9IsKagizlariAsync(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 

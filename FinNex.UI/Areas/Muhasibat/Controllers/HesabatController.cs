@@ -144,6 +144,116 @@ public class HesabatController : Controller
         return File(ms.ToArray(), "application/vnd.ms-excel", ad);
     }
 
+    // IFRS 9 iş kağızları (audit izi) — 4 vərəqli Excel: nəticəyə necə gəlindiyini göstərir.
+    public async Task<IActionResult> Ifrs9IsKagizlari(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var a = await _service.Ifrs9IsKagizlariAsync(ParseTarix(t));
+        var wb = new HSSFWorkbook();
+
+        // 1 — Tarixi keçid matrisi
+        var s1 = wb.CreateSheet("1-Tarixi kecid");
+        int r = 0;
+        s1.CreateRow(r++).CreateCell(0).SetCellValue($"IFRS 9 — Tarixi keçid matrisi (son 5 il) · {a.Tarix:dd.MM.yyyy}");
+        var h1 = s1.CreateRow(r++);
+        string[] b1 = { "Il", "Sahe kodu", "Sahe adi", "Merhele (start)", "F baslangic qaliq", "G ->Merhele1", "H ->Merhele2", "I ->Merhele3", "J baglanan", "K odenilen", "M risk mebleg", "N risk %" };
+        for (int i = 0; i < b1.Length; i++) h1.CreateCell(i).SetCellValue(b1[i]);
+        foreach (var k in a.Kechidler)
+        {
+            var row = s1.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(k.Il);
+            row.CreateCell(1).SetCellValue(k.SaheKodu);
+            row.CreateCell(2).SetCellValue(k.SaheAdi);
+            row.CreateCell(3).SetCellValue(k.Stage);
+            row.CreateCell(4).SetCellValue((double)k.F);
+            row.CreateCell(5).SetCellValue((double)k.G);
+            row.CreateCell(6).SetCellValue((double)k.H);
+            row.CreateCell(7).SetCellValue((double)k.I);
+            row.CreateCell(8).SetCellValue((double)k.J);
+            row.CreateCell(9).SetCellValue((double)k.K);
+            row.CreateCell(10).SetCellValue((double)k.M);
+            row.CreateCell(11).SetCellValue((double)Math.Round(k.N * 100m, 4));
+        }
+
+        // 2 — Risk faizləri (sahə×mərhələ üzrə orta N) + bərpa əmsalları
+        var s2 = wb.CreateSheet("2-Risk faizleri");
+        r = 0;
+        s2.CreateRow(r++).CreateCell(0).SetCellValue("Risk faizi = tarixi risk (M) / tarixi qaliq (F), sahe+merhele uzre orta (N)");
+        var pr = s2.CreateRow(r++);
+        pr.CreateCell(0).SetCellValue("Berpa emsali P2 (diger)"); pr.CreateCell(1).SetCellValue((double)Math.Round(a.P2 * 100m, 4)); pr.CreateCell(2).SetCellValue("%");
+        var qr = s2.CreateRow(r++);
+        qr.CreateCell(0).SetCellValue("Berpa emsali Q2 (menzil 1902/1904)"); qr.CreateCell(1).SetCellValue((double)Math.Round(a.Q2 * 100m, 4)); qr.CreateCell(2).SetCellValue("%");
+        r++;
+        var h2 = s2.CreateRow(r++);
+        string[] b2 = { "Sahe kodu", "Sahe adi", "Merhele", "Risk % (orta N)", "Setir sayi" };
+        for (int i = 0; i < b2.Length; i++) h2.CreateCell(i).SetCellValue(b2[i]);
+        var qruplu = a.Kechidler
+            .GroupBy(x => new { x.SaheKodu, x.Stage })
+            .Select(g => new { g.Key.SaheKodu, Ad = g.First().SaheAdi, g.Key.Stage, Risk = g.Average(x => x.N), Say = g.Count() })
+            .OrderBy(x => x.SaheKodu).ThenBy(x => x.Stage);
+        foreach (var g in qruplu)
+        {
+            var row = s2.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(g.SaheKodu);
+            row.CreateCell(1).SetCellValue(g.Ad);
+            row.CreateCell(2).SetCellValue(g.Stage);
+            row.CreateCell(3).SetCellValue((double)Math.Round(g.Risk * 100m, 4));
+            row.CreateCell(4).SetCellValue(g.Say);
+        }
+
+        // 3 — Cari portfel (kredit-kredit)
+        var s3 = wb.CreateSheet("3-Cari portfel");
+        r = 0;
+        var h3 = s3.CreateRow(r++);
+        string[] b3 = { "Hesab", "Tip", "Valyuta", "Sahe kodu", "Sahe adi", "Merhele", "Gecikme gunu", "EAD", "Risk %", "ECL" };
+        for (int i = 0; i < b3.Length; i++) h3.CreateCell(i).SetCellValue(b3[i]);
+        foreach (var x in a.Ecl.Setirler)
+        {
+            var row = s3.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(x.Hesab);
+            row.CreateCell(1).SetCellValue(x.Tip);
+            row.CreateCell(2).SetCellValue(x.Valyuta);
+            row.CreateCell(3).SetCellValue(x.SaheKodu);
+            row.CreateCell(4).SetCellValue(x.SaheAdi);
+            row.CreateCell(5).SetCellValue(x.Stage);
+            row.CreateCell(6).SetCellValue(x.Dpd);
+            row.CreateCell(7).SetCellValue((double)x.Ead);
+            row.CreateCell(8).SetCellValue((double)x.RiskFaiz);
+            row.CreateCell(9).SetCellValue((double)x.Ecl);
+        }
+
+        // 4 — Nəticə (mərhələ cəmi)
+        var s4 = wb.CreateSheet("4-Netice");
+        r = 0;
+        s4.CreateRow(r++).CreateCell(0).SetCellValue($"IFRS 9 ECL neticesi · {a.Tarix:dd.MM.yyyy}");
+        var h4 = s4.CreateRow(r++);
+        string[] b4 = { "Merhele", "Say", "EAD", "Risk %", "ECL (ehtiyat)", "FINA ehtiyat" };
+        for (int i = 0; i < b4.Length; i++) h4.CreateCell(i).SetCellValue(b4[i]);
+        foreach (var st in a.Ecl.Stagelar)
+        {
+            var row = s4.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(st.Stage);
+            row.CreateCell(1).SetCellValue(st.Say);
+            row.CreateCell(2).SetCellValue((double)st.Ead);
+            row.CreateCell(3).SetCellValue((double)st.RiskFaiz);
+            row.CreateCell(4).SetCellValue((double)st.Ecl);
+            row.CreateCell(5).SetCellValue((double)st.BankEhtiyat);
+        }
+        var tr4 = s4.CreateRow(r++);
+        tr4.CreateCell(0).SetCellValue("CEMI");
+        tr4.CreateCell(1).SetCellValue(a.Ecl.Say);
+        tr4.CreateCell(2).SetCellValue((double)a.Ecl.UmumiPortfel);
+        tr4.CreateCell(3).SetCellValue((double)a.Ecl.EclFaiz);
+        tr4.CreateCell(4).SetCellValue((double)a.Ecl.UmumiEcl);
+        tr4.CreateCell(5).SetCellValue((double)a.Ecl.BankEhtiyat);
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel", $"IFRS9_is_kagizlari_{a.Tarix:yyyyMMdd}.xls");
+    }
+
     // AMB MHBS 9 — Cədvəl A1 (amortizasiya olunmuş dəyərdə kredit portfeli) Excel ixracı.
     // A alt-cədvəli (bütün valyuta) + B (xarici valyuta). C/D (FVOCI) — bankda yoxdur, 0.
     public async Task<IActionResult> AmbA1Excel(string? t)

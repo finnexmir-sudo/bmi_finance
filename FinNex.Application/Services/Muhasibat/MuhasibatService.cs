@@ -1125,6 +1125,125 @@ FROM birlesme GROUP BY sahe, os, cs";
         return dto;
     }
 
+    // IFRS 9 iş kağızları — tarixi keçid matrisi (F..K, M, N) + P2/Q2. ECL mühərrikinin
+    // eyni CTE-ləri, amma son nəticə əvəzinə keçid sətirlərini qaytarır (audit izi).
+    private const string Ifrs9AuditSql = @"
+WITH iller AS (
+    SELECT EXTRACT(YEAR FROM ADD_MONTHS(TRUNC(TO_DATE('{TARIX}','dd/mm/yyyy'),'YYYY'),
+             -12*LEVEL)) AS il
+    FROM dual CONNECT BY LEVEL <= 5
+),
+son_tarixler AS (
+    SELECT i.il,
+           (SELECT MAX(ar.date_oper)
+              FROM arh_licschkre ar
+             WHERE ar.date_oper >= TO_DATE(i.il || '-01-01','YYYY-MM-DD')
+               AND ar.date_oper <  TO_DATE((i.il + 1) || '-01-01','YYYY-MM-DD')
+               AND ar.date_oper <= TO_DATE('{TARIX}','dd/mm/yyyy')) AS son_tarix
+    FROM iller i
+),
+snap AS (
+    SELECT licschpkre, subschkre, date_oper, lastoverduedate
+    FROM   arh_nacpogprokre
+    WHERE  date_oper IN (SELECT son_tarix FROM son_tarixler)
+),
+portfel AS (
+    SELECT /*+ LEADING(st ar) USE_NL(ar) INDEX(ar I_ARH_LICSCHKRE_DO) */
+           st.il, ar.licschpkre, ar.subschkre,
+           i.index_otrasli AS sahe_kodu,
+           CASE WHEN odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate,x.date_oper)) BETWEEN 0 AND 30 THEN 'Stage 1'
+                WHEN odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate,x.date_oper)) BETWEEN 31 AND 90 THEN 'Stage 2'
+                ELSE 'Stage 3' END AS stage,
+           (ar.summa+ar.summa_19)*ROUND(odb.func_get_kurval(substr(ar.licschkre,6,2),ar.date_oper),6) AS qaliq
+    FROM son_tarixler st
+    JOIN arh_licschkre ar ON ar.date_oper = st.son_tarix
+    JOIN snap x ON x.licschpkre = ar.licschpkre AND x.subschkre = ar.subschkre AND x.date_oper = st.son_tarix
+    JOIN index_otrasli i ON i.index_otrasli = ar.index_otrasli
+    WHERE ar.date_close IS NULL
+      AND ar.date_open >= ADD_MONTHS(TRUNC(TO_DATE('{TARIX}','dd/mm/yyyy'),'YYYY'), -12*5)
+),
+kechid AS (
+    SELECT p1.il AS il_start, p1.licschpkre, p1.subschkre, p1.sahe_kodu,
+           p1.stage AS stage_start, NVL(p2.stage,'Baglanib') AS stage_next,
+           p1.qaliq AS qaliq_start, NVL(p2.qaliq,0) AS qaliq_next
+    FROM portfel p1
+    LEFT JOIN portfel p2 ON p1.licschpkre=p2.licschpkre AND p1.subschkre=p2.subschkre AND p2.il=p1.il+1
+),
+trans AS (
+    SELECT il_start, sahe_kodu, stage_start,
+           SUM(qaliq_start) AS f,
+           SUM(CASE WHEN stage_next='Stage 1' THEN qaliq_next ELSE 0 END) AS g,
+           SUM(CASE WHEN stage_next='Stage 2' THEN qaliq_next ELSE 0 END) AS h,
+           SUM(CASE WHEN stage_next='Stage 3' THEN qaliq_next ELSE 0 END) AS i_col,
+           SUM(CASE WHEN stage_next='Baglanib' THEN qaliq_start ELSE 0 END) AS j,
+           SUM(CASE WHEN stage_next IN ('Stage 1','Stage 2','Stage 3') THEN (qaliq_start-qaliq_next) ELSE 0 END) AS k
+    FROM kechid GROUP BY il_start, sahe_kodu, stage_start
+),
+recovery AS (
+    SELECT
+      NVL(AVG(CASE WHEN sahe_kodu NOT IN (1902,1904) AND stage_start='Stage 3' AND f>0 THEN (j+k)/f END),0)    AS p2,
+      NVL(AVG(CASE WHEN sahe_kodu     IN (1902,1904) AND stage_start='Stage 3' AND f>0 THEN (j+k)/f END),0.75) AS q2
+    FROM trans
+),
+riskrow2 AS (
+    SELECT t.il_start, t.sahe_kodu, t.stage_start, t.f, t.g, t.h, t.i_col, t.j, t.k,
+      GREATEST(
+        t.f * CASE WHEN t.sahe_kodu IN (1902,1904) THEN 0.001
+                   WHEN t.stage_start='Stage 1' THEN 0.01
+                   WHEN t.stage_start='Stage 2' THEN 0.02 ELSE 0 END,
+        CASE WHEN t.stage_start='Stage 3'
+             THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
+             ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
+        END
+      ) AS m,
+      r.p2, r.q2
+    FROM trans t CROSS JOIN recovery r
+)
+SELECT rr.il_start AS il, rr.sahe_kodu, io.name_index_otrasli AS sahe_adi, rr.stage_start AS stage,
+       ROUND(rr.f,2) f, ROUND(rr.g,2) g, ROUND(rr.h,2) h, ROUND(rr.i_col,2) i_col, ROUND(rr.j,2) j, ROUND(rr.k,2) k,
+       ROUND(rr.m,2) m, ROUND(CASE WHEN rr.f=0 THEN 0.0001 ELSE rr.m/rr.f END,8) n,
+       ROUND(rr.p2,8) p2, ROUND(rr.q2,8) q2
+FROM riskrow2 rr LEFT JOIN index_otrasli io ON io.index_otrasli=rr.sahe_kodu
+ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
+
+    public async Task<MuhasibatIfrs9AuditDto> Ifrs9IsKagizlariAsync(DateTime? tarix = null)
+    {
+        var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        var dto = new MuhasibatIfrs9AuditDto { Tarix = t };
+
+        try
+        {
+            var sql = Ifrs9AuditSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
+
+            foreach (var r in rows)
+            {
+                dto.Kechidler.Add(new Ifrs9KechidSetir
+                {
+                    Il = (int)Dec(Val(r, "il")),
+                    SaheKodu = Val(r, "sahe_kodu")?.ToString()?.Trim() ?? "",
+                    SaheAdi = Val(r, "sahe_adi")?.ToString() ?? "",
+                    Stage = Val(r, "stage")?.ToString() ?? "",
+                    F = Dec(Val(r, "f")), G = Dec(Val(r, "g")), H = Dec(Val(r, "h")),
+                    I = Dec(Val(r, "i_col")), J = Dec(Val(r, "j")), K = Dec(Val(r, "k")),
+                    M = Dec(Val(r, "m")), N = Dec(Val(r, "n"))
+                });
+                if (dto.P2 == 0) dto.P2 = Dec(Val(r, "p2"));
+                if (dto.Q2 == 0) dto.Q2 = Dec(Val(r, "q2"));
+            }
+
+            dto.Ecl = await Ifrs9EclAsync(t);
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
     // IFRS 9 ECL-i bir tarixdə hesablayıb qrup×mərhələ üzrə (E1/E2/E3-ə) yığır.
     private async Task<Dictionary<string, AmbHuceyre>> EclQrupUzreAsync(DateTime t)
     {
