@@ -7,8 +7,10 @@ using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 
 namespace FinNex.UI.Areas.Muhasibat.Controllers;
 
@@ -21,15 +23,18 @@ public class HesabatController : Controller
     private readonly IMuhasibatService _service;
     private readonly IUserPermissionService _perm;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IConfiguration _config;
 
     public HesabatController(
         IMuhasibatService service,
         IUserPermissionService perm,
-        UserManager<AppUser> userManager)
+        UserManager<AppUser> userManager,
+        IConfiguration config)
     {
         _service = service;
         _perm = perm;
         _userManager = userManager;
+        _config = config;
     }
 
     private async Task<bool> IcazeVarAsync()
@@ -148,6 +153,17 @@ public class HesabatController : Controller
 
         var m = await _service.AmbA1Async(ParseTarix(t));
 
+        // DMS-də rəsmi AMB şablonu varsa onu doldur (formatlaşdırma + formullar qorunur),
+        // yoxdursa təzə cədvəl generasiya et (fallback).
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "amb-mhbs9", "AMB_MHBS9.xlsx");
+        if (System.IO.File.Exists(sablonPath))
+        {
+            var dolu = AmbA1SablonDoldur(sablonPath, m);
+            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"AMB_MHBS9_{m.Tarix:yyyyMMdd}.xlsx");
+        }
+
         var wb = new HSSFWorkbook();
         var sh = wb.CreateSheet("A1");
         int r = 0;
@@ -234,6 +250,54 @@ public class HesabatController : Controller
         row.CreateCell(10).SetCellValue(K(h.E2));
         row.CreateCell(11).SetCellValue(K(h.E3));
         row.CreateCell(12).SetCellValue(0);         // POCI
+    }
+
+    // Rəsmi AMB şablonunu (xlsx) doldur: A1 vərəqində alt-sahə sətirlərinin yalnız
+    // E-H (brüt Mərhələ 1/2/3/POCI) və J-M (ECL) xanaları. D/I və cəm/qrup sətirləri
+    // şablonun öz =SUM() formulları ilə avtomatik hesablanır (əl vurulmur).
+    private static byte[] AmbA1SablonDoldur(string sablonPath, MuhasibatAmbA1Dto m)
+    {
+        IWorkbook wb;
+        using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
+            wb = new XSSFWorkbook(fs);
+
+        var ws = wb.GetSheet("A1");
+        if (ws != null)
+        {
+            // (şablon sətri, 1-əsaslı; kateqoriya açarı). A blok; B (xarici valyuta) = +25.
+            var leaf = new (int satir, string kat)[]
+            {
+                (11,"1_1"),(12,"1_2"),(13,"1_3"),(14,"1_4"),(15,"1_5"),(16,"1_6"),(17,"1_7"),
+                (19,"2_1"),(20,"2_2"),(21,"2_3"),(22,"2_4"),(23,"2_5"),(24,"3"),(25,"4")
+            };
+            foreach (var (satir, kat) in leaf) AmbLeafYaz(ws, satir - 1,      AmbAl(m.Butun, kat));   // A
+            foreach (var (satir, kat) in leaf) AmbLeafYaz(ws, satir - 1 + 25, AmbAl(m.Xarici, kat));  // B
+        }
+
+        wb.SetForceFormulaRecalculation(true);   // açılanda cəm formulları yenilənsin
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return ms.ToArray();
+    }
+
+    // Bir alt-sahə (leaf) sətrinin mərhələ xanalarını yaz (NPOI 0-əsaslı sətir indeksi).
+    private static void AmbLeafYaz(ISheet ws, int rIdx, AmbHuceyre h)
+    {
+        static void Set(ISheet ws, int r, int c, decimal v)
+        {
+            var row = ws.GetRow(r) ?? ws.CreateRow(r);
+            var cell = row.GetCell(c) ?? row.CreateCell(c);
+            cell.SetCellValue((double)Math.Round(v / 1000m, 1));   // AZN → min manat
+        }
+        Set(ws, rIdx, 4, h.G1);   // E — brüt Mərhələ 1
+        Set(ws, rIdx, 5, h.G2);   // F — Mərhələ 2
+        Set(ws, rIdx, 6, h.G3);   // G — Mərhələ 3
+        Set(ws, rIdx, 7, 0m);     // H — POCI
+        Set(ws, rIdx, 9, h.E1);   // J — ECL Mərhələ 1
+        Set(ws, rIdx, 10, h.E2);  // K — ECL Mərhələ 2
+        Set(ws, rIdx, 11, h.E3);  // L — ECL Mərhələ 3
+        Set(ws, rIdx, 12, 0m);    // M — ECL POCI
     }
 
     private static DateTime? ParseTarix(string? t)
