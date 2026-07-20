@@ -274,6 +274,21 @@ public class HesabatController : Controller
             foreach (var (satir, kat) in leaf) AmbLeafYaz(ws, satir - 1 + 25, AmbAl(m.Xarici, kat));  // B
         }
 
+        // A1.2 — mərhələ × gecikmə günü. Alt-sahə (leaf) sətirləri: (şablon sətri, qrup, mərhələ).
+        var ws12 = wb.GetSheet("A1.2");
+        if (ws12 != null)
+        {
+            var dpdLeaf = new (int satir, string qrup, int stage)[]
+            {
+                (11,"biznes",1),(12,"biznes",2),(13,"biznes",3),
+                (15,"istehlak",1),(16,"istehlak",2),(17,"istehlak",3),
+                (19,"dasinmaz",1),(20,"dasinmaz",2),(21,"dasinmaz",3),
+                (23,"diger",1),(24,"diger",2),(25,"diger",3),
+            };
+            foreach (var (satir, qrup, stage) in dpdLeaf) AmbDpdYaz(ws12, satir - 1,      AmbDpdAl(m.Dpd, qrup, stage));        // A
+            foreach (var (satir, qrup, stage) in dpdLeaf) AmbDpdYaz(ws12, satir - 1 + 23, AmbDpdAl(m.DpdXarici, qrup, stage));  // B
+        }
+
         // Cəm/qrup =SUM() formullarını server tərəfdə hesabla ki, hansı proqram açsa da
         // düzgün rəqəm görünsün (bu NPOI versiyasında IWorkbook.SetForceFormulaRecalculation yoxdur).
         try { wb.GetCreationHelper().CreateFormulaEvaluator().EvaluateAll(); } catch { /* formul yoxdursa keç */ }
@@ -300,6 +315,24 @@ public class HesabatController : Controller
         Set(ws, rIdx, 10, h.E2);  // K — ECL Mərhələ 2
         Set(ws, rIdx, 11, h.E3);  // L — ECL Mərhələ 3
         Set(ws, rIdx, 12, 0m);    // M — ECL POCI
+    }
+
+    private static AmbDpdSetir AmbDpdAl(Dictionary<string, AmbDpdSetir> m, string qrup, int stage)
+        => m.TryGetValue($"{qrup}|{stage}", out var d) ? d : new AmbDpdSetir();
+
+    // A1.2 leaf sətrinin gecikmə xanaları: E(Cari) F(1-30) G(31-90) H(90+) — NPOI 0-əsaslı.
+    private static void AmbDpdYaz(ISheet ws, int rIdx, AmbDpdSetir d)
+    {
+        static void Set(ISheet ws, int r, int c, decimal v)
+        {
+            var row = ws.GetRow(r) ?? ws.CreateRow(r);
+            var cell = row.GetCell(c) ?? row.CreateCell(c);
+            cell.SetCellValue((double)Math.Round(v / 1000m, 1));   // AZN → min manat
+        }
+        Set(ws, rIdx, 4, d.Cari);    // E — Cari (0 gün)
+        Set(ws, rIdx, 5, d.D1_30);   // F — 1-30 gün
+        Set(ws, rIdx, 6, d.D31_90);  // G — 31-90 gün
+        Set(ws, rIdx, 7, d.D90);     // H — 90+ gün
     }
 
     private static DateTime? ParseTarix(string? t)

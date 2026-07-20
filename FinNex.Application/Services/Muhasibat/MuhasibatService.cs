@@ -979,17 +979,45 @@ ORDER BY c.stage, c.sahe_kodu";
             else                         { h.G3 += ead; h.E3 += ecl_; }
         }
 
+        static void AddDpd(Dictionary<string, AmbDpdSetir> map, string qrup, int stageNo, int dpd, decimal ead)
+        {
+            var key = $"{qrup}|{stageNo}";
+            if (!map.TryGetValue(key, out var d)) { d = new AmbDpdSetir(); map[key] = d; }
+            if (dpd <= 0)       d.Cari   += ead;
+            else if (dpd <= 30) d.D1_30  += ead;
+            else if (dpd <= 90) d.D31_90 += ead;
+            else                d.D90    += ead;
+        }
+
         foreach (var s in ecl.Setirler)
         {
             var kat = AmbKateqoriya(s.SaheKodu);
             Add(dto.Butun, kat, s.Stage, s.Ead, s.Ecl);
+
+            var qrup = AmbQrup(kat);
+            var stageNo = s.Stage == "Stage 1" ? 1 : s.Stage == "Stage 2" ? 2 : 3;
+            AddDpd(dto.Dpd, qrup, stageNo, s.Dpd, s.Ead);
+
             if (!string.IsNullOrEmpty(s.Valyuta) && s.Valyuta != "00")   // xarici valyuta (AZN=00)
+            {
                 Add(dto.Xarici, kat, s.Stage, s.Ead, s.Ecl);
+                AddDpd(dto.DpdXarici, qrup, stageNo, s.Dpd, s.Ead);
+            }
         }
 
         dto.Ugurlu = true;
         return dto;
     }
+
+    // AMB kateqoriya açarı → A1.2/A1.1 qrupu (biznes / istehlak / dasinmaz / diger).
+    private static string AmbQrup(string kat) => kat switch
+    {
+        "3" => "dasinmaz",
+        "4" => "diger",
+        _ when kat.StartsWith("1_") => "biznes",
+        _ when kat.StartsWith("2_") => "istehlak",
+        _ => "diger"
+    };
 
     // Sahə kodu (index_otrasli) → AMB A1 kateqoriya açarı.
     // İstehlak (fiziki şəxs, 19xx) sahələri ada görə; biznes (31xx–37xx) prefiksə görə.
