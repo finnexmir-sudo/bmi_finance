@@ -5,6 +5,8 @@
     string Fmt2(decimal v) => v.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
 }
 
+<partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
+
 <div class="mh-wrap">
     <div class="mh-hero mh-hero--if">
         <div class="mh-hero-l">
@@ -122,8 +124,9 @@
 </div>
 
 <style>
-    .mh-hero--if { background: linear-gradient(120deg, #7c2d12, #b91c1c); }
-    .mh-kpi--r .mh-kpi-ic { background: rgba(239,68,68,.14); color: #ef4444; }
+    .mh-hero--if { background: linear-gradient(120deg, #7c2d12, #b91c1c); box-shadow: 0 12px 30px rgba(185,28,28,.28); }
+    .mh-kpis { grid-template-columns: repeat(3, 1fr); }
+    @@media (max-width: 900px) { .mh-kpis { grid-template-columns: 1fr; } }
     .if-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); margin-top: 16px; overflow: hidden; }
     .if-card-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; color: #1e293b; }
     .if-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
