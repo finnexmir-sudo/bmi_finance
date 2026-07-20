@@ -274,7 +274,9 @@ public class HesabatController : Controller
             foreach (var (satir, kat) in leaf) AmbLeafYaz(ws, satir - 1 + 25, AmbAl(m.Xarici, kat));  // B
         }
 
-        wb.SetForceFormulaRecalculation(true);   // açılanda cəm formulları yenilənsin
+        // Cəm/qrup =SUM() formullarını server tərəfdə hesabla ki, hansı proqram açsa da
+        // düzgün rəqəm görünsün (bu NPOI versiyasında IWorkbook.SetForceFormulaRecalculation yoxdur).
+        try { wb.GetCreationHelper().CreateFormulaEvaluator().EvaluateAll(); } catch { /* formul yoxdursa keç */ }
 
         using var ms = new MemoryStream();
         wb.Write(ms, true);
