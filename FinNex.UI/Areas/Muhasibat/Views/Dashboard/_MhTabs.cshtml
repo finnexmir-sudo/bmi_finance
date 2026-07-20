@@ -1,15 +1,19 @@
 @{
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
     var act = ViewContext.RouteData.Values["action"]?.ToString();
-    bool In(params string[] a) => a.Contains(act);
-    string On(string a) => act == a ? "on" : "";
+    bool IsDash = ctrl == "Dashboard";
+    bool IsHes  = ctrl == "Hesabat";
+    // Aktivlik yalnız Dashboard controller-ində — Hesabat səhifələri dashboard qruplarını yandırmasın.
+    bool In(params string[] a) => IsDash && a.Contains(act);
+    string On(string a) => (IsDash && act == a) ? "on" : "";
 }
 <div class="mh-tabs">
     <!-- İcmal -->
     <div class="mh-tg @(In("Icmal", "Index") ? "act" : "")">
         <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-speedometer2"></i> İcmal <i class="bi bi-chevron-down mh-cv"></i></button>
         <div class="mh-tg-menu">
-            <a asp-action="Icmal" class="@On("Icmal")"><i class="bi bi-speedometer2"></i> Günlük İcmal</a>
-            <a asp-action="Index" class="@On("Index")"><i class="bi bi-clipboard-data"></i> Balans İcmalı</a>
+            <a asp-controller="Dashboard" asp-action="Icmal" class="@On("Icmal")"><i class="bi bi-speedometer2"></i> Günlük İcmal</a>
+            <a asp-controller="Dashboard" asp-action="Index" class="@On("Index")"><i class="bi bi-clipboard-data"></i> Balans İcmalı</a>
         </div>
     </div>
 
@@ -17,9 +21,9 @@
     <div class="mh-tg @(In("Kredit", "Maturity", "Keyfiyyet") ? "act" : "")">
         <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-credit-card"></i> Kreditlər <i class="bi bi-chevron-down mh-cv"></i></button>
         <div class="mh-tg-menu">
-            <a asp-action="Kredit" class="@On("Kredit")"><i class="bi bi-credit-card"></i> Kredit portfeli</a>
-            <a asp-action="Keyfiyyet" class="@On("Keyfiyyet")"><i class="bi bi-shield-check"></i> Keyfiyyət & Ehtiyat</a>
-            <a asp-action="Maturity" class="@On("Maturity")"><i class="bi bi-bar-chart-steps"></i> Pul Axını</a>
+            <a asp-controller="Dashboard" asp-action="Kredit" class="@On("Kredit")"><i class="bi bi-credit-card"></i> Kredit portfeli</a>
+            <a asp-controller="Dashboard" asp-action="Keyfiyyet" class="@On("Keyfiyyet")"><i class="bi bi-shield-check"></i> Keyfiyyət & Ehtiyat</a>
+            <a asp-controller="Dashboard" asp-action="Maturity" class="@On("Maturity")"><i class="bi bi-bar-chart-steps"></i> Pul Axını</a>
         </div>
     </div>
 
@@ -27,21 +31,30 @@
     <div class="mh-tg @(In("Depozit", "Rezident") ? "act" : "")">
         <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-safe2"></i> Depozit & Müştəri <i class="bi bi-chevron-down mh-cv"></i></button>
         <div class="mh-tg-menu">
-            <a asp-action="Depozit" class="@On("Depozit")"><i class="bi bi-safe2"></i> Depozitlər</a>
-            <a asp-action="Rezident" class="@On("Rezident")"><i class="bi bi-globe"></i> Rezidentlik</a>
+            <a asp-controller="Dashboard" asp-action="Depozit" class="@On("Depozit")"><i class="bi bi-safe2"></i> Depozitlər</a>
+            <a asp-controller="Dashboard" asp-action="Rezident" class="@On("Rezident")"><i class="bi bi-globe"></i> Rezidentlik</a>
         </div>
     </div>
 
     <!-- Gəlirlilik -->
-    <a asp-action="Menfeet" class="mh-tab @On("Menfeet")"><i class="bi bi-graph-up-arrow"></i> Mənfəət/Zərər</a>
+    <a asp-controller="Dashboard" asp-action="Menfeet" class="mh-tab @On("Menfeet")"><i class="bi bi-graph-up-arrow"></i> Mənfəət/Zərər</a>
 
     <!-- Likvidlik & Bazar -->
     <div class="mh-tg @(In("Likvidlik", "Valyuta", "Yerlesdirme") ? "act" : "")">
         <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-droplet"></i> Likvidlik & Bazar <i class="bi bi-chevron-down mh-cv"></i></button>
         <div class="mh-tg-menu">
-            <a asp-action="Likvidlik" class="@On("Likvidlik")"><i class="bi bi-droplet"></i> Likvidlik</a>
-            <a asp-action="Yerlesdirme" class="@On("Yerlesdirme")"><i class="bi bi-bank"></i> Yerləşdirmələr</a>
-            <a asp-action="Valyuta" class="@On("Valyuta")"><i class="bi bi-currency-exchange"></i> Valyuta</a>
+            <a asp-controller="Dashboard" asp-action="Likvidlik" class="@On("Likvidlik")"><i class="bi bi-droplet"></i> Likvidlik</a>
+            <a asp-controller="Dashboard" asp-action="Yerlesdirme" class="@On("Yerlesdirme")"><i class="bi bi-bank"></i> Yerləşdirmələr</a>
+            <a asp-controller="Dashboard" asp-action="Valyuta" class="@On("Valyuta")"><i class="bi bi-currency-exchange"></i> Valyuta</a>
+        </div>
+    </div>
+
+    <!-- Hesabatlar (requlyativ) -->
+    <div class="mh-tg @(IsHes ? "act" : "")">
+        <button type="button" class="mh-tab mh-tab--grp"><i class="bi bi-file-earmark-bar-graph"></i> Hesabatlar <i class="bi bi-chevron-down mh-cv"></i></button>
+        <div class="mh-tg-menu">
+            <a asp-controller="Hesabat" asp-action="Ifrs9" class="@(IsHes && act == "Ifrs9" ? "on" : "")"><i class="bi bi-clipboard2-pulse"></i> IFRS 9 ECL</a>
+            <a asp-controller="Hesabat" asp-action="Index" class="@(IsHes && act == "Index" ? "on" : "")"><i class="bi bi-collection"></i> Bütün hesabatlar</a>
         </div>
     </div>
 </div>
@@ -96,4 +109,4 @@
     })();
 </script>
 
-@await Html.PartialAsync("_MhDetal")
+@await Html.PartialAsync("~/Areas/Muhasibat/Views/Dashboard/_MhDetal.cshtml")

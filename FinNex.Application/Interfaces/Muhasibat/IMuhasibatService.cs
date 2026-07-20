@@ -28,6 +28,10 @@ public interface IMuhasibatService
     // Yerləşdirilmiş vəsaitlər — bank yerləşdirmələri (arh_licsch_rs): kontragent/valyuta/faiz/müddət.
     Task<MuhasibatYerlesdirmeDto> YerlesdirmeAsync(DateTime? tarix = null);
 
+    // IFRS 9 ECL — roll-rate stage-keçid modeli (Excel metodologiyasının proqram versiyası).
+    // Cari portfelə (arh_licschkre) tarixi risk faizini tətbiq edib gözlənilən kredit itkisini hesablayır.
+    Task<MuhasibatIfrs9Dto> Ifrs9EclAsync(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 
