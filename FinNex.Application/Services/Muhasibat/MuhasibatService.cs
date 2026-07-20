@@ -843,6 +843,7 @@ cari_snap AS (
 ),
 cari AS (
     SELECT ar.licschkre, ar.subschkre, ar.tipkredita,
+           substr(ar.licschkre,6,2) AS valyuta,
            ar.index_otrasli AS sahe_kodu, io.name_index_otrasli AS sahe_adi,
            NVL(ar.procstavrez,0) AS bank_faiz,
            NVL(odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate,x.date_oper)),0) AS dpd,
@@ -860,6 +861,7 @@ cari AS (
 )
 SELECT c.licschkre                         AS hesab,
        c.tipkredita                        AS tip,
+       c.valyuta                           AS valyuta,
        c.sahe_kodu                         AS sahe_kodu,
        c.sahe_adi                          AS sahe_adi,
        c.stage                             AS stage,
@@ -891,6 +893,7 @@ ORDER BY c.stage, c.sahe_kodu";
             {
                 var hesab    = Val(r, "hesab")?.ToString()?.Trim() ?? "";
                 var tip      = (int)Dec(Val(r, "tip"));
+                var valyuta  = Val(r, "valyuta")?.ToString()?.Trim() ?? "";
                 var saheKodu = Val(r, "sahe_kodu")?.ToString()?.Trim() ?? "";
                 var saheAdi  = Val(r, "sahe_adi")?.ToString() ?? "";
                 var stage    = Val(r, "stage")?.ToString() ?? "";
@@ -911,7 +914,7 @@ ORDER BY c.stage, c.sahe_kodu";
 
                 dto.Setirler.Add(new Ifrs9SetirDto
                 {
-                    Hesab = hesab, Tip = tip, SaheKodu = saheKodu, SaheAdi = saheAdi,
+                    Hesab = hesab, Tip = tip, Valyuta = valyuta, SaheKodu = saheKodu, SaheAdi = saheAdi,
                     Stage = stage, Dpd = dpd, Ead = Math.Round(ead, 2),
                     RiskFaiz = Math.Round(riskFaiz * 100m, 4), Ecl = Math.Round(ecl, 2),
                     BankEhtiyat = Math.Round(bank, 2)
@@ -959,6 +962,61 @@ ORDER BY c.stage, c.sahe_kodu";
         }
 
         return dto;
+    }
+
+    // AMB MHBS 9 — Cədvəl A1: IFRS 9 ECL sətirlərini AMB kateqoriyalarına aqreqasiya et.
+    public async Task<MuhasibatAmbA1Dto> AmbA1Async(DateTime? tarix = null)
+    {
+        var ecl = await Ifrs9EclAsync(tarix);
+        var dto = new MuhasibatAmbA1Dto { Tarix = ecl.Tarix };
+        if (!ecl.Ugurlu) { dto.Ugurlu = false; dto.Xeta = ecl.Xeta; return dto; }
+
+        static void Add(Dictionary<string, AmbHuceyre> map, string kat, string stage, decimal ead, decimal ecl_)
+        {
+            if (!map.TryGetValue(kat, out var h)) { h = new AmbHuceyre(); map[kat] = h; }
+            if (stage == "Stage 1")      { h.G1 += ead; h.E1 += ecl_; }
+            else if (stage == "Stage 2") { h.G2 += ead; h.E2 += ecl_; }
+            else                         { h.G3 += ead; h.E3 += ecl_; }
+        }
+
+        foreach (var s in ecl.Setirler)
+        {
+            var kat = AmbKateqoriya(s.SaheKodu);
+            Add(dto.Butun, kat, s.Stage, s.Ead, s.Ecl);
+            if (!string.IsNullOrEmpty(s.Valyuta) && s.Valyuta != "00")   // xarici valyuta (AZN=00)
+                Add(dto.Xarici, kat, s.Stage, s.Ead, s.Ecl);
+        }
+
+        dto.Ugurlu = true;
+        return dto;
+    }
+
+    // Sahə kodu (index_otrasli) → AMB A1 kateqoriya açarı.
+    // İstehlak (fiziki şəxs, 19xx) sahələri ada görə; biznes (31xx–37xx) prefiksə görə.
+    // QEYD: 01904 (yaşayış təmiri, əmlakla təmin) default "2_1"-dədir; AMB "3. Daşınmaz əmlak"
+    //       istənilsə bu sətri "3"-ə dəyiş (istifadəçi təsdiqi ilə).
+    private static string AmbKateqoriya(string? saheKodu)
+    {
+        var k = (saheKodu ?? "").Trim().TrimStart('0');
+        switch (k)
+        {
+            case "1902": return "3";     // yaşayış alın+tikinti, əmlakla təmin → daşınmaz əmlak
+            case "1903": return "2_1";   // yaşayış təmiri, təminatsız
+            case "1904": return "2_1";   // yaşayış təmiri, əmlakla təmin (bax: yuxarıdakı qeyd)
+            case "1905": return "2_2";   // avtomobil
+            case "1906": return "2_3";   // məişət avadanlıqları
+            case "1907": return "2_4";   // kredit kartları
+            case "1908": return "2_5";   // digər istehlak
+        }
+        if (k.StartsWith("19")) return "2_5";                       // digər fiziki şəxs kreditləri
+        if (k.StartsWith("31")) return "1_1";                       // sənaye
+        if (k.StartsWith("32")) return "1_2";                       // kənd təsərrüfatı
+        if (k.StartsWith("33")) return "1_3";                       // tikinti
+        if (k.StartsWith("34")) return "1_4";                       // nəqliyyat
+        if (k == "35000")       return "1_5";                       // informasiya və rabitə
+        if (k.StartsWith("35") || k.StartsWith("36")) return "1_6"; // ticarət
+        if (k.StartsWith("37")) return "1_7";                       // digər qeyri-istehsal
+        return "1_7";
     }
 
     // Qalıq müddət qutuları (date_planclose − hesabat tarixi). null → müddətsiz/tələbli.

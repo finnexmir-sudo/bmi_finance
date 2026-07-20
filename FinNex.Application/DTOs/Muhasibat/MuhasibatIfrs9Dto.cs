@@ -54,6 +54,7 @@ public class Ifrs9SetirDto
 {
     public string Hesab { get; set; } = "";
     public int Tip { get; set; }            // tipkredita: 1 hüquqi, 2 fiziki, 3 sahibkar
+    public string Valyuta { get; set; } = "";  // 00=AZN, 01=USD ... (xarici valyuta alt-cədvəli üçün)
     public string SaheKodu { get; set; } = "";
     public string SaheAdi { get; set; } = "";
     public string Stage { get; set; } = "";

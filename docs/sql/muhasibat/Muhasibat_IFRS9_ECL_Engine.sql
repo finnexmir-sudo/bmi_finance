@@ -104,6 +104,7 @@ cari_snap AS (
 ),
 cari AS (
     SELECT ar.licschkre, ar.subschkre, ar.tipkredita,
+           substr(ar.licschkre,6,2) AS valyuta,
            ar.index_otrasli AS sahe_kodu, io.name_index_otrasli AS sahe_adi,
            NVL(ar.procstavrez,0) AS bank_faiz,
            NVL(odb.tar_ferq360(x.date_oper, NVL(x.lastoverduedate,x.date_oper)),0) AS dpd,
@@ -121,6 +122,7 @@ cari AS (
 )
 SELECT c.licschkre                         AS hesab,
        c.tipkredita                        AS tip,
+       c.valyuta                           AS valyuta,
        c.sahe_kodu                         AS sahe_kodu,
        c.sahe_adi                          AS sahe_adi,
        c.stage                             AS stage,

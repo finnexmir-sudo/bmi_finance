@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using FinNex.Application.DTOs.Muhasibat;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Muhasibat;
 using FinNex.Domain;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
 
 namespace FinNex.UI.Areas.Muhasibat.Controllers;
 
@@ -135,6 +137,103 @@ public class HesabatController : Controller
         wb.Write(ms, true);
         var ad = $"IFRS9_ECL_{m.Tarix:yyyyMMdd}.xls";
         return File(ms.ToArray(), "application/vnd.ms-excel", ad);
+    }
+
+    // AMB MHBS 9 — Cədvəl A1 (amortizasiya olunmuş dəyərdə kredit portfeli) Excel ixracı.
+    // A alt-cədvəli (bütün valyuta) + B (xarici valyuta). C/D (FVOCI) — bankda yoxdur, 0.
+    public async Task<IActionResult> AmbA1Excel(string? t)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var m = await _service.AmbA1Async(ParseTarix(t));
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("A1");
+        int r = 0;
+        sh.CreateRow(r++).CreateCell(1).SetCellValue($"CƏDVƏL A1 — {m.Tarix:dd.MM.yyyy}");
+        sh.CreateRow(r++).CreateCell(1).SetCellValue("(min manatla)");
+        r++;
+        r = AmbSubCedvel(sh, r, "A. Amortizasiya olunmuş dəyərdə kredit portfeli",
+                         "(bütün kreditlər, xarici valyutada kreditlər də daxil olmaqla)", m.Butun);
+        r = AmbSubCedvel(sh, r, "B. Amortizasiya olunmuş dəyərdə kredit portfeli",
+                         "(xarici valyutada)", m.Xarici);
+        r = AmbSubCedvel(sh, r, "C. Digər məcmu gəlirdə ədalətli dəyərlə ölçülmüş kredit portfeli",
+                         "(bütün kreditlər — bankda yoxdur)", new Dictionary<string, AmbHuceyre>());
+        r = AmbSubCedvel(sh, r, "D. Digər məcmu gəlirdə ədalətli dəyərlə ölçülmüş kredit portfeli",
+                         "(xarici valyutada — bankda yoxdur)", new Dictionary<string, AmbHuceyre>());
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel", $"AMB_MHBS9_A1_{m.Tarix:yyyyMMdd}.xls");
+    }
+
+    // Bir A1 alt-cədvəlini yaz (17 sətir: cəmi, biznes+1.1–1.7, istehlak+2.1–2.5, daşınmaz əmlak, digər).
+    // Sütunlar AMB şablonu ilə eyni: B=ad, D=Cəmi E=M1 F=M2 G=M3 H=POCI, I=ECL Cəmi J=M1 K=M2 L=M3 M=POCI.
+    private static int AmbSubCedvel(ISheet sh, int r, string title, string subtitle,
+                                    Dictionary<string, AmbHuceyre> map)
+    {
+        var biznes = new[] { "1_1", "1_2", "1_3", "1_4", "1_5", "1_6", "1_7" };
+        var istehlak = new[] { "2_1", "2_2", "2_3", "2_4", "2_5" };
+        var hamisi = biznes.Concat(istehlak).Concat(new[] { "3", "4" }).ToArray();
+
+        sh.CreateRow(r++).CreateCell(1).SetCellValue(title);
+        sh.CreateRow(r++).CreateCell(1).SetCellValue(subtitle);
+        var h1 = sh.CreateRow(r++);
+        h1.CreateCell(1).SetCellValue("Kreditlərin növləri");
+        h1.CreateCell(3).SetCellValue("Ümumi məbləğ");
+        h1.CreateCell(8).SetCellValue("Gözlənilən kredit zərəri");
+        var h2 = sh.CreateRow(r++);
+        string[] basliq = { "Cəmi", "Mərhələ 1", "Mərhələ 2", "Mərhələ 3", "POCI" };
+        for (int i = 0; i < 5; i++) { h2.CreateCell(3 + i).SetCellValue(basliq[i]); h2.CreateCell(8 + i).SetCellValue(basliq[i]); }
+
+        AmbSetir(sh, r++, "Müştərilərə verilmiş kreditlər, cəmi", AmbCem(map, hamisi));
+        AmbSetir(sh, r++, "1. Biznes kreditləri", AmbCem(map, biznes));
+        AmbSetir(sh, r++, "1.1 Sənaye", AmbAl(map, "1_1"));
+        AmbSetir(sh, r++, "1.2 Kənd təsərrüfatı", AmbAl(map, "1_2"));
+        AmbSetir(sh, r++, "1.3 Tikinti sahəsi", AmbAl(map, "1_3"));
+        AmbSetir(sh, r++, "1.4 Nəqliyyat", AmbAl(map, "1_4"));
+        AmbSetir(sh, r++, "1.5 İnformasiya və Rabitə", AmbAl(map, "1_5"));
+        AmbSetir(sh, r++, "1.6 Ticarət müəssisələrinə kredit", AmbAl(map, "1_6"));
+        AmbSetir(sh, r++, "1.7 Digər qeyri-istehsal və xidmət sahələri", AmbAl(map, "1_7"));
+        AmbSetir(sh, r++, "2. İstehlak kreditləri", AmbCem(map, istehlak));
+        AmbSetir(sh, r++, "2.1 Yaşayış sahəsinin təmirinə", AmbAl(map, "2_1"));
+        AmbSetir(sh, r++, "2.2 Avtomobil alınmasına", AmbAl(map, "2_2"));
+        AmbSetir(sh, r++, "2.3 Məişət avadanlıqlarının alınmasına", AmbAl(map, "2_3"));
+        AmbSetir(sh, r++, "2.4 Kredit kartları", AmbAl(map, "2_4"));
+        AmbSetir(sh, r++, "2.5 Digər", AmbAl(map, "2_5"));
+        AmbSetir(sh, r++, "3. Daşınmaz əmlak kreditləri", AmbAl(map, "3"));
+        AmbSetir(sh, r++, "4. Digər kreditlər", AmbAl(map, "4"));
+        return r + 2;
+    }
+
+    private static AmbHuceyre AmbAl(Dictionary<string, AmbHuceyre> m, string k)
+        => m.TryGetValue(k, out var h) ? h : new AmbHuceyre();
+
+    private static AmbHuceyre AmbCem(Dictionary<string, AmbHuceyre> m, string[] keys)
+    {
+        var t = new AmbHuceyre();
+        foreach (var k in keys)
+            if (m.TryGetValue(k, out var h))
+            { t.G1 += h.G1; t.G2 += h.G2; t.G3 += h.G3; t.E1 += h.E1; t.E2 += h.E2; t.E3 += h.E3; }
+        return t;
+    }
+
+    private static void AmbSetir(ISheet sh, int r, string ad, AmbHuceyre h)
+    {
+        static double K(decimal v) => (double)Math.Round(v / 1000m, 1);   // AZN → min manat
+        var row = sh.CreateRow(r);
+        row.CreateCell(1).SetCellValue(ad);
+        row.CreateCell(3).SetCellValue(K(h.GCem));
+        row.CreateCell(4).SetCellValue(K(h.G1));
+        row.CreateCell(5).SetCellValue(K(h.G2));
+        row.CreateCell(6).SetCellValue(K(h.G3));
+        row.CreateCell(7).SetCellValue(0);          // POCI — bankda yoxdur
+        row.CreateCell(8).SetCellValue(K(h.ECem));
+        row.CreateCell(9).SetCellValue(K(h.E1));
+        row.CreateCell(10).SetCellValue(K(h.E2));
+        row.CreateCell(11).SetCellValue(K(h.E3));
+        row.CreateCell(12).SetCellValue(0);         // POCI
     }
 
     private static DateTime? ParseTarix(string? t)

@@ -13,7 +13,10 @@
             <div class="mh-badge"><i class="bi bi-clipboard2-pulse"></i> Mühasibat / Hesabatlar</div>
             <h1 class="mh-title">IFRS 9 — Gözlənilən Kredit İtkiləri (ECL)</h1>
             <div class="mh-sub"><i class="bi bi-calendar3"></i> Hesabat tarixi: <b>@Model.Tarix.ToString("dd.MM.yyyy")</b></div>
-            <a asp-action="Ifrs9Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə yüklə</a>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a asp-action="Ifrs9Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> ECL detalı (Excel)</a>
+                <a asp-action="AmbA1Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-bank2"></i> AMB MHBS 9 · A1</a>
+            </div>
         </div>
         <form method="get" class="mh-datef">
             <label>Tarix</label>

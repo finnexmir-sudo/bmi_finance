@@ -32,6 +32,9 @@ public interface IMuhasibatService
     // Cari portfelə (arh_licschkre) tarixi risk faizini tətbiq edib gözlənilən kredit itkisini hesablayır.
     Task<MuhasibatIfrs9Dto> Ifrs9EclAsync(DateTime? tarix = null);
 
+    // AMB MHBS 9 — Cədvəl A1: IFRS 9 ECL nəticəsini AMB kredit-növü kateqoriyalarına aqreqasiya edir.
+    Task<MuhasibatAmbA1Dto> AmbA1Async(DateTime? tarix = null);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 
