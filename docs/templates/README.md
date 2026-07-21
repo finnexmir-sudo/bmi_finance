@@ -7,10 +7,15 @@ gələcəkdə şöbə əsaslı çoxlu şablon üçün struktur:
 C:\FinNex_DMS\hesabat-sablonlari\
     └── muhasibat\                 (şöbə)
         └── amb-mhbs9\             (hesabat növü)
-            └── AMB_MHBS9.xlsx     (rəsmi AMB şablonu — bu qovluqdakı nüsxə)
+            ├── AMB_MHBS9.xlsx                          (rəsmi AMB A1 şablonu)
+            └── AMB_Metodoloji_Rehberlik_23122025.docx  (AMB Metodoloji Rəhbərliyi — 23.12.2025, № 45/2)
 ```
 
 Konfiqurasiya mənbəyi: `appsettings.json → DocumentStorage:RootPath` (default `C:\FinNex_DMS`).
+
+**AMB Metodoloji Rəhbərliyi (.docx):** IFRS 9 səhifəsindən "Metodologiya → AMB qaydasını yüklə"
+düyməsi bu sənədi `Hesabat/AmbQaydaSened` action-ı ilə DMS-dən verir. Sənəd tapılmasa,
+istifadəçiyə hansı yola kopyalamaq lazım olduğu bildirilir.
 
 ## Quraşdırma
 

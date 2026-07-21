@@ -52,6 +52,7 @@
                 }
                 <span class="metod-bar-d">· Hesabat tarixi @Model.Tarix.ToString("dd.MM.yyyy")</span>
             </div>
+            <a asp-action="AmbQaydaSened" class="metod-yukle" target="_blank"><i class="bi bi-download"></i> AMB qaydasını yüklə (.docx)</a>
         </div>
 
         <div class="metod-intro">
@@ -201,7 +202,9 @@
 
         <div class="metod-qayda">
             <div class="metod-t"><i class="bi bi-bank"></i> AMB Metodoloji Rəhbərliyi — bu ehtiyatı hansı qaydaya əsasən yığmışıq</div>
-            <div class="metod-qayda-src">Mənbə: <b>Azərbaycan Respublikası Mərkəzi Bankının İdarə Heyəti</b>, "23" dekabr 2025-ci il tarixli qərar, <b>Protokol № 45/2</b> — "Aktivlərin təsnifləşdirilməsi və ehtiyatların yaradılmasında MHBS 9-un tətbiqi üzrə Metodoloji Rəhbərlik".</div>
+            <div class="metod-qayda-src">Mənbə: <b>Azərbaycan Respublikası Mərkəzi Bankının İdarə Heyəti</b>, "23" dekabr 2025-ci il tarixli qərar, <b>Protokol № 45/2</b> — "Aktivlərin təsnifləşdirilməsi və ehtiyatların yaradılmasında MHBS 9-un tətbiqi üzrə Metodoloji Rəhbərlik".
+                <a asp-action="AmbQaydaSened" class="metod-yukle metod-yukle--inline" target="_blank"><i class="bi bi-file-earmark-word"></i> Rəsmi sənədi yüklə (.docx)</a>
+            </div>
             <ul class="metod-qayda-l">
                 <li><b>Mərhələləmə (gecikmə günü):</b> Mərhələ 2 = 31–90 gün (<i>«Mərhələ 2 üzrə meyarlar»</i> cədvəli, sıra 12) · Mərhələ 3 = 90+ gün, defolt (<i>«Mərhələ 3 üzrə meyarlar»</i> cədvəli, sıra 13). ✅ bizdə eyni.</li>
                 <li><b>Metod:</b> <i>«cPD hesablanması üçün... Markov zənciri... miqrasiya matrisləri»</i> (Ehtiyatlanma bölməsi) — bizim roll-rate/keçid matrisi modeli məhz buna istinad edir. ✅</li>
@@ -419,6 +422,9 @@
     .metod-metodbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 18px 0; padding: 9px 14px; background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 10px; font-size: 12.5px; flex-wrap: wrap; }
     .metod-bar-l { color: #64748b; font-weight: 600; margin-right: 4px; }
     .metod-bar-d { color: #94a3b8; margin-left: 6px; }
+    .metod-yukle { display: inline-flex; align-items: center; gap: 5px; background: #4338ca; color: #fff; border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .metod-yukle:hover { background: #3730a3; color: #fff; }
+    .metod-yukle--inline { margin-top: 7px; padding: 4px 10px; font-size: 11.5px; }
     .metod-mb-badge { display: inline-flex; align-items: center; gap: 5px; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; border-radius: 20px; padding: 3px 11px; font-weight: 700; font-size: 12px; }
     .metod-ex-badge { display: inline-flex; align-items: center; gap: 5px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 20px; padding: 3px 11px; font-weight: 700; font-size: 12px; }
     .metod-b--wide { grid-column: 1 / -1; background: #fbfcfe; border: 1px dashed #d7dee8; border-radius: 10px; padding: 12px 14px; }

@@ -364,6 +364,24 @@ public class HesabatController : Controller
         return File(ms.ToArray(), "application/vnd.ms-excel", $"AMB_MHBS9_A1_{m.Tarix:yyyyMMdd}.xls");
     }
 
+    // AMB Metodoloji Rəhbərliyi (23.12.2025, Protokol № 45/2) — rəsmi sənədi DMS-dən yüklə.
+    // Sənəd: C:\FinNex_DMS\hesabat-sablonlari\muhasibat\amb-mhbs9\AMB_Metodoloji_Rehberlik_23122025.docx
+    public async Task<IActionResult> AmbQaydaSened()
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var yol = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "amb-mhbs9",
+                               "AMB_Metodoloji_Rehberlik_23122025.docx");
+        if (!System.IO.File.Exists(yol))
+            return NotFound($"Sənəd DMS-də tapılmadı. Bu yola kopyalayın: {yol}");
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(yol);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "AMB_Metodoloji_Rehberlik_23122025.docx");
+    }
+
     // Bir A1 alt-cədvəlini yaz (17 sətir: cəmi, biznes+1.1–1.7, istehlak+2.1–2.5, daşınmaz əmlak, digər).
     // Sütunlar AMB şablonu ilə eyni: B=ad, D=Cəmi E=M1 F=M2 G=M3 H=POCI, I=ECL Cəmi J=M1 K=M2 L=M3 M=POCI.
     private static int AmbSubCedvel(ISheet sh, int r, string title, string subtitle,
