@@ -70,6 +70,22 @@ public class MuhasibatService : IMuhasibatService
             .Replace("{FLOOR_S2}", (p.Stage2Floor / 100m).ToString("0.########", inv));
     }
 
+    // Stage 3 bərpa termi — iki metod. KÖHNƏ (Excel) sətri toxunmadan qalır; MB seçiləndə
+    // yalnız Stage 3 branch-ı runtime-da əvəz olunur (Ifrs9Sql/Ifrs9AuditSql mənbəyi dəyişmir).
+    //   Excel: M_Stage3 = (batıqda qalan) × bərpa                 → risk% = (I/F) × bərpa
+    //   MB:    M_Stage3 = EAD × (1 − bərpa)                       → risk% = 1 − bərpa  (LGD, PD=100%)
+    private const string Stage3Excel =
+        "(t.f-t.g-t.h-t.j-t.k)*CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END";
+    private const string Stage3MB =
+        "t.f*(1-(CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END))";
+
+    // Metod tətbiqi: "MB" olduqda Stage 3 termini LGD=1−bərpa formasına çevirir.
+    // "Excel" (default) — heç nə dəyişmir, köhnə SQL eynən qalır.
+    private static string MetodTetbiq(string sql, Ifrs9ParametrDto p)
+        => string.Equals(p.Metod, "MB", StringComparison.OrdinalIgnoreCase)
+            ? sql.Replace(Stage3Excel, Stage3MB)
+            : sql;
+
     // OracleSorgular-dakı sorğu adları (admin paneldən redaktə oluna bilər).
     // Tapılmasa aşağıdakı embedded SQL fallback işləyir.
     private const string AdBalans   = "Muhasibat — Balans qaliqlari";
@@ -957,7 +973,8 @@ ORDER BY c.stage, c.sahe_kodu";
             dto.MenzilFloor  = parametr.MenzilFloor;
             dto.Stage1Floor  = parametr.Stage1Floor;
             dto.Stage2Floor  = parametr.Stage2Floor;
-            var sql = FloorTetbiq(Ifrs9Sql.Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
+            dto.Metod        = parametr.Metod;
+            var sql = FloorTetbiq(MetodTetbiq(Ifrs9Sql, parametr).Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
             var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
 
             var stageD = new Dictionary<string, (int say, decimal ead, decimal ecl, decimal bank)>();
@@ -1303,7 +1320,7 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         try
         {
             var parametr = await Ifrs9ParametrleriAsync();
-            var sql = FloorTetbiq(Ifrs9AuditSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
+            var sql = FloorTetbiq(MetodTetbiq(Ifrs9AuditSql, parametr).Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
             var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
 
             foreach (var r in rows)

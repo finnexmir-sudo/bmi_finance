@@ -12,4 +12,11 @@ public class Ifrs9ParametrDto
     public decimal MenzilFloor { get; set; } = 0.1m;   // mənzil floor, % (məs. 0.1)
     public decimal Stage1Floor { get; set; } = 1.0m;   // Mərhələ 1 floor, %
     public decimal Stage2Floor { get; set; } = 2.0m;   // Mərhələ 2 floor, %
+
+    // Hesablama metodu — Stage 3 bərpasının istiqamətini seçir:
+    //   "Excel" = mövcud (təsdiqlənmiş) model: Stage 3 riski = (batıqda qalma) × bərpa.
+    //   "MB"    = AMB Metodoloji Rəhbərliyi (23.12.2025): Stage 3 ECL = EAD × LGD,
+    //             LGD = 1 − bərpa (defolt olub, PD=100%, roll çarpanı yoxdur).
+    // Köhnə davranış üçün default "Excel" — dəyişmir.
+    public string Metod { get; set; } = "Excel";
 }

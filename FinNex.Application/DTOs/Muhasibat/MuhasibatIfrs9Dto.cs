@@ -26,6 +26,7 @@ public class MuhasibatIfrs9Dto
     public decimal MenzilFloor { get; set; } = 0.1m; // mənzil floor (%) — güzəşt açıqdırsa
     public decimal Stage1Floor { get; set; } = 1.0m; // Stage 1 floor (%)
     public decimal Stage2Floor { get; set; } = 2.0m; // Stage 2 floor (%)
+    public string Metod { get; set; } = "Excel";     // "Excel" (mövcud) / "MB" (AMB qaydası) — Stage 3 istiqaməti
 
     public List<Ifrs9StageDto> Stagelar { get; set; } = new();
     public List<Ifrs9SaheDto> Saheler { get; set; } = new();

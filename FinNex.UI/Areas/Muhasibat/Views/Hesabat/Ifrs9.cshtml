@@ -20,6 +20,7 @@
                 <a asp-action="Ifrs9IsKagizlari" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-journal-check"></i> İş kağızları (audit)</a>
                 <a asp-action="AmbA1Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-bank2"></i> AMB MHBS 9 · A1</a>
                 <button type="button" class="mh-xls" onclick="document.getElementById('metodPanel').classList.toggle('acik')"><i class="bi bi-info-circle"></i> Metodologiya</button>
+                <button type="button" class="mh-xls" onclick="var p=document.getElementById('metodPanel');p.classList.add('acik');setTimeout(function(){window.print();},60);"><i class="bi bi-printer"></i> Qaydanı çap et</button>
                 @if (User.IsInRole(FinNex.Domain.RoleNames.Admin) || User.IsInRole(FinNex.Domain.RoleNames.Muhasib))
                 {
                     <a asp-action="Ifrs9Parametr" class="mh-xls"><i class="bi bi-sliders"></i> Parametrlər</a>
@@ -37,6 +38,21 @@
 
     <div id="metodPanel" class="metod-panel">
         <div class="metod-h"><i class="bi bi-diagram-3"></i> Metodologiya — bu ehtiyat rəqəmlərinə necə gəlirik</div>
+
+        <div class="metod-metodbar">
+            <div>
+                <span class="metod-bar-l">Aktiv metod:</span>
+                @if (Model.Metod == "MB")
+                {
+                    <span class="metod-mb-badge"><i class="bi bi-bank"></i> AMB Metodoloji Rəhbərliyi — 23.12.2025, Protokol № 45/2</span>
+                }
+                else
+                {
+                    <span class="metod-ex-badge"><i class="bi bi-file-earmark-spreadsheet"></i> Excel (təsdiqlənmiş) model</span>
+                }
+                <span class="metod-bar-d">· Hesabat tarixi @Model.Tarix.ToString("dd.MM.yyyy")</span>
+            </div>
+        </div>
 
         <div class="metod-intro">
             <b>Əsas fikir (bir cümlə ilə):</b> Biz "bu kredit indi problemlidir" demirik — <b>keçmiş 5 ilin real təcrübəsinə</b>
@@ -67,19 +83,42 @@
                 bərpa təcrübəsi:<br>
                 • <b>Mənzil (girovda daşınmaz əmlak): @((Model.Q2*100).ToString("0.0"))%</b> qayıdır (Q2)<br>
                 • <b>Digər kreditlər: @((Model.P2*100).ToString("0.0"))%</b> qayıdır (P2)<br>
-                Yəni Mərhələ 3 itki ≈ qalıq × (1 − bərpa). Bərpa nə qədər yüksəkdirsə, itki bir o qədər azdır.<br>
                 @if (Model.MenzilGuzest)
                 {
                     <span class="metod-badge metod-badge--on"><i class="bi bi-house-check"></i> Mənzil güzəşti AÇIQ</span>
-                    <text> — mənzil <b>daha yüksək bərpa (Q2 @((Model.Q2*100).ToString("0.0"))%)</b> alır, digər kreditlər P2.
-                    Fərq qalır: mənzil girovu güclü olduğu üçün daha az itirir.</text>
+                    <text> — mənzil öz bərpasını (Q2) alır, digər kreditlər P2.</text>
                 }
                 else
                 {
                     <span class="metod-badge metod-badge--off"><i class="bi bi-house-slash"></i> Mənzil güzəşti BAĞLI</span>
-                    <text> — mənzil <b>tam adi kredit kimi</b> hesablanır: həm mərhələ floor-una (1%/2%) tabedir,
-                    <b>həm də bərpası P2-yə (@((Model.P2*100).ToString("0.0"))%)</b> düşür. Mənzil artıq üstünlük almır —
-                    fərq yox olur.</text>
+                    <text> — mənzil də adi kredit kimi P2 bərpasını alır.</text>
+                }
+            </div>
+            <div class="metod-b metod-b--wide">
+                <div class="metod-t"><span class="metod-n">3b</span> Mərhələ 3 (problemli) necə hesablanır — <b>aktiv metod</b></div>
+                @if (Model.Metod == "MB")
+                {
+                    <div class="metod-formula metod-formula--mb">ECL<sub>M3</sub> = EAD<sub>fact</sub> × LGD<sub>ID</sub> &nbsp;&nbsp;·&nbsp;&nbsp; <b>LGD = 1 − bərpa</b></div>
+                    <text>
+                    <b>İstinad — AMB Rəhbərliyi (23.12.2025 № 45/2), «Ehtiyatlanma» bölməsi, «mərhələ 3 üzrə kollektiv əsasda ECL»:</b>
+                    <i>«ECL = EAD<sub>fact</sub> × LGD<sub>ID</sub>»</i> və <i>«LGL = 1 − Total recovery%»</i>. Mərhələ 3-də kredit <b>artıq defolt olub</b> — yəni
+                    defolt ehtimalı (PD) 100%-dir, bir daha vurulmur. İtki yalnız <b>LGD</b>-dir: geri ala bilmədiyimiz pay.
+                    Bərpa nə qədər <b>çox</b>dursa, LGD (itki) bir o qədər <b>az</b>dır — girov düzgün qoruyur:<br>
+                    • Mənzil LGD = 1 − @((Model.Q2*100).ToString("0.0"))% = <b>@(((1-Model.Q2)*100).ToString("0.0"))%</b><br>
+                    • Digər LGD = 1 − @((Model.P2*100).ToString("0.0"))% = <b>@(((1-Model.P2)*100).ToString("0.0"))%</b><br>
+                    Mənzil daha az itirir (@(((1-Model.Q2)*100).ToString("0.0"))% &lt; @(((1-Model.P2)*100).ToString("0.0"))%) — MB-nin
+                    təminat cədvəlinə (Bakı daşınmaz əmlak ≈ 50%) uyğundur.
+                    </text>
+                }
+                else
+                {
+                    <div class="metod-formula">risk%<sub>M3</sub> = (batıqda qalma faizi) × bərpa</div>
+                    <text>
+                    <b>Excel (təsdiqlənmiş) model:</b> Mərhələ 3 riski tarixi keçid matrisindən gəlir — batıqda qalan payı
+                    bərpa əmsalına vurulur. <b>Qeyd:</b> bu düsturda bərpası <b>yüksək</b> olan kredit (mənzil) riyazi olaraq
+                    <b>daha yüksək</b> risk faizi alır. AMB qaydası isə əksini — LGD = 1 − bərpa — istəyir. Requlyativ hesabat
+                    üçün <b>AMB metodunu</b> seçmək tövsiyə olunur (Parametrlər səhifəsi).
+                    </text>
                 }
             </div>
             <div class="metod-b">
@@ -89,8 +128,9 @@
             </div>
             <div class="metod-b">
                 <div class="metod-t"><span class="metod-n">5</span> Nəticə — bugünə tətbiq</div>
-                <b>ECL = bugünkü EAD × tarixi risk faizi(sahə, mərhələ)</b>.<br>
-                Bütün portfel üzrə cəmlənir → cədvəldəki ehtiyat rəqəmi.
+                <b>ECL = bugünkü EAD × risk faizi(sahə, mərhələ)</b>.<br>
+                Mərhələ 1 & 2 üçün risk faizi tarixi keçiddən (floor ilə), Mərhələ 3 üçün yuxarıdakı
+                <b>aktiv metoda</b> görə hesablanır. Bütün portfel üzrə cəmlənir → cədvəldəki ehtiyat rəqəmi.
             </div>
         </div>
 
@@ -136,9 +176,17 @@
         <div class="metod-numune">
             <div class="metod-t"><i class="bi bi-calculator"></i> Sadə nümunə</div>
             <div class="metod-numune-g">
-                <div><b>100 000 ₼ mənzil krediti</b>, Mərhələ 1 → floor <b>0.1%</b> → ehtiyat <b>100 ₼</b></div>
-                <div><b>100 000 ₼ təminatsız istehlak</b>, Mərhələ 1 → floor <b>1%</b> → ehtiyat <b>1 000 ₼</b></div>
-                <div><b>Eyni məbləğ, Mərhələ 3 (problemli), təminatsız</b> → bərpa @((Model.P2*100).ToString("0.0"))% → itki ≈ <b>@(((1-Model.P2)*100).ToString("0"))%</b> × qalıq</div>
+                <div><b>100 000 ₼ mənzil krediti</b>, Mərhələ 1 → floor <b>@Ff(Model.MenzilFloor)%</b> → ehtiyat <b>@(((Model.MenzilFloor/100m)*100000m).ToString("#,##0"))  ₼</b></div>
+                <div><b>100 000 ₼ təminatsız istehlak</b>, Mərhələ 1 → floor <b>@Ff(Model.Stage1Floor)%</b> → ehtiyat <b>@(((Model.Stage1Floor/100m)*100000m).ToString("#,##0")) ₼</b></div>
+                @if (Model.Metod == "MB")
+                {
+                    <div><b>100 000 ₼ təminatsız, Mərhələ 3 (problemli)</b> → LGD = 1 − @((Model.P2*100).ToString("0.0"))% = <b>@(((1-Model.P2)*100).ToString("0.0"))%</b> → ehtiyat ≈ <b>@(((1-Model.P2)*100000m).ToString("#,##0")) ₼</b></div>
+                    <div><b>100 000 ₼ mənzil, Mərhələ 3</b> → LGD = 1 − @((Model.Q2*100).ToString("0.0"))% = <b>@(((1-Model.Q2)*100).ToString("0.0"))%</b> → ehtiyat ≈ <b>@(((1-Model.Q2)*100000m).ToString("#,##0")) ₼</b> <span style="color:#059669">(girov azaldır)</span></div>
+                }
+                else
+                {
+                    <div><b>Eyni məbləğ, Mərhələ 3 (problemli), təminatsız</b> → risk faizi tarixi keçiddən (batıqda qalma × bərpa) hesablanır — cədvəldəki St.3 sütununa bax</div>
+                }
             </div>
             <p class="metod-note">Fərq tamamilə girovdadır: mənzildə əmlak var, təminatsızda yoxdur.</p>
         </div>
@@ -151,7 +199,39 @@
                 Hər rəqəm <b>İş kağızları</b> Excel-ində ədəd-ədəd izlənir (tarixi keçid → risk faizi → cari portfel → nəticə).</div>
         </div>
 
-        <div class="metod-f"><i class="bi bi-book"></i> Əsas: IFRS 9 bənd <b>5.5.17</b> (gələcəyə yönümlü proqnoz), <b>B5.5.54</b> (sıfır risk yoxdur), <b>B5.5.55</b> (təminatın/girovun rolu).</div>
+        <div class="metod-qayda">
+            <div class="metod-t"><i class="bi bi-bank"></i> AMB Metodoloji Rəhbərliyi — bu ehtiyatı hansı qaydaya əsasən yığmışıq</div>
+            <div class="metod-qayda-src">Mənbə: <b>Azərbaycan Respublikası Mərkəzi Bankının İdarə Heyəti</b>, "23" dekabr 2025-ci il tarixli qərar, <b>Protokol № 45/2</b> — "Aktivlərin təsnifləşdirilməsi və ehtiyatların yaradılmasında MHBS 9-un tətbiqi üzrə Metodoloji Rəhbərlik".</div>
+            <ul class="metod-qayda-l">
+                <li><b>Mərhələləmə (gecikmə günü):</b> Mərhələ 2 = 31–90 gün (<i>«Mərhələ 2 üzrə meyarlar»</i> cədvəli, sıra 12) · Mərhələ 3 = 90+ gün, defolt (<i>«Mərhələ 3 üzrə meyarlar»</i> cədvəli, sıra 13). ✅ bizdə eyni.</li>
+                <li><b>Metod:</b> <i>«cPD hesablanması üçün... Markov zənciri... miqrasiya matrisləri»</i> (Ehtiyatlanma bölməsi) — bizim roll-rate/keçid matrisi modeli məhz buna istinad edir. ✅</li>
+                <li><b>Mərhələ 1 & 2 ECL:</b> <i>«ECL = Σ PD × LGD × EAD × DF ≈ PD × LGD × EAD»</i> (kollektiv əsasda). Bizdə: tarixi keçid faizi + minimum floor (sadələşdirmə).</li>
+                <li><b>Mərhələ 3 ECL:</b> <i>«ECL = EAD<sub>fact</sub> × LGD<sub>ID</sub>»</i> — defolt baş verib, PD=100%. LGD: <i>«LGL = 1 − Total recovery%»</i> → <b>1 − bərpa</b>.</li>
+                <li><b>EAD:</b> <i>«ehtiyatın hesablanması tarixinə kredit tələbinin balans dəyəri — əsas və gecikdirilmiş borc, hesablanmış faizlər, cərimələr»</i>.</li>
+                <li><b>Bərpa / LGD təminat cədvəli</b> (<i>«LGD = 1 − (təminatın məbləği × əmsal)/EAD»</i>): girovdan geri alına bilən pay —</li>
+            </ul>
+            <table class="metod-tbl metod-tbl--mb">
+                <thead><tr><th>Təminat növü</th><th>Tanınma (haircut)</th><th>Tam təminatlıdırsa LGD</th></tr></thead>
+                <tbody>
+                    <tr class="@(Model.Metod=="MB"?"metod-hl":"")"><td>Yaşayış/kommersiya daşınmaz əmlak — <b>Bakı</b> (mənzil)</td><td>50%</td><td><b>50%</b></td></tr>
+                    <tr><td>Daşınmaz əmlak — Bakıdan kənar</td><td>70%</td><td>70%</td></tr>
+                    <tr><td>Nəqliyyat / avadanlıq / mal</td><td>90%</td><td>90%</td></tr>
+                    <tr><td>Yüksək likvidli qiymətli kağızlar</td><td>10%</td><td>10%</td></tr>
+                    <tr><td>Nağd təminat</td><td>0%</td><td>0%</td></tr>
+                </tbody>
+            </table>
+            <p class="metod-note"><i class="bi bi-check2-circle"></i> Bizim empirik bərpamız (mənzil <b>@((Model.Q2*100).ToString("0.0"))%</b> ≈ MB Bakı daşınmaz əmlakı <b>50%</b>) requlyator cədvəlinə yaxındır — model tarixi real geri ödənişdən (<i>«defoltda qalan məbləğ üzrə geri ödənişlərin olması»</i>) hesablanır.</p>
+            @if (Model.Metod == "MB")
+            {
+                <div class="metod-qayda-aktiv metod-qayda-aktiv--mb"><i class="bi bi-check-circle-fill"></i> Bu hesabat <b>AMB Metodoloji Rəhbərliyinə uyğun</b> (Mərhələ 3: EAD × (1 − bərpa)) hesablanmışdır.</div>
+            }
+            else
+            {
+                <div class="metod-qayda-aktiv metod-qayda-aktiv--ex"><i class="bi bi-exclamation-circle-fill"></i> Bu hesabat hazırda <b>Excel (təsdiqlənmiş) modeli</b> ilə hesablanır. AMB tam uyğunluğu üçün Parametrlər səhifəsində metodu <b>"AMB"</b> seçin.</div>
+            }
+        </div>
+
+        <div class="metod-f"><i class="bi bi-book"></i> Əsas: IFRS 9 bənd <b>5.5.17</b> (gələcəyə yönümlü proqnoz), <b>B5.5.54</b> (sıfır risk yoxdur), <b>B5.5.55</b> (təminatın/girovun rolu) · AMB Rəhbərliyi 23.12.2025 № 45/2.</div>
     </div>
 
     @if (!Model.Ugurlu)
@@ -177,6 +257,23 @@
                 <div class="mh-kpi-l">FINA / prudensial ehtiyat (müqayisə)</div>
             </div>
         </div>
+
+        @if (Model.Metod == "MB")
+        {
+            <div class="if-ref if-ref--mb">
+                <i class="bi bi-bank"></i>
+                <div><b>AMB Metodoloji Rəhbərliyinə uyğun hesablanıb</b> — Azərbaycan Respublikası Mərkəzi Bankı, 23.12.2025, Protokol № 45/2.
+                Mərhələ 3 (problemli): <b>ECL = EAD × LGD, LGD = 1 − bərpa</b> (defolt olub, PD=100%). Detallı istinadlar üçün <b>Metodologiya</b> düyməsinə bax.</div>
+            </div>
+        }
+        else
+        {
+            <div class="if-ref if-ref--ex">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <div><b>Excel (təsdiqlənmiş) modeli</b> ilə hesablanıb. AMB Metodoloji Rəhbərliyinə (23.12.2025 № 45/2) tam uyğunluq üçün
+                <b>Parametrlər → Hesablama metodu → AMB</b> seçin. Fərqi görmək üçün iki metodu eyni tarixdə müqayisə edin.</div>
+            </div>
+        }
 
         <div class="if-card">
             <div class="if-card-h"><i class="bi bi-layers"></i> Stage üzrə bölgü</div>
@@ -283,6 +380,12 @@
     .if-tbl th.st3, .if-tbl td.st3 { background: rgba(239,68,68,.06); }
     .if-tbl-qeyd { padding: 10px 16px; font-size: 11.5px; color: #64748b; border-top: 1px solid #eef2f7; background: #f8fafc; line-height: 1.5; }
     .if-tbl-qeyd i { color: #0ea5e9; }
+    .if-ref { display: flex; gap: 11px; margin-top: 14px; padding: 12px 16px; border-radius: 12px; font-size: 12.5px; line-height: 1.55; }
+    .if-ref i { font-size: 18px; margin-top: 1px; flex: none; }
+    .if-ref--mb { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; }
+    .if-ref--mb i { color: #4338ca; }
+    .if-ref--ex { background: #fffbeb; border: 1px solid #fde68a; color: #854d0e; }
+    .if-ref--ex i { color: #d97706; }
     .if-note { display: flex; gap: 10px; margin-top: 16px; padding: 13px 16px; background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 12px; font-size: 12.5px; color: #64748b; line-height: 1.55; }
     .if-note i { color: #b91c1c; font-size: 16px; margin-top: 1px; }
     .metod-panel { display: none; margin-top: 14px; background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; }
@@ -312,4 +415,36 @@
     .metod-numune-g > div { background: #fff; border: 1px solid #e6ebf2; border-radius: 9px; padding: 10px 12px; font-size: 12.5px; color: #334155; line-height: 1.5; }
     .metod-audit { display: flex; gap: 10px; margin: 6px 18px 14px; padding: 13px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; font-size: 12.5px; color: #1e3a8a; line-height: 1.6; }
     .metod-audit i { color: #2563eb; font-size: 17px; margin-top: 1px; }
+    /* Metod bar (aktiv metod göstəricisi) */
+    .metod-metodbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 18px 0; padding: 9px 14px; background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 10px; font-size: 12.5px; flex-wrap: wrap; }
+    .metod-bar-l { color: #64748b; font-weight: 600; margin-right: 4px; }
+    .metod-bar-d { color: #94a3b8; margin-left: 6px; }
+    .metod-mb-badge { display: inline-flex; align-items: center; gap: 5px; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; border-radius: 20px; padding: 3px 11px; font-weight: 700; font-size: 12px; }
+    .metod-ex-badge { display: inline-flex; align-items: center; gap: 5px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 20px; padding: 3px 11px; font-weight: 700; font-size: 12px; }
+    .metod-b--wide { grid-column: 1 / -1; background: #fbfcfe; border: 1px dashed #d7dee8; border-radius: 10px; padding: 12px 14px; }
+    .metod-formula { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 9px 13px; margin: 6px 0 9px; display: inline-block; }
+    .metod-formula--mb { background: #312e81; }
+    .metod-formula sub { font-size: 9px; }
+    /* AMB qayda bloku */
+    .metod-qayda { margin: 6px 18px 14px; padding: 15px 17px; border: 1.5px solid #c7d2fe; border-radius: 12px; background: #f5f7ff; }
+    .metod-qayda .metod-t { color: #3730a3; }
+    .metod-qayda-src { font-size: 12px; color: #475569; line-height: 1.55; margin: 6px 0 10px; padding-bottom: 9px; border-bottom: 1px solid #e0e7ff; }
+    .metod-qayda-l { margin: 0 0 8px; padding-left: 18px; font-size: 12.5px; color: #334155; line-height: 1.7; }
+    .metod-qayda-l li { margin-bottom: 3px; }
+    .metod-tbl--mb th { background: #e0e7ff; color: #3730a3; }
+    .metod-tbl--mb .metod-hl { background: #eef2ff; }
+    .metod-tbl--mb .metod-hl td { border-top: 1px solid #c7d2fe; }
+    .metod-qayda-aktiv { margin-top: 10px; padding: 10px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; line-height: 1.5; }
+    .metod-qayda-aktiv--mb { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .metod-qayda-aktiv--mb i { color: #059669; }
+    .metod-qayda-aktiv--ex { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .metod-qayda-aktiv--ex i { color: #d97706; }
+    /* Çap (print) — yalnız metodologiya paneli */
+    @@media print {
+        body * { visibility: hidden !important; }
+        #metodPanel, #metodPanel * { visibility: visible !important; }
+        #metodPanel { position: absolute; left: 0; top: 0; width: 100%; margin: 0; border: none; box-shadow: none; display: block !important; }
+        .metod-formula { background: #fff !important; color: #0f172a !important; border: 1px solid #0f172a; }
+        .metod-grid { grid-template-columns: 1fr 1fr; }
+    }
 </style>

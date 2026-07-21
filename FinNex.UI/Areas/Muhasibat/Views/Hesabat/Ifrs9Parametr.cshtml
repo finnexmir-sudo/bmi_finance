@@ -31,6 +31,27 @@
         @Html.AntiForgeryToken()
 
         <div class="pr-card">
+            <div class="pr-card-h"><i class="bi bi-diagram-3"></i> Hesablama metodu — Mərhələ 3 (problemli) bərpası</div>
+            <div class="pr-row pr-metod">
+                <label class="pr-radio @(Model.Metod != "MB" ? "sec" : "")">
+                    <input type="radio" asp-for="Metod" value="Excel" />
+                    <div>
+                        <div class="pr-t">Excel modeli <span class="pr-tag pr-tag--n">mövcud / təsdiqlənmiş</span></div>
+                        <div class="pr-d">Mərhələ 3 riski = (batıqda qalma) × bərpa. Sənin təsdiqlədiyin, hazırda işləyən model. Rəqəmlər dəyişmir.</div>
+                    </div>
+                </label>
+                <label class="pr-radio @(Model.Metod == "MB" ? "sec" : "")">
+                    <input type="radio" asp-for="Metod" value="MB" />
+                    <div>
+                        <div class="pr-t">AMB Metodoloji Rəhbərliyi <span class="pr-tag pr-tag--mb">23.12.2025 · № 45/2</span></div>
+                        <div class="pr-d">Mərhələ 3 ECL = EAD × LGD, <b>LGD = 1 − bərpa</b> (defolt olub, PD=100%). Girov düzgün qoruyur; ehtiyat <b>artır</b>. Seçəndən sonra real data ilə yoxla.</div>
+                    </div>
+                </label>
+            </div>
+            <div class="pr-note"><i class="bi bi-info-circle"></i> İki metodu <b>eyni tarixdə</b> növbə ilə seçib IFRS 9 səhifəsində "Göstər" ilə müqayisə et. Metodun izahını IFRS 9 səhifəsindən <b>çap</b> edə bilərsən.</div>
+        </div>
+
+        <div class="pr-card">
             <div class="pr-card-h"><i class="bi bi-house-lock"></i> Mənzil güzəşti</div>
             <div class="pr-row pr-toggle">
                 <label class="pr-switch">
@@ -101,4 +122,13 @@
     .pr-foot { text-align: right; }
     .pr-btn { display: inline-flex; align-items: center; gap: 7px; background: linear-gradient(135deg, #b91c1c, #ef4444); color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
     .pr-btn:hover { filter: brightness(1.05); }
+    .pr-metod { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @@media (max-width: 640px) { .pr-metod { grid-template-columns: 1fr; } }
+    .pr-radio { display: flex; gap: 10px; align-items: flex-start; padding: 13px 14px; border: 1.5px solid #e2e8f0; border-radius: 11px; cursor: pointer; transition: .15s; }
+    .pr-radio:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .pr-radio.sec { border-color: #b91c1c; background: #fef2f2; box-shadow: 0 0 0 3px rgba(185,28,28,.08); }
+    .pr-radio input { margin-top: 3px; flex: none; width: 16px; height: 16px; accent-color: #b91c1c; }
+    .pr-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 20px; vertical-align: middle; margin-left: 4px; }
+    .pr-tag--n { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .pr-tag--mb { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
 </style>

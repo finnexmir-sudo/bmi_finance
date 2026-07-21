@@ -92,6 +92,7 @@ public class HesabatController : Controller
         model.MenzilFloor = Math.Max(0m, model.MenzilFloor);
         model.Stage1Floor = Math.Max(0m, model.Stage1Floor);
         model.Stage2Floor = Math.Max(0m, model.Stage2Floor);
+        model.Metod = string.Equals(model.Metod, "MB", StringComparison.OrdinalIgnoreCase) ? "MB" : "Excel";
         await _service.Ifrs9ParametrYazAsync(model);
         TempData["Status"] = "IFRS 9 floor parametrləri yadda saxlanıldı. Nəticəni real data ilə yoxlayın.";
         return RedirectToAction(nameof(Ifrs9Parametr));
