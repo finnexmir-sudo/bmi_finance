@@ -435,7 +435,7 @@ public class HesabatController : Controller
 
     private static void AmbSetir(ISheet sh, int r, string ad, AmbHuceyre h)
     {
-        static double K(decimal v) => (double)Math.Round(v / 1000m, 1);   // AZN → min manat
+        static double K(decimal v) => (double)(v / 1000m);   // AZN → min manat
         var row = sh.CreateRow(r);
         row.CreateCell(1).SetCellValue(ad);
         row.CreateCell(3).SetCellValue(K(h.GCem));
@@ -539,7 +539,7 @@ public class HesabatController : Controller
         {
             var row = ws.GetRow(r) ?? ws.CreateRow(r);
             var cell = row.GetCell(c) ?? row.CreateCell(c);
-            cell.SetCellValue((double)Math.Round(v / 1000m, 1));   // AZN → min manat
+            cell.SetCellValue((double)(v / 1000m));   // AZN → min manat
         }
         Set(ws, rIdx, 4, h.G1);   // E — brüt Mərhələ 1
         Set(ws, rIdx, 5, h.G2);   // F — Mərhələ 2
@@ -556,7 +556,7 @@ public class HesabatController : Controller
     {
         var row = ws.GetRow(r) ?? ws.CreateRow(r);
         var cell = row.GetCell(c) ?? row.CreateCell(c);
-        cell.SetCellValue((double)Math.Round(v / 1000m, 1));
+        cell.SetCellValue((double)(v / 1000m));
     }
 
     private static AmbDpdSetir AmbDpdAl(Dictionary<string, AmbDpdSetir> m, string qrup, int stage)
@@ -569,7 +569,7 @@ public class HesabatController : Controller
         {
             var row = ws.GetRow(r) ?? ws.CreateRow(r);
             var cell = row.GetCell(c) ?? row.CreateCell(c);
-            cell.SetCellValue((double)Math.Round(v / 1000m, 1));   // AZN → min manat
+            cell.SetCellValue((double)(v / 1000m));   // AZN → min manat
         }
         Set(ws, rIdx, 4, d.Cari);    // E — Cari (0 gün)
         Set(ws, rIdx, 5, d.D1_30);   // F — 1-30 gün
