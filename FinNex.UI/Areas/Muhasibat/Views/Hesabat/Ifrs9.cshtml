@@ -30,34 +30,84 @@
     <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhTabs.cshtml" />
 
     <div id="metodPanel" class="metod-panel">
-        <div class="metod-h"><i class="bi bi-diagram-3"></i> Metodologiya — bu rəqəmlərə necə gəlinir</div>
+        <div class="metod-h"><i class="bi bi-diagram-3"></i> Metodologiya — bu ehtiyat rəqəmlərinə necə gəlirik</div>
+
+        <div class="metod-intro">
+            <b>Əsas fikir (bir cümlə ilə):</b> Biz "bu kredit indi problemlidir" demirik — <b>keçmiş 5 ilin real təcrübəsinə</b>
+            əsasən "bu tip kreditlərin hansı hissəsini adətən itiririk?" sualına cavab veririk və həmin faizi
+            <b>bugünkü portfelə</b> tətbiq edirik. Yəni: <b>ehtiyat = son 5 ilin real itki təcrübəsi × bugünkü qalıq.</b>
+            IFRS 9 məhz bunu — <b>gözlənilən (gələcək) itkini</b> — tələb edir, təkcə bugünkü vəziyyəti yox.
+        </div>
+
         <div class="metod-grid">
             <div class="metod-b">
-                <div class="metod-t">1 · Mərhələ (staging)</div>
-                Gecikmə günündən: <b>0–30</b> = Mərhələ 1 · <b>31–90</b> = Mərhələ 2 · <b>90+</b> = Mərhələ 3.
+                <div class="metod-t"><span class="metod-n">1</span> Mərhələ — kredit hansı səbətdədir?</div>
+                Hər kredit <b>gecikmə gününə</b> görə 3 səbətdən birinə düşür:<br>
+                • <b>Mərhələ 1</b> — 0–30 gün (sağlam)<br>
+                • <b>Mərhələ 2</b> — 31–90 gün (nəzarətdə, gecikmə başlayıb)<br>
+                • <b>Mərhələ 3</b> — 90+ gün (problemli / defolt)
             </div>
             <div class="metod-b">
-                <div class="metod-t">2 · Tarixi risk faizi</div>
-                Son <b>5 il</b>, sahə×mərhələ üzrə keçid: risk% = tarixi risk məbləği (M) / tarixi qalıq (F), illər üzrə orta (N).
+                <div class="metod-t"><span class="metod-n">2</span> Tarixi risk faizi (modelin ürəyi)</div>
+                Son <b>5 ilə</b> baxırıq: hər <b>sahə × mərhələ</b> üçün — ilin əvvəlində bu mərhələdə olan kreditlərin
+                <b>neçə faizini real itirdik</b> (geri qaytara bilmədik)?<br>
+                <b>risk% = tarixi itki məbləği (M) ÷ tarixi başlanğıc qalıq (F)</b>, 5 il üzrə orta.<br>
+                <i>Hər sahə×mərhələnin faizi — İş kağızları, 2-ci vərəq.</i>
             </div>
             <div class="metod-b">
-                <div class="metod-t">3 · Floor (aşağı hədd)</div>
-                Mənzil (1902/1904) <b>0.1%</b> · Mərhələ 1 <b>1%</b> · Mərhələ 2 <b>2%</b>. Heç bir kredit tam risksiz deyil.
+                <div class="metod-t"><span class="metod-n">3</span> Bərpa — problemli kreditdə nə qədər qaytarırıq?</div>
+                Defolt (Mərhələ 3) olan kreditdə də hər şeyi itirmirik — girovdan bir hissə qayıdır.
+                Son 5 ilin real bərpası:<br>
+                • <b>Mənzil (girovda əmlak): @((Model.Q2*100).ToString("0.0"))%</b> qayıdır<br>
+                • <b>Digər kreditlər: @((Model.P2*100).ToString("0.0"))%</b> qayıdır<br>
+                Yəni Mərhələ 3 itki ≈ qalıq × (1 − bərpa).
             </div>
             <div class="metod-b">
-                <div class="metod-t">4 · Bərpa (recovery)</div>
-                Mərhələ 3-də təminatdan gələcək pul: mənzil <b>Q2</b>, digər <b>P2</b> (son 5 ilin real (J+K)/F ortalaması). Dəqiq dəyərlər — İş kağızlarında.
+                <div class="metod-t"><span class="metod-n">4</span> EAD — bugünkü ekspozisiya</div>
+                Əsas borc + balansdankənar (<code>summa + summa_19</code>), AZN-ə çevrilmiş.
+                Əsas qalığı 0 olsa da <b>açıq</b> kredit (balansdankənar riski olan) daxildir.
             </div>
             <div class="metod-b">
-                <div class="metod-t">5 · EAD (ekspozisiya)</div>
-                Əsas borc + balansdankənar (<code>summa + summa_19</code>), AZN-ə çevrilmiş. Qalığı 0 olan açıq kredit də daxil.
-            </div>
-            <div class="metod-b">
-                <div class="metod-t">6 · Nəticə</div>
-                <b>ECL = cari EAD × risk faizi(sahə, mərhələ)</b>. Auditə tam izlənir → <b>İş kağızları</b> düyməsi.
+                <div class="metod-t"><span class="metod-n">5</span> Nəticə — bugünə tətbiq</div>
+                <b>ECL = bugünkü EAD × tarixi risk faizi(sahə, mərhələ)</b>.<br>
+                Bütün portfel üzrə cəmlənir → cədvəldəki ehtiyat rəqəmi.
             </div>
         </div>
-        <div class="metod-f"><i class="bi bi-book"></i> Əsas: IFRS 9 bənd 5.5.17 (gələcəyə yönümlü proqnoz), B5.5.54 (sıfır risk yoxdur), B5.5.55 (təminatın rolu).</div>
+
+        <div class="metod-menzil">
+            <div class="metod-t"><i class="bi bi-house-lock"></i> Minimum floor (aşağı hədd) və <b>mənzil güzəşti</b></div>
+            <p>"Heç bir kredit tam risksiz deyil" (IFRS 9 B5.5.54) — tarix az itki göstərsə belə, <b>minimum</b> ehtiyat ayırırıq:</p>
+            <table class="metod-tbl">
+                <thead><tr><th>Kredit növü</th><th>Minimum floor</th><th>Niyə məhz bu?</th></tr></thead>
+                <tbody>
+                    <tr class="metod-hl"><td><b>Mənzil</b> (daşınmaz əmlakla təminatlı · 1902/1904)</td><td><b>0.1%</b></td><td>Girovda ev/mənzil var — müştəri ödəməsə əmlakı satıb pulu qaytarırıq, ona görə risk çox aşağı. <b>Bu, bizim güzəştimizdir.</b></td></tr>
+                    <tr><td><b>Mərhələ 1</b> (sağlam, təminatsız)</td><td><b>1%</b></td><td>Bu gün sağlamdır, amma təcrübə göstərir ki, bir hissəsi gələcəkdə gecikəcək.</td></tr>
+                    <tr><td><b>Mərhələ 2</b> (nəzarətdə, təminatsız)</td><td><b>2%</b></td><td>Gecikmə artıq başlayıb — risk daha yüksək, minimum ikiqat.</td></tr>
+                    <tr><td><b>Mərhələ 3</b> (problemli)</td><td>bərpa əsaslı</td><td>Sabit floor yox — yuxarıdakı bərpa faizi (3-cü addım) tətbiq olunur.</td></tr>
+                </tbody>
+            </table>
+            <p class="metod-note"><i class="bi bi-lightbulb"></i> <b>Güzəşt niyə?</b> Daşınmaz əmlakla təminatlı kreditdə (mənzil) girov güclüdür — itki ehtimalı təminatsız istehlak kreditindən <b>10–20 dəfə</b> aşağıdır (0.1% ↔ 1–2%). Bu, IFRS 9 B5.5.55 (təminatın rolu) əsasındadır.</p>
+        </div>
+
+        <div class="metod-numune">
+            <div class="metod-t"><i class="bi bi-calculator"></i> Sadə nümunə</div>
+            <div class="metod-numune-g">
+                <div><b>100 000 ₼ mənzil krediti</b>, Mərhələ 1 → floor <b>0.1%</b> → ehtiyat <b>100 ₼</b></div>
+                <div><b>100 000 ₼ təminatsız istehlak</b>, Mərhələ 1 → floor <b>1%</b> → ehtiyat <b>1 000 ₼</b></div>
+                <div><b>Eyni məbləğ, Mərhələ 3 (problemli), təminatsız</b> → bərpa @((Model.P2*100).ToString("0.0"))% → itki ≈ <b>@(((1-Model.P2)*100).ToString("0"))%</b> × qalıq</div>
+            </div>
+            <p class="metod-note">Fərq tamamilə girovdadır: mənzildə əmlak var, təminatsızda yoxdur.</p>
+        </div>
+
+        <div class="metod-audit">
+            <i class="bi bi-shield-check"></i>
+            <div><b>Müfəttiş "necə gəldiniz?" soruşanda ardıcıllıq:</b>
+                ① kredit gecikmə gününə görə mərhələyə düşür → ② həmin sahə×mərhələnin <b>son 5 illik real itki faizi</b> götürülür →
+                ③ minimum floor yoxlanır (mənzildə 0.1% güzəşt) → ④ problemlidirsə bərpa çıxılır → ⑤ bugünkü qalığa vurulur.
+                Hər rəqəm <b>İş kağızları</b> Excel-ində ədəd-ədəd izlənir (tarixi keçid → risk faizi → cari portfel → nəticə).</div>
+        </div>
+
+        <div class="metod-f"><i class="bi bi-book"></i> Əsas: IFRS 9 bənd <b>5.5.17</b> (gələcəyə yönümlü proqnoz), <b>B5.5.54</b> (sıfır risk yoxdur), <b>B5.5.55</b> (təminatın/girovun rolu).</div>
     </div>
 
     @if (!Model.Ugurlu)
@@ -186,4 +236,19 @@
     .metod-b code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; color: #b91c1c; }
     .metod-f { padding: 11px 18px; border-top: 1px solid #eef2f7; background: #f8fafc; font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 7px; }
     .metod-f i { color: #b91c1c; }
+    .metod-intro { margin: 16px 18px 4px; padding: 13px 16px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; font-size: 13px; color: #7c2d12; line-height: 1.6; }
+    .metod-n { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #b91c1c; color: #fff; font-size: 11px; font-weight: 700; margin-right: 6px; }
+    .metod-menzil, .metod-numune { margin: 6px 18px; padding: 14px 16px; border: 1px solid #e6ebf2; border-radius: 12px; background: #f8fafc; }
+    .metod-menzil p, .metod-numune p { font-size: 12.5px; color: #475569; line-height: 1.55; margin: 6px 0; }
+    .metod-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 8px 0; }
+    .metod-tbl th { text-align: left; padding: 7px 10px; background: #eef2f7; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; }
+    .metod-tbl td { padding: 8px 10px; border-top: 1px solid #eef2f7; color: #334155; vertical-align: top; }
+    .metod-tbl .metod-hl { background: #ecfdf5; }
+    .metod-tbl .metod-hl td { border-top: 1px solid #a7f3d0; }
+    .metod-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 9px 12px; font-size: 12px; color: #713f12; }
+    .metod-note i { color: #d97706; }
+    .metod-numune-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 8px 0; }
+    .metod-numune-g > div { background: #fff; border: 1px solid #e6ebf2; border-radius: 9px; padding: 10px 12px; font-size: 12.5px; color: #334155; line-height: 1.5; }
+    .metod-audit { display: flex; gap: 10px; margin: 6px 18px 14px; padding: 13px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; font-size: 12.5px; color: #1e3a8a; line-height: 1.6; }
+    .metod-audit i { color: #2563eb; font-size: 17px; margin-top: 1px; }
 </style>

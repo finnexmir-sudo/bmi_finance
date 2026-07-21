@@ -887,8 +887,11 @@ SELECT c.licschkre                         AS hesab,
        ROUND(c.ead,2)                      AS ead,
        ROUND(NVL(rf.risk_faiz,0.0001),8)   AS risk_faiz,
        ROUND(c.ead*NVL(rf.risk_faiz,0.0001),2) AS ecl,
-       ROUND(c.ead*c.bank_faiz/100,2)      AS bank_ehtiyat
+       ROUND(c.ead*c.bank_faiz/100,2)      AS bank_ehtiyat,
+       ROUND(rec.p2,8)                     AS p2,
+       ROUND(rec.q2,8)                     AS q2
 FROM cari c
+CROSS JOIN recovery rec
 LEFT JOIN riskfaiz rf ON rf.sahe_kodu=c.sahe_kodu AND rf.stage_start=c.stage
 ORDER BY c.stage, c.sahe_kodu";
 
@@ -920,6 +923,8 @@ ORDER BY c.stage, c.sahe_kodu";
                 var riskFaiz = Dec(Val(r, "risk_faiz"));
                 var ecl      = Dec(Val(r, "ecl"));
                 var bank     = Dec(Val(r, "bank_ehtiyat"));
+                if (dto.P2 == 0) dto.P2 = Dec(Val(r, "p2"));
+                if (dto.Q2 == 0) dto.Q2 = Dec(Val(r, "q2"));
 
                 totEad += ead; totEcl += ecl; totBank += bank; say++;
 

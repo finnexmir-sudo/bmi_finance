@@ -18,6 +18,8 @@ public class MuhasibatIfrs9Dto
     public decimal UmumiEcl { get; set; }        // IFRS 9 ehtiyat cəmi
     public decimal EclFaiz { get; set; }         // ECL / EAD %
     public decimal BankEhtiyat { get; set; }     // FINA/prudensial ehtiyat (procstavrez) — müqayisə üçün
+    public decimal P2 { get; set; }              // bərpa əmsalı — digər sahələr (Stage 3), fraction
+    public decimal Q2 { get; set; }              // bərpa əmsalı — mənzil (1902/1904, Stage 3), fraction
 
     public List<Ifrs9StageDto> Stagelar { get; set; } = new();
     public List<Ifrs9SaheDto> Saheler { get; set; } = new();
