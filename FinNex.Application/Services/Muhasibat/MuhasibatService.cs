@@ -1,4 +1,5 @@
 using FinNex.Application.DTOs.Muhasibat;
+using FinNex.Application.DTOs.Sorgular;
 using FinNex.Application.Interfaces.Muhasibat;
 using FinNex.Application.Interfaces.Oracle;
 using FinNex.Application.Interfaces.Sorgular;
@@ -41,11 +42,19 @@ public class MuhasibatService : IMuhasibatService
     private const string AdKeyfiyyetDetal  = "Muhasibat — Kredit keyfiyyet detal";
     private const string AdYerlesdirme     = "Muhasibat — Yerlesdirme";
 
-    // SQL-i OracleSorgular-dan ad ilə oxu. Yoxdursa xəta at (embedded fallback yoxdur).
+    // Sorğu siyahısı bir dəfə oxunur və scoped servis ömrü boyu cache-lənir (DbContext).
+    // Bu, GunlukIcmal kimi çoxlu SqlAl çağıran bölmələrdə DbContext-i təkrar-təkrar vurmur
+    // və alt-bölmələrin PARALEL işləməsinə imkan verir (əvvəlcədən SorgulariYukleAsync ilə doldurulur).
+    private List<OracleSorguDto>? _sorguCache;
+
+    private async Task<List<OracleSorguDto>> SorgulariYukleAsync()
+        => _sorguCache ??= (await _sorgu.HamisiniGetirAsync())?.Data?.ToList() ?? new List<OracleSorguDto>();
+
+    // SQL-i OracleSorgular-dan ad ilə oxu (cache-dən). Yoxdursa xəta at (embedded fallback yoxdur).
     private async Task<string> SqlAl(string ad)
     {
-        var res = await _sorgu.HamisiniGetirAsync();
-        var q = res?.Data?.FirstOrDefault(x => x.Aktiv
+        var list = await SorgulariYukleAsync();
+        var q = list.FirstOrDefault(x => x.Aktiv
             && !string.IsNullOrWhiteSpace(x.SorguMetni)
             && string.Equals((x.SorguAdi ?? "").Trim(), ad, StringComparison.OrdinalIgnoreCase));
         if (q == null)
@@ -61,15 +70,24 @@ public class MuhasibatService : IMuhasibatService
 
         try
         {
-            // Bölmələri ARDICIL çağır — rəqəmlər tab-larla eynidir.
-            // (Paralel OLMAZ: sorğu mətnləri EF Core DbContext-dən oxunur, o isə
-            // thread-safe deyil — paralel çağırış "second operation on context" atır.
-            // Oracle sorğuları özləri yeni bağlantı açır, amma SqlAl DbContext-ə vurur.)
-            var bal     = await BalansAsync(t);
-            var dep     = await DepozitAsync(t);
-            var krd     = await KreditPortfelAsync(t);
-            var lkv     = await LikvidlikAsync(t);
-            var pnl     = await MenfeetAsync(new DateTime(t.Year, 1, 1), t);
+            // Sorğu mətnlərini əvvəlcədən cache-ə yığ (DbContext, ardıcıl) — sonra bölmələr
+            // PARALEL işləyə bilər: SqlAl artıq cache-dən oxuyur (DbContext-ə vurmur), Oracle
+            // sorğuları isə hər biri öz bağlantısını açır (OracleService.SelectAsync = yeni con),
+            // deməli paralel təhlükəsizdir. Ardıcıl 7 sorğu → eyni anda (vaxt = ən yavaş bölmə).
+            await SorgulariYukleAsync();
+
+            var balT = BalansAsync(t);
+            var depT = DepozitAsync(t);
+            var krdT = KreditPortfelAsync(t);
+            var lkvT = LikvidlikAsync(t);
+            var pnlT = MenfeetAsync(new DateTime(t.Year, 1, 1), t);
+            await Task.WhenAll(balT, depT, krdT, lkvT, pnlT);
+
+            var bal = balT.Result;
+            var dep = depT.Result;
+            var krd = krdT.Result;
+            var lkv = lkvT.Result;
+            var pnl = pnlT.Result;
 
             dto.UmumiAktiv     = bal.UmumiAktiv;
             dto.UmumiOhdelik   = bal.UmumiOhdelik;
