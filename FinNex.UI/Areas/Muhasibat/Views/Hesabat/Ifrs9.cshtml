@@ -64,8 +64,8 @@
             </div>
             <div class="metod-b">
                 <div class="metod-t"><span class="metod-n">4</span> EAD — bugünkü ekspozisiya</div>
-                Əsas borc + balansdankənar (<code>summa + summa_19</code>), AZN-ə çevrilmiş.
-                Əsas qalığı 0 olsa da <b>açıq</b> kredit (balansdankənar riski olan) daxildir.
+                Əsas borc + <b>vaxtı keçmiş əsas borc</b> (<code>summa + summa_19</code>), AZN-ə çevrilmiş.
+                Əsas qalığı 0 olsa da <b>açıq</b> kredit (vaxtı keçmiş borcu olan) daxildir.
             </div>
             <div class="metod-b">
                 <div class="metod-t"><span class="metod-n">5</span> Nəticə — bugünə tətbiq</div>
@@ -80,7 +80,7 @@
             <table class="metod-tbl">
                 <thead><tr><th>Kredit növü</th><th>Minimum floor</th><th>Niyə məhz bu?</th></tr></thead>
                 <tbody>
-                    <tr class="metod-hl"><td><b>Mənzil</b> (daşınmaz əmlakla təminatlı · 1902/1904)</td><td><b>0.1%</b></td><td>Girovda ev/mənzil var — müştəri ödəməsə əmlakı satıb pulu qaytarırıq, ona görə risk çox aşağı. <b>Bu, bizim güzəştimizdir.</b></td></tr>
+                    <tr class="metod-hl"><td><b>Mənzil</b> (daşınmaz əmlakla təminatlı · 1902/1904)</td><td><b>0.1%</b><br><span style="font-size:11px;color:#059669;font-weight:600">bütün mərhələlərdə eyni</span></td><td>Girovda ev/mənzil var — müştəri ödəməsə əmlakı satıb pulu qaytarırıq, ona görə risk çox aşağı. <b>Bu, bizim güzəştimizdir.</b> Bu 0.1% <b>Mərhələ 1, 2, 3-ün hamısında eynidir</b> (girov hər mərhələdə qoruyur). Bu minimumdur — problemli (Mərhələ 3) mənzildə real risk bərpadan asılı olaraq daha yüksək çıxa bilər.</td></tr>
                     <tr><td><b>Mərhələ 1</b> (sağlam, təminatsız)</td><td><b>1%</b></td><td>Bu gün sağlamdır, amma təcrübə göstərir ki, bir hissəsi gələcəkdə gecikəcək.</td></tr>
                     <tr><td><b>Mərhələ 2</b> (nəzarətdə, təminatsız)</td><td><b>2%</b></td><td>Gecikmə artıq başlayıb — risk daha yüksək, minimum ikiqat.</td></tr>
                     <tr><td><b>Mərhələ 3</b> (problemli)</td><td>bərpa əsaslı</td><td>Sabit floor yox — yuxarıdakı bərpa faizi (3-cü addım) tətbiq olunur.</td></tr>
@@ -100,8 +100,8 @@
         </div>
 
         <div class="metod-audit">
-            <i class="bi bi-shield-check"></i>
-            <div><b>Müfəttiş "necə gəldiniz?" soruşanda ardıcıllıq:</b>
+            <i class="bi bi-list-check"></i>
+            <div><b>Bu ehtiyat necə çıxdı — addım-addım (sadə dillə):</b>
                 ① kredit gecikmə gününə görə mərhələyə düşür → ② həmin sahə×mərhələnin <b>son 5 illik real itki faizi</b> götürülür →
                 ③ minimum floor yoxlanır (mənzildə 0.1% güzəşt) → ④ problemlidirsə bərpa çıxılır → ⑤ bugünkü qalığa vurulur.
                 Hər rəqəm <b>İş kağızları</b> Excel-ində ədəd-ədəd izlənir (tarixi keçid → risk faizi → cari portfel → nəticə).</div>
@@ -202,7 +202,7 @@
             <div>
                 <b>Metodologiya:</b> roll-rate stage-keçid modeli (son 5 il tarixi keçid → sahə üzrə risk faizi).
                 Staging gecikmə günündən: 0–30 = Stage 1, 31–90 = Stage 2, 90+ = Stage 3.
-                EAD = əsas borc + balansdankənar (summa + summa_19), AZN-ə çevrilmiş.
+                EAD = əsas borc + vaxtı keçmiş əsas borc (summa + summa_19), AZN-ə çevrilmiş.
                 Floor: mənzil 0.1% · Stage 1 1% · Stage 2 2%. FINA ehtiyatı prudensial (procstavrez) — müqayisə üçün.
             </div>
         </div>
