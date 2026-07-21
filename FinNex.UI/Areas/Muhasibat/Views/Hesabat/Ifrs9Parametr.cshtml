@@ -1,0 +1,104 @@
+@model Ifrs9ParametrDto
+@{
+    ViewData["Title"] = "IFRS 9 — Floor parametrləri";
+}
+
+<partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--if">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-sliders"></i> Mühasibat / Hesabatlar</div>
+            <h1 class="mh-title">IFRS 9 — Floor parametrləri</h1>
+            <div class="mh-sub"><i class="bi bi-shield-lock"></i> Mənzil güzəşti və mərhələ floor-larının idarəsi</div>
+            <a asp-action="Ifrs9" class="mh-xls"><i class="bi bi-arrow-left"></i> IFRS 9 səhifəsinə qayıt</a>
+        </div>
+    </div>
+
+    <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhTabs.cshtml" />
+
+    @if (TempData["Status"] != null)
+    {
+        <div class="pr-ok"><i class="bi bi-check-circle"></i> @TempData["Status"]</div>
+    }
+
+    <div class="pr-warn">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div><b>Diqqət:</b> bu parametrlər birbaşa <b>ehtiyat (ECL) hesablamasına</b> təsir edir. Dəyişdirdikdən sonra IFRS 9 səhifəsini açıb nəticənin gözlədiyin kimi dəyişdiyini <b>real data ilə yoxla</b>. Yalnız Admin/Muhasib dəyişə bilər.</div>
+    </div>
+
+    <form method="post" asp-action="Ifrs9Parametr" class="pr-form">
+        @Html.AntiForgeryToken()
+
+        <div class="pr-card">
+            <div class="pr-card-h"><i class="bi bi-house-lock"></i> Mənzil güzəşti</div>
+            <div class="pr-row pr-toggle">
+                <label class="pr-switch">
+                    <input type="checkbox" asp-for="MenzilGuzest" />
+                    <span class="pr-slider"></span>
+                </label>
+                <div>
+                    <div class="pr-t">Mənzil güzəşti aktivdir</div>
+                    <div class="pr-d">Açıq: daşınmaz əmlakla təminatlı kredit (1902/1904) aşağı floor alır (aşağıdakı "Mənzil floor").<br>
+                        Bağlı: mənzil də adi kredit kimi <b>mərhələ floor-una</b> (Mərhələ 1 / Mərhələ 2) tabe olur.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pr-card">
+            <div class="pr-card-h"><i class="bi bi-percent"></i> Floor (aşağı hədd) dərəcələri — faizlə (%)</div>
+            <div class="pr-grid">
+                <div class="pr-f">
+                    <label>Mənzil floor (%)</label>
+                    <input type="number" step="0.01" min="0" asp-for="MenzilFloor" />
+                    <span class="pr-hint">güzəşt açıqdırsa · default 0.1</span>
+                </div>
+                <div class="pr-f">
+                    <label>Mərhələ 1 floor (%)</label>
+                    <input type="number" step="0.01" min="0" asp-for="Stage1Floor" />
+                    <span class="pr-hint">sağlam · default 1</span>
+                </div>
+                <div class="pr-f">
+                    <label>Mərhələ 2 floor (%)</label>
+                    <input type="number" step="0.01" min="0" asp-for="Stage2Floor" />
+                    <span class="pr-hint">nəzarətdə · default 2</span>
+                </div>
+            </div>
+            <div class="pr-note"><i class="bi bi-info-circle"></i> Mərhələ 3 (problemli) sabit floor almır — bərpa (P2/Q2) əsaslı hesablanır, dəyişmir.</div>
+        </div>
+
+        <div class="pr-foot">
+            <button type="submit" class="pr-btn"><i class="bi bi-check-lg"></i> Yadda saxla</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .mh-hero--if { background: linear-gradient(120deg, #7c2d12, #b91c1c); box-shadow: 0 12px 30px rgba(185,28,28,.28); }
+    .pr-ok { margin-top: 14px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 10px; padding: 11px 15px; font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+    .pr-warn { display: flex; gap: 10px; margin-top: 14px; padding: 13px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; font-size: 12.5px; color: #713f12; line-height: 1.55; }
+    .pr-warn i { color: #d97706; font-size: 17px; margin-top: 1px; }
+    .pr-form { margin-top: 14px; max-width: 760px; }
+    .pr-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); margin-bottom: 14px; overflow: hidden; }
+    .pr-card-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; color: #1e293b; }
+    .pr-row { padding: 16px 18px; }
+    .pr-toggle { display: flex; align-items: flex-start; gap: 14px; }
+    .pr-t { font-weight: 700; font-size: 13.5px; color: #1e293b; }
+    .pr-d { font-size: 12.5px; color: #64748b; margin-top: 3px; line-height: 1.55; }
+    .pr-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex: none; margin-top: 2px; }
+    .pr-switch input { opacity: 0; width: 0; height: 0; }
+    .pr-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 26px; transition: .2s; }
+    .pr-slider:before { content: ''; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    .pr-switch input:checked + .pr-slider { background: #10b981; }
+    .pr-switch input:checked + .pr-slider:before { transform: translateX(20px); }
+    .pr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; padding: 16px 18px; }
+    .pr-f { display: flex; flex-direction: column; gap: 5px; }
+    .pr-f label { font-size: 12.5px; font-weight: 600; color: #334155; }
+    .pr-f input { border: 1px solid #d7dee8; border-radius: 9px; padding: 9px 11px; font-size: 14px; }
+    .pr-hint { font-size: 11px; color: #94a3b8; }
+    .pr-note { padding: 11px 18px; border-top: 1px solid #eef2f7; background: #f8fafc; font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 7px; }
+    .pr-note i { color: #0ea5e9; }
+    .pr-foot { text-align: right; }
+    .pr-btn { display: inline-flex; align-items: center; gap: 7px; background: linear-gradient(135deg, #b91c1c, #ef4444); color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .pr-btn:hover { filter: brightness(1.05); }
+</style>

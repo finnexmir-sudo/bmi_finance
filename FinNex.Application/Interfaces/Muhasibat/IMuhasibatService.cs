@@ -43,6 +43,10 @@ public interface IMuhasibatService
     // "Bu rəqəmə necə gəlindi?" sualına addım-addım cavab (auditor/müfəttiş üçün).
     Task<MuhasibatIfrs9AuditDto> Ifrs9IsKagizlariAsync(DateTime? tarix = null);
 
+    // IFRS 9 floor parametrləri (mənzil güzəşti + mərhələ floor-ları) — oxu/yaz (DMS JSON).
+    Task<Ifrs9ParametrDto> Ifrs9ParametrleriAsync();
+    Task Ifrs9ParametrYazAsync(Ifrs9ParametrDto p);
+
     // Likvidlik — likvid aktivlər + sadə likvidlik nisbətləri.
     Task<MuhasibatLikvidlikDto> LikvidlikAsync(DateTime? tarix = null);
 

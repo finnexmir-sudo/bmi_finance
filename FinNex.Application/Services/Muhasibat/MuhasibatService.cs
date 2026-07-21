@@ -1,8 +1,10 @@
+using System.Text.Json;
 using FinNex.Application.DTOs.Muhasibat;
 using FinNex.Application.DTOs.Sorgular;
 using FinNex.Application.Interfaces.Muhasibat;
 using FinNex.Application.Interfaces.Oracle;
 using FinNex.Application.Interfaces.Sorgular;
+using Microsoft.Extensions.Configuration;
 
 namespace FinNex.Application.Services.Muhasibat;
 
@@ -13,11 +15,59 @@ public class MuhasibatService : IMuhasibatService
 {
     private readonly IOracleService _oracle;
     private readonly IOracleSorguService _sorgu;
+    private readonly IConfiguration _config;
 
-    public MuhasibatService(IOracleService oracle, IOracleSorguService sorgu)
+    public MuhasibatService(IOracleService oracle, IOracleSorguService sorgu, IConfiguration config)
     {
         _oracle = oracle;
         _sorgu = sorgu;
+        _config = config;
+    }
+
+    // ── IFRS 9 floor parametrləri (DMS JSON — DB migration lazım deyil) ──────────
+    private Ifrs9ParametrDto? _ifrs9Parametr;
+
+    private string Ifrs9ParametrYol()
+    {
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        return System.IO.Path.Combine(dmsRoot, "hesabat-sablonlari", "ifrs9-parametr.json");
+    }
+
+    public async Task<Ifrs9ParametrDto> Ifrs9ParametrleriAsync()
+    {
+        if (_ifrs9Parametr != null) return _ifrs9Parametr;
+        try
+        {
+            var yol = Ifrs9ParametrYol();
+            if (System.IO.File.Exists(yol))
+            {
+                var json = await System.IO.File.ReadAllTextAsync(yol);
+                _ifrs9Parametr = JsonSerializer.Deserialize<Ifrs9ParametrDto>(json) ?? new Ifrs9ParametrDto();
+            }
+            else _ifrs9Parametr = new Ifrs9ParametrDto();   // default = cari dəyərlər
+        }
+        catch { _ifrs9Parametr = new Ifrs9ParametrDto(); }
+        return _ifrs9Parametr;
+    }
+
+    public async Task Ifrs9ParametrYazAsync(Ifrs9ParametrDto p)
+    {
+        var yol = Ifrs9ParametrYol();
+        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(yol)!);
+        var json = JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true });
+        await System.IO.File.WriteAllTextAsync(yol, json);
+        _ifrs9Parametr = p;   // cache yenilə
+    }
+
+    // Floor placeholder-larını cari parametrlərlə əvəz et (Ifrs9Sql və Ifrs9AuditSql üçün).
+    private static string FloorTetbiq(string sql, Ifrs9ParametrDto p)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        return sql
+            .Replace("{MENZIL_SERT}", p.MenzilGuzest ? "1=1" : "1=0")
+            .Replace("{FLOOR_MENZIL}", (p.MenzilFloor / 100m).ToString("0.########", inv))
+            .Replace("{FLOOR_S1}", (p.Stage1Floor / 100m).ToString("0.########", inv))
+            .Replace("{FLOOR_S2}", (p.Stage2Floor / 100m).ToString("0.########", inv));
     }
 
     // OracleSorgular-dakı sorğu adları (admin paneldən redaktə oluna bilər).
@@ -842,9 +892,9 @@ recovery AS (
 riskrow AS (
     SELECT t.sahe_kodu, t.stage_start, t.f,
       GREATEST(
-        t.f * CASE WHEN t.sahe_kodu IN (1902,1904) THEN 0.001
-                   WHEN t.stage_start='Stage 1' THEN 0.01
-                   WHEN t.stage_start='Stage 2' THEN 0.02 ELSE 0 END,
+        t.f * CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN {FLOOR_MENZIL}
+                   WHEN t.stage_start='Stage 1' THEN {FLOOR_S1}
+                   WHEN t.stage_start='Stage 2' THEN {FLOOR_S2} ELSE 0 END,
         CASE WHEN t.stage_start='Stage 3'
              THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
              ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
@@ -902,7 +952,8 @@ ORDER BY c.stage, c.sahe_kodu";
 
         try
         {
-            var sql = Ifrs9Sql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var parametr = await Ifrs9ParametrleriAsync();
+            var sql = FloorTetbiq(Ifrs9Sql.Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
             var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
 
             var stageD = new Dictionary<string, (int say, decimal ead, decimal ecl, decimal bank)>();
@@ -1222,9 +1273,9 @@ recovery AS (
 riskrow2 AS (
     SELECT t.il_start, t.sahe_kodu, t.stage_start, t.f, t.g, t.h, t.i_col, t.j, t.k,
       GREATEST(
-        t.f * CASE WHEN t.sahe_kodu IN (1902,1904) THEN 0.001
-                   WHEN t.stage_start='Stage 1' THEN 0.01
-                   WHEN t.stage_start='Stage 2' THEN 0.02 ELSE 0 END,
+        t.f * CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN {FLOOR_MENZIL}
+                   WHEN t.stage_start='Stage 1' THEN {FLOOR_S1}
+                   WHEN t.stage_start='Stage 2' THEN {FLOOR_S2} ELSE 0 END,
         CASE WHEN t.stage_start='Stage 3'
              THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
              ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
@@ -1247,7 +1298,8 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
 
         try
         {
-            var sql = Ifrs9AuditSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var parametr = await Ifrs9ParametrleriAsync();
+            var sql = FloorTetbiq(Ifrs9AuditSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
             var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
 
             foreach (var r in rows)

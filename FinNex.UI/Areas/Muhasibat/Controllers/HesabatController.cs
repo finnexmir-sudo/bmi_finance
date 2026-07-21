@@ -68,6 +68,35 @@ public class HesabatController : Controller
         return View(model);
     }
 
+    // Yalnız tam maliyyə (Admin/Muhasib) floor parametrlərini dəyişə bilər — ehtiyata təsir edir.
+    private bool TamMaliyye() => User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Muhasib);
+
+    // IFRS 9 floor parametrləri (mənzil güzəşti + mərhələ floor-ları) — baxış.
+    public async Task<IActionResult> Ifrs9Parametr()
+    {
+        if (!await IcazeVarAsync() || !TamMaliyye())
+            return Forbid();
+
+        var p = await _service.Ifrs9ParametrleriAsync();
+        return View(p);
+    }
+
+    // IFRS 9 floor parametrlərini yadda saxla.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Ifrs9Parametr(Ifrs9ParametrDto model)
+    {
+        if (!await IcazeVarAsync() || !TamMaliyye())
+            return Forbid();
+
+        model.MenzilFloor = Math.Max(0m, model.MenzilFloor);
+        model.Stage1Floor = Math.Max(0m, model.Stage1Floor);
+        model.Stage2Floor = Math.Max(0m, model.Stage2Floor);
+        await _service.Ifrs9ParametrYazAsync(model);
+        TempData["Status"] = "IFRS 9 floor parametrləri yadda saxlanıldı. Nəticəni real data ilə yoxlayın.";
+        return RedirectToAction(nameof(Ifrs9Parametr));
+    }
+
     // IFRS 9 detalını (kredit-kredit) Excel-ə çıxar.
     public async Task<IActionResult> Ifrs9Excel(string? t)
     {

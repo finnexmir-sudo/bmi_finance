@@ -19,6 +19,10 @@
                 <a asp-action="Ifrs9IsKagizlari" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-journal-check"></i> İş kağızları (audit)</a>
                 <a asp-action="AmbA1Excel" asp-route-t="@Model.Tarix.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-bank2"></i> AMB MHBS 9 · A1</a>
                 <button type="button" class="mh-xls" onclick="document.getElementById('metodPanel').classList.toggle('acik')"><i class="bi bi-info-circle"></i> Metodologiya</button>
+                @if (User.IsInRole(FinNex.Domain.RoleNames.Admin) || User.IsInRole(FinNex.Domain.RoleNames.Muhasib))
+                {
+                    <a asp-action="Ifrs9Parametr" class="mh-xls"><i class="bi bi-sliders"></i> Parametrlər</a>
+                }
             </div>
         </div>
         <form method="get" class="mh-datef">
