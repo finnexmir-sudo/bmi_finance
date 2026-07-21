@@ -1161,18 +1161,26 @@ birlesme AS (
     FROM acilis a FULL OUTER JOIN baglanis b
       ON a.licschpkre=b.licschpkre AND a.subschkre=b.subschkre
 )
-SELECT sahe, NVL(os,0) os, NVL(cs,0) cs, ROUND(SUM(obal),2) obal, ROUND(SUM(cbal),2) cbal
+SELECT sahe, NVL(os,0) os, NVL(cs,0) cs, ROUND(SUM(obal),2) obal, ROUND(SUM(cbal),2) cbal,
+       (SELECT d FROM acilis_snap) acilis_tarix
 FROM birlesme GROUP BY sahe, os, cs";
 
     public async Task<MuhasibatAmbA1_1Dto> AmbA1_1Async(DateTime? tarix = null)
     {
         var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
+        // Fallback: cari ilin əvvəli (31 dekabr). Real snapshot tarixi SQL-dən gələndə override olunur —
+        // ilin son iş günü 31 dekabr olmaya bilər (məs. 30.12.2025), etiket real tarixi göstərməlidir.
         var dto = new MuhasibatAmbA1_1Dto { Tarix = t, AcilisTarix = new DateTime(t.Year, 1, 1).AddDays(-1) };
 
         try
         {
             var sql = Ifrs9RollForwardSql.Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
+
+            // Açılış etiketini real snapshot tarixinə bağla (hardcode 31 dekabr yerinə).
+            var realAcilis = rows.Select(r => Val(r, "acilis_tarix"))
+                                 .FirstOrDefault(v => v != null && v != DBNull.Value);
+            if (realAcilis != null) dto.AcilisTarix = Convert.ToDateTime(realAcilis);
 
             foreach (var g in new[] { "biznes", "istehlak", "dasinmaz", "diger" })
                 dto.Qruplar[g] = new AmbRollForward();
