@@ -4,6 +4,7 @@
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string Fmt2(decimal v) => v.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string StR(decimal v) => v < 0 ? "—" : Fmt2(v) + "%";   // mərhələ risk %-i (-1 = kredit yoxdur)
+    string Ff(decimal v) => v.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);  // floor faizi (parametrdən): 0.1 / 1 / 2
 }
 
 <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
@@ -60,12 +61,26 @@
                 <i>Hər sahə×mərhələnin faizi — İş kağızları, 2-ci vərəq.</i>
             </div>
             <div class="metod-b">
-                <div class="metod-t"><span class="metod-n">3</span> Bərpa — problemli kreditdə nə qədər qaytarırıq?</div>
-                Defolt (Mərhələ 3) olan kreditdə də hər şeyi itirmirik — girovdan bir hissə qayıdır.
-                Son 5 ilin real bərpası:<br>
-                • <b>Mənzil (girovda əmlak): @((Model.Q2*100).ToString("0.0"))%</b> qayıdır<br>
-                • <b>Digər kreditlər: @((Model.P2*100).ToString("0.0"))%</b> qayıdır<br>
-                Yəni Mərhələ 3 itki ≈ qalıq × (1 − bərpa).
+                <div class="metod-t"><span class="metod-n">3</span> Bərpa — problemli kreditdə girovdan qaytarılan pul</div>
+                <b>Bərpa nədir?</b> Kredit problemli olanda (Mərhələ 3, 90+ gün) borcalan ödəməsə belə, biz hər şeyi
+                itirmirik — <b>girovu (əmlak, avadanlıq) satıb pulun bir hissəsini geri alırıq</b>. Son 5 ilin real
+                bərpa təcrübəsi:<br>
+                • <b>Mənzil (girovda daşınmaz əmlak): @((Model.Q2*100).ToString("0.0"))%</b> qayıdır (Q2)<br>
+                • <b>Digər kreditlər: @((Model.P2*100).ToString("0.0"))%</b> qayıdır (P2)<br>
+                Yəni Mərhələ 3 itki ≈ qalıq × (1 − bərpa). Bərpa nə qədər yüksəkdirsə, itki bir o qədər azdır.<br>
+                @if (Model.MenzilGuzest)
+                {
+                    <span class="metod-badge metod-badge--on"><i class="bi bi-house-check"></i> Mənzil güzəşti AÇIQ</span>
+                    <text> — mənzil <b>daha yüksək bərpa (Q2 @((Model.Q2*100).ToString("0.0"))%)</b> alır, digər kreditlər P2.
+                    Fərq qalır: mənzil girovu güclü olduğu üçün daha az itirir.</text>
+                }
+                else
+                {
+                    <span class="metod-badge metod-badge--off"><i class="bi bi-house-slash"></i> Mənzil güzəşti BAĞLI</span>
+                    <text> — mənzil <b>tam adi kredit kimi</b> hesablanır: həm mərhələ floor-una (1%/2%) tabedir,
+                    <b>həm də bərpası P2-yə (@((Model.P2*100).ToString("0.0"))%)</b> düşür. Mənzil artıq üstünlük almır —
+                    fərq yox olur.</text>
+                }
             </div>
             <div class="metod-b">
                 <div class="metod-t"><span class="metod-n">4</span> EAD — bugünkü ekspozisiya</div>
@@ -80,18 +95,42 @@
         </div>
 
         <div class="metod-menzil">
-            <div class="metod-t"><i class="bi bi-house-lock"></i> Minimum floor (aşağı hədd) və <b>mənzil güzəşti</b></div>
-            <p>"Heç bir kredit tam risksiz deyil" (IFRS 9 B5.5.54) — tarix az itki göstərsə belə, <b>minimum</b> ehtiyat ayırırıq:</p>
+            <div class="metod-t"><i class="bi bi-house-lock"></i> Minimum floor (aşağı hədd) və <b>mənzil güzəşti</b>
+                @if (Model.MenzilGuzest)
+                {
+                    <span class="metod-badge metod-badge--on"><i class="bi bi-toggle-on"></i> güzəşt AÇIQ</span>
+                }
+                else
+                {
+                    <span class="metod-badge metod-badge--off"><i class="bi bi-toggle-off"></i> güzəşt BAĞLI</span>
+                }
+            </div>
+            <p>"Heç bir kredit tam risksiz deyil" (IFRS 9 B5.5.54) — tarix az itki göstərsə belə, <b>minimum</b> ehtiyat ayırırıq.
+               <i>Aşağıdakı faizlər <b>proqram parametrlərindən</b> gəlir (Parametrlər səhifəsində dəyişdirilə bilər) — bu panel həmişə cari dəyərləri göstərir:</i></p>
             <table class="metod-tbl">
                 <thead><tr><th>Kredit növü</th><th>Minimum floor</th><th>Niyə məhz bu?</th></tr></thead>
                 <tbody>
-                    <tr class="metod-hl"><td><b>Mənzil</b> (daşınmaz əmlakla təminatlı · 1902/1904)</td><td><b>0.1%</b><br><span style="font-size:11px;color:#059669;font-weight:600">bütün mərhələlərdə eyni</span></td><td>Girovda ev/mənzil var — müştəri ödəməsə əmlakı satıb pulu qaytarırıq, ona görə risk çox aşağı. <b>Bu, bizim güzəştimizdir.</b> Bu 0.1% <b>Mərhələ 1, 2, 3-ün hamısında eynidir</b> (girov hər mərhələdə qoruyur). Bu minimumdur — problemli (Mərhələ 3) mənzildə real risk bərpadan asılı olaraq daha yüksək çıxa bilər.</td></tr>
-                    <tr><td><b>Mərhələ 1</b> (sağlam, təminatsız)</td><td><b>1%</b></td><td>Bu gün sağlamdır, amma təcrübə göstərir ki, bir hissəsi gələcəkdə gecikəcək.</td></tr>
-                    <tr><td><b>Mərhələ 2</b> (nəzarətdə, təminatsız)</td><td><b>2%</b></td><td>Gecikmə artıq başlayıb — risk daha yüksək, minimum ikiqat.</td></tr>
+                    @if (Model.MenzilGuzest)
+                    {
+                        <tr class="metod-hl"><td><b>Mənzil</b> (daşınmaz əmlakla təminatlı · 1902/1904)</td><td><b>@Ff(Model.MenzilFloor)%</b><br><span style="font-size:11px;color:#059669;font-weight:600">bütün mərhələlərdə eyni</span></td><td>Girovda ev/mənzil var — müştəri ödəməsə əmlakı satıb pulu qaytarırıq, ona görə risk çox aşağı. <b>Bu, bizim güzəştimizdir.</b> Bu @Ff(Model.MenzilFloor)% <b>Mərhələ 1, 2, 3-ün hamısında eynidir</b> (girov hər mərhələdə qoruyur). Problemli (Mərhələ 3) mənzildə bərpa da <b>Q2 (@((Model.Q2*100).ToString("0.0"))%)</b> — daha yüksək.</td></tr>
+                    }
+                    else
+                    {
+                        <tr><td><b>Mənzil</b> (daşınmaz əmlakla təminatlı · 1902/1904)<br><span style="font-size:11px;color:#b91c1c;font-weight:600">güzəşt bağlı — adi kredit kimi</span></td><td><b>@Ff(Model.Stage1Floor)% / @Ff(Model.Stage2Floor)%</b><br><span style="font-size:11px;color:#b91c1c;font-weight:600">mərhələyə görə</span></td><td>Güzəşt <b>bağlıdır</b>: mənzil ayrıca aşağı floor <b>almır</b>, digər kreditlər kimi mərhələ floor-una (Mərhələ 1 → @Ff(Model.Stage1Floor)%, Mərhələ 2 → @Ff(Model.Stage2Floor)%) tabedir. Bərpası da <b>P2 (@((Model.P2*100).ToString("0.0"))%)</b> — Q2 üstünlüyü yoxdur.</td></tr>
+                    }
+                    <tr><td><b>Mərhələ 1</b> (sağlam, təminatsız)</td><td><b>@Ff(Model.Stage1Floor)%</b></td><td>Bu gün sağlamdır, amma təcrübə göstərir ki, bir hissəsi gələcəkdə gecikəcək.</td></tr>
+                    <tr><td><b>Mərhələ 2</b> (nəzarətdə, təminatsız)</td><td><b>@Ff(Model.Stage2Floor)%</b></td><td>Gecikmə artıq başlayıb — risk daha yüksək, minimum ikiqat.</td></tr>
                     <tr><td><b>Mərhələ 3</b> (problemli)</td><td>bərpa əsaslı</td><td>Sabit floor yox — yuxarıdakı bərpa faizi (3-cü addım) tətbiq olunur.</td></tr>
                 </tbody>
             </table>
-            <p class="metod-note"><i class="bi bi-lightbulb"></i> <b>Güzəşt niyə?</b> Daşınmaz əmlakla təminatlı kreditdə (mənzil) girov güclüdür — itki ehtimalı təminatsız istehlak kreditindən <b>10–20 dəfə</b> aşağıdır (0.1% ↔ 1–2%). Bu, IFRS 9 B5.5.55 (təminatın rolu) əsasındadır.</p>
+            @if (Model.MenzilGuzest)
+            {
+                <p class="metod-note"><i class="bi bi-lightbulb"></i> <b>Güzəşt niyə?</b> Daşınmaz əmlakla təminatlı kreditdə (mənzil) girov güclüdür — itki ehtimalı təminatsız istehlak kreditindən <b>10–20 dəfə</b> aşağıdır (@Ff(Model.MenzilFloor)% ↔ @Ff(Model.Stage1Floor)–@Ff(Model.Stage2Floor)%). Mənzil <b>həm</b> aşağı floor (@Ff(Model.MenzilFloor)%) <b>həm də</b> yüksək bərpa (Q2 @((Model.Q2*100).ToString("0.0"))%) alır. Bu, IFRS 9 B5.5.55 (təminatın rolu) əsasındadır.</p>
+            }
+            else
+            {
+                <p class="metod-note"><i class="bi bi-info-circle"></i> <b>Güzəşt bağlıdır:</b> mənzil <b>tam adi kredit kimi</b> yanaşılır — nə aşağı floor (@Ff(Model.MenzilFloor)%), nə də yüksək bərpa (Q2) tətbiq olunur. Mənzil də mərhələ floor-una (@Ff(Model.Stage1Floor)%/@Ff(Model.Stage2Floor)%) və P2 bərpasına (@((Model.P2*100).ToString("0.0"))%) tabedir. Nəticədə ECL bir qədər artır.</p>
+            }
         </div>
 
         <div class="metod-numune">
@@ -253,6 +292,9 @@
     .metod-b { font-size: 12.5px; color: #475569; line-height: 1.55; }
     .metod-t { font-weight: 700; color: #1e293b; margin-bottom: 3px; font-size: 13px; }
     .metod-b code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; color: #b91c1c; }
+    .metod-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; vertical-align: middle; white-space: nowrap; }
+    .metod-badge--on { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .metod-badge--off { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
     .metod-f { padding: 11px 18px; border-top: 1px solid #eef2f7; background: #f8fafc; font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 7px; }
     .metod-f i { color: #b91c1c; }
     .metod-intro { margin: 16px 18px 4px; padding: 13px 16px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; font-size: 13px; color: #7c2d12; line-height: 1.6; }

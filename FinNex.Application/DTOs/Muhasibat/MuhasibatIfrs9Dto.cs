@@ -21,6 +21,12 @@ public class MuhasibatIfrs9Dto
     public decimal P2 { get; set; }              // bərpa əmsalı — digər sahələr (Stage 3), fraction
     public decimal Q2 { get; set; }              // bərpa əmsalı — mənzil (1902/1904, Stage 3), fraction
 
+    // Cari floor parametrləri (metodologiya panelini canlı göstərmək üçün — Ifrs9ParametrDto-dan).
+    public bool MenzilGuzest { get; set; } = true;   // mənzil güzəşti açıq/bağlı
+    public decimal MenzilFloor { get; set; } = 0.1m; // mənzil floor (%) — güzəşt açıqdırsa
+    public decimal Stage1Floor { get; set; } = 1.0m; // Stage 1 floor (%)
+    public decimal Stage2Floor { get; set; } = 2.0m; // Stage 2 floor (%)
+
     public List<Ifrs9StageDto> Stagelar { get; set; } = new();
     public List<Ifrs9SaheDto> Saheler { get; set; } = new();
     public List<Ifrs9SetirDto> Setirler { get; set; } = new();   // xam sətirlər (drill/AMB ixracı üçün)

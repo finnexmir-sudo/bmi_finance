@@ -896,8 +896,8 @@ riskrow AS (
                    WHEN t.stage_start='Stage 1' THEN {FLOOR_S1}
                    WHEN t.stage_start='Stage 2' THEN {FLOOR_S2} ELSE 0 END,
         CASE WHEN t.stage_start='Stage 3'
-             THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
-             ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
+             THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
+             ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
         END
       ) AS m
     FROM trans t CROSS JOIN recovery r
@@ -953,6 +953,10 @@ ORDER BY c.stage, c.sahe_kodu";
         try
         {
             var parametr = await Ifrs9ParametrleriAsync();
+            dto.MenzilGuzest = parametr.MenzilGuzest;
+            dto.MenzilFloor  = parametr.MenzilFloor;
+            dto.Stage1Floor  = parametr.Stage1Floor;
+            dto.Stage2Floor  = parametr.Stage2Floor;
             var sql = FloorTetbiq(Ifrs9Sql.Replace("{TARIX}", t.ToString("dd/MM/yyyy")), parametr);
             var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
 
@@ -1277,8 +1281,8 @@ riskrow2 AS (
                    WHEN t.stage_start='Stage 1' THEN {FLOOR_S1}
                    WHEN t.stage_start='Stage 2' THEN {FLOOR_S2} ELSE 0 END,
         CASE WHEN t.stage_start='Stage 3'
-             THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
-             ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
+             THEN (t.f-t.g-t.h-t.j-t.k)*CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
+             ELSE t.i_col*(CASE WHEN t.f=0 THEN 1 ELSE (t.f-t.g-t.h-t.j-t.k)/t.f END)*CASE WHEN {MENZIL_SERT} AND t.sahe_kodu IN (1902,1904) THEN r.q2 ELSE r.p2 END
         END
       ) AS m,
       r.p2, r.q2
