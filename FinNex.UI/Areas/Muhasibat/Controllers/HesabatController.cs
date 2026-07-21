@@ -183,6 +183,44 @@ public class HesabatController : Controller
         var a = await _service.Ifrs9IsKagizlariAsync(ParseTarix(t));
         var wb = new HSSFWorkbook();
 
+        // 0 — Metod & parametrlər (audit izi: bu rəqəmlər hansı qaydaya görə çıxıb).
+        // MB seçildikdə M sütunu Stage 3-də (F−G−H−J−K)×bərpa yox, F×(1−bərpa) olur —
+        // auditorun M-i təkrar yoxlaya bilməsi üçün burada açıq yazılır.
+        var s0 = wb.CreateSheet("0-Metod");
+        int r0 = 0;
+        void AddL(string ad, string deyer = "")
+        {
+            var row = s0.CreateRow(r0++);
+            row.CreateCell(0).SetCellValue(ad);
+            if (deyer.Length > 0) row.CreateCell(1).SetCellValue(deyer);
+        }
+        bool mbSec = a.Ecl.Metod == "MB";
+        AddL("IFRS 9 ECL — is kagizlari (audit izi)", a.Tarix.ToString("dd.MM.yyyy"));
+        AddL("");
+        AddL("Aktiv hesablama metodu:", mbSec
+            ? "AMB Metodoloji Rehberliyi — 23.12.2025, Protokol 45/2"
+            : "Excel (tesdiqlenmis) model");
+        AddL("Merhele 1 & 2 ECL:", "EAD × risk% (tarixi kecid faizi + minimum floor)");
+        AddL("Merhele 3 (problemli) ECL:", mbSec
+            ? "EAD × LGD;  LGD = 1 - berpa  (defolt olub, PD=100%)"
+            : "EAD × risk%;  risk% = (batiqda qalma) × berpa");
+        AddL("  -> M sutunu (Merhele 3 hesabi):", mbSec
+            ? "M = F × (1 - berpa).  DIQQET: G/H/J/K sutunlari Merhele 3 M-e daxil deyil."
+            : "M = (F - G - H - J - K) × berpa");
+        AddL("Menzil guzesti (1902/1904):", a.Ecl.MenzilGuzest
+            ? "ACIQ — menzil oz (yuksek) berpasini Q2 alir"
+            : "BAGLI — menzil adi kredit kimi P2 alir");
+        AddL("Floor — Menzil / Merhele 1 / Merhele 2:",
+            $"{a.Ecl.MenzilFloor}% / {a.Ecl.Stage1Floor}% / {a.Ecl.Stage2Floor}%  (Merhele 3-de floor tesirsizdir)");
+        AddL("Berpa emsali P2 (diger sahe, Merhele 3):", $"{Math.Round(a.P2 * 100m, 2)}%");
+        AddL("Berpa emsali Q2 (menzil 1902/1904):", $"{Math.Round(a.Q2 * 100m, 2)}%");
+        AddL("");
+        AddL("UMUMI ECL (cemi):", $"{Math.Round(a.Ecl.UmumiEcl, 2)} AZN  ({Math.Round(a.Ecl.EclFaiz, 2)}%)");
+        if (mbSec)
+            AddL("Istinad:", "AMB Rehberliyi «Ehtiyatlanma»: ECL=EAD×LGD_ID, LGL=1-Total recovery%, teminat cedveli.");
+        s0.SetColumnWidth(0, 14000);
+        s0.SetColumnWidth(1, 20000);
+
         // 1 — Tarixi keçid matrisi
         var s1 = wb.CreateSheet("1-Tarixi kecid");
         int r = 0;
