@@ -47,8 +47,12 @@ public class Ifrs9SaheDto
     public int Say { get; set; }
     public decimal Ead { get; set; }
     public decimal Ecl { get; set; }
-    public decimal RiskFaiz { get; set; }
+    public decimal RiskFaiz { get; set; }   // çəkili orta (bütün mərhələlər): ECL/EAD
     public decimal Pay { get; set; }
+    // Mərhələ üzrə tətbiq olunan risk % (ECL/EAD həmin mərhələdə). -1 = o mərhələdə kredit yoxdur.
+    public decimal Risk1 { get; set; } = -1m;
+    public decimal Risk2 { get; set; } = -1m;
+    public decimal Risk3 { get; set; } = -1m;
 }
 
 // Bir cari kredit sətri (xam) — hesabat/AMB aqreqasiyası C#-da bunun üstündə qurulur.

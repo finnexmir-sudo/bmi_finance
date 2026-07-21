@@ -907,6 +907,7 @@ ORDER BY c.stage, c.sahe_kodu";
 
             var stageD = new Dictionary<string, (int say, decimal ead, decimal ecl, decimal bank)>();
             var saheD  = new Dictionary<string, (string ad, int say, decimal ead, decimal ecl)>();
+            var saheStageD = new Dictionary<(string sahe, int stage), (decimal ead, decimal ecl)>();  // sahə×mərhələ
             decimal totEad = 0m, totEcl = 0m, totBank = 0m;
             int say = 0;
 
@@ -934,6 +935,10 @@ ORDER BY c.stage, c.sahe_kodu";
                 var sh = saheD.GetValueOrDefault(saheKodu);
                 saheD[saheKodu] = (string.IsNullOrEmpty(sh.ad) ? saheAdi : sh.ad,
                                    sh.say + 1, sh.ead + ead, sh.ecl + ecl);
+
+                var stageNo = stage == "Stage 1" ? 1 : stage == "Stage 2" ? 2 : 3;
+                var ss = saheStageD.GetValueOrDefault((saheKodu, stageNo));
+                saheStageD[(saheKodu, stageNo)] = (ss.ead + ead, ss.ecl + ecl);
 
                 dto.Setirler.Add(new Ifrs9SetirDto
                 {
@@ -967,13 +972,19 @@ ORDER BY c.stage, c.sahe_kodu";
                 });
             }
 
+            decimal StageRisk(string sahe, int stage)
+            {
+                var v = saheStageD.GetValueOrDefault((sahe, stage));
+                return v.ead != 0 ? Math.Round(v.ecl / v.ead * 100m, 2) : -1m;   // -1 = o mərhələdə kredit yoxdur
+            }
             dto.Saheler = saheD.OrderByDescending(x => x.Value.ecl)
                 .Select(x => new Ifrs9SaheDto
                 {
                     Kod = x.Key, Ad = x.Value.ad, Say = x.Value.say,
                     Ead = Math.Round(x.Value.ead, 2), Ecl = Math.Round(x.Value.ecl, 2),
                     RiskFaiz = x.Value.ead != 0 ? Math.Round(x.Value.ecl / x.Value.ead * 100m, 2) : 0,
-                    Pay = totEcl != 0 ? Math.Round(x.Value.ecl / totEcl * 100m, 1) : 0
+                    Pay = totEcl != 0 ? Math.Round(x.Value.ecl / totEcl * 100m, 1) : 0,
+                    Risk1 = StageRisk(x.Key, 1), Risk2 = StageRisk(x.Key, 2), Risk3 = StageRisk(x.Key, 3)
                 }).ToList();
 
             dto.Ugurlu = true;

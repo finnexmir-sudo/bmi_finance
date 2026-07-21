@@ -3,6 +3,7 @@
     ViewData["Title"] = "IFRS 9 — Gözlənilən Kredit İtkiləri (ECL)";
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string Fmt2(decimal v) => v.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    string StR(decimal v) => v < 0 ? "—" : Fmt2(v) + "%";   // mərhələ risk %-i (-1 = kredit yoxdur)
 }
 
 <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
@@ -178,7 +179,12 @@
             <div class="if-card-h"><i class="bi bi-diagram-3"></i> Sahə üzrə ECL (ən böyük 15)</div>
             <table class="if-tbl">
                 <thead>
-                    <tr><th>Kod</th><th>Sahə</th><th class="r">Say</th><th class="r">EAD</th><th class="r">Risk %</th><th class="r">ECL</th><th class="r">ECL payı</th></tr>
+                    <tr>
+                        <th>Kod</th><th>Sahə</th><th class="r">Say</th><th class="r">EAD</th>
+                        <th class="r">Orta risk</th>
+                        <th class="r st1">St.1 risk</th><th class="r st2">St.2 risk</th><th class="r st3">St.3 risk</th>
+                        <th class="r">ECL</th><th class="r">Pay</th>
+                    </tr>
                 </thead>
                 <tbody>
                     @foreach (var s in Model.Saheler.Take(15))
@@ -188,13 +194,17 @@
                             <td>@s.Ad</td>
                             <td class="r">@s.Say</td>
                             <td class="r">@Fmt2(s.Ead)</td>
-                            <td class="r">@Fmt2(s.RiskFaiz)%</td>
+                            <td class="r"><b>@Fmt2(s.RiskFaiz)%</b></td>
+                            <td class="r st1">@StR(s.Risk1)</td>
+                            <td class="r st2">@StR(s.Risk2)</td>
+                            <td class="r st3">@StR(s.Risk3)</td>
                             <td class="r"><b>@Fmt2(s.Ecl)</b></td>
                             <td class="r">@Fmt2(s.Pay)%</td>
                         </tr>
                     }
                 </tbody>
             </table>
+            <div class="if-tbl-qeyd"><i class="bi bi-info-circle"></i> <b>Orta risk</b> = ECL ÷ EAD (bütün mərhələlər birlikdə, çəkili). <b>St.1/2/3</b> = həmin mərhələdəki kreditlərə tətbiq olunan risk %-i. <b>—</b> = o mərhələdə kredit yoxdur. Bunlar ayrıdır — bir yerdə ortalama alınmır.</div>
         </div>
 
         <div class="if-note">
@@ -225,6 +235,11 @@
     .if-bar { display: inline-block; width: 90px; height: 7px; border-radius: 5px; background: #eef2f7; overflow: hidden; vertical-align: middle; margin-right: 6px; }
     .if-bar span { display: block; height: 100%; border-radius: 5px; }
     .if-tbl em { font-style: normal; font-size: 12px; color: #64748b; }
+    .if-tbl th.st1, .if-tbl td.st1 { background: rgba(16,185,129,.06); }
+    .if-tbl th.st2, .if-tbl td.st2 { background: rgba(245,158,11,.07); }
+    .if-tbl th.st3, .if-tbl td.st3 { background: rgba(239,68,68,.06); }
+    .if-tbl-qeyd { padding: 10px 16px; font-size: 11.5px; color: #64748b; border-top: 1px solid #eef2f7; background: #f8fafc; line-height: 1.5; }
+    .if-tbl-qeyd i { color: #0ea5e9; }
     .if-note { display: flex; gap: 10px; margin-top: 16px; padding: 13px 16px; background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 12px; font-size: 12.5px; color: #64748b; line-height: 1.55; }
     .if-note i { color: #b91c1c; font-size: 16px; margin-top: 1px; }
     .metod-panel { display: none; margin-top: 14px; background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; }
