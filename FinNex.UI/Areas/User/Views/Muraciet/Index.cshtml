@@ -401,6 +401,28 @@
                                     </span>
                                 </div>
                                 <div class="fn-icaze-meta">
+                                    @if (!e.TamGun)
+                                    {
+                                        <span class="fn-icaze-saat">
+                                            <i class="bi bi-clock"></i>
+                                            @if (e.BaslamaSaati != null && e.BitisSaati != null)
+                                            {
+                                                <text>@e.BaslamaSaati.Value.ToString(@"hh\:mm") – @e.BitisSaati.Value.ToString(@"hh\:mm")</text>
+                                            }
+                                            else if (e.BaslamaSaati != null)
+                                            {
+                                                <text>@e.BaslamaSaati.Value.ToString(@"hh\:mm")-dan çıxış</text>
+                                            }
+                                            else
+                                            {
+                                                <text>@e.BitisSaati.Value.ToString(@"hh\:mm")-dək</text>
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fn-icaze-saat fn-icaze-saat--gun"><i class="bi bi-sun"></i> tam gün</span>
+                                    }
                                     <span class="fn-icaze-evez"><i class="bi bi-geo-alt"></i> @e.MekanAd</span>
                                 </div>
                                 @if (!string.IsNullOrWhiteSpace(e.Qeyd))
