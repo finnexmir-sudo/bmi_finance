@@ -61,6 +61,11 @@ namespace FinNex.Application.Services
                     .Select(MapToListDto)
                     .ToList();
 
+                // Effektiv saat (nahar çıxılmaqla) üçün nahar müddətini cari parametrdən doldur.
+                var naharDeq = (await _unitOfWork.Repository<IsParametri>()
+                    .Query().Where(p => !p.Silinib).FirstOrDefaultAsync())?.NaharMuddetDeqiqe ?? 45;
+                foreach (var d in dtos) d.NaharDeqiqe = naharDeq;
+
                 return Result<IList<IcazeListDto>>.Ok(dtos);
             }
             catch (Exception ex)

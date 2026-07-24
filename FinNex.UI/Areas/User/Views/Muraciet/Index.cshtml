@@ -299,6 +299,12 @@
                                         @i.BitisSaati.ToString(@"hh\:mm") ·
                                         @i.IcazeSaati.ToString("F1") saat)
                                     </span>
+                                    @if (i.NaharNezereAlinmasin)
+                                    {
+                                        <span class="fn-icaze-saat fn-icaze-saat--gun" title="Nahar (@i.NaharDeqiqe dəq) çıxıldıqdan sonra sayılan müddət">
+                                            <i class="bi bi-cup-hot"></i> nahar çıxılmaqla @i.EffektivSaat.ToString("F1") saat
+                                        </span>
+                                    }
                                 </div>
                                 <div class="fn-icaze-meta">
                                     <span class="fn-icaze-evez">Əvəzedici: @i.EvezEdenAdSoyad</span>

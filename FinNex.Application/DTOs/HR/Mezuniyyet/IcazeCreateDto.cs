@@ -54,6 +54,19 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public TimeSpan BaslamaSaati { get; set; }
         public TimeSpan BitisSaati { get; set; }
         public double IcazeSaati { get; set; }
+        // Nahar müddəti (dəqiqə) — effektiv saat hesabı üçün; IsParametri-dən doldurulur (default 45).
+        public int NaharDeqiqe { get; set; } = 45;
+        // Effektiv (sayılan) müddət: "nahara çıxmıram" işarəlidirsə nahar müddəti çıxılır,
+        // əks halda xam müddətə bərabərdir. Rəhbər təsdiqindəki hesabla eyni məntiq.
+        public double EffektivSaat
+        {
+            get
+            {
+                if (!NaharNezereAlinmasin) return IcazeSaati;
+                var e = IcazeSaati - NaharDeqiqe / 60.0;
+                return e < 0 ? 0 : e;
+            }
+        }
         // Faktiki istifadə (cihaz çıxış/qayıdışından): adi icazə → qayıdış−çıxış;
         // birdəfəlik → çıxışdan icazə sonuna. Punch yoxdursa null. Servis doldurur.
         public double? FaktikiSaat { get; set; }
