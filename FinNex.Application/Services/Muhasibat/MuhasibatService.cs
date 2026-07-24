@@ -558,7 +558,8 @@ public class MuhasibatService : IMuhasibatService
             if (netFx >= 0m) gelirD["Valyuta/ticarət (net)"] = netFx;
             else             xercD["Valyuta/ticarət (net)"]  = -netFx;
 
-            dto.FaizGeliri   = Math.Round(gelirD.GetValueOrDefault("Faiz gəliri"), 2);
+            // Faiz gəliri cəmi = 4 alt-kateqoriyanın toplamı (NII/NIM/Excel bunu istifadə edir).
+            dto.FaizGeliri   = Math.Round(FaizGelirKatlar.Sum(k => gelirD.GetValueOrDefault(k)), 2);
             dto.FaizXerci    = Math.Round(xercD.GetValueOrDefault("Faiz xərci"), 2);
             dto.EhtiyatGross = Math.Round(ehtiyatGross, 2);
             dto.UmumiGelir   = Math.Round(gelirD.Values.Sum(), 2);            // əməliyyat gəliri
@@ -597,11 +598,25 @@ public class MuhasibatService : IMuhasibatService
         return dto;
     }
 
+    // Faiz gəliri alt-kateqoriyaları (hesab prefiksinə görə). NII/NIM üçün cəmi bunların
+    // toplamıdır. Sıra dəyişsə həm cəmi, həm drill-down təsnifatı avtomatik izləyir.
+    private static readonly string[] FaizGelirKatlar =
+    {
+        "Qiymətli kağızlar üzrə faiz",     // 60
+        "Overnayt depozit və repo faizi",  // 61
+        "Kreditlər üzrə faiz",             // 63, 64
+        "Digər faiz gəliri"                // 65
+    };
+
     // P&L kateqoriya təsnifatı hesab sinifinə (ilk 2 rəqəm) görə.
     // gelir=true → sinif 6/7 (kredit dövriyyəsi); gelir=false → sinif 8 (debet dövriyyəsi).
+    // Faiz gəliri prefiksə görə 4 alt-kateqoriyaya bölünür (60/61/63-64/65).
     private static (string kat, bool gelir) MenfeetTesnif(string sinif2) => sinif2 switch
     {
-        "60" or "61" or "63" or "64" or "65" => ("Faiz gəliri", true),
+        "60"                                  => ("Qiymətli kağızlar üzrə faiz", true),
+        "61"                                  => ("Overnayt depozit və repo faizi", true),
+        "63" or "64"                          => ("Kreditlər üzrə faiz", true),
+        "65"                                  => ("Digər faiz gəliri", true),
         "66" or "68"                          => ("Valyuta/ticarət gəliri", true),
         "67"                                  => ("Komissiya gəliri", true),
         "70" or "72"                          => ("Digər gəlir", true),
@@ -1966,7 +1981,8 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
 
                 case "menfeet":
                 {
-                    // P&L drill-down — madde = kateqoriya adı (məs. "Faiz gəliri").
+                    // P&L drill-down — madde = kateqoriya adı (məs. "Kreditlər üzrə faiz").
+                    // Faiz alt-kateqoriyaları (60/61/63-64/65) ayrıca drill olunur.
                     // Hesab-səviyyə dövriyyə, aqreqat ilə EYNİ MenfeetTesnif təsnifatı.
                     var bb = (bas ?? new DateTime((son ?? t).Year, 1, 1)).Date;
                     var ss = (son ?? t).Date;
