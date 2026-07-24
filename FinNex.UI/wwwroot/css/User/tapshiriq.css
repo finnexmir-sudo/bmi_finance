@@ -299,6 +299,139 @@
     color: #6b7280;
 }
 
+/* Status pilləkəni (stepper) — Detay */
+.tsk-stepper {
+    display: flex;
+    align-items: flex-start;
+    margin: 20px 0 4px;
+}
+
+.tsk-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.tsk-step-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #eef0f4;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    font-weight: 700;
+    border: 2px solid #e5e7eb;
+    transition: all .25s;
+}
+
+.tsk-step-lbl {
+    font-size: .7rem;
+    color: #9ca3af;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tsk-step-line {
+    flex: 1 1 auto;
+    height: 3px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    margin: 15px 4px 0;
+    min-width: 20px;
+    transition: background .25s;
+}
+
+.tsk-step-line--done {
+    background: #10b981;
+}
+
+.tsk-step--done .tsk-step-dot {
+    background: #10b981;
+    border-color: #10b981;
+    color: #fff;
+}
+
+.tsk-step--done .tsk-step-lbl {
+    color: #059669;
+}
+
+.tsk-step--active .tsk-step-dot {
+    background: #fff;
+    border-color: #3b82f6;
+    color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+}
+
+.tsk-step--active .tsk-step-lbl {
+    color: #2563eb;
+}
+
+.tsk-cancel-banner {
+    margin: 18px 0 4px;
+    padding: 12px 14px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 8px;
+    font-size: .82rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Status əməliyyat düymələri (Detay — sağ panel) */
+.tsk-status-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tsk-act-btn {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+    .tsk-act-btn:last-child {
+        margin-bottom: 0;
+    }
+
+.tsk-status-actions form {
+    margin: 0;
+}
+
+.tsk-btn--start {
+    background: #f59e0b;
+    color: #fff;
+}
+
+    .tsk-btn--start:hover {
+        background: #d97706;
+        color: #fff;
+    }
+
+.tsk-btn--done-act {
+    background: #10b981;
+    color: #fff;
+}
+
+    .tsk-btn--done-act:hover {
+        background: #059669;
+        color: #fff;
+    }
+
+.tsk-act-btn--muted {
+    color: #9ca3af;
+}
+
+    .tsk-act-btn--muted:hover {
+        color: #ef4444;
+        background: #fef2f2;
+    }
+
 /* Detay */
 .tsk-detay-grid {
     display: grid;

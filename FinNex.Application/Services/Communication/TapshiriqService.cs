@@ -214,7 +214,17 @@ namespace FinNex.Application.Services.Communication
                     return Result.Fail("İcazəniz yoxdur.");
 
                 t.Status = dto.Status;
-                t.TamamlanmaFaizi = dto.TamamlanmaFaizi;
+                // Tamamlanma faizi statusdan AVTOMATİK törəyir — əl ilə faiz seçimi yoxdur
+                // (status pilləkəni). Köhnə slider götürüldü; DB sahəsi sinxron saxlanır ki,
+                // faizi oxuyan digər view-lar (siyahı, hesabat izləmə) işləməyə davam etsin.
+                t.TamamlanmaFaizi = dto.Status switch
+                {
+                    TapshiriqStatus.Yeni       => 0,
+                    TapshiriqStatus.DavamEdir  => 50,
+                    TapshiriqStatus.Tamamlandi => 100,
+                    TapshiriqStatus.LegvEdildi => 0,
+                    _                          => t.TamamlanmaFaizi
+                };
                 if (dto.Qeyd != null) t.Qeyd = dto.Qeyd;
 
                 await _unitOfWork.Repository<Tapshiriq>().YenileAsync(t);
@@ -223,7 +233,6 @@ namespace FinNex.Application.Services.Communication
                 // Tapşırıq tamamlandısa yaradan işçiyə bildiriş
                 if (dto.Status == TapshiriqStatus.Tamamlandi)
                 {
-                    t.TamamlanmaFaizi = 100;
                     await _bildirisService.YaratAsync(
                         isciId: t.YaradanIsciId,
                         nov: BildirisNovu.TapshiriqTamamlandi,
@@ -232,8 +241,6 @@ namespace FinNex.Application.Services.Communication
                         redirectUrl: $"/User/Tapshiriq/Detay/{t.Id}");
                     await _teklifService.TapshiriqTamamlandiAsync(t.Id);
                 }
-                else
-                    t.TamamlanmaFaizi = dto.TamamlanmaFaizi;
 
                 return Result.Ok("Yeniləndi.");
             }

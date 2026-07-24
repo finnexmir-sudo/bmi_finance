@@ -45,16 +45,39 @@
                     <div class="tsk-detay-tesvir">@Model.Tesvir</div>
                 }
 
-                @* Progress bar *@
-                <div style="margin-top:16px">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-                        <span style="font-size:.78rem;color:#6b7280">Tamamlanma</span>
-                        <span style="font-size:.78rem;font-weight:600;color:#1a2332">@Model.TamamlanmaFaizi%</span>
+                @* Status pilləkəni (stepper) — faiz yerinə statusun addımı *@
+                @if (Model.Status == TapshiriqStatus.LegvEdildi)
+                {
+                    <div class="tsk-cancel-banner">⊘ Bu tapşırıq ləğv edilib</div>
+                }
+                else
+                {
+                    var addimlar = new[] { "Yeni", "Davam edir", "Tamamlandı" };
+                    var cari = Model.Status switch
+                    {
+                        TapshiriqStatus.Yeni       => 0,
+                        TapshiriqStatus.DavamEdir  => 1,
+                        TapshiriqStatus.Gecikdi    => 1,
+                        TapshiriqStatus.Tamamlandi => 2,
+                        _                          => 0
+                    };
+                    var bitib = Model.Status == TapshiriqStatus.Tamamlandi;
+
+                    <div class="tsk-stepper">
+                        @for (int i = 0; i < addimlar.Length; i++)
+                        {
+                            var kecdi = bitib || i < cari;
+                            if (i > 0)
+                            {
+                                <div class="tsk-step-line @((bitib || i <= cari) ? "tsk-step-line--done" : "")"></div>
+                            }
+                            <div class="tsk-step @(kecdi ? "tsk-step--done" : (i == cari ? "tsk-step--active" : ""))">
+                                <div class="tsk-step-dot">@(kecdi ? "✓" : (i + 1).ToString())</div>
+                                <div class="tsk-step-lbl">@addimlar[i]</div>
+                            </div>
+                        }
                     </div>
-                    <div class="tsk-progress-bar tsk-progress-bar--lg">
-                        <div class="tsk-progress-fill" style="width:@Model.TamamlanmaFaizi%"></div>
-                    </div>
-                </div>
+                }
 
                 <div class="tsk-detay-meta">
                     <div class="tsk-meta-row">
@@ -133,44 +156,47 @@
                           && Model.Status != TapshiriqStatus.LegvEdildi)
             {
                 <div class="tsk-detay-card">
-                    <div class="tsk-action-title">Status yenilə</div>
-                    <form asp-action="StatusYenile" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="Id" value="@Model.Id" />
+                    <div class="tsk-action-title">Statusu dəyiş</div>
+                    <div class="tsk-status-actions">
+                        <form asp-action="StatusYenile" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@Model.Id" />
 
-                        <div class="tsk-field">
-                            <label class="tsk-label">Status</label>
-                            <select name="Status" class="tsk-input">
-                                @foreach (var s in Enum.GetValues<TapshiriqStatus>())
-                                {
-                                    <option value="@((int)s)"
-                                            selected="@(s == Model.Status ? "selected" : null)">
-                                        @(s switch {
-                                            TapshiriqStatus.Yeni => "Yeni",
-                                            TapshiriqStatus.DavamEdir => "Davam edir",
-                                            TapshiriqStatus.Tamamlandi => "Tamamlandı",
-                                            TapshiriqStatus.LegvEdildi => "Ləğv edildi",
-                                            _ => s.ToString()
-                                        })
-                                    </option>
-                                }
-                            </select>
-                        </div>
+                            @if (Model.Status == TapshiriqStatus.Yeni)
+                            {
+                                <button type="submit" name="Status"
+                                        value="@((int)TapshiriqStatus.DavamEdir)"
+                                        class="tsk-btn tsk-btn--start tsk-act-btn">
+                                    ▶ İşə başla
+                                </button>
+                            }
+                            @if (Model.Status == TapshiriqStatus.DavamEdir ||
+                                 Model.Status == TapshiriqStatus.Gecikdi)
+                            {
+                                <button type="submit" name="Status"
+                                        value="@((int)TapshiriqStatus.Yeni)"
+                                        class="tsk-btn tsk-btn--ghost tsk-act-btn">
+                                    ↩ Yeniyə qaytar
+                                </button>
+                            }
+                            <button type="submit" name="Status"
+                                    value="@((int)TapshiriqStatus.Tamamlandi)"
+                                    class="tsk-btn tsk-btn--done-act tsk-act-btn">
+                                ✓ Tamamlandı
+                            </button>
+                        </form>
 
-                        <div class="tsk-field">
-                            <label class="tsk-label">Tamamlanma %</label>
-                            <input type="range" name="TamamlanmaFaizi"
-                                   min="0" max="100" step="5"
-                                   value="@Model.TamamlanmaFaizi"
-                                   class="tsk-range"
-                                   oninput="document.getElementById('pctDisplay').textContent=this.value+'%'" />
-                            <span id="pctDisplay" class="tsk-range-val">@Model.TamamlanmaFaizi%</span>
-                        </div>
-
-                        <button type="submit" class="tsk-btn tsk-btn--primary" style="width:100%">
-                            Yenilə
-                        </button>
-                    </form>
+                        <form asp-action="StatusYenile" method="post"
+                              onsubmit="return confirm('Tapşırığı ləğv etmək istəyirsiniz?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@Model.Id" />
+                            <button type="submit" name="Status"
+                                    value="@((int)TapshiriqStatus.LegvEdildi)"
+                                    class="tsk-btn tsk-btn--ghost tsk-act-btn tsk-act-btn--muted">
+                                Ləğv et
+                            </button>
+                        </form>
+                    </div>
                 </div>
             }
 
