@@ -299,10 +299,10 @@
                                         @i.BitisSaati.ToString(@"hh\:mm") ·
                                         @i.IcazeSaati.ToString("F1") saat)
                                     </span>
-                                    @if (i.NaharNezereAlinmasin)
+                                    @if (i.IstifadeSaati < i.IcazeSaati - 0.01)
                                     {
-                                        <span class="fn-icaze-saat fn-icaze-saat--gun" title="Nahar (@i.NaharDeqiqe dəq) çıxıldıqdan sonra sayılan müddət">
-                                            <i class="bi bi-cup-hot"></i> nahar çıxılmaqla @i.EffektivSaat.ToString("F1") saat
+                                        <span class="fn-icaze-saat fn-icaze-saat--gun" title="Nahar və faktiki qayıdış nəzərə alınmaqla real sayılan müddət (büdcədən bu qədər çıxılır)">
+                                            <i class="bi bi-clock-history"></i> sayılan @i.IstifadeSaati.ToString("0.##") saat
                                         </span>
                                     }
                                 </div>

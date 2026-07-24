@@ -101,10 +101,10 @@
                     <div class="fn-icaze-title">
                         @icaze.BaslamaSaati.ToString(@"hh\:mm") —
                         @icaze.BitisSaati.ToString(@"hh\:mm")
-                        <span class="fn-icaze-dur">(@icaze.IstifadeSaati.ToString("F1") saat)</span>
-                        @if (icaze.FaktikiSaat.HasValue && System.Math.Abs(icaze.FaktikiSaat.Value - icaze.IcazeSaati) > 0.01)
+                        <span class="fn-icaze-dur">(sayılan @icaze.IstifadeSaati.ToString("0.##") saat)</span>
+                        @if (icaze.IstifadeSaati < icaze.IcazeSaati - 0.01)
                         {
-                            <span class="fn-icaze-dur" style="opacity:.55">· plan @icaze.IcazeSaati.ToString("F1")</span>
+                            <span class="fn-icaze-dur" style="opacity:.55">· plan @icaze.IcazeSaati.ToString("0.##")</span>
                         }
                     </div>
                     <div class="fn-icaze-meta">

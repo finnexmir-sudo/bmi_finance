@@ -267,21 +267,45 @@ namespace FinNex.Application.Services
                 var naharDeq = izParam?.NaharMuddetDeqiqe ?? 45;
                 var cariIl = DateTime.Today.Year;
 
+                var stdCixis = izParam?.StandartCixisVaxti;
                 var ilinIcazeleri = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(
                         x => x.IsciId == isci.Id && !x.Silinib
                           && x.Status == IcazeStatus.Tesdiqlenib
                           && x.IcazeTarixi.Year == cariIl,
+                        include: q => q.Include(m => m.CixisGiris),
                         izlemeden: true);
 
-                // Nahar çıxılması REAL kəsişmə əsaslıdır (icazə pəncərəsi ∩ nahar) — IcazeService ilə eyni.
-                dto.IcazeIstifadeSaat = Math.Round(
-                    ilinIcazeleri.Sum(x => Math.Max(0,
-                        x.IcazeSaati
-                        - (double)x.JetonOdenenSaat
-                        - (x.NaharNezereAlinmasin
+                // İSTİFADƏ = FAKTİKİ (cihaz çıxış/qayıdış, nahar çıxılmaqla) — cihaz datası yoxdursa
+                // planlaşdırılan effektiv. Nahar hər ikisində REAL kəsişmə ilə çıxılır. Sonra jeton çıxılır.
+                // (İcazə səhifəsindəki IstifadeSaati ilə eyni məntiq.)
+                double IcazeIstifade(Icaze x)
+                {
+                    var cixis = x.CixisGiris?.CixisVaxt;
+                    var qayidis = x.CixisGiris?.QayidisVaxt;
+                    var faktiki = IcazeService.IcazeFaktikiSaat(cixis, qayidis, x.Birdefelik,
+                                                                x.IcazeTarixi, x.BitisSaati, stdCixis);
+                    double efektiv;
+                    if (faktiki.HasValue)
+                    {
+                        efektiv = faktiki.Value;
+                        if (x.NaharNezereAlinmasin && cixis.HasValue)
+                        {
+                            var bit = qayidis?.TimeOfDay ?? x.BitisSaati;
+                            efektiv = Math.Max(0, efektiv
+                                - IcazeService.NaharKesishmeSaat(cixis.Value.TimeOfDay, bit, naharBas, naharDeq));
+                        }
+                    }
+                    else
+                    {
+                        efektiv = x.IcazeSaati - (x.NaharNezereAlinmasin
                             ? IcazeService.NaharKesishmeSaat(x.BaslamaSaati, x.BitisSaati, naharBas, naharDeq)
-                            : 0))), 2);
+                            : 0);
+                    }
+                    return Math.Max(0, efektiv - (double)x.JetonOdenenSaat);
+                }
+
+                dto.IcazeIstifadeSaat = Math.Round(ilinIcazeleri.Sum(IcazeIstifade), 2);
 
                 // ── 6d. Gecikmə balansı (cari il) ────────────────────────
                 // Gün = Status==Gecikme; toplam saat = (faktiki giriş − standart giriş) cəmi.

@@ -966,7 +966,7 @@ namespace FinNex.Application.Services
         //    ona görə çıxışdan planlaşdırılan icazə sonuna (BitisSaati) qədər sayılır.
         //    Çıxış yoxdursa, yaxud çıxış icazə sonundan sonradırsa null (faktiki ölçülə bilmir).
         // gunSonu = StandartCixisVaxti (verilsə, günün sonuna kimi olan icazə də qayıtmayan sayılır).
-        private static double? IcazeFaktikiSaat(
+        internal static double? IcazeFaktikiSaat(
             DateTime? cixis, DateTime? qayidis, bool birdefelik,
             DateTime icazeTarixi, TimeSpan bitisSaati, TimeSpan? gunSonu = null)
         {
