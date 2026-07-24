@@ -61,10 +61,14 @@ namespace FinNex.Application.Services
                     .Select(MapToListDto)
                     .ToList();
 
-                // Effektiv saat (nahar çıxılmaqla) üçün nahar müddətini cari parametrdən doldur.
-                var naharDeq = (await _unitOfWork.Repository<IsParametri>()
-                    .Query().Where(p => !p.Silinib).FirstOrDefaultAsync())?.NaharMuddetDeqiqe ?? 45;
-                foreach (var d in dtos) d.NaharDeqiqe = naharDeq;
+                // Effektiv saat (nahar çıxılmaqla) üçün nahar parametrlərini cari dəyərdən doldur.
+                var isPrm = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking().Where(p => !p.Silinib).FirstOrDefaultAsync();
+                foreach (var d in dtos)
+                {
+                    d.NaharDeqiqe = isPrm?.NaharMuddetDeqiqe ?? 45;
+                    d.NaharBaslama = isPrm?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+                }
 
                 return Result<IList<IcazeListDto>>.Ok(dtos);
             }
@@ -519,15 +523,18 @@ namespace FinNex.Application.Services
             if (icaze.Status != IcazeStatus.RehberTesdiqinde)
                 return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}).");
 
-            // Nahar müddəti IsParametri-dən oxunur (default 45 dəq)
+            // Nahar parametrləri IsParametri-dən (default 13:00 / 45 dəq)
             var isParam = await _unitOfWork.Repository<IsParametri>()
                 .Query().Where(x => !x.Silinib).FirstOrDefaultAsync();
-            decimal naharMuddet = (isParam?.NaharMuddetDeqiqe ?? 45) / 60m;
+            var naharBas = isParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+            var naharDeq = isParam?.NaharMuddetDeqiqe ?? 45;
 
             var icazeSaatiRaw = (decimal)icaze.IcazeSaati;
-            var efektivSaat = naharNezereAlinmasin
-                ? Math.Max(0m, icazeSaatiRaw - naharMuddet)
-                : icazeSaatiRaw;
+            // Nahar çıxılması REAL kəsişmə əsaslıdır (icazə pəncərəsi ∩ nahar pəncərəsi).
+            var naharCix = naharNezereAlinmasin
+                ? (decimal)NaharKesishmeSaat(icaze.BaslamaSaati, icaze.BitisSaati, naharBas, naharDeq)
+                : 0m;
+            var efektivSaat = Math.Max(0m, icazeSaatiRaw - naharCix);
 
             // Jeton miqdarı yalnız təsdiq vəziyyətində nəzərə alınır
             if (status && jetonOdenenSaat > 0)
@@ -980,6 +987,18 @@ namespace FinNex.Application.Services
             return Math.Round((qayidis.Value - cixis.Value).TotalHours, 2);
         }
 
+        // İcazə pəncərəsinin [bas,bitis] nahar pəncərəsi [naharBas .. naharBas+naharDeq] ilə
+        // REAL kəsişməsi (saat). "Nahara çıxmıram" halında bu qədər çıxılır — sabit 45 dəq yox,
+        // yalnız pəncərənin naharla üst-üstə düşən hissəsi (qismən nahar hallarında da dəqiq).
+        internal static double NaharKesishmeSaat(TimeSpan bas, TimeSpan bitis, TimeSpan naharBas, int naharDeq)
+        {
+            var nBitis = naharBas + TimeSpan.FromMinutes(naharDeq);
+            var oBas = bas > naharBas ? bas : naharBas;
+            var oBitis = bitis < nBitis ? bitis : nBitis;
+            var k = (oBitis - oBas).TotalHours;
+            return k > 0 ? k : 0;
+        }
+
         public async Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr)
         {
             try
@@ -1007,17 +1026,14 @@ namespace FinNex.Application.Services
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
-                // Nahar müddəti (saat) — nahar icazəyə qatılıbsa icazə saatından çıxılır
-                // (işçi nahar haqqını istifadə etməyib).
+                // Nahar parametrləri — effektiv saat DTO-da REAL kəsişmə ilə hesablanır.
                 var izParam = await _unitOfWork.Repository<IsParametri>()
                     .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
-                double naharSaat = (izParam?.NaharMuddetDeqiqe ?? 45) / 60.0;
+                var izNaharBas = izParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+                var izNaharDeq = izParam?.NaharMuddetDeqiqe ?? 45;
 
-                // Effektiv icazə saatı = xam saat − jeton (bonus, sayılmır) − nahar (istifadə edilməyib)
-                double EfektivSaat(Icaze x) => Math.Max(0,
-                    x.IcazeSaati
-                    - (double)x.JetonOdenenSaat
-                    - (x.NaharNezereAlinmasin ? naharSaat : 0));
+                // Planlaşdırılan effektiv = DTO.EffektivSaat (nahar çıxılıb) − jeton (bonus, sayılmır).
+                double PlanEfektiv(IcazeListDto d) => Math.Max(0, d.EffektivSaat - (double)d.JetonOdenenSaat);
 
                 // ── Bağlanmamış (Gözlənir) icazədə faktiki çıxış/qayıdışı cihaz datasından bərpa et ──
                 // Dövriyyə ilə eyni məntiq: xam oxuma (varsa — qayıdış da), yoxsa Davamiyyət çıxışı.
@@ -1044,6 +1060,8 @@ namespace FinNex.Application.Services
                         var icazeDtolar = g.OrderByDescending(x => x.IcazeTarixi).Select(x =>
                         {
                             var dto = MapToListDto(x);
+                            dto.NaharBaslama = izNaharBas;
+                            dto.NaharDeqiqe = izNaharDeq;
                             if (x.CixisGiris != null && x.CixisGiris.CixisVaxt == null &&
                                 x.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
                             {
@@ -1069,12 +1087,23 @@ namespace FinNex.Application.Services
                                 x.Status == IcazeStatus.RehberTesdiqinde ||
                                 x.Status == IcazeStatus.HrTesdiqinde),
                             ImtinaEdildiSayi = g.Count(x => x.Status == IcazeStatus.ImtinaEdildi),
-                            UmumSaat = g.Sum(x => EfektivSaat(x)),
-                            TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
+                            UmumSaat = icazeDtolar.Sum(PlanEfektiv),
+                            TesdiqSaat = icazeDtolar.Where(d => d.Status == IcazeStatus.Tesdiqlenib).Sum(PlanEfektiv),
                             FaktikiSaat = icazeDtolar
                                 .Where(d => d.Status == IcazeStatus.Tesdiqlenib)
-                                .Select(d => IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
-                                                              d.IcazeTarixi, d.BitisSaati, izParam?.StandartCixisVaxti))
+                                .Select(d =>
+                                {
+                                    // Faktiki xam (günün sonuna kimi halı üçün StandartCixisVaxti ilə) − nahar kəsişməsi.
+                                    var f = IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
+                                                             d.IcazeTarixi, d.BitisSaati, izParam?.StandartCixisVaxti);
+                                    if (f.HasValue && d.NaharNezereAlinmasin && d.CixisVaxt.HasValue)
+                                    {
+                                        var bit = d.QayidisVaxt?.TimeOfDay ?? d.BitisSaati;
+                                        f = Math.Max(0, f.Value - NaharKesishmeSaat(
+                                            d.CixisVaxt.Value.TimeOfDay, bit, izNaharBas, izNaharDeq));
+                                    }
+                                    return f;
+                                })
                                 .Where(s => s.HasValue)
                                 .Sum(s => s!.Value),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
@@ -1154,6 +1183,16 @@ namespace FinNex.Application.Services
                         double? faktiki = (!c.Birdefelik ? c.FaktikiSaat : null)
                             ?? IcazeFaktikiSaat(effCixis, effQayidis, c.Birdefelik,
                                                 c.Icaze.IcazeTarixi, c.Icaze.BitisSaati, dovParam?.StandartCixisVaxti);
+                        // "Nahara çıxmıram" halında faktikidən də naharın REAL kəsişməsi çıxılır
+                        // (planlaşdırılanla eyni məntiq).
+                        if (faktiki.HasValue && c.Icaze.NaharNezereAlinmasin && effCixis.HasValue)
+                        {
+                            var dnBas = dovParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+                            var dnDeq = dovParam?.NaharMuddetDeqiqe ?? 45;
+                            var dnBit = effQayidis?.TimeOfDay ?? c.Icaze.BitisSaati;
+                            faktiki = Math.Max(0, faktiki.Value
+                                - NaharKesishmeSaat(effCixis.Value.TimeOfDay, dnBit, dnBas, dnDeq));
+                        }
                         return new IcazeDovriyyeDto
                         {
                             IcazeId = c.IcazeId,

@@ -23,12 +23,11 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
         public int ImtinaCem => Icazeler
             .Count(x => x.WorkflowMerhele == "İmtina edildi");
 
-        // Təsdiqlənmiş icazələrin FAKTİKİ istifadəsi — jeton (mükafat) və nahar
-        // çıxılır ki, jetonla ödənilən gün "istifadə edilmiş icazə"yə düşməsin
-        // (HR İcazə İzləmədəki EfektivSaat ilə eyni məntiq). Nahar = 45 dəq = 0.75 s.
+        // Təsdiqlənmiş icazələrin FAKTİKİ istifadəsi — yalnız jeton (mükafat) çıxılır.
+        // Nahar artıq IstifadeSaati-nin içində (EffektivFaktikiSaat/EffektivSaat, real
+        // kəsişmə ilə) çıxılıb — burada TƏKRAR çıxılmamalıdır (ikiqat olmasın).
         public double IstifadeOlunanSaat => Icazeler
             .Where(x => x.WorkflowMerhele == "Təsdiqlənib")
-            .Sum(x => Math.Max(0.0, x.IstifadeSaati - (double)x.JetonOdenenSaat
-                                    - (x.NaharNezereAlinmasin ? 0.75 : 0.0)));
+            .Sum(x => Math.Max(0.0, x.IstifadeSaati - (double)x.JetonOdenenSaat));
     }
 }

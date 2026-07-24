@@ -341,7 +341,7 @@
                                                                 @if (ic.JetonOdenenSaat > 0)
                                                                 {
                                                                     var jSaat = ic.JetonOdenenSaat.ToString("0.#");
-                                                                    var jTam = (ic.IcazeSaati - (double)ic.JetonOdenenSaat - (ic.NaharNezereAlinmasin ? 0.75 : 0.0)) <= 0.01;
+                                                                    var jTam = (ic.EffektivSaat - (double)ic.JetonOdenenSaat) <= 0.01;
                                                                     <span class="iz-jeton-tag"
                                                                           title="Jetonla ödənilib: @jSaat saat — maaşdan kəsilmir (mükafat günü, məzuniyyət deyil)">
                                                                         🎫 @(jTam ? "Jeton · tam gün" : "Jeton")

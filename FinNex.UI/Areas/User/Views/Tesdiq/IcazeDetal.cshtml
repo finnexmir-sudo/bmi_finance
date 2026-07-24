@@ -302,10 +302,19 @@
                                             Model.BaslamaSaati.Value < naharBitis &&
                                             Model.BitisSaati.Value > naharBaslama;
 
+                        // REAL kəsişmə (icazə pəncərəsi ∩ nahar pəncərəsi) — sabit 45 dəq yox, faktiki üst-üstə düşmə.
+                        decimal naharKesisme = 0m;
                         if (naharKesisir)
                         {
-                            decimal naharSaat = naharDeq / 60m;
-                            decimal efektivSaat = Math.Max(0m, icazeSaatiRaw - naharSaat);
+                            var oBas = Model.BaslamaSaati!.Value > naharBaslama ? Model.BaslamaSaati.Value : naharBaslama;
+                            var oBitis = Model.BitisSaati!.Value < naharBitis ? Model.BitisSaati.Value : naharBitis;
+                            naharKesisme = (decimal)Math.Max(0, (oBitis - oBas).TotalHours);
+                        }
+                        int kesismeDeq = (int)Math.Round((double)naharKesisme * 60);
+
+                        if (naharKesisir)
+                        {
+                            decimal efektivSaat = Math.Max(0m, icazeSaatiRaw - naharKesisme);
                             int eDeq = (int)Math.Round((double)efektivSaat * 60);
                             int eH = eDeq / 60; int eM = eDeq % 60;
 
@@ -323,7 +332,7 @@
                                     <span>
                                         <strong>Naharı nəzərə alma</strong>
                                         <span style="color:#6b7280;font-size:11px;display:block;margin-top:1px">
-                                            İşçi nahar fasiləsini götürməyib — @naharDeq dəq icazə müddətindən çıxılır
+                                            İşçi nahar fasiləsini götürməyib — nahar pəncərəsi ilə kəsişən @kesismeDeq dəq icazə müddətindən çıxılır
                                             (@naharBaslama.ToString(@"hh\:mm")–@naharBitis.ToString(@"hh\:mm"))
                                         </span>
                                         <span id="naharEfektiv" style="display:none;color:#0369a1;font-size:12px;font-weight:600;margin-top:3px">
@@ -364,7 +373,7 @@
                         <script>
                         (function(){
                             var rawSaat = @icazeSaatiRaw;
-                            var naharSaat = @((naharDeq / 60.0m).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
+                            var naharSaat = @(naharKesisme.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
                             var balans = @balans;
                             function fmtSaat(h){
                                 var t = Math.round(h * 60);

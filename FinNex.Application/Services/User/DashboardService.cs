@@ -263,7 +263,8 @@ namespace FinNex.Application.Services
                 // Jeton ödənən saat (bonus, sayılmır) və istifadə edilməyən nahar
                 // çıxılır — IcazeService.EfektivSaat ilə EYNİ qayda.
                 // (izParam yuxarıda ── 3-də yüklənib.)
-                double naharSaat = (izParam?.NaharMuddetDeqiqe ?? 45) / 60.0;
+                var naharBas = izParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+                var naharDeq = izParam?.NaharMuddetDeqiqe ?? 45;
                 var cariIl = DateTime.Today.Year;
 
                 var ilinIcazeleri = await _unitOfWork.Repository<Icaze>()
@@ -273,11 +274,14 @@ namespace FinNex.Application.Services
                           && x.IcazeTarixi.Year == cariIl,
                         izlemeden: true);
 
+                // Nahar çıxılması REAL kəsişmə əsaslıdır (icazə pəncərəsi ∩ nahar) — IcazeService ilə eyni.
                 dto.IcazeIstifadeSaat = Math.Round(
                     ilinIcazeleri.Sum(x => Math.Max(0,
                         x.IcazeSaati
                         - (double)x.JetonOdenenSaat
-                        - (x.NaharNezereAlinmasin ? naharSaat : 0))), 2);
+                        - (x.NaharNezereAlinmasin
+                            ? IcazeService.NaharKesishmeSaat(x.BaslamaSaati, x.BitisSaati, naharBas, naharDeq)
+                            : 0))), 2);
 
                 // ── 6d. Gecikmə balansı (cari il) ────────────────────────
                 // Gün = Status==Gecikme; toplam saat = (faktiki giriş − standart giriş) cəmi.
