@@ -421,8 +421,8 @@
     position: absolute;
     bottom: 42px;
     left: 0;
-    width: 280px;
-    max-height: 220px;
+    width: 300px;
+    max-height: 300px;
     overflow-y: auto;
     background: #fff;
     border: 1px solid #e2e6ed;
@@ -434,6 +434,20 @@
     gap: 2px;
     z-index: 100;
 }
+
+.chat-emoji-cat {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    font-weight: 700;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding: 7px 4px 2px;
+    position: sticky;
+    top: -8px;
+    background: #fff;
+}
+.chat-emoji-cat:first-child { padding-top: 2px; }
 
 .chat-emoji-item {
     width: 30px;
