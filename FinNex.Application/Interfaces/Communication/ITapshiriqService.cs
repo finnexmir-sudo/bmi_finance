@@ -12,6 +12,7 @@ namespace FinNex.Application.Interfaces.Communication
         Task<Result<TapshiriqDetailDto>> GetDetayAsync(int id, int isciId);
         Task<Result> YaratAsync(TapshiriqCreateDto dto);
         Task<Result> StatusYenileAsync(TapshiriqUpdateDto dto, int isciId);
+        Task<Result> ImtinaEtAsync(int tapshiriqId, int isciId, string sebeb);
         Task<Result> SherhEleveEtAsync(int tapshiriqId, int isciId, string metn);
         Task<Result> SilAsync(int id, int isciId);
         Task<Result<IList<TapshiriqListDto>>> GetGecikenleriAsync();

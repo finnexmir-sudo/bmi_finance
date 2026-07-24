@@ -140,6 +140,19 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Detay), new { id = dto.Id });
         }
 
+        // ── POST /User/Tapshiriq/Imtina ────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Imtina(int id, string sebeb)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            var result = await _tapshiriqService.ImtinaEtAsync(id, isciId.Value, sebeb);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Detay), new { id });
+        }
+
         // ── POST /User/Tapshiriq/SherhEleveEt ──────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -37,7 +37,8 @@ namespace FinNex.Domain.Entities.Communication
         Yeni = 1,
         DavamEdir = 2,
         Tamamlandi = 3,
-        LegvEdildi = 4,
-        Gecikdi = 5
+        LegvEdildi = 4,   // yaradan ləğv edir
+        Gecikdi = 5,
+        ImtinaEdildi = 6  // təyin olunan işçi səbəb göstərərək imtina edir
     }
 }

@@ -42,6 +42,7 @@ namespace FinNex.Application.Services.Communication
                     t.SonTarix < DateTime.Today &&
                     t.Status != TapshiriqStatus.Tamamlandi &&
                     t.Status != TapshiriqStatus.LegvEdildi &&
+                    t.Status != TapshiriqStatus.ImtinaEdildi &&
                     t.Status != TapshiriqStatus.Gecikdi))
                 {
                     t.Status = TapshiriqStatus.Gecikdi;
@@ -223,6 +224,7 @@ namespace FinNex.Application.Services.Communication
                     TapshiriqStatus.DavamEdir  => 50,
                     TapshiriqStatus.Tamamlandi => 100,
                     TapshiriqStatus.LegvEdildi => 0,
+                    TapshiriqStatus.ImtinaEdildi => 0,
                     _                          => t.TamamlanmaFaizi
                 };
                 if (dto.Qeyd != null) t.Qeyd = dto.Qeyd;
@@ -243,6 +245,59 @@ namespace FinNex.Application.Services.Communication
                 }
 
                 return Result.Ok("Yeniləndi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
+        // İşçi (təyin olunan) tapşırıqdan səbəb göstərərək imtina edir.
+        // Səbəb şərh (iz) kimi saxlanılır və yaradan işçiyə bildiriş gedir.
+        public async Task<Result> ImtinaEtAsync(int tapshiriqId, int isciId, string sebeb)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sebeb))
+                    return Result.Fail("İmtina səbəbi qeyd edilməlidir.");
+
+                var t = await _unitOfWork.Repository<Tapshiriq>()
+                    .GetirAsync(x => x.Id == tapshiriqId && !x.Silinib);
+
+                if (t == null) return Result.Fail("Tapılmadı.");
+                // Yalnız tapşırıq təyin olunan işçi imtina edə bilər
+                if (t.TeyinOlunanIsciId != isciId)
+                    return Result.Fail("Yalnız tapşırıq təyin olunan işçi imtina edə bilər.");
+                if (t.Status == TapshiriqStatus.Tamamlandi ||
+                    t.Status == TapshiriqStatus.LegvEdildi ||
+                    t.Status == TapshiriqStatus.ImtinaEdildi)
+                    return Result.Fail("Bu tapşırıq üçün imtina mümkün deyil.");
+
+                sebeb = sebeb.Trim();
+
+                t.Status = TapshiriqStatus.ImtinaEdildi;
+                t.TamamlanmaFaizi = 0;
+                await _unitOfWork.Repository<Tapshiriq>().YenileAsync(t);
+
+                // Səbəbi daimi iz kimi şərh olaraq saxla (təyin olunan işçi müəllif)
+                await _unitOfWork.Repository<TapshiriqSherh>().YaratAsync(new TapshiriqSherh
+                {
+                    TapshiriqId   = t.Id,
+                    MuellifIsciId = isciId,
+                    Metn          = $"İmtina səbəbi: {sebeb}"
+                });
+
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                // Yaradan işçiyə bildiriş — səbəblə birlikdə
+                await _bildirisService.YaratAsync(
+                    isciId: t.YaradanIsciId,
+                    nov: BildirisNovu.TapshiriqImtina,
+                    bashliq: "Tapşırıqdan imtina edildi",
+                    metn: $"'{t.Bashliq}' tapşırığından imtina edildi. Səbəb: {sebeb}",
+                    redirectUrl: $"/User/Tapshiriq/Detay/{t.Id}");
+
+                return Result.Ok("İmtina qeyd edildi.");
             }
             catch (Exception ex)
             {

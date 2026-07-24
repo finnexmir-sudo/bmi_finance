@@ -74,5 +74,8 @@ namespace FinNex.Domain.Entities.Communication
         EzamiyyetMuraciet = 45,
         EzamiyyetTesdiq   = 46,
         EzamiyyetImtina   = 47,
+
+        // İşçi tapşırıqdan imtina etdi (yaradan xəbərdar edilir)
+        TapshiriqImtina   = 48,
     }
 }

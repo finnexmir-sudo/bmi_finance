@@ -19,7 +19,8 @@ namespace FinNex.Application.DTOs.Communication
         public DateTime YaradilmaTarixi { get; set; }
         public bool Gecikibmi => SonTarix.HasValue && SonTarix < DateTime.Today
                                 && Status != TapshiriqStatus.Tamamlandi
-                                && Status != TapshiriqStatus.LegvEdildi;
+                                && Status != TapshiriqStatus.LegvEdildi
+                                && Status != TapshiriqStatus.ImtinaEdildi;
 
         public string PrioritetText => Prioritet switch
         {
@@ -37,6 +38,7 @@ namespace FinNex.Application.DTOs.Communication
             TapshiriqStatus.Tamamlandi => "Tamamlandı",
             TapshiriqStatus.LegvEdildi => "Ləğv edildi",
             TapshiriqStatus.Gecikdi => "Gecikdi",
+            TapshiriqStatus.ImtinaEdildi => "İmtina edildi",
             _ => ""
         };
     }

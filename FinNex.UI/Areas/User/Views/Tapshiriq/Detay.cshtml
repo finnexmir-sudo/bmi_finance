@@ -50,6 +50,13 @@
                 {
                     <div class="tsk-cancel-banner">⊘ Bu tapşırıq ləğv edilib</div>
                 }
+                else if (Model.Status == TapshiriqStatus.ImtinaEdildi)
+                {
+                    <div class="tsk-imtina-banner">
+                        ⊘ İşçi bu tapşırıqdan imtina edib
+                        <div class="tsk-imtina-hint">Səbəb aşağıda şərhlərdə göstərilib.</div>
+                    </div>
+                }
                 else
                 {
                     var addimlar = new[] { "Yeni", "Davam edir", "Tamamlandı" };
@@ -137,7 +144,8 @@
                 }
 
                 @if (Model.Status != TapshiriqStatus.Tamamlandi &&
-                     Model.Status != TapshiriqStatus.LegvEdildi)
+                     Model.Status != TapshiriqStatus.LegvEdildi &&
+                     Model.Status != TapshiriqStatus.ImtinaEdildi)
                 {
                     <form asp-action="SherhEleveEt" method="post" class="tsk-sherh-form">
                         @Html.AntiForgeryToken()
@@ -153,7 +161,8 @@
         @* ── Sağ: Əməliyyatlar ── *@
         <div>
             @if (menimDir && Model.Status != TapshiriqStatus.Tamamlandi
-                          && Model.Status != TapshiriqStatus.LegvEdildi)
+                          && Model.Status != TapshiriqStatus.LegvEdildi
+                          && Model.Status != TapshiriqStatus.ImtinaEdildi)
             {
                 <div class="tsk-detay-card">
                     <div class="tsk-action-title">Statusu dəyiş</div>
@@ -186,14 +195,17 @@
                             </button>
                         </form>
 
-                        <form asp-action="StatusYenile" method="post"
-                              onsubmit="return confirm('Tapşırığı ləğv etmək istəyirsiniz?')">
+                        @* İmtina — səbəb məcburidir; yaradan işçiyə bildiriş gedir *@
+                        <form asp-action="Imtina" method="post" class="tsk-imtina-form"
+                              onsubmit="return confirm('Tapşırıqdan imtina etmək istəyirsiniz?')">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="Id" value="@Model.Id" />
-                            <button type="submit" name="Status"
-                                    value="@((int)TapshiriqStatus.LegvEdildi)"
-                                    class="tsk-btn tsk-btn--ghost tsk-act-btn tsk-act-btn--muted">
-                                Ləğv et
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <label class="tsk-label">İmtina səbəbi</label>
+                            <textarea name="sebeb" class="tsk-input" rows="2"
+                                      placeholder="Niyə imtina edirsiniz? (məcburi)" required></textarea>
+                            <button type="submit"
+                                    class="tsk-btn tsk-btn--imtina tsk-act-btn" style="margin-top:8px">
+                                İmtina et
                             </button>
                         </form>
                     </div>
@@ -203,7 +215,8 @@
             @* Edit düyməsi — 171-ci sətrdən əvvəl *@
 @if (menYaratmisham &&
      Model.Status != TapshiriqStatus.Tamamlandi &&
-     Model.Status != TapshiriqStatus.LegvEdildi)
+     Model.Status != TapshiriqStatus.LegvEdildi &&
+     Model.Status != TapshiriqStatus.ImtinaEdildi)
 {
     <div class="tsk-detay-card" style="margin-top:12px">
         <a asp-action="Edit" asp-route-id="@Model.Id"
@@ -213,7 +226,9 @@
     </div>
 }
 
-            @if (menYaratmisham && Model.Status == TapshiriqStatus.Yeni)
+            @* İmtina olunmuş və ya yeni tapşırığı yaradan silə bilər *@
+            @if (menYaratmisham && (Model.Status == TapshiriqStatus.Yeni ||
+                                    Model.Status == TapshiriqStatus.ImtinaEdildi))
             {
                 <div class="tsk-detay-card" style="margin-top:12px">
                     <form asp-action="Sil" method="post"
@@ -246,6 +261,7 @@
         TapshiriqStatus.Tamamlandi => "tsk-status--done",
         TapshiriqStatus.LegvEdildi => "tsk-status--cancel",
         TapshiriqStatus.Gecikdi => "tsk-status--late",
+        TapshiriqStatus.ImtinaEdildi => "tsk-status--late",
         _ => ""
     };
 }

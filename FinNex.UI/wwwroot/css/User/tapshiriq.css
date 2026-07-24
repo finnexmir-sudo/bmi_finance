@@ -382,6 +382,44 @@
     text-align: center;
 }
 
+.tsk-imtina-banner {
+    margin: 18px 0 4px;
+    padding: 12px 14px;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: .82rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.tsk-imtina-hint {
+    font-size: .72rem;
+    font-weight: 500;
+    color: #b45f5f;
+    margin-top: 4px;
+}
+
+/* İmtina forması (sağ panel) */
+.tsk-imtina-form {
+    border-top: 1px dashed #e3e6ea;
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.tsk-btn--imtina {
+    background: #fee2e2;
+    color: #b91c1c;
+    width: 100%;
+    justify-content: center;
+}
+
+    .tsk-btn--imtina:hover {
+        background: #ef4444;
+        color: #fff;
+    }
+
 /* Status əməliyyat düymələri (Detay — sağ panel) */
 .tsk-status-actions {
     display: flex;
