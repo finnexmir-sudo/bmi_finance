@@ -87,10 +87,11 @@
                                 <div class="tsk-card-title">@t.Bashliq</div>
                                 <div class="tsk-card-meta">
                                     <span>@t.YaradanAd</span>
+                                    <span>🗓 Verildi: @t.YaradilmaTarixi.ToString("dd.MM.yyyy")</span>
                                     @if (t.SonTarix.HasValue)
                                     {
                                         <span class="@(t.Gecikibmi ? "tsk-late-text" : "")">
-                                            📅 @t.SonTarix.Value.ToString("dd.MM.yyyy")
+                                            📅 Son: @t.SonTarix.Value.ToString("dd.MM.yyyy")
                                         </span>
                                     }
                                 </div>
@@ -131,10 +132,11 @@
                                 <div class="tsk-card-title">@t.Bashliq</div>
                                 <div class="tsk-card-meta">
                                     <span>→ @t.TeyinOlunanAd</span>
+                                    <span>🗓 Verildi: @t.YaradilmaTarixi.ToString("dd.MM.yyyy")</span>
                                     @if (t.SonTarix.HasValue)
                                     {
                                         <span class="@(t.Gecikibmi ? "tsk-late-text" : "")">
-                                            📅 @t.SonTarix.Value.ToString("dd.MM.yyyy")
+                                            📅 Son: @t.SonTarix.Value.ToString("dd.MM.yyyy")
                                         </span>
                                     }
                                 </div>
