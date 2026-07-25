@@ -1,60 +1,65 @@
 <#
 ================================================================================
- FinNex — Transaction LOG backup (PowerShell)  —  YALNIZ recovery model = FULL
+ FinNex — Transaction LOG backup (PowerShell)  —  recovery model = FULL
 --------------------------------------------------------------------------------
- Nə edir:
-   1) FinNex_Maliyye_Db bazasının transaction log-unu (.trn) backup edir.
-   2) Bu, NÖQTƏ-VAXT bərpasına imkan verir (istənilən dəqiqəyə geri qayıt).
-   3) Log-u "təkrar istifadəyə açır" → .ldf faylının sonsuz şişməsini dayandırır.
+ Axın (tam backup ilə eyni etibarlı üsul):
+   1) Log-u LOKAL staging papkasına .trn kimi yazır.
+   2) .trn faylını ŞƏBƏKƏ papkasına köçürür.
+   3) Şəbəkədə N gündən köhnə .trn-ləri silir; lokal staging-i təmizləyir.
 
- ŞƏRT: Ən azı BİR tam backup (FinNex_Backup.ps1) artıq alınmış olmalıdır —
-       log zənciri tam backup-dan başlayır. Əvvəlcə tam backup-ı qur, sonra bunu.
+ Faydası: nöqtə-vaxt bərpası (istənilən dəqiqəyə) + .ldf faylının şişməsini
+          dayandırır (FULL-da log backup olmasa .ldf sonsuz böyüyür).
 
- Tezlik: hər 15 dəqiqədən bir tövsiyə olunur (maliyyə sistemi). Minimum saatlıq.
-         Task Scheduler-də "Repeat every 15 minutes" ilə işlədilir.
-
- QEYD: SIMPLE recovery model-də BU SKRİPT İŞLƏMİR (log backup icazə verilmir) —
-       o halda ehtiyac da yoxdur. Yalnız FULL-da işlət.
+ ŞƏRT: Ən azı bir TAM backup (FinNex_Backup.ps1) artıq alınmış olmalıdır.
+ Tezlik: Task Scheduler-də hər 15 dəqiqə ("Repeat every 15 minutes").
+ SIMPLE model-də təhlükəsiz keçir (log backup icra edilmir).
 ================================================================================
 #>
 
-# ── AYARLAR — FinNex_Backup.ps1 ilə eyni saxla ─────────────────────────────────
-$SqlInstance    = "localhost\SQLEXPRESS"     # Express instansiyası
+# ── AYARLAR — FinNex_Backup.ps1 ilə EYNİ ───────────────────────────────────────
+$SqlInstance    = "localhost\SQLEXPRESS"
 $Database       = "FinNex_Maliyye_Db"
-$BackupRoot     = "\\NAS01\Backups\FinNex"   # tam backup ilə eyni kök
-$RetentionDays  = 15                          # neçə gün .trn saxlanılsın
+$LocalStaging   = "C:\FinNex_Backup\staging"
+$BackupRoot     = "\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance"
+$RetentionDays  = 15
 $UseWindowsAuth = $true
 $SqlUser        = "sa"
 $SqlPassword    = ""
 
 # ── Hazırlıq ───────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
-$stamp   = Get-Date -Format "yyyyMMdd_HHmmss"
-$logDir2 = Join-Path $BackupRoot "translog"          # .trn faylları
-$logFile = Join-Path (Join-Path $BackupRoot "log") "logbackup_$(Get-Date -Format 'yyyyMM').log"
-$trnFile = Join-Path $logDir2 "$($Database)_$stamp.trn"
+$stamp    = Get-Date -Format "yyyyMMdd_HHmmss"
+$netTrn   = Join-Path $BackupRoot "translog"
+$logFile  = Join-Path (Join-Path $BackupRoot "log") "logbackup_$(Get-Date -Format 'yyyyMM').log"
+$localTrn = Join-Path $LocalStaging "$($Database)_$stamp.trn"
 
-foreach ($d in @($logDir2, (Split-Path $logFile))) {
+foreach ($d in @($LocalStaging, $netTrn, (Split-Path $logFile))) {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
 }
-function Log($m) {
-    $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m"
-    Add-Content -Path $logFile -Value $line
-}
-
+function Log($m) { Add-Content -Path $logFile -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m") }
 $auth = if ($UseWindowsAuth) { @("-E") } else { @("-U", $SqlUser, "-P", $SqlPassword) }
 
-# ── Log backup ─────────────────────────────────────────────────────────────────
+# ── 1) Log backup → LOKAL (yalnız FULL-da) ─────────────────────────────────────
 $tsql = "IF (SELECT recovery_model_desc FROM sys.databases WHERE name=N'$Database') = N'FULL'
-         BACKUP LOG [$Database] TO DISK = N'$trnFile' WITH INIT, CHECKSUM;
+         BACKUP LOG [$Database] TO DISK = N'$localTrn' WITH INIT, CHECKSUM;
          ELSE RAISERROR('Recovery model FULL deyil — log backup keçildi.',10,1);"
-
 & sqlcmd -S $SqlInstance @auth -b -Q $tsql
 if ($LASTEXITCODE -ne 0) { Log "XƏTA: log backup uğursuz (kod $LASTEXITCODE)"; exit 1 }
-Log "Log backup TAMAM: $trnFile"
 
-# ── Retention — köhnə .trn sil ─────────────────────────────────────────────────
+# FULL deyilsə fayl yaranmaya bilər — varsa köçür
+if (-not (Test-Path $localTrn)) { Log "Log faylı yaranmadı (yəqin SIMPLE) — keçildi."; exit 0 }
+
+# ── 2) .trn → ŞƏBƏKƏ ───────────────────────────────────────────────────────────
+try {
+    Copy-Item $localTrn -Destination $netTrn -Force
+    Remove-Item $localTrn -Force
+    Log "Log backup TAMAM → $netTrn\$(Split-Path $localTrn -Leaf)"
+} catch {
+    Log "XƏTA: .trn şəbəkəyə köçürülmədi — LOKAL qaldı: $localTrn ($($_.Exception.Message))"
+    exit 1
+}
+
+# ── 3) Retention — şəbəkədə köhnə .trn sil ─────────────────────────────────────
 $limit = (Get-Date).AddDays(-$RetentionDays)
-Get-ChildItem -Path $logDir2 -Filter "*.trn" |
-    Where-Object { $_.LastWriteTime -lt $limit } |
+Get-ChildItem -Path $netTrn -Filter "*.trn" | Where-Object { $_.LastWriteTime -lt $limit } |
     ForEach-Object { Remove-Item $_.FullName -Force; Log "Köhnə log silindi: $($_.Name)" }
