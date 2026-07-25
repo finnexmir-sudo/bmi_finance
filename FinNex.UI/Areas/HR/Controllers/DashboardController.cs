@@ -177,6 +177,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                     var qalangGun = (ilDonumu - bugun).Days;
                     if (qalangGun < 0 || qalangGun > 5) continue;
 
+                    // YENİ İŞÇİ (staj < 1) müqavilə yeniləmə bildirişi ALMASIN.
+                    // Bu bildiriş iş İLDÖNÜMÜ (müqavilə yenilənməsi) xatırlatmasıdır —
+                    // ən azı 1 tam il xidmət tələb olunur. İşə qəbul tarixi bu il olan
+                    // işçidə hesablanan "ildönümü" əslində işə BAŞLAMA tarixidir (staj 0),
+                    // real yenilənmə deyil. Əvvəl bu yoxlanmadığı üçün yeni əlavə edilən
+                    // işçinin işə qəbul tarixi 5 gün içindədirsə dərhal bildiriş gedirdi.
+                    var staj = ilDonumu.Year - isci.IsheQebulTarixi.Year;
+                    if (staj < 1) continue;
+
                     // Bu il üçün artıq bildiriş yaradılıbmı?
                     var artiqVar = await _unitOfWork.Repository<Bildiris>()
                         .MovcuddurmuAsync(x =>
@@ -186,8 +195,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                             x.YaradilmaTarixi.Year == bugun.Year);
 
                     if (artiqVar) continue;
-
-                    var staj = ilDonumu.Year - isci.IsheQebulTarixi.Year;
                     var metn = qalangGun == 0
                         ? $"{isci.Ad} {isci.Soyad} — müqavilə yenilənmə tarixi bu gündür! ({staj} il staj)"
                         : $"{isci.Ad} {isci.Soyad} — müqavilə yenilənməsinə {qalangGun} gün qalıb ({ilDonumu:dd.MM.yyyy}, {staj} il staj)";
