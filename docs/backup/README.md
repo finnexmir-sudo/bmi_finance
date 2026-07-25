@@ -1,5 +1,56 @@
 # FinNex — Avtomatik Backup
 
+## ✅ REAL QURAŞDIRMA — TAMAMLANDI (2026-07-25, serverdə test edildi)
+
+Aşağıdakı sistem serverdə quruldu, əl ilə və planlaşdırıcı ilə **test edildi**
+(`LastTaskResult = 0`, şəbəkədə real `.bak` + `.trn` yarandı).
+
+| Komponent | Real dəyər |
+|---|---|
+| Server | `WIN-VVUKFGHL48S`, domen `bmi.local` (NetBIOS `BMILOCAL`) |
+| SQL instansiya | `localhost\SQLEXPRESS` (xidmət: `NT Service\MSSQL$SQLEXPRESS`) |
+| Baza | `FinNex_Maliyye_Db` — **FULL** recovery, Express edition |
+| Skriptlər | `C:\FinNex_Backup\FinNex_Backup.ps1`, `FinNex_LogBackup.ps1` |
+| Staging (lokal) | `C:\FinNex_Backup\staging` (avtomatik təmizlənir) |
+| Şəbəkə hədəfi | `\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance\` (`sql`/`translog`/`dms`/`log`) |
+| Tam backup | Task **"FinNex Full Backup"**, hər gün **02:00** |
+| Log backup | Task **"FinNex Log Backup"**, hər **15 dəqiqə** |
+| İşləyən hesab | `administrator@bmi.local`, **LogonType=Password** (login olmasa da işləyir), RunLevel=Highest |
+| Saxlama | tam backup **30 gün**, log **15 gün** |
+
+### Quraşdırmada aşkarlanan kritik tələlər (təkrar quraşdırma üçün)
+
+1. **`localhost` ≠ server** — baza yerli PC-də (`Sam1rPC`) də var idi, amma
+   **production server VM-dədir**. Backup MÜTLƏQ serverdə qurulur.
+2. **Adlı instansiya** — `localhost` işləmir, `localhost\SQLEXPRESS` lazımdır.
+3. **ODBC Driver 18 SSL** — `sqlcmd`-ə **`-C`** (TrustServerCertificate) olmadan
+   self-signed sertifikatla SSL xətası verir. Skriptlərdə `$auth`-a `-C` əlavə edilib.
+4. **Task hesabı / S4U tələsi** — `schtasks /RU <user>` parolsuz S4U yaradır
+   (şəbəkə çıxışı yoxdur, 02:00-da işləməz). **Parol saxlanmalı** (`/RP`) →
+   LogonType=Password. Parol ESXi konsolunda gözü bağlı yazılanda xüsusi
+   simvollar səhv düşür → parolu **fayldan/clipboard-dan** ötür.
+5. **Domen admin SQL icazəsi** — tapşırıq `BMILOCAL\Administrator` kimi işləyir;
+   həmin hesabın SQL-də login-i yox idi (`sqlcmd -E` uğursuz, `.bak` yaranmır).
+   Həll: `db_backupoperator` verildi (aşağıda).
+
+### Domen admin-ə verilən SQL icazəsi (real işlədilən)
+```sql
+CREATE LOGIN [BMILOCAL\Administrator] FROM WINDOWS;   -- yoxdursa
+USE FinNex_Maliyye_Db;
+CREATE USER [BMILOCAL\Administrator] FOR LOGIN [BMILOCAL\Administrator];
+ALTER ROLE db_backupoperator ADD MEMBER [BMILOCAL\Administrator];
+```
+
+### Faydalı yoxlama əmrləri
+```powershell
+Get-ScheduledTask -TaskName "FinNex Full Backup","FinNex Log Backup" | Select TaskName, State, @{n='LogonType';e={$_.Principal.LogonType}}
+Get-ScheduledTaskInfo -TaskName "FinNex Full Backup" | Select LastRunTime, LastTaskResult   # 0 = uğur
+Get-ChildItem "\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance\sql"      | Sort LastWriteTime | Select -Last 3
+Get-ChildItem "\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance\translog" | Sort LastWriteTime | Select -Last 3
+```
+
+---
+
 ## ⭐ BU SERVER ÜÇÜN DƏQİQ PLAN (yoxlanmış: Express + FULL)
 
 Server: **SQL Server 2022 Express (64-bit)**, baza **FULL** recovery model-də.
