@@ -407,7 +407,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         // nömrə isə (Nov=Mezuniyyet, il) sayğacından gəlir. HR son nömrəni əl ilə
         // təyin edibsə, generasiya oradan davam edir. Göstərmək üçün EmrRegem/EmrIl
         // məzuniyyətdə də saxlanır (köhnə format/UI toxunulmaz qalır).
-        if (status && !m.EmrRegem.HasValue)
+        // JETON ilə məzuniyyət əmr nömrəsi ALMIR (istək 2026-07) — hazırda jeton
+        // məzuniyyəti yalnız HR "Geriyə qeyd" axını ilə yaranır, amma bu yol da
+        // jeton müraciəti alsa nömrə verməsin deyə burada da qoruyucu şərt.
+        if (status && !m.EmrRegem.HasValue && !m.JetonIleOdendi)
         {
             var emr = await _emrService.YeniEmrAsync(
                 EmrNovu.Mezuniyyet,
@@ -2236,52 +2239,59 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 //    unikallığını yoxlayır. Əmr "K/M 5G 2026" kimi formalaşır
                 //    və sıralamada K/M 5 ilə K/M 6 arasında qalır.
                 // Default BOŞ — manuel "araya əlavə" rejimində aşağıda suffiks mütləq.
-                var suffiks = string.IsNullOrWhiteSpace(dto.EmrSuffiks)
+                // JETON ilə məzuniyyət əmr nömrəsi ALMIR (istək 2026-07): jetonla tam
+                // məzuniyyətə çıxanda əmr reyestrindən nömrə/suffiks GÖTÜRÜLMÜR — nə
+                // avtomatik sayğac artır, nə manual araya əlavə. EmrRegem/EmrIl null qalır,
+                // entity-nin göstərmə property-si də null qaytarır (əmr görünmür).
+                var suffiks = dto.JetonIleEvezlesdir || string.IsNullOrWhiteSpace(dto.EmrSuffiks)
                     ? null
                     : dto.EmrSuffiks.Trim().ToUpperInvariant();
 
-                int emrIl;
-                int emrRegem;
+                int? emrIl = null;
+                int? emrRegem = null;
 
-                if (dto.EmrRegem.HasValue && dto.EmrRegem.Value > 0)
+                if (!dto.JetonIleEvezlesdir)
                 {
-                    // Manuel rejim — araya əlavə
-                    emrIl = dto.EmrIl.HasValue && dto.EmrIl.Value > 0
-                        ? dto.EmrIl.Value
-                        : indi.Year;
-                    emrRegem = dto.EmrRegem.Value;
-
-                    // Suffiks olmadan dublikat ola bilməz: əgər suffiks boşdursa,
-                    // əsas nömrəni mövcud normal əmrlə qarışdırmağa imkan yoxdur.
-                    if (string.IsNullOrEmpty(suffiks))
+                    if (dto.EmrRegem.HasValue && dto.EmrRegem.Value > 0)
                     {
-                        return Result<MezuniyyetDto>.Fail(
-                            "Mövcud əmr nömrəsinə əlavə edərkən suffiks mütləq olmalıdır " +
-                            "(məs: G, X, T) — yoxsa mövcud əmrlə dublikat olar.");
-                    }
+                        // Manuel rejim — araya əlavə
+                        emrIl = dto.EmrIl.HasValue && dto.EmrIl.Value > 0
+                            ? dto.EmrIl.Value
+                            : indi.Year;
+                        emrRegem = dto.EmrRegem.Value;
 
-                    var emrKonflikt = await _unitOfWork.Repository<Mezuniyyet>()
-                        .MovcuddurmuAsync(x =>
-                            !x.Silinib &&
-                            x.EmrIl == emrIl &&
-                            x.EmrRegem == emrRegem &&
-                            x.EmrSuffiks == suffiks);
-                    if (emrKonflikt)
-                    {
-                        return Result<MezuniyyetDto>.Fail(
-                            $"K/M {emrRegem}{suffiks} {emrIl} əmr nömrəsi artıq mövcuddur. " +
-                            "Başqa suffiks seçin (məs. X, T) və ya başqa nömrə göstərin.");
+                        // Suffiks olmadan dublikat ola bilməz: əgər suffiks boşdursa,
+                        // əsas nömrəni mövcud normal əmrlə qarışdırmağa imkan yoxdur.
+                        if (string.IsNullOrEmpty(suffiks))
+                        {
+                            return Result<MezuniyyetDto>.Fail(
+                                "Mövcud əmr nömrəsinə əlavə edərkən suffiks mütləq olmalıdır " +
+                                "(məs: G, X, T) — yoxsa mövcud əmrlə dublikat olar.");
+                        }
+
+                        var emrKonflikt = await _unitOfWork.Repository<Mezuniyyet>()
+                            .MovcuddurmuAsync(x =>
+                                !x.Silinib &&
+                                x.EmrIl == emrIl &&
+                                x.EmrRegem == emrRegem &&
+                                x.EmrSuffiks == suffiks);
+                        if (emrKonflikt)
+                        {
+                            return Result<MezuniyyetDto>.Fail(
+                                $"K/M {emrRegem}{suffiks} {emrIl} əmr nömrəsi artıq mövcuddur. " +
+                                "Başqa suffiks seçin (məs. X, T) və ya başqa nömrə göstərin.");
+                        }
                     }
-                }
-                else
-                {
-                    // Avtomatik rejim — VAHID sayğacdan (normal məzuniyyət əmrləri ilə
-                    // EYNİ ardıcıllıq). ƏVVƏL max(Mezuniyyet.EmrRegem)+1 idi: EmrSayghaci
-                    // sayğacını artırmırdı, ona görə normal axın həmin nömrəni təkrar
-                    // verirdi (məs. hər ikisi 76). İndi sayğacdan gəlir → toqquşma yoxdur.
-                    var (nextNomre, nextIl) = await _emrService.NovbetiNomreAsync(EmrNovu.Mezuniyyet, indi);
-                    emrRegem = nextNomre;
-                    emrIl = nextIl;
+                    else
+                    {
+                        // Avtomatik rejim — VAHID sayğacdan (normal məzuniyyət əmrləri ilə
+                        // EYNİ ardıcıllıq). ƏVVƏL max(Mezuniyyet.EmrRegem)+1 idi: EmrSayghaci
+                        // sayğacını artırmırdı, ona görə normal axın həmin nömrəni təkrar
+                        // verirdi (məs. hər ikisi 76). İndi sayğacdan gəlir → toqquşma yoxdur.
+                        var (nextNomre, nextIl) = await _emrService.NovbetiNomreAsync(EmrNovu.Mezuniyyet, indi);
+                        emrRegem = nextNomre;
+                        emrIl = nextIl;
+                    }
                 }
 
                 var entity = new Mezuniyyet

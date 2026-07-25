@@ -149,6 +149,8 @@
                         <small style="font-size:11px;color:#94a3b8;margin-top:4px;display:block">Verilərsə, audit üçün qeydə alınır</small>
                     </div>
 
+                    @* ── Əmr sahələri — jeton seçiləndə gizlənir (jeton məzuniyyəti əmr almır) ── *@
+                    <div id="emrBlok">
                     @* ── Əmr suffiksi (frekans) ── *@
                     <div class="fn-form-group">
                         <label asp-for="EmrSuffiks" class="fn-label">
@@ -195,6 +197,7 @@
                             <em>Suffiks mütləq olmalıdır</em> ki, mövcud əmrlə dublikat olmasın.
                         </small>
                     </details>
+                    </div> @* /emrBlok *@
 
                     @* ── Düymələr ── *@
                     <div class="fn-form-actions">
@@ -271,6 +274,7 @@
                 jetonBlok.style.display    = 'none';
                 jetonYoxBlok.style.display = 'none';
                 cbJeton.checked            = false;
+                emrBlokuYenile();
                 return;
             }
 
@@ -279,6 +283,7 @@
                 jetonYoxBlok.style.display = 'none';
                 cbJeton.checked            = false;
                 jetonSaatBalansi           = 0;
+                emrBlokuYenile();
                 return;
             }
 
@@ -302,6 +307,7 @@
                 jetonBlok.style.display    = 'none';
                 jetonYoxBlok.style.display = 'none';
             }
+            emrBlokuYenile();
         }
 
         function novOzHesabinami() {
@@ -356,7 +362,16 @@
             novDeyisdi();
         });
 
+        // Jeton ilə məzuniyyət əmr nömrəsi ALMIR — jeton seçiləndə əmr sahələrini gizlət.
+        function emrBlokuYenile() {
+            var cb   = document.getElementById('cbJetonIle');
+            var blok = document.getElementById('emrBlok');
+            if (!blok) return;
+            blok.style.display = (cb && cb.checked) ? 'none' : '';
+        }
+
         function jetonCheckboxDeyisdi(cb) {
+            emrBlokuYenile();
             var xbr = document.getElementById('jetonXeberdarliq');
             if (cb.checked) {
                 var baslama = document.querySelector('[name="BaslamaTarixi"]').value;
