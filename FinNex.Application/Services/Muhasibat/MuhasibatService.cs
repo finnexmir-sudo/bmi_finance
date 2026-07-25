@@ -1895,12 +1895,17 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                         };
                         if (!uygun) continue;
                         var muq = Val(r, "muqavile")?.ToString() ?? "";
+                        // Müştəri adı — regnom.name_regnom (substr(licschkre,10,6)=regnom).
+                        // Ad boşdursa (regnom tapılmasa) müştəri tipinə düş ki, sətir adsız qalmasın.
+                        var musteri = Val(r, "musteri")?.ToString()?.Trim() ?? "";
+                        var tipAdi  = TipAd((int)Dec(Val(r, "tip")));
                         dto.Setirler.Add(new MuhasibatDetalSetirDto
                         {
-                            Kod = muq, Ad = TipAd((int)Dec(Val(r, "tip"))),
+                            Kod = muq,
+                            Ad = string.IsNullOrWhiteSpace(musteri) ? tipAdi : musteri,
                             Valyuta = ValyutaAd(Val(r, "valyuta")?.ToString() ?? ""),
                             Mebleg = Math.Round(qaliq, 2),
-                            Elave = gec > 0 ? $"DPD {gec}" : "cari"
+                            Elave = gec > 0 ? $"{tipAdi} · DPD {gec}" : tipAdi
                         });
                     }
                     dto.Setirler = dto.Setirler.OrderByDescending(x => x.Mebleg).ToList();
