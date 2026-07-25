@@ -1,5 +1,29 @@
 # FinNex — Avtomatik Backup
 
+## ⭐ BU SERVER ÜÇÜN DƏQİQ PLAN (yoxlanmış: Express + FULL)
+
+Server: **SQL Server 2022 Express (64-bit)**, baza **FULL** recovery model-də.
+Deməli: **PowerShell + Task Scheduler** (Agent yoxdur) **VƏ log backup MÜTLƏQ**.
+
+**Sıra ilə et:**
+
+1. **Backup hədəfini seç** — əsas serverdən BAŞQA yer (ayrı disk/NAS). Skriptlərdə
+   `$BackupRoot`-u ora yönəlt (məs. `\\NAS01\Backups\FinNex` və ya `E:\Backups\FinNex`).
+2. **Tam backup qur** — `FinNex_Backup.ps1` (baza + `C:\FinNex_DMS`), gündəlik 02:00.
+   `$SqlInstance = "localhost\SQLEXPRESS"` təyin et, əl ilə bir dəfə işlət, `.bak` yarandığını gör.
+3. **Log backup qur** — `FinNex_LogBackup.ps1`, hər **15 dəqiqə**. FULL olduğu üçün bu
+   şərtdir: nöqtə-vaxt bərpası verir + `.ldf` şişməsini dayandırır.
+4. **Task Scheduler**-də hər iki skriptə tapşırıq (aşağıda addımlar + log üçün "Repeat").
+5. **Test**: hər iki task-ı əl ilə "Run", `\sql` və `\translog` qovluqlarında fayl yoxla.
+6. **Bərpa testi**: başqa/test serverdə son `.bak` + sonrakı `.trn`-ləri `RESTORE ... WITH
+   NORECOVERY` / `STOPAT` ilə bərpa et (ayda bir).
+
+> ⚠️ FULL + log backup olmadan `.ldf` faylı sonsuz böyüyür. Log backup qurulan kimi
+> log hər dəfə "təkrar istifadəyə" açılır və şişmə dayanır. Log backup-ı MÜTLƏQ qur.
+
+---
+
+
 İki fayl var, **birini** seç (hər ikisini işlətmə):
 
 | Vəziyyət | İstifadə et |
@@ -44,6 +68,27 @@ Oracle (BMI) DAXİL DEYİL — o, yalnız-oxu bazadır, backup-ı bank tərəfin
      - Program: `powershell.exe`
      - Arguments: `-ExecutionPolicy Bypass -File "C:\FinNex_Backup\FinNex_Backup.ps1"`
 5. Task-ı sağ-klik → **Run** ilə bir dəfə test et.
+
+### Log backup tapşırığı (FinNex_LogBackup.ps1 — FULL üçün, hər 15 dəq)
+
+`FinNex_Backup.ps1` üçün olan addımların EYNİSİ, iki fərqlə:
+- **Action → Arguments**: `-ExecutionPolicy Bypass -File "C:\FinNex_Backup\FinNex_LogBackup.ps1"`
+- **Triggers**: Daily, başlanğıc 00:00 → **"Repeat task every: 15 minutes"**, **"for a duration of: 1 day"** (Indefinitely).
+
+Beləliklə tam backup gündə 1 dəfə (02:00), log backup gün boyu hər 15 dəqiqə işləyir.
+
+### Bərpa nümunəsi (nöqtə-vaxt — məs. 14:37-yə qədər)
+```sql
+-- 1) Son tam backup-ı NORECOVERY ilə bərpa et
+RESTORE DATABASE FinNex_Maliyye_Db FROM DISK='...\sql\FinNex_Maliyye_Db_20260725_020000.bak'
+  WITH NORECOVERY, REPLACE;
+-- 2) 02:00-dan sonrakı bütün .trn-ləri sıra ilə NORECOVERY ilə tətbiq et
+RESTORE LOG FinNex_Maliyye_Db FROM DISK='...\translog\FinNex_Maliyye_Db_20260725_021500.trn' WITH NORECOVERY;
+-- ... aralıqdakı hamısı ...
+-- 3) Son .trn-də dəqiq vaxta dayan
+RESTORE LOG FinNex_Maliyye_Db FROM DISK='...\translog\FinNex_Maliyye_Db_20260725_143000.trn'
+  WITH RECOVERY, STOPAT = '2026-07-25T14:37:00';
+```
 
 ---
 
