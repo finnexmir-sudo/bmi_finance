@@ -17,7 +17,7 @@
 #>
 
 # ── AYARLAR ────────────────────────────────────────────────────────────────────
-$SqlInstance   = "localhost\SQLEXPRESS"
+$SqlInstance   = "localhost"                  # default instansiya (MSSQLSERVER). Adlı instansiyada: "localhost\<ad>"
 $Database      = "FinNex_Maliyye_Db"
 $LocalStaging  = "C:\FinNex_Backup\staging"                                   # SQL bura yazır (lokal)
 $BackupRoot    = "\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance"  # şəbəkə hədəf
