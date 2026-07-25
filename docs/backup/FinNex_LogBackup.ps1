@@ -17,7 +17,7 @@
 #>
 
 # ── AYARLAR — FinNex_Backup.ps1 ilə EYNİ ───────────────────────────────────────
-$SqlInstance    = "localhost"                 # default instansiya (MSSQLSERVER). Adlı instansiyada: "localhost\<ad>"
+$SqlInstance    = "localhost\SQLEXPRESS"      # serverdə adlı instansiya (MSSQL$SQLEXPRESS). Default olsaydı: "localhost"
 $Database       = "FinNex_Maliyye_Db"
 $LocalStaging   = "C:\FinNex_Backup\staging"
 $BackupRoot     = "\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance"
@@ -37,7 +37,8 @@ foreach ($d in @($LocalStaging, $netTrn, (Split-Path $logFile))) {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
 }
 function Log($m) { Add-Content -Path $logFile -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m") }
-$auth = if ($UseWindowsAuth) { @("-E") } else { @("-U", $SqlUser, "-P", $SqlPassword) }
+# -C = TrustServerCertificate (ODBC Driver 18 default Encrypt=Yes + self-signed sertifikat üçün MƏCBURİ)
+$auth = if ($UseWindowsAuth) { @("-E", "-C") } else { @("-U", $SqlUser, "-P", $SqlPassword, "-C") }
 
 # ── 1) Log backup → LOKAL (yalnız FULL-da) ─────────────────────────────────────
 $tsql = "IF (SELECT recovery_model_desc FROM sys.databases WHERE name=N'$Database') = N'FULL'

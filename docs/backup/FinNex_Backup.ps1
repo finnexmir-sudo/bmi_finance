@@ -17,7 +17,7 @@
 #>
 
 # ── AYARLAR ────────────────────────────────────────────────────────────────────
-$SqlInstance   = "localhost"                  # default instansiya (MSSQLSERVER). Adlı instansiyada: "localhost\<ad>"
+$SqlInstance   = "localhost\SQLEXPRESS"       # serverdə adlı instansiya (MSSQL$SQLEXPRESS). Default olsaydı: "localhost"
 $Database      = "FinNex_Maliyye_Db"
 $LocalStaging  = "C:\FinNex_Backup\staging"                                   # SQL bura yazır (lokal)
 $BackupRoot    = "\\192.168.0.37\fs2\12345\Personal\Samir\tast_setup_local\Backup_BMI_Finance"  # şəbəkə hədəf
@@ -44,7 +44,8 @@ function Log($m) {
     Add-Content -Path $logFile -Value $line
     Write-Host $line
 }
-$auth = if ($UseWindowsAuth) { @("-E") } else { @("-U", $SqlUser, "-P", $SqlPassword) }
+# -C = TrustServerCertificate (ODBC Driver 18 default Encrypt=Yes + self-signed sertifikat üçün MƏCBURİ)
+$auth = if ($UseWindowsAuth) { @("-E", "-C") } else { @("-U", $SqlUser, "-P", $SqlPassword, "-C") }
 
 Log "=== FinNex TAM backup BAŞLADI ==="
 
