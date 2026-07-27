@@ -40,7 +40,7 @@
         if (bas.Date <= bugun && bit.Date >= bugun)
         {
             var qalan = GunHesabla(bugun, bit);
-            if (qalan == 0) return ("Bu gün qayıdır", "#dc2626", "#fef2f2");
+            if (qalan == 0) return ("Bu gün bitir", "#dc2626", "#fef2f2");
             if (qalan <= 2) return ($"{qalan} gün qalıb", "#dc2626", "#fef2f2");
             return ("Məzuniyyətdə", "#2563eb", "#eff6ff");
         }
