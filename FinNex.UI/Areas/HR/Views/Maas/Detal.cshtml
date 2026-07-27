@@ -20,7 +20,10 @@
         _ => "—"
     };
 
-    var gelirlər  = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Gelir).ToList();
+    // VM 98.2.1 gəlirləri hesabi (imputed) vergiyə cəlb gəlirdir — işçiyə nağd ödənmir,
+    // yalnız vergi bazasını artırır. Ona görə "Gəlirlər" siyahısından və brüt/gəlir cəmindən
+    // çıxarılır (əks halda cəmlər tutmaz); izahı aşağıda "Hesablama axını" cədvəlində görünür.
+    var gelirlər  = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Gelir && d.MaasNovuAd != "VM 98.2.1 Gəlirləri").ToList();
     var tutulmalar = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Tutulma).ToList();
     var sirket    = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.IsegoturenXerci).ToList();
     decimal brutMaas = gelirlər.Sum(d => d.Mebleg) - tutulmalar.Where(d => d.MaasNovuAd == "Məzuniyyət Kəsintisi" || d.MaasNovuAd == "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg);

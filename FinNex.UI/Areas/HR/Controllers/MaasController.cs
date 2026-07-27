@@ -763,8 +763,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                     MezuniyyetOdenisi = GetDetay("Məzuniyyət Ödənişi"),
                     MezuniyyetEsasMaasKesintisi = GetDetay("Məzuniyyət Kəsintisi"),
                     CerimeMeblegi = GetDetay("Gecikdirmə Cəriməsi"),
+                    // VM 98.2.1 gəlirləri hesabi (imputed) gəlirdir — brüt-ə daxil deyil,
+                    // ona görə brüt yenidən qurulanda Gəlir cəmindən çıxarılır (stored BrutMebleg ilə uyğun).
                     BrutMaas = m.Detallar
-                        .Where(d => d.MaasNovu?.Tip == MaasDetayTipi.Gelir)
+                        .Where(d => d.MaasNovu?.Tip == MaasDetayTipi.Gelir &&
+                                    d.MaasNovu.Ad != "VM 98.2.1 Gəlirləri")
                         .Sum(d => d.Mebleg)
                         - m.Detallar
                         .Where(d => d.MaasNovu?.Tip == MaasDetayTipi.Tutulma &&
