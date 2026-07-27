@@ -410,7 +410,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
         public async Task<IActionResult> IsGunuBit()
         {
             try
