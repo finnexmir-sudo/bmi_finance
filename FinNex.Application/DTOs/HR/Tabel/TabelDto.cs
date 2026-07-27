@@ -17,7 +17,8 @@ namespace FinNex.Application.DTOs.HR.Tabel
         public string Departament { get; set; } = null!;
         /// <summary>
         /// Hər gün üçün kod: "8","7","6" — iş saatı; "İ" — istirahət; "B" — bayram;
-        /// "M" — məzuniyyət; "X" — xəstəlik; "E" — ezamiyyət
+        /// "M" — məzuniyyət; "X" — xəstəlik; "E" — ezamiyyət;
+        /// "" (boş) — işçi həmin gün işləmirdi (işdən ayrıldıqdan sonrakı günlər)
         /// </summary>
         public List<string> GunKodlari  { get; set; } = new();
         public int IsGunSayi     { get; set; }
