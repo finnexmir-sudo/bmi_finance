@@ -97,17 +97,17 @@
                                 <div class="mh-row-p">@x.Faiz%</div>
                             </div>
                         }
-                    </div>
-                    @* Ehtiyat ayırmaları (sinif 89) — digər kateqoriyalarla eyni struktur;
-                       subtotala daxil deyil (aşağıdakı "Qeyd"-də izah var). *@
-                    @{
-                        var ehtFaiz = Model.UmumiXerc != 0 ? Math.Round(Model.XalisEhtiyat / Model.UmumiXerc * 100, 1) : 0m;
-                        var ehtBar  = Math.Min(100m, Math.Abs(ehtFaiz));
-                    }
-                    <div class="mh-row">
-                        <div class="mh-row-t"><span>Ehtiyat ayırmaları</span><b>@Fmt(Model.XalisEhtiyat) ₼</b></div>
-                        <div class="mh-bar mh-bar--r"><span style="width:@(ehtBar)%"></span></div>
-                        <div class="mh-row-p">@ehtFaiz%</div>
+                        @* Ehtiyat ayırmaları (sinif 89) — siyahının İÇİNDƏ, digərlərinin altında (sonda).
+                           Yalnız display; subtotala və donut qrafikə DAXİL DEYİL. *@
+                        @{
+                            var ehtFaiz = Model.UmumiXerc != 0 ? Math.Round(Model.XalisEhtiyat / Model.UmumiXerc * 100, 1) : 0m;
+                            var ehtBar  = Math.Min(100m, Math.Abs(ehtFaiz));
+                        }
+                        <div class="mh-row">
+                            <div class="mh-row-t"><span>Ehtiyat ayırmaları</span><b>@Fmt(Model.XalisEhtiyat) ₼</b></div>
+                            <div class="mh-bar mh-bar--r"><span style="width:@(ehtBar)%"></span></div>
+                            <div class="mh-row-p">@ehtFaiz%</div>
+                        </div>
                     </div>
                 </div>
             </div>
