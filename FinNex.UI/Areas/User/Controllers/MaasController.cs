@@ -64,13 +64,20 @@ namespace FinNex.UI.Areas.User.Controllers
                 "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"
             };
 
-            var data = maaslar.Select(m => new
+            var data = maaslar.Select(m =>
             {
-                etiket = ayAdlar[m.Ay] + " " + m.Il,
-                brut = m.BrutMebleg,
-                net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi),   // avans işçinin maaşıdır → qazanılan net
-                il = m.Il,
-                ay = m.Ay
+                // Qabaqcadan ödənilmiş məzuniyyət bu ayın adi maaşından çıxılır (ödəniş ayrıca
+                // edilib). Bu, işçinin qazandığı puldur — başlıqda ayın TAM gross/net-i görünsün
+                // deyə həm brütə, həm netə geri əlavə olunur (avans ilə eyni məntiq).
+                var mezQabaqKes = MezQabaqcadanKesintiTap(m.HesablamaIzahi);
+                return new
+                {
+                    etiket = ayAdlar[m.Ay] + " " + m.Il,
+                    brut = m.BrutMebleg + mezQabaqKes,
+                    net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi) + mezQabaqKes,
+                    il = m.Il,
+                    ay = m.Ay
+                };
             }).ToList();
 
             return Json(new { success = true, data });
@@ -85,6 +92,22 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 var list = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(hesablamaIzahi);
                 return list?.FirstOrDefault(x => x.Addim == "Avans Kəsintisi")?.Mebleg ?? 0m;
+            }
+            catch { return 0m; }
+        }
+
+        // Qabaqcadan ödənilmiş məzuniyyət üçün bu ay əsas maaşdan çıxılan kəsinti.
+        // İşçinin qazandığı puldur (məzuniyyət ayrıca ödənilib) — başlıq gross/net-inə geri
+        // əlavə olunur ki, qabaqcadan alınan aylar süni şəkildə aşağı görünməsin.
+        private static decimal MezQabaqcadanKesintiTap(string? hesablamaIzahi)
+        {
+            if (string.IsNullOrEmpty(hesablamaIzahi)) return 0m;
+            try
+            {
+                var list = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(hesablamaIzahi);
+                return list?
+                    .Where(x => x.Addim == "Mezuniyyet Kesintisi (qabaqcadan ödənilən günlər)")
+                    .Sum(x => x.Mebleg) ?? 0m;
             }
             catch { return 0m; }
         }

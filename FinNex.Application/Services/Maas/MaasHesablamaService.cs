@@ -357,13 +357,15 @@ namespace FinNex.Application.Services.HR
 
                 if (advanceHIGS > 0)
                 {
-                    mezKesinti += Math.Round(esasMaas / ayIsGunu * advanceHIGS, 2);
+                    // Yalnız qabaqcadan hissə (kumulyativ mezKesinti YOX — ay sonu ilə qarışsa şişər).
+                    var advanceKesinti = Math.Round(esasMaas / ayIsGunu * advanceHIGS, 2);
+                    mezKesinti += advanceKesinti;
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Kesintisi (qabaqcadan ödənilən günlər)",
                         Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {advanceHIGS} faktiki iş günü " +
                                "(qabaqcadan ödənilmiş; ödəniş ayrıca edildiyi üçün əsas maaşdan çıxılır).",
-                        Mebleg = mezKesinti,
+                        Mebleg = advanceKesinti,
                         Tip = "kesinti"
                     });
                 }
