@@ -64,17 +64,19 @@ namespace FinNex.UI.Areas.User.Controllers
                 "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"
             };
 
+            // Qabaqcadan ödənilmiş məzuniyyət — ödəniş ayına görə (brüt, net). Ayrıca ödənilib
+            // və adi maaşdan çıxılıb; başlıqda ayın TAM gross/net-i görünsün deyə geri əlavə
+            // edirik. Mənbə provodka ilə eynidir (Mezuniyyet entity) — həm köhnə, həm yeni datada işləyir.
+            var mezByMonth = await MezQabaqAylikMapAsync(isciId, sonIl, sonAy);
+
             var data = maaslar.Select(m =>
             {
-                // Qabaqcadan ödənilmiş məzuniyyət bu ayın adi maaşından çıxılır (ödəniş ayrıca
-                // edilib). Bu, işçinin qazandığı puldur — başlıqda ayın TAM gross/net-i görünsün
-                // deyə həm brütə, həm netə geri əlavə olunur (avans ilə eyni məntiq).
-                var mezQabaqKes = MezQabaqcadanKesintiTap(m.HesablamaIzahi);
+                var mez = mezByMonth.TryGetValue((m.Il, m.Ay), out var v) ? v : (Brut: 0m, Net: 0m);
                 return new
                 {
                     etiket = ayAdlar[m.Ay] + " " + m.Il,
-                    brut = m.BrutMebleg + mezQabaqKes,
-                    net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi) + mezQabaqKes,
+                    brut = m.BrutMebleg + mez.Brut,
+                    net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi) + mez.Net,
                     il = m.Il,
                     ay = m.Ay
                 };
@@ -96,20 +98,26 @@ namespace FinNex.UI.Areas.User.Controllers
             catch { return 0m; }
         }
 
-        // Qabaqcadan ödənilmiş məzuniyyət üçün bu ay əsas maaşdan çıxılan kəsinti.
-        // İşçinin qazandığı puldur (məzuniyyət ayrıca ödənilib) — başlıq gross/net-inə geri
-        // əlavə olunur ki, qabaqcadan alınan aylar süni şəkildə aşağı görünməsin.
-        private static decimal MezQabaqcadanKesintiTap(string? hesablamaIzahi)
+        // Qabaqcadan ödənilmiş məzuniyyət — ödəniş ayına görə (brüt, net) map.
+        // Provodka ilə eyni mənbə (Mezuniyyet.OdenenMeblegBrut / OdenenMebleg). Məzuniyyət
+        // ayrıca ödənilib və adi maaşdan çıxılıb; başlıqda ayın TAM gross/net-i üçün geri əlavə olunur.
+        private async Task<Dictionary<(int Il, int Ay), (decimal Brut, decimal Net)>> MezQabaqAylikMapAsync(
+            int isciId, int sonIl, int sonAy)
         {
-            if (string.IsNullOrEmpty(hesablamaIzahi)) return 0m;
-            try
-            {
-                var list = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(hesablamaIzahi);
-                return list?
-                    .Where(x => x.Addim == "Mezuniyyet Kesintisi (qabaqcadan ödənilən günlər)")
-                    .Sum(x => x.Mebleg) ?? 0m;
-            }
-            catch { return 0m; }
+            var qeydler = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib && x.IsciId == isciId
+                    && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    && x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib
+                    && x.OdenilmeTarixi.HasValue
+                    && (x.OdenilmeTarixi.Value.Year > sonIl
+                        || (x.OdenilmeTarixi.Value.Year == sonIl && x.OdenilmeTarixi.Value.Month >= sonAy)))
+                .Select(x => new { x.OdenilmeTarixi, Brut = x.OdenenMeblegBrut ?? 0m, Net = x.OdenenMebleg ?? 0m })
+                .ToListAsync();
+
+            return qeydler
+                .GroupBy(x => (Il: x.OdenilmeTarixi!.Value.Year, Ay: x.OdenilmeTarixi.Value.Month))
+                .ToDictionary(g => g.Key, g => (Brut: g.Sum(x => x.Brut), Net: g.Sum(x => x.Net)));
         }
 
         // ── GET /User/Maas/GetDetay?il=2026&ay=4 ────────────

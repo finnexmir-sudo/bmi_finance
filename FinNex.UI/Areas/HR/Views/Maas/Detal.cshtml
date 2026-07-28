@@ -28,6 +28,16 @@
     var sirket    = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.IsegoturenXerci).ToList();
     decimal brutMaas = gelirlər.Sum(d => d.Mebleg) - tutulmalar.Where(d => d.MaasNovuAd == "Məzuniyyət Kəsintisi" || d.MaasNovuAd == "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg);
     decimal umumiTutulma = tutulmalar.Where(d => d.MaasNovuAd != "Məzuniyyət Kəsintisi" && d.MaasNovuAd != "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg);
+
+    // Qabaqcadan ödənilmiş məzuniyyət (ayrıca ödənilib, adi maaşdan çıxılıb) — başlıqda
+    // ayın TAM gross/net-i görünsün. Yalnız məzuniyyət olan ayda tətbiq olunur (adi/HYS
+    // işçilərdə brutMaas/NetMebleg toxunulmaz qalır).
+    decimal mezQabaqBrut = ViewBag.MezQabaqBrut == null ? 0m : (decimal)ViewBag.MezQabaqBrut;
+    decimal mezQabaqNet  = ViewBag.MezQabaqNet  == null ? 0m : (decimal)ViewBag.MezQabaqNet;
+    decimal tamGross = ViewBag.TamGross == null ? brutMaas        : (decimal)ViewBag.TamGross;
+    decimal tamNet   = ViewBag.TamNet   == null ? Model.NetMebleg : (decimal)ViewBag.TamNet;
+    decimal grossDisplay = mezQabaqBrut > 0 ? tamGross : brutMaas;
+    decimal netDisplay   = mezQabaqNet  > 0 ? tamNet   : Model.NetMebleg;
 }
 
 <div class="fn-page">
@@ -195,7 +205,7 @@
             @* NET kart *@
             <div class="fn-card dt-net-card">
                 <div class="dt-net-ay">@AyAdi(Model.Ay) @Model.Il</div>
-                <div class="dt-net-val">@Model.NetMebleg.ToString("N2") ₼</div>
+                <div class="dt-net-val">@netDisplay.ToString("N2") ₼</div>
                 <div class="dt-net-lbl">NET MAAŞ</div>
 
                 @if (!string.IsNullOrEmpty(Model.BankHesabNo))
@@ -227,7 +237,7 @@
                 </div>
                 <div class="dt-sum-row dt-sum-sep">
                     <span>Gross maaş</span>
-                    <span style="font-weight:600;">@brutMaas.ToString("N2") ₼</span>
+                    <span style="font-weight:600;">@grossDisplay.ToString("N2") ₼</span>
                 </div>
                 <div class="dt-sum-row">
                     <span>Vergi tutulmaları</span>
@@ -235,8 +245,15 @@
                 </div>
                 <div class="dt-sum-row dt-sum-net">
                     <span>NET maaş</span>
-                    <span>@Model.NetMebleg.ToString("N2") ₼</span>
+                    <span>@netDisplay.ToString("N2") ₼</span>
                 </div>
+                @if (mezQabaqBrut > 0)
+                {
+                    <div class="dt-sum-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed #e4e8f0;color:#8a93a8;font-size:10px;">
+                        <span>— o cümlədən qabaqcadan məzuniyyət (ayrıca ödənilib)</span>
+                        <span>brüt @mezQabaqBrut.ToString("N2") / net @mezQabaqNet.ToString("N2") ₼</span>
+                    </div>
+                }
                 @if (sirket.Any())
                 {
                     <div class="dt-sum-row" style="margin-top:8px;padding-top:8px;border-top:1px dashed #e4e8f0;color:#8a93a8;font-size:10px;">

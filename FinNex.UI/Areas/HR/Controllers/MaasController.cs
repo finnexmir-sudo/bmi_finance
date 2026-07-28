@@ -1815,6 +1815,27 @@ namespace FinNex.UI.Areas.HR.Controllers
                 catch { /* köhnə yazılarda JSON korlansa boş göstərir */ }
             }
 
+            // Qabaqcadan ödənilmiş məzuniyyət ayrıca ödənilib və adi maaşdan çıxılıb.
+            // Başlıqda ayın TAM gross/net-i görünsün deyə məzuniyyətin REAL brüt/netini
+            // əlavə edirik (detal sətirləri dəyişmir). Mənbə provodka ilə eynidir (Mezuniyyet
+            // entity, ödəniş ayına görə) — həm köhnə, həm yeni datada işləyir.
+            var mezQabaq = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib && x.IsciId == maas.IsciId
+                    && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    && x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib
+                    && x.OdenilmeTarixi.HasValue
+                    && x.OdenilmeTarixi.Value.Year == maas.Il
+                    && x.OdenilmeTarixi.Value.Month == maas.Ay)
+                .Select(x => new { Brut = x.OdenenMeblegBrut ?? 0m, Net = x.OdenenMebleg ?? 0m })
+                .ToListAsync();
+            var mezQabaqBrut = mezQabaq.Sum(x => x.Brut);
+            var mezQabaqNet  = mezQabaq.Sum(x => x.Net);
+            ViewBag.MezQabaqBrut = mezQabaqBrut;
+            ViewBag.MezQabaqNet  = mezQabaqNet;
+            ViewBag.TamGross     = maas.BrutMebleg + mezQabaqBrut;
+            ViewBag.TamNet       = maas.NetMebleg  + mezQabaqNet;
+
             ViewData["Title"] = $"Maaş Detalı — {maas.Isci.Ad} {maas.Isci.Soyad}";
             return View(dto);
         }
