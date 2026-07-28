@@ -103,6 +103,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 NetMebleg        = m.NetMebleg,
                 MezQabaqcadanNet = ProvodkaMezQabaqcadanOxu(m.HesablamaIzahi),
                 MezQabaqcadanBrut = mezBrutMap.GetValueOrDefault(m.IsciId),
+                CixisKesintisi   = ProvodkaIzahMeblegCem(m.HesablamaIzahi, "Çıxış Kəsintisi"),
                 DetalCemi        = m.Detallar
                     .GroupBy(d => d.MaasNovu?.Ad ?? "")
                     .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg), StringComparer.Ordinal)
@@ -146,6 +147,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             decimal Cem(string ad) => isciler.Sum(m => Detay(m, ad));
             // Qabaqcadan ödənilmiş məzuniyyət brütü — rezident/qeyri-rezident üzrə.
             decimal MezQabaqBrutCem(bool qeyri) => isciler.Where(m => QeyriRez(m) == qeyri).Sum(m => m.MezQabaqcadanBrut);
+            // İşdən çıxma kəsintisi — rezident/qeyri-rezident üzrə (əmək haqqı xərcindən çıxılır).
+            decimal CixisCem(bool qeyri) => isciler.Where(m => QeyriRez(m) == qeyri).Sum(m => m.CixisKesintisi);
 
             string[] ayAdlar = { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
                                  "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
@@ -171,19 +174,22 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 // A) Hesablanma — xərc (Debet xərc, Kredit klirinq)
                 // Maaş xərci = işlənmiş günə düşən (hesablanmış) məbləğ:
-                //   "Əsas Əməkhaqqı" (tam baza) − "Davamiyyət Kəsintisi" (qayıb/məzuniyyət/xəstəlik günləri).
+                //   "Əsas Əməkhaqqı" (tam baza) − "Davamiyyət Kəsintisi" (qayıb/məzuniyyət/xəstəlik günləri)
+                //   − "Çıxış Kəsintisi" (ay ortasında çıxan işçinin işlənməyən günləri).
                 //   Məzuniyyət/xəstəlik haqqı ayrıca sətirlərdə (aşağıda) gəlir.
-                (Hesab("MaasXercRezident"),         kliring, CemRez("Əsas Əməkhaqqı", false) - CemRez("Davamiyyət Kəsintisi", false), Q("rezident işçilərə əmək haqqı")),
-                (Hesab("MaasXercQeyriRezident"),    kliring, CemRez("Əsas Əməkhaqqı", true)  - CemRez("Davamiyyət Kəsintisi", true),  Q("qeyri-rezident işçilərə əmək haqqı")),
+                (Hesab("MaasXercRezident"),         kliring, CemRez("Əsas Əməkhaqqı", false) - CemRez("Davamiyyət Kəsintisi", false) - CixisCem(false), Q("rezident işçilərə əmək haqqı")),
+                (Hesab("MaasXercQeyriRezident"),    kliring, CemRez("Əsas Əməkhaqqı", true)  - CemRez("Davamiyyət Kəsintisi", true)  - CixisCem(true),  Q("qeyri-rezident işçilərə əmək haqqı")),
                 (Hesab("MukafatXercRezident"),      kliring, CemRez("Bonus/Mükafat", false),      Q("rezident işçilərə mükafat")),
                 (Hesab("MukafatXercQeyriRezident"), kliring, CemRez("Bonus/Mükafat", true),       Q("qeyri-rezident işçilərə mükafat")),
                 // Əlavə əmək haqqı xərci = Overtime + IH-07 əlavə təminat (hər ikisi ayrı detaldır).
                 (Hesab("ElaveXercRezident"),        kliring, CemRez("Overtime", false) + CemRez("IH-07 Əlavə Təminat", false), Q("rezident işçiyə əlavə əmək haqqı xərci")),
                 (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true)  + CemRez("IH-07 Əlavə Təminat", true),  Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
-                // Məzuniyyət xərci = cari ay məzuniyyəti + qabaqcadan ödənilmiş məzuniyyət BRÜT-ü.
+                // Məzuniyyət xərci = cari ay məzuniyyəti + qabaqcadan ödənilmiş məzuniyyət BRÜT-ü
+                //                    + istifadə edilməmiş məzuniyyət kompensasiyası.
                 // (Avans brütü olmasa provodka balanslaşmır: brüt = bağlanma net + avans vergiləri.)
-                (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false) + MezQabaqBrutCem(false), Q("rezident işçilərə məzuniyyət haqqı")),
-                (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true) + MezQabaqBrutCem(true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
+                // Kompensasiya gross-a daxildir (net-i artırır) — burada olmasa klirinq balansı pozulur.
+                (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false) + MezQabaqBrutCem(false) + CemRez("Məzuniyyət Kompensasiyası", false), Q("rezident işçilərə məzuniyyət haqqı")),
+                (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true) + MezQabaqBrutCem(true) + CemRez("Məzuniyyət Kompensasiyası", true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
 
                 // Hesablanma — xəstəlik müavinəti (Debet müavinət xərci, Kredit klirinq)
                 (Hesab("MuavinetXerc"), kliring, xestelikSirketCemi, Q("sığortaedən tərəfindən ödənilən müavinət haqqları")),
@@ -392,6 +398,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
                     .Sum(z => z.Mebleg),
                 MezQabaqcadanBrut = mezBrutMap.GetValueOrDefault(d.IsciId),
+                CixisKesintisi   = d.Izahatlar
+                    .Where(z => z.Addim == "Çıxış Kəsintisi")
+                    .Sum(z => z.Mebleg),
                 DetalCemi        = d.Detallar
                     .GroupBy(x => x.Ad)
                     .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg), StringComparer.Ordinal)
@@ -417,6 +426,19 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return izahlar?
                     .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
                     .Sum(z => z.Mebleg) ?? 0m;
+            }
+            catch { return 0m; }
+        }
+
+        // Saxlanmış izahdan verilmiş addım adı üzrə məbləğ cəmini oxuyur (məs. "Çıxış Kəsintisi").
+        // İzahat Mebleg-i müsbət magnitude-dir; çağıran tərəf işarəni özü tətbiq edir.
+        private static decimal ProvodkaIzahMeblegCem(string? hesablamaIzahi, string addim)
+        {
+            if (string.IsNullOrWhiteSpace(hesablamaIzahi)) return 0m;
+            try
+            {
+                var izahlar = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(hesablamaIzahi);
+                return izahlar?.Where(z => z.Addim == addim).Sum(z => z.Mebleg) ?? 0m;
             }
             catch { return 0m; }
         }
@@ -451,6 +473,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             public decimal MezQabaqcadanNet { get; init; }
             // Qabaqcadan ödənilmiş məzuniyyətin BRÜT-ü (məzuniyyət xərc sətrinə əlavə olunur).
             public decimal MezQabaqcadanBrut { get; init; }
+            // İşdən çıxma kəsintisi (ay ortasında çıxan işçi) — əmək haqqı xərc sətrindən çıxılır.
+            // Detal DEYİL, yalnız izahatlarda var; MezQabaqcadan kimi izahdan oxunur.
+            public decimal CixisKesintisi { get; init; }
             public Dictionary<string, decimal> DetalCemi { get; init; } = new(StringComparer.Ordinal);
 
             // MaasNovu adı üzrə detal cəmi (provodka sətirləri ad-ad cəmləyir).
