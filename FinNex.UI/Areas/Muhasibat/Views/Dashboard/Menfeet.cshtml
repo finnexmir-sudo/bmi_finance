@@ -109,7 +109,7 @@
                 <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 (kredit); <b>əməliyyat xərci</b> = sinif 8 EHTİYATSIZ (debet). Dövr: <b>başlanğıc–son</b> (default YTD).</li>
                 <li><b>NII</b> = faiz gəliri − faiz xərci. <b>NIM</b> = NII / işləyən aktiv (müxbir+banklararası+kredit, son iş gününə) × (365/gün) — illik təxmini.</li>
                 <li><b>Ehtiyat (sinif 89):</b> hər gün yenidən hesablandığı üçün "gross churn" böyük çıxır (<b>@Fmt(Model.EhtiyatGross) ₼</b>). Ona görə <b>xalis ehtiyat</b> = (ehtiyatdan əvvəl mənfəət − GL mənfəəti) kimi <b>törədilir</b> = <b>@Fmt(Model.XalisEhtiyat) ₼</b>.</li>
-                <li><b>Xalis mənfəət = <code>50130</code></b> (GL). Konstruksiyaya görə: ehtiyatdan əvvəl mənfəət − xalis ehtiyat = 50130. <b>Valyuta/ticarət</b> (66/68 gəlir, 86/88 zərər) gündəlik yenidən qiymətləndirmə olduğu üçün <b>NET</b> göstərilir (gross ~10M bir-birini kompensasiya edir).</li>
+                <li><b>Xalis mənfəət = <code>50130</code></b> (GL). Konstruksiyaya görə: ehtiyatdan əvvəl mənfəət − xalis ehtiyat = 50130. <b>Kurs fərqi</b> (66 gəlir − 86 xərc, mövqe yenidən qiymətləndirmə) və <b>Dilinq fərqi</b> (68 gəlir − 88 xərc, dealing) <b>NET</b> olaraq <b>gəlir strukturunda</b> göstərilir (mənfi ola bilər) — əməliyyat xərcinə daxil edilmir; pre-provision mənfəət dəyişmir.</li>
             </ul>
         </div>
     }

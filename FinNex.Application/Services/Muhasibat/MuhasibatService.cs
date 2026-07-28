@@ -547,16 +547,21 @@ public class MuhasibatService : IMuhasibatService
                 else xercD[kat] = xercD.GetValueOrDefault(kat) + meb;
             }
 
-            // Valyuta/ticarət (66/68 gəlir, 86/88 zərər) — gündəlik yenidən qiymətləndirmə
-            // olduğu üçün GROSS böyükdür, amma bir-birini kompensasiya edir. NET göstərilir
-            // ki, struktur və Cost/Income təhrif olunmasın (pre-provision mənfəət dəyişmir).
-            var vGelir = gelirD.GetValueOrDefault("Valyuta/ticarət gəliri");
-            var vZerer = xercD.GetValueOrDefault("Valyuta/ticarət zərəri");
-            gelirD.Remove("Valyuta/ticarət gəliri");
-            xercD.Remove("Valyuta/ticarət zərəri");
-            var netFx = vGelir - vZerer;
-            if (netFx >= 0m) gelirD["Valyuta/ticarət (net)"] = netFx;
-            else             xercD["Valyuta/ticarət (net)"]  = -netFx;
+            // Kurs fərqi (66 gəlir − 86 xərc) və Dilinq fərqi (68 gəlir − 88 xərc).
+            // İkisi də valyuta əməliyyatlarının nəticəsidir: kurs = mövqe gündəlik yenidən
+            // qiymətləndirmə (GROSS böyük, bir-birini kompensasiya edir), dilinq = dealing.
+            // Hər ikisi NET olaraq GƏLİR strukturunda göstərilir (mənfi ola bilər) və
+            // ƏMƏLİYYAT XƏRCİNƏ DAXİL EDİLMİR. Pre-provision mənfəət dəyişmir (cəbri eyni).
+            var kursGelir   = gelirD.GetValueOrDefault("Kurs fərqi gəliri");
+            var kursZerer   = xercD.GetValueOrDefault("Kurs fərqi zərəri");
+            var dilinqGelir = gelirD.GetValueOrDefault("Dilinq fərqi gəliri");
+            var dilinqZerer = xercD.GetValueOrDefault("Dilinq fərqi zərəri");
+            gelirD.Remove("Kurs fərqi gəliri");
+            gelirD.Remove("Dilinq fərqi gəliri");
+            xercD.Remove("Kurs fərqi zərəri");
+            xercD.Remove("Dilinq fərqi zərəri");
+            gelirD["Kurs fərqi"]   = kursGelir - kursZerer;
+            gelirD["Dilinq fərqi"] = dilinqGelir - dilinqZerer;
 
             // Faiz gəliri cəmi = 4 alt-kateqoriyanın toplamı (NII/NIM/Excel bunu istifadə edir).
             dto.FaizGeliri   = Math.Round(FaizGelirKatlar.Sum(k => gelirD.GetValueOrDefault(k)), 2);
@@ -617,11 +622,13 @@ public class MuhasibatService : IMuhasibatService
         "61"                                  => ("Overnayt depozit və repo faizi", true),
         "63" or "64"                          => ("Kreditlər üzrə faiz", true),
         "65"                                  => ("Digər faiz gəliri", true),
-        "66" or "68"                          => ("Valyuta/ticarət gəliri", true),
+        "66"                                  => ("Kurs fərqi gəliri", true),     // mövqe yenidən qiymətləndirmə
+        "68"                                  => ("Dilinq fərqi gəliri", true),   // dilinq (dealing) əməliyyatı
         "67"                                  => ("Komissiya gəliri", true),
         "70" or "72"                          => ("Digər gəlir", true),
         "81" or "82" or "84" or "85"          => ("Faiz xərci", false),
-        "86" or "88"                          => ("Valyuta/ticarət zərəri", false),
+        "86"                                  => ("Kurs fərqi zərəri", false),    // mövqe yenidən qiymətləndirmə
+        "88"                                  => ("Dilinq fərqi zərəri", false),  // dilinq (dealing) əməliyyatı
         "87"                                  => ("Komissiya xərci", false),
         "89"                                  => ("Ehtiyat xərci", false),
         _ => sinif2.StartsWith("8") ? ("Digər xərc", false) : ("Digər gəlir", true)
@@ -1995,17 +2002,25 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                         .Replace("{BAS}", bb.ToString("dd/MM/yyyy"))
                         .Replace("{SON}", ss.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
-                    var fxNet = madde == "Valyuta/ticarət (net)";
+                    var kursNet   = madde == "Kurs fərqi";     // 66 gəlir − 86 xərc
+                    var dilinqNet = madde == "Dilinq fərqi";   // 68 gəlir − 88 xərc
                     foreach (var r in rows)
                     {
                         var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
                         var (kat, gelir) = MenfeetTesnif(sinif2);
                         decimal meb;
-                        if (fxNet)
+                        if (kursNet)
                         {
-                            // net kateqoriya: gəlir tərəf (66/68) +kredit, zərər tərəf (86/88) −debet.
-                            if (kat == "Valyuta/ticarət gəliri") meb = Dec(Val(r, "kredit"));
-                            else if (kat == "Valyuta/ticarət zərəri") meb = -Dec(Val(r, "debet"));
+                            // net kateqoriya: gəlir tərəf (66) +kredit, zərər tərəf (86) −debet.
+                            if (kat == "Kurs fərqi gəliri") meb = Dec(Val(r, "kredit"));
+                            else if (kat == "Kurs fərqi zərəri") meb = -Dec(Val(r, "debet"));
+                            else continue;
+                        }
+                        else if (dilinqNet)
+                        {
+                            // net kateqoriya: gəlir tərəf (68) +kredit, zərər tərəf (88) −debet.
+                            if (kat == "Dilinq fərqi gəliri") meb = Dec(Val(r, "kredit"));
+                            else if (kat == "Dilinq fərqi zərəri") meb = -Dec(Val(r, "debet"));
                             else continue;
                         }
                         else
