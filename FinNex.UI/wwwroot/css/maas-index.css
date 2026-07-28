@@ -362,27 +362,64 @@
     }
 
 /* ── Scroll wrapper ──────────────────────────────────────────── */
+/* Native horizontal scrollbar gizlədilir — əvəzinə aşağıdakı "sticky proxy"
+   scrollbar istifadə olunur (viewport-un altına yapışır, qalın və tutması asan).
+   Scroll yenə işləyir: siçan çarxı/shift + proxy sürüşdürmə. */
 .mi-scroll {
     overflow-x: auto;
     overflow-y: visible;
+    scrollbar-width: none;            /* Firefox */
+    -ms-overflow-style: none;         /* köhnə Edge */
 }
 
     .mi-scroll::-webkit-scrollbar {
-        height: 5px;
+        height: 0;                    /* Chrome/Safari — native bar gizli */
     }
 
-    .mi-scroll::-webkit-scrollbar-track {
-        background: #f5f7fb;
+/* ── Sticky (üzən) horizontal scrollbar ──────────────────────────
+   .mi-scroll-ilə eyni məzmunun eninə malik boş proxy; JS scrollLeft-i
+   sinxronlaşdırır (maas-index.js → initStickyScroll).
+   position:sticky; bottom:0 → cədvəl ekranda olduqca scrollbar həmişə
+   viewport-un altında görünür (səhifəni sona sürüşdürmək lazım deyil). */
+.mi-scroll-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 25;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 18px;
+    margin-top: 2px;
+    background: #ffffff;
+    border-top: 1px solid #eef1f7;
+    border-bottom-left-radius: 13px;
+    border-bottom-right-radius: 13px;
+    scrollbar-width: auto;                       /* Firefox — qalın */
+    scrollbar-color: #b3bcce #eef1f7;
+}
+
+    .mi-scroll-sticky::-webkit-scrollbar {
+        height: 14px;
     }
 
-    .mi-scroll::-webkit-scrollbar-thumb {
-        background: #c8d0e0;
-        border-radius: 3px;
+    .mi-scroll-sticky::-webkit-scrollbar-track {
+        background: #eef1f7;
+        border-radius: 8px;
     }
 
-        .mi-scroll::-webkit-scrollbar-thumb:hover {
-            background: #aab0bf;
+    .mi-scroll-sticky::-webkit-scrollbar-thumb {
+        background: #b3bcce;
+        border-radius: 8px;
+        border: 3px solid #eef1f7;               /* thumb-u nazildib "pill" görünüşü */
+    }
+
+        .mi-scroll-sticky::-webkit-scrollbar-thumb:hover {
+            background: #8f9bb3;
         }
+
+/* İçəri boş element — yalnız eni (=cədvəlin tam eni) proxy-yə scroll verir. */
+.mi-scroll-sticky-inner {
+    height: 1px;
+}
 
 /* ── Table ───────────────────────────────────────────────────── */
 .mi-table {
