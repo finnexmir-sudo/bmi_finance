@@ -660,7 +660,7 @@
                             <td class="center col-sep" style="font-weight:700;font-size:12px;color:#1a2332;">
                                 @list.Count işçi
                             </td>
-                            <td class="center"><span class="n">@umumiBrut.ToString("N2") ₼</span></td>
+                            <td class="center"><span class="n">@list.Sum(x => x.EsasMaas).ToString("N2") ₼</span></td>
                             <td class="center"><span class="n n--green">@FmtC(umumiBonus,"+")</span></td>
                             <td class="center"><span class="n n--green">@FmtC(umumiOvertime,"+")</span></td>
                             <td class="center col-sep"><span class="n n--blue">@FmtC(list.Sum(x=>x.MezuniyyetOdenisi))</span></td>
