@@ -63,7 +63,7 @@
                 <div><span>Əməliyyat gəliri (sinif 6/7)</span><b>@Fmt(Model.UmumiGelir) ₼</b></div>
                 <div><span>Əməliyyat xərci (ehtiyatsız)</span><b>@Fmt(Model.UmumiXerc) ₼</b></div>
                 <div><span>Ehtiyatdan əvvəl mənfəət</span><b class="mh-ok">@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b></div>
-                <div><span>Xalis ehtiyat (net)</span><b class="mh-warn">− @Fmt(Model.XalisEhtiyat) ₼</b></div>
+                <div><span>Ehtiyat ayırmaları (xalis)</span><b class="@(Model.XalisEhtiyat > 0 ? "mh-warn" : "mh-ok")">@Fmt(Model.XalisEhtiyat) ₼</b></div>
             </div>
         </div>
 
@@ -98,6 +98,17 @@
                                 <div class="mh-row-p">@x.Faiz%</div>
                             </div>
                         }
+                    </div>
+                    @* Ehtiyat ayırmaları — Excel-də #3 (sinif 89). Əməliyyat xərci deyil, ona görə
+                       yuxarıdakı siyahıya/subtotala DAXİL EDİLMİR; ayrıca sətir kimi göstərilir. *@
+                    <div class="mh-row" style="margin-top:10px;padding-top:12px;border-top:1px dashed #e2e6ef;">
+                        <div class="mh-row-t">
+                            <span>Ehtiyat ayırmaları <span style="font-size:10px;color:#94a3b8;">(sinif 89 — ayrıca)</span></span>
+                            <b class="@(Model.XalisEhtiyat > 0 ? "mh-warn" : "mh-ok")">@Fmt(Model.XalisEhtiyat) ₼</b>
+                        </div>
+                        <div class="mh-row-p" style="text-align:left;color:#94a3b8;">
+                            Əməliyyat xərcinə daxil deyil · @(Model.XalisEhtiyat < 0 ? "bu dövr geri qaytarma (mənfəəti artırır)" : "bu dövr ayırma")
+                        </div>
                     </div>
                 </div>
             </div>
