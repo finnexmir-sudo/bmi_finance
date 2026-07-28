@@ -789,17 +789,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                     MezuniyyetOdenisi = GetDetay("Məzuniyyət Ödənişi"),
                     MezuniyyetEsasMaasKesintisi = GetDetay("Məzuniyyət Kəsintisi"),
                     CerimeMeblegi = GetDetay("Gecikdirmə Cəriməsi"),
-                    // VM 98.2.1 gəlirləri hesabi (imputed) gəlirdir — brüt-ə daxil deyil,
-                    // ona görə brüt yenidən qurulanda Gəlir cəmindən çıxarılır (stored BrutMebleg ilə uyğun).
-                    BrutMaas = m.Detallar
-                        .Where(d => d.MaasNovu?.Tip == MaasDetayTipi.Gelir &&
-                                    d.MaasNovu.Ad != "VM 98.2.1 Gəlirləri")
-                        .Sum(d => d.Mebleg)
-                        - m.Detallar
-                        .Where(d => d.MaasNovu?.Tip == MaasDetayTipi.Tutulma &&
-                                    (d.MaasNovu.Ad == "Məzuniyyət Kəsintisi" ||
-                                     d.MaasNovu.Ad == "Gecikdirmə Cəriməsi"))
-                        .Sum(d => d.Mebleg),
+                    // Regular brüt = saxlanmış BrutMebleg (davamiyyət VƏ çıxış engine-də artıq
+                    // çıxılıb; VM 98.2.1 imputed gəlir daxil deyil). Köhnə əl ilə yenidənqurma
+                    // davamiyyət/çıxışı çıxmırdı → "Ümumi Gross" şişirdi. Qabaqcadan məzuniyyət
+                    // brütü ayrıca AvansBrut kimi əlavə olunur (mühasibin "Cəmi" ilə uyğun).
+                    BrutMaas = m.BrutMebleg,
                     GelirVergisi = GetDetay("Gəlir Vergisi"),
                     DsmfIsci = GetDetay("DSMF (İşçi)"),
                     IssizlikIsci = GetDetay("İşsizlik Sığortası (İşçi)"),
