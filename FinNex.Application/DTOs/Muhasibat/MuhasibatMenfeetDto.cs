@@ -13,12 +13,12 @@ public class MuhasibatMenfeetDto
     public string?  Xeta     { get; set; }
 
     public decimal  FaizGeliri       { get; set; }   // faiz gəliri (60/61/63/64/65)
-    public decimal  FaizXerci        { get; set; }   // faiz xərci (81/82/84/85)
+    public decimal  FaizXerci        { get; set; }   // faiz xərci (84 — Excel)
     public decimal  XalisFaizGeliri  { get; set; }   // NII = faiz gəliri − faiz xərci
     public decimal  Nim              { get; set; }   // xalis faiz marjası % (illik, təxmini)
 
     public decimal  UmumiGelir       { get; set; }   // əməliyyat gəliri (sinif 6/7)
-    public decimal  UmumiXerc        { get; set; }   // əməliyyat xərci (sinif 8, EHTİYATSIZ)
+    public decimal  UmumiXerc        { get; set; }   // əməliyyat xərci (faiz+komissiya+opex sinif 9, EHTİYATSIZ)
     public decimal  EhtiyatdanEvvelMenfeet { get; set; } // əməliyyat gəliri − əməliyyat xərci
     public decimal  XalisEhtiyat     { get; set; }   // XALİS ehtiyat = ehtiyatdan əvvəl mənfəət − 50130 (törədilir)
     public decimal  XalisMenfeet     { get; set; }   // = MenfeetGL (50130) — GL ilə tutuşur
