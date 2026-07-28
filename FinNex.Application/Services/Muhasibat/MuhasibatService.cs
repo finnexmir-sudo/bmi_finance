@@ -572,7 +572,15 @@ public class MuhasibatService : IMuhasibatService
             dto.XalisFaizGeliri = Math.Round(dto.FaizGeliri - dto.FaizXerci, 2);
             dto.EhtiyatdanEvvelMenfeet = Math.Round(dto.UmumiGelir - dto.UmumiXerc, 2);
             dto.XercGelirNisbeti = dto.UmumiGelir != 0 ? Math.Round(dto.UmumiXerc / dto.UmumiGelir * 100, 2) : 0;
-            dto.GelirBolgusu = ToMadde(gelirD, dto.UmumiGelir);
+            // Gəlir siyahısı: əsas gəlirlər məbləğə görə, sonda valyuta cütü YAN-YANA
+            // (Kurs fərqi → Dilinq fərqi) — ikisi də FX nəticəsidir, birlikdə oxunsun.
+            var gelirList = ToMadde(gelirD, dto.UmumiGelir);
+            var fxAdlar   = new[] { "Kurs fərqi", "Dilinq fərqi" };
+            var esasGelir = gelirList.Where(x => !fxAdlar.Contains(x.Ad)).ToList();
+            var fxGelir   = gelirList.Where(x => fxAdlar.Contains(x.Ad))
+                                     .OrderBy(x => Array.IndexOf(fxAdlar, x.Ad));
+            esasGelir.AddRange(fxGelir);
+            dto.GelirBolgusu = esasGelir;
             dto.XercBolgusu  = ToMadde(xercD, dto.UmumiXerc);
 
             // 2) Baza nəticəsi — işləyən aktiv (NIM məxrəci) + 50130 mənfəəti (yoxlama).
