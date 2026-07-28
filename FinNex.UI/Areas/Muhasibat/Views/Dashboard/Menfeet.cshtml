@@ -3,8 +3,13 @@
 @{
     ViewData["Title"] = "Mühasibat — Mənfəət / Zərər";
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    // Rəng palitraları — həm donut, həm siyahı nöqtələri eyni indeks üzrə istifadə edir.
+    string[] palGelir = { "#059669", "#10b981", "#34d399", "#0d9488", "#14b8a6", "#047857", "#6ee7b7", "#5eead4" };
+    string[] palXerc  = { "#b91c1c", "#ef4444", "#f97316", "#f59e0b", "#dc2626", "#ea580c", "#d97706", "#e11d48", "#fb923c", "#facc15", "#9f1239", "#c2410c", "#fda4af", "#fca5a5" };
     var gelirJson = Html.Raw(JsonSerializer.Serialize(Model.GelirBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var xercJson = Html.Raw(JsonSerializer.Serialize(Model.XercBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var palGjson = Html.Raw(JsonSerializer.Serialize(palGelir));
+    var palXjson = Html.Raw(JsonSerializer.Serialize(palXerc));
 }
 
 <div class="mh-wrap">
@@ -72,10 +77,11 @@
                 <div class="mh-card-b">
                     <div class="mh-chart"><canvas id="chGelir"></canvas></div>
                     <div class="mh-list">
-                        @foreach (var a in Model.GelirBolgusu)
+                        @for (int gi = 0; gi < Model.GelirBolgusu.Count; gi++)
                         {
+                            var a = Model.GelirBolgusu[gi];
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@a.Ad" data-mhbaslik="Gəlir — @a.Ad">
-                                <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
+                                <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palGelir[gi % palGelir.Length])"></span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
                                 <div class="mh-bar mh-bar--g"><span style="width:@(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
@@ -89,10 +95,11 @@
                 <div class="mh-card-b">
                     <div class="mh-chart"><canvas id="chXerc"></canvas></div>
                     <div class="mh-list">
-                        @foreach (var x in Model.XercBolgusu)
+                        @for (int xi = 0; xi < Model.XercBolgusu.Count; xi++)
                         {
+                            var x = Model.XercBolgusu[xi];
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@x.Ad" data-mhbaslik="Xərc — @x.Ad">
-                                <div class="mh-row-t"><span>@x.Ad</span><b>@Fmt(x.Mebleg) ₼</b></div>
+                                <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palXerc[xi % palXerc.Length])"></span>@x.Ad</span><b>@Fmt(x.Mebleg) ₼</b></div>
                                 <div class="mh-bar mh-bar--r"><span style="width:@(x.Faiz)%"></span></div>
                                 <div class="mh-row-p">@x.Faiz%</div>
                             </div>
@@ -104,7 +111,7 @@
                             var ehtBar  = Math.Min(100m, Math.Abs(ehtFaiz));
                         }
                         <div class="mh-row">
-                            <div class="mh-row-t"><span>Ehtiyat ayırmaları</span><b>@Fmt(Model.XalisEhtiyat) ₼</b></div>
+                            <div class="mh-row-t"><span><span class="mh-dot2" style="background:#94a3b8"></span>Ehtiyat ayırmaları</span><b>@Fmt(Model.XalisEhtiyat) ₼</b></div>
                             <div class="mh-bar mh-bar--r"><span style="width:@(ehtBar)%"></span></div>
                             <div class="mh-row-p">@ehtFaiz%</div>
                         </div>
@@ -130,8 +137,8 @@
     <script>
         (function () {
             if (typeof Chart === 'undefined') return;
-            const palG = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'];
-            const palX = ['#b91c1c', '#ef4444', '#f97316', '#f59e0b', '#fca5a5'];
+            const palG = @palGjson;
+            const palX = @palXjson;
 
             function donut(id, rows, pal) {
                 const el = document.getElementById(id);
@@ -199,11 +206,12 @@
     .mh-card-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
     .mh-dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
     .mh-dot--g { background: #10b981; } .mh-dot--r { background: #ef4444; }
-    .mh-card-b { display: grid; grid-template-columns: 200px 1fr; gap: 18px; padding: 18px 20px; align-items: start; }
-    .mh-chart { height: 200px; position: relative; }
+    .mh-card-b { display: grid; grid-template-columns: 170px 1fr; gap: 18px; padding: 18px 20px; align-items: center; }
+    .mh-chart { height: 170px; position: relative; }
     .mh-list { display: flex; flex-direction: column; gap: 12px; }
     .mh-row-t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
-    .mh-row-t span { color: #475569; } .mh-row-t b { color: #0f172a; }
+    .mh-row-t > span { color: #475569; display: inline-flex; align-items: center; } .mh-row-t b { color: #0f172a; }
+    .mh-dot2 { width: 9px; height: 9px; border-radius: 3px; display: inline-block; margin-right: 7px; flex: 0 0 auto; }
     .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
     .mh-bar--g span { display: block; height: 100%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 6px; }
     .mh-bar--r span { display: block; height: 100%; background: linear-gradient(90deg, #dc2626, #f87171); border-radius: 6px; }
