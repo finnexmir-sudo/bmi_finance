@@ -36,8 +36,16 @@
     decimal mezQabaqNet  = ViewBag.MezQabaqNet  == null ? 0m : (decimal)ViewBag.MezQabaqNet;
     decimal tamGross = ViewBag.TamGross == null ? brutMaas        : (decimal)ViewBag.TamGross;
     decimal tamNet   = ViewBag.TamNet   == null ? Model.NetMebleg : (decimal)ViewBag.TamNet;
-    decimal grossDisplay = mezQabaqBrut > 0 ? tamGross : brutMaas;
-    decimal netDisplay   = mezQabaqNet  > 0 ? tamNet   : Model.NetMebleg;
+
+    // Gross = Excel "Cəmi hesablanmış" ilə eyni: m.BrutMebleg (davamiyyət VƏ çıxış kəsintiləri
+    // engine-də artıq çıxılıb) + qabaqcadan məzuniyyət brütü. Beləliklə işdən çıxan işçi
+    // işlədiyi günə görə, davamiyyət kəsintili işçi isə real işlənmiş gross ilə görünür.
+    // Xülasə daxildə balanslaşır: gəlir − işlənməyən gün = gross; gross − vergi = net.
+    decimal grossDisplay = tamGross;
+    decimal netDisplay   = tamNet;
+    decimal umumiGelirDisplay = gelirlər.Sum(d => d.Mebleg) + mezQabaqBrut;   // bütün gəlir (məzuniyyət daxil)
+    decimal kesintiDisplay = umumiGelirDisplay - tamGross;                     // işlənməyən gün (davamiyyət/çıxış)
+    decimal vergiDisplay = tamGross - tamNet;                                  // vergi və tutulmalar
 }
 
 <div class="fn-page">
@@ -229,11 +237,11 @@
                 <div class="fn-card-title" style="margin-bottom:10px;">Xülasə</div>
                 <div class="dt-sum-row">
                     <span>Ümumi gəlirlər</span>
-                    <span class="dt-gelir">@gelirlər.Sum(d => d.Mebleg).ToString("N2") ₼</span>
+                    <span class="dt-gelir">@umumiGelirDisplay.ToString("N2") ₼</span>
                 </div>
                 <div class="dt-sum-row">
-                    <span>Kəsintilər</span>
-                    <span class="dt-kesinti">−@tutulmalar.Where(d => d.MaasNovuAd is "Məzuniyyət Kəsintisi" or "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg).ToString("N2") ₼</span>
+                    <span>İşlənməyən gün kəsintisi</span>
+                    <span class="dt-kesinti">−@kesintiDisplay.ToString("N2") ₼</span>
                 </div>
                 <div class="dt-sum-row dt-sum-sep">
                     <span>Gross maaş</span>
@@ -241,7 +249,7 @@
                 </div>
                 <div class="dt-sum-row">
                     <span>Vergi tutulmaları</span>
-                    <span class="dt-kesinti">−@umumiTutulma.ToString("N2") ₼</span>
+                    <span class="dt-kesinti">−@vergiDisplay.ToString("N2") ₼</span>
                 </div>
                 <div class="dt-sum-row dt-sum-net">
                     <span>NET maaş</span>
