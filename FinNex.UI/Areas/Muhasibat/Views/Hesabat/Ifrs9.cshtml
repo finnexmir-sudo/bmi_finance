@@ -1,6 +1,8 @@
 @model MuhasibatIfrs9Dto
 @{
     ViewData["Title"] = "IFRS 9 — Gözlənilən Kredit İtkiləri (ECL)";
+    // Zolaq eni — CSS ucun INVARIANT format (az-AZ vergul 73,3% etibarsizdir, zolaq tam dolur); menfi/100+ sixilir.
+    string Bw(decimal v) => Math.Min(100m, Math.Abs(v)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string Fmt2(decimal v) => v.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string StR(decimal v) => v < 0 ? "—" : Fmt2(v) + "%";   // mərhələ risk %-i (-1 = kredit yoxdur)
@@ -298,7 +300,7 @@
                             <td class="r"><b>@Fmt2(s.Ecl)</b></td>
                             <td class="r if-muted">@Fmt2(s.BankEhtiyat)</td>
                             <td>
-                                <div class="if-bar"><span style="width:@(s.Pay)%;background:@s.Reng"></span></div>
+                                <div class="if-bar"><span style="width:@Bw(s.Pay)%;background:@s.Reng"></span></div>
                                 <em>@Fmt2(s.Pay)%</em>
                             </td>
                         </tr>

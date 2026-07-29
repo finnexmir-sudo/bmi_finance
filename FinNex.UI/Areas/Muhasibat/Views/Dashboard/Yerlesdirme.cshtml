@@ -2,6 +2,8 @@
 @model MuhasibatYerlesdirmeDto
 @{
     ViewData["Title"] = "Mühasibat — Yerləşdirilmiş vəsaitlər";
+    // Zolaq eni — CSS ucun INVARIANT format (az-AZ vergul 73,3% etibarsizdir, zolaq tam dolur); menfi/100+ sixilir.
+    string Bw(decimal v) => Math.Min(100m, Math.Abs(v)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var kontJson = Html.Raw(JsonSerializer.Serialize(Model.Kontragentler.Select(x => new { l = x.Ad, v = x.Qaliq, c = x.Reng })));
 }
@@ -62,7 +64,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="yerlesdirme" data-mhmadde="kontragent:@k.Ad" data-mhbaslik="Yerləşdirmə — @k.Ad">
                                 <div class="mh-row-t"><span><i class="bi bi-circle-fill" style="color:@k.Reng;font-size:9px"></i> @k.Ad <em>· @k.Say</em></span><b>@Fmt(k.Qaliq) ₼</b></div>
-                                <div class="mh-bar"><span style="width:@(k.Pay)%;background:@k.Reng"></span></div>
+                                <div class="mh-bar"><span style="width:@Bw(k.Pay)%;background:@k.Reng"></span></div>
                                 <div class="mh-row-p">Faiz: @k.Faiz% · Pay @k.Pay%@(k.Ehtiyat > 0 ? $" · ⚠ ehtiyat {Fmt(k.Ehtiyat)} ₼" : "")</div>
                             </div>
                         }

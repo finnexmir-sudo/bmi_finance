@@ -2,6 +2,8 @@
 @model MuhasibatKreditDto
 @{
     ViewData["Title"] = "Mühasibat — Kredit portfeli";
+    // Zolaq eni — CSS ucun INVARIANT format (az-AZ vergul 73,3% etibarsizdir, zolaq tam dolur); menfi/100+ sixilir.
+    string Bw(decimal v) => Math.Min(100m, Math.Abs(v)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var tipJson = Html.Raw(JsonSerializer.Serialize(Model.TipBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var valJson = Html.Raw(JsonSerializer.Serialize(Model.ValyutaBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
@@ -64,7 +66,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="kredit" data-mhmadde="tip:@a.Ad" data-mhbaslik="Kredit — @a.Ad">
                                 <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
-                                <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
+                                <div class="mh-bar"><span style="width:@Bw(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
                         }
@@ -81,7 +83,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="kredit" data-mhmadde="age:@g.Ad" data-mhbaslik="Kredit — @g.Ad">
                                 <div class="mh-row-t"><span>@g.Ad</span><b>@Fmt(g.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--r"><span style="width:@(g.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--r"><span style="width:@Bw(g.Faiz)%"></span></div>
                                 <div class="mh-row-p">@g.Faiz%</div>
                             </div>
                         }
@@ -98,7 +100,7 @@
                     {
                         <div class="mh-row mh-click" data-mhsahe="kredit" data-mhmadde="teyinat:@t.Ad" data-mhbaslik="Kredit — @t.Ad">
                             <div class="mh-row-t"><span>@t.Ad</span><b>@Fmt(t.Mebleg) ₼</b></div>
-                            <div class="mh-bar mh-bar--p"><span style="width:@(t.Faiz)%"></span></div>
+                            <div class="mh-bar mh-bar--p"><span style="width:@Bw(t.Faiz)%"></span></div>
                             <div class="mh-row-p">@t.Faiz%</div>
                         </div>
                     }
@@ -114,7 +116,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="kredit" data-mhmadde="valyuta:@v.Ad" data-mhbaslik="Kredit — @v.Ad valyutası">
                                 <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--v"><span style="width:@Bw(v.Faiz)%"></span></div>
                                 <div class="mh-row-p">@v.Faiz%</div>
                             </div>
                         }

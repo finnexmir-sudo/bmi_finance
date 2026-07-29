@@ -172,6 +172,23 @@ bərabər idi — filtri götürəndə həm faiz düzəldi, həm balans dəqiq b
 - Diaqnostik SELECT verəndə dashboard-un **bütün** filtrlərini təkrarla — natamam
   diaqnostik yanlış "düz/səhv" nəticəsinə aparır.
 
+## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
+
+Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur
+(`73,3`). Bu, insan oxuyan mətndə düzdür, amma **CSS/JS-ə gedən rəqəmdə**
+etibarsızdır: `style="width:73,3%"` CSS tərəfindən atılır və zolaq **tam dolu**
+görünür (2026-07, Mühasibat dashboard — bütün faiz zolaqları 100% görünürdü;
+mənfi faizdə `width:-2%` də eyni nəticəni verirdi).
+
+**Qaydalar:**
+- `style`/`<script>` içinə yazılan hər rəqəmi **InvariantCulture** ilə format et.
+  Mühasibat view-larında hazır helper var: `Bw(decimal)` — `min(100, |v|)` +
+  invariant `"0.##"`. Yeni zolaq/width yazanda **həmişə** `width:@Bw(x)%` istifadə et.
+- JS-ə data ötürəndə `JsonSerializer.Serialize` istifadə et (invariant yazır) —
+  əl ilə `@decimal` interpolasiya etmə.
+- İnsan oxuyan mətndə (`@x.Faiz%` etiketi) vergül qala bilər — problem yalnız
+  maşın oxuyan (CSS/JS) tərəfdədir.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

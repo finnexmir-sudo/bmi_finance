@@ -2,6 +2,8 @@
 @model MuhasibatMenfeetDto
 @{
     ViewData["Title"] = "Mühasibat — Mənfəət / Zərər";
+    // Zolaq eni — CSS ucun INVARIANT format (az-AZ vergul 73,3% etibarsizdir, zolaq tam dolur); menfi/100+ sixilir.
+    string Bw(decimal v) => Math.Min(100m, Math.Abs(v)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     // Rəng palitraları — həm donut, həm siyahı nöqtələri eyni indeks üzrə istifadə edir.
     string[] palGelir = { "#059669", "#10b981", "#34d399", "#0d9488", "#14b8a6", "#047857", "#6ee7b7", "#5eead4" };
@@ -105,7 +107,7 @@
                                zolağı tam dolu göstərir; |faiz| ilə 0–100 aralığına sıxılır. *@
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@a.Ad" data-mhbaslik="Gəlir — @a.Ad">
                                 <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palGelir[gi % palGelir.Length])"></span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--g"><span style="width:@(Math.Min(100m, Math.Abs(a.Faiz)))%"></span></div>
+                                <div class="mh-bar mh-bar--g"><span style="width:@Bw(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
                         }
@@ -123,7 +125,7 @@
                             var x = Model.XercBolgusu[xi];
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@x.Ad" data-mhbaslik="Xərc — @x.Ad">
                                 <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palXerc[xi % palXerc.Length])"></span>@x.Ad</span><b>@Fmt(x.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--r"><span style="width:@(Math.Min(100m, Math.Abs(x.Faiz)))%"></span></div>
+                                <div class="mh-bar mh-bar--r"><span style="width:@Bw(x.Faiz)%"></span></div>
                                 <div class="mh-row-p">@x.Faiz%</div>
                             </div>
                         }
@@ -135,7 +137,7 @@
                         }
                         <div class="mh-row">
                             <div class="mh-row-t"><span><span class="mh-dot2" style="background:#94a3b8"></span>Ehtiyat ayırmaları</span><b>@Fmt(Model.XalisEhtiyat) ₼</b></div>
-                            <div class="mh-bar mh-bar--r"><span style="width:@(ehtBar)%"></span></div>
+                            <div class="mh-bar mh-bar--r"><span style="width:@Bw(ehtBar)%"></span></div>
                             <div class="mh-row-p">@ehtFaiz%</div>
                         </div>
                     </div>

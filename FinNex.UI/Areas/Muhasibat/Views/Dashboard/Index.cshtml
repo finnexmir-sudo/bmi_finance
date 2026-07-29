@@ -2,6 +2,8 @@
 @model MuhasibatBalansDto
 @{
     ViewData["Title"] = "Mühasibat — Balans İcmalı";
+    // Zolaq eni — CSS ucun INVARIANT format (az-AZ vergul 73,3% etibarsizdir, zolaq tam dolur); menfi/100+ sixilir.
+    string Bw(decimal v) => Math.Min(100m, Math.Abs(v)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     string Fmt2(decimal v) => v.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var ferqOk = Math.Abs(Model.BalansFerqi) < (Model.UmumiAktiv == 0 ? 1 : Model.UmumiAktiv * 0.005m);
@@ -199,7 +201,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="balans" data-mhmadde="@a.Ad" data-mhbaslik="@a.Ad">
                                 <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
-                                <div class="mh-bar"><span style="width:@(a.Faiz)%"></span></div>
+                                <div class="mh-bar"><span style="width:@Bw(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
                         }
@@ -216,7 +218,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="balans" data-mhmadde="@o.Ad" data-mhbaslik="@o.Ad">
                                 <div class="mh-row-t"><span>@o.Ad</span><b>@Fmt(o.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--o"><span style="width:@(o.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--o"><span style="width:@Bw(o.Faiz)%"></span></div>
                                 <div class="mh-row-p">@o.Faiz%</div>
                             </div>
                         }

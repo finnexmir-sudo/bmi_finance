@@ -2,6 +2,8 @@
 @model MuhasibatLikvidlikDto
 @{
     ViewData["Title"] = "Mühasibat — Likvidlik";
+    // Zolaq eni — CSS ucun INVARIANT format (az-AZ vergul 73,3% etibarsizdir, zolaq tam dolur); menfi/100+ sixilir.
+    string Bw(decimal v) => Math.Min(100m, Math.Abs(v)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var strukJson = Html.Raw(JsonSerializer.Serialize(Model.LikvidStruktur.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var valJson = Html.Raw(JsonSerializer.Serialize(Model.ValyutaBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
@@ -77,7 +79,7 @@
                         {
                             <div class="mh-row mh-click" data-mhsahe="likvidlik" data-mhmadde="@s.Ad" data-mhbaslik="Likvid — @s.Ad">
                                 <div class="mh-row-t"><span>@s.Ad</span><b>@Fmt(s.Mebleg) ₼</b></div>
-                                <div class="mh-bar"><span style="width:@(s.Faiz)%"></span></div>
+                                <div class="mh-bar"><span style="width:@Bw(s.Faiz)%"></span></div>
                                 <div class="mh-row-p">@s.Faiz%</div>
                             </div>
                         }
@@ -94,7 +96,7 @@
                         {
                             <div class="mh-row">
                                 <div class="mh-row-t"><span>@v.Ad</span><b>@Fmt(v.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--v"><span style="width:@(v.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--v"><span style="width:@Bw(v.Faiz)%"></span></div>
                                 <div class="mh-row-p">@v.Faiz%</div>
                             </div>
                         }
