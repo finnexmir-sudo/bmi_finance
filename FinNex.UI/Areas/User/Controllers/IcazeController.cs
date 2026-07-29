@@ -21,22 +21,19 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IDepartmentService _departamentService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IJetonService _jetonService;
-        private readonly IIsciSiralamaService _siralamaService;
 
         public IcazeController(
             IIcazeService icazeService,
             IIsciService isciService,
             IDepartmentService departamentService,
             UserManager<AppUser> userManager,
-            IJetonService jetonService,
-            IIsciSiralamaService siralamaService)
+            IJetonService jetonService)
         {
             _icazeService = icazeService;
             _isciService = isciService;
             _departamentService = departamentService;
             _userManager = userManager;
             _jetonService = jetonService;
-            _siralamaService = siralamaService;
         }
 
         // ── GET /User/Icaze ────────────────────────────────────
@@ -204,22 +201,13 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             var isciler = result.Success ? result.Data!.ToList() : new();
-
-            // İşçi sıralaması (Kadr sırası) — default. IsciSiralamaService kanonik mənbədir
-            // (Sira → Ad → Soyad). IsciId → mövqe xəritəsi qurulur; siyahıda olmayan
-            // (passiv/silinmiş, amma keçmişdə icazəsi olan) işçilər sona düşür.
-            var siraSiyahi = await _siralamaService.GetSiyahiAsync();
-            var siraMap = new Dictionary<int, int>();
-            for (int si = 0; si < siraSiyahi.Count; si++) siraMap[siraSiyahi[si].IsciId] = si;
-            int SiraMovqe(int id) => siraMap.TryGetValue(id, out var p) ? p : int.MaxValue;
-
             isciler = sirala switch
             {
-                "cemi"    => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
-                "saat"    => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
-                "faktiki" => isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
-                "imtina"  => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
-                _         => isciler.OrderBy(x => SiraMovqe(x.IsciId)).ThenBy(x => x.IsciAdSoyad).ToList(), // "sira" (default)
+                "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+                "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
+                "faktiki"=> isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
+                "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
+                _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
             };
 
             var vm = new IcazeIzlemeVM
@@ -229,7 +217,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 Departamentler = departamentler,
             };
 
-            ViewData["Sirala"] = sirala ?? "sira";
+            ViewData["Sirala"] = sirala ?? "cemi";
 
             if (!result.Success)
                 TempData["Error"] = result.Message;
