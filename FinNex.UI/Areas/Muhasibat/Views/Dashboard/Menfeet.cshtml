@@ -101,9 +101,11 @@
                         @for (int gi = 0; gi < Model.GelirBolgusu.Count; gi++)
                         {
                             var a = Model.GelirBolgusu[gi];
+                            @* Mənfi kateqoriyada (məs. Kurs fərqi) width mənfi olmasın — etibarsız CSS
+                               zolağı tam dolu göstərir; |faiz| ilə 0–100 aralığına sıxılır. *@
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@a.Ad" data-mhbaslik="Gəlir — @a.Ad">
                                 <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palGelir[gi % palGelir.Length])"></span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--g"><span style="width:@(a.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--g"><span style="width:@(Math.Min(100m, Math.Abs(a.Faiz)))%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
                         }
@@ -121,7 +123,7 @@
                             var x = Model.XercBolgusu[xi];
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@x.Ad" data-mhbaslik="Xərc — @x.Ad">
                                 <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palXerc[xi % palXerc.Length])"></span>@x.Ad</span><b>@Fmt(x.Mebleg) ₼</b></div>
-                                <div class="mh-bar mh-bar--r"><span style="width:@(x.Faiz)%"></span></div>
+                                <div class="mh-bar mh-bar--r"><span style="width:@(Math.Min(100m, Math.Abs(x.Faiz)))%"></span></div>
                                 <div class="mh-row-p">@x.Faiz%</div>
                             </div>
                         }
