@@ -5,6 +5,9 @@
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
     var gelirJson = Html.Raw(JsonSerializer.Serialize(Model.GelirBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var xercJson = Html.Raw(JsonSerializer.Serialize(Model.XercBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var gunSayi = (Model.SonTarix - Model.BasTarix).Days + 1;                 // NIM illik əmsalının məxrəci
+    var qeyriFaizGelir = Model.UmumiGelir - Model.FaizGeliri;                 // komissiya + valyuta(net) + digər
+    var xercCemi = Model.UmumiXerc + Model.XalisEhtiyat;                      // ehtiyat daxil — Gəlir − bu = 50130
 }
 
 <div class="mh-wrap">
@@ -35,21 +38,25 @@
                 <div class="mh-kpi-ic"><i class="bi bi-cash-coin"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.XalisFaizGeliri) <span>₼</span></div>
                 <div class="mh-kpi-l">Xalis faiz gəliri (NII)</div>
+                <div class="mh-kpi-f">Faiz gəliri @Fmt(Model.FaizGeliri) − faiz xərci @Fmt(Model.FaizXerci)</div>
             </div>
             <div class="mh-kpi mh-kpi--t">
                 <div class="mh-kpi-ic"><i class="bi bi-percent"></i></div>
                 <div class="mh-kpi-v">@Model.Nim%</div>
                 <div class="mh-kpi-l">Xalis faiz marjası (NIM) · illik</div>
+                <div class="mh-kpi-f">NII @Fmt(Model.XalisFaizGeliri) ÷ işləyən aktiv @Fmt(Model.IsleyenAktiv) × 365/@gunSayi gün</div>
             </div>
             <div class="mh-kpi mh-kpi--b">
                 <div class="mh-kpi-ic"><i class="bi bi-box-arrow-in-down"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiGelir) <span>₼</span></div>
                 <div class="mh-kpi-l">Əməliyyat gəliri</div>
+                <div class="mh-kpi-f">Faiz @Fmt(Model.FaizGeliri) + qeyri-faiz @Fmt(qeyriFaizGelir) (sinif 6/7)</div>
             </div>
             <div class="mh-kpi mh-kpi--w">
                 <div class="mh-kpi-ic"><i class="bi bi-clipboard-check"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.EhtiyatdanEvvelMenfeet) <span>₼</span></div>
                 <div class="mh-kpi-l">Ehtiyatdan əvvəl mənfəət</div>
+                <div class="mh-kpi-f">Gəlir @Fmt(Model.UmumiGelir) − əməliyyat xərci @Fmt(Model.UmumiXerc)</div>
             </div>
         </div>
 
@@ -57,13 +64,26 @@
             <div class="mh-lcr-main">
                 <div class="mh-lcr-t">Xalis mənfəət (GL — hesab 50130)</div>
                 <div class="mh-lcr-v">@Fmt(Model.XalisMenfeet) <span>₼</span></div>
-                <div class="mh-lcr-s">Ehtiyatdan əvvəl <b>@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b> · Xərc/Gəlir <b>@Model.XercGelirNisbeti%</b></div>
+                <div class="mh-lcr-gx">
+                    <div><span>Gəlir cəmi</span><b class="mh-ok">@Fmt(Model.UmumiGelir) ₼</b></div>
+                    <div><span>Xərc cəmi (ehtiyat daxil)</span><b class="mh-warn">@Fmt(xercCemi) ₼</b></div>
+                </div>
+                <div class="mh-lcr-s">Fərq: @Fmt(Model.UmumiGelir) − @Fmt(xercCemi) = <b>@Fmt(Model.XalisMenfeet) ₼</b> · Xərc/Gəlir <b>@Model.XercGelirNisbeti%</b></div>
             </div>
-            <div class="mh-lcr-comp">
-                <div><span>Əməliyyat gəliri (sinif 6/7)</span><b>@Fmt(Model.UmumiGelir) ₼</b></div>
-                <div><span>Əməliyyat xərci (ehtiyatsız)</span><b>@Fmt(Model.UmumiXerc) ₼</b></div>
-                <div><span>Ehtiyatdan əvvəl mənfəət</span><b class="mh-ok">@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b></div>
-                <div><span>Xalis ehtiyat (net)</span><b class="mh-warn">− @Fmt(Model.XalisEhtiyat) ₼</b></div>
+            <div class="mh-lcr-comp mh-ladder">
+                <div class="mh-lad-h">Necə yaranır — addım-addım</div>
+                <div><span>Gəlir cəmi (sinif 6/7 — aşağıda "Gəlir strukturu")</span><b class="mh-ok">+ @Fmt(Model.UmumiGelir) ₼</b></div>
+                <div><span>Əməliyyat xərci (sinif 8, ehtiyatsız — aşağıda "Əməliyyat xərci")</span><b class="mh-warn">− @Fmt(Model.UmumiXerc) ₼</b></div>
+                <div class="mh-lad-eq"><span>= Ehtiyatdan əvvəl mənfəət</span><b>@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b></div>
+                @if (Model.XalisEhtiyat >= 0)
+                {
+                    <div><span>Ehtiyat xərci (sinif 89, xalis)</span><b class="mh-warn">− @Fmt(Model.XalisEhtiyat) ₼</b></div>
+                }
+                else
+                {
+                    <div><span>Ehtiyat bərpası (sinif 89, xalis — ehtiyat azalıb, mənfəətə qayıdıb)</span><b class="mh-ok">+ @Fmt(-Model.XalisEhtiyat) ₼</b></div>
+                }
+                <div class="mh-lad-eq"><span>= Xalis mənfəət (GL — hesab 50130)</span><b>@Fmt(Model.XalisMenfeet) ₼</b></div>
             </div>
         </div>
 
@@ -107,6 +127,7 @@
             <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
             <ul>
                 <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 (kredit); <b>əməliyyat xərci</b> = sinif 8 EHTİYATSIZ (debet). Dövr: <b>başlanğıc–son</b> (default YTD).</li>
+                <li><b>Rəqəm haradan gəlir?</b> Aşağıdakı gəlir/xərc sətirlərinə <b>klik</b> edin — hesab-səviyyə (GL) siyahı açılır; kateqoriya cəmi həmin hesabların toplamıdır.</li>
                 <li><b>NII</b> = faiz gəliri − faiz xərci. <b>NIM</b> = NII / işləyən aktiv (müxbir+banklararası+kredit, son iş gününə) × (365/gün) — illik təxmini.</li>
                 <li><b>Ehtiyat (sinif 89):</b> hər gün yenidən hesablandığı üçün "gross churn" böyük çıxır (<b>@Fmt(Model.EhtiyatGross) ₼</b>). Ona görə <b>xalis ehtiyat</b> = (ehtiyatdan əvvəl mənfəət − GL mənfəəti) kimi <b>törədilir</b> = <b>@Fmt(Model.XalisEhtiyat) ₼</b>.</li>
                 <li><b>Xalis mənfəət = <code>50130</code></b> (GL). Konstruksiyaya görə: ehtiyatdan əvvəl mənfəət − xalis ehtiyat = 50130. <b>Valyuta/ticarət</b> (66/68 gəlir, 86/88 zərər) gündəlik yenidən qiymətləndirmə olduğu üçün <b>NET</b> göstərilir (gross ~10M bir-birini kompensasiya edir).</li>
@@ -171,6 +192,7 @@
     .mh-kpi-v { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
     .mh-kpi-v span { font-size: 14px; font-weight: 600; opacity: .85; }
     .mh-kpi-l { font-size: 12.5px; opacity: .92; margin-top: 3px; }
+    .mh-kpi-f { font-size: 11px; opacity: .82; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.28); line-height: 1.45; }
 
     .mh-lcr { display: grid; grid-template-columns: 320px 1fr; gap: 18px; margin-top: 16px;
         background: linear-gradient(135deg, #064e3b, #047857); border-radius: 16px; padding: 22px 26px; color: #fff; box-shadow: 0 8px 22px rgba(5,150,105,.22); }
@@ -183,6 +205,14 @@
     .mh-lcr-comp > div { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.16); padding-bottom: 6px; font-size: 13px; }
     .mh-lcr-comp span { opacity: .88; } .mh-lcr-comp b { font-weight: 700; }
     .mh-ok { color: #bbf7d0; } .mh-warn { color: #fde68a; }
+    .mh-lcr-gx { display: flex; gap: 22px; margin: 8px 0 6px; }
+    .mh-lcr-gx > div { display: flex; flex-direction: column; }
+    .mh-lcr-gx span { font-size: 11.5px; opacity: .85; }
+    .mh-lcr-gx b { font-size: 16px; font-weight: 800; }
+    .mh-ladder { grid-template-columns: 1fr; gap: 8px; }
+    .mh-ladder > div b { white-space: nowrap; margin-left: 12px; }
+    .mh-lad-h { font-weight: 800; font-size: 13.5px; border-bottom: none !important; padding-bottom: 0 !important; opacity: .95; }
+    .mh-lad-eq { background: rgba(255,255,255,.12); border-radius: 8px; padding: 6px 10px; border-bottom: none !important; font-weight: 700; }
 
     .mh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
     .mh-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(2,6,23,.05); }
