@@ -30,7 +30,8 @@
     var canSil      = isHR || isAdmin;                  // Layihe statusunda silinə bilər
 
     decimal umumiNet      = list.Sum(x => x.NetMebleg);
-    decimal umumiBrut     = list.Sum(x => x.BrutMaas);
+    // Ümumi Gross = regular brüt + qabaqcadan məzuniyyət brütü (mühasibin "Cəmi" ilə uyğun).
+    decimal umumiBrut     = list.Sum(x => x.BrutMaas + x.AvansBrut);
     decimal umumiGelirV   = list.Sum(x => x.GelirVergisi);
     decimal umumiDsmf     = list.Sum(x => x.DsmfIsci);
     decimal umumiIssizlik = list.Sum(x => x.IssizlikIsci);
@@ -659,7 +660,7 @@
                             <td class="center col-sep" style="font-weight:700;font-size:12px;color:#1a2332;">
                                 @list.Count işçi
                             </td>
-                            <td class="center"><span class="n">@umumiBrut.ToString("N2") ₼</span></td>
+                            <td class="center"><span class="n">@list.Sum(x => x.EsasMaas).ToString("N2") ₼</span></td>
                             <td class="center"><span class="n n--green">@FmtC(umumiBonus,"+")</span></td>
                             <td class="center"><span class="n n--green">@FmtC(umumiOvertime,"+")</span></td>
                             <td class="center col-sep"><span class="n n--blue">@FmtC(list.Sum(x=>x.MezuniyyetOdenisi))</span></td>

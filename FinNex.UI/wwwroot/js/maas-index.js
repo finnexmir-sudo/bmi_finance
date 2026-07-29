@@ -180,4 +180,48 @@
         });
     }
 
+    /* ── Sticky (üzən) horizontal scrollbar ───────────────────────
+       Native bar CSS-də gizlədilib. Burada .mi-scroll-un eninə uyğun boş
+       proxy qurulur və scrollLeft iki tərəfli sinxronlaşdırılır. Proxy
+       position:sticky;bottom:0 olduğundan cədvəl ekrandaykən scrollbar
+       həmişə viewport-un altında görünür — səhifəni sona sürüşdürmək lazım deyil. */
+    function initStickyScroll() {
+        const scroll = document.querySelector('.mi-scroll');
+        if (!scroll) return;                       // boş dövr — .mi-scroll yoxdur
+        const table = scroll.querySelector('.mi-table');
+        if (!table) return;
+
+        const sticky = document.createElement('div');
+        sticky.className = 'mi-scroll-sticky';
+        const inner = document.createElement('div');
+        inner.className = 'mi-scroll-sticky-inner';
+        sticky.appendChild(inner);
+        // .mi-scroll-dan dərhal sonra (mi-table-card-ın sonuncu uşağı) yerləşdir
+        scroll.parentNode.insertBefore(sticky, scroll.nextSibling);
+
+        function sync() {
+            inner.style.width = scroll.scrollWidth + 'px';
+            // Yalnız horizontal daşma varsa scrollbar göstər
+            const dasma = scroll.scrollWidth > scroll.clientWidth + 1;
+            sticky.style.display = dasma ? 'block' : 'none';
+            if (dasma) sticky.scrollLeft = scroll.scrollLeft;
+        }
+
+        // İki tərəfli sinxron — echo döngüsünün qarşısını rAF-lı bayraq alır
+        let syncing = false;
+        function mirror(from, to) {
+            if (syncing) return;
+            syncing = true;
+            to.scrollLeft = from.scrollLeft;
+            requestAnimationFrame(function () { syncing = false; });
+        }
+        scroll.addEventListener('scroll', function () { mirror(scroll, sticky); });
+        sticky.addEventListener('scroll', function () { mirror(sticky, scroll); });
+
+        sync();
+        window.addEventListener('resize', sync);
+    }
+
+    initStickyScroll();
+
 })();

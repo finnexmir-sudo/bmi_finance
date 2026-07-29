@@ -64,13 +64,22 @@ namespace FinNex.UI.Areas.User.Controllers
                 "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"
             };
 
-            var data = maaslar.Select(m => new
+            // Qabaqcadan ödənilmiş məzuniyyət — ödəniş ayına görə (brüt, net). Ayrıca ödənilib
+            // və adi maaşdan çıxılıb; başlıqda ayın TAM gross/net-i görünsün deyə geri əlavə
+            // edirik. Mənbə provodka ilə eynidir (Mezuniyyet entity) — həm köhnə, həm yeni datada işləyir.
+            var mezByMonth = await MezQabaqAylikMapAsync(isciId, sonIl, sonAy);
+
+            var data = maaslar.Select(m =>
             {
-                etiket = ayAdlar[m.Ay] + " " + m.Il,
-                brut = m.BrutMebleg,
-                net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi),   // avans işçinin maaşıdır → qazanılan net
-                il = m.Il,
-                ay = m.Ay
+                var mez = mezByMonth.TryGetValue((m.Il, m.Ay), out var v) ? v : (Brut: 0m, Net: 0m);
+                return new
+                {
+                    etiket = ayAdlar[m.Ay] + " " + m.Il,
+                    brut = m.BrutMebleg + mez.Brut,
+                    net = m.NetMebleg + AvansMebleginiTap(m.HesablamaIzahi) + mez.Net,
+                    il = m.Il,
+                    ay = m.Ay
+                };
             }).ToList();
 
             return Json(new { success = true, data });
@@ -87,6 +96,28 @@ namespace FinNex.UI.Areas.User.Controllers
                 return list?.FirstOrDefault(x => x.Addim == "Avans Kəsintisi")?.Mebleg ?? 0m;
             }
             catch { return 0m; }
+        }
+
+        // Qabaqcadan ödənilmiş məzuniyyət — ödəniş ayına görə (brüt, net) map.
+        // Provodka ilə eyni mənbə (Mezuniyyet.OdenenMeblegBrut / OdenenMebleg). Məzuniyyət
+        // ayrıca ödənilib və adi maaşdan çıxılıb; başlıqda ayın TAM gross/net-i üçün geri əlavə olunur.
+        private async Task<Dictionary<(int Il, int Ay), (decimal Brut, decimal Net)>> MezQabaqAylikMapAsync(
+            int isciId, int sonIl, int sonAy)
+        {
+            var qeydler = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib && x.IsciId == isciId
+                    && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    && x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib
+                    && x.OdenilmeTarixi.HasValue
+                    && (x.OdenilmeTarixi.Value.Year > sonIl
+                        || (x.OdenilmeTarixi.Value.Year == sonIl && x.OdenilmeTarixi.Value.Month >= sonAy)))
+                .Select(x => new { x.OdenilmeTarixi, Brut = x.OdenenMeblegBrut ?? 0m, Net = x.OdenenMebleg ?? 0m })
+                .ToListAsync();
+
+            return qeydler
+                .GroupBy(x => (Il: x.OdenilmeTarixi!.Value.Year, Ay: x.OdenilmeTarixi.Value.Month))
+                .ToDictionary(g => g.Key, g => (Brut: g.Sum(x => x.Brut), Net: g.Sum(x => x.Net)));
         }
 
         // ── GET /User/Maas/GetDetay?il=2026&ay=4 ────────────

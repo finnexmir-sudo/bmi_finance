@@ -245,6 +245,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     cell.Style.Font.FontSize        = 9;
                     switch (kod)
                     {
+                        case "":  break; // işçi həmin gün işləmirdi (işdən ayrılıbdan sonra) → boş xana
                         case "İ": cell.Value = "İ"; cell.Style.Fill.BackgroundColor = cIstirahit; cell.Style.Font.FontColor = XLColor.Gray; break;
                         case "B": cell.Value = "B"; cell.Style.Fill.BackgroundColor = cBayram; cell.Style.Font.Bold = true; break;
                         case "M": cell.Value = "M"; cell.Style.Fill.BackgroundColor = cMez; break;

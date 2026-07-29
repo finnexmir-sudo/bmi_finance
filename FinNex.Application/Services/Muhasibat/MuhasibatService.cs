@@ -543,7 +543,7 @@ public class MuhasibatService : IMuhasibatService
                 .Replace("{SON}", s.ToString("dd/MM/yyyy"));
             var bazaSql = (await SqlAl(AdMenfeetBaza)).Replace("{SON}", s.ToString("dd/MM/yyyy"));
 
-            var plTask   = _oracle.SelectAsync(plSql, maxRows: 200);
+            var plTask   = _oracle.SelectAsync(plSql, maxRows: 5000);
             var bazaTask = _oracle.SelectAsync(bazaSql, maxRows: 5);
             await Task.WhenAll(plTask, bazaTask);
             var rows  = plTask.Result;
@@ -554,10 +554,10 @@ public class MuhasibatService : IMuhasibatService
             decimal ehtiyatGross = 0m;                          // 89 provision — gross churn (ayrıca)
             foreach (var r in rows)
             {
-                var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
+                var hesab  = Val(r, "hesab")?.ToString() ?? "";
                 var debet  = Dec(Val(r, "debet"));
                 var kredit = Dec(Val(r, "kredit"));
-                var (kat, gelir) = MenfeetTesnif(sinif2);
+                var (kat, gelir) = MenfeetTesnif(hesab);
                 var meb = gelir ? kredit : debet;
                 if (meb == 0m) continue;
                 if (gelir) gelirD[kat] = gelirD.GetValueOrDefault(kat) + meb;
@@ -565,28 +565,41 @@ public class MuhasibatService : IMuhasibatService
                 else xercD[kat] = xercD.GetValueOrDefault(kat) + meb;
             }
 
-            // Valyuta/ticarət (66/68 gəlir, 86/88 zərər) — gündəlik yenidən qiymətləndirmə
-            // olduğu üçün GROSS böyükdür, amma bir-birini kompensasiya edir. NET göstərilir
-            // ki, struktur və Cost/Income təhrif olunmasın (pre-provision mənfəət dəyişmir).
-            var vGelir = gelirD.GetValueOrDefault("Valyuta/ticarət gəliri");
-            var vZerer = xercD.GetValueOrDefault("Valyuta/ticarət zərəri");
-            gelirD.Remove("Valyuta/ticarət gəliri");
-            xercD.Remove("Valyuta/ticarət zərəri");
-            var netFx = vGelir - vZerer;
-            if (netFx >= 0m) gelirD["Valyuta/ticarət (net)"] = netFx;
-            else             xercD["Valyuta/ticarət (net)"]  = -netFx;
+            // Kurs fərqi (66 gəlir − 86 xərc) və Dilinq fərqi (68 gəlir − 88 xərc).
+            // İkisi də valyuta əməliyyatlarının nəticəsidir: kurs = mövqe gündəlik yenidən
+            // qiymətləndirmə (GROSS böyük, bir-birini kompensasiya edir), dilinq = dealing.
+            // Hər ikisi NET olaraq GƏLİR strukturunda göstərilir (mənfi ola bilər) və
+            // ƏMƏLİYYAT XƏRCİNƏ DAXİL EDİLMİR. Pre-provision mənfəət dəyişmir (cəbri eyni).
+            var kursGelir   = gelirD.GetValueOrDefault("Kurs fərqi gəliri");
+            var kursZerer   = xercD.GetValueOrDefault("Kurs fərqi zərəri");
+            var dilinqGelir = gelirD.GetValueOrDefault("Dilinq fərqi gəliri");
+            var dilinqZerer = xercD.GetValueOrDefault("Dilinq fərqi zərəri");
+            gelirD.Remove("Kurs fərqi gəliri");
+            gelirD.Remove("Dilinq fərqi gəliri");
+            xercD.Remove("Kurs fərqi zərəri");
+            xercD.Remove("Dilinq fərqi zərəri");
+            gelirD["Kurs fərqi"]   = kursGelir - kursZerer;
+            gelirD["Dilinq fərqi"] = dilinqGelir - dilinqZerer;
 
             // Faiz gəliri cəmi = 4 alt-kateqoriyanın toplamı (NII/NIM/Excel bunu istifadə edir).
             dto.FaizGeliri   = Math.Round(FaizGelirKatlar.Sum(k => gelirD.GetValueOrDefault(k)), 2);
-            dto.FaizXerci    = Math.Round(xercD.GetValueOrDefault("Faiz xərci"), 2);
+            dto.FaizXerci    = Math.Round(xercD.GetValueOrDefault("Faiz xərcləri"), 2);
             dto.EhtiyatGross = Math.Round(ehtiyatGross, 2);
             dto.UmumiGelir   = Math.Round(gelirD.Values.Sum(), 2);            // əməliyyat gəliri
             dto.UmumiXerc    = Math.Round(xercD.Values.Sum(), 2);            // əməliyyat xərci (ehtiyatsız)
             dto.XalisFaizGeliri = Math.Round(dto.FaizGeliri - dto.FaizXerci, 2);
             dto.EhtiyatdanEvvelMenfeet = Math.Round(dto.UmumiGelir - dto.UmumiXerc, 2);
             dto.XercGelirNisbeti = dto.UmumiGelir != 0 ? Math.Round(dto.UmumiXerc / dto.UmumiGelir * 100, 2) : 0;
-            dto.GelirBolgusu = ToMadde(gelirD, dto.UmumiGelir);
-            dto.XercBolgusu  = ToMadde(xercD, dto.UmumiXerc);
+            // Gəlir siyahısı: əsas gəlirlər məbləğə görə, sonda valyuta cütü YAN-YANA
+            // (Kurs fərqi → Dilinq fərqi) — ikisi də FX nəticəsidir, birlikdə oxunsun.
+            var gelirList = ToMadde(gelirD, dto.UmumiGelir);
+            var fxAdlar   = new[] { "Kurs fərqi", "Dilinq fərqi" };
+            var esasGelir = gelirList.Where(x => !fxAdlar.Contains(x.Ad)).ToList();
+            var fxGelir   = gelirList.Where(x => fxAdlar.Contains(x.Ad))
+                                     .OrderBy(x => Array.IndexOf(fxAdlar, x.Ad));
+            esasGelir.AddRange(fxGelir);
+            dto.GelirBolgusu = esasGelir;
+            dto.XercBolgusu  = ToMaddeKanonik(xercD, dto.UmumiXerc, MenfeetXercSira);
 
             // 2) Baza nəticəsi — işləyən aktiv (NIM məxrəci) + 50130 mənfəəti (yoxlama).
             // Kiçik aqreqat (2 rəqəm), ≤SON son iş günü — 200k sətir çəkilmir.
@@ -626,24 +639,94 @@ public class MuhasibatService : IMuhasibatService
         "Digər faiz gəliri"                // 65
     };
 
-    // P&L kateqoriya təsnifatı hesab sinifinə (ilk 2 rəqəm) görə.
-    // gelir=true → sinif 6/7 (kredit dövriyyəsi); gelir=false → sinif 8 (debet dövriyyəsi).
-    // Faiz gəliri prefiksə görə 4 alt-kateqoriyaya bölünür (60/61/63-64/65).
-    private static (string kat, bool gelir) MenfeetTesnif(string sinif2) => sinif2 switch
+    // ── Əməliyyat (opex) xərc kateqoriyaları — Excel "xərclər" spesifikasiyası ──
+    // Sinif 9 hesabları TAM 20-rəqəmli nömrə üzrə təsnif olunur: 9007/9008 prefiksi
+    // bir neçə kateqoriyaya bölünür (90071=Sığorta, 90073=Mühafizə, 90074=Enerji,
+    // 90080=Rabitə, 90089=Kredit), ona görə prefiks kifayət etmir — dəqiq hesab lazımdır.
+    private static readonly HashSet<string> OpexSigorta = new()
     {
-        "60"                                  => ("Qiymətli kağızlar üzrə faiz", true),
-        "61"                                  => ("Overnayt depozit və repo faizi", true),
-        "63" or "64"                          => ("Kreditlər üzrə faiz", true),
-        "65"                                  => ("Digər faiz gəliri", true),
-        "66" or "68"                          => ("Valyuta/ticarət gəliri", true),
-        "67"                                  => ("Komissiya gəliri", true),
-        "70" or "72"                          => ("Digər gəlir", true),
-        "81" or "82" or "84" or "85"          => ("Faiz xərci", false),
-        "86" or "88"                          => ("Valyuta/ticarət zərəri", false),
-        "87"                                  => ("Komissiya xərci", false),
-        "89"                                  => ("Ehtiyat xərci", false),
-        _ => sinif2.StartsWith("8") ? ("Digər xərc", false) : ("Digər gəlir", true)
+        "90039000030000700000", "90071000010000700000", "90071000020000700000",
+        "90090000000000700001", "90100010000000700001", "90100020000000700001"
     };
+    private static readonly HashSet<string> OpexKredit = new()
+    {
+        "90060000000000700004", "90060000000000700005", "90060000000000700006",
+        "90089000013000700000", "90089000022000700000", "90111000000000700000"
+    };
+    private static readonly HashSet<string> OpexEnerji = new()
+    {
+        "90074000010000700000", "90074000020000700000"
+    };
+    private static readonly HashSet<string> OpexRabite = new()
+    {
+        "90080000000000700002", "90080000010000700000",
+        "90080000040000700000", "90080000050000700000"
+    };
+    private static readonly HashSet<string> OpexHuquq = new()
+    {
+        "90114000020000700000", "90114000030000700000"
+    };
+    private const string OpexMuhafize = "90073000000000700000";
+    private const string OpexHerrac   = "90112000000000700000";
+
+    // Əməliyyat xərci strukturu — Excel-dəki kanonik sıra (display + drill-down).
+    // Qeyd: "Ehtiyat xərci" (89) burada YOXDUR — o, əməliyyat xərci deyil, ayrıca
+    // provision kimi (EhtiyatGross / XalisEhtiyat) hesablanır (ikiqat sayılma olmasın).
+    private static readonly string[] MenfeetXercSira =
+    {
+        "Faiz xərcləri", "Komissiya xərcləri",
+        "İşçilərə əmək haqqı və digər xərclər", "Sığorta xərcləri", "Kredit xərcləri",
+        "Mühafizə xərcləri", "Enerji xərcləri", "Amortizasiya ayırmaları",
+        "Təmir xərcləri", "Rabitə xərcləri", "Hərrac xərci", "Hüquq məsrəfləri",
+        "Digər xərclər"
+    };
+
+    // Sinif 9 (opex) — TAM hesab nömrəsinə görə Excel kateqoriyası (#4–14).
+    private static string OpexTesnif(string hesab)
+    {
+        if (hesab.StartsWith("9002")) return "İşçilərə əmək haqqı və digər xərclər";
+        if (hesab.StartsWith("9004")) return "Amortizasiya ayırmaları";
+        if (hesab.StartsWith("9005")) return "Təmir xərcləri";
+        if (OpexSigorta.Contains(hesab)) return "Sığorta xərcləri";
+        if (OpexKredit.Contains(hesab))  return "Kredit xərcləri";
+        if (hesab == OpexMuhafize)       return "Mühafizə xərcləri";
+        if (OpexEnerji.Contains(hesab))  return "Enerji xərcləri";
+        if (OpexRabite.Contains(hesab))  return "Rabitə xərcləri";
+        if (hesab == OpexHerrac)         return "Hərrac xərci";
+        if (OpexHuquq.Contains(hesab))   return "Hüquq məsrəfləri";
+        return "Digər xərclər";   // qalan 90... və 91...
+    }
+
+    // P&L kateqoriya təsnifatı — TAM hesab nömrəsi üzrə.
+    // gelir=true → sinif 6/7 (kredit dövriyyəsi); gelir=false → sinif 8/9 (debet dövriyyəsi).
+    // Gəlir və faiz/komissiya xərci ilk 2 rəqəmə görə; opex (sinif 9) tam hesaba görə.
+    // Faiz xərci Excel-ə görə YALNIZ 84 (81/82/85 → "Digər xərclər", pul düşməsin).
+    private static (string kat, bool gelir) MenfeetTesnif(string hesab)
+    {
+        hesab = (hesab ?? "").Trim();
+        var s2 = hesab.Length >= 2 ? hesab.Substring(0, 2) : hesab;
+        switch (s2)
+        {
+            case "60": return ("Qiymətli kağızlar üzrə faiz", true);
+            case "61": return ("Overnayt depozit və repo faizi", true);
+            case "63":
+            case "64": return ("Kreditlər üzrə faiz", true);
+            case "65": return ("Digər faiz gəliri", true);
+            case "66": return ("Kurs fərqi gəliri", true);     // mövqe yenidən qiymətləndirmə
+            case "68": return ("Dilinq fərqi gəliri", true);   // dilinq (dealing) əməliyyatı
+            case "67": return ("Komissiya gəliri", true);
+            case "70":
+            case "72": return ("Digər gəlir", true);
+            case "84": return ("Faiz xərcləri", false);        // Excel #1 — yalnız 84
+            case "86": return ("Kurs fərqi zərəri", false);    // mövqe yenidən qiymətləndirmə
+            case "88": return ("Dilinq fərqi zərəri", false);  // dilinq (dealing) əməliyyatı
+            case "87": return ("Komissiya xərcləri", false);   // Excel #2
+            case "89": return ("Ehtiyat xərci", false);        // Excel #3 — provision (ayrıca)
+        }
+        if (hesab.StartsWith("9")) return (OpexTesnif(hesab), false);   // Excel #4–14 (opex)
+        if (hesab.StartsWith("8")) return ("Digər xərclər", false);     // 81/82/85 və s. — düşməsin
+        return ("Digər gəlir", true);                                    // qalan sinif 6/7
+    }
 
     public async Task<MuhasibatKeyfiyyetDto> KreditKeyfiyyetAsync(DateTime? tarix = null)
     {
@@ -2017,17 +2100,25 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                         .Replace("{BAS}", bb.ToString("dd/MM/yyyy"))
                         .Replace("{SON}", ss.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
-                    var fxNet = madde == "Valyuta/ticarət (net)";
+                    var kursNet   = madde == "Kurs fərqi";     // 66 gəlir − 86 xərc
+                    var dilinqNet = madde == "Dilinq fərqi";   // 68 gəlir − 88 xərc
                     foreach (var r in rows)
                     {
-                        var sinif2 = Val(r, "sinif2")?.ToString() ?? "";
-                        var (kat, gelir) = MenfeetTesnif(sinif2);
+                        var hesab = Val(r, "hesab")?.ToString() ?? "";
+                        var (kat, gelir) = MenfeetTesnif(hesab);
                         decimal meb;
-                        if (fxNet)
+                        if (kursNet)
                         {
-                            // net kateqoriya: gəlir tərəf (66/68) +kredit, zərər tərəf (86/88) −debet.
-                            if (kat == "Valyuta/ticarət gəliri") meb = Dec(Val(r, "kredit"));
-                            else if (kat == "Valyuta/ticarət zərəri") meb = -Dec(Val(r, "debet"));
+                            // net kateqoriya: gəlir tərəf (66) +kredit, zərər tərəf (86) −debet.
+                            if (kat == "Kurs fərqi gəliri") meb = Dec(Val(r, "kredit"));
+                            else if (kat == "Kurs fərqi zərəri") meb = -Dec(Val(r, "debet"));
+                            else continue;
+                        }
+                        else if (dilinqNet)
+                        {
+                            // net kateqoriya: gəlir tərəf (68) +kredit, zərər tərəf (88) −debet.
+                            if (kat == "Dilinq fərqi gəliri") meb = Dec(Val(r, "kredit"));
+                            else if (kat == "Dilinq fərqi zərəri") meb = -Dec(Val(r, "debet"));
                             else continue;
                         }
                         else
@@ -2206,6 +2297,20 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         d.Where(x => Math.Abs(x.Value) > 0.005m).OrderByDescending(x => x.Value)
          .Select(x => new BalansMaddeDto { Ad = x.Key, Mebleg = Math.Round(x.Value, 2),
              Faiz = total != 0 ? Math.Round(x.Value / total * 100, 1) : 0 }).ToList();
+
+    // Kanonik sıra (verilmiş massiv) ilə; siyahıda olmayan qalanlar sonda məbləğə görə.
+    private static List<BalansMaddeDto> ToMaddeKanonik(Dictionary<string, decimal> d, decimal total, string[] sira)
+    {
+        BalansMaddeDto Mk(string ad, decimal v) => new() { Ad = ad, Mebleg = Math.Round(v, 2),
+            Faiz = total != 0 ? Math.Round(v / total * 100, 1) : 0 };
+        var res = new List<BalansMaddeDto>();
+        foreach (var ad in sira)
+            if (d.TryGetValue(ad, out var v) && Math.Abs(v) > 0.005m) res.Add(Mk(ad, v));
+        foreach (var kv in d.Where(x => !sira.Contains(x.Key) && Math.Abs(x.Value) > 0.005m)
+                            .OrderByDescending(x => x.Value))
+            res.Add(Mk(kv.Key, kv.Value));
+        return res;
+    }
 
     // Gecikmə (aging) — məntiqi sıra ilə (cari → 90+).
     private static readonly string[] AgeSira = { "Cari (0 gün)", "1–30 gün", "31–90 gün", "90+ gün (NPL)" };

@@ -36,7 +36,12 @@ namespace FinNex.Application.Services.HR
                 .Include(t => t.Departament)
                 .Include(t => t.Vezife)
                 .Where(t => !t.Silinib && t.Aktivdir &&
-                            t.Isci.Status != IsciStatus.IshtenCixib &&   // çıxmış işçilər tabeldə göstərilmir
+                            // Çıxmış işçi də seçilmiş ayda ən azı bir gün işləyibsə tabeldə göstərilir:
+                            // ya hələ çıxmayıb, ya da ayın başlanğıcında/sonrasında (yəni ay ərzində) çıxıb.
+                            // Ayın başlanğıcından ƏVVƏL çıxanlar (o ay heç işləməyənlər) göstərilmir.
+                            (t.Isci.Status != IsciStatus.IshtenCixib ||
+                             (t.Isci.IsdenAyrilmaTarixi != null &&
+                              t.Isci.IsdenAyrilmaTarixi.Value.Date >= ayBaslangic.Date)) &&
                             t.BaslamaTarixi.Date <= ayBitis.Date &&
                             (t.BitmeTarixi == null || t.BitmeTarixi.Value.Date >= ayBaslangic.Date))
                 .ToListAsync();
@@ -142,6 +147,14 @@ namespace FinNex.Application.Services.HR
                 for (int d = 1; d <= gunSayi; d++)
                 {
                     var gun = new DateTime(il, ay, d);
+
+                    // İşçi işdən ayrıldıqdan SONRAKI günlər → boş xana (o günlər işləmir,
+                    // iş günü/saatı sayılmır). Ayrılma günü daxil işlədiyi günlər normal qalır.
+                    if (isci.IsdenAyrilmaTarixi != null && gun.Date > isci.IsdenAyrilmaTarixi.Value.Date)
+                    {
+                        satir.GunKodlari.Add("");
+                        continue;
+                    }
 
                     bool isWeekend    = gun.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
                     bool isBayram     = bayramTarihleri.Contains(gun.Date);

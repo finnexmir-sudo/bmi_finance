@@ -641,7 +641,8 @@ namespace FinNex.Application.Services.HR
                 izahatlar.Add(new HesablamaIzahiDto
                 {
                     Addim = "VM 98.2.1 Gəlirləri",
-                    Izah = "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər",
+                    Izah = "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan hesabi gəlir — " +
+                           "4 vergi/ayırma bazasına ƏLAVƏ OLUNUR, brüt/net-ə DAXİL DEYİL (nağd ödənmir; tutulmalar artır)",
                     Mebleg = input.VM9821Meblegi,
                     Tip = "gelir"
                 });
@@ -783,7 +784,10 @@ namespace FinNex.Application.Services.HR
                 + input.BonusMeblegi
                 + overtimeMebleg
                 + input.IH07Meblegi
-                + input.VM9821Meblegi
+                // VM 98.2.1 gəlirləri BRÜT-ə DAXİL EDİLMİR (gəlir kimi maaşı ARTIRMIR).
+                // Bu, VM 98.2.1-ə əsasən vergiyə cəlb olunan hesabi (imputed) gəlirdir:
+                // yalnız 4 vergi/ayırma bazasına və güzəşt həddinə əlavə olunur (aşağıda),
+                // beləliklə tutulmalar artır, amma işçiyə əlavə pul (brüt/net) ödənmir.
                 - input.CerimeMeblegi
                 + korreksiyaGelir
                 + mezKompensasiyaMebleg
@@ -824,10 +828,13 @@ namespace FinNex.Application.Services.HR
             // çıxılır, müvafiq hissə geri əlavə olunur. elave=0-da bazalar əvvəlki kimi qalır.
             // İşsizlik və İTSS ayrı bazalara bölünür (konfiqurasiyalı gəlir biri üçün cəlb,
             // digəri üçün azad ola bilər); elave=0-da hər ikisi köhnə itssBazasi-na bərabərdir.
-            decimal vergiBazasi    = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg - elaveCemi + elaveVergiTaxable);
-            decimal dsmfBazasi     = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg - xestelikSirketOdenis - elaveCemi + elaveDsmf);
-            decimal issizlikBazasi = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis - elaveCemi + elaveIssizlik);
-            decimal itssBazasi     = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis - elaveCemi + elaveItss);
+            // VM 98.2.1 gəlirləri (input.VM9821Meblegi) BÜTÜN 4 bazaya əlavə olunur — brüt-ə YOX.
+            // Bu bazalar həm İŞÇİ, həm İŞƏGÖTÜRƏN paylarını qidalandırır (aşağıda dsmfIsegoturen
+            // və s. eyni dəyişənləri istifadə edir) → VM 98.2.1 hər iki tərəfə simmetrik təsir edir.
+            decimal vergiBazasi    = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg - elaveCemi + elaveVergiTaxable + input.VM9821Meblegi);
+            decimal dsmfBazasi     = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg - xestelikSirketOdenis - elaveCemi + elaveDsmf + input.VM9821Meblegi);
+            decimal issizlikBazasi = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis - elaveCemi + elaveIssizlik + input.VM9821Meblegi);
+            decimal itssBazasi     = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis - elaveCemi + elaveItss + input.VM9821Meblegi);
 
             if (hysMebleg > 0)
             {
@@ -913,7 +920,9 @@ namespace FinNex.Application.Services.HR
             // Məzuniyyət avansı ayrıca ödənilsə də, həmin ayın ümumi gəliri sayılır → threshold-a daxildir.
             // brutMaas elaveCemi-ni tam ehtiva edir; 2500 güzəşt həddinə yalnız
             // GuzestHeddineDaxil=true olan konfiqurasiyalı gəlirlər sayılmalıdır.
-            decimal brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu - (elaveCemi - elaveGuzest);
+            // VM 98.2.1 gəlirləri vergiyə cəlb olunan gəlirdir → 200 AZN güzəşt həddinə (2500)
+            // sayılır (brüt-ə daxil olmasa da), əks halda güzəşt yanlış tətbiq oluna bilər.
+            decimal brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu - (elaveCemi - elaveGuzest) + input.VM9821Meblegi;
             decimal standartGuzest = brutMaasGuzestYoxlama <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
             decimal vergilenecek = Math.Max(0, vergiBazasi - standartGuzest - maxIsciGuzesti);

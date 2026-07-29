@@ -3,10 +3,15 @@
 @{
     ViewData["Title"] = "Mühasibat — Mənfəət / Zərər";
     string Fmt(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
+    // Rəng palitraları — həm donut, həm siyahı nöqtələri eyni indeks üzrə istifadə edir.
+    string[] palGelir = { "#059669", "#10b981", "#34d399", "#0d9488", "#14b8a6", "#047857", "#6ee7b7", "#5eead4" };
+    string[] palXerc  = { "#b91c1c", "#ef4444", "#f97316", "#f59e0b", "#dc2626", "#ea580c", "#d97706", "#e11d48", "#fb923c", "#facc15", "#9f1239", "#c2410c", "#fda4af", "#fca5a5" };
     var gelirJson = Html.Raw(JsonSerializer.Serialize(Model.GelirBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
     var xercJson = Html.Raw(JsonSerializer.Serialize(Model.XercBolgusu.Select(x => new { l = x.Ad, v = x.Mebleg })));
+    var palGjson = Html.Raw(JsonSerializer.Serialize(palGelir));
+    var palXjson = Html.Raw(JsonSerializer.Serialize(palXerc));
     var gunSayi = (Model.SonTarix - Model.BasTarix).Days + 1;                 // NIM illik əmsalının məxrəci
-    var qeyriFaizGelir = Model.UmumiGelir - Model.FaizGeliri;                 // komissiya + valyuta(net) + digər
+    var qeyriFaizGelir = Model.UmumiGelir - Model.FaizGeliri;                 // komissiya + kurs/dilinq(net) + digər
     var xercCemi = Model.UmumiXerc + Model.XalisEhtiyat;                      // ehtiyat daxil — Gəlir − bu = 50130
 }
 
@@ -73,11 +78,11 @@
             <div class="mh-lcr-comp mh-ladder">
                 <div class="mh-lad-h">Necə yaranır — addım-addım</div>
                 <div><span>Gəlir cəmi (sinif 6/7 — aşağıda "Gəlir strukturu")</span><b class="mh-ok">+ @Fmt(Model.UmumiGelir) ₼</b></div>
-                <div><span>Əməliyyat xərci (sinif 8, ehtiyatsız — aşağıda "Əməliyyat xərci")</span><b class="mh-warn">− @Fmt(Model.UmumiXerc) ₼</b></div>
+                <div><span>Əməliyyat xərci (ehtiyatsız — aşağıda "Əməliyyat xərci")</span><b class="mh-warn">− @Fmt(Model.UmumiXerc) ₼</b></div>
                 <div class="mh-lad-eq"><span>= Ehtiyatdan əvvəl mənfəət</span><b>@Fmt(Model.EhtiyatdanEvvelMenfeet) ₼</b></div>
                 @if (Model.XalisEhtiyat >= 0)
                 {
-                    <div><span>Ehtiyat xərci (sinif 89, xalis)</span><b class="mh-warn">− @Fmt(Model.XalisEhtiyat) ₼</b></div>
+                    <div><span>Ehtiyat ayırmaları (sinif 89, xalis)</span><b class="mh-warn">− @Fmt(Model.XalisEhtiyat) ₼</b></div>
                 }
                 else
                 {
@@ -93,10 +98,11 @@
                 <div class="mh-card-b">
                     <div class="mh-chart"><canvas id="chGelir"></canvas></div>
                     <div class="mh-list">
-                        @foreach (var a in Model.GelirBolgusu)
+                        @for (int gi = 0; gi < Model.GelirBolgusu.Count; gi++)
                         {
+                            var a = Model.GelirBolgusu[gi];
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@a.Ad" data-mhbaslik="Gəlir — @a.Ad">
-                                <div class="mh-row-t"><span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
+                                <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palGelir[gi % palGelir.Length])"></span>@a.Ad</span><b>@Fmt(a.Mebleg) ₼</b></div>
                                 <div class="mh-bar mh-bar--g"><span style="width:@(a.Faiz)%"></span></div>
                                 <div class="mh-row-p">@a.Faiz%</div>
                             </div>
@@ -110,14 +116,26 @@
                 <div class="mh-card-b">
                     <div class="mh-chart"><canvas id="chXerc"></canvas></div>
                     <div class="mh-list">
-                        @foreach (var x in Model.XercBolgusu)
+                        @for (int xi = 0; xi < Model.XercBolgusu.Count; xi++)
                         {
+                            var x = Model.XercBolgusu[xi];
                             <div class="mh-row mh-click" data-mhsahe="menfeet" data-mhmadde="@x.Ad" data-mhbaslik="Xərc — @x.Ad">
-                                <div class="mh-row-t"><span>@x.Ad</span><b>@Fmt(x.Mebleg) ₼</b></div>
+                                <div class="mh-row-t"><span><span class="mh-dot2" style="background:@(palXerc[xi % palXerc.Length])"></span>@x.Ad</span><b>@Fmt(x.Mebleg) ₼</b></div>
                                 <div class="mh-bar mh-bar--r"><span style="width:@(x.Faiz)%"></span></div>
                                 <div class="mh-row-p">@x.Faiz%</div>
                             </div>
                         }
+                        @* Ehtiyat ayırmaları (sinif 89) — siyahının İÇİNDƏ, digərlərinin altında (sonda).
+                           Yalnız display; subtotala və donut qrafikə DAXİL DEYİL. *@
+                        @{
+                            var ehtFaiz = Model.UmumiXerc != 0 ? Math.Round(Model.XalisEhtiyat / Model.UmumiXerc * 100, 1) : 0m;
+                            var ehtBar  = Math.Min(100m, Math.Abs(ehtFaiz));
+                        }
+                        <div class="mh-row">
+                            <div class="mh-row-t"><span><span class="mh-dot2" style="background:#94a3b8"></span>Ehtiyat ayırmaları</span><b>@Fmt(Model.XalisEhtiyat) ₼</b></div>
+                            <div class="mh-bar mh-bar--r"><span style="width:@(ehtBar)%"></span></div>
+                            <div class="mh-row-p">@ehtFaiz%</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -126,11 +144,11 @@
         <div class="mh-note">
             <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
             <ul>
-                <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 (kredit); <b>əməliyyat xərci</b> = sinif 8 EHTİYATSIZ (debet). Dövr: <b>başlanğıc–son</b> (default YTD).</li>
+                <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 (kredit); <b>əməliyyat xərci</b> = faiz (84) + komissiya (87) + opex (sinif 9), EHTİYATSIZ (debet). Dövr: <b>başlanğıc–son</b> (default YTD).</li>
                 <li><b>Rəqəm haradan gəlir?</b> Aşağıdakı gəlir/xərc sətirlərinə <b>klik</b> edin — hesab-səviyyə (GL) siyahı açılır; kateqoriya cəmi həmin hesabların toplamıdır.</li>
                 <li><b>NII</b> = faiz gəliri − faiz xərci. <b>NIM</b> = NII / işləyən aktiv (müxbir+banklararası+kredit, son iş gününə) × (365/gün) — illik təxmini.</li>
                 <li><b>Ehtiyat (sinif 89):</b> hər gün yenidən hesablandığı üçün "gross churn" böyük çıxır (<b>@Fmt(Model.EhtiyatGross) ₼</b>). Ona görə <b>xalis ehtiyat</b> = (ehtiyatdan əvvəl mənfəət − GL mənfəəti) kimi <b>törədilir</b> = <b>@Fmt(Model.XalisEhtiyat) ₼</b>.</li>
-                <li><b>Xalis mənfəət = <code>50130</code></b> (GL). Konstruksiyaya görə: ehtiyatdan əvvəl mənfəət − xalis ehtiyat = 50130. <b>Valyuta/ticarət</b> (66/68 gəlir, 86/88 zərər) gündəlik yenidən qiymətləndirmə olduğu üçün <b>NET</b> göstərilir (gross ~10M bir-birini kompensasiya edir).</li>
+                <li><b>Xalis mənfəət = <code>50130</code></b> (GL). Konstruksiyaya görə: ehtiyatdan əvvəl mənfəət − xalis ehtiyat = 50130. <b>Kurs fərqi</b> (66 gəlir − 86 xərc, mövqe yenidən qiymətləndirmə) və <b>Dilinq fərqi</b> (68 gəlir − 88 xərc, dealing) <b>NET</b> olaraq <b>gəlir strukturunda</b> göstərilir (mənfi ola bilər) — əməliyyat xərcinə daxil edilmir; pre-provision mənfəət dəyişmir.</li>
             </ul>
         </div>
     }
@@ -141,8 +159,8 @@
     <script>
         (function () {
             if (typeof Chart === 'undefined') return;
-            const palG = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'];
-            const palX = ['#b91c1c', '#ef4444', '#f97316', '#f59e0b', '#fca5a5'];
+            const palG = @palGjson;
+            const palX = @palXjson;
 
             function donut(id, rows, pal) {
                 const el = document.getElementById(id);
@@ -153,7 +171,7 @@
                     options: {
                         cutout: '62%', responsive: true, maintainAspectRatio: false,
                         plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                            legend: { display: false },
                             tooltip: { callbacks: { label: c => c.label + ': ' + Number(c.raw).toLocaleString('az-AZ') + ' ₼' } }
                         }
                     }
@@ -219,11 +237,12 @@
     .mh-card-h { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
     .mh-dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
     .mh-dot--g { background: #10b981; } .mh-dot--r { background: #ef4444; }
-    .mh-card-b { display: grid; grid-template-columns: 240px 1fr; gap: 18px; padding: 18px 20px; align-items: center; }
-    .mh-chart { height: 230px; position: relative; }
+    .mh-card-b { display: grid; grid-template-columns: 170px 1fr; gap: 18px; padding: 18px 20px; align-items: start; }
+    .mh-chart { height: 170px; position: relative; }
     .mh-list { display: flex; flex-direction: column; gap: 12px; }
     .mh-row-t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
-    .mh-row-t span { color: #475569; } .mh-row-t b { color: #0f172a; }
+    .mh-row-t > span { color: #475569; display: inline-flex; align-items: center; } .mh-row-t b { color: #0f172a; }
+    .mh-dot2 { width: 9px; height: 9px; border-radius: 3px; display: inline-block; margin-right: 7px; flex: 0 0 auto; }
     .mh-bar { height: 7px; background: #eef2f7; border-radius: 6px; overflow: hidden; }
     .mh-bar--g span { display: block; height: 100%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 6px; }
     .mh-bar--r span { display: block; height: 100%; background: linear-gradient(90deg, #dc2626, #f87171); border-radius: 6px; }

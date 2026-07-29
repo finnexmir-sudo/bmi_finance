@@ -221,9 +221,53 @@ namespace FinNex.UI.Areas.HR.Controllers
                     && gorushDict.TryGetValue((rec.IsciId, rec.Tarix.Date), out var b)
                     && rec.GirisVaxti.Value.TimeOfDay <= b.Bit + gorushGecikTolerans;
 
-                // status=4 (İcazəli) → "indi icazədə" canlı siyahısı; digər statuslar adi filtr
+                // ── İcazəli KPI ilə DRILL-DOWN siyahısı EYNİ prinsiplə getməlidir ───────────
+                // (CLAUDE.md: aqreqat say ≠ siyahı tələsi). İcazəli KPI İKİ qrupdan ibarətdir:
+                //   (1) icazeliIndi — cihazda faktiki çıxıb icazədə olanlar (umumi-də var),
+                //   (2) icazeGozleyen — təsdiqlənmiş icazəsi olan, amma həmin gün cihaz qeydi
+                //       OLMAYAN işçilər (məs. işə gəlməyib, adından icazə yazılıb təsdiqlənib).
+                // İkinci qrup `umumi`-də olmadığı üçün əvvəllər siyahıya düşmürdü → kart 1,
+                // siyahı boş idi. Ona görə həmin qrup üçün sintetik sətir hazırlanır.
+                var hedefTarixKpi = (tarix ?? baslangic ?? DateTime.Today).Date;
+                var qeydliIdsKpi = new HashSet<int>(umumi.Where(x => x.Tarix.Date == hedefTarixKpi).Select(x => x.IsciId));
+                var icazeGozleyenIds = icazeList
+                    .Where(i => i.Tarix == hedefTarixKpi && !qeydliIdsKpi.Contains(i.IsciId) && !mezuniyyetIsciIds.Contains(i.IsciId))
+                    .Select(i => i.IsciId).Distinct().ToList();
+
+                // İcazəli filtri seçiləndə icazeGozleyen işçilər üçün sintetik sətir hazırla
+                var icazeGozleyenRows = new List<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto>();
+                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli && icazeGozleyenIds.Count > 0)
+                {
+                    var icazeGozleyenIsciler = await _unitOfWork.Repository<Isci>()
+                        .Query().AsNoTracking()
+                        .Where(x => icazeGozleyenIds.Contains(x.Id))
+                        .Include(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                            .ThenInclude(t => t.Departament)
+                        .ToListAsync();
+                    icazeGozleyenRows = icazeGozleyenIsciler.Select(i =>
+                    {
+                        var esasTeyinat = i.IsciTeyinatlari.FirstOrDefault(t => t.Esasdir && !t.Silinib)
+                                          ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                        return new Application.DTOs.HR.Davamiyyet.DavamiyyetListDto
+                        {
+                            Id = 0,
+                            IsciId = i.Id,
+                            IsciTamAd = i.Ad + " " + i.Soyad,
+                            Tarix = hedefTarixKpi,
+                            GirisVaxti = null,
+                            CixisVaxti = null,
+                            Status = DavamiyyetStatus.Icazeli,
+                            DepartamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                            MaasdanKes = false,
+                            QayibSebebi = null
+                        };
+                    }).ToList();
+                }
+
+                // status=4 (İcazəli) → "indi icazədə" + "icazə gözləyən" (sintetik); digər statuslar adi filtr
                 var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
-                    ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)).ToList()
+                    ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId))
+                           .Concat(icazeGozleyenRows).ToList()
                     : status.HasValue
                         ? umumi.Where(x => (int)x.Status == status.Value && !TedbirBagislanir(x)).ToList()
                         : umumi;
@@ -344,11 +388,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // İcazəli = (indi fiziki icazədə olanlar) + (təsdiqlənmiş icazəsi olan, amma hələ
                 // qeydə düşməyənlər — səhər/gözləyən icazə). Belə, kart gözlənilən siyahısındakı
                 // "İcazəli" ilə uyğun olur (əvvəl bu ikinci qrup İcazəli sayılmırdı → kart 0 idi).
-                var hedefTarixKpi = (tarix ?? baslangic ?? DateTime.Today).Date;
-                var qeydliIdsKpi = new HashSet<int>(umumi.Where(x => x.Tarix.Date == hedefTarixKpi).Select(x => x.IsciId));
-                var icazeGozleyenSayi = icazeList
-                    .Where(i => i.Tarix == hedefTarixKpi && !qeydliIdsKpi.Contains(i.IsciId) && !mezuniyyetIsciIds.Contains(i.IsciId))
-                    .Select(i => i.IsciId).Distinct().Count();
+                // icazeGozleyenIds yuxarıda (result-dan əvvəl) hesablanıb — say ilə siyahı EYNİ mənbədən.
+                var icazeGozleyenSayi = icazeGozleyenIds.Count;
                 var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)) + icazeGozleyenSayi;
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
@@ -410,7 +451,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
         public async Task<IActionResult> IsGunuBit()
         {
             try
