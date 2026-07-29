@@ -107,6 +107,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdKeyfiyyetBaza   = "Muhasibat — Kredit keyfiyyet baza";
     private const string AdKeyfiyyetDetal  = "Muhasibat — Kredit keyfiyyet detal";
     private const string AdYerlesdirme     = "Muhasibat — Yerlesdirme";
+    private const string AdSonIsGunu       = "Muhasibat — Ilin son is gunu";
 
     // Sorğu siyahısı bir dəfə oxunur və scoped servis ömrü boyu cache-lənir (DbContext).
     // Bu, GunlukIcmal kimi çoxlu SqlAl çağıran bölmələrdə DbContext-i təkrar-təkrar vurmur
@@ -127,6 +128,20 @@ public class MuhasibatService : IMuhasibatService
             throw new InvalidOperationException(
                 $"OracleSorgular-da sorğu tapılmadı: '{ad}'. Muhasibat INSERT script işlədilməlidir.");
         return q.SorguMetni;
+    }
+
+    // İlin son əməliyyat günü — həmin gün il-sonu bağlanışı ilə cari il mənfəəti (50130)
+    // 50120-yə köçürülür, ona görə mənfəət KPI-si 50120-dən oxunmalıdır.
+    // Sorğu tapılmasa və ya Oracle xəta versə false — adi gün kimi 50130 işləyir.
+    private async Task<bool> IlinSonIsGunuMu(DateTime t)
+    {
+        try
+        {
+            var sql = (await SqlAl(AdSonIsGunu)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 1);
+            return rows.Count > 0 && Dec(Val(rows[0], "son_gun")) == 1m;
+        }
+        catch { return false; }
     }
 
     public async Task<MuhasibatIcmalDto> GunlukIcmalAsync(DateTime? tarix = null)
@@ -206,6 +221,9 @@ public class MuhasibatService : IMuhasibatService
             var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
 
+            // İl sonu son iş günündə 50130 artıq 50120-yə bağlanıb — mənfəət oradan oxunur.
+            var menfeetPrefiks = await IlinSonIsGunuMu(t) ? "50120" : "50130";
+
             var aktiv   = new Dictionary<string, decimal>();
             var ohdelik = new Dictionary<string, decimal>();
             var valyuta = new Dictionary<string, decimal>();
@@ -219,8 +237,8 @@ public class MuhasibatService : IMuhasibatService
                 var qaliq = Dec(Val(r, "qaliq"));
                 if (qaliq == 0m) continue;
 
-                // Cari ilin mənfəəti (50130*) — kredit qalıqlı, çevir
-                if (hesab.StartsWith("50130")) menfeet += -qaliq;
+                // Cari ilin mənfəəti (adi gün 50130*, ilin son iş günü 50120*) — kredit qalıqlı, çevir
+                if (hesab.StartsWith(menfeetPrefiks)) menfeet += -qaliq;
 
                 // Real müştəri depoziti (frm_Dep məntiqi) — Depozit tab-ı ilə tam uyğun
                 var depTip = Val(r, "dep_tip")?.ToString() ?? "X";
@@ -1725,6 +1743,10 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                 {
                     var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+                    // balans-menfeet: BalansAsync ilə eyni prefiks qaydası (say = siyahı) —
+                    // ilin son iş günündə mənfəət 50120-dədir, adi gündə 50130-da.
+                    var menfeetPrefiks = s0 == "balans-menfeet" && await IlinSonIsGunuMu(t)
+                        ? "50120" : "50130";
                     foreach (var r in rows)
                     {
                         var hesab = Val(r, "hesab")?.ToString() ?? "";
@@ -1743,7 +1765,7 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
 
                         if (s0 == "balans-menfeet")
                         {
-                            if (!hesab.StartsWith("50130")) continue;
+                            if (!hesab.StartsWith(menfeetPrefiks)) continue;
                             dto.Setirler.Add(DSetir(hesab, ad, ValyutaAd(valKod), -qaliq, InvalDisp(-qaliq)));
                             continue;
                         }
