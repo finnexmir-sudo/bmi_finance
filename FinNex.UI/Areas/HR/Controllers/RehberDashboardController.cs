@@ -407,65 +407,6 @@ namespace FinNex.UI.Areas.HR.Controllers
 
 
 
-        // ═══════════════════════════════════════════════════════════════
-        // İcazə İzləmə — rəhbər üçün işçi icazə statistikası
-        // ═══════════════════════════════════════════════════════════════
-        public async Task<IActionResult> IcazeIzleme(
-            DateTime? tarixFrom,
-            DateTime? tarixTo,
-            int? departamentId,
-            string? axtaris,
-            int? status,
-            string? sirala)
-        {
-            var filtr = new IcazeIzlemeFiltrDto
-            {
-                TarixFrom = tarixFrom,
-                TarixTo = tarixTo,
-                DepartamentId = departamentId,
-                Axtaris = axtaris,
-                Status = status,
-            };
-
-            var result = await _icazeService.GetIsciIzlemeAsync(filtr);
-            var depResult = await _departamentService.HamisiniGetirAsync();
-
-            var departamentler = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
-            {
-                new("Bütün şöbələr", "")
-            };
-            if (depResult.Success && depResult.Data != null)
-            {
-                departamentler.AddRange(depResult.Data
-                    .OrderBy(d => d.Ad)
-                    .Select(d => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(d.Ad, d.Id.ToString())));
-            }
-
-            var isciler = result.Success ? result.Data!.ToList() : new();
-
-            isciler = sirala switch
-            {
-                "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
-                "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
-                "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
-                _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
-            };
-
-            var vm = new IcazeIzlemeVM
-            {
-                IsciIstatistikler = isciler,
-                Filtr = filtr,
-                Departamentler = departamentler,
-            };
-
-            ViewData["Sirala"] = sirala ?? "cemi";
-            ViewData["Title"] = "İcazə İzləmə";
-
-            if (!result.Success)
-                TempData["Error"] = result.Message;
-
-            return View(vm);
-        }
 
 
 
