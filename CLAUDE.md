@@ -134,6 +134,21 @@ Düzgün həll: hər ikisi `date_close` (açıq) üzrə — qalığı 0 olan aç
 say tutuşur. `arh_licschkre` sorğularında `(date_close is null or date_close > TARIX)`
 kifayətdir; drill-down servisində `if (qaliq == 0) continue` **qoyma**.
 
+## Davamiyyət — İcazəli KPI vs Drill-down Siyahısı (KRİTİK)
+
+Davamiyyət səhifəsində "İcazəli" KPI kartı **İKİ qrupdan** ibarətdir:
+1. `icazeliIndi` — cihazda **faktiki çıxıb** icazədə olanlar (`umumi`-də qeydi var).
+2. `icazeGozleyen` — təsdiqlənmiş icazəsi olan, amma həmin gün **cihaz qeydi OLMAYAN**
+   işçilər (məs. işə gəlməyib, adından login olub icazə yazılıb və təsdiqlənib).
+
+Kart sayı hər iki qrupu toplayır, amma drill-down siyahısı yalnız `umumi`-dən qurulurdusa,
+ikinci qrup siyahıya **düşmür** → **kart 1, siyahı boş** (2026-07, real hadisə).
+
+**Qayda:** İcazəli filtri (`status=4`) seçiləndə siyahıya `icazeGozleyen` işçilər üçün
+**sintetik sətir** əlavə et (ad/departament `Isci`-dən, giriş/çıxış null, status İcazəli).
+Say və siyahı **eyni `icazeGozleyenIds` mənbəsindən** getməlidir — biri toplayıb, o biri
+atsa, say ≠ siyahı olur (eyni prinsip kredit hesabatlarındakı `date_close` tələsi kimidir).
+
 ## Balans — Bağlı Hesab (date_close_licsch) Filtri (KRİTİK)
 
 Oracle GL balans sorğularında hesab adı/dep_tip üçün `licsch` cədvəlinə join edilir.
