@@ -11,9 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Endpoint URL-ləri ──────────────────────────────────────────
     // Səhifənin kök elementində `data-endpoint-*` atributu varsa onun dəyəri
     // istifadə olunur (boş dəyər → endpoint deaktiv); yoxdursa default HR
-    // Davamiyyet controller-ə yönəlir. Bu yolla eyni JS həm
-    // `/HR/Davamiyyet/Index`, həm də `/HR/RehberDashboard/Davamiyyet`
-    // səhifələrində işləyir — rəhbərin HR-a girişi olmasa belə.
+    // Davamiyyet controller-ə yönəlir. Davamiyyət səhifəsi vahiddir:
+    // `/HR/Davamiyyet/Index` (HR + Admin + Rəhbər rollarına açıq).
     var pageEl = document.querySelector('.hrd-page');
     function endpoint(name, defaultUrl) {
         if (pageEl && pageEl.hasAttribute('data-endpoint-' + name)) {
