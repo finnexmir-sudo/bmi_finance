@@ -221,8 +221,20 @@ public class MuhasibatService : IMuhasibatService
             var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
             var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
 
-            // İl sonu son iş günündə 50130 artıq 50120-yə bağlanıb — mənfəət oradan oxunur.
-            var menfeetPrefiks = await IlinSonIsGunuMu(t) ? "50120" : "50130";
+            // İl sonu son iş günündə 50130 → 50120-yə bağlanır, mənfəət oradan oxunur.
+            // DİQQƏT: son_gun sorğusu "ildə TARIX-dən sonra gün yoxdur"u yoxlayır — cari ilin
+            // ən son yüklənmiş günündə bu HƏMİŞƏ doğrudur (sabah hələ bazada yoxdur). Ona görə
+            // 50120-yə keçid yalnız: (1) ay=dekabr, (2) 50130 həqiqətən bağlanıb (qalıq 0),
+            // (3) ildə sonrakı gün yoxdur — ÜÇÜ BİRLİKDƏ ödənəndə olur.
+            var menfeetPrefiks = "50130";
+            if (t.Month == 12)
+            {
+                decimal m50130 = 0m;
+                foreach (var r in rows)
+                    if ((Val(r, "hesab")?.ToString() ?? "").StartsWith("50130"))
+                        m50130 += -Dec(Val(r, "qaliq"));
+                if (m50130 == 0m && await IlinSonIsGunuMu(t)) menfeetPrefiks = "50120";
+            }
 
             var aktiv   = new Dictionary<string, decimal>();
             var ohdelik = new Dictionary<string, decimal>();
@@ -1826,10 +1838,17 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                 {
                     var sql = (await SqlAl(AdBalans)).Replace("{TARIX}", t.ToString("dd/MM/yyyy"));
                     var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
-                    // balans-menfeet: BalansAsync ilə eyni prefiks qaydası (say = siyahı) —
-                    // ilin son iş günündə mənfəət 50120-dədir, adi gündə 50130-da.
-                    var menfeetPrefiks = s0 == "balans-menfeet" && await IlinSonIsGunuMu(t)
-                        ? "50120" : "50130";
+                    // balans-menfeet: BalansAsync ilə EYNİ prefiks qaydası (say = siyahı) —
+                    // 50120 yalnız dekabr + 50130 bağlanıb (qalıq 0) + ildə sonrakı gün yoxdur.
+                    var menfeetPrefiks = "50130";
+                    if (s0 == "balans-menfeet" && t.Month == 12)
+                    {
+                        decimal m50130 = 0m;
+                        foreach (var r in rows)
+                            if ((Val(r, "hesab")?.ToString() ?? "").StartsWith("50130"))
+                                m50130 += -Dec(Val(r, "qaliq"));
+                        if (m50130 == 0m && await IlinSonIsGunuMu(t)) menfeetPrefiks = "50120";
+                    }
                     foreach (var r in rows)
                     {
                         var hesab = Val(r, "hesab")?.ToString() ?? "";

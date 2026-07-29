@@ -172,6 +172,20 @@ bərabər idi — filtri götürəndə həm faiz düzəldi, həm balans dəqiq b
 - Diaqnostik SELECT verəndə dashboard-un **bütün** filtrlərini təkrarla — natamam
   diaqnostik yanlış "düz/səhv" nəticəsinə aparır.
 
+## "İlin Son Günü" Aşkarlanması — Cari İl Tələsi (KRİTİK)
+
+"TARIX ilin son əməliyyat günüdürmü?" tipli sorğu (`ildə TARIX-dən sonra gün
+YOXDUR`) cari ildə **hər gün doğru çıxır** — sabahkı günlər bazada hələ mövcud
+deyil. Nəticədə "il sonu" məntiqi ilin ortasında işə düşür.
+
+Real nümunə (2026-07-29, Balans İcmalı): mənfəət 50130→50120 il-sonu keçidi
+yalnız son_gun sorğusuna bağlanmışdı → iyulda "son gün" sayıldı, mənfəət boş
+50120-dən oxundu və Xalis mənfəət 0 göründü (ROA/ROE də 0).
+
+**Qayda:** Belə keçidləri tək tarix-müqayisəli sorğuya bağlama — real DATA
+şərti ilə birləşdir (məs. mənfəət üçün: ay=dekabr **VƏ** 50130 qalığı=0
+**VƏ** ildə sonrakı gün yoxdur). "Ən son yüklənmiş gün" ≠ "ilin son günü".
+
 ## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
 
 Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur
