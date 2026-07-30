@@ -11,6 +11,9 @@
         + debet 50    → kredit 8x/9x (xərcin mənfəətə bağlanması)
         − debet 8x/9x → kredit 50    (əks yazılış / korreksiya — çıxılır)
 
+   İSTİSNA: sinif 89 (ehtiyat ayırmaları) bu hesablanmaya DAXİL DEYİL — UI-dakı
+   "Ehtiyat ayırmaları" rəqəmi törəmədir: ehtiyatdan əvvəl mənfəət − GL (50130).
+
    Mənbə cədvəl: odb.arh_dd (yazılış jurnalı — debet, kredit, summa_v_nacval).
    Nəticə sütunları ƏVVƏLKİ İLƏ EYNİDİR (hesab, debet, kredit) — gəlir hesablarının
    neti KREDIT sütununda, xərc hesablarının neti DEBET sütununda qayıdır, ona görə
@@ -52,12 +55,14 @@ from (
   select dd.kredit, dd.summa_v_nacval, 0
   from   odb.arh_dd dd
   where  dd.date_oper between to_date(''{BAS}'',''dd/mm/yyyy'') and to_date(''{SON}'',''dd/mm/yyyy'')
-    and  substr(dd.kredit,1,1) in (''8'',''9'') and substr(dd.debet,1,2) = ''50''
+    and  substr(dd.kredit,1,1) in (''8'',''9'') and substr(dd.kredit,1,2) <> ''89''
+    and  substr(dd.debet,1,2) = ''50''
   union all
   select dd.debet, -dd.summa_v_nacval, 0
   from   odb.arh_dd dd
   where  dd.date_oper between to_date(''{BAS}'',''dd/mm/yyyy'') and to_date(''{SON}'',''dd/mm/yyyy'')
-    and  substr(dd.debet,1,1) in (''8'',''9'') and substr(dd.kredit,1,2) = ''50''
+    and  substr(dd.debet,1,1) in (''8'',''9'') and substr(dd.debet,1,2) <> ''89''
+    and  substr(dd.kredit,1,2) = ''50''
 )
 group by hesab'
 WHERE  SorguAdi = N'Muhasibat — Menfeet zerer' AND ISNULL(Silinib,0) = 0;
@@ -83,12 +88,14 @@ from (
   select dd.kredit, dd.summa_v_nacval, 0
   from   odb.arh_dd dd
   where  dd.date_oper between to_date(''{BAS}'',''dd/mm/yyyy'') and to_date(''{SON}'',''dd/mm/yyyy'')
-    and  substr(dd.kredit,1,1) in (''8'',''9'') and substr(dd.debet,1,2) = ''50''
+    and  substr(dd.kredit,1,1) in (''8'',''9'') and substr(dd.kredit,1,2) <> ''89''
+    and  substr(dd.debet,1,2) = ''50''
   union all
   select dd.debet, -dd.summa_v_nacval, 0
   from   odb.arh_dd dd
   where  dd.date_oper between to_date(''{BAS}'',''dd/mm/yyyy'') and to_date(''{SON}'',''dd/mm/yyyy'')
-    and  substr(dd.debet,1,1) in (''8'',''9'') and substr(dd.kredit,1,2) = ''50''
+    and  substr(dd.debet,1,1) in (''8'',''9'') and substr(dd.debet,1,2) <> ''89''
+    and  substr(dd.kredit,1,2) = ''50''
 ) t, licsch l
 where l.licsch = t.hesab
 group by t.hesab, substr(t.hesab,1,2)'
