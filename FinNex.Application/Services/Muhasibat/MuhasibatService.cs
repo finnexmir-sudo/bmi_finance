@@ -2137,7 +2137,9 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                         {
                             if (kat == "Ehtiyat xərci") continue;   // ehtiyat heç birinə daxil deyil
                             if (kNii && !(gelir && FaizGelirKatlar.Contains(kat)) && kat != "Faiz xərcləri") continue;
-                            if (kGelir && !gelir) continue;
+                            // *gelir: kartda Kurs/Dilinq NET sayılır → zərər tərəfi (86/88) siyahıya
+                            // MƏNFİ sətir kimi daxil olmalıdır, yoxsa cəm karta bərabər olmur (say=siyahı).
+                            if (kGelir && !gelir && kat != "Kurs fərqi zərəri" && kat != "Dilinq fərqi zərəri") continue;
                             meb = gelir ? Dec(Val(r, "kredit")) : -Dec(Val(r, "debet"));
                         }
                         else if (kursNet)
