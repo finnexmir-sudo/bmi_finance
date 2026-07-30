@@ -2121,12 +2121,26 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                     var rows = await _oracle.SelectAsync(sql, maxRows: 20000);
                     var kursNet   = madde == "Kurs fərqi";     // 66 gəlir − 86 xərc
                     var dilinqNet = madde == "Dilinq fərqi";   // 68 gəlir − 88 xərc
+                    // KPI kart drill-down-ları (say = kart rəqəmi):
+                    //   *nii   → faiz gəliri hesabları (+) − faiz xərci (84, −)      = NII / NIM
+                    //   *gelir → bütün gəlir hesabları (net, Kurs/Dilinq daxil)      = Əməliyyat gəliri
+                    //   *pl    → gəlir (+) − əməliyyat xərci (−, ehtiyatsız)         = Ehtiyatdan əvvəl mənfəət
+                    var kNii   = madde == "*nii";
+                    var kGelir = madde == "*gelir";
+                    var kPl    = madde == "*pl";
                     foreach (var r in rows)
                     {
                         var hesab = Val(r, "hesab")?.ToString() ?? "";
                         var (kat, gelir) = MenfeetTesnif(hesab);
                         decimal meb;
-                        if (kursNet)
+                        if (kNii || kGelir || kPl)
+                        {
+                            if (kat == "Ehtiyat xərci") continue;   // ehtiyat heç birinə daxil deyil
+                            if (kNii && !(gelir && FaizGelirKatlar.Contains(kat)) && kat != "Faiz xərcləri") continue;
+                            if (kGelir && !gelir) continue;
+                            meb = gelir ? Dec(Val(r, "kredit")) : -Dec(Val(r, "debet"));
+                        }
+                        else if (kursNet)
                         {
                             // net kateqoriya: gəlir tərəf (66) +kredit, zərər tərəf (86) −debet.
                             if (kat == "Kurs fərqi gəliri") meb = Dec(Val(r, "kredit"));

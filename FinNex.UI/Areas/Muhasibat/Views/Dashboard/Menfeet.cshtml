@@ -41,25 +41,26 @@
     else
     {
         <div class="mh-kpis">
-            <div class="mh-kpi mh-kpi--a">
+            @* Kartlar klikləndikdə hesab-səviyyə drill-down açılır (cəm = kart rəqəmi) *@
+            <div class="mh-kpi mh-kpi--a mh-click" data-mhsahe="menfeet" data-mhmadde="*nii" data-mhbaslik="Xalis faiz gəliri (NII) — faiz gəliri (+) − faiz xərci (−)">
                 <div class="mh-kpi-ic"><i class="bi bi-cash-coin"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.XalisFaizGeliri) <span>₼</span></div>
                 <div class="mh-kpi-l">Xalis faiz gəliri (NII)</div>
                 <div class="mh-kpi-f">Faiz gəliri @Fmt(Model.FaizGeliri) − faiz xərci @Fmt(Model.FaizXerci)</div>
             </div>
-            <div class="mh-kpi mh-kpi--t">
+            <div class="mh-kpi mh-kpi--t mh-click" data-mhsahe="menfeet" data-mhmadde="*nii" data-mhbaslik="NIM — NII hesabları (÷ işləyən aktiv @Fmt(Model.IsleyenAktiv) ₼ × 365/@gunSayi gün)">
                 <div class="mh-kpi-ic"><i class="bi bi-percent"></i></div>
                 <div class="mh-kpi-v">@Model.Nim%</div>
                 <div class="mh-kpi-l">Xalis faiz marjası (NIM) · illik</div>
                 <div class="mh-kpi-f">NII @Fmt(Model.XalisFaizGeliri) ÷ işləyən aktiv @Fmt(Model.IsleyenAktiv) × 365/@gunSayi gün</div>
             </div>
-            <div class="mh-kpi mh-kpi--b">
+            <div class="mh-kpi mh-kpi--b mh-click" data-mhsahe="menfeet" data-mhmadde="*gelir" data-mhbaslik="Əməliyyat gəliri — bütün gəlir hesabları (Kurs/Dilinq net daxil)">
                 <div class="mh-kpi-ic"><i class="bi bi-box-arrow-in-down"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.UmumiGelir) <span>₼</span></div>
                 <div class="mh-kpi-l">Əməliyyat gəliri</div>
                 <div class="mh-kpi-f">Faiz @Fmt(Model.FaizGeliri) + qeyri-faiz @Fmt(qeyriFaizGelir) (sinif 6/7)</div>
             </div>
-            <div class="mh-kpi mh-kpi--w">
+            <div class="mh-kpi mh-kpi--w mh-click" data-mhsahe="menfeet" data-mhmadde="*pl" data-mhbaslik="Ehtiyatdan əvvəl mənfəət — gəlir (+) − əməliyyat xərci (−)">
                 <div class="mh-kpi-ic"><i class="bi bi-clipboard-check"></i></div>
                 <div class="mh-kpi-v">@Fmt(Model.EhtiyatdanEvvelMenfeet) <span>₼</span></div>
                 <div class="mh-kpi-l">Ehtiyatdan əvvəl mənfəət</div>
