@@ -36,11 +36,12 @@
     }
     else
     {
-        <div class="ms-toolbar" style="margin-bottom:12px">
-            <div class="ms-search">
+        <div class="ms-toolbar" style="margin-bottom:12px; display:flex; align-items:center; gap:10px">
+            <div class="ms-search" style="flex:1">
                 <i class="bi bi-search"></i>
                 <input type="text" id="bdSearch" placeholder="Borcalan / zamin adı, hesab axtar..." autocomplete="off" />
             </div>
+            <a asp-action="BildirisExcel" class="ms-btn bd-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə yüklə</a>
         </div>
 
         <div class="ms-twrap">
@@ -160,6 +161,9 @@
         .ic-zad { color: #1e293b; }
         .ic-zbadge { display: inline-flex; align-items: center; gap: 3px; background: #ede9fe; color: #6d28d9; border-radius: 6px; padding: 1px 7px; font-weight: 700; font-size: 11px; margin-left: 6px; }
         .bd-stat { display: inline-block; background: #eef2ff; color: #4338ca; border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: 11px; white-space: nowrap; }
+
+        .bd-xls { background: #107c41; border-color: #107c41; color: #fff; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+        .bd-xls:hover { background: #0b5d31; color: #fff; }
 
         .bd-btn { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
         .bd-btn-z { background: #0d9488; border-color: #0d9488; color: #fff; }

@@ -88,6 +88,80 @@ public class MehkemeIsiController : Controller
         return View(vm);
     }
 
+    // ── Excel: Bildirişə düşənlər — səhifədəki cədvəlin tam ixracı (zamin sətirləri ilə) ──
+    public async Task<IActionResult> BildirisExcel()
+    {
+        var vm = await _service.BildirisSiyahiAsync();
+        if (!vm.SorguTapildi || vm.Xeta != null)
+        {
+            TempData["Error"] = vm.Xeta ?? "Sorğu tapılmadı.";
+            return RedirectToAction(nameof(Bildirisler));
+        }
+
+        var wb = new NPOI.XSSF.UserModel.XSSFWorkbook();
+        var sh = wb.CreateSheet("Bildirise dusenler");
+
+        var boldF = wb.CreateFont(); boldF.IsBold = true;
+        var hSt = wb.CreateCellStyle();
+        hSt.SetFont(boldF);
+        hSt.FillForegroundColor = IndexedColors.Grey25Percent.Index;
+        hSt.FillPattern = FillPattern.SolidForeground;
+
+        var numSt = wb.CreateCellStyle();
+        numSt.DataFormat = wb.CreateDataFormat().GetFormat("#,##0.00");
+
+        string[] hdr = { "№", "Borcalan / Zamin", "Ünvan", "Hesab", "Status", "Son bildiriş tarixi",
+                         "Kr verilmə tarixi", "Ay", "Ver.kredit", "Əsas", "VK", "Faiz", "VK faiz",
+                         "Toplam VK", "Ümumi borc", "Aylıq", "×1.5", "Son ödəniş tarixi", "Son ödəniş məbləği" };
+        int[] gen = { 5, 34, 40, 24, 22, 16, 14, 6, 12, 12, 12, 12, 12, 13, 13, 11, 11, 14, 15 };
+        var hr = sh.CreateRow(0);
+        for (int c = 0; c < hdr.Length; c++)
+        {
+            var cell = hr.CreateCell(c); cell.SetCellValue(hdr[c]); cell.CellStyle = hSt;
+            sh.SetColumnWidth(c, gen[c] * 256);
+        }
+
+        void Num(IRow row, int col, decimal? v)
+        {
+            var cell = row.CreateCell(col);
+            if (v.HasValue) { cell.SetCellValue((double)v.Value); cell.CellStyle = numSt; }
+        }
+
+        int ri = 1, sira = 0;
+        foreach (var s in vm.Setirler)
+        {
+            var r = sh.CreateRow(ri++);
+            r.CreateCell(0).SetCellValue(++sira);
+            r.CreateCell(1).SetCellValue(s.Ad);
+            r.CreateCell(2).SetCellValue(s.BorcUnvan ?? "");
+            r.CreateCell(3).SetCellValue(s.Hes ?? "");
+            r.CreateCell(4).SetCellValue(s.Item01 ?? "");
+            r.CreateCell(5).SetCellValue(s.Item02 ?? "");
+            r.CreateCell(6).SetCellValue(s.VTar?.ToString("dd.MM.yyyy") ?? "");
+            if (s.MuddedAy.HasValue) r.CreateCell(7).SetCellValue(s.MuddedAy.Value);
+            Num(r, 8,  s.VerKr);     Num(r, 9,  s.Esas);      Num(r, 10, s.Vk);
+            Num(r, 11, s.Faiz);      Num(r, 12, s.VkFaiz);    Num(r, 13, s.ToplamVkBorc);
+            Num(r, 14, s.UmumiBorc); Num(r, 15, s.Ayliq);     Num(r, 16, s.Nisbet);
+            r.CreateCell(17).SetCellValue(s.SonOdTar?.ToString("dd.MM.yyyy") ?? "");
+            Num(r, 18, s.SonOdMeb);
+
+            foreach (var z in s.Zaminlar)
+            {
+                var zr = sh.CreateRow(ri++);
+                zr.CreateCell(1).SetCellValue("ZAMİN — " + z.Ad);
+                zr.CreateCell(2).SetCellValue(z.Unvan ?? "");
+            }
+        }
+
+        sh.CreateFreezePane(0, 1);
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"Bildirise_dusenler_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
     // Word bildiriş: zaminIndex boşdursa borcalana, doludursa həmin zaminə
     public async Task<IActionResult> BildirisWord(string? sk, string? hes, int? zaminIndex)
     {
