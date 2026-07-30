@@ -148,7 +148,7 @@
         <div class="mh-note">
             <div class="mh-note-h"><i class="bi bi-info-circle"></i> Qeyd</div>
             <ul>
-                <li>Mənbə: <code>arh_saldo_ls</code> dövriyyəsi. <b>Gəlir</b> = sinif 6/7 (kredit); <b>əməliyyat xərci</b> = faiz (84) + komissiya (87) + opex (sinif 9), EHTİYATSIZ (debet). Dövr: <b>başlanğıc–son</b> (default YTD).</li>
+                <li>Mənbə: <code>arh_dd</code> yazılışları, açar hesab <code>50</code> (mənfəət): <b>Gəlir</b> = (debet 6/7 → kredit 50) − (debet 50 → kredit 6/7); <b>Xərc</b> = (debet 50 → kredit 8/9) − (debet 8/9 → kredit 50) — faiz (84) + komissiya (87) + opex (sinif 9), EHTİYATSIZ. Dövr: <b>başlanğıc–son</b> (default YTD).</li>
                 <li><b>Rəqəm haradan gəlir?</b> Aşağıdakı gəlir/xərc sətirlərinə <b>klik</b> edin — hesab-səviyyə (GL) siyahı açılır; kateqoriya cəmi həmin hesabların toplamıdır.</li>
                 <li><b>NII</b> = faiz gəliri − faiz xərci. <b>NIM</b> = NII / işləyən aktiv (müxbir+banklararası+kredit, son iş gününə) × (365/gün) — illik təxmini.</li>
                 <li><b>Ehtiyat (sinif 89):</b> hər gün yenidən hesablandığı üçün "gross churn" böyük çıxır (<b>@Fmt(Model.EhtiyatGross) ₼</b>). Ona görə <b>xalis ehtiyat</b> = (ehtiyatdan əvvəl mənfəət − GL mənfəəti) kimi <b>törədilir</b> = <b>@Fmt(Model.XalisEhtiyat) ₼</b>.</li>
