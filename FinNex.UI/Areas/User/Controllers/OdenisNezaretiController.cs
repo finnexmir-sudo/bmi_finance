@@ -39,7 +39,7 @@ public class OdenisNezaretiController : Controller
     // Filtrlər (səhifədəki JS ilə eyni məntiq) query-dən gəlir ki, Excel yalnız
     // görünən (süzülmüş) sətirləri versin — status/item10 kiçik hərflə müqayisə olunur.
     public async Task<IActionResult> IndexExcel(
-        string? axtaris, string? status, string? item10, int? il, int? ay, bool onlyNo = false)
+        string? axtaris, string? status, string? item10, string? item13, int? il, int? ay, bool onlyNo = false)
     {
         var vm = await _service.OracleSiyahiAsync();
         var setirlerF = vm.Setirler.AsEnumerable();
@@ -48,6 +48,8 @@ public class OdenisNezaretiController : Controller
             setirlerF = setirlerF.Where(x => (x.Status ?? "").Trim().ToLowerInvariant() == status.Trim().ToLowerInvariant());
         if (!string.IsNullOrWhiteSpace(item10))
             setirlerF = setirlerF.Where(x => (x.Item10 ?? "").Trim().ToLowerInvariant() == item10.Trim().ToLowerInvariant());
+        if (!string.IsNullOrWhiteSpace(item13))
+            setirlerF = setirlerF.Where(x => (x.Item13 ?? "").Trim().ToLowerInvariant() == item13.Trim().ToLowerInvariant());
         // "Ödənişi olmayanlar" + il/ay birlikdə → seçilən ayda ödəniş etməyənlər
         // (son ödəniş həmin aydan əvvəl, ya da heç ödəniş yox). Əks halda adi filtrlər (səhifə JS ilə eyni).
         if (onlyNo && il.HasValue && ay.HasValue)
@@ -70,18 +72,18 @@ public class OdenisNezaretiController : Controller
         {
             var q = axtaris.Trim().ToLowerInvariant();
             setirlerF = setirlerF.Where(x =>
-                (x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "") + " " + (x.Item10 ?? ""))
+                (x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "") + " " + (x.Item10 ?? "") + " " + (x.Item13 ?? ""))
                     .ToLowerInvariant().Contains(q));
         }
 
         var filtered = setirlerF.ToList();
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
-            "Tam qalıq", "Qalıq", "V/K qalıq", "Item 01", "Item 10", "Sistem son əməliyyat",
+            "Tam qalıq", "Qalıq", "V/K qalıq", "Item 01", "Item 10", "Item 13", "Sistem son əməliyyat",
             "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Rüsum cəmi", "Ödəniş sayı" };
         var setirler = filtered.Select((x, idx) => new object?[]
         {
             idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
-            x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.SistemSonEmel,
+            x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.Item13, x.SistemSonEmel,
             x.SonOdenisTarixi, x.SonOdenisMeblegi, x.OdenisCemi, x.RusumCemi, x.OdenisSayi
         });
         var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);

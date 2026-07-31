@@ -49,6 +49,7 @@ public class OdenisNezaretSatirDto
     public decimal? VkQaliq      { get; set; }
     public string? Status        { get; set; }          // item_01
     public string? Item10        { get; set; }          // item_10 (son fəaliyyət)
+    public string? Item13        { get; set; }          // item_13 (ödənişlə məşğul olan şirkət)
     public string? SistemSonEmel { get; set; }          // lastpaymentdate_ish (dd.MM.yyyy)
 
     // AVTOMAT — ARH_DD: müştərinin cari hesabından (DEBET 3/4) kredit hesabına (KREDIT 2121) son köçürmə

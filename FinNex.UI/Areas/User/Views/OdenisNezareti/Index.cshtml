@@ -22,6 +22,14 @@
         .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
         .ToList();
 
+    // Item_13 (ödənişlə məşğul olan şirkət) filtri üçün fərqli dəyərlər
+    var item13ler = Model.Setirler
+        .Where(x => !string.IsNullOrWhiteSpace(x.Item13))
+        .Select(x => x.Item13!.Trim())
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
     // Son ödəniş dövrü filtri — cari və keçən ay (server tarixinə görə)
     var cariIl = DateTime.Today.Year;
     var cariAy = DateTime.Today.Month;
@@ -116,6 +124,15 @@
                 }
             </select>
 
+            <span class="on-flt-lbl">Item 13:</span>
+            <select id="onItem13" class="on-inp" title="Ödənişlə məşğul olan şirkət">
+                <option value="">hamısı</option>
+                @foreach (var it in item13ler)
+                {
+                    <option value="@it.ToLowerInvariant()">@it</option>
+                }
+            </select>
+
             <span class="on-flt-lbl">Son ödəniş:</span>
             <select id="onDovr" class="on-inp" title="Son ödəniş dövrü"
                     data-cari-il="@cariIl" data-cari-ay="@cariAy"
@@ -149,6 +166,7 @@
                             <th class="on-num">V/K qalıq</th>
                             <th>Item 01</th>
                             <th>Item 10</th>
+                            <th>Item 13</th>
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis">Ödəniş cəmi</th>
@@ -161,10 +179,11 @@
                             var i = 1;
                             @foreach (var x in Model.Setirler)
                             {
-                                <tr data-search="@((x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "") + " " + (x.Item10 ?? "")).ToLowerInvariant())"
+                                <tr data-search="@((x.Musteri + " " + x.KreditHesabi + " " + x.Ks + " " + (x.Status ?? "") + " " + (x.Item10 ?? "") + " " + (x.Item13 ?? "")).ToLowerInvariant())"
                                     data-noodenis="@(x.OdenisYox ? "1" : "0")"
                                     data-status="@((x.Status ?? "").Trim().ToLowerInvariant())"
                                     data-item10="@((x.Item10 ?? "").Trim().ToLowerInvariant())"
+                                    data-item13="@((x.Item13 ?? "").Trim().ToLowerInvariant())"
                                     data-il="@(x.SonOdenisIl?.ToString() ?? "")"
                                     data-ay="@(x.SonOdenisAy?.ToString() ?? "")">
                                     <td>@(i++)</td>
@@ -198,6 +217,16 @@
                                             <span class="on-status">@x.Item10</span>
                                         }
                                     </td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(x.Item13))
+                                        {
+                                            <span class="on-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="on-status">@x.Item13</span>
+                                        }
+                                    </td>
                                     <td class="on-col-odenis">
                                         @if (x.OdenisYox)
                                         {
@@ -216,7 +245,7 @@
                         }
                         else
                         {
-                            <tr><td colspan="14"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
+                            <tr><td colspan="15"><div class="on-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Aktiv müştəri tapılmadı.</div></td></tr>
                         }
                     </tbody>
                 </table>
@@ -232,6 +261,7 @@
         var axtar = document.getElementById('onAxtar');
         var statusSel = document.getElementById('onStatus');
         var item10Sel = document.getElementById('onItem10');
+        var item13Sel = document.getElementById('onItem13');
         var dovrSel = document.getElementById('onDovr');
         var yalnizNo = document.getElementById('onYalnizNo');
         var btnTemizle = document.getElementById('onTemizle');
@@ -263,6 +293,7 @@
                 noodenis: r.getAttribute('data-noodenis') || '0',
                 status: r.getAttribute('data-status') || '',
                 item10: r.getAttribute('data-item10') || '',
+                item13: r.getAttribute('data-item13') || '',
                 il: r.getAttribute('data-il') || '',
                 ay: r.getAttribute('data-ay') || ''
             });
@@ -276,6 +307,7 @@
             if (s && r.search.indexOf(s) === -1) return false;
             if (exclude !== 'status' && statusSel.value && r.status !== statusSel.value) return false;
             if (exclude !== 'item10' && item10Sel.value && r.item10 !== item10Sel.value) return false;
+            if (exclude !== 'item13' && item13Sel.value && r.item13 !== item13Sel.value) return false;
             return true;
         }
 
@@ -287,6 +319,7 @@
             if (s && r.search.indexOf(s) === -1) return false;
             if (statusSel.value && r.status !== statusSel.value) return false;
             if (item10Sel.value && r.item10 !== item10Sel.value) return false;
+            if (item13Sel.value && r.item13 !== item13Sel.value) return false;
 
             var h = hedefIlAy();
             var onlyNo = yalnizNo.checked;
@@ -321,6 +354,7 @@
         function suz() {
             opsiyalariYenile(statusSel, 'status');
             opsiyalariYenile(item10Sel, 'item10');
+            opsiyalariYenile(item13Sel, 'item13');
 
             var gorunen = 0;
             allRows.forEach(function (r) {
@@ -338,6 +372,7 @@
             if (q()) p.set('axtaris', axtar.value.trim());
             if (statusSel.value) p.set('status', statusSel.value);
             if (item10Sel.value) p.set('item10', item10Sel.value);
+            if (item13Sel && item13Sel.value) p.set('item13', item13Sel.value);
             var h = hedefIlAy();
             if (h) { p.set('il', h.il); p.set('ay', h.ay); }
             if (yalnizNo.checked) p.set('onlyNo', 'true');
@@ -347,7 +382,7 @@
 
         function temizle() {
             axtar.value = '';
-            statusSel.value = ''; item10Sel.value = ''; if (dovrSel) dovrSel.value = '';
+            statusSel.value = ''; item10Sel.value = ''; if (item13Sel) item13Sel.value = ''; if (dovrSel) dovrSel.value = '';
             yalnizNo.checked = false;
             suz();
         }
@@ -356,6 +391,7 @@
         yalnizNo.addEventListener('change', suz);
         if (statusSel) statusSel.addEventListener('change', suz);
         if (item10Sel) item10Sel.addEventListener('change', suz);
+        if (item13Sel) item13Sel.addEventListener('change', suz);
         if (dovrSel) dovrSel.addEventListener('change', suz);
         if (btnTemizle) btnTemizle.addEventListener('click', temizle);
 
