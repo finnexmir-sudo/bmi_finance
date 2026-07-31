@@ -172,6 +172,24 @@ bərabər idi — filtri götürəndə həm faiz düzəldi, həm balans dəqiq b
 - Diaqnostik SELECT verəndə dashboard-un **bütün** filtrlərini təkrarla — natamam
   diaqnostik yanlış "düz/səhv" nəticəsinə aparır.
 
+## ViewModel Non-Nullable String — Gizli Required Tələsi (KRİTİK)
+
+.NET 8 MVC-də ViewModel-dəki **non-nullable** string (`string X = null!`) avtomatik
+**Required** sayılır. Sahə formda input kimi YOXDURSA (yalnız başlıqda göstərilir),
+POST-da gəlmir → ModelState hər dəfə kəsilir və form heç vaxt yadda saxlanmır.
+
+Real nümunə (2026-07, TeyinatDeyisVM.IsciTamAd): "The IsciTamAd field is required."
+xətası validasiya xülasəsində çıxırdı, amma xülasə `fn-alert` class-ında idi və
+user-area.js **bütün .fn-alert-ləri 4 saniyəyə silir** → xəta görünməmiş yox olurdu,
+"düyməni klikləyirəm heç nə olmur" kimi təzahür edirdi. Diaqnozu 4 mərhələ uzatdı.
+
+**Qaydalar:**
+- Display-only ViewModel sahələri **həmişə nullable** (`string?`) olsun.
+- Validasiya xülasəsini `.fn-alert` class-ı ilə YAZMA — auto-hide onu silir;
+  qalıcı öz class-ını işlət (nümunə: TeyinatDeyis `isci-val-summary`).
+- "Submit heç nə etmir" şikayətində əvvəlcə brauzerin "Confirm Form Resubmission"
+  dialoquna bax — çıxırsa POST gedir, problem serverin qaytardığı görünməz xətadadır.
+
 ## "İlin Son Günü" Aşkarlanması — Cari İl Tələsi (KRİTİK)
 
 "TARIX ilin son əməliyyat günüdürmü?" tipli sorğu (`ildə TARIX-dən sonra gün

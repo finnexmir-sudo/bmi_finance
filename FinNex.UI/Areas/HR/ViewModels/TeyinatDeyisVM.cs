@@ -6,7 +6,10 @@ namespace FinNex.UI.Areas.HR.ViewModels
     public class TeyinatDeyisVM
     {
         public int IsciId { get; set; }
-        public string IsciTamAd { get; set; } = null!;
+        // NULLABLE olmalıdır: display-only sahədir, formda input yoxdur — non-nullable
+        // olanda .NET 8 onu avtomatik Required sayır və POST hər dəfə validasiyadan kəsilir
+        // ("The IsciTamAd field is required."). TeyinatRedakteVM-dəki kimi string?.
+        public string? IsciTamAd { get; set; }
 
         // Mövcud vəziyyət
         public string? KohneDepartament { get; set; }

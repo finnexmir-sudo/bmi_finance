@@ -50,22 +50,6 @@ document.addEventListener('DOMContentLoaded', function () {
         loadVezifeler(this.value, null);
     });
 
-    // ── Diaqnostika: submit zənciri hansı nöqtədə qırılır? ──
-    // Konsolda: "[teyinat] düymə klikləndi" → klik düyməyə çatır;
-    //           "[teyinat] submit fired"    → form submit hadisəsi yaranıb.
-    var form = document.getElementById('teyinatForm');
-    if (form) {
-        var btn = form.querySelector('button[type="submit"]');
-        if (btn) btn.addEventListener('click', function () {
-            console.log('[teyinat] düymə klikləndi, form:', form.action, 'method:', form.method);
-        });
-        form.addEventListener('submit', function () {
-            console.log('[teyinat] submit fired — brauzer formu göndərir');
-        });
-    } else {
-        console.warn('[teyinat] teyinatForm DOM-da TAPILMADI — form tag itib!');
-    }
-
     // İlkin yüklənmə
     if (initDeptId > 0) {
         loadVezifeler(initDeptId, initVezifeId);
