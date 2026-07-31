@@ -80,6 +80,9 @@
     .on-empty { text-align: center; padding: 40px; color: #94a3b8; }
     .on-foot { padding: 10px 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; }
     .on-notice { background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 28px; color: #64748b; text-align: center; }
+    .on-scope { display: flex; align-items: center; gap: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+                border-radius: 10px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 12px; }
+    .on-scope b { font-weight: 700; }
     .on-notice code { background: #f1f5f9; padding: 2px 6px; border-radius: 5px; color: #334155; }
 </style>
 
@@ -149,6 +152,12 @@
                 <button type="button" id="onTemizle" class="on-btn on-btn--g"><i class="bi bi-x-circle"></i> Təmizlə</button>
                 <a id="onExcel" href="@Url.Action("IndexExcel")" class="on-btn on-btn--g"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
             </div>
+        </div>
+
+        <div class="on-scope">
+            <i class="bi bi-info-circle"></i>
+            Siyahı <b>bütün açıq kreditləri</b> və <b>@kecen.ToString("MMMM yyyy") – @DateTime.Today.ToString("MMMM yyyy")</b> aralığında bağlananları əhatə edir —
+            ödəniş statistikası <b>cari və keçən ay</b> üçün tamdır; daha əvvəl bağlanmış kreditlər göstərilmir.
         </div>
 
         <div class="on-card">
