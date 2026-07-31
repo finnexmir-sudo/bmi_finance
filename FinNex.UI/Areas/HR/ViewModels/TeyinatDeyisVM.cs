@@ -20,9 +20,11 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Display(Name = "Yeni Vəzifə")]
         public int YeniVezifeId { get; set; }
 
+        // input type=date "yyyy-MM-dd" göndərir — az-Latn-AZ mədəniyyətində DateTime
+        // birbaşa bind olmur (bax: OdenisNezaretiCreateDto), string alıb invariant parse edirik.
         [Required(ErrorMessage = "Başlama tarixi mütləqdir")]
         [Display(Name = "Başlama Tarixi")]
-        public DateTime BaslamaTarixi { get; set; } = DateTime.Today;
+        public string? BaslamaTarixi { get; set; }
 
         public List<SelectListItem> Departamentler { get; set; } = new();
         public List<SelectListItem> Vezifeler { get; set; } = new();

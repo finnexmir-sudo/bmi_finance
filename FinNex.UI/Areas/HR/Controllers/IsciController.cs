@@ -354,7 +354,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 IsciTamAd = isci.TamAd,
                 KohneDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 KohneVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
-                BaslamaTarixi = DateTime.Today
+                BaslamaTarixi = DateTime.Today.ToString("yyyy-MM-dd")
             };
 
             await ReloadTeyinatLists(vm);
@@ -367,11 +367,18 @@ namespace FinNex.UI.Areas.HR.Controllers
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> TeyinatDeyis(TeyinatDeyisVM vm)
         {
+            // Tarix string gəlir (input type=date → yyyy-MM-dd), invariant parse edilir —
+            // az-Latn-AZ mədəniyyətində DateTime birbaşa bind olmadığı üçün.
+            var tarixOk = DateTime.TryParseExact((vm.BaslamaTarixi ?? "").Trim(),
+                new[] { "yyyy-MM-dd", "dd.MM.yyyy", "dd-MM-yyyy" },
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var baslamaTarixi);
+            if (!tarixOk)
+                ModelState.AddModelError(nameof(vm.BaslamaTarixi), "Başlama tarixi düzgün formatda deyil.");
+
             if (!ModelState.IsValid)
             {
-                var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
-                if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
-                await ReloadTeyinatLists(vm);
+                await TeyinatFormunuBerpaEt(vm);
                 return View(vm);
             }
 
@@ -379,19 +386,32 @@ namespace FinNex.UI.Areas.HR.Controllers
                 vm.IsciId,
                 vm.YeniDepartamentId,
                 vm.YeniVezifeId,
-                vm.BaslamaTarixi);
+                baslamaTarixi);
 
             if (!result.Success)
             {
                 ModelState.AddModelError("", result.Message ?? "Təyinat dəyişikliyi zamanı xəta baş verdi.");
-                var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
-                if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
-                await ReloadTeyinatLists(vm);
+                await TeyinatFormunuBerpaEt(vm);
                 return View(vm);
             }
 
             TempData["Success"] = "Təyinat uğurla dəyişdirildi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
+        }
+
+        // POST xəta yolunda formu TAM bərpa et — "Mövcud vəziyyət" (Kohne*) daxil,
+        // yoxsa səhifə yalançı "Təyin edilməyib" göstərir (işçinin təyinatı yerindədir).
+        private async Task TeyinatFormunuBerpaEt(TeyinatDeyisVM vm)
+        {
+            var isci = await _isciService.GetIsciDetailsAsync(vm.IsciId);
+            if (isci != null)
+            {
+                vm.IsciTamAd = isci.TamAd;
+                var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(vm.IsciId);
+                vm.KohneDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi;
+                vm.KohneVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi;
+            }
+            await ReloadTeyinatLists(vm);
         }
 
         // ─────────── TEYINAT REDAKTE GET ───────────
