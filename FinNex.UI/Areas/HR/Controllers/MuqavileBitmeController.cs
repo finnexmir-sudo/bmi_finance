@@ -24,7 +24,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Index(int gun = 30, int? departamentId = null, string? search = null)
         {
             if (gun < 1)   gun = 30;
-            if (gun > 365) gun = 365;
+            if (gun > 730) gun = 730;   // maks 2 il — 2 illik müqavilələr də izlənilir
 
             var rows = await LoadRowsAsync();
 
@@ -50,7 +50,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Excel(int gun = 30, int? departamentId = null, string? search = null)
         {
             if (gun < 1)   gun = 30;
-            if (gun > 365) gun = 365;
+            if (gun > 730) gun = 730;   // maks 2 il — 2 illik müqavilələr də izlənilir
 
             var rows = ApplyFilters(await LoadRowsAsync(), gun, departamentId, search);
 
