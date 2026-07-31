@@ -378,6 +378,10 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (!ModelState.IsValid)
             {
+                Serilog.Log.Warning("TeyinatDeyis POST validasiya xətası (IsciId={IsciId}, Tarix={Tarix}): {Xetalar}",
+                    vm.IsciId, vm.BaslamaTarixi,
+                    string.Join(" | ", ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .Select(x => $"{x.Key}: {string.Join("; ", x.Value!.Errors.Select(e => e.ErrorMessage))}")));
                 await TeyinatFormunuBerpaEt(vm);
                 return View(vm);
             }
@@ -390,6 +394,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (!result.Success)
             {
+                Serilog.Log.Warning("TeyinatDeyis servis xətası (IsciId={IsciId}): {Mesaj}", vm.IsciId, result.Message);
                 ModelState.AddModelError("", result.Message ?? "Təyinat dəyişikliyi zamanı xəta baş verdi.");
                 await TeyinatFormunuBerpaEt(vm);
                 return View(vm);

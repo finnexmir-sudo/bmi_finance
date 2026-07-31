@@ -63,7 +63,15 @@
             <form asp-action="TeyinatDeyis" method="post" id="teyinatForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="IsciId" />
-                <div asp-validation-summary="ModelOnly" class="fn-alert fn-alert--error" style="margin:16px 24px 0;"></div>
+                @* fn-alert İŞLƏTMƏ: user-area.js .fn-alert-ləri 4 saniyəyə avtomatik silir —
+                   xəta görünüb yoxa çıxırdı ("heç nə olmur" təəssüratı). Öz class-ı ilə qalıcıdır. *@
+                <div asp-validation-summary="All" class="isci-val-summary" style="margin:16px 24px 0;"></div>
+                <style>
+                    .isci-val-summary { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c;
+                        border-radius:10px; padding:10px 16px; font-size:13px; }
+                    .isci-val-summary ul { margin:0; padding-left:18px; }
+                    .isci-val-summary.validation-summary-valid { display:none; }
+                </style>
 
                 <div class="isci-form-body">
 
