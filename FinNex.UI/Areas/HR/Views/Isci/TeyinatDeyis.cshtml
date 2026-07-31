@@ -90,10 +90,7 @@
 
                     <div class="isci-field">
                         <label class="isci-label">Başlama Tarixi <span class="isci-required">*</span></label>
-                        @* data-no-fn-dp: native date qalsın — fn-datepicker input-un name-ini gizli
-                           input-a köçürür, data-val atributları adsız elementdə qalır və
-                           jquery-validate submit-i səssiz bloklaya bilir. *@
-                        <input asp-for="BaslamaTarixi" type="date" class="isci-input" data-no-fn-dp />
+                        <input asp-for="BaslamaTarixi" type="date" class="isci-input" />
                         <small class="date-format-hint" style="color:#888;font-size:11px;"></small>
                         <span asp-validation-for="BaslamaTarixi" class="isci-error"></span>
                     </div>
@@ -127,9 +124,10 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @* jquery-validate bu formada qəsdən YOXDUR: fn-datepicker tarix input-unun
+       name-ini gizli input-a köçürür, data-val atributları adsız elementdə qalır
+       və unobtrusive submit-i səssiz bloklayırdı ("klik → heç nə"). Validasiya
+       server tərəfindədir — xətalar sahə altında və summary-də göstərilir. *@
     <script>
         const getVezifelerUrl = '@Url.Action("GetVezifeler", "Isci", new { area = "HR" })';
         const initialDeptId = @Model.YeniDepartamentId;
