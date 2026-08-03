@@ -5,6 +5,8 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") : "—";
+    // JS üçün XAM rəqəm (invariant, nöqtə ilə) — cəmləmə/formatlama client-də olur
+    Func<decimal?, string> Inv = v => v?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
 
     // Item_01 (status) filtri üçün datadan yığılan fərqli dəyərlər
     var statuslar = Model.Setirler
@@ -179,7 +181,7 @@
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis" id="onOcemTh">Ödəniş cəmi</th>
-                            <th class="on-num on-col-rusum">Rüsum cəmi</th>
+                            <th class="on-num on-col-rusum" id="onRusumTh">Rüsum cəmi</th>
                         </tr>
                     </thead>
                     <tbody id="onBody">
@@ -195,9 +197,12 @@
                                     data-item13="@((x.Item13 ?? "").Trim().ToLowerInvariant())"
                                     data-il="@(x.SonOdenisIl?.ToString() ?? "")"
                                     data-ay="@(x.SonOdenisAy?.ToString() ?? "")"
-                                    data-ocem="@(x.OdenisYox ? "" : Pul(x.OdenisCemi))"
-                                    data-ocari="@(x.OdenisCariAy.HasValue ? Pul(x.OdenisCariAy) : "")"
-                                    data-okecen="@(x.OdenisKecenAy.HasValue ? Pul(x.OdenisKecenAy) : "")">
+                                    data-ocem="@(x.OdenisYox ? "" : Inv(x.OdenisCemi))"
+                                    data-ocari="@Inv(x.OdenisCariAy)"
+                                    data-okecen="@Inv(x.OdenisKecenAy)"
+                                    data-rcem="@Inv(x.RusumCemi)"
+                                    data-rcari="@Inv(x.RusumCariAy)"
+                                    data-rkecen="@Inv(x.RusumKecenAy)">
                                     <td>@(i++)</td>
                                     <td>@(string.IsNullOrWhiteSpace(x.Region) ? "—" : x.Region)</td>
                                     <td class="on-fix" style="font-weight:600">@x.Musteri</td>
@@ -251,7 +256,7 @@
                                     </td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
                                     <td class="on-num on-col-odenis on-ocem">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
-                                    <td class="on-num on-col-rusum">@Pul(x.RusumCemi)</td>
+                                    <td class="on-num on-col-rusum on-rusum">@Pul(x.RusumCemi)</td>
                                 </tr>
                             }
                         }
@@ -262,7 +267,10 @@
                     </tbody>
                 </table>
             </div>
-            <div class="on-foot"><span id="onCount">@Model.CemMusteri</span> müştəri</div>
+            <div class="on-foot" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <span><span id="onCount">@Model.CemMusteri</span> müştəri</span>
+                <span id="onTotals" style="font-size:13px;color:#0f172a"></span>
+            </div>
         </div>
     }
 </div>
@@ -363,29 +371,48 @@
             if (!curVar) sel.value = '';
         }
 
-        // "Ödəniş cəmi" sütunu seçilmiş dövrə uyğunlaşır: bütün → tam cəm,
-        // cari/keçən ay → HƏMİN ayın ödəniş cəmi (dəyərlər serverdən data-* ilə gəlir).
-        function ocemYenile() {
+        // az formatı: 5.507,38 (server N2 ilə eyni görünüş)
+        function pulFmt(n) {
+            var s = n.toFixed(2).split('.');
+            s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return s[0] + ',' + s[1];
+        }
+
+        // "Ödəniş cəmi" / "Rüsum cəmi" sütunları seçilmiş dövrə uyğunlaşır və
+        // cədvəlin sonunda GÖRÜNƏN sətirlərin ümumi cəmi göstərilir (data-* xam rəqəmlərdən).
+        function cemlerYenile() {
             var mode = dovrSel ? dovrSel.value : '';
+            var oAttr = mode === 'cari' ? 'data-ocari' : mode === 'kecen' ? 'data-okecen' : 'data-ocem';
+            var rAttr = mode === 'cari' ? 'data-rcari' : mode === 'kecen' ? 'data-rkecen' : 'data-rcem';
+            var etiket = mode === 'cari' ? ' (cari ay)' : mode === 'kecen' ? ' (keçən ay)' : '';
+
+            var oCem = 0, rCem = 0;
             allRows.forEach(function (r) {
-                var cell = r.el.querySelector('.on-ocem');
-                if (!cell) return;
-                var v = mode === 'cari' ? r.el.getAttribute('data-ocari')
-                      : mode === 'kecen' ? r.el.getAttribute('data-okecen')
-                      : r.el.getAttribute('data-ocem');
-                cell.textContent = v || '—';
+                var oV = r.el.getAttribute(oAttr), rV = r.el.getAttribute(rAttr);
+                var oCell = r.el.querySelector('.on-ocem');
+                var rCell = r.el.querySelector('.on-rusum');
+                if (oCell) oCell.textContent = oV ? pulFmt(parseFloat(oV)) : '—';
+                if (rCell) rCell.textContent = rV ? pulFmt(parseFloat(rV)) : '—';
+                if (r.el.style.display !== 'none') {
+                    if (oV) oCem += parseFloat(oV);
+                    if (rV) rCem += parseFloat(rV);
+                }
             });
-            var th = document.getElementById('onOcemTh');
-            if (th) th.textContent = mode === 'cari' ? 'Ödəniş cəmi (cari ay)'
-                                   : mode === 'kecen' ? 'Ödəniş cəmi (keçən ay)'
-                                   : 'Ödəniş cəmi';
+
+            var oTh = document.getElementById('onOcemTh');
+            if (oTh) oTh.textContent = 'Ödəniş cəmi' + etiket;
+            var rTh = document.getElementById('onRusumTh');
+            if (rTh) rTh.textContent = 'Rüsum cəmi' + etiket;
+
+            var tot = document.getElementById('onTotals');
+            if (tot) tot.innerHTML = 'CƏMİ' + etiket + ': ödəniş <b>' + pulFmt(oCem) +
+                ' ₼</b> · rüsum <b>' + pulFmt(rCem) + ' ₼</b>';
         }
 
         function suz() {
             opsiyalariYenile(statusSel, 'status');
             opsiyalariYenile(item10Sel, 'item10');
             opsiyalariYenile(item13Sel, 'item13');
-            ocemYenile();
 
             var gorunen = 0;
             allRows.forEach(function (r) {
@@ -394,6 +421,7 @@
                 if (show) gorunen++;
             });
             count.textContent = gorunen;
+            cemlerYenile();
             excelHrefYenile();
         }
 
@@ -426,6 +454,7 @@
         if (dovrSel) dovrSel.addEventListener('change', suz);
         if (btnTemizle) btnTemizle.addEventListener('click', temizle);
 
+        cemlerYenile();
         excelHrefYenile();
     })();
 </script>

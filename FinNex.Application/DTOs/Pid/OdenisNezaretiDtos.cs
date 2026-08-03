@@ -60,6 +60,8 @@ public class OdenisNezaretSatirDto
     public decimal? OdenisKecenAy    { get; set; }      // keçən ayın ödəniş cəmi (odenis_kecen_ay)
     public int?     OdenisSayi       { get; set; }      // COUNT(*) — yalnız kredit ödənişləri
     public decimal? RusumCemi        { get; set; }      // SUM(summa_v_nacval) — məhkəmə rüsumu (KREDIT 7011…)
+    public decimal? RusumCariAy      { get; set; }      // cari ayın rüsum cəmi (rusum_cari_ay)
+    public decimal? RusumKecenAy     { get; set; }      // keçən ayın rüsum cəmi (rusum_kecen_ay)
 
     // ── Hesablanmış monitorinq siqnalı ──
     public DateTime? SonOdenisParsed

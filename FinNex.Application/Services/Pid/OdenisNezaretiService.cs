@@ -79,6 +79,8 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         OdenisKecenAy    = GetDec(row, "odenis_kecen_ay"),
         OdenisSayi       = GetDec(row, "odenis_sayi") is decimal ds ? (int)Math.Round(ds) : (int?)null,
         RusumCemi        = GetDec(row, "rusum_cemi"),
+        RusumCariAy      = GetDec(row, "rusum_cari_ay"),
+        RusumKecenAy     = GetDec(row, "rusum_kecen_ay"),
     };
 
     public async Task<IList<OdenisNezaretiDto>> HamisiniGetirAsync(BalansNovu? balans = null, string? axtaris = null)
