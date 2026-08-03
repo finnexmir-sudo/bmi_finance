@@ -248,8 +248,13 @@ public class ADMSController : Controller
                 // (işçi səhər cihaza baxmayıb, getməyə yaxın basıb). Cihaz IN/OUT istiqaməti
                 // etibarsız olduğundan vaxta görə qərar veririk. Giriş kimi yox — çıxış kimi
                 // yazırıq, giriş boş qalır ("giriş qeyd olunmayıb").
+                //
+                // İSTİSNA — EZAMİYYƏT GÜNÜ: təsdiqlənmiş ezamiyyəti olan işçidə fərziyyə
+                // ƏKSİNƏDİR — günorta gələn işçi ezamiyyətdən QAYIDIB (gedən deyil), ilk
+                // oxuma GİRİŞ-dir. Əks halda qayıdış "Çıxış" yazılır, giriş boş qalırdı
+                // (real hadisə: 03.08.2026, ezamiyyətdən 14:50-də qayıdan işçi).
                 var cixisKimiHedd = tarix.AddHours(13);
-                if (vaxt >= cixisKimiHedd)
+                if (vaxt >= cixisKimiHedd && bugunEzamiyyet == null)
                 {
                     var yeniCixis = new Davamiyyet
                     {
