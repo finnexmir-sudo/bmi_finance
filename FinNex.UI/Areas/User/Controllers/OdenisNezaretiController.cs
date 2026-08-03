@@ -95,14 +95,19 @@ public class OdenisNezaretiController : Controller
             rusumBasliq = $"Rüsum cəmi ({ay.Value:00}.{il.Value})";
         }
 
+        // Ümumi = ödəniş + rüsum (kredit üzrə) — işçi əl ilə toplamasın
+        Func<OdenisNezaretSatirDto, decimal?> umumi = x =>
+            (ocem(x).HasValue || rusum(x).HasValue) ? (ocem(x) ?? 0m) + (rusum(x) ?? 0m) : (decimal?)null;
+        var umumiBasliq = il.HasValue && ay.HasValue ? $"Ümumi ({ay.Value:00}.{il.Value})" : "Ümumi (ödəniş+rüsum)";
+
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
             "Tam qalıq", "Qalıq", "V/K qalıq", "Item 01", "Item 10", "Item 13", "Sistem son əməliyyat",
-            "Son ödəniş tarixi", "Son ödəniş məbləği", ocemBasliq, rusumBasliq, "Ödəniş sayı" };
+            "Son ödəniş tarixi", "Son ödəniş məbləği", ocemBasliq, rusumBasliq, umumiBasliq, "Ödəniş sayı" };
         var setirler = filtered.Select((x, idx) => new object?[]
         {
             idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
             x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.Item13, x.SistemSonEmel,
-            x.SonOdenisTarixi, x.SonOdenisMeblegi, ocem(x), rusum(x), x.OdenisSayi
+            x.SonOdenisTarixi, x.SonOdenisMeblegi, ocem(x), rusum(x), umumi(x), x.OdenisSayi
         }).ToList();
 
         // Cədvəlin sonunda CƏMİ sətri (səhifədəki footer ilə eyni)
@@ -113,6 +118,7 @@ public class OdenisNezaretiController : Controller
             null, null,
             filtered.Sum(x => ocem(x) ?? 0m),
             filtered.Sum(x => rusum(x) ?? 0m),
+            filtered.Sum(x => umumi(x) ?? 0m),
             null
         });
         var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);

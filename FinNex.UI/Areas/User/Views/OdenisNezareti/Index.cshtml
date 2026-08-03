@@ -72,6 +72,8 @@
     .on-table thead th.on-col-odenis { background: #fef9ec; }
     .on-col-rusum { background: #f5faff; }
     .on-table thead th.on-col-rusum { background: #eaf3fe; }
+    .on-col-umumi { background: #f0fdf4; }
+    .on-table thead th.on-col-umumi { background: #dcfce7; }
     .on-mono { font-family: ui-monospace, monospace; }
     .on-ks { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #eef2ff; color: #4338ca; font-size: 11px; font-weight: 800; margin-left: 4px; }
     .on-status { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; background: #f1f5f9; color: #475569; white-space: nowrap; }
@@ -182,6 +184,7 @@
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
                             <th class="on-num on-col-odenis" id="onOcemTh">Ödəniş cəmi</th>
                             <th class="on-num on-col-rusum" id="onRusumTh">Rüsum cəmi</th>
+                            <th class="on-num on-col-umumi" id="onUmumiTh">Ümumi</th>
                         </tr>
                     </thead>
                     <tbody id="onBody">
@@ -257,6 +260,8 @@
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
                                     <td class="on-num on-col-odenis on-ocem">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
                                     <td class="on-num on-col-rusum on-rusum">@Pul(x.RusumCemi)</td>
+                                    @* Ümumi = ödəniş + rüsum — işçi əl ilə toplamasın *@
+                                    <td class="on-num on-col-umumi on-umumi"><b>@((x.OdenisCemi.HasValue || x.RusumCemi.HasValue) ? Pul((x.OdenisYox ? 0 : (x.OdenisCemi ?? 0)) + (x.RusumCemi ?? 0)) : "—")</b></td>
                                 </tr>
                             }
                         }
@@ -389,24 +394,28 @@
             var oCem = 0, rCem = 0;
             allRows.forEach(function (r) {
                 var oV = r.el.getAttribute(oAttr), rV = r.el.getAttribute(rAttr);
+                var o = oV ? parseFloat(oV) : 0, rr = rV ? parseFloat(rV) : 0;
                 var oCell = r.el.querySelector('.on-ocem');
                 var rCell = r.el.querySelector('.on-rusum');
-                if (oCell) oCell.textContent = oV ? pulFmt(parseFloat(oV)) : '—';
-                if (rCell) rCell.textContent = rV ? pulFmt(parseFloat(rV)) : '—';
-                if (r.el.style.display !== 'none') {
-                    if (oV) oCem += parseFloat(oV);
-                    if (rV) rCem += parseFloat(rV);
-                }
+                var uCell = r.el.querySelector('.on-umumi');
+                if (oCell) oCell.textContent = oV ? pulFmt(o) : '—';
+                if (rCell) rCell.textContent = rV ? pulFmt(rr) : '—';
+                // Ümumi = ödəniş + rüsum (kredit üzrə)
+                if (uCell) uCell.innerHTML = (oV || rV) ? '<b>' + pulFmt(o + rr) + '</b>' : '—';
+                if (r.el.style.display !== 'none') { oCem += o; rCem += rr; }
             });
 
             var oTh = document.getElementById('onOcemTh');
             if (oTh) oTh.textContent = 'Ödəniş cəmi' + etiket;
             var rTh = document.getElementById('onRusumTh');
             if (rTh) rTh.textContent = 'Rüsum cəmi' + etiket;
+            var uTh = document.getElementById('onUmumiTh');
+            if (uTh) uTh.textContent = 'Ümumi' + etiket;
 
             var tot = document.getElementById('onTotals');
             if (tot) tot.innerHTML = 'CƏMİ' + etiket + ': ödəniş <b>' + pulFmt(oCem) +
-                ' ₼</b> · rüsum <b>' + pulFmt(rCem) + ' ₼</b>';
+                ' ₼</b> · rüsum <b>' + pulFmt(rCem) + ' ₼</b> · ÜMUMİ <b style="color:#15803d">' +
+                pulFmt(oCem + rCem) + ' ₼</b>';
         }
 
         function suz() {
