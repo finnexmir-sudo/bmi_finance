@@ -75,6 +75,8 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         SonOdenisTarixi  = GetStr(row, "son_odenis_tarixi"),
         SonOdenisMeblegi = GetDec(row, "son_odenis_meblegi"),
         OdenisCemi       = GetDec(row, "odenis_cemi"),
+        OdenisCariAy     = GetDec(row, "odenis_cari_ay"),
+        OdenisKecenAy    = GetDec(row, "odenis_kecen_ay"),
         OdenisSayi       = GetDec(row, "odenis_sayi") is decimal ds ? (int)Math.Round(ds) : (int?)null,
         RusumCemi        = GetDec(row, "rusum_cemi"),
     };

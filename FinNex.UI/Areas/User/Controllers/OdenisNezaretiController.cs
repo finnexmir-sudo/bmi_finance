@@ -77,14 +77,28 @@ public class OdenisNezaretiController : Controller
         }
 
         var filtered = setirlerF.ToList();
+
+        // "Ödəniş cəmi" səhifə ilə EYNİ məntiqlə: ay seçilibsə həmin ayın cəmi
+        // (cari/keçən ay serverdəki ayrıca aqreqatlardan), seçilməyibsə tam cəm.
+        Func<OdenisNezaretSatirDto, decimal?> ocem = x => x.OdenisCemi;
+        var ocemBasliq = "Ödəniş cəmi";
+        if (il.HasValue && ay.HasValue)
+        {
+            var bu = DateTime.Today; var kecen = bu.AddMonths(-1);
+            if (il.Value == bu.Year && ay.Value == bu.Month)
+            { ocem = x => x.OdenisCariAy; ocemBasliq = $"Ödəniş cəmi ({ay.Value:00}.{il.Value})"; }
+            else if (il.Value == kecen.Year && ay.Value == kecen.Month)
+            { ocem = x => x.OdenisKecenAy; ocemBasliq = $"Ödəniş cəmi ({ay.Value:00}.{il.Value})"; }
+        }
+
         var basliqlar = new[] { "№", "Region", "Müştəri", "Kredit hesabı", "K.S.", "Kreditin növü",
             "Tam qalıq", "Qalıq", "V/K qalıq", "Item 01", "Item 10", "Item 13", "Sistem son əməliyyat",
-            "Son ödəniş tarixi", "Son ödəniş məbləği", "Ödəniş cəmi", "Rüsum cəmi", "Ödəniş sayı" };
+            "Son ödəniş tarixi", "Son ödəniş məbləği", ocemBasliq, "Rüsum cəmi", "Ödəniş sayı" };
         var setirler = filtered.Select((x, idx) => new object?[]
         {
             idx + 1, x.Region, x.Musteri, x.KreditHesabi, x.Ks, x.KreditinNovu,
             x.TamQaliq, x.Qaliq, x.VkQaliq, x.Status, x.Item10, x.Item13, x.SistemSonEmel,
-            x.SonOdenisTarixi, x.SonOdenisMeblegi, x.OdenisCemi, x.RusumCemi, x.OdenisSayi
+            x.SonOdenisTarixi, x.SonOdenisMeblegi, ocem(x), x.RusumCemi, x.OdenisSayi
         });
         var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);
         return File(bytes, ExcelExportHelper.ContentType, $"Odenise_Nezaret_{DateTime.Now:yyyyMMdd}.xlsx");

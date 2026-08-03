@@ -56,6 +56,8 @@ public class OdenisNezaretSatirDto
     public string?  SonOdenisTarixi  { get; set; }      // MAX(date_oper) (dd.MM.yyyy)
     public decimal? SonOdenisMeblegi { get; set; }      // ən son tarixli əməliyyat(lar)ın məbləği
     public decimal? OdenisCemi       { get; set; }      // SUM(summa_v_nacval) — yalnız kredit ödənişləri
+    public decimal? OdenisCariAy     { get; set; }      // cari ayın ödəniş cəmi (odenis_cari_ay)
+    public decimal? OdenisKecenAy    { get; set; }      // keçən ayın ödəniş cəmi (odenis_kecen_ay)
     public int?     OdenisSayi       { get; set; }      // COUNT(*) — yalnız kredit ödənişləri
     public decimal? RusumCemi        { get; set; }      // SUM(summa_v_nacval) — məhkəmə rüsumu (KREDIT 7011…)
 

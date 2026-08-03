@@ -178,7 +178,7 @@
                             <th>Item 13</th>
                             <th class="on-col-odenis">Son ödəniş tarixi</th>
                             <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
-                            <th class="on-num on-col-odenis">Ödəniş cəmi</th>
+                            <th class="on-num on-col-odenis" id="onOcemTh">Ödəniş cəmi</th>
                             <th class="on-num on-col-rusum">Rüsum cəmi</th>
                         </tr>
                     </thead>
@@ -194,7 +194,10 @@
                                     data-item10="@((x.Item10 ?? "").Trim().ToLowerInvariant())"
                                     data-item13="@((x.Item13 ?? "").Trim().ToLowerInvariant())"
                                     data-il="@(x.SonOdenisIl?.ToString() ?? "")"
-                                    data-ay="@(x.SonOdenisAy?.ToString() ?? "")">
+                                    data-ay="@(x.SonOdenisAy?.ToString() ?? "")"
+                                    data-ocem="@(x.OdenisYox ? "" : Pul(x.OdenisCemi))"
+                                    data-ocari="@(x.OdenisCariAy.HasValue ? Pul(x.OdenisCariAy) : "")"
+                                    data-okecen="@(x.OdenisKecenAy.HasValue ? Pul(x.OdenisKecenAy) : "")">
                                     <td>@(i++)</td>
                                     <td>@(string.IsNullOrWhiteSpace(x.Region) ? "—" : x.Region)</td>
                                     <td class="on-fix" style="font-weight:600">@x.Musteri</td>
@@ -247,7 +250,7 @@
                                         }
                                     </td>
                                     <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.SonOdenisMeblegi))</td>
-                                    <td class="on-num on-col-odenis">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
+                                    <td class="on-num on-col-odenis on-ocem">@(x.OdenisYox ? "—" : Pul(x.OdenisCemi))</td>
                                     <td class="on-num on-col-rusum">@Pul(x.RusumCemi)</td>
                                 </tr>
                             }
@@ -360,10 +363,29 @@
             if (!curVar) sel.value = '';
         }
 
+        // "Ödəniş cəmi" sütunu seçilmiş dövrə uyğunlaşır: bütün → tam cəm,
+        // cari/keçən ay → HƏMİN ayın ödəniş cəmi (dəyərlər serverdən data-* ilə gəlir).
+        function ocemYenile() {
+            var mode = dovrSel ? dovrSel.value : '';
+            allRows.forEach(function (r) {
+                var cell = r.el.querySelector('.on-ocem');
+                if (!cell) return;
+                var v = mode === 'cari' ? r.el.getAttribute('data-ocari')
+                      : mode === 'kecen' ? r.el.getAttribute('data-okecen')
+                      : r.el.getAttribute('data-ocem');
+                cell.textContent = v || '—';
+            });
+            var th = document.getElementById('onOcemTh');
+            if (th) th.textContent = mode === 'cari' ? 'Ödəniş cəmi (cari ay)'
+                                   : mode === 'kecen' ? 'Ödəniş cəmi (keçən ay)'
+                                   : 'Ödəniş cəmi';
+        }
+
         function suz() {
             opsiyalariYenile(statusSel, 'status');
             opsiyalariYenile(item10Sel, 'item10');
             opsiyalariYenile(item13Sel, 'item13');
+            ocemYenile();
 
             var gorunen = 0;
             allRows.forEach(function (r) {
