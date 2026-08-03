@@ -132,6 +132,26 @@ namespace FinNex.Infrastructure.BackgroundJobs
             var gorushSet = new HashSet<string>(
                 gorushIshtirakcilar.Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
 
+            // Backfill dövrünü örtən təsdiqlənmiş EZAMİYYƏTLƏR — bu günlər Qayib YOX,
+            // Ezamiyyet yazılacaq (tam günlük ezamiyyətdə cihaz qeydi olmaması normaldır;
+            // əvvəllər yalnız icazə/görüş istisna idi və ezamiyyətli işçi Qayib düşürdü).
+            var ezamiyyetSet = new HashSet<string>();
+            var ezamiyyetler = await db.Set<EzamiyyetMuraciet>()
+                .AsNoTracking()
+                .Where(x => !x.Silinib &&
+                             x.Status == EzamiyyetStatus.Tesdiqlendi &&
+                             x.BaslamaTarixi.Date <= bugun &&
+                             x.BitmeTarixi.Date >= baslanic)
+                .Select(x => new { x.IsciId, Bas = x.BaslamaTarixi.Date, Bit = x.BitmeTarixi.Date })
+                .ToListAsync(ct);
+            foreach (var e in ezamiyyetler)
+            {
+                var d1 = e.Bas < baslanic ? baslanic : e.Bas;
+                var d2 = e.Bit > bugun ? bugun : e.Bit;
+                for (var d = d1; d <= d2; d = d.AddDays(1))
+                    ezamiyyetSet.Add($"{e.IsciId}|{d:yyyy-MM-dd}");
+            }
+
             var indi = DateTime.Now;
             var yeniQeydler = new List<Davamiyyet>();
 
@@ -161,10 +181,12 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     var key = $"{isci.Id}|{gun:yyyy-MM-dd}";
                     if (movcudSet.Contains(key)) continue;
 
-                    // Həmin gün üçün icazə və ya offline görüş varsa Icazeli yaz, Qayib yox
-                    var status = (icazeSet.Contains(key) || gorushSet.Contains(key))
-                        ? DavamiyyetStatus.Icazeli
-                        : DavamiyyetStatus.Qayib;
+                    // Həmin gün ezamiyyət → Ezamiyyet; icazə/offline görüş → Icazeli; qalanı Qayib
+                    var status = ezamiyyetSet.Contains(key)
+                        ? DavamiyyetStatus.Ezamiyyet
+                        : (icazeSet.Contains(key) || gorushSet.Contains(key))
+                            ? DavamiyyetStatus.Icazeli
+                            : DavamiyyetStatus.Qayib;
 
                     yeniQeydler.Add(new Davamiyyet
                     {

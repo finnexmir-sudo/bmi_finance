@@ -234,6 +234,16 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Where(i => i.Tarix == hedefTarixKpi && !qeydliIdsKpi.Contains(i.IsciId) && !mezuniyyetIsciIds.Contains(i.IsciId))
                     .Select(i => i.IsciId).Distinct().ToList();
 
+                // Ezamiyyət — EYNİ prinsip (say = siyahı): təsdiqlənmiş ezamiyyəti hədəf tarixi
+                // örtən, amma həmin gün cihaz qeydi OLMAYAN işçilər (tam günlük ezamiyyətdə
+                // işçi cihaza vurmur). Əvvəllər onlar "Gözlənilir"ə düşürdü, Ezamiyyət KPI 0 idi.
+                var ezamiyyetGozleyenIds = ezamiyyetList
+                    .Where(e => e.Bas <= hedefTarixKpi && e.Bit >= hedefTarixKpi
+                             && !qeydliIdsKpi.Contains(e.IsciId)
+                             && !mezuniyyetIsciIds.Contains(e.IsciId)
+                             && !icazeGozleyenIds.Contains(e.IsciId))
+                    .Select(e => e.IsciId).Distinct().ToList();
+
                 // İcazəli filtri seçiləndə icazeGozleyen işçilər üçün sintetik sətir hazırla
                 var icazeGozleyenRows = new List<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto>();
                 if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli && icazeGozleyenIds.Count > 0)
@@ -264,13 +274,48 @@ namespace FinNex.UI.Areas.HR.Controllers
                     }).ToList();
                 }
 
-                // status=4 (İcazəli) → "indi icazədə" + "icazə gözləyən" (sintetik); digər statuslar adi filtr
+                // Ezamiyyət filtri seçiləndə ezamiyyetGozleyen işçilər üçün sintetik sətir (İcazəli pattern-i)
+                var ezamiyyetGozleyenRows = new List<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto>();
+                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Ezamiyyet && ezamiyyetGozleyenIds.Count > 0)
+                {
+                    var ezamiyyetGozleyenIsciler = await _unitOfWork.Repository<Isci>()
+                        .Query().AsNoTracking()
+                        .Where(x => ezamiyyetGozleyenIds.Contains(x.Id))
+                        .Include(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                            .ThenInclude(t => t.Departament)
+                        .ToListAsync();
+                    ezamiyyetGozleyenRows = ezamiyyetGozleyenIsciler.Select(i =>
+                    {
+                        var esasTeyinat = i.IsciTeyinatlari.FirstOrDefault(t => t.Esasdir && !t.Silinib)
+                                          ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                        return new Application.DTOs.HR.Davamiyyet.DavamiyyetListDto
+                        {
+                            Id = 0,
+                            IsciId = i.Id,
+                            IsciTamAd = i.Ad + " " + i.Soyad,
+                            Tarix = hedefTarixKpi,
+                            GirisVaxti = null,
+                            CixisVaxti = null,
+                            Status = DavamiyyetStatus.Ezamiyyet,
+                            DepartamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                            MaasdanKes = false,
+                            QayibSebebi = null
+                        };
+                    }).ToList();
+                }
+
+                // status=4 (İcazəli) → "indi icazədə" + "icazə gözləyən" (sintetik);
+                // status=6 (Ezamiyyət) → qeydli ezamiyyət + cihaz qeydi olmayan ezamiyyətlilər (sintetik);
+                // digər statuslar adi filtr
                 var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
                     ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId))
                            .Concat(icazeGozleyenRows).ToList()
-                    : status.HasValue
-                        ? umumi.Where(x => (int)x.Status == status.Value && !TedbirBagislanir(x)).ToList()
-                        : umumi;
+                    : (status.HasValue && status.Value == (int)DavamiyyetStatus.Ezamiyyet)
+                        ? umumi.Where(x => x.Status == DavamiyyetStatus.Ezamiyyet)
+                               .Concat(ezamiyyetGozleyenRows).ToList()
+                        : status.HasValue
+                            ? umumi.Where(x => (int)x.Status == status.Value && !TedbirBagislanir(x)).ToList()
+                            : umumi;
 
                 // Nəticədəki bütün tarixlər üçün BayramGunu xüsusi bitmə vaxtlarını toplu çək
                 var hedefTarixler = result.Select(x => x.Tarix.Date).Distinct().ToList();
@@ -392,7 +437,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var icazeGozleyenSayi = icazeGozleyenIds.Count;
                 var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)) + icazeGozleyenSayi;
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
-                var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
+                // Ezamiyyət = qeydli ezamiyyət + cihaz qeydi olmayan ezamiyyətlilər (say = siyahı,
+                // ezamiyyetGozleyenIds ilə EYNİ mənbədən — İcazəli KPI qaydasının eynisi).
+                var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet) + ezamiyyetGozleyenIds.Count;
 
                 var iseSaatleri = umumi
                     .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
@@ -685,6 +732,18 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Select(x => x.IsciId)
                     .ToListAsync());
 
+            // Həmin günü örtən təsdiqlənmiş ezamiyyəti olan işçilər — onlar "Gözlənilir"/
+            // "Qayıb" deyil, Ezamiyyət statusunda göstərilir (cihaz qeydi olmaması normaldır).
+            var ezamiyyetdeIsciIds = new HashSet<int>(
+                await _unitOfWork.Repository<EzamiyyetMuraciet>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib
+                             && x.Status == EzamiyyetStatus.Tesdiqlendi
+                             && x.BaslamaTarixi.Date <= hedef
+                             && x.BitmeTarixi.Date >= hedef)
+                    .Select(x => x.IsciId)
+                    .ToListAsync());
+
             // Həmin gün offline tədbirdə (görüşdə) olan işçilər → "Tədbirdə" göstərilir.
             // (QayibMarkerBackgroundService ilə eyni məntiq: offline, ləğv olunmamış,
             //  iştirakçı Redd/İştiraketməyəcək deyil.) Yalnız görüntü — heç bir yazı yoxdur.
@@ -719,10 +778,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .Where(t => t.Esasdir && !t.Silinib)
                         .FirstOrDefault()
                         ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
-                    // İcazəli > Tədbirdə > (Qayib/Gözlənilir). Tədbirdə = sintetik status 100.
+                    // İcazəli > Ezamiyyət > Tədbirdə > (Qayib/Gözlənilir). Tədbirdə = sintetik status 100.
                     int st;
                     string? tedAd = null, tedSaat = null;
                     if (icazeliIsciIds.Contains(i.Id)) st = 4;                    // İcazəli
+                    else if (ezamiyyetdeIsciIds.Contains(i.Id)) st = 6;           // Ezamiyyət
                     else if (tedbirDict.TryGetValue(i.Id, out var ted))           // Tədbirdə
                     {
                         st = 100;
@@ -747,8 +807,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .OrderBy(x => x.isciTamAd)
                 .ToList();
 
-            // İcazəli (status 4) "gözlənilir" sayılmır — onlar İcazəli KPI-də sayılır.
-            var yalnizGozleyen = gozlenilenler.Where(x => x.status != 4).ToList();
+            // İcazəli (4) və Ezamiyyət (6) "gözlənilir" sayılmır — öz KPI-lərində sayılırlar.
+            var yalnizGozleyen = gozlenilenler.Where(x => x.status != 4 && x.status != 6).ToList();
 
             return Json(new
             {
