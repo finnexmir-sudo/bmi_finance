@@ -58,7 +58,7 @@ namespace FinNex.Application.Services.HR
         // tətbiq olunur; köhnələr KÖHNƏ düsturla qalır (keçmiş dəyişmir).
         // Konfiq: appsettings → Mezuniyyet:YeniQaydaBaslama (yyyy-MM-dd).
         // ─────────────────────────────────────────────────────────
-        private static readonly DateTime YeniQaydaDefolt = new DateTime(2026, 9, 1);
+        private static readonly DateTime YeniQaydaDefolt = new DateTime(2026, 8, 1);
 
         private DateTime YeniQaydaBaslamaTarixi()
         {
