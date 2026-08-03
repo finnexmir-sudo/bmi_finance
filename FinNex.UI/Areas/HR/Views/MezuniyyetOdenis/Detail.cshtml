@@ -159,6 +159,36 @@
             }
         </div>
 
+        @* ── YENİ QAYDA (ƏM md.140): iki üsulun tam-dövr müqayisəsi ── *@
+        @if (Model.YeniQayda)
+        {
+            <div class="mod-card" style="border:2px solid #059669;">
+                <div class="mod-card-title"><i class="bi bi-scale"></i> Üsulların müqayisəsi (ƏM md.140 — tam dövr üzrə)</div>
+                <table class="mod-table">
+                    <tr>
+                        <td>ÜSUL A — orta əməkhaqqı (gündəlik orta × @Model.UmumiIsGun təqvim günü)</td>
+                        <td class="mod-num" style="@(Model.QalibUsul == "A" ? "font-weight:800;color:#059669" : "")">
+                            @Model.ACemi.ToString("N2") ₼ @(Model.QalibUsul == "A" ? "✓ QALİB" : "")
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>ÜSUL B — cari maaş (hər ay: maaş ÷ ayın iş günü × düşən İŞ günü)</td>
+                        <td class="mod-num" style="@(Model.QalibUsul == "B" ? "font-weight:800;color:#059669" : "")">
+                            @Model.BCemi.ToString("N2") ₼ @(Model.QalibUsul == "B" ? "✓ QALİB" : "")
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>ÖDƏNİŞ = MAX(A; B)</strong> — işçinin xeyrinə böyük məbləğ</td>
+                        <td class="mod-num mod-total"><strong>@Model.CemiOdenis.ToString("N2") ₼</strong></td>
+                    </tr>
+                </table>
+                <div style="padding:8px 14px;font-size:12px;color:#64748b;">
+                    Aşağıdakı cədvəldə "Aya düşən pay" — bu məbləğin hər ayın təqvim gününə
+                    mütənasib bölgüsüdür; hər pay həmin ayın gəliri kimi vergiyə cəlb olunur.
+                </div>
+            </div>
+        }
+
         @* ── Per-month breakdown ── *@
         <div class="mod-card">
             <div class="mod-card-title"><i class="bi bi-calendar3"></i> Ay-ay bölünmə</div>
@@ -171,7 +201,14 @@
                         <th class="mod-num">Ay iş günü</th>
                         <th class="mod-num" title="Gündəlik tarixi orta (son 12 ayın düzəlmiş cəmi ÷ 12 ÷ 30.4) × iş günü">Tarixi orta</th>
                         <th class="mod-num" title="Gündəlik cari maaş (cari maaş ÷ ay iş günü) × məzuniyyət iş günü">Cari maaş hesabı</th>
-                        <th class="mod-num" title="MAX(gündəlik dərəcələr) × iş günü — böyük gündəlik götürülür">Məzuniyyət ödənişi</th>
+                        @if (Model.YeniQayda)
+                        {
+                            <th class="mod-num" title="Tam-dövr MAX(A;B)-nin bu aya düşən payı — təqvim gününə mütənasib; ayın gəliri kimi vergiyə cəlb olunur">Aya düşən pay</th>
+                        }
+                        else
+                        {
+                            <th class="mod-num" title="MAX(gündəlik dərəcələr) × iş günü — böyük gündəlik götürülür">Məzuniyyət ödənişi</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>

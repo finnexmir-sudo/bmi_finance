@@ -31,6 +31,13 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         // Nəticə məbləği (ümumi advance məbləği)
         public decimal CemiOdenis { get; set; }
 
+        // ── YENİ QAYDA (ƏM md.140 — tam-dövr MAX) sahələri ──
+        // YeniQayda=false olduqda aşağıdakılar doldurulmur (köhnə davranış).
+        public bool    YeniQayda { get; set; }
+        public decimal ACemi     { get; set; }   // Üsul A: orta əməkhaqqı (gündəlik orta × təqvim günü, tam dövr)
+        public decimal BCemi     { get; set; }   // Üsul B: cari maaş (hər ay maaş/ay iş günü × düşən İŞ günü, cəm)
+        public string? QalibUsul { get; set; }   // "A" (orta) / "B" (cari maaş)
+
         // Son 12 ayın artım əmsalları cədvəli (Muhasib Detail səhifəsində göstərmək üçün)
         public List<QazancEmsalSliceDto> QazancEmsallari { get; set; } = new();
 
@@ -62,9 +69,11 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public decimal MH { get; set; }
         // ƏH = CariMaas / AyİşGün × İGS (bu ay üçün İGS)
         public decimal EH { get; set; }
-        // MAX(MH, ƏH) — bu ay üçün seçilən məbləğ
+        // Köhnə qayda: MAX(MH, ƏH) — bu ay üçün seçilən məbləğ.
+        // YENİ qayda: tam-dövr MAX-ın bu aya düşən payı (təqvim gününə mütənasib) —
+        // aşağı axın (vergi/bəyannamə) bunu ayın gəliri kimi istifadə edir.
         public decimal Secilen { get; set; }
-        public string Qalib { get; set; } = "MH"; // MH / ƏH (hansı böyükdür)
+        public string Qalib { get; set; } = "MH"; // MH / ƏH (hansı böyükdür; yeni qaydada dövrün qalibi)
     }
 
     /// <summary>
