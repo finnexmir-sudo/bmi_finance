@@ -628,12 +628,21 @@ public class ADMSController : Controller
             return DavamiyyetStatus.Icazeli;
         }
 
-        // Səhər ezamiyyəti: giriş ezamiyyətin bitmə saatı + tolerans aralığındadırsa gecikməyib
-        // Məs: ezamiyyət 09:00-11:00 → işçi 10:45-də gəlirsə gecikməyib
-        if (bugunEzamiyyet?.BitisSaati != null &&
-            girisZaman <= bugunEzamiyyet.BitisSaati.Value + gecikTolerans)
+        // Ezamiyyət günü — giriş gec olsa belə GECİKMƏ YAZILMIR:
+        //  • giriş ezamiyyətin bitmə saatı + tolerans içindədirsə → İşdə (səhər ezamiyyəti,
+        //    məs: 09:00-11:00 ezamiyyət, işçi 10:45-də gəlir — gecikməyib);
+        //  • giriş ondan da gecdirsə (yaxud ezamiyyətin saatı qeyd olunmayıbsa) → Ezamiyyət —
+        //    gecikmənin səbəbi təsdiqlənmiş ezamiyyətdir, qayıdış vaxtı yol vaxtından asılıdır
+        //    (real hadisə: 03.08.2026, 14:50-də qayıdan işçi "Gecikmə" görünürdü).
+        if (bugunEzamiyyet != null)
         {
-            return DavamiyyetStatus.Isde;
+            if (bugunEzamiyyet.BitisSaati != null &&
+                girisZaman <= bugunEzamiyyet.BitisSaati.Value + gecikTolerans)
+                return DavamiyyetStatus.Isde;
+
+            if (girisZaman > standartGiris + gecikTolerans)
+                return DavamiyyetStatus.Ezamiyyet;
+            // Vaxtında gəlibsə adi axına düşür (aşağıda İşdə çıxacaq).
         }
 
         // Səhər tədbiri (offline görüş): giriş tədbirin bitmə saatı + tolerans içindədirsə gecikməyib.

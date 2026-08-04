@@ -243,6 +243,15 @@ namespace FinNex.UI.Areas.User.Controllers
             }
             catch { }
 
+            // Ezamiyyət günü "Gecikmə" GÖSTƏRİLMİR (HR Davamiyyət ilə eyni qayda):
+            // təsdiqlənmiş ezamiyyət həmin günü örtürsə, gec giriş ezamiyyətdən qayıdışdır →
+            // Ezamiyyət. Statistikadan və filtrlərdən əvvəl tətbiq olunur; bazaya toxunmur.
+            foreach (var rGec in records.Where(x => x.Status == DavamiyyetStatus.Gecikme))
+            {
+                if (ezamiyyetList.Any(e => e.Bas <= rGec.Tarix.Date && e.Bit >= rGec.Tarix.Date))
+                    rGec.Status = DavamiyyetStatus.Ezamiyyet;
+            }
+
             // Tədbir (offline görüş) — həm gecikmə, həm erkən çıxış bağışlanması (HR/ADMS ilə eyni)
             var gorushDict = new Dictionary<DateTime, (TimeSpan Bas, TimeSpan Bit)>();
             try

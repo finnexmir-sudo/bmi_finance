@@ -184,6 +184,18 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { }
 
+                // Ezamiyyət günü "Gecikmə" GÖSTƏRİLMİR: təsdiqlənmiş ezamiyyəti həmin günü
+                // örtən işçidə gec giriş ezamiyyətdən qayıdışdır → Ezamiyyət. Bu düzəliş
+                // KPI-lardan və filtrlərdən ƏVVƏL tətbiq olunur ki, say = siyahı qalsın
+                // (CLAUDE.md qaydası). Köhnə (ADMS düzəlişindən əvvəl yazılmış) qeydləri də
+                // örtür — bazaya toxunmur, yalnız göstərmə səviyyəsindədir.
+                foreach (var rGec in umumi.Where(x => x.Status == DavamiyyetStatus.Gecikme))
+                {
+                    if (ezamiyyetList.Any(e => e.IsciId == rGec.IsciId &&
+                                               e.Bas <= rGec.Tarix.Date && e.Bit >= rGec.Tarix.Date))
+                        rGec.Status = DavamiyyetStatus.Ezamiyyet;
+                }
+
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
