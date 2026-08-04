@@ -180,7 +180,7 @@
                                     <span class="mp-tval" id="mpMezPuluNet" style="color:#6b21a8;font-weight:800">—</span>
                                 </div>
                                 <div class="mp-trow mp-trow--mez" id="mpQalanMaasRow" style="display:none">
-                                    <span class="mp-tlbl">Maaş verilənda alacağınız (net, tutulmalardan sonra)</span>
+                                    <span class="mp-tlbl">İşlənmiş günlərin maaşı (net) — ay sonu maaşla ödənilir</span>
                                     <span class="mp-tval" id="mpQalanMaasNet" style="color:#1e9b6b;font-weight:800">—</span>
                                 </div>
                                 <div class="mp-trow" id="mpHysRow" style="display:none">
@@ -841,7 +841,7 @@
                             } else {
                                 mezPuluRow.querySelector('.mp-tlbl').textContent = 'Məzuniyyət pulu (net)';
                                 qalanMaasRow.querySelector('.mp-tlbl').textContent =
-                                    'Maaş verilənda alacağınız (net, tutulmalardan sonra)';
+                                    'İşlənmiş günlərin maaşı (net) — ay sonu maaşla ödənilir';
                             }
                             document.getElementById('mpMezPuluNet').textContent = fmt(data.mezOdenisNetCemi);
                             document.getElementById('mpQalanMaasNet').textContent = fmt(Math.max(0, qalanNet));
