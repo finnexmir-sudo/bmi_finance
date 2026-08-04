@@ -1,0 +1,236 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@model QazancMatrisVM
+@{
+    ViewData["Title"] = $"Aylıq Qazanc Matrisi — {Model.Il}";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";   // Index ilə eyni layout
+    var il = Model.Il;
+    string[] ayAdlari = { "Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek" };
+    // JS-ə gedən xam rəqəm — invariant (az-AZ vergül tələsi, CLAUDE.md)
+    Func<decimal, string> Inv = v => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    Func<decimal, string> Pul = v => v.ToString("N2");
+}
+
+<style>
+    .qm-wrap { padding: 18px 0 6px; }
+    .qm-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .qm-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-right: 8px; }
+    .qm-il { display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+    .qm-il a { padding: 7px 12px; text-decoration: none; color: #475569; font-weight: 700; }
+    .qm-il a:hover { background: #f1f5f9; }
+    .qm-il span { padding: 7px 10px; font-weight: 800; color: #0f172a; }
+    .qm-inp { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; min-width: 240px; }
+    .qm-inp:focus { border-color: #6366f1; }
+    .qm-actions { margin-left: auto; display: flex; gap: 8px; }
+    .qm-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; text-decoration: none; }
+    .qm-btn:hover { background: #f8fafc; }
+    .qm-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .qm-scroll { overflow: auto; max-height: calc(100vh - 250px); }
+    .qm-table { border-collapse: collapse; font-size: 12.5px; white-space: nowrap; width: 100%; }
+    .qm-table thead th { position: sticky; top: 0; z-index: 3; background: #f8fafc; padding: 9px 10px; border-bottom: 2px solid #e2e8f0; border-right: 1px solid #e2e8f0; color: #475569; font-weight: 700; text-align: right; }
+    .qm-table thead th:first-child, .qm-table thead th:nth-child(2) { text-align: left; }
+    .qm-table td { padding: 7px 10px; border-bottom: 1px solid #eef2f7; border-right: 1px solid #eef2f7; text-align: right; font-variant-numeric: tabular-nums; }
+    .qm-table tbody tr:hover { background: #fafbff; }
+    /* İlk 2 sütun (ID + ad) solda donur */
+    .qm-fix1, .qm-fix2 { position: sticky; background: #fff; z-index: 2; }
+    .qm-fix1 { left: 0; min-width: 46px; text-align: right; color: #64748b; }
+    .qm-fix2 { left: 56px; text-align: left; font-weight: 600; box-shadow: 6px 0 8px -6px rgba(0,0,0,.12); }
+    thead .qm-fix1, thead .qm-fix2 { z-index: 5; background: #f8fafc; }
+    tbody tr:hover .qm-fix1, tbody tr:hover .qm-fix2 { background: #fafbff; }
+    .qm-cell { cursor: pointer; min-width: 78px; }
+    .qm-cell:hover { outline: 2px solid #c7d2fe; outline-offset: -2px; }
+    .qm-cell.qm-elile { background: #fefce8; }          /* əl ilə yazılmış */
+    .qm-cell.qm-bos { color: #cbd5e1; }
+    .qm-cell.qm-ok { background: #dcfce7 !important; transition: background 1.2s; }
+    .qm-cell input { width: 82px; padding: 3px 6px; border: 1.5px solid #6366f1; border-radius: 5px; font-size: 12.5px; text-align: right; outline: none; }
+    .qm-cem { font-weight: 800; color: #0f172a; background: #f8fafc; }
+    .qm-passiv td.qm-fix2 { color: #94a3b8; font-weight: 500; }
+    tfoot td { position: sticky; bottom: 0; background: #f1f5f9; font-weight: 800; border-top: 2px solid #e2e8f0; padding: 8px 10px; text-align: right; }
+    tfoot td.qm-fix1, tfoot td.qm-fix2 { background: #f1f5f9; text-align: left; }
+    .qm-leg { display: flex; gap: 16px; padding: 8px 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; align-items: center; }
+    .qm-leg .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+</style>
+
+<div class="qm-wrap">
+    @Html.AntiForgeryToken()
+
+    <div class="qm-bar">
+        <span class="qm-title"><i class="bi bi-grid-3x3-gap"></i> Aylıq Qazanc Matrisi</span>
+        <span class="qm-il">
+            <a href="@Url.Action("Matris", new { il = il - 1 })" title="Əvvəlki il">◀</a>
+            <span>@il</span>
+            <a href="@Url.Action("Matris", new { il = il + 1 })" title="Növbəti il">▶</a>
+        </span>
+        <input type="text" id="qmAxtar" class="qm-inp" placeholder="🔍 İşçi adı və ya ID axtar…" />
+        <div class="qm-actions">
+            <a class="qm-btn" href="@Url.Action("Index")"><i class="bi bi-person-lines-fill"></i> Fərdi tarixçə</a>
+            <a class="qm-btn" href="@Url.Action("MatrisExcel", new { il })"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
+        </div>
+    </div>
+
+    <div class="qm-card">
+        <div class="qm-scroll">
+            <table class="qm-table" id="qmTable">
+                <thead>
+                    <tr>
+                        <th class="qm-fix1">ID</th>
+                        <th class="qm-fix2">İşçi</th>
+                        @for (int a = 1; a <= 12; a++)
+                        {
+                            <th>@ayAdlari[a - 1]</th>
+                        }
+                        <th>Cəmi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Setirler)
+                    {
+                        <tr class="@(s.Aktiv ? "" : "qm-passiv")" data-search="@($"{s.IsciId} {s.AdSoyad}".ToLowerInvariant())">
+                            <td class="qm-fix1">@s.IsciId</td>
+                            <td class="qm-fix2">@s.AdSoyad @(s.Aktiv ? "" : " · çıxıb")</td>
+                            @for (int a = 1; a <= 12; a++)
+                            {
+                                var h = s.Aylar.TryGetValue(a, out var hv) ? hv : null;
+                                <td class="qm-cell @(h == null ? "qm-bos" : "") @(h?.ElIle == true ? "qm-elile" : "")"
+                                    data-isci="@s.IsciId" data-ay="@a"
+                                    data-raw="@(h == null ? "" : Inv(h.Qazanc))"
+                                    title="@(h?.Qeyd ?? (h == null ? "Qeyd yoxdur — klik edib əlavə edə bilərsiniz" : ""))">@(h == null ? "—" : Pul(h.Qazanc))</td>
+                            }
+                            <td class="qm-cem" data-cem>@Pul(s.Cemi)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td class="qm-fix1"></td>
+                        <td class="qm-fix2">CƏMİ (görünən)</td>
+                        @for (int a = 1; a <= 12; a++)
+                        {
+                            <td data-aycem="@a"></td>
+                        }
+                        <td data-umumicem></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="qm-leg">
+            <span><span class="sw" style="background:#fefce8;border:1px solid #eab308"></span>Əl ilə yazılıb (sistem üstələmir)</span>
+            <span><span class="sw" style="background:#fff;border:1px solid #cbd5e1"></span>Sistem yazıb (ay sonu hesablama)</span>
+            <span>Xanaya <b>klik</b> → düzəliş; <b>Enter</b> saxlayır, <b>Esc</b> imtina.</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        var il = @il;
+
+        function pulFmt(v) {
+            return v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // ── Axtarış + ay cəmləri (görünən sətirlər üzrə) ──
+        var axtar = document.getElementById('qmAxtar');
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#qmTable tbody tr'));
+
+        function cemleriYenile() {
+            var ayCem = new Array(13).fill(0), umumi = 0;
+            rows.forEach(function (r) {
+                if (r.style.display === 'none') return;
+                r.querySelectorAll('.qm-cell').forEach(function (c) {
+                    var v = parseFloat(c.getAttribute('data-raw'));
+                    if (!isNaN(v)) { ayCem[parseInt(c.getAttribute('data-ay'))] += v; umumi += v; }
+                });
+            });
+            for (var a = 1; a <= 12; a++) {
+                var td = document.querySelector('[data-aycem="' + a + '"]');
+                if (td) td.textContent = ayCem[a] ? pulFmt(ayCem[a]) : '—';
+            }
+            var u = document.querySelector('[data-umumicem]');
+            if (u) u.textContent = pulFmt(umumi);
+        }
+
+        axtar.addEventListener('input', function () {
+            var q = (axtar.value || '').trim().toLowerCase();
+            rows.forEach(function (r) {
+                r.style.display = (!q || (r.getAttribute('data-search') || '').indexOf(q) >= 0) ? '' : 'none';
+            });
+            cemleriYenile();
+        });
+
+        // ── Xana redaktəsi ──
+        var aktivInput = null;
+
+        function redakteBaslat(cell) {
+            if (aktivInput) return;                       // eyni anda bir redaktə
+            var kohneRaw = cell.getAttribute('data-raw');
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.value = kohneRaw || '';
+            cell.textContent = '';
+            cell.appendChild(inp);
+            inp.focus(); inp.select();
+            aktivInput = inp;
+
+            function bitir(saxla) {
+                if (!aktivInput) return;
+                aktivInput = null;
+                if (!saxla) { geriQaytar(); return; }
+                var s = (inp.value || '').trim().replace(',', '.').replace(/\s/g, '');
+                if (s === '' || s === kohneRaw) { geriQaytar(); return; }
+                var v = parseFloat(s);
+                if (isNaN(v) || v < 0) { alert('Düzgün müsbət rəqəm daxil edin.'); geriQaytar(); return; }
+                saxlaVeGoster(v);
+            }
+            function geriQaytar() {
+                cell.textContent = kohneRaw ? pulFmt(parseFloat(kohneRaw)) : '—';
+            }
+            function saxlaVeGoster(v) {
+                var fd = new URLSearchParams();
+                fd.append('isciId', cell.getAttribute('data-isci'));
+                fd.append('il', il);
+                fd.append('ay', cell.getAttribute('data-ay'));
+                fd.append('qazanc', v.toFixed(2));        // invariant nöqtə ilə gedir
+                fd.append('__RequestVerificationToken', token);
+                fetch('@Url.Action("MatrisSave")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: fd.toString()
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.success) { alert(d.message || 'Xəta baş verdi.'); geriQaytar(); return; }
+                    cell.setAttribute('data-raw', v.toFixed(2));
+                    cell.textContent = pulFmt(v);
+                    cell.classList.remove('qm-bos');
+                    cell.classList.add('qm-elile', 'qm-ok');
+                    cell.title = 'Əl ilə yazıldı (indicə)';
+                    setTimeout(function () { cell.classList.remove('qm-ok'); }, 1200);
+                    // sətir cəmi
+                    var tr = cell.closest('tr'), cem = 0;
+                    tr.querySelectorAll('.qm-cell').forEach(function (c) {
+                        var x = parseFloat(c.getAttribute('data-raw'));
+                        if (!isNaN(x)) cem += x;
+                    });
+                    tr.querySelector('[data-cem]').textContent = pulFmt(cem);
+                    cemleriYenile();
+                })
+                .catch(function () { alert('Şəbəkə xətası — yenidən yoxlayın.'); geriQaytar(); });
+            }
+
+            inp.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); bitir(true); }
+                else if (e.key === 'Escape') { bitir(false); }
+            });
+            inp.addEventListener('blur', function () { bitir(true); });
+        }
+
+        document.querySelectorAll('#qmTable .qm-cell').forEach(function (c) {
+            c.addEventListener('click', function () {
+                if (!c.querySelector('input')) redakteBaslat(c);
+            });
+        });
+
+        cemleriYenile();
+    })();
+</script>

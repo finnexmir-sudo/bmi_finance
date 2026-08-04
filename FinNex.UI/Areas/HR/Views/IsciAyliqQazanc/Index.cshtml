@@ -53,6 +53,9 @@
 
     @* ── İşçi seçimi ── *@
     <form method="get" class="iaq-filter">
+        <a href="@Url.Action("Matris")" class="iaq-btn iaq-btn--outline" style="text-decoration:none;margin-right:10px">
+            <i class="bi bi-grid-3x3-gap"></i> Matris (bütün işçilər, il üzrə)
+        </a>
         <label class="iaq-filter-label">İşçi seçin:</label>
         <select name="isciId" class="iaq-select" onchange="this.form.submit()">
             <option value="">— İşçi seçin —</option>
