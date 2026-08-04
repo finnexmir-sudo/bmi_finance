@@ -339,6 +339,7 @@ namespace FinNex.Application.Services.HR
             decimal mezKesinti = 0;
             decimal mezuniyyetAvansBrutu = 0;     // birləşdirilmiş vergi bazası və 200 AZN güzəşt yoxlaması üçün
             decimal mezuniyyetAvansNetPaid = 0;   // artıq ödənilmiş NET (umumiTutulma-dan çıxılır)
+            decimal qabaqcadanTarixcePayi = 0;    // addım 16: bu AYA düşən qabaqcadan məz. brüt payı (tarixçə üçün)
 
             if (mezGun > 0)
             {
@@ -395,6 +396,34 @@ namespace FinNex.Application.Services.HR
                         Mebleg = mezKesinti,
                         Tip = "kesinti"
                     });
+                }
+
+                // TARİXÇƏ PAYI (addım 16 üçün): qabaqcadan ödənilən məzuniyyətin brütü
+                // ÖDƏNİLMƏ ayına yox, MƏZUNİYYƏT günlərinin düşdüyü ay(lar)a aiddir —
+                // "qabaqcadan" elə deməkdir ki, pul adətən məzuniyyətdən ƏVVƏLKİ ayda
+                // ödənilir. Bu ayın qazanc qeydinə yalnız BU AYA düşən pay yazılır
+                // (AySonu rejimi ilə simmetrik: orada mezOdenis onsuz da öz ayındadır).
+                // advanceQeydler yalnız bu ayla kəsişən qeydlərdir → başqa ay pay almır.
+                foreach (var advMez in advanceQeydler)
+                {
+                    if (advMez.OdenisStatus != MezuniyyetOdenisStatus.Odenilib &&
+                        advMez.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis) continue;
+                    try
+                    {
+                        var mhesPay = await MezuniyyetOdenisiDetalliHesablaAsync(
+                            advMez.IsciId, advMez.BaslamaTarixi, advMez.BitmeTarixi);
+                        var slPay = mhesPay.AySliceleri
+                            .FirstOrDefault(s => s.Il == input.Il && s.Ay == input.Ay);
+                        if (slPay == null || mhesPay.CemiOdenis <= 0) continue;
+
+                        // Faktiki ödənilmiş brüt saxlanılıbsa, pay ona miqyaslanır;
+                        // yoxdursa (köhnə qeydlərdə brüt NULL) canlı hesabın payı götürülür.
+                        decimal pay = (advMez.OdenenMeblegBrut.HasValue && advMez.OdenenMeblegBrut.Value > 0)
+                            ? Math.Round(advMez.OdenenMeblegBrut.Value * slPay.Secilen / mhesPay.CemiOdenis, 2)
+                            : slPay.Secilen;
+                        qabaqcadanTarixcePayi += pay;
+                    }
+                    catch { /* pay hesablanmasa qazanc qeydi brutMaas ilə qalır — maaşı pozma */ }
                 }
 
                 // Qabaqcadan ödənilmiş avansın brütü — 2500 güzəşt yoxlaması üçün toplanır.
@@ -1247,17 +1276,19 @@ namespace FinNex.Application.Services.HR
             }
 
             // 16. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
-            // Məzuniyyət bazası = BrutMaaş PLUS bu ayda qabaqcadan ödənilmiş məzuniyyət
-            // brütü MINUS orta qazanca daxil olmayan birdəfəlik ödənişlər (Qərar 137).
+            // Məzuniyyət bazası = BrutMaaş PLUS bu aya düşən qabaqcadan məzuniyyət brüt
+            // payı MINUS orta qazanca daxil olmayan birdəfəlik ödənişlər (Qərar 137).
             // QabaqcadanOdenis məzuniyyətin pulu ayrıca ödənildiyi üçün brutMaas-a düşmür,
             // amma ayın REAL qazancının hissəsidir — daxil edilməsə, məzuniyyətli ay
             // tarixçədə süni aşağı görünür və gələcək məzuniyyət ortalamasını salır
             // (real hadisə: İyul 2026 — 1.321,30 yazılmışdı, düzü 2.798,55).
-            // mezuniyyetAvansBrutu yalnız ÖDƏNİLMƏ ayında dolur — ikiqat sayılma yoxdur.
+            // DİQQƏT: pay ÖDƏNİLMƏ ayına yox, MƏZUNİYYƏT günlərinin ayına yazılır
+            // (qabaqcadanTarixcePayi — yalnız bu ayla kəsişən qeydlərin bu ay payı);
+            // vergi bazası isə qanuna uyğun ödənilmə ayında qalır (dəyişməyib).
             // IH-07, VM 98.2.1 əlavə təminatlardır — adi gəlirdir, çıxılmır.
             try
             {
-                decimal qazanc = brutMaas + mezuniyyetAvansBrutu - mezOrtalamaXaric;
+                decimal qazanc = brutMaas + qabaqcadanTarixcePayi - mezOrtalamaXaric;
                 if (qazanc < 0) qazanc = 0;
 
                 // Xəstəlik ödənişinin yeni DSMF-əsaslı düsturu üçün DSMF məbləğləri də saxlanılır.
