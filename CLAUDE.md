@@ -39,6 +39,43 @@ Sessiyanın **sonunda** (işlər tamamlananda) mütləq:
 - İkiqat sayılma riskini hər zaman nəzərə al (korreksiya + orijinal).
 - SQL migration vermədən əvvəl `SELECT` ilə nə dəyişəcəyini göstər.
 
+## Aylıq Qazanc Tarixçəsi (IsciAyliqQazanc) — Nə Düşür, Nə Düşmür (KRİTİK)
+
+Bu cədvəl məzuniyyət ortalamasının (12 aylıq S) yeganə mənbəyidir. Yazan yer:
+`MaasHesablamaService.FerdiHesabla` addım 16 → `AutoInsertFromMaasAsync`. Düstur:
+
+```
+qazanc = brutMaas + qabaqcadanTarixcePayi − mezOrtalamaXaric − xestelikSirketOdenis
+```
+
+**DAXİLDİR:**
+- Əsas əməkhaqqı (davamiyyət/məzuniyyət/çıxış kəsintilərindən sonra), Overtime,
+  IH-07 əlavə təminat, korreksiya gəlirləri, işəgötürən HYS payı (brutMaas tərkibində);
+- "Ay sonu" məzuniyyət pulu — onsuz da brutMaas içindədir;
+- **Qabaqcadan ödənilən məzuniyyət brütü** — amma **MƏZUNİYYƏT günlərinin düşdüyü aya**
+  (ödənilmə ayına YOX — "qabaqcadan" pul adətən əvvəlki ayda ödənilir; çoxaylı
+  məzuniyyət aylara bölünür, `qabaqcadanTarixcePayi`). Vergi bazası isə ödənilmə
+  ayında qalır — bu iki attribusiya QƏSDƏN fərqlidir;
+- Aylıq bonuslar — yalnız növündə `MezuniyyetOrtalamasinaDaxil=true` olanlar (default).
+
+**DAXİL DEYİL:**
+- **Xəstəlik şirkət ödənişi** — brutMaas-a daxildir, amma qazancdan ÇIXILIR
+  (entity sənədi: "xəstəlik ödənişi artıq çıxılmış olmalıdır");
+- Birdəfəlik ödənişlər — növündə `MezuniyyetOrtalamasinaDaxil=false` (NK Qərar 137);
+- VM 98.2.1 hesabi gəlirləri (onsuz da brütə düşmür).
+
+Real hadisə (2026-08 audit, mühasib Exceli ilə üzləşdirmə): 10 qeyd səhv çıxdı —
+(a) qabaqcadan brüt ümumiyyətlə düşmürdü (İyul: 1.321,30 ≠ 2.798,55);
+(b) düşəndə ödənilmə ayına düşürdü (iyun ödənişi → iyul məzuniyyəti);
+(c) xəstəlik pulu daxil qalırdı (+93,21). Hamısı kodda bağlandı, keçmiş SQL ilə düzəldildi.
+
+**Qaydalar:**
+- `ElIleDaxilEdilib=1` qeydləri sistem HEÇ VAXT üstələmir — korreksiyalar belə yazılır.
+  Yoxlama/düzəliş aləti: **Admin → Qazanc Matrisi** (`/HR/IsciAyliqQazanc/Matris`) —
+  il üzrə işçi×12 ay, mühasib Exceli ilə müqayisə üçün; Excel çıxarışı ədədi xanalarla.
+- Addım 16 düsturuna toxunanda bu siyahını tutuşdur və mühasib Exceli ilə ən azı
+  bir məzuniyyətli, bir xəstəlikli ayı yoxla.
+
 ## EF Core — Filtered Include + Tracking Tələsi (KRİTİK)
 
 Tracking ilə işləyən sorğuda `Include(x => x.Nav.Where(...))` (filtered include)
