@@ -1285,10 +1285,14 @@ namespace FinNex.Application.Services.HR
             // DİQQƏT: pay ÖDƏNİLMƏ ayına yox, MƏZUNİYYƏT günlərinin ayına yazılır
             // (qabaqcadanTarixcePayi — yalnız bu ayla kəsişən qeydlərin bu ay payı);
             // vergi bazası isə qanuna uyğun ödənilmə ayında qalır (dəyişməyib).
-            // IH-07, VM 98.2.1 əlavə təminatlardır — adi gəlirdir, çıxılmır.
+            // XƏSTƏLİK şirkət ödənişi brutMaas-a daxildir, amma məzuniyyət ortalamasına
+            // DAXİL DEYİL (IsciAyliqQazanc.Qazanc sənədi: "xəstəlik ödənişi artıq
+            // çıxılmış olmalıdır") — çıxılır (real hadisə: 2026-04, xəstəlik pulu 93,21
+            // qazanca düşmüşdü). IH-07, VM 98.2.1 əlavə təminatlardır — çıxılmır.
             try
             {
-                decimal qazanc = brutMaas + qabaqcadanTarixcePayi - mezOrtalamaXaric;
+                decimal qazanc = brutMaas + qabaqcadanTarixcePayi
+                                 - mezOrtalamaXaric - xestelikSirketOdenis;
                 if (qazanc < 0) qazanc = 0;
 
                 // Xəstəlik ödənişinin yeni DSMF-əsaslı düsturu üçün DSMF məbləğləri də saxlanılır.
