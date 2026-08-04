@@ -1014,9 +1014,16 @@
                                 <i class="bi bi-wallet"></i> Məzuniyyət Ödənişləri
                             </a>
                             <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
-                               class="fn-nav-item @(currentController == "IsciAyliqQazanc" ? "active" : "")">
+                               class="fn-nav-item @(currentController == "IsciAyliqQazanc" && ViewContext.RouteData.Values["action"]?.ToString() != "Matris" ? "active" : "")">
                                 <i class="bi bi-clock-history"></i> Qazanc Tarixçəsi
                             </a>
+                            @if (isAdmin)
+                            {
+                            <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Matris"
+                               class="fn-nav-item @(currentController == "IsciAyliqQazanc" && ViewContext.RouteData.Values["action"]?.ToString() == "Matris" ? "active" : "")">
+                                <i class="bi bi-grid-3x3-gap"></i> Qazanc Matrisi
+                            </a>
+                            }
                             <a asp-area="HR" asp-controller="Avans" asp-action="Index"
                                class="fn-nav-item @(currentController == "Avans" && currentArea == "HR" ? "active" : "")">
                                 <i class="bi bi-cash-coin"></i> Avans Müraciətləri

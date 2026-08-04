@@ -129,6 +129,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/IsciAyliqQazanc/Matris?il=2026 ───────────────
+        // YALNIZ Admin — mühasib Exceli ilə müqayisə/korreksiya alətidir.
+        [Authorize(Roles = RoleNames.Admin)]
         public async Task<IActionResult> Matris(int? il)
         {
             var secilmisIl = il ?? DateTime.Today.Year;
@@ -139,6 +141,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ── POST /HR/IsciAyliqQazanc/MatrisSave (AJAX) ───────────
         // Xanadakı düzəliş: əl ilə qeyd kimi saxlanır (avtomatik sync üstələmir).
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Admin)]
         public async Task<IActionResult> MatrisSave(int isciId, int il, int ay, decimal qazanc)
         {
             if (ay < 1 || ay > 12)
@@ -154,6 +157,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ── GET /HR/IsciAyliqQazanc/MatrisExcel?il=2026 ──────────
         // Rəqəmlər ƏDƏDİ xana kimi yazılır (ClosedXML double) — Excel-də
         // sum/düstur birbaşa işləyir, mətn problemi yoxdur.
+        [Authorize(Roles = RoleNames.Admin)]
         public async Task<IActionResult> MatrisExcel(int il)
         {
             var vm = await MatrisQurAsync(il);
