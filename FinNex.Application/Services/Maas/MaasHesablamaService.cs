@@ -1247,12 +1247,17 @@ namespace FinNex.Application.Services.HR
             }
 
             // 16. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
-            // Məzuniyyət bazası = BrutMaaş MINUS orta qazanca daxil olmayan birdəfəlik
-            // ödənişlər (Qərar 137 — növdə MezuniyyetOrtalamasinaDaxil=false olanlar).
+            // Məzuniyyət bazası = BrutMaaş PLUS bu ayda qabaqcadan ödənilmiş məzuniyyət
+            // brütü MINUS orta qazanca daxil olmayan birdəfəlik ödənişlər (Qərar 137).
+            // QabaqcadanOdenis məzuniyyətin pulu ayrıca ödənildiyi üçün brutMaas-a düşmür,
+            // amma ayın REAL qazancının hissəsidir — daxil edilməsə, məzuniyyətli ay
+            // tarixçədə süni aşağı görünür və gələcək məzuniyyət ortalamasını salır
+            // (real hadisə: İyul 2026 — 1.321,30 yazılmışdı, düzü 2.798,55).
+            // mezuniyyetAvansBrutu yalnız ÖDƏNİLMƏ ayında dolur — ikiqat sayılma yoxdur.
             // IH-07, VM 98.2.1 əlavə təminatlardır — adi gəlirdir, çıxılmır.
             try
             {
-                decimal qazanc = brutMaas - mezOrtalamaXaric;
+                decimal qazanc = brutMaas + mezuniyyetAvansBrutu - mezOrtalamaXaric;
                 if (qazanc < 0) qazanc = 0;
 
                 // Xəstəlik ödənişinin yeni DSMF-əsaslı düsturu üçün DSMF məbləğləri də saxlanılır.
