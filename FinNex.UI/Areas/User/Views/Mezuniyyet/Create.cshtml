@@ -726,16 +726,49 @@
                         // Per-month cards (collapse/expand — xülasə həmişə görünür)
                         const aylarEl = document.getElementById('mpAylar');
                         aylarEl.innerHTML = '';
+
+                        // YENİ QAYDA (ƏM md.140): ayların üstündə tam-dövr A/B/MAX müqayisəsi
+                        if (data.yeniQayda) {
+                            const aWin = data.qalibUsul === 'A';
+                            const cmp = document.createElement('div');
+                            cmp.className = 'mp-ay-card';
+                            cmp.style.cssText = 'border:1px solid #1e9b6b;background:#f2fbf7;padding:10px 14px';
+                            cmp.innerHTML = `
+                                <div style="font-weight:800;color:#166e4f;margin-bottom:6px">İki üsulun müqayisəsi — TAM DÖVR üzrə (ƏM md.140)</div>
+                                <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px">
+                                    <span>ÜSUL A — orta əməkhaqqı: <strong>${fmt(data.aCemi)} ₼</strong>${aWin ? ' ✓' : ''}</span>
+                                    <span>ÜSUL B — cari maaş (iş günü üzrə): <strong>${fmt(data.bCemi)} ₼</strong>${!aWin ? ' ✓' : ''}</span>
+                                    <span>Ödənilən: <strong style="color:#166e4f">MAX = ${fmt(data.cemiOdenis)} ₼</strong></span>
+                                </div>
+                                <div style="font-size:12px;color:#5b7268;margin-top:4px">Böyük olan BİR DƏFƏ seçilir və aylara təqvim gününə mütənasib bölünür — hər ayın payı öz ayında vergilənir.</div>`;
+                            aylarEl.appendChild(cmp);
+                        }
+
                         (data.aylar || []).forEach(ay => {
                             const card = document.createElement('div');
                             card.className = 'mp-ay-card';
-                            const qalibTxt = ay.qalib === 'MH'
-                                ? 'tarixi ortalama daha yüksəkdir'
-                                : 'cari maaş daha yüksəkdir';
+                            const qalibTxt = data.yeniQayda
+                                ? `Tam dövr üzrə: A = ${fmt(data.aCemi)} ₼, B = ${fmt(data.bCemi)} ₼ → Üsul ${data.qalibUsul} (${data.qalibUsul === 'A' ? 'orta əməkhaqqı' : 'cari maaş'}) tətbiq olunur`
+                                : (ay.qalib === 'MH'
+                                    ? 'tarixi ortalama daha yüksəkdir'
+                                    : 'cari maaş daha yüksəkdir');
+                            // Məzuniyyət pulu sətirləri — qayda-dan asılı izah:
+                            //  • YENİ (md.140): A payı informativ, B komponenti FAKTİKİ iş günü ilə,
+                            //    ödənilən = tam-dövr MAX-ın bu aya düşən təqvim-mütənasib payı;
+                            //  • KÖHNƏ: hər ay öz MAX-ı (böyük gündəlik dərəcə × iş günü).
+                            const mezLines = data.yeniQayda
+                                ? `<span class="mp-ay-lbl">Üsul A payı (informativ) — gündəlik orta (düzəlmiş cəm ÷ 12 ÷ 30.4) × ${ay.isGun} təqvim günü</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
+                                   <span class="mp-ay-lbl">Üsul B komponenti — cari maaş ÷ ${ay.ayIsGun} ay iş günü × ${ay.haqiqiIsGun} faktiki iş günü</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
+                                   <span class="mp-ay-lbl"><strong>Bu aya düşən pay</strong> — tam dövrün MAX(A; B) məbləğinin ${ay.isGun}/${data.isGun} təqvim payı</span><span class="mp-ay-val"><strong>${fmt(ay.secilen)}</strong></span>
+                                   <span class="mp-ay-sub" style="grid-column:1/-1">${qalibTxt}</span>`
+                                : `<span class="mp-ay-lbl">Tarixi orta — gündəlik (son 12 ayın düzəlmiş cəmi ÷ 12 ÷ 30.4) × ${ay.isGun} iş günü</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
+                                   <span class="mp-ay-lbl">Cari maaş — gündəlik (cari maaş ÷ ${ay.ayIsGun} ay iş günü) × ${ay.isGun} iş günü</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
+                                   <span class="mp-ay-lbl"><strong>Məzuniyyət ödənişi</strong> — böyük gündəlik dərəcə × iş günü</span><span class="mp-ay-val"><strong>${fmt(ay.secilen)}</strong></span>
+                                   <span class="mp-ay-sub" style="grid-column:1/-1">${qalibTxt}</span>`;
                             // Hər iki rejimdə məzuniyyət pulu ay brütünə daxil olur (qanuni).
                             // Qabaqcadan rejimində fərq yalnız ödəniş vaxtındadır — məbləğ artıq
                             // vergisiz avans kimi əvvəl ödənilib.
-                            const odenisLine = `<span class="mp-ay-lbl">+ Məzuniyyət ödənişi (${ay.isGun} iş günü)${data.qabaqcadan ? ' <em style="color:#6b21a8">(qabaqcadan avans kimi ödənilib)</em>' : ''}</span><span class="mp-ay-val" style="color:#1e9b6b">+ ${fmt(ay.odenisPay)}</span>`;
+                            const odenisLine = `<span class="mp-ay-lbl">+ Məzuniyyət ödənişi (${ay.isGun} ${data.yeniQayda ? 'təqvim günü' : 'iş günü'})${data.qabaqcadan ? ' <em style="color:#6b21a8">(qabaqcadan avans kimi ödənilib)</em>' : ''}</span><span class="mp-ay-val" style="color:#1e9b6b">+ ${fmt(ay.odenisPay)}</span>`;
                             card.innerHTML = `
                                 <div class="mp-ay-summary" onclick="this.parentElement.classList.toggle('mp-ay-open')">
                                     <div class="mp-ay-title">
@@ -753,10 +786,7 @@
                                 <div class="mp-ay-details">
                                     <div class="mp-ay-section-title">1) Məzuniyyət pulu</div>
                                     <div class="mp-ay-lines">
-                                        <span class="mp-ay-lbl">Tarixi orta — gündəlik (son 12 ayın düzəlmiş cəmi ÷ 12 ÷ 30.4) × ${ay.isGun} iş günü</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
-                                        <span class="mp-ay-lbl">Cari maaş — gündəlik (cari maaş ÷ ${ay.ayIsGun} ay iş günü) × ${ay.isGun} iş günü</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
-                                        <span class="mp-ay-lbl"><strong>Məzuniyyət ödənişi</strong> — böyük gündəlik dərəcə × iş günü</span><span class="mp-ay-val"><strong>${fmt(ay.secilen)}</strong></span>
-                                        <span class="mp-ay-sub" style="grid-column:1/-1">${qalibTxt}</span>
+                                        ${mezLines}
                                     </div>
                                     <div class="mp-ay-section-title">2) Bu ayın brüt maaşı</div>
                                     <div class="mp-ay-lines">

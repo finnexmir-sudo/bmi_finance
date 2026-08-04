@@ -140,6 +140,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     ayAdi = s.AyAdi,
                     teqvimGun = s.TeqvimGun,
                     isGun = s.IsGun,
+                    haqiqiIsGun = s.HaqiqiIsGun,
                     ayIsGun = s.AyIsGun,
                     islenmisIsGun,
                     islenmisMaas,
@@ -225,6 +226,11 @@ namespace FinNex.UI.Areas.User.Controllers
                 sDuzelmis = hesablama.Son12AyDuzelmisCemi,
                 qeydSayi = hesablama.Son12AyQeydSayi,
                 cemiOdenis = hesablama.CemiOdenis,
+                // Yeni qayda (ƏM md.140 — tam-dövr MAX): izah mətnləri üçün
+                yeniQayda = hesablama.YeniQayda,
+                aCemi = hesablama.ACemi,
+                bCemi = hesablama.BCemi,
+                qalibUsul = hesablama.QalibUsul,
                 // Ay sonu maaşla: ayrıca məzuniyyət pulu (net) və qalan maaş (net)
                 mezPuluBrutCemi,
                 mezOdenisNetCemi,
