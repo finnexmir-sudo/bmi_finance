@@ -8,6 +8,9 @@ public interface IOdenisNezaretiService
     // Oracle-dan canlı "Ödənişə Nəzarət" siyahısı (Aktiv Müştərilər + ARH_DD son ödəniş)
     Task<OdenisNezaretSiyahiDto> OracleSiyahiAsync();
 
+    // Gray list — ARH_DD (debet 45019…, kredit 89150…) ödənişləri, müştəri üzrə qruplu
+    Task<GrayOdenisSiyahiDto> GraySiyahiAsync();
+
     Task<IList<OdenisNezaretiDto>> HamisiniGetirAsync(BalansNovu? balans = null, string? axtaris = null);
     Task<OdenisNezaretiDto?> IdIleGetirAsync(int id);
     Task<int> YaratAsync(OdenisNezaretiCreateDto dto, int isciId);

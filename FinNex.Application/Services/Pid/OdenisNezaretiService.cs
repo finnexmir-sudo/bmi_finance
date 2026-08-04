@@ -46,16 +46,102 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         return vm;
     }
 
+    private static string Norm(string? s) => (s ?? "").ToLowerInvariant()
+        .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
+        .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
+
     private async Task<string?> OdenisNezaretSorguMetniAsync()
     {
         var res = await _sorguService.HamisiniGetirAsync();
         if (!res.Success || res.Data is null) return null;
-        static string Norm(string? s) => (s ?? "").ToLowerInvariant()
-            .Replace("ə", "e").Replace("ş", "s").Replace("ç", "c").Replace("ğ", "g")
-            .Replace("ı", "i").Replace("ö", "o").Replace("ü", "u").Replace(" ", "");
+        // "gray" istisnası: Graylist sorğusunun adında da "Odenis"+"Nezaret" var —
+        // adi siyahı səhvən onu götürməsin
         var q = res.Data.FirstOrDefault(x => x.Aktiv
-            && Norm(x.SorguAdi).Contains("odenis") && Norm(x.SorguAdi).Contains("nezaret"));
+            && Norm(x.SorguAdi).Contains("odenis") && Norm(x.SorguAdi).Contains("nezaret")
+            && !Norm(x.SorguAdi).Contains("gray"));
         return q?.SorguMetni;
+    }
+
+    // ── GRAY LIST: ARH_DD (debet 45019…, kredit 89150…) → müştəri üzrə qruplaşma ──
+    // Sorğu xam əməliyyat sətirlərini qaytarır (tarix, məbləğ, təyinat); müştəri adı
+    // TƏYİNATIN ilk mötərizəsindən burada (C#-da) çıxarılır — Oracle-da regex-ə
+    // güvənmirik, mötərizə içi boşluqlar/format fərqləri burada təmizlənir.
+    public async Task<GrayOdenisSiyahiDto> GraySiyahiAsync()
+    {
+        var vm = new GrayOdenisSiyahiDto();
+        var res = await _sorguService.HamisiniGetirAsync();
+        var sql = (!res.Success || res.Data is null) ? null
+            : res.Data.FirstOrDefault(x => x.Aktiv
+                && Norm(x.SorguAdi).Contains("odenis") && Norm(x.SorguAdi).Contains("nezaret")
+                && Norm(x.SorguAdi).Contains("gray"))?.SorguMetni;
+        if (string.IsNullOrWhiteSpace(sql)) { vm.SorguTapildi = false; return vm; }
+        vm.SorguTapildi = true;
+
+        try
+        {
+            var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+            var odenisler = rows.Select(r => new GrayOdenisDto
+            {
+                Tarix   = GetDate(r, "tarix", "date_oper"),
+                Mebleg  = GetDec(r, "mebleg", "summa_v_nacval", "summa") ?? 0m,
+                Teyinat = GetStr(r, "teyinat", "primechanie")
+            }).ToList();
+
+            var buAy = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var kecenAy = buAy.AddMonths(-1);
+
+            vm.Setirler = odenisler
+                .GroupBy(o => TeyinatdanMusteri(o.Teyinat))
+                .Select(g =>
+                {
+                    var sirali = g.OrderByDescending(x => x.Tarix ?? DateTime.MinValue).ToList();
+                    var son = sirali.FirstOrDefault(x => x.Tarix.HasValue);
+                    return new GrayMusteriDto
+                    {
+                        Musteri          = g.Key,
+                        SonOdenisTarixi  = son?.Tarix,
+                        SonOdenisMeblegi = son?.Mebleg,
+                        Cemi    = g.Sum(x => x.Mebleg),
+                        CariAy  = g.Where(x => x.Tarix.HasValue && x.Tarix.Value.Year == buAy.Year && x.Tarix.Value.Month == buAy.Month).Sum(x => x.Mebleg),
+                        KecenAy = g.Where(x => x.Tarix.HasValue && x.Tarix.Value.Year == kecenAy.Year && x.Tarix.Value.Month == kecenAy.Month).Sum(x => x.Mebleg),
+                        Say     = g.Count(),
+                        Odenisler = sirali
+                    };
+                })
+                .OrderBy(x => x.Musteri, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception ex) { vm.Xeta = ex.Message; }
+        return vm;
+    }
+
+    // Təyinatdan müştəri adı: İLK "( … )" mötərizəsinin içi. Artıq boşluqlar yığcamlanır.
+    // Mötərizə yoxdursa → "(təyinatda ad tapılmadı)" qrupu (sətir itmir, say = siyahı).
+    private static string TeyinatdanMusteri(string? teyinat)
+    {
+        if (string.IsNullOrWhiteSpace(teyinat)) return "(təyinatda ad tapılmadı)";
+        var m = System.Text.RegularExpressions.Regex.Match(teyinat, @"\(([^)]+)\)");
+        if (!m.Success) return "(təyinatda ad tapılmadı)";
+        var ad = System.Text.RegularExpressions.Regex.Replace(m.Groups[1].Value.Trim(), @"\s+", " ");
+        return string.IsNullOrWhiteSpace(ad) ? "(təyinatda ad tapılmadı)" : ad;
+    }
+
+    private static DateTime? GetDate(Dictionary<string, object?> row, params string[] keys)
+    {
+        foreach (var key in keys)
+            foreach (var kv in row)
+                if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase) && kv.Value != null)
+                {
+                    if (kv.Value is DateTime dt) return dt;
+                    var s = kv.Value.ToString()?.Trim();
+                    if (string.IsNullOrEmpty(s)) continue;
+                    string[] f = { "dd.MM.yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "dd/MM/yyyy" };
+                    if (DateTime.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        return d;
+                    if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
+                        return d;
+                }
+        return null;
     }
 
     private static OdenisNezaretSatirDto MapOdenisSatir(Dictionary<string, object?> row) => new()

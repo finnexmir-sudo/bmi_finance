@@ -35,6 +35,58 @@ public class OdenisNezaretiController : Controller
         return View(vm);
     }
 
+    // ── GRAY LIST tabı — ARH_DD (debet 45019…, kredit 89150…), müştəri üzrə qruplu ──
+    public async Task<IActionResult> Gray()
+    {
+        var vm = await _service.GraySiyahiAsync();
+        return View(vm);
+    }
+
+    // Gray list Excel — səhifə ilə eyni struktur: müştəri xülasəsi + hər ödəniş sətri
+    public async Task<IActionResult> GrayExcel(string? axtaris)
+    {
+        var vm = await _service.GraySiyahiAsync();
+        var setirlerF = vm.Setirler.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(axtaris))
+        {
+            var q = axtaris.Trim().ToLowerInvariant();
+            setirlerF = setirlerF.Where(x => x.Musteri.ToLowerInvariant().Contains(q));
+        }
+        var filtered = setirlerF.ToList();
+
+        var bu = DateTime.Today; var kecen = bu.AddMonths(-1);
+        var basliqlar = new[] { "№", "Müştəri", "Tarix", "Məbləğ",
+            $"Cari ay ({bu:MM.yyyy})", $"Keçən ay ({kecen:MM.yyyy})", "Cəmi", "Ödəniş sayı", "Təyinat" };
+
+        // Hər müştəri üçün: xülasə sətri + altında ödəniş sətirləri (tarix DESC)
+        var setirler = new List<object?[]>();
+        int idx = 1;
+        foreach (var m in filtered)
+        {
+            setirler.Add(new object?[]
+            {
+                idx++, m.Musteri,
+                m.SonOdenisTarixi?.ToString("dd.MM.yyyy"), m.SonOdenisMeblegi,
+                m.CariAy, m.KecenAy, m.Cemi, m.Say, null
+            });
+            foreach (var o in m.Odenisler)
+                setirler.Add(new object?[]
+                {
+                    null, null, o.Tarix?.ToString("dd.MM.yyyy"), o.Mebleg,
+                    null, null, null, null, o.Teyinat
+                });
+        }
+        setirler.Add(new object?[]
+        {
+            null, "CƏMİ:", null, null,
+            filtered.Sum(x => x.CariAy), filtered.Sum(x => x.KecenAy),
+            filtered.Sum(x => x.Cemi), null, null
+        });
+
+        var bytes = ExcelExportHelper.Yarat("Gray list — Ödənişə Nəzarət", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Gray_Odenis_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
     // ── Excel export (Oracle canlı siyahı) ────────────────────────
     // Filtrlər (səhifədəki JS ilə eyni məntiq) query-dən gəlir ki, Excel yalnız
     // görünən (süzülmüş) sətirləri versin — status/item10 kiçik hərflə müqayisə olunur.

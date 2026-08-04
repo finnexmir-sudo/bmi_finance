@@ -90,3 +90,41 @@ public class OdenisNezaretSiyahiDto
     public int OdenisEdenSay   => Setirler.Count(x => !x.OdenisYox);
     public int OdenisEtmeyenSay => Setirler.Count(x => x.OdenisYox);
 }
+
+// ── GRAY LIST — Ödənişə Nəzarət (ARH_DD: debet 45019…, kredit 89150…) ─────────
+// Balansdankənar graylist müştərilərinin ödənişləri. Müştəri adı əməliyyatın
+// TƏYİNATINDAN (primechanie) çıxarılır — ilk mötərizə içindəki ad.
+// Mənbə sorğu: Admin → Oracle Sorğular, adında "Odenis"+"Nezaret"+"Gray".
+public class GrayOdenisDto
+{
+    public DateTime? Tarix   { get; set; }
+    public decimal   Mebleg  { get; set; }
+    public string?   Teyinat { get; set; }   // primechanie — tam mətn
+}
+
+public class GrayMusteriDto
+{
+    public string Musteri { get; set; } = "(naməlum)";
+
+    public DateTime? SonOdenisTarixi  { get; set; }
+    public decimal?  SonOdenisMeblegi { get; set; }
+    public decimal   CariAy  { get; set; }   // cari ayın ödəniş cəmi
+    public decimal   KecenAy { get; set; }   // keçən ayın ödəniş cəmi
+    public decimal   Cemi    { get; set; }   // bütün dövrün cəmi
+    public int       Say     { get; set; }   // əməliyyat sayı
+
+    // Drill-down — müştərinin bütün ödənişləri (tarix DESC)
+    public List<GrayOdenisDto> Odenisler { get; set; } = new();
+}
+
+public class GrayOdenisSiyahiDto
+{
+    public bool SorguTapildi { get; set; }
+    public string? Xeta { get; set; }
+    public List<GrayMusteriDto> Setirler { get; set; } = new();
+
+    public int     CemMusteri => Setirler.Count;
+    public decimal CemCariAy  => Setirler.Sum(x => x.CariAy);
+    public decimal CemKecenAy => Setirler.Sum(x => x.KecenAy);
+    public decimal CemUmumi   => Setirler.Sum(x => x.Cemi);
+}

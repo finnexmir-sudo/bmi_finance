@@ -1,0 +1,234 @@
+@using FinNex.Application.DTOs.Pid
+@model GrayOdenisSiyahiDto
+@{
+    ViewData["Title"] = "Ödənişə Nəzarət — Gray list";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    Func<decimal?, string> Pul = v => v.HasValue ? v.Value.ToString("N2") : "—";
+    // JS üçün XAM rəqəm (invariant, nöqtə ilə) — cəmləmə client-də olur (az-AZ vergül tələsi)
+    Func<decimal, string> Inv = v => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    var cariAyAd  = DateTime.Today.ToString("MM.yyyy");
+    var kecenAyAd = DateTime.Today.AddMonths(-1).ToString("MM.yyyy");
+}
+
+<style>
+    .on-wrap { padding: 20px 0 4px; }
+    .on-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .on-inp { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; }
+    .on-inp:focus { border-color: #6366f1; }
+    .on-grow { flex: 1 1 240px; max-width: 400px; }
+    .on-actions { margin-left: auto; display: flex; gap: 8px; }
+    .on-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; }
+    .on-btn--g { background: #fff; color: #334155; border: 1.5px solid #e2e8f0; }
+    .on-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .on-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+    .on-table thead th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; z-index: 3; }
+    .on-table td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    .on-table th, .on-table td { border-right: 1px solid #e2e8f0; }
+    .on-table th:last-child, .on-table td:last-child { border-right: none; }
+    .on-table tbody tr:hover { background: #fafbff; }
+    .on-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .on-col-odenis { background: #fffdf5; }
+    .on-table thead th.on-col-odenis { background: #fef9ec; }
+    .on-col-umumi { background: #f0fdf4; }
+    .on-table thead th.on-col-umumi { background: #dcfce7; }
+    .on-empty { text-align: center; padding: 40px; color: #94a3b8; }
+    .on-foot { padding: 10px 14px; font-size: 13px; color: #475569; border-top: 1px solid #f1f5f9; }
+    .on-notice { background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 28px; color: #64748b; text-align: center; }
+    .on-notice code { background: #f1f5f9; padding: 2px 6px; border-radius: 5px; color: #334155; }
+    .on-scope { display: flex; align-items: center; gap: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+                border-radius: 10px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 12px; }
+
+    /* Tab keçidi (Adi / Gray list) */
+    .on-tabs { display: inline-flex; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+    .on-tab { padding: 9px 20px; font-size: 13px; font-weight: 700; color: #475569; background: #fff; text-decoration: none; }
+    .on-tab + .on-tab { border-left: 1.5px solid #e2e8f0; }
+    .on-tab--aktiv { background: #4f46e5; color: #fff; }
+    .on-tab:hover:not(.on-tab--aktiv) { background: #f8fafc; color: #334155; }
+
+    /* Müştəri sətri + drill-down */
+    .gr-row { cursor: pointer; }
+    .gr-chev { display: inline-block; transition: transform .15s; color: #94a3b8; margin-right: 6px; }
+    .gr-row.gr-open .gr-chev { transform: rotate(90deg); }
+    .gr-detal { display: none; }
+    .gr-row.gr-open + .gr-detal { display: table-row; }
+    .gr-detal > td { background: #f8fafc; padding: 0 12px 12px 34px; }
+    .gr-dtable { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    .gr-dtable th { text-align: left; color: #64748b; font-weight: 700; padding: 6px 10px; border-bottom: 1.5px solid #e2e8f0; background: #f1f5f9; }
+    .gr-dtable td { padding: 6px 10px; border-bottom: 1px solid #e9eef5; }
+    .gr-dtable td.on-num { text-align: right; }
+    .gr-teyinat { white-space: normal; max-width: 700px; color: #475569; }
+</style>
+
+<div class="on-wrap">
+
+    <div class="on-tabs">
+        <a class="on-tab" href="@Url.Action("Index")"><i class="bi bi-people"></i> Adi müştərilər</a>
+        <a class="on-tab on-tab--aktiv" href="@Url.Action("Gray")"><i class="bi bi-shield-exclamation"></i> Gray list</a>
+    </div>
+
+    @if (!Model.SorguTapildi)
+    {
+        <div class="on-notice">
+            <i class="bi bi-database-x" style="font-size:2rem;display:block;margin-bottom:10px"></i>
+            <div style="font-weight:700;color:#334155;margin-bottom:6px">Oracle sorğusu tapılmadı</div>
+            <div>Admin → <b>Oracle Sorğular</b> bölməsində adında <code>Odenis</code>, <code>Nezaret</code> və <code>Gray</code> olan
+                 <b>aktiv</b> sorğu yaradın (məs. <code>PID Odenis Nezaret Graylist</code>).</div>
+        </div>
+    }
+    else if (Model.Xeta != null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Oracle sorğusu icra olunmadı:<br />
+            <small style="font-family:ui-monospace,monospace">@Model.Xeta</small>
+        </div>
+    }
+    else
+    {
+        <div class="on-bar">
+            <input type="text" id="grAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri axtar…" />
+            <div class="on-actions">
+                <button type="button" id="grTemizle" class="on-btn on-btn--g"><i class="bi bi-x-circle"></i> Təmizlə</button>
+                <a id="grExcel" href="@Url.Action("GrayExcel")" class="on-btn on-btn--g"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
+            </div>
+        </div>
+
+        <div class="on-scope">
+            <i class="bi bi-info-circle"></i>
+            <span>Gray list ödənişləri — balansdankənar (debet <b>45019…400014</b> → kredit <b>89150…700000</b>).
+            Müştəri adı əməliyyatın <b>təyinatından</b> götürülür; sətrə klik → ödənişlərin tam siyahısı.</span>
+        </div>
+
+        <div class="on-card">
+            <div style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 320px)">
+                <table class="on-table" id="grTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Müştəri</th>
+                            <th class="on-col-odenis">Son ödəniş tarixi</th>
+                            <th class="on-num on-col-odenis">Son ödəniş məbləği</th>
+                            <th class="on-num on-col-odenis">Cari ay (@cariAyAd)</th>
+                            <th class="on-num on-col-odenis">Keçən ay (@kecenAyAd)</th>
+                            <th class="on-num on-col-umumi">Cəmi</th>
+                            <th class="on-num">Ödəniş sayı</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grBody">
+                        @if (Model.Setirler.Any())
+                        {
+                            var i = 1;
+                            @foreach (var m in Model.Setirler)
+                            {
+                                <tr class="gr-row"
+                                    data-search="@m.Musteri.ToLowerInvariant()"
+                                    data-cari="@Inv(m.CariAy)"
+                                    data-kecen="@Inv(m.KecenAy)"
+                                    data-cem="@Inv(m.Cemi)">
+                                    <td>@(i++)</td>
+                                    <td style="font-weight:600"><span class="gr-chev">▸</span>@m.Musteri</td>
+                                    <td>@(m.SonOdenisTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                    <td class="on-num">@Pul(m.SonOdenisMeblegi)</td>
+                                    <td class="on-num">@(m.CariAy == 0 ? "—" : Pul(m.CariAy))</td>
+                                    <td class="on-num">@(m.KecenAy == 0 ? "—" : Pul(m.KecenAy))</td>
+                                    <td class="on-num" style="font-weight:700;color:#15803d">@Pul(m.Cemi)</td>
+                                    <td class="on-num">@m.Say</td>
+                                </tr>
+                                <tr class="gr-detal">
+                                    <td colspan="8">
+                                        <table class="gr-dtable">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:110px">Tarix</th>
+                                                    <th style="width:120px" class="on-num">Məbləğ</th>
+                                                    <th>Təyinat</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var o in m.Odenisler)
+                                                {
+                                                    <tr>
+                                                        <td>@(o.Tarix?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                                        <td class="on-num">@Pul(o.Mebleg)</td>
+                                                        <td class="gr-teyinat">@(string.IsNullOrWhiteSpace(o.Teyinat) ? "—" : o.Teyinat)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="8" class="on-empty">Bu hesab cütü üzrə əməliyyat tapılmadı</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="on-foot" id="grFoot">
+                <span id="grSay">@Model.CemMusteri müştəri</span> ·
+                Cari ay: <b id="grCemCari"></b> ·
+                Keçən ay: <b id="grCemKecen"></b> ·
+                Cəm: <b id="grCemUmumi" style="color:#15803d;font-size:18px"></b>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    (function () {
+        var axtar = document.getElementById('grAxtar');
+        if (!axtar) return;
+
+        // az format: minlik nöqtə, onluq vergül (server data-* atributları invariant nöqtə ilə yazır)
+        function pulFmt(v) {
+            return v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₼';
+        }
+
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#grBody .gr-row'));
+
+        // Drill-down aç/bağla
+        rows.forEach(function (r) {
+            r.addEventListener('click', function () { r.classList.toggle('gr-open'); });
+        });
+
+        function yenile() {
+            var q = (axtar.value || '').trim().toLowerCase();
+            var say = 0, cari = 0, kecen = 0, cem = 0;
+            rows.forEach(function (r) {
+                var uygun = !q || (r.getAttribute('data-search') || '').indexOf(q) >= 0;
+                r.style.display = uygun ? '' : 'none';
+                if (!uygun) {
+                    r.classList.remove('gr-open');
+                    var d = r.nextElementSibling;
+                    if (d && d.classList.contains('gr-detal')) d.style.display = 'none';
+                } else {
+                    var d2 = r.nextElementSibling;
+                    if (d2 && d2.classList.contains('gr-detal')) d2.style.display = '';
+                    say++;
+                    cari  += parseFloat(r.getAttribute('data-cari'))  || 0;
+                    kecen += parseFloat(r.getAttribute('data-kecen')) || 0;
+                    cem   += parseFloat(r.getAttribute('data-cem'))   || 0;
+                }
+            });
+            document.getElementById('grSay').textContent = say + ' müştəri';
+            document.getElementById('grCemCari').textContent  = pulFmt(cari);
+            document.getElementById('grCemKecen').textContent = pulFmt(kecen);
+            document.getElementById('grCemUmumi').textContent = pulFmt(cem);
+
+            var excel = document.getElementById('grExcel');
+            var url = '@Url.Action("GrayExcel")';
+            excel.href = q ? url + '?axtaris=' + encodeURIComponent(axtar.value.trim()) : url;
+        }
+
+        axtar.addEventListener('input', yenile);
+        document.getElementById('grTemizle').addEventListener('click', function () {
+            axtar.value = '';
+            yenile();
+        });
+
+        yenile();
+    })();
+</script>
