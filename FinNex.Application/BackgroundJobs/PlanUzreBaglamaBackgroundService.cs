@@ -13,15 +13,15 @@ namespace FinNex.Infrastructure.BackgroundJobs
     ///
     /// İşçi icazə/ezamiyyətlə gedəndə cihaza baxmasa, faktiki çıxış/qayıdış boş
     /// qalır və HR hər dəfə əl ilə düzəltməli olurdu. Bu servis hər gün 23:00-dan
-    /// sonra KEÇMİŞ günlər üçün (son 7 gün):
+    /// sonra həmin gün DAXİL son 7 gün üçün (23:00-da iş günü bitib):
     ///   1) əvvəl XAM cihaz oxumalarından (CihazOxuma) bərpa etməyə çalışır
     ///      (pəncərə daxilində ilk oxuma = çıxış, son oxuma = qayıdış);
     ///   2) cihazda heç nə yoxdursa, MÜRACİƏTDƏKİ PLAN vaxtlarını yazır və
     ///      qeydi PlanUzre bayrağı ilə işarələyir (audit üçün cihaz datasından
     ///      fərqlənsin).
     ///
-    /// Yalnız KEÇMİŞ günlərə toxunur — cari günün icazəsi axşama qədər canlı
-    /// ADMS hook-u ilə bağlana bilər, ona qarışmır. Əl ilə yazılmış (HR düzəlişi)
+    /// Yalnız 23:00-dan sonra işləyir — günün canlı ADMS axını bitəndən sonra.
+    /// Əl ilə yazılmış (HR düzəlişi)
     /// dəyərlərin üstünə YAZMIR (yalnız boş sahələri doldurur).
     /// </summary>
     public class PlanUzreBaglamaBackgroundService : BackgroundService
@@ -80,7 +80,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
                          && x.Status == IcazeStatus.Tesdiqlenib
                          && x.CixisGiris == null
                          && x.IcazeTarixi >= minTarix
-                         && x.IcazeTarixi < bugun)
+                         && x.IcazeTarixi < bugun.AddDays(1))
                 .Select(x => new { x.Id, x.Birdefelik })
                 .ToListAsync(ct);
             if (qeydsizler.Count > 0)
@@ -114,7 +114,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
                          && x.BaslamaSaati != null
                          && x.CihazQayidisVaxti == null
                          && x.BitmeTarixi >= minTarix
-                         && x.BitmeTarixi < bugun)
+                         && x.BitmeTarixi < bugun.AddDays(1))
                 .ToListAsync(ct);
 
             if (icazeler.Count == 0 && ezamlar.Count == 0) return;
