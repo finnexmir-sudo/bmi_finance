@@ -151,13 +151,17 @@ public class MezuniyyetEmrWordService
             .FirstOrDefaultAsync(x => !x.Silinib && x.Nov == EmrNovu.Mezuniyyet
                                    && x.ElaqeliEntityId == komp.Id
                                    && x.Metn == "Kompensasiya");
-        int nomre; string? suffiks = null;
-        if (movcudEmr != null) { nomre = movcudEmr.Nomre; suffiks = movcudEmr.Suffiks; }
+        int nomre; string? suffiks; DateTime emrTarixi;
+        if (movcudEmr != null)
+        {
+            nomre = movcudEmr.Nomre; suffiks = movcudEmr.Suffiks; emrTarixi = movcudEmr.Tarix;
+        }
         else
         {
+            // Köhnə qeydlər üçün fallback — yeni qeydlərdə nömrə YaratAsync-də verilir
             var emr = await _emrService.YeniEmrAsync(EmrNovu.Mezuniyyet,
                 elaqeliEntityId: komp.Id, metn: "Kompensasiya");
-            nomre = emr.Nomre; suffiks = emr.Suffiks;
+            nomre = emr.Nomre; suffiks = emr.Suffiks; emrTarixi = emr.Tarix;
         }
 
         var isci = komp.Isci;
@@ -170,7 +174,7 @@ public class MezuniyyetEmrWordService
         var tokenler = new Dictionary<string, string?>
         {
             ["{e_nomre}"] = $"{nomre}{suffiks}",
-            ["{e_tarix}"] = TarixSozle(DateTime.Today),
+            ["{e_tarix}"] = TarixSozle(emrTarixi),   // nömrənin verildiyi gün (çap günü yox)
             ["{e_isci_yonluk}"] = IsciYonluk(isci),
             ["{e_vezife_yonluk}"] = VezifeYonluk(teyinat),
             ["{e_isci_yiyelik}"] = IsciYiyelik(isci),

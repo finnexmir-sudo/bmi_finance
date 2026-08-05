@@ -19,11 +19,15 @@ namespace FinNex.Application.Services.HR
         private readonly IUnitOfWork _uow;
         private readonly IMaasHesablamaService _hesablamaService;
 
-        public KompensasiyaService(IUnitOfWork uow, IMaasHesablamaService hesablamaService)
+        public KompensasiyaService(IUnitOfWork uow, IMaasHesablamaService hesablamaService,
+            IEmrService emrService)
         {
             _uow = uow;
             _hesablamaService = hesablamaService;
+            _emrService = emrService;
         }
+
+        private readonly IEmrService _emrService;
 
         // ─── HESABLA (preview) ───────────────────────────────────
         public async Task<Result<KompensasiyaHesablamaNeticesiDto>> HesablaAsync(
@@ -374,6 +378,17 @@ namespace FinNex.Application.Services.HR
                 entity.BalansdanCixilib = cixilacaqGun > 0;
 
                 await _uow.YaddaSaxlaAsync();   // entity + balans birlikdə commit olunur
+
+                // K/M əmr nömrəsi kompensasiya YAZILAN anda götürülür (çap anında yox) —
+                // nömrə xronologiyası pozulmasın. Emr reyestrində saxlanır; Word çapı
+                // (MezuniyyetEmrWordService) nömrəni və əmr tarixini oradan oxuyur.
+                try
+                {
+                    await _emrService.YeniEmrAsync(EmrNovu.Mezuniyyet,
+                        elaqeliEntityId: entity.Id, metn: "Kompensasiya",
+                        verenIsciId: hesablayanIsciId);
+                }
+                catch { /* nömrə alınmasa Word çapı ilk klikdə fallback ilə alacaq */ }
 
                 return Result<int>.Ok(entity.Id,
                     "Kompensasiya hesablandı, yadda saxlandı və balansdan çıxıldı.");
