@@ -111,8 +111,12 @@ public class MezuniyyetEmrWordService
             {
                 var evTey = mez.EvezEdenIsci.IsciTeyinatlari.FirstOrDefault(t => t.Esasdir)
                             ?? mez.EvezEdenIsci.IsciTeyinatlari.FirstOrDefault();
-                var evDept = DepartamentYiyelik(evTey?.Vezife?.Departament?.Ad);
-                var evVez = evTey?.Vezife?.Ad ?? "";
+                var evDeptAd = evTey?.Vezife?.Departament?.Ad;
+                var evDept = (evDeptAd != null &&
+                              evDeptAd.Trim().Equals("Rəhbərlik", StringComparison.OrdinalIgnoreCase))
+                    ? "" : DepartamentYiyelik(evDeptAd);
+                // Əvəzedicinin vəzifəsi MƏNSUBİYYƏT formasında: "departamentinin rəisi"
+                var evVez = VezifeMensubiyyet(evTey?.Vezife?.Ad);
                 tokenler["{e_evezedici}"] =
                     $"{(string.IsNullOrEmpty(evDept) ? "" : evDept + " ")}{evVez} {Inisiallar(mez.EvezEdenIsci)} {SoyadYonluk(mez.EvezEdenIsci.Soyad)}".Trim();
             }
@@ -400,6 +404,23 @@ public class MezuniyyetEmrWordService
             vez.Departament.Ad.Trim().Equals("Rəhbərlik", StringComparison.OrdinalIgnoreCase))
             deptGen = "";
         return string.IsNullOrEmpty(deptGen) ? vezYon : $"{deptGen} {vezYon}";
+    }
+
+    // Vəzifənin MƏNSUBİYYƏT forması (§2-də əvəzedici üçün):
+    // "rəis" → "rəisi", "auditor" → "auditoru", "əməliyyatçı" → "əməliyyatçısı";
+    // "rəis müavini" kimi onsuz da mənsubiyyətli adlar olduğu kimi qalır.
+    private static string VezifeMensubiyyet(string? ad)
+    {
+        if (string.IsNullOrWhiteSpace(ad)) return "";
+        ad = ad.Trim();
+        var sonHerf = ad[^1];
+        var sait = SonSait(ad) ?? 'a';
+        string s1 = DodaqQalin(sait) ? "u" : DodaqInce(sait) ? "ü" : Qalin(sait) ? "ı" : "i";
+        bool mensubiyyetli = ad.Contains(' ') &&
+            (sonHerf is 'i' or 'ı' or 'u' or 'ü');
+        if (mensubiyyetli) return ad;                     // rəis müavini → rəis müavini
+        if (Saitler.Contains(sonHerf)) return ad + "s" + s1;  // əməliyyatçı → əməliyyatçısı
+        return ad + s1;                                    // rəis → rəisi
     }
 
     // ── §2 bölməsinin silinməsi (əvəzedici seçilməyəndə) ────────────
