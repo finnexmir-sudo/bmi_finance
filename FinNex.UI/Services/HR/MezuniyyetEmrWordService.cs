@@ -383,10 +383,22 @@ public class MezuniyyetEmrWordService
             var sait = SonSait(ad) ?? 'a';
             string s1 = DodaqQalin(sait) ? "u" : DodaqInce(sait) ? "ü" : Qalin(sait) ? "ı" : "i";
             string s2 = Qalin(sait) || DodaqQalin(sait) ? "a" : "ə";
-            vezYon = Saitler.Contains(sonHerf)
-                ? ad + "s" + s1 + "n" + s2      // əməliyyatçı → əməliyyatçısına
-                : ad + s1 + "n" + s2;           // rəis → rəisinə, müavin → müavininə
+            // Çoxsözlü və sonu i/ı/u/ü ilə bitən ad artıq MƏNSUBİYYƏT şəkilçilidir
+            // ("müdir müavini", "baş kassirin müavini") → yalnız n + a/ə əlavə olunur.
+            bool mensubiyyetli = ad.Contains(' ') &&
+                (sonHerf is 'i' or 'ı' or 'u' or 'ü' || char.ToLowerInvariant(sonHerf) is 'i');
+            if (mensubiyyetli)
+                vezYon = ad + "n" + s2;         // müdir müavini → müdir müavininə
+            else if (Saitler.Contains(sonHerf))
+                vezYon = ad + "s" + s1 + "n" + s2;  // əməliyyatçı → əməliyyatçısına
+            else
+                vezYon = ad + s1 + "n" + s2;    // rəis → rəisinə, müavin → müavininə
         }
+        // "Rəhbərlik" strukturu üçün departament adı əmrə yazılmır
+        // ("bankın Rəhbərliyin müdir müavininə" əvəzinə "bankın müdir müavininə").
+        if (vez.Departament?.Ad != null &&
+            vez.Departament.Ad.Trim().Equals("Rəhbərlik", StringComparison.OrdinalIgnoreCase))
+            deptGen = "";
         return string.IsNullOrEmpty(deptGen) ? vezYon : $"{deptGen} {vezYon}";
     }
 
