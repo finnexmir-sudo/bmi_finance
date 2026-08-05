@@ -9,6 +9,10 @@
         public int IsciSayi { get; set; }
         public bool IsActive { get; set; } = true;
         public int EsasMezuniyyetGunu { get; set; } = 21;
+        // Vəzifə adının yönlük halı — məzuniyyət əmrləri üçün ("rəis" → "rəisinə").
+        // Boşdursa sistem avtomatik şəkilçi qoşur.
+        public string? YonlukHal { get; set; }
+
     }
 
 }

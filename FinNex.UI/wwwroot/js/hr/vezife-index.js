@@ -5,6 +5,8 @@ document.querySelectorAll('[data-action="vezife-edit"]').forEach(function (btn) 
         document.getElementById('vezifeEditId').value = btn.dataset.id;
         document.getElementById('vezifeEditAd').value = btn.dataset.ad;
         document.getElementById('vezifeEditAktiv').checked = btn.dataset.active === 'true';
+        var yonlukInp = document.getElementById('vezifeEditYonluk');
+        if (yonlukInp) yonlukInp.value = btn.dataset.yonluk || '';
 
         var deptSel = document.getElementById('vezifeEditDept');
         if (deptSel && btn.dataset.deptid) {

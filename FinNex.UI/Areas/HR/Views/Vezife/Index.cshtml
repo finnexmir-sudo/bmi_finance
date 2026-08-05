@@ -69,6 +69,7 @@
                                         data-ad="@item.Ad"
                                         data-deptid="@item.DepartamentId"
                                         data-mezgun="@item.EsasMezuniyyetGunu"
+                                        data-yonluk="@(item.YonlukHal ?? "")"
                                         data-active="@item.IsActive.ToString().ToLower()">
                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                         <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
@@ -137,6 +138,11 @@
                         <option value="21">21 gün — adi işçi</option>
                         <option value="30">30 gün — mütəxəssis / rəhbər</option>
                     </select>
+                </div>
+                <div class="isci-field str-field-mt">
+                    <label class="isci-label">Yönlük halı <span style="color:#8a93a8;font-weight:400">(əmrlər üçün, boş = avtomatik)</span></label>
+                    <input type="text" name="YonlukHal" id="vezifeEditYonluk" class="isci-input"
+                           placeholder="məs. rəisinə / baş mühasibin müavininə" />
                 </div>
                 <div class="isci-field str-field-mt">
                     <label class="isci-label">Təsvir</label>

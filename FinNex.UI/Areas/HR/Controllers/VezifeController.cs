@@ -102,7 +102,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ── POST: /HR/Vezife/Edit ────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string Ad, int DepartamentId, string? Tesvir, bool Aktivdir, int EsasMezuniyyetGunu = 21)
+        public async Task<IActionResult> Edit(int id, string Ad, int DepartamentId, string? Tesvir, bool Aktivdir, int EsasMezuniyyetGunu = 21, string? YonlukHal = null)
         {
             if (string.IsNullOrWhiteSpace(Ad))
             {
@@ -117,7 +117,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 DepartamentId = DepartamentId,
                 Tesvir = Tesvir?.Trim(),
                 Aktivdir = Aktivdir,
-                EsasMezuniyyetGunu = EsasMezuniyyetGunu == 30 ? 30 : 21
+                EsasMezuniyyetGunu = EsasMezuniyyetGunu == 30 ? 30 : 21,
+                YonlukHal = string.IsNullOrWhiteSpace(YonlukHal) ? null : YonlukHal.Trim()
             };
 
             var result = await _vezifeService.YenileAsync(dto);

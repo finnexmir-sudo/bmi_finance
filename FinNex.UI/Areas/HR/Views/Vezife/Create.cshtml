@@ -76,6 +76,12 @@
                         <span class="str-label-hint">Əlil işçi üçün balansda avtomatik 42 gün tətbiq olunur.</span>
                         <span asp-validation-for="EsasMezuniyyetGunu" class="isci-error"></span>
                     </div>
+                    <div class="isci-field">
+                        <label class="isci-label">Yönlük halı <span style="color:#8a93a8;font-weight:400">(əmrlər üçün, boş = avtomatik)</span></label>
+                        <input asp-for="YonlukHal" class="isci-input"
+                               placeholder="məs. rəisinə / baş mühasibin müavininə" />
+                        <span asp-validation-for="YonlukHal" class="isci-error"></span>
+                    </div>
 
                     <div class="isci-field">
                         <label class="isci-label">
