@@ -61,7 +61,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Ad = vm.Ad,
                 DepartamentId = vm.DepartamentId,
                 Tesvir = vm.Tesvir,
-                EsasMezuniyyetGunu = vm.EsasMezuniyyetGunu
+                EsasMezuniyyetGunu = vm.EsasMezuniyyetGunu,
+                YonlukHal = string.IsNullOrWhiteSpace(vm.YonlukHal) ? null : vm.YonlukHal.Trim()
             };
 
             var result = await _vezifeService.YaratAsync(dto);

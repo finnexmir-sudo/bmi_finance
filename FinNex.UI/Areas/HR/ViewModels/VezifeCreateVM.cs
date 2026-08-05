@@ -27,6 +27,12 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Range(21, 30, ErrorMessage = "21 və ya 30 seçilməlidir")]
         public int EsasMezuniyyetGunu { get; set; } = 21;
 
+        // Vəzifə adının yönlük halı — məzuniyyət əmrləri üçün ("rəis" → "rəisinə").
+        // Boş qalarsa sistem avtomatik şəkilçi qoşur.
+        [StringLength(150, ErrorMessage = "Yönlük halı maksimum 150 simvol ola bilər")]
+        [Display(Name = "Yönlük halı")]
+        public string? YonlukHal { get; set; }
+
         [Display(Name = "Aktiv")]
         public bool IsActive { get; set; } = true;
 
