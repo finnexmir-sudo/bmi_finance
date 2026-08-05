@@ -35,6 +35,10 @@ namespace FinNex.Domain.Entities.HR
         public DateTime? CihazCixisVaxti   { get; set; }
         public DateTime? CihazQayidisVaxti { get; set; }
 
+        // Gün bağlananda cihaz oxuması olmayan SAATLI ezamiyyətin vaxtları
+        // müraciətdəki PLAN üzrə avtomatik yazılıbsa true (gecə servisi).
+        public bool CihazVaxtPlanUzre { get; set; } = false;
+
         // Geri dönüş notu — işçi ezamiyyətdən qayıtdıqdan sonra əlavə edir
         public string? GeriDonusQeydi { get; set; }
     }

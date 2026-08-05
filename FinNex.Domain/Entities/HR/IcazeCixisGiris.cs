@@ -12,6 +12,10 @@ namespace FinNex.Domain.Entities.HR
         // Birdefelik çıxış: qayıdış gözlənilmir (HR təsdiq zamanı işarələyir)
         public bool Birdefelik { get; set; } = false;
 
+        // Gün bağlananda cihaz oxuması olmayan icazənin vaxtları müraciətdəki
+        // PLAN üzrə avtomatik yazılıbsa true (gecə servisi) — audit üçün.
+        public bool PlanUzreAvtomatik { get; set; } = false;
+
         // Faktiki müddət = QayidisVaxt - CixisVaxt (Birdefelik isə hesablanmır)
         public double? FaktikiSaat =>
             (!Birdefelik && CixisVaxt.HasValue && QayidisVaxt.HasValue)

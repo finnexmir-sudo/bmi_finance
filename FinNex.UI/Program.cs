@@ -232,6 +232,9 @@ namespace FinNex.UI
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.XatirlatmaBackgroundService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.MezuniyyetOdenisSchedulerService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.QayibMarkerBackgroundService>();
+            // Gün bağlama: cihaza vurmadan gedənlərin icazə/ezamiyyət vaxtları
+            // (əvvəl cihazdan bərpa, yoxdursa plan üzrə) avtomatik bağlanır
+            builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.PlanUzreBaglamaBackgroundService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.GelenMailSyncService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.KreditMailBackgroundService>();
