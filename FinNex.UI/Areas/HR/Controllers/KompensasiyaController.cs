@@ -35,6 +35,23 @@ namespace FinNex.UI.Areas.HR.Controllers
             _userManager = userManager;
         }
 
+        // ── GET /HR/Kompensasiya/EmrWord/5 — K/M kompensasiya əmrinin Word çapı ──
+        // Nömrə EYNİ K/M sayğacından götürülür və Emr reyestrində saxlanır
+        // (təkrar çapda eyni nömrə).
+        public async Task<IActionResult> EmrWord(int id,
+            [FromServices] FinNex.UI.Services.HR.MezuniyyetEmrWordService emrWord)
+        {
+            var (bytes, faylAdi, xeta) = await emrWord.KompensasiyaEmriYaratAsync(id);
+            if (bytes == null)
+            {
+                TempData["Error"] = xeta ?? "Əmr yaradıla bilmədi.";
+                return RedirectToAction("Detal", new { id });
+            }
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                faylAdi);
+        }
+
         // ── GET /HR/Kompensasiya ───────────────────────────────
         public async Task<IActionResult> Index()
         {

@@ -60,6 +60,22 @@ namespace FinNex.UI.Areas.HR.Controllers
             return appUser?.IsciId;
         }
 
+        // ── GET /HR/Mezuniyyet/EmrWord/5 — K/M əmrinin Word çapı ──────────
+        // Şablon avtomatik seçilir (öz hesabına / 1 gün / çoxgünlük / iki iş ili).
+        public async Task<IActionResult> EmrWord(int id,
+            [FromServices] FinNex.UI.Services.HR.MezuniyyetEmrWordService emrWord)
+        {
+            var (bytes, faylAdi, xeta) = await emrWord.MezuniyyetEmriYaratAsync(id);
+            if (bytes == null)
+            {
+                TempData["Error"] = xeta ?? "Əmr yaradıla bilmədi.";
+                return RedirectToAction("Detal", new { id });
+            }
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                faylAdi);
+        }
+
         private async Task<int?> GetCurrentDepartamentIdAsync(int isciId)
         {
             var result = await _isciService.GetAktivDepartamentIdAsync(isciId);

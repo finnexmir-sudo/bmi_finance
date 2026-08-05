@@ -141,6 +141,16 @@
                                        title="Detal">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    @if (m.Status == FinNex.Domain.Entities.HR.MezuniyyetStatus.Tesdiqlenib
+                                         && (m.Nov == FinNex.Domain.Entities.HR.MezuniyyetNovu.Illik
+                                          || m.Nov == FinNex.Domain.Entities.HR.MezuniyyetNovu.OzHesabina))
+                                    {
+                                    <a asp-action="EmrWord" asp-route-id="@m.Id"
+                                       style="padding:4px 8px;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;color:#1d4ed8;text-decoration:none;display:inline-flex;align-items:center;background:#eff6ff;"
+                                       title="K/M əmrini Word kimi yüklə">
+                                        <i class="bi bi-file-earmark-word"></i>
+                                    </a>
+                                    }
                                     <a asp-action="Edit" asp-route-id="@m.Id"
                                        style="padding:4px 8px;border:1px solid #e4e8f0;border-radius:6px;font-size:12px;color:#5a647a;text-decoration:none;display:inline-flex;align-items:center;"
                                        title="Redaktə">

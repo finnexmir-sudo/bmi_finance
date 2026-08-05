@@ -15,6 +15,13 @@ namespace FinNex.Domain.Entities.HR
         /// </summary>
         public int EsasMezuniyyetGunu { get; set; } = 21;
 
+        /// <summary>
+        /// Vəzifə adının YÖNLÜK halı — məzuniyyət əmrlərində istifadə olunur
+        /// (məs. "rəis" → "rəisinə"). BOŞ olarsa sistem avtomatik şəkilçi qoşur;
+        /// avtomatik forma səhv çıxan istisna vəzifələr üçün əl ilə doldurulur.
+        /// </summary>
+        public string? YonlukHal { get; set; }
+
         public int DepartamentId { get; set; }
         public Departament Departament { get; set; } = null!;
 

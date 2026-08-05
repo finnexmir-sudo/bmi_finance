@@ -207,6 +207,9 @@ namespace FinNex.UI
             {
                 c.Timeout = TimeSpan.FromSeconds(30);
             });
+            // ── Məzuniyyət əmrlərinin Word generasiyası (K/M şablonları) ──
+            builder.Services.AddScoped<FinNex.UI.Services.HR.MezuniyyetEmrWordService>();
+
             // ── Masaüstü Bildiriş Servisi (SignalR push) ─────────
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IDesktopBildirisService,
                                         FinNex.UI.Services.SignalRDesktopBildirisService>();

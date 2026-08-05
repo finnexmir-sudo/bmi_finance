@@ -28,6 +28,10 @@
     <div class="fn-page-head">
         <div>
             <a asp-action="Index" style="font-size:13px;color:#64748b;text-decoration:none">‹ Siyahıya qayıt</a>
+            <a asp-action="EmrWord" asp-route-id="@Model.Id"
+               style="font-size:13px;color:#1d4ed8;text-decoration:none;margin-left:14px;padding:4px 10px;border:1px solid #bfdbfe;border-radius:6px;background:#eff6ff">
+                <i class="bi bi-file-earmark-word"></i> K/M əmri (Word)
+            </a>
             <div class="fn-page-title" style="margin-top:4px;display:flex;align-items:center;gap:10px">
                 @Model.IsciAdSoyad
                 <span class="fn-badge @StatusClass(Model.Status)">@StatusText(Model.Status)</span>
