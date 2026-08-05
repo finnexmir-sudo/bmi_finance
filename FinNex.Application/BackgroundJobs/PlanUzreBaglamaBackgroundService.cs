@@ -104,7 +104,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
                          && !x.Icaze.Silinib
                          && x.Icaze.Status == IcazeStatus.Tesdiqlenib
                          && x.Icaze.IcazeTarixi >= minTarix
-                         && x.Icaze.IcazeTarixi < bugun)
+                         && x.Icaze.IcazeTarixi < bugun.AddDays(1))
                 .ToListAsync(ct);
 
             // ── 2) EZAMİYYƏTLƏR — saatlı, bağlanmamış keçmişlər ──────────────
