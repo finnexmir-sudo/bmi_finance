@@ -96,6 +96,12 @@
                             <td style="padding:10px 14px;text-align:right;color:#94a3b8;white-space:nowrap;font-size:12px">@k.YaradilmaTarixi.ToString("dd.MM HH:mm")</td>
                             <td style="padding:10px 14px;white-space:nowrap">
                                 <a asp-action="Detal" asp-route-id="@k.Id" class="fn-btn fn-btn--outline fn-btn--sm" style="padding:4px 10px">Detal</a>
+                                <a asp-action="EmrWord" asp-route-id="@k.Id"
+                                   class="fn-btn fn-btn--outline fn-btn--sm"
+                                   style="padding:4px 10px;margin-left:4px;color:#1d4ed8;border-color:#bfdbfe;background:#eff6ff"
+                                   title="K/M əmrini Word kimi yüklə">
+                                    <i class="bi bi-file-earmark-word"></i> Word
+                                </a>
                                 @if (k.Status != KompensasiyaStatus.MaasaDaxilEdildi && k.Status != KompensasiyaStatus.LegvEdildi)
                                 {
                                     <form asp-action="LegvEt" method="post" style="display:inline-block;margin-left:4px"
