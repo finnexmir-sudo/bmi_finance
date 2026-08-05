@@ -1151,20 +1151,48 @@ namespace FinNex.Application.Services
                                         .ThenInclude(t => t.Departament),
                         izlemeden: true);
 
+                // ── CixisGiris QEYDİ OLMAYAN təsdiqlənmiş icazələr (say = siyahı) ──
+                // Bəzi axınlar (məs. jeton sorğusundan yaranan icazə) bu qeyd olmadan
+                // icazə yaradırdı — nəticədə icazə Dövriyyə siyahısına düşmürdü və HR
+                // düzəliş edə bilmirdi. Onlar sintetik sətir kimi əlavə olunur; düzəliş
+                // POST-u (CixisGirisDuzeltAsync) qeydi özü yaradır.
+                var qeydsizIcazeler = await _unitOfWork.Repository<Icaze>()
+                    .HamisiniGetirAsync(
+                        predicate: x => !x.Silinib &&
+                            x.Status == IcazeStatus.Tesdiqlenib &&
+                            x.CixisGiris == null &&
+                            (tarixFrom == null || x.IcazeTarixi >= tarixFrom) &&
+                            (tarixTo == null || x.IcazeTarixi <= tarixTo) &&
+                            (departamentId == null || x.Isci.IsciTeyinatlari
+                                .Any(t => t.Aktivdir && t.DepartamentId == departamentId)) &&
+                            (axtaris == null ||
+                                x.Isci.Ad.Contains(axtaris) ||
+                                x.Isci.Soyad.Contains(axtaris)),
+                        include: q => q
+                            .Include(i => i.Isci)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Departament),
+                        izlemeden: true);
+
                 // ── Bağlanmamış (Gözlənir) icazələrdə faktiki çıxış/qayıdışı cihaz datasından bərpa et ──
                 // Canlı ADMS hook işləməyibsə (seed, yaxud oxuma təsdiqdən əvvəl gəlib), xam cihaz
                 // oxumalarından (varsa — qayıdış da daxil), yoxdursa Davamiyyət çıxışından bərpa
-                // olunur və GÖSTƏRİLİR (DB-yə YAZMIR).
+                // olunur və GÖSTƏRİLİR (DB-yə YAZMIR). Sintetik (qeydsiz) icazələr də bərpaya daxildir.
                 var eksikler = list
                     .Where(c => c.CixisVaxt == null &&
                                 c.Status == IcazeCixisGirisStatus.Gozlenir)
                     .ToList();
 
-                var (rawXerite, davXerite) = eksikler.Count > 0
+                var berpaAcarlari = eksikler
+                    .Select(c => (IsciId: c.Icaze.IsciId, Tarix: c.Icaze.IcazeTarixi.Date))
+                    .Concat(qeydsizIcazeler.Select(i => (IsciId: i.IsciId, Tarix: i.IcazeTarixi.Date)))
+                    .ToList();
+
+                var (rawXerite, davXerite) = berpaAcarlari.Count > 0
                     ? await CihazBerpaXeritesiAsync(
-                        eksikler.Select(c => c.Icaze.IsciId).Distinct().ToList(),
-                        eksikler.Min(c => c.Icaze.IcazeTarixi.Date),
-                        eksikler.Max(c => c.Icaze.IcazeTarixi.Date))
+                        berpaAcarlari.Select(k => k.IsciId).Distinct().ToList(),
+                        berpaAcarlari.Min(k => k.Tarix),
+                        berpaAcarlari.Max(k => k.Tarix))
                     : (new Dictionary<string, List<DateTime>>(), new Dictionary<string, DateTime>());
 
                 var dtos = list
@@ -1215,6 +1243,48 @@ namespace FinNex.Application.Services
                         };
                     }).ToList();
 
+                // Sintetik sətirlər — qeydi olmayan icazələr (eyni bərpa məntiqi ilə)
+                var sintetikler = qeydsizIcazeler.Select(i =>
+                {
+                    var (fcx, fqy) = IcazeFaktikiBerpa(i.IsciId, i.IcazeTarixi,
+                                                      i.BaslamaSaati, i.BitisSaati, rawXerite, davXerite);
+                    double? faktiki = IcazeFaktikiSaat(fcx, fqy, false,
+                                        i.IcazeTarixi, i.BitisSaati, dovParam?.StandartCixisVaxti);
+                    if (faktiki.HasValue && i.NaharNezereAlinmasin && fcx.HasValue)
+                    {
+                        var dnBas = dovParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+                        var dnDeq = dovParam?.NaharMuddetDeqiqe ?? 45;
+                        var dnBit = fqy?.TimeOfDay ?? i.BitisSaati;
+                        faktiki = Math.Max(0, faktiki.Value
+                            - NaharKesishmeSaat(fcx.Value.TimeOfDay, dnBit, dnBas, dnDeq));
+                    }
+                    return new IcazeDovriyyeDto
+                    {
+                        IcazeId = i.Id,
+                        IsciAdSoyad = i.Isci.TamAd,
+                        SobeAdi = i.Isci.IsciTeyinatlari
+                            .Where(t => t.Aktivdir)
+                            .Select(t => t.Departament?.Ad)
+                            .FirstOrDefault() ?? "-",
+                        IcazeTarixi = i.IcazeTarixi,
+                        BaslamaSaati = i.BaslamaSaati,
+                        BitisSaati = i.BitisSaati,
+                        PlanlananSaat = i.IcazeSaati,
+                        Birdefelik = false,
+                        CixisVaxt = fcx,
+                        QayidisVaxt = fqy,
+                        FaktikiSaat = faktiki,
+                        CixisStatus = fcx != null
+                            ? (fqy != null ? IcazeCixisGirisStatus.Tamamlandi : IcazeCixisGirisStatus.Cixdi)
+                            : IcazeCixisGirisStatus.Gozlenir,
+                    };
+                }).ToList();
+
+                if (sintetikler.Count > 0)
+                    dtos = dtos.Concat(sintetikler)
+                               .OrderByDescending(x => x.IcazeTarixi)
+                               .ToList();
+
                 return Result<IList<IcazeDovriyyeDto>>.Ok(dtos);
             }
             catch (Exception ex)
@@ -1231,13 +1301,27 @@ namespace FinNex.Application.Services
             {
                 var icaze = await _unitOfWork.Repository<Icaze>()
                     .GetirAsync(x => x.Id == icazeId, include: q => q.Include(i => i.CixisGiris));
-                if (icaze?.CixisGiris == null)
-                    return Result.Fail("İcazə və ya çıxış/giriş qeydi tapılmadı.");
+                if (icaze == null)
+                    return Result.Fail("İcazə tapılmadı.");
 
                 if (cixisVaxt.HasValue && qayidisVaxt.HasValue && qayidisVaxt.Value < cixisVaxt.Value)
                     return Result.Fail("Qayıdış vaxtı çıxış vaxtından əvvəl ola bilməz.");
 
+                // Qeyd yoxdursa (məs. köhnə jeton icazələri bu qeyd olmadan yaranırdı) —
+                // düzəliş zamanı YARADILIR ki, HR sintetik sətirdən də vaxt yaza bilsin.
                 var cg = icaze.CixisGiris;
+                bool yeniYarandi = false;
+                if (cg == null)
+                {
+                    yeniYarandi = true;
+                    cg = new IcazeCixisGiris
+                    {
+                        IcazeId = icaze.Id,
+                        Birdefelik = icaze.Birdefelik,
+                        Status = IcazeCixisGirisStatus.Gozlenir
+                    };
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YaratAsync(cg);
+                }
                 cg.CixisVaxt = cixisVaxt;
                 cg.QayidisVaxt = qayidisVaxt;
                 cg.Status = qayidisVaxt.HasValue
@@ -1245,7 +1329,8 @@ namespace FinNex.Application.Services
                     : (cixisVaxt.HasValue ? IcazeCixisGirisStatus.Cixdi : IcazeCixisGirisStatus.Gozlenir);
                 cg.YenilenmeTarixi = DateTime.Now;
 
-                await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
+                if (!yeniYarandi)
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
                 await _unitOfWork.YaddaSaxlaAsync();
                 return Result.Ok("Çıxış/qayıdış vaxtı yeniləndi.");
             }

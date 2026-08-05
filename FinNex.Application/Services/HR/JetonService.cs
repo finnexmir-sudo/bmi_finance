@@ -541,6 +541,16 @@ namespace FinNex.Application.Services.HR
 
                     await _unitOfWork.Repository<Icaze>().YaratAsync(icaze);
 
+                    // Dövriyyə izlənməsi üçün çıxış/qayıdış qeydi — adi icazə axını ilə eyni.
+                    // (Bu olmadan jeton icazəsi İcazə Dövriyyəsi səhifəsinə düşmür və
+                    // HR faktiki çıxış/qayıdışa düzəliş edə bilmirdi — real hadisə 05.08.2026.)
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YaratAsync(new IcazeCixisGiris
+                    {
+                        Icaze = icaze,
+                        Birdefelik = false,
+                        Status = IcazeCixisGirisStatus.Gozlenir
+                    });
+
                     // Möhkəmlik: həmin günü davamiyyətdə dərhal "İcazəli" et (Qayib qalıb maaşdan
                     // kəsilməsin). Background marker yalnız qeydi olmayan günləri yazır — burada upsert.
                     // Yalnız qeyd yoxdursa və ya Qayib-dirsə dəyişir; işçi gəlib (Isde/Gecikme) qeydə toxunulmur.
