@@ -253,6 +253,17 @@
                                         <i class="bi bi-eye"></i>
                                     </a>
 
+                                    @if (m.Status == FinNex.Domain.Entities.HR.MezuniyyetStatus.Tesdiqlenib
+                                         && (m.Nov == FinNex.Domain.Entities.HR.MezuniyyetNovu.Illik
+                                          || m.Nov == FinNex.Domain.Entities.HR.MezuniyyetNovu.OzHesabina))
+                                    {
+                                    <a asp-action="EmrWord" asp-route-id="@m.Id"
+                                       style="padding:4px 9px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:6px;font-size:12px;color:#1d4ed8;text-decoration:none;display:inline-flex;align-items:center;"
+                                       title="K/M əmrini Word kimi yüklə">
+                                        <i class="bi bi-file-earmark-word"></i>
+                                    </a>
+                                    }
+
                                     @if (!string.IsNullOrEmpty(Model.TesdiqAction))
                                     {
                                         <form asp-action="@Model.TesdiqAction" method="post" class="d-inline">
