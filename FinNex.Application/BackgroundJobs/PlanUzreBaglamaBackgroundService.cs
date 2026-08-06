@@ -111,7 +111,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
             var ezamlar = await db.EzamiyyetMuracietler
                 .Where(x => !x.Silinib
                          && x.Status == EzamiyyetStatus.Tesdiqlendi
-                         && x.BaslamaSaati != null
+                         && (x.BaslamaSaati != null || x.BitisSaati != null)
                          && x.CihazQayidisVaxti == null
                          && x.BitmeTarixi >= minTarix
                          && x.BitmeTarixi < bugun.AddDays(1))
@@ -171,17 +171,29 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     : new List<DateTime>();
 
                 bool planIsledi = false;
-                if (ez.CihazCixisVaxti == null)
+                // "-dək" səfəri (BaslamaSaati yox): işçi günün əvvəlindən səfərdədir,
+                // ofisdən çıxış anlayışı yoxdur — yalnız QAYIDIŞ yazılır
+                // (pəncərədəki ilk oxuma = qayıdış, yoxdursa plan bitişi).
+                if (ez.BaslamaSaati == null)
                 {
-                    if (pencere.Count > 0) ez.CihazCixisVaxti = pencere[0];
-                    else { ez.CihazCixisVaxti = gun + (ez.BaslamaSaati ?? TimeSpan.Zero); planIsledi = true; }
-                }
-                if (ez.CihazQayidisVaxti == null)
-                {
-                    var sonPunch = pencere.LastOrDefault(v => v > ez.CihazCixisVaxti.Value.AddMinutes(5));
-                    if (sonPunch != default) ez.CihazQayidisVaxti = sonPunch;
+                    if (pencere.Count > 0) ez.CihazQayidisVaxti = pencere[0];
                     else if (ez.BitisSaati.HasValue)
                     { ez.CihazQayidisVaxti = ez.BitmeTarixi.Date + ez.BitisSaati.Value; planIsledi = true; }
+                }
+                else
+                {
+                    if (ez.CihazCixisVaxti == null)
+                    {
+                        if (pencere.Count > 0) ez.CihazCixisVaxti = pencere[0];
+                        else { ez.CihazCixisVaxti = gun + ez.BaslamaSaati.Value; planIsledi = true; }
+                    }
+                    if (ez.CihazQayidisVaxti == null)
+                    {
+                        var sonPunch = pencere.LastOrDefault(v => v > ez.CihazCixisVaxti.Value.AddMinutes(5));
+                        if (sonPunch != default) ez.CihazQayidisVaxti = sonPunch;
+                        else if (ez.BitisSaati.HasValue)
+                        { ez.CihazQayidisVaxti = ez.BitmeTarixi.Date + ez.BitisSaati.Value; planIsledi = true; }
+                    }
                 }
 
                 if (planIsledi) ez.CihazVaxtPlanUzre = true;
