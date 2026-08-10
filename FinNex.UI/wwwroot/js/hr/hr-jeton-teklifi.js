@@ -122,6 +122,7 @@ function jtCreateCard(item) {
                 <span class="jt-card-badge" style="background:${item.teklifNovuReng}">${jtEsc(item.teklifNovuAd)}</span>
             </div>
             <p class="jt-card-text">${jtEsc(item.metn)}</p>
+            ${item.mezAraliq ? `<span class="jt-card-mez"><i class="bi bi-calendar-range"></i> ${item.mezAraliq}</span>` : ''}
             <span class="jt-card-date"><i class="bi bi-clock"></i> ${dateStr}</span>
         </div>
         <div class="jt-card-actions">

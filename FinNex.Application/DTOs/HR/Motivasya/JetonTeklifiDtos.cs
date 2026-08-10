@@ -1,4 +1,4 @@
-using FinNex.Domain.Entities.HR;
+﻿using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.Motivasya
 {
@@ -18,6 +18,15 @@ namespace FinNex.Application.DTOs.HR.Motivasya
         public string? ElaveMelumat { get; set; }
         public JetonTeklifinStatusu Status { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
+
+        public DateTime? MezBaslama { get; set; }
+        public DateTime? MezBitme { get; set; }
+
+        // Hazır göstərmə mətni — JS tərəfdə tarix formatlama dərdi olmasın
+        public string? MezAraliq =>
+            MezBaslama.HasValue && MezBitme.HasValue
+                ? $"{MezBaslama:dd.MM.yyyy} – {MezBitme:dd.MM.yyyy}"
+                : null;
     }
 
     public class JetonTeklifiVerDto

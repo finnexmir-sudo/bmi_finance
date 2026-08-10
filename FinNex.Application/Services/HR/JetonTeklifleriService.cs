@@ -32,6 +32,7 @@ namespace FinNex.Application.Services.HR
                         .ThenInclude(t => t.Vezife)
                 .Where(x => x.Status == JetonTeklifinStatusu.Gozlenir);
 
+
             if (departamentId.HasValue)
                 query = query.Where(x => x.Isci.IsciTeyinatlari
                     .Any(t => t.Aktivdir && t.DepartamentId == departamentId.Value));
@@ -51,7 +52,35 @@ namespace FinNex.Application.Services.HR
                 .Select(g => g.First())
                 .ToList();
 
-            return dedup.Select(MapDto).ToList();
+            var tesdiqIdler = dedup.Where(x => x.TeklifNovu == JetonTeklifinNovu.EvezediciOldu)
+                .Select(x => int.TryParse(x.ElaveMelumat, out var id) ? id : 0).Where(id => id > 0).Distinct().ToList();
+
+            var mezXerite = tesdiqIdler.Count == 0
+     
+                ? new Dictionary<int, (DateTime Bas, DateTime Bit)>()
+                : await _uow.Repository<EvezediciTesdiq>()
+                    .Query().AsNoTracking()
+                    .Where(x => tesdiqIdler.Contains(x.Id))
+                    .Select(x => new { x.Id, x.Mezuniyyet.BaslamaTarixi, x.Mezuniyyet.BitmeTarixi })
+                    .ToDictionaryAsync(x => x.Id, x => (Bas: x.BaslamaTarixi,Bit: x.BitmeTarixi));
+
+            var dtos = new List<JetonTeklifiDto>();
+            foreach (var t in dedup)
+            {
+                var dto = MapDto(t);
+
+                if (t.TeklifNovu == JetonTeklifinNovu.EvezediciOldu
+                    && int.TryParse(t.ElaveMelumat, out var tid)
+                    && mezXerite.TryGetValue(tid, out var araliq))
+                {
+                    dto.MezBaslama = araliq.Bas;
+                    dto.MezBitme = araliq.Bit;
+                }
+
+                dtos.Add(dto);
+            }
+            return dtos;
+
         }
 
         public async Task<Result> JetonVerAsync(JetonTeklifiVerDto dto, int verenUserId)

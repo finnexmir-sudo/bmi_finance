@@ -34,6 +34,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             int? departamentId = await GetRehberDepartamentIdAsync();
             var list = await _teklifService.GetGozleyenlerAsync(departamentId);
+
             return Json(new { success = true, data = list });
         }
 
