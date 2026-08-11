@@ -352,6 +352,35 @@ public class ADMSController : Controller
                             movcud.Status = DavamiyyetStatus.Ezamiyyet;
                             await _db.SaveChangesAsync();
                         }
+                        // SAATLIQ ezamiyyətdən QAYIDIŞ → status "İşdə"yə qayıdır.
+                        // Yuxarıdakı blok ezamiyyətə çıxanda günü Ezamiyyət işarələyir (tez çıxma
+                        // yazılmasın deyə), amma işçi qayıdıb işini davam etdirəndə geri qaytaran
+                        // kod yox idi: səhər 06:58-də gələn, 10:15-də ezamiyyətə çıxıb 11:44-də
+                        // qayıdan işçi gün sonuna kimi "Ezamiyyət" qalırdı və KPI-da "Gəlib"
+                        // sayılmırdı (real hadisə: 11.08.2026).
+                        //
+                        // Şərtlər QƏSDƏN dardır — yalnız "getdi və qayıtdı" halı:
+                        //  • ezamiyyətin HƏM başlama, HƏM bitmə saatı var (tam günlük/"-dək" DEYİL);
+                        //  • işçi ezamiyyətdən ƏVVƏL işdə olub (giriş < başlama saatı);
+                        //  • bu oxuma çıxış pəncərəsindən (±30 dəq) sonradır, yəni qayıdışdır.
+                        // Gec gələn (girişi ezamiyyət pəncərəsindən sonra olan) işçi toxunulmur —
+                        // onun Ezamiyyət statusu gecikmə qoruması kimi qalır.
+                        //
+                        // Tez çıxma qoruması İTMİR: hesablamalarda status yoxlaması ilə yanaşı
+                        // müraciətin özünə baxan `ezamiyyetOrtuyur` şərti də var
+                        // (HR/DavamiyyetController:416, User/DavamiyyetController:292).
+                        else if (bugunEzamiyyet != null
+                              && movcud.Status == DavamiyyetStatus.Ezamiyyet
+                              && bugunEzamiyyet.BaslamaSaati != null
+                              && bugunEzamiyyet.BitisSaati != null
+                              && movcud.GirisVaxti.HasValue
+                              && movcud.GirisVaxti.Value.TimeOfDay < bugunEzamiyyet.BaslamaSaati.Value
+                              && vaxt.TimeOfDay > bugunEzamiyyet.BaslamaSaati.Value.Add(TimeSpan.FromMinutes(30)))
+                        {
+                            movcud.Status = HesablaStatus(movcud.GirisVaxti.Value, bugunIcaze,
+                                bugunEzamiyyet, standartGiris, gecikTolerans, bugunGorushBitis);
+                            await _db.SaveChangesAsync();
+                        }
 
                         // Görüş çıxışı? — offline görüşün başlama saatı ±30 dəq.
                         bool gorushCixisi = false;
