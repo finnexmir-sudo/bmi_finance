@@ -516,6 +516,13 @@ namespace FinNex.Application.Services.HR
                     var jNaharIcerdedir = redim.BaslamaSaati.Value <= jNaharBas
                                        && redim.BitisSaati.Value >= jNaharBitis;
 
+                    // TAM İŞ GÜNÜ: işçi bütün gün jetonla məzundur — ofisə ümumiyyətlə gəlmir,
+                    // ona görə cihaz çıxış/qayıdışı GÖZLƏNİLMİR (aşağıda qeyd dərhal Tamamlandı
+                    // açılır). Nahar aralığın içində olması ilə qarışdırma: 12:00–15:00 icazəsi
+                    // də naharı əhatə edir, amma işçi həmin gün ofisdədir və cihaza vurur.
+                    var jTamIsGunu = redim.BaslamaSaati.Value <= (jetonPrm?.StandartGirisVaxti ?? new TimeSpan(9, 0, 0))
+                                  && redim.BitisSaati.Value >= (jetonPrm?.StandartCixisVaxti ?? new TimeSpan(17, 45, 0));
+
                     var icaze = new Icaze
                     {
                         IsciId = redim.IsciId,
@@ -562,7 +569,13 @@ namespace FinNex.Application.Services.HR
                     {
                         Icaze = icaze,
                         Birdefelik = false,
-                        Status = IcazeCixisGirisStatus.Gozlenir
+                        // Tam iş günü → gözləniləsi çıxış/qayıdış yoxdur, qeyd dərhal bağlanır
+                        // (vaxtlar boş qalır — uydurma cihaz oxuması yazılmır; sayılan müddət
+                        // plandan gəlir və jeton onu tam örtür). Qismən icazədə isə işçi
+                        // ofisdədir və cihaza vurur → adi axın.
+                        Status = jTamIsGunu
+                            ? IcazeCixisGirisStatus.Tamamlandi
+                            : IcazeCixisGirisStatus.Gozlenir
                     });
 
                     // Möhkəmlik: həmin günü davamiyyətdə dərhal "İcazəli" et (Qayib qalıb maaşdan

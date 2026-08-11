@@ -100,6 +100,12 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 .Include(x => x.Icaze)
                 .Where(x => !x.Silinib
                          && x.Status != IcazeCixisGirisStatus.LegvEdildi
+                         // Artıq bağlanmış qeydə toxunma. Tam günlük jeton icazəsi məhz belədir:
+                         // işçi ofisə gəlmir, gözləniləsi çıxış/qayıdış yoxdur, qeyd yaranarkən
+                         // Tamamlandı açılır və vaxtları BOŞ qalmalıdır — bu istisna olmasa
+                         // servis ora plan vaxtlarını yazıb uydurma cihaz oxuması yaradardı.
+                         // (Birdəfəlik icazələr də hər gecə boş yerə yenilənmir.)
+                         && x.Status != IcazeCixisGirisStatus.Tamamlandi
                          && x.QayidisVaxt == null
                          && !x.Icaze.Silinib
                          && x.Icaze.Status == IcazeStatus.Tesdiqlenib
