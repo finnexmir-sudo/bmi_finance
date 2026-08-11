@@ -58,6 +58,38 @@ function hesabla() {
 
     txt.textContent = metn;
     box.style.display = 'flex';
+
+    naharEfektivGoster(diff);
+}
+
+// ── Nahar seçiləndə sayğaca yazılacaq (effektiv) müddəti göstər ──
+// İşçi "nahara çıxmıram" seçəndə pəncərə uzun ola bilir, amma sayğacdan sabit
+// nahar fasiləsi qədər AZ yazılır. Bu qarşılığı formada dərhal göstəririk ki,
+// işçi nə aldığını və nə yazıldığını eyni anda görsün.
+function deqMetn(t) {
+    var s = Math.floor(t / 60), m = t % 60;
+    var x = s > 0 ? s + ' saat' : '';
+    if (m > 0) x += (x ? ' ' : '') + m + ' dəqiqə';
+    return x || '0 dəqiqə';
+}
+
+function naharEfektivGoster(diff) {
+    var cb = document.querySelector('input[name="NaharNezereAlinmasin"]');
+    var kutu = document.getElementById('naharEfektivBox');
+    var mtn = document.getElementById('naharEfektivText');
+    if (!cb || !kutu || !mtn) return;
+
+    if (!cb.checked || !diff || diff <= 0) {
+        kutu.style.display = 'none';
+        return;
+    }
+
+    var naharDeq = parseInt(cb.getAttribute('data-nahar-deq'), 10);
+    if (isNaN(naharDeq)) naharDeq = 45;
+
+    var sayilan = Math.max(0, diff - Math.min(naharDeq, diff));
+    mtn.textContent = deqMetn(sayilan) + ' (pəncərə ' + deqMetn(diff) + ', −' + Math.min(naharDeq, diff) + ' dəq nahar)';
+    kutu.style.display = 'block';
 }
 
 var basEl = document.getElementById('baslamaSaati');
@@ -65,4 +97,8 @@ var bitisEl = document.getElementById('bitisSaati');
 
 basEl.addEventListener('input', maskSaat);
 bitisEl.addEventListener('input', maskSaat);
+
+var naharCb = document.querySelector('input[name="NaharNezereAlinmasin"]');
+if (naharCb) naharCb.addEventListener('change', hesabla);
+
 hesabla();

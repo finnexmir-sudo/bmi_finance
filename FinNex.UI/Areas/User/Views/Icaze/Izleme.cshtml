@@ -81,6 +81,11 @@
             font-size:.7rem; font-weight:600;
             color:#7c3aed; background:#f3e8ff; border:1px solid #e9d5ff; border-radius:10px;
         }
+        .iz-nahar-tag {
+            display:inline-block; margin-left:6px; padding:1px 7px; white-space:nowrap;
+            font-size:.7rem; font-weight:600; cursor:help;
+            color:#92400e; background:#fef3c7; border:1px solid #fde68a; border-radius:10px;
+        }
     </style>
 }
 
@@ -324,7 +329,7 @@
                                                         <th>Faktiki çıxış</th>
                                                         <th>Faktiki qayıdış</th>
                                                         <th>Səbəb</th>
-                                                        <th>Status</th>
+                                                        <th>Təsdiq statusu</th>
                                                         <th>Əməliyyat</th>
                                                     </tr>
                                                 </thead>
@@ -338,6 +343,15 @@
                                                             <td>@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm")</td>
                                                             <td>
                                                                 <strong style="@(icGec ? "color:#e0566a" : null)">@SaatToDeqiqe(ic.IcazeSaati)</strong>
+                                                                @if (ic.NaharNezereAlinmasin && ic.NaharCixilanDeqiqe > 0)
+                                                                {
+                                                                    @* Nahara çıxmayan işçidə sayılan müddət pəncərədən azdır —
+                                                                       yalnız xam müddəti göstərmək çaşdırıcıdır. *@
+                                                                    <span class="iz-nahar-tag"
+                                                                          title="İşçi nahara çıxmayıb — icazə müddətindən @ic.NaharCixilanDeqiqe dəq çıxılır; sayğaca @SaatToDeqiqe(ic.EffektivSaat) yazılır">
+                                                                        🍽 −@ic.NaharCixilanDeqiqe dəq → @SaatToDeqiqe(ic.EffektivSaat)
+                                                                    </span>
+                                                                }
                                                                 @if (ic.JetonOdenenSaat > 0)
                                                                 {
                                                                     var jSaat = ic.JetonOdenenSaat.ToString("0.#");

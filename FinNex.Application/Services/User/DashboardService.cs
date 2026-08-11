@@ -263,7 +263,6 @@ namespace FinNex.Application.Services
                 // Jeton ödənən saat (bonus, sayılmır) və istifadə edilməyən nahar
                 // çıxılır — IcazeService.EfektivSaat ilə EYNİ qayda.
                 // (izParam yuxarıda ── 3-də yüklənib.)
-                var naharBas = izParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
                 var naharDeq = izParam?.NaharMuddetDeqiqe ?? 45;
                 var cariIl = DateTime.Today.Year;
 
@@ -277,7 +276,7 @@ namespace FinNex.Application.Services
                         izlemeden: true);
 
                 // İSTİFADƏ = FAKTİKİ (cihaz çıxış/qayıdış, nahar çıxılmaqla) — cihaz datası yoxdursa
-                // planlaşdırılan effektiv. Nahar hər ikisində REAL kəsişmə ilə çıxılır. Sonra jeton çıxılır.
+                // planlaşdırılan effektiv. Nahar hər ikisində SABİT fasilə qədər çıxılır. Sonra jeton çıxılır.
                 // (İcazə səhifəsindəki IstifadeSaati ilə eyni məntiq.)
                 double IcazeIstifade(Icaze x)
                 {
@@ -293,13 +292,13 @@ namespace FinNex.Application.Services
                         {
                             var bit = qayidis?.TimeOfDay ?? x.BitisSaati;
                             efektiv = Math.Max(0, efektiv
-                                - IcazeService.NaharKesishmeSaat(cixis.Value.TimeOfDay, bit, naharBas, naharDeq));
+                                - IcazeService.NaharCixilmaSaat(cixis.Value.TimeOfDay, bit, naharDeq));
                         }
                     }
                     else
                     {
                         efektiv = x.IcazeSaati - (x.NaharNezereAlinmasin
-                            ? IcazeService.NaharKesishmeSaat(x.BaslamaSaati, x.BitisSaati, naharBas, naharDeq)
+                            ? IcazeService.NaharCixilmaSaat(x.BaslamaSaati, x.BitisSaati, naharDeq)
                             : 0);
                     }
                     return Math.Max(0, efektiv - (double)x.JetonOdenenSaat);

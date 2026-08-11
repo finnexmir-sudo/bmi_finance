@@ -67,7 +67,6 @@ namespace FinNex.Application.Services
                 foreach (var d in dtos)
                 {
                     d.NaharDeqiqe = isPrm?.NaharMuddetDeqiqe ?? 45;
-                    d.NaharBaslama = isPrm?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
                 }
 
                 return Result<IList<IcazeListDto>>.Ok(dtos);
@@ -76,6 +75,13 @@ namespace FinNex.Application.Services
             {
                 return Result<IList<IcazeListDto>>.Fail($"Icazeler getirilmedi: {ex.Message}");
             }
+        }
+
+        public async Task<int> NaharMuddetDeqiqeAsync()
+        {
+            var p = await _unitOfWork.Repository<IsParametri>()
+                .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
+            return p?.NaharMuddetDeqiqe ?? 45;
         }
 
         public async Task<Result<IcazeListDto>> YaratAsync(IcazeCreateDto dto)
@@ -89,14 +95,28 @@ namespace FinNex.Application.Services
                 if (string.IsNullOrWhiteSpace(dto.Sebeb))
                     return Result<IcazeListDto>.Fail("İcazə səbəbi mütləq qeyd edilməlidir.");
 
-                // Maksimum müddət — adi icazə 3 saat; nahar fasiləsi icazəyə qatılırsa 3 saat 45 dəqiqə
+                // Maksimum müddət — adi icazə 3 saat (180 dəq). Nahara çıxmayan işçi nahar
+                // fasiləsi qədər kredit qazanır → pəncərə o qədər uzun ola bilər, ƏVƏZİNDƏ
+                // sayğacdan həmin müddət çıxılır (NaharCixilmaSaat). Beləcə sayılan icazə
+                // hər halda 3 saatı keçmir. Nahar müddəti IsParametri-dən oxunur (default 45).
+                var yaratParam = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
+                var yaratNaharDeq = yaratParam?.NaharMuddetDeqiqe ?? 45;
+
                 var icazeDeq = (int)(dto.BitisSaati - dto.BaslamaSaati).TotalMinutes;
-                var maxDeq = dto.NaharNezereAlinmasin ? 225 : 180;   // 3s45d : 3s
+                var maxDeq = dto.NaharNezereAlinmasin ? 180 + yaratNaharDeq : 180;
                 if (icazeDeq > maxDeq)
+                {
+                    var maxSaat = maxDeq / 60; var maxQaliq = maxDeq % 60;
+                    // Çıxışlıq hal şəkilçisi son sözə görə dəyişir: "...dəqiqədən" / "...saatdan".
+                    var maxMetn = maxQaliq > 0
+                        ? $"{maxSaat} saat {maxQaliq} dəqiqədən"
+                        : $"{maxSaat} saatdan";
                     return Result<IcazeListDto>.Fail(
                         dto.NaharNezereAlinmasin
-                            ? "Nahar icazəyə qatıldıqda icazə 3 saat 45 dəqiqədən çox ola bilməz."
-                            : "İcazə 3 saatdan çox ola bilməz. Nahara çıxmırsınızsa müraciətdə qeyd edin (max 3 saat 45 dəqiqə).");
+                            ? $"Nahar icazəyə qatıldıqda icazə {maxMetn} çox ola bilməz."
+                            : $"İcazə 3 saatdan çox ola bilməz. Nahara çıxmırsınızsa müraciətdə qeyd edin (max {180 + yaratNaharDeq} dəqiqə).");
+                }
 
                 // YENİ AXİN:
                 //   Rəhbər müraciəti   → birbaşa Tesdiqlenib (özü Rəhbər olduğu üçün)
@@ -515,7 +535,7 @@ namespace FinNex.Application.Services
         }
 
         // Rəhbər təsdiq edir → Tesdiqlenib + IcazeCixisGiris yaranır
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false, bool birdefelik = false)
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool? naharNezereAlinmasin = null, bool birdefelik = false)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -523,16 +543,20 @@ namespace FinNex.Application.Services
             if (icaze.Status != IcazeStatus.RehberTesdiqinde)
                 return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}).");
 
-            // Nahar parametrləri IsParametri-dən (default 13:00 / 45 dəq)
+            // Nahar parametrləri IsParametri-dən (default 45 dəq)
             var isParam = await _unitOfWork.Repository<IsParametri>()
                 .Query().Where(x => !x.Silinib).FirstOrDefaultAsync();
-            var naharBas = isParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
             var naharDeq = isParam?.NaharMuddetDeqiqe ?? 45;
 
+            // Forma nahar seçimini göndərməyibsə (null) — işçinin müraciətdəki seçimi SAXLANILIR.
+            // Əvvəl parametr `bool = false` idi: təsdiq səhifəsində checkbox render olunmayanda
+            // (nahara toxunmayan pəncərələrdə) işçinin seçimi səssizcə silinirdi.
+            var naharSecimi = naharNezereAlinmasin ?? icaze.NaharNezereAlinmasin;
+
             var icazeSaatiRaw = (decimal)icaze.IcazeSaati;
-            // Nahar çıxılması REAL kəsişmə əsaslıdır (icazə pəncərəsi ∩ nahar pəncərəsi).
-            var naharCix = naharNezereAlinmasin
-                ? (decimal)NaharKesishmeSaat(icaze.BaslamaSaati, icaze.BitisSaati, naharBas, naharDeq)
+            // Nahar çıxılması SABİT fasilə müddətidir (bax: NaharCixilmaSaat şərhi).
+            var naharCix = naharSecimi
+                ? (decimal)NaharCixilmaSaat(icaze.BaslamaSaati, icaze.BitisSaati, naharDeq)
                 : 0m;
             var efektivSaat = Math.Max(0m, icazeSaatiRaw - naharCix);
 
@@ -555,7 +579,7 @@ namespace FinNex.Application.Services
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
             icaze.JetonOdenenSaat = status ? jetonOdenenSaat : 0;
-            icaze.NaharNezereAlinmasin = status && naharNezereAlinmasin;
+            icaze.NaharNezereAlinmasin = status && naharSecimi;
 
             if (!status)
             {
@@ -987,16 +1011,24 @@ namespace FinNex.Application.Services
             return Math.Round((qayidis.Value - cixis.Value).TotalHours, 2);
         }
 
-        // İcazə pəncərəsinin [bas,bitis] nahar pəncərəsi [naharBas .. naharBas+naharDeq] ilə
-        // REAL kəsişməsi (saat). "Nahara çıxmıram" halında bu qədər çıxılır — sabit 45 dəq yox,
-        // yalnız pəncərənin naharla üst-üstə düşən hissəsi (qismən nahar hallarında da dəqiq).
-        internal static double NaharKesishmeSaat(TimeSpan bas, TimeSpan bitis, TimeSpan naharBas, int naharDeq)
+        // "Nahara çıxmıram" halında icazədən çıxılan müddət (saat) — SABİT nahar fasiləsi.
+        //
+        // Qayda (10.06.2026): işçi nahar fasiləsini götürmür → 45 dəq kredit qazanır →
+        // icazə pəncərəsi 45 dəq uzun ola bilər (max 3s45d), ƏVƏZİNDƏ sayğaca 45 dəq az
+        // düşür. Güzəşt (+45) və çıxılma (−45) bir-birini tarazlayır: sayılan icazə heç
+        // vaxt 3 saatı keçmir.
+        //
+        // DİQQƏT: burada REAL KƏSİŞMƏ (icazə ∩ nahar pəncərəsi) İSTİFADƏ EDİLMİR.
+        // 24.07.2026-da kəsişməyə keçirilmişdi (ec0a695e) — nəticədə nahara toxunmayan
+        // pəncərədə (məs. 14:00–17:45) çıxılma 0 olurdu: işçi naharda işləyir, amma
+        // sayğacdan 3s45d tam yazılırdı, yəni güzəştin qarşılığı itirdi. Bərpa edildi.
+        // Yeganə hədd: pəncərənin özündən çox çıxılmasın.
+        internal static double NaharCixilmaSaat(TimeSpan bas, TimeSpan bitis, int naharDeq)
         {
-            var nBitis = naharBas + TimeSpan.FromMinutes(naharDeq);
-            var oBas = bas > naharBas ? bas : naharBas;
-            var oBitis = bitis < nBitis ? bitis : nBitis;
-            var k = (oBitis - oBas).TotalHours;
-            return k > 0 ? k : 0;
+            var pencere = (bitis - bas).TotalHours;
+            if (pencere <= 0) return 0;
+            var cixilan = naharDeq / 60.0;
+            return cixilan < pencere ? cixilan : pencere;
         }
 
         public async Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr)
@@ -1026,10 +1058,9 @@ namespace FinNex.Application.Services
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
-                // Nahar parametrləri — effektiv saat DTO-da REAL kəsişmə ilə hesablanır.
+                // Nahar parametrləri — effektiv saat DTO-da sabit fasilə ilə hesablanır.
                 var izParam = await _unitOfWork.Repository<IsParametri>()
                     .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
-                var izNaharBas = izParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
                 var izNaharDeq = izParam?.NaharMuddetDeqiqe ?? 45;
 
                 // Planlaşdırılan effektiv = DTO.EffektivSaat (nahar çıxılıb) − jeton (bonus, sayılmır).
@@ -1060,7 +1091,6 @@ namespace FinNex.Application.Services
                         var icazeDtolar = g.OrderByDescending(x => x.IcazeTarixi).Select(x =>
                         {
                             var dto = MapToListDto(x);
-                            dto.NaharBaslama = izNaharBas;
                             dto.NaharDeqiqe = izNaharDeq;
                             if (x.CixisGiris != null && x.CixisGiris.CixisVaxt == null &&
                                 x.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
@@ -1093,14 +1123,14 @@ namespace FinNex.Application.Services
                                 .Where(d => d.Status == IcazeStatus.Tesdiqlenib)
                                 .Select(d =>
                                 {
-                                    // Faktiki xam (günün sonuna kimi halı üçün StandartCixisVaxti ilə) − nahar kəsişməsi.
+                                    // Faktiki xam (günün sonuna kimi halı üçün StandartCixisVaxti ilə) − sabit nahar.
                                     var f = IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
                                                              d.IcazeTarixi, d.BitisSaati, izParam?.StandartCixisVaxti);
                                     if (f.HasValue && d.NaharNezereAlinmasin && d.CixisVaxt.HasValue)
                                     {
                                         var bit = d.QayidisVaxt?.TimeOfDay ?? d.BitisSaati;
-                                        f = Math.Max(0, f.Value - NaharKesishmeSaat(
-                                            d.CixisVaxt.Value.TimeOfDay, bit, izNaharBas, izNaharDeq));
+                                        f = Math.Max(0, f.Value - NaharCixilmaSaat(
+                                            d.CixisVaxt.Value.TimeOfDay, bit, izNaharDeq));
                                     }
                                     return f;
                                 })
@@ -1211,15 +1241,14 @@ namespace FinNex.Application.Services
                         double? faktiki = (!c.Birdefelik ? c.FaktikiSaat : null)
                             ?? IcazeFaktikiSaat(effCixis, effQayidis, c.Birdefelik,
                                                 c.Icaze.IcazeTarixi, c.Icaze.BitisSaati, dovParam?.StandartCixisVaxti);
-                        // "Nahara çıxmıram" halında faktikidən də naharın REAL kəsişməsi çıxılır
+                        // "Nahara çıxmıram" halında faktikidən də sabit nahar çıxılır
                         // (planlaşdırılanla eyni məntiq).
                         if (faktiki.HasValue && c.Icaze.NaharNezereAlinmasin && effCixis.HasValue)
                         {
-                            var dnBas = dovParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
                             var dnDeq = dovParam?.NaharMuddetDeqiqe ?? 45;
                             var dnBit = effQayidis?.TimeOfDay ?? c.Icaze.BitisSaati;
                             faktiki = Math.Max(0, faktiki.Value
-                                - NaharKesishmeSaat(effCixis.Value.TimeOfDay, dnBit, dnBas, dnDeq));
+                                - NaharCixilmaSaat(effCixis.Value.TimeOfDay, dnBit, dnDeq));
                         }
                         return new IcazeDovriyyeDto
                         {
@@ -1233,6 +1262,8 @@ namespace FinNex.Application.Services
                             BaslamaSaati = c.Icaze.BaslamaSaati,
                             BitisSaati = c.Icaze.BitisSaati,
                             PlanlananSaat = c.Icaze.IcazeSaati,
+                            NaharNezereAlinmasin = c.Icaze.NaharNezereAlinmasin,
+                            NaharDeqiqe = dovParam?.NaharMuddetDeqiqe ?? 45,
                             Birdefelik = c.Birdefelik,
                             CixisVaxt = effCixis,
                             QayidisVaxt = effQayidis,
@@ -1252,11 +1283,10 @@ namespace FinNex.Application.Services
                                         i.IcazeTarixi, i.BitisSaati, dovParam?.StandartCixisVaxti);
                     if (faktiki.HasValue && i.NaharNezereAlinmasin && fcx.HasValue)
                     {
-                        var dnBas = dovParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
                         var dnDeq = dovParam?.NaharMuddetDeqiqe ?? 45;
                         var dnBit = fqy?.TimeOfDay ?? i.BitisSaati;
                         faktiki = Math.Max(0, faktiki.Value
-                            - NaharKesishmeSaat(fcx.Value.TimeOfDay, dnBit, dnBas, dnDeq));
+                            - NaharCixilmaSaat(fcx.Value.TimeOfDay, dnBit, dnDeq));
                     }
                     return new IcazeDovriyyeDto
                     {
@@ -1270,6 +1300,8 @@ namespace FinNex.Application.Services
                         BaslamaSaati = i.BaslamaSaati,
                         BitisSaati = i.BitisSaati,
                         PlanlananSaat = i.IcazeSaati,
+                        NaharNezereAlinmasin = i.NaharNezereAlinmasin,
+                        NaharDeqiqe = dovParam?.NaharMuddetDeqiqe ?? 45,
                         Birdefelik = false,
                         CixisVaxt = fcx,
                         QayidisVaxt = fqy,

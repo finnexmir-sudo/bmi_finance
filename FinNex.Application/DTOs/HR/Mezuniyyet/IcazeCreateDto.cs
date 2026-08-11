@@ -57,34 +57,37 @@ namespace FinNex.Application.DTOs.HR.Icaze
 
         // ── Nahar (fasilə) parametrləri — effektiv saat hesabı üçün; IsParametri-dən doldurulur.
         public int NaharDeqiqe { get; set; } = 45;
-        public TimeSpan NaharBaslama { get; set; } = new TimeSpan(13, 0, 0);
 
-        // Verilmiş [bas,bitis] pəncərəsinin nahar pəncərəsi ilə REAL kəsişməsi (saat).
-        // "Nahara çıxmıram" deyilsə 0. Yalnız pəncərənin naharla üst-üstə düşən hissəsi çıxılır
-        // (sabit 45 dəq yox) — qismən nahar hallarında da dəqiq.
-        private double NaharKesishme(TimeSpan bas, TimeSpan bitis)
+        // "Nahara çıxmıram" halında çıxılan müddət (saat) — SABİT nahar fasiləsi.
+        // Güzəşt (+45 dəq uzun pəncərə) və çıxılma (−45 dəq) bir-birini tarazlayır →
+        // sayılan icazə heç vaxt 3 saatı keçmir. Real kəsişmə İSTİFADƏ EDİLMİR:
+        // nahara toxunmayan pəncərədə (14:00–17:45) çıxılma 0 olurdu və işçi naharda
+        // işlədiyi halda sayğacdan tam 3s45d yazılırdı (bax: IcazeService.NaharCixilmaSaat).
+        private double NaharCixilma(TimeSpan bas, TimeSpan bitis)
         {
             if (!NaharNezereAlinmasin) return 0;
-            var nBas = NaharBaslama;
-            var nBitis = NaharBaslama.Add(TimeSpan.FromMinutes(NaharDeqiqe));
-            var oBas = bas > nBas ? bas : nBas;
-            var oBitis = bitis < nBitis ? bitis : nBitis;
-            var k = (oBitis - oBas).TotalHours;
-            return k > 0 ? k : 0;
+            var pencere = (bitis - bas).TotalHours;
+            if (pencere <= 0) return 0;
+            var cixilan = NaharDeqiqe / 60.0;
+            return cixilan < pencere ? cixilan : pencere;
         }
 
-        // Effektiv (sayılan) PLANLAŞDIRILMIŞ müddət = pəncərə − nahar kəsişməsi.
+        // Effektiv (sayılan) PLANLAŞDIRILMIŞ müddət = pəncərə − nahar fasiləsi.
         public double EffektivSaat
         {
-            get { var e = IcazeSaati - NaharKesishme(BaslamaSaati, BitisSaati); return e < 0 ? 0 : e; }
+            get { var e = IcazeSaati - NaharCixilma(BaslamaSaati, BitisSaati); return e < 0 ? 0 : e; }
         }
+
+        // Bu icazədən nahara görə çıxılan dəqiqə — UI-da göstərmək üçün (0 = çıxılmayıb).
+        public int NaharCixilanDeqiqe =>
+            (int)Math.Round(NaharCixilma(BaslamaSaati, BitisSaati) * 60);
 
         // Faktiki pəncərənin bitiş anı (time-of-day): qayıdış varsa onun saatı;
         // qayıdış yoxdursa (birdəfəlik / günün sonuna kimi) icazə bitmə saatı.
         private TimeSpan? FaktikiBitisTod =>
             QayidisVaxt?.TimeOfDay ?? (CixisVaxt != null ? BitisSaati : (TimeSpan?)null);
 
-        // Effektiv FAKTİKİ müddət = xam faktiki − faktiki pəncərənin naharla kəsişməsi.
+        // Effektiv FAKTİKİ müddət = xam faktiki − sabit nahar fasiləsi.
         // Planlaşdırılan ilə eyni məntiq — nahar həm plandan, həm faktikidən çıxılır.
         public double? EffektivFaktikiSaat
         {
@@ -93,7 +96,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
                 if (!FaktikiSaat.HasValue) return null;
                 var cix = CixisVaxt?.TimeOfDay;
                 var bit = FaktikiBitisTod;
-                var cixilan = (cix.HasValue && bit.HasValue) ? NaharKesishme(cix.Value, bit.Value) : 0;
+                var cixilan = (cix.HasValue && bit.HasValue) ? NaharCixilma(cix.Value, bit.Value) : 0;
                 var e = FaktikiSaat.Value - cixilan;
                 return e < 0 ? 0 : e;
             }
@@ -102,7 +105,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
         // birdəfəlik → çıxışdan icazə sonuna. Punch yoxdursa null. Servis doldurur.
         public double? FaktikiSaat { get; set; }
         // İstifadə olunan (sayılan) saat = effektiv faktiki varsa o, yoxdursa effektiv plan.
-        // Hər ikisi nahar çıxılmaqla (real kəsişmə).
+        // Hər ikisi sabit nahar fasiləsi çıxılmaqla.
         public double IstifadeSaati => EffektivFaktikiSaat ?? EffektivSaat;
 
         public string? Sebeb { get; set; }
@@ -201,6 +204,20 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public DateTime? QayidisVaxt { get; set; }
         public double? FaktikiSaat { get; set; }
         public IcazeCixisGirisStatus CixisStatus { get; set; }
+
+        // ── Nahar ──────────────────────────────────────────────
+        // FaktikiSaat servisdə onsuz da nahar çıxılmış gəlir; plan tərəfi də eyni
+        // olmalıdır, yoxsa müqayisə (fərq) həmişə "erkən qayıdıb" kimi görünür.
+        public bool NaharNezereAlinmasin { get; set; }
+        public int NaharDeqiqe { get; set; } = 45;
+
+        public int NaharCixilanDeqiqe => NaharNezereAlinmasin
+            ? (int)Math.Round(Math.Min(NaharDeqiqe / 60.0, PlanlananSaat) * 60)
+            : 0;
+
+        // Sayılan (effektiv) planlaşdırılan müddət — nahar çıxılmaqla.
+        public double EffektivPlanSaat =>
+            Math.Max(0, PlanlananSaat - NaharCixilanDeqiqe / 60.0);
 
         public string CixisStatusText => CixisStatus switch
         {

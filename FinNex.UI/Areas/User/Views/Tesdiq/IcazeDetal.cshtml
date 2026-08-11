@@ -293,47 +293,48 @@
                         int rH = rTotalDeq / 60; int rM = rTotalDeq % 60;
 
                         // Nahar parametrləri
-                        TimeSpan naharBaslama = ViewBag.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
                         int naharDeq = ViewBag.NaharMuddetDeqiqe ?? 45;
-                        TimeSpan naharBitis = naharBaslama + TimeSpan.FromMinutes(naharDeq);
 
-                        // Checkbox yalnız icazə nahar pəncərəsi ilə kəsişdikdə görünür
-                        bool naharKesisir = Model.BaslamaSaati.HasValue && Model.BitisSaati.HasValue &&
-                                            Model.BaslamaSaati.Value < naharBitis &&
-                                            Model.BitisSaati.Value > naharBaslama;
-
-                        // REAL kəsişmə (icazə pəncərəsi ∩ nahar pəncərəsi) — sabit 45 dəq yox, faktiki üst-üstə düşmə.
-                        decimal naharKesisme = 0m;
-                        if (naharKesisir)
-                        {
-                            var oBas = Model.BaslamaSaati!.Value > naharBaslama ? Model.BaslamaSaati.Value : naharBaslama;
-                            var oBitis = Model.BitisSaati!.Value < naharBitis ? Model.BitisSaati.Value : naharBitis;
-                            naharKesisme = (decimal)Math.Max(0, (oBitis - oBas).TotalHours);
-                        }
-                        int kesismeDeq = (int)Math.Round((double)naharKesisme * 60);
-
-                        if (naharKesisir)
-                        {
-                            decimal efektivSaat = Math.Max(0m, icazeSaatiRaw - naharKesisme);
-                            int eDeq = (int)Math.Round((double)efektivSaat * 60);
-                            int eH = eDeq / 60; int eM = eDeq % 60;
+                        // Çıxılma SABİT nahar fasiləsidir (pəncərədən çox olmamaq şərtilə) —
+                        // real kəsişmə DEYİL. Bax: IcazeService.NaharCixilmaSaat.
+                        int cixilanDeq = Math.Min(naharDeq, rTotalDeq);
+                        decimal naharCixilma = cixilanDeq / 60m;
+                        decimal efektivSaat = Math.Max(0m, icazeSaatiRaw - naharCixilma);
+                        int eDeq = (int)Math.Round((double)efektivSaat * 60);
+                        int eH = eDeq / 60; int eM = eDeq % 60;
 
                             <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
                                 @if (Model.NaharNezereAlinmasin)
                                 {
-                                    <div style="font-size:12px;color:#92400e;background:#fef3c7;padding:7px 10px;border-radius:6px;margin-bottom:10px;font-weight:600">
-                                        ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — nahar icazəyə qatılıb.
+                                    <div style="font-size:12px;color:#92400e;background:#fef3c7;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-weight:600;line-height:1.5">
+                                        ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — buna görə icazə
+                                        3 saatdan uzun (max @(180 + naharDeq) dəq) ola bilib.<br />
+                                        Təsdiq etsəniz sayğaca <strong>@cixilanDeq dəq az</strong> yazılacaq:
+                                        pəncərə @rH saat@(rM > 0 ? $" {rM} dəq" : "") → sayılan <strong>@eH saat@(eM > 0 ? $" {eM} dəq" : "")</strong>.
                                     </div>
                                 }
+                                else
+                                {
+                                    <div style="font-size:12px;color:#475569;background:#f1f5f9;padding:8px 10px;border-radius:6px;margin-bottom:10px;line-height:1.5">
+                                        İşçi müraciətdə nahar barədə qeyd etməyib — icazə tam sayılır
+                                        (@rH saat@(rM > 0 ? $" {rM} dəq" : "")).
+                                    </div>
+                                }
+                                @* Checkbox HƏMİŞƏ render olunur. Əvvəl yalnız nahar pəncərəsi ilə
+                                   kəsişəndə göstərilirdi — render olunmayanda forma sahəni göndərmirdi
+                                   və işçinin seçimi təsdiqdə səssizcə silinirdi. *@
                                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:#374151">
                                     <input type="checkbox" name="naharNezereAlinmasin" id="naharCheck" value="true"
                                            checked="@(Model.NaharNezereAlinmasin ? "checked" : null)"
                                            style="width:15px;height:15px;margin-top:2px;accent-color:#0369a1;flex-shrink:0" />
+                                    @* Checkbox işarəsizdirsə brauzer heç nə göndərmir — bu hidden "false"
+                                       göndərir ki, servis seçimin ləğv edildiyini bilsin (null ≠ false). *@
+                                    <input type="hidden" name="naharNezereAlinmasin" value="false" />
                                     <span>
                                         <strong>Naharı nəzərə alma</strong>
                                         <span style="color:#6b7280;font-size:11px;display:block;margin-top:1px">
-                                            İşçi nahar fasiləsini götürməyib — nahar pəncərəsi ilə kəsişən @kesismeDeq dəq icazə müddətindən çıxılır
-                                            (@naharBaslama.ToString(@"hh\:mm")–@naharBitis.ToString(@"hh\:mm"))
+                                            İşçi nahar fasiləsini götürməyib — icazə müddətindən sabit @naharDeq dəq çıxılır.
+                                            İşarəni götürsəniz icazə tam (@rH saat@(rM > 0 ? $" {rM} dəq" : "")) sayılacaq.
                                         </span>
                                         <span id="naharEfektiv" style="display:none;color:#0369a1;font-size:12px;font-weight:600;margin-top:3px">
                                             Effektiv icazə: @eH saat@(eM > 0 ? $" {eM} dəq" : "")
@@ -341,7 +342,6 @@
                                     </span>
                                 </label>
                             </div>
-                        }
 
                         <div style="margin:14px 0;padding:12px;background:#fff8e8;border:1px solid #f0d785;border-radius:8px">
                             <div style="font-size:12px;color:#8a6a18;margin-bottom:6px">
@@ -373,7 +373,7 @@
                         <script>
                         (function(){
                             var rawSaat = @icazeSaatiRaw;
-                            var naharSaat = @(naharKesisme.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
+                            var naharSaat = @(naharCixilma.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
                             var balans = @balans;
                             function fmtSaat(h){
                                 var t = Math.round(h * 60);

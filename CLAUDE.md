@@ -234,6 +234,46 @@ bərabər idi — filtri götürəndə həm faiz düzəldi, həm balans dəqiq b
 - Diaqnostik SELECT verəndə dashboard-un **bütün** filtrlərini təkrarla — natamam
   diaqnostik yanlış "düz/səhv" nəticəsinə aparır.
 
+## İcazə — Nahar Güzəşti: Güzəşt və Çıxılma AYRILMAZDIR (KRİTİK)
+
+Qayda (10.06.2026-dan): işçi "nahara çıxmıram" seçirsə nahar fasiləsi qədər **kredit**
+qazanır — icazə pəncərəsi o qədər uzun ola bilər (`maxDeq = 180 + naharDeq`), **əvəzində**
+sayğacdan həmin müddət **SABİT** çıxılır (`IcazeService.NaharCixilmaSaat`). İki tərəf
+bir-birini tarazlayır → **sayılan icazə heç vaxt 3 saatı keçmir**.
+
+**Çıxılma REAL KƏSİŞMƏ (icazə ∩ nahar pəncərəsi) İLƏ HESABLANMAMALIDIR.** 24.07.2026-da
+(ec0a695e) qismən nahar hallarını dəqiqləşdirmək üçün sabit çıxılma kəsişməyə keçirilmişdi.
+Nəticə: nahara toxunmayan pəncərədə (məs. 14:00–17:45, nahar 13:00–13:45) kəsişmə 0 →
+çıxılma 0, amma güzəşt (+45 dəq) yerində qaldı. İşçi naharda işləyir, 3s45d gedir və
+sayğacdan da **3s45d** yazılır — güzəştin qarşılığı itir (illik 36 saatlıq balansdan
+45 dəq artıq gedir), HR tərəfdə isə "max 3 saat" nəzarəti pozulur.
+
+**Qayda:** güzəşt (`YaratAsync` limiti) ilə çıxılma (`NaharCixilmaSaat`) **eyni kəmiyyət**
+olmalıdır. Birini dəyişirsənsə o birini də dəyiş — yoxsa məntiq sükutla sınır, heç bir
+xəta verməz. Çıxılma həm PLANA, həm FAKTİKİYƏ eyni cür tətbiq olunur
+(`IcazeListDto.EffektivSaat` / `EffektivFaktikiSaat`, `GetIsciIzlemeAsync`,
+`GetDovriyyeAsync`, `DashboardService` illik balans, `RehberTesdiqAsync` jeton limiti) —
+altısı da eyni helper-i çağırmalıdır.
+
+## Şərtli Render Olunan Form Sahəsi + Default Parametr = Səssiz Data İtkisi (KRİTİK)
+
+Bir checkbox/input `@if (...)` şərti ilə render olunursa və POST-u qəbul edən metod həmin
+sahəni **default dəyərlə** (`bool x = false`) alıb entity-yə **şərtsiz yazırsa**, sahə
+render olunmayan hallarda istifadəçinin seçimi **səssizcə silinir**. Xəta yoxdur, log yoxdur.
+
+Real nümunə (2026-08, icazə nahar bayrağı): təsdiq səhifəsində checkbox yalnız nahar
+kəsişməsi olanda göstərilirdi; kəsişməyəndə forma sahəni göndərmirdi → `RehberTesdiqAsync`
+`NaharNezereAlinmasin = status && false` yazırdı → işçinin müraciətdəki seçimi bazadan itdi.
+Diaqnozu çətinləşdirən: bayraq 0 olduğu üçün heç bir səhifədə "nahar seçilib" izi qalmırdı.
+
+**Qaydalar:**
+- Belə sahələri **həmişə render et** (lazım gəlsə passiv/izahlı formada), yaxud
+- parametri **nullable** et (`bool?`) və `null` gələndə mövcud dəyəri **saxla**
+  (`var secim = param ?? entity.Sahe;`) — `null` ("göndərilməyib") ilə `false`
+  ("işarə götürülüb") fərqli mənalardır;
+- checkbox-un yanına `<input type="hidden" name="eyniAd" value="false" />` qoy ki,
+  işarəsiz hal da açıq şəkildə göndərilsin.
+
 ## ViewModel Non-Nullable String — Gizli Required Tələsi (KRİTİK)
 
 .NET 8 MVC-də ViewModel-dəki **non-nullable** string (`string X = null!`) avtomatik

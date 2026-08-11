@@ -83,6 +83,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             // Jeton balansı: rəhbər təsdiq zamanı görmək üçün məlumat olaraq göstərilir
             ViewBag.JetonBalansi = await _jetonService.AktivSaatBalansiAsync(isciId.Value);
+            ViewBag.NaharMuddetDeqiqe = await _icazeService.NaharMuddetDeqiqeAsync();
 
             return View(vm);
         }
@@ -119,6 +120,7 @@ namespace FinNex.UI.Areas.User.Controllers
             if (!ModelState.IsValid)
             {
                 vm.EvezEdenList = await BuildEvezEdenListAsync(isciId.Value);
+                ViewBag.NaharMuddetDeqiqe = await _icazeService.NaharMuddetDeqiqeAsync();
                 return View(vm);
             }
 
@@ -143,6 +145,7 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 TempData["Error"] = result.Message;
                 vm.EvezEdenList = await BuildEvezEdenListAsync(isciId.Value);
+                ViewBag.NaharMuddetDeqiqe = await _icazeService.NaharMuddetDeqiqeAsync();
                 return View(vm);
             }
 

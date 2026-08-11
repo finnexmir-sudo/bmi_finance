@@ -137,7 +137,7 @@
                         <th>Çıxış vaxtı</th>
                         <th>Qayıdış vaxtı</th>
                         <th>Faktiki saat</th>
-                        <th>Status</th>
+                        <th>Çıxış statusu</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -155,6 +155,16 @@
                                 <span style="color:#8a93a8;font-size:11px;margin-left:4px">
                                     (@item.PlanlananSaat.ToString("0.#") saat)
                                 </span>
+                                @if (item.NaharCixilanDeqiqe > 0)
+                                {
+                                    @* İç-içə dırnaqdan qaçmaq üçün mətn əvvəlcədən qurulur. *@
+                                    var naharTip = $"İşçi nahara çıxmayıb — {item.NaharCixilanDeqiqe} dəq çıxılır; "
+                                                 + $"sayılan {item.EffektivPlanSaat:0.##} saat";
+                                    <span style="margin-left:4px;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:600;cursor:help"
+                                          title="@naharTip">
+                                        🍽 −@item.NaharCixilanDeqiqe dəq
+                                    </span>
+                                }
                                 @if (item.Birdefelik)
                                 {
                                     <span style="margin-left:4px;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:600">birdəfəlik</span>
@@ -187,7 +197,10 @@
                             <td>
                                 @if (item.FaktikiSaat.HasValue)
                                 {
-                                    var fark = item.FaktikiSaat.Value - item.PlanlananSaat;
+                                    @* Müqayisə EFFEKTİV plana görə: FaktikiSaat onsuz da nahar
+                                       çıxılmış gəlir, xam planla tutuşdursaq hər nahar icazəsi
+                                       yalandan "erkən qayıdıb" görünür. *@
+                                    var fark = item.FaktikiSaat.Value - item.EffektivPlanSaat;
                                     var farkColor = Math.Abs(fark) < 0.25 ? "#1e9b6b" : fark > 0 ? "#c0392b" : "#2d6cdf";
                                     <span style="font-weight:600;color:@farkColor">
                                         @item.FaktikiSaat.Value.ToString("0.##") saat

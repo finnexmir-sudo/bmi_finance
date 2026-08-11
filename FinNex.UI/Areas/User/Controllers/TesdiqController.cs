@@ -341,7 +341,7 @@ namespace FinNex.UI.Areas.User.Controllers
         // POST /User/Tesdiq/IcazeTesdiq
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false)
+        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false, decimal jetonOdenenSaat = 0, bool? naharNezereAlinmasin = null)
         {
             var appUser = await _userManager.GetUserAsync(User);
             var tesdiqciIsciId = appUser?.IsciId ?? 0;

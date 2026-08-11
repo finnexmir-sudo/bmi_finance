@@ -98,14 +98,32 @@
                 </div>
 
                 @* ── Nahar fasiləsini icazəyə qatmaq ── *@
+                @{
+                    int crNaharDeq = ViewBag.NaharMuddetDeqiqe ?? 45;
+                    int crMaxDeq = 180 + crNaharDeq;
+                    // Yönlük hal şəkilçisi son sözə görə: "...dəqiqəyə" / "...saata".
+                    string crMaxMetn = crMaxDeq % 60 > 0
+                        ? $"{crMaxDeq / 60} saat {crMaxDeq % 60} dəqiqəyə"
+                        : $"{crMaxDeq / 60} saata";
+                }
                 <div class="fn-form-group">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
-                        <input asp-for="NaharNezereAlinmasin" type="checkbox" style="width:16px;height:16px" />
+                        @* data-nahar-deq: çıxılacaq dəqiqə serverdən gəlir (IsParametri) —
+                           JS-də sabit 45 yazmaq parametr dəyişəndə səhv göstərərdi. *@
+                        <input asp-for="NaharNezereAlinmasin" type="checkbox"
+                               data-nahar-deq="@crNaharDeq" style="width:16px;height:16px" />
                         <span>Nahara çıxmıram — nahar fasiləsini icazəyə qatıram</span>
                     </label>
                     <span class="fn-label-hint" style="margin-left:24px;display:block;margin-top:4px">
-                        İşarələnsə icazə <strong>3 saat 45 dəqiqəyə</strong> qədər ola bilər (əks halda maksimum 3 saat).
+                        İşarələnsə icazə <strong>@crMaxMetn</strong> qədər ola bilər (əks halda maksimum 3 saat).
+                        Naharda işlədiyiniz üçün icazə sayğacınızdan <strong>@crNaharDeq dəqiqə az</strong> yazılır.
                     </span>
+                    @* İşçi güzəştin qarşılığını dərhal görsün — "3s45d götürdüm, 3 saat yazıldı". *@
+                    <div id="naharEfektivBox" class="fn-label-hint"
+                         style="display:none;margin-left:24px;margin-top:6px;padding:6px 10px;border-radius:6px;
+                                background:#fef3c7;color:#92400e;font-weight:600">
+                        Sayğaca yazılacaq: <span id="naharEfektivText"></span>
+                    </div>
                 </div>
 
                 @* ── Jeton (yalnız Rəhbər üçün) ── *@
