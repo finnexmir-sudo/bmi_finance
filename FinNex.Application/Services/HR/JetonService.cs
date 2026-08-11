@@ -502,6 +502,20 @@ namespace FinNex.Application.Services.HR
                     && redim.BaslamaSaati.HasValue
                     && redim.BitisSaati.HasValue)
                 {
+                    // Jeton icazəsində NaharNezereAlinmasin "işçi naharda işləyib" demək DEYİL —
+                    // təqvim aralığını iş saatına çevirmək üçündür (8.75 təqvim → 8 iş saatı).
+                    // İcazə tərəfindəki çıxılma isə SABİT nahar fasiləsidir (NaharCixilmaSaat),
+                    // ona görə bayraq yalnız nahar pəncərəsi aralığın İÇİNƏ TAM düşəndə qoyulur —
+                    // yalnız o halda sabit çıxılma jeton hesabı (IsSaatiHesabla, kəsişmə əsaslı)
+                    // ilə eyni rəqəmi verir. Əks halda ekranda jetonla ödənilən saatdan az
+                    // görünürdü (məs. 14:00–18:00 → 4 saat əvəzinə 3,25 saat).
+                    var jetonPrm = await _unitOfWork.Repository<IsParametri>()
+                        .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
+                    var jNaharBas = jetonPrm?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+                    var jNaharBitis = jNaharBas + TimeSpan.FromMinutes(jetonPrm?.NaharMuddetDeqiqe ?? 45);
+                    var jNaharIcerdedir = redim.BaslamaSaati.Value <= jNaharBas
+                                       && redim.BitisSaati.Value >= jNaharBitis;
+
                     var icaze = new Icaze
                     {
                         IsciId = redim.IsciId,
@@ -517,9 +531,9 @@ namespace FinNex.Application.Services.HR
                         HrTesdiq = true,
                         HrTesdiqTarixi = DateTime.Now,
                         JetonOdenenSaat = redim.CemiSaat,
-                        // Jeton icazəsi İŞ saatını ödəyir; nahar təqvim aralığını şişirtməsin
-                        // → tam iş günü 8.75 təqvim yox, 8 iş saatı kimi sayılır (jeton 8-i tam örtür).
-                        NaharNezereAlinmasin = true
+                        // Tam iş günü (nahar aralığın içindədir) → 8.75 təqvim yox, 8 iş saatı.
+                        // Nahara toxunmayan qismən aralıqda çıxılma olmamalıdır.
+                        NaharNezereAlinmasin = jNaharIcerdedir
                     };
 
                     // SobeReisiId, RehberId, HrId üçün Isci ID-ləri lazımdır.
