@@ -4,6 +4,7 @@ using FinNex.Application.DTOs.Mektub;
 using FinNex.Application.Interfaces.Mektub;
 using FinNex.Application.Interfaces.Oracle;
 using FinNex.Domain.Entities.Mektub;
+using FinNex.Domain.Entities.Sorgular;
 using FinNex.Domain.Interfaces;
 
 namespace FinNex.Application.Services.Mektub;
@@ -16,6 +17,25 @@ public class MektubImportService : IMektubImportService
     // Bir ildəki ən böyük say ~4 800-dür (daxil 2020). Limit ondan xeyli yuxarı
     // saxlanılır; buna baxmayaraq nəticədə LimiteCatdi bayrağı ilə yoxlanılır.
     private const int IlLimiti = 20000;
+
+    // Oracle sorğuları Admin → Oracle Sorğular-da saxlanılır (layihə qaydası),
+    // ADLAR ASCII-dir ki, SSMS-in Azərbaycan hərfi tələsi axtarışı sındırmasın.
+    // Seed: docs/sql/mektub/Mektub_OracleSorgular.sql
+    private const string SorguXaricSaylar    = "MEKTUB_IDXAL_XARIC_SAYLAR";
+    private const string SorguXaricSetirler  = "MEKTUB_IDXAL_XARIC_SETIRLER";
+    private const string SorguDaxilSaylar    = "MEKTUB_IDXAL_DAXIL_SAYLAR";
+    private const string SorguDaxilSetirler  = "MEKTUB_IDXAL_DAXIL_SETIRLER";
+
+    // Sətir sorğularındakı token — kod onu "il = 2024" / "il IS NULL" ilə əvəz edir.
+    private const string IlToken = "{IL_SERTI}";
+
+    // İdxal sətirləri sütun ADINA görə entity sahələrinə yazılır. Sorğu redaktə
+    // olunub bir sütun itsə, xəta OLMUR — sahə səssizcə boş yazılır və 87 min
+    // sətrin içində fərq edilmir. Ona görə yazmazdan ƏVVƏL sütunlar yoxlanılır.
+    private static readonly string[] XaricSutunlar =
+        { "KOD", "QEY_NOM", "GON_YER", "TARIX", "QISA_MEZ", "ICRACI", "DUBL", "MEKTUB_METN", "IL" };
+    private static readonly string[] DaxilSutunlar =
+        { "NOM", "NOM1", "DAX_TARIX", "IDARE_ADI", "GON_TARIX", "DAX_NOM", "MEK_UNVAN", "IL" };
 
     public MektubImportService(IUnitOfWork uow, IOracleService oracle)
     {
@@ -30,8 +50,8 @@ public class MektubImportService : IMektubImportService
         {
             var dto = new MektubImportVeziyyetDto();
 
-            var xarOra = await OracleIlSaylariAsync("odb.xaric_mektub", ct);
-            var daxOra = await OracleIlSaylariAsync("odb.daxil_mektub", ct);
+            var xarOra = await OracleIlSaylariAsync(SorguXaricSaylar, ct);
+            var daxOra = await OracleIlSaylariAsync(SorguDaxilSaylar, ct);
 
             // Silinmiş sətirlər də sayılır: bu, İDXALIN tamlığını göstərən ekrandır,
             // biznes siyahısı deyil. Aşağıdakı idxal da açar mövcuddursa keçir (silinmiş
@@ -69,15 +89,55 @@ public class MektubImportService : IMektubImportService
             .ToList();
     }
 
-    private async Task<Dictionary<int?, int>> OracleIlSaylariAsync(string cedvel, CancellationToken ct)
+    private async Task<Dictionary<int?, int>> OracleIlSaylariAsync(string sorguAdi, CancellationToken ct)
     {
-        var setirler = await _oracle.SelectAsync(
-            $"SELECT il, COUNT(*) say FROM {cedvel} GROUP BY il", 500, ct);
+        var sql = await SorguMetniAsync(sorguAdi);
+        var setirler = await _oracle.SelectAsync(sql, 500, ct);
+
+        var yoxla = SutunYoxla(setirler, "IL", "SAY");
+        if (!yoxla.Success) throw new InvalidOperationException($"«{sorguAdi}»: {yoxla.Message}");
 
         var xerite = new Dictionary<int?, int>();
         foreach (var s in setirler)
             xerite[Tam(s, "IL")] = Tam(s, "SAY") ?? 0;
         return xerite;
+    }
+
+    // ── Saxlanılan sorğular ────────────────────────────────────────────────
+    // Layihə qaydası: Oracle sorğuları kodda deyil, `OracleSorgular` cədvəlində
+    // saxlanılır və Admin → Oracle Sorğular səhifəsindən redaktə oluna bilir
+    // (publish etmədən düzəliş imkanı). Ad tapılmasa idxal BAŞLAMIR.
+    private async Task<string> SorguMetniAsync(string sorguAdi)
+    {
+        var sorgu = (await _uow.Repository<OracleSorgu>()
+                .HamisiniGetirAsync(x => !x.Silinib && x.Aktiv, izlemeden: true))
+            .FirstOrDefault(x => string.Equals((x.SorguAdi ?? "").Trim(), sorguAdi,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (sorgu == null || string.IsNullOrWhiteSpace(sorgu.SorguMetni))
+            throw new InvalidOperationException(
+                $"Oracle sorğusu tapılmadı: «{sorguAdi}». " +
+                "Admin → Oracle Sorğular-da yaradılmalıdır " +
+                "(seed skripti: docs/sql/mektub/Mektub_OracleSorgular.sql).");
+
+        return sorgu.SorguMetni;
+    }
+
+    // Sorğu nəticəsində tələb olunan sütunların hamısı varmı? Yoxdursa BAZAYA HEÇ NƏ
+    // YAZILMIR — səhv redaktə səssiz data zədəsi yox, açıq xəta verməlidir.
+    private static Result SutunYoxla(
+        IList<Dictionary<string, object?>> setirler, params string[] telebOlunan)
+    {
+        if (setirler.Count == 0) return Result.Ok();   // sətir yoxdursa yoxlanacaq bir şey yoxdur
+
+        var movcud = new HashSet<string>(setirler[0].Keys, StringComparer.OrdinalIgnoreCase);
+        var catismayan = telebOlunan.Where(c => !movcud.Contains(c)).ToList();
+
+        return catismayan.Count == 0
+            ? Result.Ok()
+            : Result.Fail(
+                $"sorğu nəticəsində sütun çatışmır: {string.Join(", ", catismayan)}. " +
+                "Sorğu redaktə olunub? Bazaya heç nə yazılmadı.");
     }
 
     // ── İdxal ──────────────────────────────────────────────────────────────
@@ -106,13 +166,18 @@ public class MektubImportService : IMektubImportService
     {
         var netice = new MektubImportNeticeDto { Jurnal = "xaric", Il = il };
 
+        // Sorğu Admin → Oracle Sorğular-dan gəlir; {IL_SERTI} tokeni burada əvəz olunur.
         // MEKTUB_METN — CLOB, ODP.NET onu string kimi qaytarır (cəmi 31,9 MB).
-        var setirler = await _oracle.SelectAsync(
-            $@"SELECT kod, qey_nom, gon_yer, tarix, qisa_mez, icraci, dubl, mektub_metn, il
-               FROM odb.xaric_mektub WHERE {IlSerti(il)}", IlLimiti, ct);
+        var sql = (await SorguMetniAsync(SorguXaricSetirler)).Replace(IlToken, IlSerti(il));
+        var setirler = await _oracle.SelectAsync(sql, IlLimiti, ct);
 
         netice.Oxunan = setirler.Count;
         netice.LimiteCatdi = setirler.Count >= IlLimiti;
+
+        // Sütunlar tam deyilsə heç nə yazılmır (səssiz zədə əvəzinə açıq xəta)
+        var sutunYoxlama = SutunYoxla(setirler, XaricSutunlar);
+        if (!sutunYoxlama.Success)
+            return Result<MektubImportNeticeDto>.Fail($"«{SorguXaricSetirler}» {sutunYoxlama.Message}");
 
         // Mövcud açarlar — təkrar idxalda dublikat yaranmasın (KOD unikaldır).
         // `Silinib` filtri QƏSDƏN yoxdur: istifadəçi silmiş qeyd təkrar idxalda dirilməməlidir.
@@ -156,13 +221,17 @@ public class MektubImportService : IMektubImportService
     {
         var netice = new MektubImportNeticeDto { Jurnal = "daxil", Il = il };
 
-        // MEZMUN (LONG RAW) QƏSDƏN SEÇİLMİR — ayrı keçidlə gətiriləcək.
-        var setirler = await _oracle.SelectAsync(
-            $@"SELECT nom, nom1, dax_tarix, idare_adi, gon_tarix, dax_nom, mek_unvan, il
-               FROM odb.daxil_mektub WHERE {IlSerti(il)}", IlLimiti, ct);
+        // Sorğu Admin → Oracle Sorğular-dan gəlir; {IL_SERTI} tokeni burada əvəz olunur.
+        // MEZMUN (LONG RAW) sorğuya QƏSDƏN daxil deyil — ayrı keçidlə gətiriləcək.
+        var sql = (await SorguMetniAsync(SorguDaxilSetirler)).Replace(IlToken, IlSerti(il));
+        var setirler = await _oracle.SelectAsync(sql, IlLimiti, ct);
 
         netice.Oxunan = setirler.Count;
         netice.LimiteCatdi = setirler.Count >= IlLimiti;
+
+        var sutunYoxlama = SutunYoxla(setirler, DaxilSutunlar);
+        if (!sutunYoxlama.Success)
+            return Result<MektubImportNeticeDto>.Fail($"«{SorguDaxilSetirler}» {sutunYoxlama.Message}");
 
         var movcud = (await _uow.Repository<DaxilMektub>()
                 .HamisiniGetirAsync(x => x.Il == il, izlemeden: true))
