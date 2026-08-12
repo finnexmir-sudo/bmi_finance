@@ -11,9 +11,13 @@ namespace FinNex.Application.Interfaces.Mektub;
 /// idxal AÇARA GÖRƏ İDEMPOTENTDİR (xaric → KOD, daxil → NOM), yəni yarıda dayansa
 /// təkrar işlədəndə yalnız çatışmayan sətirlər gəlir, dublikat yaranmır.
 ///
-/// DİQQƏT: daxil_mektub.MEZMUN (LONG RAW) bu axına DAXİL DEYİL — 54 101 sətrin
-/// yalnız 264-ündə var və LONG oxumaq ayrıca konfiqurasiya tələb edir; ayrı keçidlə
-/// gətiriləcək.
+/// DİQQƏT: daxil_mektub.MEZMUN (LONG RAW — skan olunmuş məktub faylı) bu axına
+/// DAXİL DEYİL və GƏTİRİLMƏYƏCƏK. 54 101 sətrin yalnız 264-ündə var, hamısı da
+/// 2013-cü ildədir (12.08.2026 yoxlaması) — köhnə arxivdir, istifadəçi qərarı ilə
+/// köçürülmür. LONG RAW oxumaq ayrıca ODP.NET konfiqurasiyası (InitialLONGFetchSize)
+/// tələb edir; bu iş üçün onu etməyə dəyməz.
+/// DaxilMektub.Mezmun (varbinary) sütunu sxemdə qalır, amma idxalda həmişə null olur —
+/// FaylVar yoxlaması FaylYolu üzərindən işləyir (yeni yükləmələr DMS-ə gedir).
 /// </summary>
 public interface IMektubImportService
 {
