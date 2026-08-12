@@ -16,8 +16,27 @@ public class XaricMektubService : IXaricMektubService
         _uow = uow;
     }
 
-    // QEY_NOM mətn ola bilər (köhnə data) — nömrələmə üçün rəqəm hissəsini oxu
-    private static int ParseNum(string? s) => int.TryParse(s?.Trim(), out var n) ? n : 0;
+    // QEY_NOM formatı BMI-dən gəlir: "İL-NÖMRƏ" (məs. "2026-651"), uzunluğu max 9.
+    // Sadə `int.TryParse("2026-651")` UĞURSUZ olur və 0 qaytarır — nəticədə il üzrə
+    // max+1 hesabı sıfırdan başlayır və mövcud nömrələri təkrarlayır (real hadisə:
+    // BMI 2026-651-də ikən FinNex "№ 1/2026" verdi). Ona görə tiredən sonrakı hissə
+    // oxunur; tire yoxdursa (köhnə/sadə dəyər) bütün sətir rəqəm kimi sınanır.
+    private static int ParseNum(string? s)
+    {
+        var t = s?.Trim();
+        if (string.IsNullOrEmpty(t)) return 0;
+
+        var tire = t.LastIndexOf('-');
+        if (tire >= 0 && tire < t.Length - 1)
+            t = t[(tire + 1)..];
+
+        return int.TryParse(t, out var n) ? n : 0;
+    }
+
+    // Yeni qeydin Qeydiyyat №-si BMI ilə EYNİ formatda yazılır ki, köhnə və yeni
+    // sətirlər eyni jurnalda düzgün oxunsun/sıralansın.
+    private static string QeyNomYarat(int il, int nomre) =>
+        $"{il}-{nomre.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 
     public async Task<IList<XaricMektubListDto>> HamisiniGetirAsync(int? il = null)
     {
@@ -85,7 +104,7 @@ public class XaricMektubService : IXaricMektubService
 
         var entity = new XaricMektub
         {
-            QeyNom     = novbeti.ToString(),
+            QeyNom     = QeyNomYarat(il, novbeti),
             GonYer     = dto.GonYer?.Trim(),
             Tarix      = dto.Tarix,
             QisaMez    = dto.QisaMez?.Trim(),
