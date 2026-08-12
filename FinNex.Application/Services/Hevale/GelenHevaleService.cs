@@ -32,17 +32,73 @@ public class GelenHevaleService : IGelenHevaleService
             .ToDictionary(g => g.Key, g => g.First().TamAd);
     }
 
-    public async Task<IList<GelenHevaleListDto>> HamisiniGetirAsync(int? il = null)
+    // Jurnalda mövcud illər və icraçı nömrələri (filtr açılan siyahıları üçün).
+    // Həvalədə `Il` sütunu yoxdur — il `Tarix`-dən çıxarılır.
+    public async Task<HevaleFiltrMenbeDto> FiltrMenbeleriAsync()
     {
-        var list = await _uow.Repository<GelenHevale>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && (il == null || (x.Tarix != null && x.Tarix.Value.Year == il)),
-            izlemeden: true);
+        var hamisi = await _uow.Repository<GelenHevale>()
+            .HamisiniGetirAsync(x => !x.Silinib, izlemeden: true);
 
         var adMap = await IcraciAdMapAsync();
 
-        return list
+        return new HevaleFiltrMenbeDto
+        {
+            Iller = hamisi.Where(x => x.Tarix.HasValue).Select(x => x.Tarix!.Value.Year)
+                          .Distinct().OrderByDescending(x => x).ToList(),
+
+            Icracilar = hamisi
+                .Where(x => x.Icra.HasValue)
+                .GroupBy(x => x.Icra!.Value)
+                .Select(g => new HevaleIcraciDto
+                {
+                    No  = g.Key,
+                    Ad  = adMap.TryGetValue(g.Key, out var ad) ? ad : null,
+                    Say = g.Count()
+                })
+                .OrderBy(x => x.No)
+                .ToList()
+        };
+    }
+
+    public async Task<HevaleSehifeDto<GelenHevaleListDto>> HamisiniGetirAsync(HevaleFiltrDto? filtr = null)
+    {
+        var f  = HevaleFiltrDto.Normalla(filtr);
+        var il = f.SorguIli;   // "bütün illər" seçilibsə null
+
+        // İl, icraçı və tarix DB tərəfində süzülür; yalnız mətn axtarışı yaddaşdadır.
+        var list = await _uow.Repository<GelenHevale>().HamisiniGetirAsync(
+            predicate: x => !x.Silinib
+                         && (il == null || (x.Tarix != null && x.Tarix.Value.Year == il))
+                         && (f.IcraciNo == null || x.Icra == f.IcraciNo)
+                         && (f.TarixFrom == null || (x.Tarix != null && x.Tarix >= f.TarixFrom))
+                         && (f.TarixTo   == null || (x.Tarix != null && x.Tarix <= f.TarixTo)),
+            izlemeden: true);
+
+        if (!string.IsNullOrWhiteSpace(f.Axtaris))
+        {
+            var q = f.Axtaris.Trim();
+            list = list.Where(x =>
+                    (x.Saa     ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.HevNom  ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.HesNom  ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.AlBank  ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.GelOlke ?? "").Contains(q, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        var adMap = await IcraciAdMapAsync();
+
+        // Səhifələmə süzgəclərdən SONRA — "Cəmi" filtrə uyğun sətir sayını göstərməlidir.
+        return new HevaleSehifeDto<GelenHevaleListDto>
+        {
+            CemiSay      = list.Count,
+            Sehife       = f.Sehife,
+            SehifeOlcusu = f.SehifeOlcusu,
+            Setirler     = list
             .OrderByDescending(x => x.Tarix)
             .ThenByDescending(x => SonReqem(x.HevNom))
+            .Skip((f.Sehife - 1) * f.SehifeOlcusu)
+            .Take(f.SehifeOlcusu)
             .Select(x => new GelenHevaleListDto
             {
                 Id        = x.Id,
@@ -59,7 +115,8 @@ public class GelenHevaleService : IGelenHevaleService
                 FaylYolu  = x.FaylYolu,
                 FaylVar   = !string.IsNullOrEmpty(x.FaylYolu)
             })
-            .ToList();
+            .ToList()
+        };
     }
 
     public async Task<Result<string>> YaratAsync(GelenHevaleCreateDto dto, int yaradanUserId, string? faylYolu = null)

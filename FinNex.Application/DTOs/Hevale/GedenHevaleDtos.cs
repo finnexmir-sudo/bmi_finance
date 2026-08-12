@@ -11,8 +11,15 @@ public class GedenHevaleListDto
     public string?   ValTip    { get; set; }   // valyuta
     public string?   Olke      { get; set; }   // təyinat ölkə
     public string?   AlBank    { get; set; }   // alan bank
-    public short?    Icra      { get; set; }   // icraçı nömrəsi
-    public string?   IcraciAd  { get; set; }   // icraçı adı (IcraciNo-dan)
+    public short?    Icra      { get; set; }   // xam icraçı nömrəsi (Oracle ICRA)
+    public string?   IcraciAd  { get; set; }   // nömrədən tapılan işçi adı (tapılmasa null)
+
+    // Ekranda göstəriləcək: nömrə işçiyə təyin olunubsa AD, yoxsa xam nömrə.
+    // "№" prefiksi YOXDUR — sütun başlığı onsuz da "İcraçı №"dir.
+    public string?   IcraciGoster => !string.IsNullOrWhiteSpace(IcraciAd)
+        ? IcraciAd
+        : Icra?.ToString();
+
     public int?      YaradanId { get; set; }   // sahiblik (AppUser id)
     public string?   FaylYolu  { get; set; }
     public bool      FaylVar   { get; set; }

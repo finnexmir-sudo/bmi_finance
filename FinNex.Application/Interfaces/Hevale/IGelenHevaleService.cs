@@ -5,8 +5,12 @@ namespace FinNex.Application.Interfaces.Hevale;
 
 public interface IGelenHevaleService
 {
-    // Gələn həvalələr (istəyə görə il üzrə — Tarix ilinə görə)
-    Task<IList<GelenHevaleListDto>> HamisiniGetirAsync(int? il = null);
+    // Filtr açılan siyahılarının mənbəyi — jurnalda REAL mövcud illər və icraçı nömrələri
+    Task<HevaleFiltrMenbeDto> FiltrMenbeleriAsync();
+
+    // Gələn həvalələr — filtrlənmiş və səhifələnmiş.
+    // filtr null olanda cari il götürülür (HevaleFiltrDto.Normalla).
+    Task<HevaleSehifeDto<GelenHevaleListDto>> HamisiniGetirAsync(HevaleFiltrDto? filtr = null);
 
     // Yeni həvalə — Həvalə № il üzrə avtomatik. Qaytarır: yeni Həvalə №.
     Task<Result<string>> YaratAsync(GelenHevaleCreateDto dto, int yaradanUserId, string? faylYolu = null);

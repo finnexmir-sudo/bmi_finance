@@ -36,11 +36,14 @@ public class GelenHevaleController : Controller
         return $"hevaleler/{ad}";
     }
 
-    public async Task<IActionResult> Index(int? il)
+    public async Task<IActionResult> Index(HevaleFiltrDto filtr)
     {
-        var model = await _service.HamisiniGetirAsync(il);
-        ViewBag.Il = il;
-        ViewBag.UserId = GetUserId();
+        var f = HevaleFiltrDto.Normalla(filtr);
+        var model = await _service.HamisiniGetirAsync(f);
+
+        ViewBag.Filtr   = f;
+        ViewBag.Menbe   = await _service.FiltrMenbeleriAsync();
+        ViewBag.UserId  = GetUserId();
         ViewBag.IsAdmin = IsAdmin();
         return View(model);
     }
