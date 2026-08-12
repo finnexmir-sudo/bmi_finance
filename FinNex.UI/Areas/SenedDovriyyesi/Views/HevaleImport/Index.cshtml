@@ -1,0 +1,149 @@
+@model HevaleImportVeziyyetDto
+@{
+    ViewData["Title"] = "Həvalə jurnalı — BMI-dən köçürmə";
+
+    // İki jurnal eyni şablonla göstərilir — markup təkrarlanmasın deyə siyahı ilə gəzilir.
+    var bloklar = new[]
+    {
+        ("geden", "Gedən həvalələr", Model.Geden, Model.GedenOracle, Model.GedenFinNex),
+        ("gelen", "Gələn həvalələr", Model.Gelen, Model.GelenOracle, Model.GelenFinNex),
+    };
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Həvalə jurnalı — BMI-dən köçürmə</div>
+            <div class="fn-page-sub">Oracle jurnalları FinNex bazasına il-il köçürülür</div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mi-alert mi-alert--ok">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mi-alert mi-alert--err">@TempData["Error"]</div>
+    }
+
+    <div class="mi-note">
+        <strong>Necə işləyir:</strong> hər il ayrıca köçürülür və əməliyyat
+        <strong>təkrarlana bilər</strong> — artıq gəlmiş sətirlər açara görə
+        (<code>HEV_NOM</code>, həmin il daxilində) keçilir, dublikat yaranmır.
+        Yarıda dayansa, düyməni yenidən bas. Oracle tərəfinə <strong>heç nə yazılmır</strong>
+        (yalnız SELECT).
+        <br />
+        Həvalə cədvəllərində <strong>İL sütunu yoxdur</strong> — il <code>TARIX</code>-dən
+        çıxarılır. Tarixi boş sətirlər <strong>— (tarixsiz)</strong> sətrindədir.
+        <br />
+        Sorğular <strong>Admin → Oracle Sorğular</strong>-da saxlanılır
+        (<code>HEVALE_IDXAL_…</code>) — publish etmədən redaktə oluna bilər. Sütun silinsə
+        idxal <strong>başlamır</strong> və xəta göstərir; bazaya yarımçıq data yazılmır.
+    </div>
+
+    @foreach (var (jurnal, basliq, iller, oracleSay, finnexSay) in bloklar)
+    {
+        <div class="fn-card mi-card">
+            <div class="mi-head">
+                <div>
+                    <div class="mi-title">@basliq</div>
+                    <div class="mi-sub">
+                        Oracle: <strong>@oracleSay.ToString("N0")</strong> ·
+                        FinNex: <strong>@finnexSay.ToString("N0")</strong>
+                        @if (oracleSay > finnexSay)
+                        {
+                            <span class="mi-warn">· çatışmayan @((oracleSay - finnexSay).ToString("N0"))</span>
+                        }
+                        else if (oracleSay > 0)
+                        {
+                            <span class="mi-ok">· tam</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (!iller.Any())
+            {
+                <div class="mi-empty">Oracle-dan məlumat gəlmədi.</div>
+            }
+            else
+            {
+                <table class="mi-table">
+                    <thead>
+                        <tr>
+                            <th>İl</th><th>Oracle</th><th>FinNex</th><th>Çatışmayan</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in iller)
+                        {
+                            <tr class="@(r.Tamamdir ? "mi-done" : null)">
+                                <td class="mi-il">@(r.Il?.ToString() ?? "— (tarixsiz)")</td>
+                                <td>@r.OracleSay.ToString("N0")</td>
+                                <td>@r.FinNexSay.ToString("N0")</td>
+                                <td>
+                                    @if (r.Catismayan > 0)
+                                    {
+                                        <span class="mi-warn">@r.Catismayan.ToString("N0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="mi-ok">✓</span>
+                                    }
+                                </td>
+                                <td class="mi-op">
+                                    <form asp-action="Il" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="jurnal" value="@jurnal" />
+                                        @if (r.Il.HasValue)
+                                        {
+                                            <input type="hidden" name="il" value="@r.Il.Value" />
+                                        }
+                                        <button type="submit" class="mi-btn @(r.Tamamdir ? "mi-btn--soft" : "")">
+                                            @(r.Tamamdir ? "Yenidən yoxla" : "Köçür")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+
+</div>
+
+@section Styles {
+    <style>
+        .mi-card { margin-bottom: 18px; }
+        .mi-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+        .mi-title { font-size:15px; font-weight:700; color:#0f172a; }
+        .mi-sub { font-size:12px; color:#64748b; margin-top:2px; }
+        .mi-warn { color:#b45309; font-weight:600; }
+        .mi-ok { color:#15803d; font-weight:600; }
+        .mi-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .mi-table thead th { text-align:left; padding:8px 12px; background:#f1f5f9; color:#475569;
+            font-size:12px; font-weight:600; border-bottom:1px solid #e2e8f0; }
+        .mi-table td { padding:7px 12px; border-bottom:1px solid #f1f5f9; }
+        .mi-table tbody tr:hover td { background:#f8fafc; }
+        .mi-done td { color:#64748b; }
+        .mi-il { font-weight:700; color:#0f172a; }
+        .mi-op { text-align:right; }
+        .mi-op form { display:inline; margin:0; }
+        .mi-btn { padding:5px 14px; font-size:12px; font-weight:600; border-radius:7px;
+            border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; }
+        .mi-btn:hover { background:#1d4ed8; }
+        .mi-btn--soft { background:#fff; color:#475569; border-color:#e2e8f0; }
+        .mi-btn--soft:hover { background:#f1f5f9; color:#2563eb; }
+        .mi-empty { text-align:center; color:#94a3b8; padding:24px; font-size:13px; }
+        .mi-alert { padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .mi-alert--ok { background:#dcfce7; border:1px solid #bbf7d0; color:#166534; }
+        .mi-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+        .mi-note { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:12px 16px;
+            border-radius:10px; font-size:12.5px; line-height:1.6; margin-bottom:16px; }
+        .mi-note code { background:#dbeafe; padding:1px 5px; border-radius:4px; }
+    </style>
+}
