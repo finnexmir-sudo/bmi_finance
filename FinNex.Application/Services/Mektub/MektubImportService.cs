@@ -58,11 +58,11 @@ public class MektubImportService : IMektubImportService
             // qeydi diriltmir) — iki tərəf beləcə eyni cavabı verir.
             var xarFin = (await _uow.Repository<XaricMektub>()
                     .HamisiniGetirAsync(izlemeden: true))
-                .GroupBy(x => x.Il).ToDictionary(g => g.Key, g => g.Count());
+                .GroupBy(x => x.Il).Select(g => (Il: g.Key, Say: g.Count())).ToList();
 
             var daxFin = (await _uow.Repository<DaxilMektub>()
                     .HamisiniGetirAsync(izlemeden: true))
-                .GroupBy(x => x.Il).ToDictionary(g => g.Key, g => g.Count());
+                .GroupBy(x => x.Il).Select(g => (Il: g.Key, Say: g.Count())).ToList();
 
             dto.Xaric = Birlesdir(xarOra, xarFin);
             dto.Daxil = Birlesdir(daxOra, daxFin);
@@ -75,21 +75,25 @@ public class MektubImportService : IMektubImportService
         }
     }
 
+    // DİQQƏT: burada `Dictionary<int?, int>` İSTİFADƏ EDİLMİR — Dictionary NULL açar
+    // qəbul etmir (ArgumentNullException: "Value cannot be null. (Parameter 'key')"),
+    // Oracle-da isə `il` boş olan sətirlər var (xaric 22, daxil 1) və `GROUP BY il`
+    // onları NULL açarlı sətir kimi qaytarır. Ona görə siyahı + LINQ axtarışı.
     private static List<MektubImportIlDto> Birlesdir(
-        Dictionary<int?, int> oracle, Dictionary<int?, int> finnex)
+        List<(int? Il, int Say)> oracle, List<(int? Il, int Say)> finnex)
     {
-        return oracle.Keys.Concat(finnex.Keys).Distinct()
+        return oracle.Select(x => x.Il).Concat(finnex.Select(x => x.Il)).Distinct()
             .Select(il => new MektubImportIlDto
             {
                 Il        = il,
-                OracleSay = oracle.TryGetValue(il, out var o) ? o : 0,
-                FinNexSay = finnex.TryGetValue(il, out var f) ? f : 0
+                OracleSay = oracle.FirstOrDefault(x => x.Il == il).Say,
+                FinNexSay = finnex.FirstOrDefault(x => x.Il == il).Say
             })
             .OrderBy(x => x.Il == null).ThenBy(x => x.Il)   // boş il sonda
             .ToList();
     }
 
-    private async Task<Dictionary<int?, int>> OracleIlSaylariAsync(string sorguAdi, CancellationToken ct)
+    private async Task<List<(int? Il, int Say)>> OracleIlSaylariAsync(string sorguAdi, CancellationToken ct)
     {
         var sql = await SorguMetniAsync(sorguAdi);
         var setirler = await _oracle.SelectAsync(sql, 500, ct);
@@ -97,10 +101,10 @@ public class MektubImportService : IMektubImportService
         var yoxla = SutunYoxla(setirler, "IL", "SAY");
         if (!yoxla.Success) throw new InvalidOperationException($"«{sorguAdi}»: {yoxla.Message}");
 
-        var xerite = new Dictionary<int?, int>();
-        foreach (var s in setirler)
-            xerite[Tam(s, "IL")] = Tam(s, "SAY") ?? 0;
-        return xerite;
+        // `il` boş olan sətir də normaldır — siyahıda saxlanılır (bax: Birlesdir şərhi).
+        return setirler
+            .Select(s => (Il: Tam(s, "IL"), Say: Tam(s, "SAY") ?? 0))
+            .ToList();
     }
 
     // ── Saxlanılan sorğular ────────────────────────────────────────────────
