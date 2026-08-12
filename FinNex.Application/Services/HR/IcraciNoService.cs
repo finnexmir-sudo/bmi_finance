@@ -45,6 +45,13 @@ public class IcraciNoService : IIcraciNoService
             .ToList();
     }
 
+    public async Task<int?> AppUserIcraciNoAsync(int appUserId)
+    {
+        var isci = (await _uow.Repository<Isci>().HamisiniGetirAsync(
+            predicate: x => x.AppUserId == appUserId && !x.Silinib, izlemeden: true)).FirstOrDefault();
+        return (isci?.IcraciNo is int no && no > 0) ? no : (int?)null;
+    }
+
     public async Task<Result> TopluTeyinEtAsync(IList<IcraciNoTeyinDto> teyinler)
     {
         if (teyinler == null || teyinler.Count == 0)

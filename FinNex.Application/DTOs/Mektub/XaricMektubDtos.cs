@@ -8,7 +8,19 @@ public class XaricMektubListDto
     public DateTime? Tarix     { get; set; }   // Tarix
     public string?   GonYer    { get; set; }   // Göndərilən yer (təyinat)
     public string?   QisaMez   { get; set; }   // Qısa məzmun
-    public string?   Icraci    { get; set; }   // İcraçı (mətn)
+
+    // İCRAÇI — Oracle `ICRACI` sütunu RƏQƏM saxlayır (icraçı nömrəsi: 68, 25, 48…),
+    // ad yox. Xam dəyər `Icraci`-də qalır (Oracle ilə 1:1), adı isə göstərmə anında
+    // `Isci.IcraciNo`-dan tapılır — Daxil məktub və Həvalə ilə eyni qayda.
+    public string?   Icraci    { get; set; }   // xam dəyər (adətən nömrə)
+    public int?      IcraciNo  { get; set; }   // rəqəmə parse olunanda
+    public string?   IcraciAd  { get; set; }   // nömrədən tapılan işçi adı (tapılmasa null)
+
+    // Ekranda göstəriləcək mətn: ad varsa ad, yoxsa xam dəyər (məlumat itməsin).
+    public string?   IcraciGoster => !string.IsNullOrWhiteSpace(IcraciAd)
+        ? IcraciAd
+        : (string.IsNullOrWhiteSpace(Icraci) ? null : $"№ {Icraci}");
+
     public int?      Il        { get; set; }
     public int?      YaradanId { get; set; }   // sahiblik yoxlaması üçün (AppUser id)
     public string?   FaylYolu  { get; set; }   // DMS nisbi yol (yeni yükləmə) — /dms/ ilə serve olunur

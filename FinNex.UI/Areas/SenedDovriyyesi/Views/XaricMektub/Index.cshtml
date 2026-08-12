@@ -59,12 +59,14 @@
                     <tbody>
                         @foreach (var m in Model)
                         {
-                            <tr class="dm-row" data-search="@($"{m.GonYer} {m.QisaMez} {m.Icraci} {m.QeyNom}".ToLower())">
+                            <tr class="dm-row" data-search="@($"{m.GonYer} {m.QisaMez} {m.IcraciAd} {m.Icraci} {m.QeyNom}".ToLower())">
                                 <td class="dm-num">@T(m.QeyNom)</td>
                                 <td>@D(m.Tarix)</td>
                                 <td class="dm-name">@T(m.GonYer)</td>
                                 <td>@T(m.QisaMez)</td>
-                                <td>@T(m.Icraci)</td>
+                                @* İcraçı: bazada nömrə saxlanılır, adı Isci.IcraciNo-dan tapılır.
+                                       Ad tapılmasa xam nömrə göstərilir — məlumat itməsin. *@
+                                <td title="@(m.IcraciNo.HasValue ? $"İcraçı № {m.IcraciNo}" : null)">@T(m.IcraciGoster)</td>
                                 <td>@(m.Il?.ToString() ?? "—")</td>
                                 <td>
                                     @if (!string.IsNullOrEmpty(m.FaylYolu))

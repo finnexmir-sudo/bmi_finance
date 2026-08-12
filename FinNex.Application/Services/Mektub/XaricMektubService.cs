@@ -25,32 +25,53 @@ public class XaricMektubService : IXaricMektubService
             predicate: x => !x.Silinib && (il == null || x.Il == il),
             izlemeden: true);
 
+        // İcraçı nömrəsi → işçi adı (Isci.IcraciNo) — Daxil məktub/Həvalə ilə eyni qayda.
+        var isciler = await _uow.Repository<Isci>().HamisiniGetirAsync(
+            predicate: x => !x.Silinib && x.IcraciNo != null, izlemeden: true);
+        var adMap = isciler.Where(i => i.IcraciNo.HasValue)
+            .GroupBy(i => i.IcraciNo!.Value)
+            .ToDictionary(g => g.Key, g => g.First().TamAd);
+
         return list
             .OrderByDescending(x => x.Il).ThenByDescending(x => ParseNum(x.QeyNom))
-            .Select(x => new XaricMektubListDto
+            .Select(x =>
             {
-                Id        = x.Id,
-                QeyNom    = x.QeyNom,
-                Tarix     = x.Tarix,
-                GonYer    = x.GonYer,
-                QisaMez   = x.QisaMez,
-                Icraci    = x.Icraci,
-                Il        = x.Il,
-                YaradanId = x.YaradanIcraciId,
-                FaylYolu  = x.FaylYolu,
-                FaylVar   = !string.IsNullOrEmpty(x.FaylYolu)
+                // Köhnə Oracle sətirlərində və yeni qeydlərdə dəyər nömrədir; nömrəyə
+                // parse olunmayan (keçmiş adla yazılmış) qeydlər xam qalır.
+                int? icNo = int.TryParse(x.Icraci?.Trim(), out var n) ? n : (int?)null;
+                return new XaricMektubListDto
+                {
+                    Id        = x.Id,
+                    QeyNom    = x.QeyNom,
+                    Tarix     = x.Tarix,
+                    GonYer    = x.GonYer,
+                    QisaMez   = x.QisaMez,
+                    Icraci    = x.Icraci,
+                    IcraciNo  = icNo,
+                    IcraciAd  = (icNo.HasValue && adMap.TryGetValue(icNo.Value, out var ad)) ? ad : null,
+                    Il        = x.Il,
+                    YaradanId = x.YaradanIcraciId,
+                    FaylYolu  = x.FaylYolu,
+                    FaylVar   = !string.IsNullOrEmpty(x.FaylYolu)
+                };
             })
             .ToList();
     }
 
     public async Task<Result<int>> YaratAsync(XaricMektubCreateDto dto, int yaradanUserId, string? faylYolu = null)
     {
-        // İcraçı adı — cari istifadəçinin işçisindən (Isci.AppUserId → TamAd)
+        // İCRAÇI — cari istifadəçinin işçisindən NÖMRƏ (Isci.AppUserId → IcraciNo).
+        // Oracle `odb.xaric_mektub.ICRACI` sütununda BMI rəqəm saxlayır (68, 25, 48…);
+        // əvvəl bura işçinin TAM ADI yazılırdı və eyni sütunda iki fərqli məna yaranırdı
+        // (köhnə sətirlər "68", yeni sətirlər "Rafael Quliyev İsrafil"). İndi rəqəm yazılır,
+        // ad isə göstərmə anında tapılır — Daxil məktub/Həvalə ilə eyni qayda.
+        // İşçiyə hələ nömrə təyin edilməyibsə sahə BOŞ qalır (yalançı dəyər yazılmır);
+        // nömrələr HR → İcraçı Nömrələri səhifəsindən verilir.
         var isci = (await _uow.Repository<Isci>().HamisiniGetirAsync(
             predicate: x => x.AppUserId == yaradanUserId && !x.Silinib, izlemeden: true)).FirstOrDefault();
-        var icraciAd = isci?.TamAd;
-        if (!string.IsNullOrEmpty(icraciAd) && icraciAd.Length > 50)
-            icraciAd = icraciAd.Substring(0, 50);   // ICRACI NVARCHAR(50)
+        var icraciNoMetn = (isci?.IcraciNo is int no && no > 0)
+            ? no.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : null;
 
         var il = dto.Tarix?.Year ?? DateTime.Now.Year;
 
@@ -68,7 +89,7 @@ public class XaricMektubService : IXaricMektubService
             GonYer     = dto.GonYer?.Trim(),
             Tarix      = dto.Tarix,
             QisaMez    = dto.QisaMez?.Trim(),
-            Icraci     = icraciAd,
+            Icraci     = icraciNoMetn,
             MektubMetn = string.IsNullOrWhiteSpace(dto.MektubMetn) ? null : dto.MektubMetn.Trim(),
             Il         = il,
             FaylYolu   = string.IsNullOrWhiteSpace(faylYolu) ? null : faylYolu,
