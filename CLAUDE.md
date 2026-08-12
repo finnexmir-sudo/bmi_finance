@@ -384,14 +384,19 @@ Layihədə ikinci bir verilənlər bazası mövcuddur: **Oracle (BMI)**
 - Bütün Oracle sorğuları `IOracleService` vasitəsilə icra olunur
 - Oracle sorguları `OracleSorgular` cədvəlində saxlanır (SQL Server-də), oradan oxunur
 
-### İSTİSNA — Kredit müqavilə nömrələri (yalnız 2 cədvəl)
+### İSTİSNA — Kredit müqavilə nömrələri (yalnız 1 cədvəl)
 
-Kredit müqaviləsi modulu üçün **yalnız aşağıdakı iki cədvələ** yazı (INSERT/UPDATE)
+Kredit müqaviləsi modulu üçün **yalnız aşağıdakı cədvələ** yazı (INSERT/UPDATE)
 icazəlidir. Səbəb: BMI (köhnə desktop) və FinNex bir müddət paralel işləyəcək və
 müqavilə nömrələri **eyni Oracle sayğacından** verilməlidir ki, nömrələr toqquşmasın.
 
 - `odb.muqavile_nomreleri` — müqavilə nömrə sayğacları (UPDATE, seed üçün INSERT)
-- `odb.xaric_mektub` — girova düşmə (BTİ) məktub jurnalı (INSERT)
+
+**~~`odb.xaric_mektub`~~ — 12.08.2026-dan SİLİNDİ.** Məktub jurnalı FinNex-ə
+köçürüldü, jurnalın sahibi artıq FinNex-dir. Girova düşmə (BTİ) məktubu
+`XaricMektubService.YaratAsync` ilə **öz bazamıza** yazılır; Oracle-a məktub
+INSERT-i yoxdur. Nömrə də oradan gəlir — jurnal səhifəsindən yaradılan məktubla
+eyni yoldan, yəni nömrələmə TƏK yerdədir.
 
 Qaydalar:
 - Bu yazılar **yalnız** `IKreditMuqavileNomreService`-də olur — başqa yerdə Oracle yazısı QADAĞANDIR.
@@ -399,7 +404,18 @@ Qaydalar:
 - Bütün yazılar parametrli (`OracleCommand` bind) və atomik (`SELECT ... FOR UPDATE`) olmalıdır.
 - `KreditMuqavile:NomreYaz = false` (default) olduqda servis **heç nə yazmır** (preview);
   yalnız real yoxlamadan sonra `true` edilir.
-- **Bu iki cədvəldən başqa Oracle-a heç bir yazı əlavə edilə bilməz.**
+- **Bu cədvəldən başqa Oracle-a heç bir yazı əlavə edilə bilməz.**
+
+### Jurnal Nömrəsi Öz Bazamızdan Verilirsə — ƏVVƏLCƏ İDXAL (KRİTİK)
+
+FinNex-də jurnal nömrəsi (məktub Qeydiyyat №, həvalə №) **həmin ilin FinNex
+sətirlərindən max+1** ilə hesablanır. Həmin ilin BMI datası hələ idxal
+edilməyibsə nömrə **1-dən başlayır** və köhnə nömrələrlə toqquşur.
+
+**Qayda:** bir jurnaldan real nömrə verməzdən əvvəl (məs. `KreditMuqavile:NomreYaz = true`
+edilməzdən əvvəl) **ən azı cari il idxal edilmiş olmalıdır** — SenedDovriyyesi →
+BMI-dən köçürmə. `NomreYaz=false` preview rejimində risk yoxdur (heç nə yazılmır),
+amma preview-də görünən nömrə də natamam idxalda yanlış olar.
 
 ## Texnoloji stack
 - ASP.NET Core MVC, Areas: HR / User / Admin

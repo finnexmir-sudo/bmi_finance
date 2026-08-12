@@ -166,14 +166,7 @@ public class XaricMektubService : IXaricMektubService
             : null;
 
         var il = dto.Tarix?.Year ?? DateTime.Now.Year;
-
-        // İl üzrə növbəti Qeydiyyat № (yüklənən data + yeni qeydlərdən max+1)
-        var heminIl = await _uow.Repository<XaricMektub>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Il == il, izlemeden: true);
-        var novbeti = heminIl
-            .Select(x => ParseNum(x.QeyNom))
-            .DefaultIfEmpty(0)
-            .Max() + 1;
+        var novbeti = await NovbetiNomreAsync(il);
 
         var entity = new XaricMektub
         {
@@ -192,6 +185,24 @@ public class XaricMektubService : IXaricMektubService
         await _uow.YaddaSaxlaAsync();
 
         return Result<int>.Ok(novbeti, $"Xaric məktub qeydə alındı — Qeydiyyat № {novbeti}/{il}.");
+    }
+
+    // İl üzrə növbəti Qeydiyyat № (yüklənən BMI datası + yeni qeydlərdən max+1).
+    // YaratAsync da bunu çağırır — preview ilə real nömrə HƏMİŞƏ eyni düsturdan gəlir.
+    //
+    // DİQQƏT: nömrə FinNex bazasındakı sətirlərdən hesablanır. Həmin ilin BMI datası
+    // hələ idxal edilməyibsə nömrə 1-dən başlayar və köhnə nömrələrlə toqquşar —
+    // ona görə jurnaldan nömrə verməzdən əvvəl həmin il idxal edilməlidir
+    // (SenedDovriyyesi → Məktublar → BMI-dən köçürmə).
+    public async Task<int> NovbetiNomreAsync(int il)
+    {
+        var heminIl = await _uow.Repository<XaricMektub>().HamisiniGetirAsync(
+            predicate: x => !x.Silinib && x.Il == il, izlemeden: true);
+
+        return heminIl
+            .Select(x => ParseNum(x.QeyNom))
+            .DefaultIfEmpty(0)
+            .Max() + 1;
     }
 
     public async Task<XaricMektubEditDto?> RedakteMelumatiAsync(int id)

@@ -1,15 +1,19 @@
 using System.Globalization;
 using FinNex.Application.DTOs.Kredit.Muqavile;
+using FinNex.Application.DTOs.Mektub;
 using FinNex.Application.Interfaces.Kredit;
+using FinNex.Application.Interfaces.Mektub;
 using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 
 namespace FinNex.Application.Services.Kredit;
 
 /// <summary>
-/// Müqavilə nömrələri (odb.muqavile_nomreleri) və məktub jurnalı (odb.xaric_mektub).
+/// Müqavilə nömrələri (odb.muqavile_nomreleri) və girova düşmə məktubunun qeydiyyatı.
 ///
-/// ⚠️ Bu, Oracle-a YAZAN yeganə servisdir. CLAUDE.md istisnası: yalnız bu iki cədvəl.
+/// ⚠️ Bu, Oracle-a YAZAN yeganə servisdir. CLAUDE.md istisnası indi YALNIZ BİR cədvəldir:
+/// `odb.muqavile_nomreleri`. Məktub jurnalı (`odb.xaric_mektub`) FinNex-ə köçürüldüyü
+/// üçün məktub qeydi artıq öz bazamıza yazılır — Oracle-a məktub INSERT-i YOXDUR.
 /// KreditMuqavile:NomreYaz = false (default) → preview, HEÇ NƏ yazılmır.
 /// KreditMuqavile:NomreYaz = true → sayğaclar atomik (SELECT ... FOR UPDATE) artırılır.
 ///
@@ -22,12 +26,14 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
 {
     private readonly string _connectionString;
     private readonly bool _nomreYaz;
+    private readonly IXaricMektubService _xaricMektub;
 
-    public KreditMuqavileNomreService(IConfiguration config)
+    public KreditMuqavileNomreService(IConfiguration config, IXaricMektubService xaricMektub)
     {
         _connectionString = config["Oracle:ConnectionString"]
             ?? throw new InvalidOperationException("Oracle:ConnectionString konfiqurasiya edilməyib.");
         _nomreYaz = config.GetValue("KreditMuqavile:NomreYaz", false);
+        _xaricMektub = xaricMektub;
     }
 
     public async Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default)
@@ -157,37 +163,38 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
         return netice;
     }
 
-    public async Task<string> MektubQeydiyyatiAsync(DateTime tarix, string icraci, CancellationToken ct = default)
+    // Girova düşmə (BTİ) məktubu — ARTIQ ORACLE-A YAZILMIR.
+    //
+    // Əvvəl bu metod `odb.xaric_mektub`-a INSERT edir, sonra nömrəni Oracle-dan
+    // oxuyurdu. Məktub jurnalı FinNex-ə köçürüldükdən sonra (SenedDovriyyesi →
+    // Məktublar) jurnalın sahibi FinNex-dir: BMI daha yazmır. Ona görə qeyd də,
+    // nömrə də öz bazamızdan gəlir — jurnal səhifəsində yaradılan məktubla eyni
+    // yoldan (XaricMektubService.YaratAsync), yəni nömrələmə TƏK yerdən idarə olunur.
+    //
+    // Yan fayda: köhnə kod preview rejimində `MAX(...)` qaytarırdı — yəni SON
+    // məktubun nömrəsini, növbətini yox. İndi hər iki rejimdə növbəti nömrə gəlir.
+    public async Task<string> MektubQeydiyyatiAsync(DateTime tarix, int yaradanUserId, CancellationToken ct = default)
     {
-        await using var con = new OracleConnection(_connectionString);
-        await con.OpenAsync(ct);
+        var il = tarix.Year;
 
-        var il = await CariIlAsync(con, ct);
-
-        if (_nomreYaz)
+        if (!_nomreYaz)
         {
-            await using var ins = new OracleCommand(@"
-                INSERT INTO odb.xaric_mektub x (x.gon_yer, x.tarix, x.qisa_mez, x.icraci, x.il)
-                VALUES ('Mənzil', TO_DATE(:tar, 'dd-MM-yyyy'), 'mənzil gir sal', :icraci, :il)", con)
-            { BindByName = true };
-            ins.Parameters.Add("tar", tarix.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture));
-            ins.Parameters.Add("icraci", icraci ?? "");
-            ins.Parameters.Add("il", il);
-            await ins.ExecuteNonQueryAsync(ct);
+            // Preview — heç nə yazılmır, yalnız növbəti nömrə göstərilir
+            var novbeti = await _xaricMektub.NovbetiNomreAsync(il);
+            return $"{il}-{novbeti.ToString(CultureInfo.InvariantCulture)}";
         }
 
-        // Məktub nömrəsi — BMI məntiqi (mektubElaveEt)
-        var mekNoArti = 0;
-        await using (var max = new OracleCommand(
-            "SELECT MAX(-TO_NUMBER(SUBSTR(t.qey_nom, 5, 5))) mn FROM odb.xaric_mektub t WHERE t.il = :il", con)
-            { BindByName = true })
+        var netice = await _xaricMektub.YaratAsync(new XaricMektubCreateDto
         {
-            max.Parameters.Add("il", il);
-            var r = await max.ExecuteScalarAsync(ct);
-            mekNoArti = ToInt(r, 0);
-        }
+            Tarix   = tarix,
+            GonYer  = "Mənzil",
+            QisaMez = "mənzil gir sal"
+        }, yaradanUserId);
 
-        return $"{il}-{mekNoArti}";
+        if (!netice.Success)
+            throw new InvalidOperationException($"Məktub qeydiyyatı alınmadı: {netice.Message}");
+
+        return $"{il}-{netice.Data.ToString(CultureInfo.InvariantCulture)}";
     }
 
     private static async Task<string> CariIlAsync(OracleConnection con, CancellationToken ct)

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Security.Claims;
 using FinNex.Application.DTOs.Kredit.Muqavile;
 using FinNex.Application.Helpers.Kredit;
-using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Kredit;
 using FinNex.UI.Services.Kredit;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +17,6 @@ public class KreditMuqavileController : Controller
     private readonly IKreditMuqavileNomreService _nomreService;
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
-    private readonly IIcraciNoService _icraciNoService;
 
     // Müqavilə tipləri — BMI-dəki "Müqavilə tipi" dropdown ilə eyni.
     public static readonly string[] MuqavileTipleri =
@@ -54,14 +52,12 @@ public class KreditMuqavileController : Controller
         IKreditMuqavileService muqavileService,
         IKreditMuqavileNomreService nomreService,
         IConfiguration config,
-        IWebHostEnvironment env,
-        IIcraciNoService icraciNoService)
+        IWebHostEnvironment env)
     {
         _muqavileService = muqavileService;
         _nomreService = nomreService;
         _config = config;
         _env = env;
-        _icraciNoService = icraciNoService;
     }
 
     // Səviyyə 1 — Seçim səhifəsi: tarixə görə verilmiş kreditlərin siyahısı.
@@ -136,15 +132,12 @@ public class KreditMuqavileController : Controller
 
         // Nömrələri ayır (NomreYaz=false olduqda preview — Oracle-a yazılmır)
         var nomreler = await _nomreService.MenzilNomreleriAyirAsync(zaminler.Count, ct);
-        // İCRAÇI — Oracle `odb.xaric_mektub.ICRACI` sütununda BMI RƏQƏM saxlayır (68, 25…).
-        // Əvvəl bura login adı (`User.Identity.Name`) yazılırdı: `NomreYaz=true` edilən gün
-        // BMI-nin jurnalına rəqəm əvəzinə "admin" düşəcəkdi. İndi cari istifadəçinin
-        // icraçı nömrəsi göndərilir; təyin edilməyibsə sahə boş qalır (yalançı dəyər yazılmır).
-        var icraciNo = await _icraciNoService.AppUserIcraciNoAsync(
-            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+        // Girova düşmə (BTİ) məktubu FinNex jurnalına yazılır (Oracle-a YOX).
+        // İcraçı nömrəsini servis özü tapır (AppUser → Isci.IcraciNo) — jurnal
+        // səhifəsindən yaradılan məktubla eyni yol, eyni nömrələmə.
         var mekno = await _nomreService.MektubQeydiyyatiAsync(
             dto.MuqavileTarixi,
-            icraciNo?.ToString(CultureInfo.InvariantCulture) ?? "",
+            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
             ct);
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──

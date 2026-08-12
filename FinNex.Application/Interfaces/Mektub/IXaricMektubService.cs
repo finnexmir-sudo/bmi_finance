@@ -17,6 +17,11 @@ public interface IXaricMektubService
     // faylYolu — DMS-də nisbi yol (istəyə bağlı qoşma). Qaytarır: yeni Qeydiyyat №.
     Task<Result<int>> YaratAsync(XaricMektubCreateDto dto, int yaradanUserId, string? faylYolu = null);
 
+    // Həmin ildə növbəti Qeydiyyat № — HEÇ NƏ YAZMADAN (preview).
+    // YaratAsync ilə eyni düsturu (max+1) işlədir; ikisi ayrı hesablanarsa
+    // preview real nömrədən fərqlənər və istifadəçini çaşdırar.
+    Task<int> NovbetiNomreAsync(int il);
+
     // Redaktə üçün mövcud dəyərlər (tapılmasa null)
     Task<XaricMektubEditDto?> RedakteMelumatiAsync(int id);
 
