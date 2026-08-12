@@ -114,14 +114,14 @@
                         {
                             <tr class="dm-row">
                                 <td class="dm-num">@T(m.QeyNom)</td>
-                                <td>@D(m.Tarix)</td>
+                                <td class="dm-dt">@D(m.Tarix)</td>
                                 <td class="dm-name">@T(m.GonYer)</td>
-                                <td>@T(m.QisaMez)</td>
+                                <td class="dm-txt">@T(m.QisaMez)</td>
                                 @* İcraçı: bazada nömrə saxlanılır, adı Isci.IcraciNo-dan tapılır.
                                        Ad tapılmasa xam nömrə göstərilir — məlumat itməsin. *@
-                                <td title="@(m.IcraciNo.HasValue ? $"İcraçı № {m.IcraciNo}" : null)">@T(m.IcraciGoster)</td>
-                                <td>@(m.Il?.ToString() ?? "—")</td>
-                                <td>
+                                <td class="dm-ic" title="@(m.IcraciNo.HasValue ? $"İcraçı № {m.IcraciNo}" : null)">@T(m.IcraciGoster)</td>
+                                <td class="dm-yr">@(m.Il?.ToString() ?? "—")</td>
+                                <td class="dm-att">
                                     @if (!string.IsNullOrEmpty(m.FaylYolu))
                                     {
                                         <a href="/dms/@m.FaylYolu" target="_blank" title="Qoşmanı aç"><i class="bi bi-paperclip"></i></a>
@@ -153,6 +153,44 @@
 
 @section Styles {
     <style>
+        /* ── Jurnal cədvəli ───────────────────────────────────────────────
+           Qeydiyyat jurnalıdır: sıx sətirlər + görünən şəbəkə xətləri lazımdır ki,
+           göz sətir boyu sürüşəndə sütunu itirməsin. Əvvəl yalnız açıq üfüqi xətt
+           var idi və uzun ünvanlar sətri 3 sətrə qaldırırdı — siyahı kimi görünürdü. */
+        .dm-twrap { overflow-x:auto; border:1px solid #dbe2ea; border-radius:10px; }
+        .dm-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+
+        .dm-table thead th {
+            position:sticky; top:0; z-index:2;
+            background:#eef2f7; color:#334155;
+            font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.03em;
+            text-align:left; padding:9px 10px; white-space:nowrap;
+            border-bottom:2px solid #c7d2de; border-right:1px solid #dbe2ea;
+        }
+        .dm-table thead th:last-child { border-right:none; }
+
+        .dm-table td {
+            padding:6px 10px; color:#1e293b; vertical-align:top; line-height:1.35;
+            border-bottom:1px solid #eef2f7; border-right:1px solid #f1f5f9;
+        }
+        .dm-table td:last-child { border-right:none; }
+        .dm-table tbody tr:nth-child(even) td { background:#fbfcfe; }
+        .dm-table tbody tr:hover td { background:#eff6ff; }
+        .dm-table tbody tr:last-child td { border-bottom:none; }
+
+        /* Sütun rolları — sətirlərin hündürlüyü bərabər qalsın */
+        .dm-num  { width:88px;  font-weight:700; color:#0f172a; white-space:nowrap;
+                   font-variant-numeric:tabular-nums; }
+        .dm-dt   { width:92px;  white-space:nowrap; color:#475569;
+                   font-variant-numeric:tabular-nums; }
+        .dm-name { min-width:240px; max-width:420px; font-weight:600; color:#0f172a; }
+        .dm-txt  { min-width:180px; max-width:360px; color:#334155; }
+        .dm-mono { white-space:nowrap; font-variant-numeric:tabular-nums; color:#334155; }
+        .dm-ic   { width:150px; color:#475569; }
+        .dm-yr   { width:56px;  text-align:center; color:#64748b;
+                   font-variant-numeric:tabular-nums; }
+        .dm-att  { width:60px;  text-align:center; }
+
         .mk-filtr { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
             background:#f8fafc; border:1px solid #e8ecf2; border-radius:10px; padding:12px 14px; margin-bottom:14px; }
         .mk-f { display:flex; flex-direction:column; gap:4px; }
@@ -166,17 +204,7 @@
 
         .dm-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
 
-
-
         .dm-hint { font-size:12px; color:#64748b; }
-        .dm-twrap { overflow-x:auto; }
-        .dm-table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
-        .dm-table thead th { position:sticky; top:0; background:#f1f5f9; color:#475569; font-weight:600; font-size:12px;
-            text-align:left; padding:10px 14px; border-bottom:1px solid #e2e8f0; }
-        .dm-table td { padding:9px 14px; border-bottom:1px solid #f1f5f9; color:#1e293b; }
-        .dm-table tbody tr:hover td { background:#f8fafc; }
-        .dm-num { font-weight:700; color:#0f172a; text-align:center; }
-        .dm-name { font-weight:600; color:#0f172a; white-space:normal; }
         .dm-empty { text-align:center; color:#94a3b8; padding:36px; font-size:14px; }
         .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
         .dm-alert--ok { background:#dcfce7; border:1px solid #bbf7d0; color:#166534; }
