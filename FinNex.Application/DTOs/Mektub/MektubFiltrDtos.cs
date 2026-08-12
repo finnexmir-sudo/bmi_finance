@@ -13,6 +13,12 @@ public class MektubFiltrDto
     public DateTime? TarixTo   { get; set; }
     public string?   Axtaris   { get; set; }   // təyinat / məzmun / nömrə üzrə mətn axtarışı
 
+    // ── Səhifələmə ──────────────────────────────────────────────────────
+    // "Bütün illər" seçiləndə nəticə 32 min sətrə çata bilər — bir səhifədə
+    // göstərmək nə brauzerə, nə də istifadəçiyə fayda verir.
+    public int Sehife       { get; set; } = 1;
+    public int SehifeOlcusu { get; set; } = 50;
+
     public bool ButunIller => Il == 0;
 
     // Filtrin DB sorğusunda işlədiləcək il dəyəri (bütün illər seçilibsə null)
@@ -24,6 +30,8 @@ public class MektubFiltrDto
         var f = filtr ?? new MektubFiltrDto();
         f.Il ??= DateTime.Today.Year;
         f.Axtaris = string.IsNullOrWhiteSpace(f.Axtaris) ? null : f.Axtaris.Trim();
+        if (f.Sehife < 1) f.Sehife = 1;
+        if (f.SehifeOlcusu is < 10 or > 500) f.SehifeOlcusu = 50;
         return f;
     }
 }
@@ -46,4 +54,19 @@ public class MektubIcraciDto
     public string Goster => string.IsNullOrWhiteSpace(Ad)
         ? $"№ {No} (təyin edilməyib)"
         : $"{No} — {Ad}";
+}
+
+// Səhifələnmiş nəticə — siyahı + ümumi say (pager üçün).
+public class MektubSehifeDto<T>
+{
+    public IList<T> Setirler     { get; set; } = new List<T>();
+    public int      CemiSay      { get; set; }
+    public int      Sehife       { get; set; } = 1;
+    public int      SehifeOlcusu { get; set; } = 50;
+
+    public int SehifeSayi => CemiSay <= 0 ? 1 : (int)Math.Ceiling(CemiSay / (double)SehifeOlcusu);
+    public int Ilk        => CemiSay == 0 ? 0 : (Sehife - 1) * SehifeOlcusu + 1;
+    public int Son        => Math.Min(Sehife * SehifeOlcusu, CemiSay);
+    public bool EvvelVar  => Sehife > 1;
+    public bool SonraVar  => Sehife < SehifeSayi;
 }

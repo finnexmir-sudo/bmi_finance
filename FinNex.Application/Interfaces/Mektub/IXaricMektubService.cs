@@ -7,7 +7,7 @@ public interface IXaricMektubService
 {
     // Filtrli siyahı. filtr.Il: null → cari il (defolt), 0 → bütün illər.
     // Jurnal 30 mindən çox sətir saxlayır — filtrsiz tam yükləmə QƏSDƏN yoxdur.
-    Task<IList<XaricMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null);
+    Task<MektubSehifeDto<XaricMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null);
 
     // Filtr açılan siyahıları — jurnalda REAL mövcud olan illər və icraçı nömrələri.
     Task<MektubFiltrMenbeDto> FiltrMenbeleriAsync();

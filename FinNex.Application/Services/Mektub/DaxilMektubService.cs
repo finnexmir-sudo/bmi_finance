@@ -52,7 +52,7 @@ public class DaxilMektubService : IDaxilMektubService
             .ToDictionary(g => g.Key, g => g.First().TamAd);
     }
 
-    public async Task<IList<DaxilMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null)
+    public async Task<MektubSehifeDto<DaxilMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null)
     {
         var f  = MektubFiltrDto.Normalla(filtr);
         var il = f.SorguIli;   // "bütün illər" seçilibsə null
@@ -80,8 +80,18 @@ public class DaxilMektubService : IDaxilMektubService
         // İcraçı nömrəsi → işçi adı (Isci.IcraciNo)
         var adMap = await IcraciAdXeritesiAsync();
 
-        return list
+        // Səhifələmə süzgəclərdən SONRA — "Cəmi" filtrə uyğun sətir sayını göstərməlidir.
+        var cemi = list.Count;
+
+        return new MektubSehifeDto<DaxilMektubListDto>
+        {
+            CemiSay      = cemi,
+            Sehife       = f.Sehife,
+            SehifeOlcusu = f.SehifeOlcusu,
+            Setirler     = list
             .OrderByDescending(x => x.Il).ThenByDescending(x => x.Nom1)
+            .Skip((f.Sehife - 1) * f.SehifeOlcusu)
+            .Take(f.SehifeOlcusu)
             .Select(x => new DaxilMektubListDto
             {
                 Id       = x.Id,
@@ -97,7 +107,8 @@ public class DaxilMektubService : IDaxilMektubService
                 FaylYolu = x.FaylYolu,
                 FaylVar  = !string.IsNullOrEmpty(x.FaylYolu) || (x.Mezmun != null && x.Mezmun.Length > 0)
             })
-            .ToList();
+            .ToList()
+        };
     }
 
     public async Task<Result<int>> YaratAsync(DaxilMektubCreateDto dto, int yaradanUserId, string? faylYolu = null)

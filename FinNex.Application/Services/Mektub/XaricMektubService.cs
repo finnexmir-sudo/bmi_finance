@@ -81,7 +81,7 @@ public class XaricMektubService : IXaricMektubService
             .ToDictionary(g => g.Key, g => g.First().TamAd);
     }
 
-    public async Task<IList<XaricMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null)
+    public async Task<MektubSehifeDto<XaricMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null)
     {
         var f  = MektubFiltrDto.Normalla(filtr);
         var il = f.SorguIli;   // "bütün illər" seçilibsə null
@@ -111,8 +111,20 @@ public class XaricMektubService : IXaricMektubService
         // İcraçı nömrəsi → işçi adı (Isci.IcraciNo) — Daxil məktub/Həvalə ilə eyni qayda.
         var adMap = await IcraciAdXeritesiAsync();
 
-        return list
+        // Səhifələmə süzgəclərdən SONRA — "Cəmi" filtrə uyğun sətir sayını göstərməlidir.
+        var cemi = list.Count;
+        var sehifeSetirleri = list
             .OrderByDescending(x => x.Il).ThenByDescending(x => ParseNum(x.QeyNom))
+            .Skip((f.Sehife - 1) * f.SehifeOlcusu)
+            .Take(f.SehifeOlcusu)
+            .ToList();
+
+        return new MektubSehifeDto<XaricMektubListDto>
+        {
+            CemiSay      = cemi,
+            Sehife       = f.Sehife,
+            SehifeOlcusu = f.SehifeOlcusu,
+            Setirler     = sehifeSetirleri
             .Select(x =>
             {
                 // Köhnə Oracle sətirlərində və yeni qeydlərdə dəyər nömrədir; nömrəyə
@@ -134,7 +146,8 @@ public class XaricMektubService : IXaricMektubService
                     FaylVar   = !string.IsNullOrEmpty(x.FaylYolu)
                 };
             })
-            .ToList();
+            .ToList()
+        };
     }
 
     public async Task<Result<int>> YaratAsync(XaricMektubCreateDto dto, int yaradanUserId, string? faylYolu = null)

@@ -1,5 +1,5 @@
 @using FinNex.Application.DTOs.Mektub
-@model IList<XaricMektubListDto>
+@model MektubSehifeDto<XaricMektubListDto>
 @{
     ViewData["Title"] = "Xaric olan məktublar";
     string D(DateTime? v) => v?.ToString("dd.MM.yyyy") ?? "—";
@@ -86,10 +86,10 @@
     </form>
 
         <div class="dm-toolbar">
-            <div class="dm-hint">@(filtr.ButunIller ? "Bütün illər" : $"{filtr.Il} ili") · Cəmi: <strong>@Model.Count.ToString("N0")</strong> məktub</div>
+            <div class="dm-hint">@(filtr.ButunIller ? "Bütün illər" : $"{filtr.Il} ili") · Cəmi: <strong>@Model.CemiSay.ToString("N0")</strong> məktub</div>
         </div>
 
-        @if (!Model.Any())
+        @if (!Model.Setirler.Any())
         {
             <div class="dm-empty"><i class="bi bi-inbox"></i> Seçilmiş filtrə uyğun məktub tapılmadı.</div>
         }
@@ -103,14 +103,14 @@
                             <th>Tarix</th>
                             <th>Göndərilən yer</th>
                             <th>Qısa məzmun</th>
-                            <th>İcraçı</th>
-                            <th>İl</th>
+                            <th>İcraçı №</th>
+                            @if (filtr.ButunIller) { <th>İl</th> }
                             <th>Qoşma</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var m in Model)
+                        @foreach (var m in Model.Setirler)
                         {
                             <tr class="dm-row">
                                 <td class="dm-num">@T(m.QeyNom)</td>
@@ -120,7 +120,7 @@
                                 @* İcraçı: bazada nömrə saxlanılır, adı Isci.IcraciNo-dan tapılır.
                                        Ad tapılmasa xam nömrə göstərilir — məlumat itməsin. *@
                                 <td class="dm-ic" title="@(m.IcraciNo.HasValue ? $"İcraçı № {m.IcraciNo}" : null)">@T(m.IcraciGoster)</td>
-                                <td class="dm-yr">@(m.Il?.ToString() ?? "—")</td>
+                                @if (filtr.ButunIller) { <td class="dm-yr">@(m.Il?.ToString() ?? "—")</td> }
                                 <td class="dm-att">
                                     @if (!string.IsNullOrEmpty(m.FaylYolu))
                                     {
@@ -148,11 +148,57 @@
                 </table>
             </div>
         }
+
+        @* ── Səhifələmə ── Filtr dəyərləri linklərdə saxlanılır ki, səhifə dəyişəndə itməsin *@
+        @if (Model.SehifeSayi > 1)
+        {
+            <div class="mk-pager">
+                <div class="mk-pager-info">
+                    @Model.Ilk.ToString("N0")–@Model.Son.ToString("N0") /
+                    <strong>@Model.CemiSay.ToString("N0")</strong>
+                </div>
+                <div class="mk-pager-btns">
+                    @if (Model.EvvelVar)
+                    {
+                        <a class="mk-pg" asp-action="Index"
+                           asp-route-Il="@filtr.Il" asp-route-IcraciNo="@filtr.IcraciNo"
+                           asp-route-TarixFrom="@D2(filtr.TarixFrom)" asp-route-TarixTo="@D2(filtr.TarixTo)"
+                           asp-route-Axtaris="@filtr.Axtaris" asp-route-Sehife="1">« ilk</a>
+                        <a class="mk-pg" asp-action="Index"
+                           asp-route-Il="@filtr.Il" asp-route-IcraciNo="@filtr.IcraciNo"
+                           asp-route-TarixFrom="@D2(filtr.TarixFrom)" asp-route-TarixTo="@D2(filtr.TarixTo)"
+                           asp-route-Axtaris="@filtr.Axtaris" asp-route-Sehife="@(Model.Sehife - 1)">‹ əvvəlki</a>
+                    }
+                    <span class="mk-pg mk-pg--cur">@Model.Sehife / @Model.SehifeSayi</span>
+                    @if (Model.SonraVar)
+                    {
+                        <a class="mk-pg" asp-action="Index"
+                           asp-route-Il="@filtr.Il" asp-route-IcraciNo="@filtr.IcraciNo"
+                           asp-route-TarixFrom="@D2(filtr.TarixFrom)" asp-route-TarixTo="@D2(filtr.TarixTo)"
+                           asp-route-Axtaris="@filtr.Axtaris" asp-route-Sehife="@(Model.Sehife + 1)">sonrakı ›</a>
+                        <a class="mk-pg" asp-action="Index"
+                           asp-route-Il="@filtr.Il" asp-route-IcraciNo="@filtr.IcraciNo"
+                           asp-route-TarixFrom="@D2(filtr.TarixFrom)" asp-route-TarixTo="@D2(filtr.TarixTo)"
+                           asp-route-Axtaris="@filtr.Axtaris" asp-route-Sehife="@Model.SehifeSayi">son »</a>
+                    }
+                </div>
+            </div>
+        }
     </div>
 </div>
 
 @section Styles {
     <style>
+        .mk-pager { display:flex; align-items:center; justify-content:space-between; gap:12px;
+            flex-wrap:wrap; margin-top:12px; }
+        .mk-pager-info { font-size:12px; color:#64748b; font-variant-numeric:tabular-nums; }
+        .mk-pager-btns { display:flex; gap:6px; }
+        .mk-pg { padding:5px 11px; font-size:12px; font-weight:600; border-radius:7px;
+            border:1px solid #e2e8f0; background:#fff; color:#475569; text-decoration:none; }
+        .mk-pg:hover { background:#f1f5f9; color:#2563eb; border-color:#cbd5e1; }
+        .mk-pg--cur { background:#eef2f7; color:#0f172a; border-color:#dbe2ea; cursor:default;
+            font-variant-numeric:tabular-nums; }
+
         /* ── Jurnal cədvəli ───────────────────────────────────────────────
            Qeydiyyat jurnalıdır: sıx sətirlər + görünən şəbəkə xətləri lazımdır ki,
            göz sətir boyu sürüşəndə sütunu itirməsin. Əvvəl yalnız açıq üfüqi xətt

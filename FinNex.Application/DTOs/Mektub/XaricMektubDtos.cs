@@ -16,10 +16,11 @@ public class XaricMektubListDto
     public int?      IcraciNo  { get; set; }   // rəqəmə parse olunanda
     public string?   IcraciAd  { get; set; }   // nömrədən tapılan işçi adı (tapılmasa null)
 
-    // Ekranda göstəriləcək mətn: ad varsa ad, yoxsa xam dəyər (məlumat itməsin).
+    // Ekranda göstəriləcək: nömrə işçiyə təyin olunubsa AD, yoxsa xam nömrə.
+    // "№" prefiksi YOXDUR — sütun başlığı onsuz da "İcraçı №"dir, təkrar olardı.
     public string?   IcraciGoster => !string.IsNullOrWhiteSpace(IcraciAd)
         ? IcraciAd
-        : (string.IsNullOrWhiteSpace(Icraci) ? null : $"№ {Icraci}");
+        : (string.IsNullOrWhiteSpace(Icraci) ? null : Icraci.Trim());
 
     public int?      Il        { get; set; }
     public int?      YaradanId { get; set; }   // sahiblik yoxlaması üçün (AppUser id)
