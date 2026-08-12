@@ -38,18 +38,78 @@ public class XaricMektubService : IXaricMektubService
     private static string QeyNomYarat(int il, int nomre) =>
         $"{il}-{nomre.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 
-    public async Task<IList<XaricMektubListDto>> HamisiniGetirAsync(int? il = null)
+    // Jurnalda mövcud illər və icraçı nömrələri (filtr açılan siyahıları üçün).
+    public async Task<MektubFiltrMenbeDto> FiltrMenbeleriAsync()
     {
-        var list = await _uow.Repository<XaricMektub>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && (il == null || x.Il == il),
-            izlemeden: true);
+        var hamisi = await _uow.Repository<XaricMektub>()
+            .HamisiniGetirAsync(x => !x.Silinib, izlemeden: true);
 
-        // İcraçı nömrəsi → işçi adı (Isci.IcraciNo) — Daxil məktub/Həvalə ilə eyni qayda.
+        var adMap = await IcraciAdXeritesiAsync();
+
+        return new MektubFiltrMenbeDto
+        {
+            Iller = hamisi.Where(x => x.Il.HasValue).Select(x => x.Il!.Value)
+                          .Distinct().OrderByDescending(x => x).ToList(),
+
+            // Yalnız REAL işlənən nömrələr — HR-ın hansı kodları təyin etməli olduğu da buradan görünür
+            Icracilar = hamisi
+                .Select(x => IcraciNoOxu(x.Icraci))
+                .Where(n => n.HasValue)
+                .GroupBy(n => n!.Value)
+                .Select(g => new MektubIcraciDto
+                {
+                    No  = g.Key,
+                    Ad  = adMap.TryGetValue(g.Key, out var ad) ? ad : null,
+                    Say = g.Count()
+                })
+                .OrderBy(x => x.No)
+                .ToList()
+        };
+    }
+
+    // Oracle-dan gələn və FinNex-də yazılan dəyər rəqəmdir; parse olunmayan köhnə
+    // (adla yazılmış) qeydlərdə null qayıdır.
+    private static int? IcraciNoOxu(string? xam) =>
+        int.TryParse(xam?.Trim(), out var n) ? n : (int?)null;
+
+    private async Task<Dictionary<int, string>> IcraciAdXeritesiAsync()
+    {
         var isciler = await _uow.Repository<Isci>().HamisiniGetirAsync(
             predicate: x => !x.Silinib && x.IcraciNo != null, izlemeden: true);
-        var adMap = isciler.Where(i => i.IcraciNo.HasValue)
+        return isciler.Where(i => i.IcraciNo.HasValue)
             .GroupBy(i => i.IcraciNo!.Value)
             .ToDictionary(g => g.Key, g => g.First().TamAd);
+    }
+
+    public async Task<IList<XaricMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null)
+    {
+        var f  = MektubFiltrDto.Normalla(filtr);
+        var il = f.SorguIli;   // "bütün illər" seçilibsə null
+
+        // İl və tarix DB tərəfində süzülür (32 min sətir yaddaşa çəkilməsin);
+        // icraçı və mətn axtarışı sətir əməliyyatı olduğu üçün yaddaşda.
+        var list = await _uow.Repository<XaricMektub>().HamisiniGetirAsync(
+            predicate: x => !x.Silinib
+                         && (il == null || x.Il == il)
+                         && (f.TarixFrom == null || (x.Tarix != null && x.Tarix >= f.TarixFrom))
+                         && (f.TarixTo   == null || (x.Tarix != null && x.Tarix <= f.TarixTo)),
+            izlemeden: true);
+
+        if (f.IcraciNo.HasValue)
+            list = list.Where(x => IcraciNoOxu(x.Icraci) == f.IcraciNo.Value).ToList();
+
+        if (!string.IsNullOrWhiteSpace(f.Axtaris))
+        {
+            var q = f.Axtaris.Trim();
+            list = list.Where(x =>
+                    (x.GonYer  ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.QisaMez ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.QeyNom  ?? "").Contains(q, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // İcraçı nömrəsi → işçi adı (Isci.IcraciNo) — Daxil məktub/Həvalə ilə eyni qayda.
+        var adMap = await IcraciAdXeritesiAsync();
 
         return list
             .OrderByDescending(x => x.Il).ThenByDescending(x => ParseNum(x.QeyNom))
@@ -57,7 +117,7 @@ public class XaricMektubService : IXaricMektubService
             {
                 // Köhnə Oracle sətirlərində və yeni qeydlərdə dəyər nömrədir; nömrəyə
                 // parse olunmayan (keçmiş adla yazılmış) qeydlər xam qalır.
-                int? icNo = int.TryParse(x.Icraci?.Trim(), out var n) ? n : (int?)null;
+                int? icNo = IcraciNoOxu(x.Icraci);
                 return new XaricMektubListDto
                 {
                     Id        = x.Id,

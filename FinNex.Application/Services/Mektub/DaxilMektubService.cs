@@ -16,18 +16,69 @@ public class DaxilMektubService : IDaxilMektubService
         _uow = uow;
     }
 
-    public async Task<IList<DaxilMektubListDto>> HamisiniGetirAsync(int? il = null)
+    // Jurnalda mövcud illər və icraçı nömrələri (filtr açılan siyahıları üçün).
+    public async Task<MektubFiltrMenbeDto> FiltrMenbeleriAsync()
     {
-        var list = await _uow.Repository<DaxilMektub>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && (il == null || x.Il == il),
-            izlemeden: true);
+        var hamisi = await _uow.Repository<DaxilMektub>()
+            .HamisiniGetirAsync(x => !x.Silinib, izlemeden: true);
 
-        // İcraçı nömrəsi → işçi adı (Isci.IcraciNo)
+        var adMap = await IcraciAdXeritesiAsync();
+
+        return new MektubFiltrMenbeDto
+        {
+            Iller = hamisi.Where(x => x.Il.HasValue).Select(x => x.Il!.Value)
+                          .Distinct().OrderByDescending(x => x).ToList(),
+
+            Icracilar = hamisi
+                .Where(x => x.MekUnvan.HasValue)
+                .GroupBy(x => x.MekUnvan!.Value)
+                .Select(g => new MektubIcraciDto
+                {
+                    No  = g.Key,
+                    Ad  = adMap.TryGetValue(g.Key, out var ad) ? ad : null,
+                    Say = g.Count()
+                })
+                .OrderBy(x => x.No)
+                .ToList()
+        };
+    }
+
+    private async Task<Dictionary<int, string>> IcraciAdXeritesiAsync()
+    {
         var isciler = await _uow.Repository<Isci>().HamisiniGetirAsync(
             predicate: x => !x.Silinib && x.IcraciNo != null, izlemeden: true);
-        var adMap = isciler.Where(i => i.IcraciNo.HasValue)
+        return isciler.Where(i => i.IcraciNo.HasValue)
             .GroupBy(i => i.IcraciNo!.Value)
             .ToDictionary(g => g.Key, g => g.First().TamAd);
+    }
+
+    public async Task<IList<DaxilMektubListDto>> HamisiniGetirAsync(MektubFiltrDto? filtr = null)
+    {
+        var f  = MektubFiltrDto.Normalla(filtr);
+        var il = f.SorguIli;   // "bütün illər" seçilibsə null
+
+        // İl, icraçı və tarix DB tərəfində süzülür (54 min sətir yaddaşa çəkilməsin);
+        // yalnız mətn axtarışı yaddaşdadır. Tarix filtri DAX_TARIX (daxil olma) üzrədir.
+        var list = await _uow.Repository<DaxilMektub>().HamisiniGetirAsync(
+            predicate: x => !x.Silinib
+                         && (il == null || x.Il == il)
+                         && (f.IcraciNo == null || x.MekUnvan == f.IcraciNo)
+                         && (f.TarixFrom == null || (x.DaxTarix != null && x.DaxTarix >= f.TarixFrom))
+                         && (f.TarixTo   == null || (x.DaxTarix != null && x.DaxTarix <= f.TarixTo)),
+            izlemeden: true);
+
+        if (!string.IsNullOrWhiteSpace(f.Axtaris))
+        {
+            var q = f.Axtaris.Trim();
+            list = list.Where(x =>
+                    (x.IdareAdi ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.DaxNom   ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (x.Nom1     ?? 0).ToString().Contains(q, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // İcraçı nömrəsi → işçi adı (Isci.IcraciNo)
+        var adMap = await IcraciAdXeritesiAsync();
 
         return list
             .OrderByDescending(x => x.Il).ThenByDescending(x => x.Nom1)

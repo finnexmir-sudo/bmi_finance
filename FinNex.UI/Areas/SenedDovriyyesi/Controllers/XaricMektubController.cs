@@ -71,10 +71,15 @@ public class XaricMektubController : Controller
     };
 
     // GET: /SenedDovriyyesi/XaricMektub
-    public async Task<IActionResult> Index(int? il)
+    // Filtr: il (boş → cari il, 0 → bütün illər), icraçı, tarix aralığı, mətn axtarışı.
+    // Jurnal on minlərlə sətir saxlayır — ona görə defolt CARİ İLDİR.
+    public async Task<IActionResult> Index(MektubFiltrDto filtr)
     {
-        var model = await _service.HamisiniGetirAsync(il);
-        ViewBag.Il = il;
+        var f = MektubFiltrDto.Normalla(filtr);
+        var model = await _service.HamisiniGetirAsync(f);
+
+        ViewBag.Filtr  = f;
+        ViewBag.Menbe  = await _service.FiltrMenbeleriAsync();
         ViewBag.UserId = GetUserId();
         ViewBag.IsAdmin = IsAdmin();
         return View(model);
