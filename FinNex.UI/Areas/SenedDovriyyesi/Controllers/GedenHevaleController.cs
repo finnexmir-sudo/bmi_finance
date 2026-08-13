@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FinNex.Application.DTOs.Hevale;
 using FinNex.Application.Interfaces.Hevale;
+using FinNex.Application.Interfaces.Valyuta;
 using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,12 +15,23 @@ public class GedenHevaleController : Controller
 {
     private readonly IGedenHevaleService _service;
     private readonly IConfiguration _config;
+    private readonly IBmiValyutaService _valyuta;
 
-    public GedenHevaleController(IGedenHevaleService service, IConfiguration config)
+    public GedenHevaleController(
+        IGedenHevaleService service,
+        IConfiguration config,
+        IBmiValyutaService valyuta)
     {
         _service = service;
         _config = config;
+        _valyuta = valyuta;
     }
+
+    // Valyuta siyahısı BMI `kurval`-dan gəlir (kod + ad).
+    // FORMA QAYTARILAN HƏR YOLDA çağırılmalıdır — POST xətasında da.
+    // Unudulsa view-dakı ViewBag.Valyutalar null olar və səhifə sınar.
+    private async Task ValyutalariDoldurAsync(CancellationToken ct = default)
+        => ViewBag.Valyutalar = await _valyuta.SiyahiAsync(ct);
 
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private bool IsAdmin() => User.IsInRole(RoleNames.Admin);
@@ -50,8 +62,13 @@ public class GedenHevaleController : Controller
     }
 
     [HttpGet]
-    public IActionResult Yarat() =>
-        View(new GedenHevaleCreateDto { Tarix = DateTime.Today, ValTip = "AZN" });
+    public async Task<IActionResult> Yarat(CancellationToken ct)
+    {
+        await ValyutalariDoldurAsync(ct);
+        // Defolt valyuta — BMI kodu "00" (AZƏRBAYCAN MANATI).
+        // Əvvəl "AZN" mətni idi; indi seçilən dəyər KODDUR (kurval.SOKNAMEVALUT).
+        return View(new GedenHevaleCreateDto { Tarix = DateTime.Today, ValTip = "00" });
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -61,6 +78,7 @@ public class GedenHevaleController : Controller
         if (string.IsNullOrWhiteSpace(dto.Saa))
         {
             TempData["Error"] = "Soyad Ad Ata (S.A.A.) boş ola bilməz.";
+            await ValyutalariDoldurAsync();
             return View(dto);
         }
         var faylYolu = await QosmaYazAsync(fayl);
@@ -83,6 +101,7 @@ public class GedenHevaleController : Controller
             TempData["Error"] = "Bu həvaləni yalnız yaradan və ya Admin dəyişə bilər.";
             return RedirectToAction(nameof(Index));
         }
+        await ValyutalariDoldurAsync();
         return View(dto);
     }
 
@@ -95,7 +114,10 @@ public class GedenHevaleController : Controller
         var res = await _service.YenileAsync(dto, GetUserId(), IsAdmin(), yeniFaylYolu);
         TempData[res.Success ? "Success" : "Error"] = res.Message;
         if (!res.Success)
+        {
+            await ValyutalariDoldurAsync();
             return View(dto);
+        }
         return RedirectToAction(nameof(Index));
     }
 

@@ -1,7 +1,12 @@
 @model GedenHevaleCreateDto
 @{
     ViewData["Title"] = "Yeni gedən həvalə";
-    var valyutalar = new[] { "AZN", "USD", "EUR", "RUB", "GBP", "TRY" };
+    // Valyuta siyahısı BMI `kurval`-dan gəlir (kod + ad) — controller doldurur.
+    // Əvvəl burada sabit massiv var idi ("AZN","USD"…); indi seçilən dəyər KODDUR
+    // (kurval.SOKNAMEVALUT: "00","01"…), çünki kurval-da USD/EUR qısaltması yoxdur.
+    // Oracle əlçatmaz olsa servis sabit ehtiyat siyahı qaytarır — siyahı boş qalmır.
+    var valyutalar = ViewBag.Valyutalar as IList<FinNex.Application.DTOs.Valyuta.BmiValyutaDto>
+                     ?? new List<FinNex.Application.DTOs.Valyuta.BmiValyutaDto>();
     var resTipleri = new[] { "Rezident", "Qeyri-rezident" };
 }
 
@@ -55,7 +60,15 @@
                         <select name="ValTip" class="fn-input">
                             @foreach (var v in valyutalar)
                             {
-                                <option value="@v" selected="@(Model.ValTip == v)">@v</option>
+                                <option value="@v.Kod" selected="@(Model.ValTip == v.Kod)">@v.Goster</option>
+                            }
+                            @* Köhnə qeydlərdə valyuta mətn kimi saxlanılıb ("USD","EUR",
+                               hətta kiril "УСД"). Belə dəyər siyahıda yoxdursa redaktədə
+                               İTƏRDİ — ona görə mövcud dəyər olduğu kimi əlavə olunur. *@
+                            @if (!string.IsNullOrWhiteSpace(Model.ValTip)
+                                 && !valyutalar.Any(x => x.Kod == Model.ValTip))
+                            {
+                                <option value="@Model.ValTip" selected="selected">@Model.ValTip (köhnə)</option>
                             }
                         </select>
                     </div>
