@@ -13,5 +13,13 @@ namespace FinNex.Application.Interfaces.Communication
         Task<Result> YaratAsync(int isciId, BildirisNovu nov,
             string bashliq, string metn, string? redirectUrl = null,
             int? mezuniyyetId = null, int? icazeId = null, int? mesajId = null);
+
+        /// <summary>
+        /// Ləğv/silinmiş məzuniyyətə bağlı, hələ OXUNMAMIŞ bildirişləri yumşaq silir.
+        /// Oxunmuşlara toxunulmur — onlar baş vermiş hadisənin tarixçəsidir; oxunmamış
+        /// bildiriş isə "sənə iş gəlib" deməkdir və o iş artıq yoxdur.
+        /// Qaytarır: silinən bildiriş sayı.
+        /// </summary>
+        Task<Result<int>> MezuniyyetBildirisleriniSilAsync(int mezuniyyetId);
     }
 }

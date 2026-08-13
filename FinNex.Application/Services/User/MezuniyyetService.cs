@@ -19,6 +19,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     private readonly IEvezediciTesdiqService _evezediciTesdiqService;
     private readonly IMaasHesablamaService _maasHesablamaService;
     private readonly IBildirisRouter _bildirisRouter;
+    private readonly IBildirisService _bildirisService;
     private readonly IJetonService _jetonService;
     private readonly IEmrService _emrService;
     private readonly UserManager<AppUser> _userManager;
@@ -29,6 +30,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         IEvezediciTesdiqService evezediciTesdiqService,
         IMaasHesablamaService maasHesablamaService,
         IBildirisRouter bildirisRouter,
+        IBildirisService bildirisService,
         IJetonService jetonService,
         IEmrService emrService,
         UserManager<AppUser> userManager)
@@ -37,6 +39,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         _evezediciTesdiqService = evezediciTesdiqService;
         _maasHesablamaService = maasHesablamaService;
         _bildirisRouter = bildirisRouter;
+        _bildirisService = bildirisService;
         _jetonService = jetonService;
         _emrService = emrService;
         _userManager = userManager;
@@ -652,6 +655,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         // Aktiv siyahılardan çıxsın
         await _unitOfWork.Repository<Mezuniyyet>().YumshakSilAsync(id);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // Ləğvin İKİNCİ giriş nöqtəsi — işçi ləğvi (LegvEtAsync) ilə eyni təmizlik.
+        // Biri köhnə qalarsa xəta yalnız o yolda təzahür edər (CLAUDE.md qaydası).
+        // DİQQƏT: aşağıdakı NotifyIsciForHrCancelAsync-dən ƏVVƏL çağırılır ki,
+        // işçiyə gedən "ləğv edildi" bildirişi təmizlənməyə düşməsin.
+        await _bildirisService.MezuniyyetBildirisleriniSilAsync(id);
 
         // Bildirişlər
         await NotifyIsciForHrCancelAsync(m, sebeb);
@@ -1712,6 +1721,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         await _unitOfWork.Repository<Mezuniyyet>().YumshakSilAsync(id);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // Müraciət artıq yoxdur → təsdiqçilərin gözləyən bildirişləri də getməlidir.
+        // Əks halda rəhbərin siyahısında ölü bildiriş qalır və işçi yenidən müraciət
+        // yazanda o, eyni müraciətin "iki dəfə gəldiyini" düşünür (13.08.2026 hadisəsi).
+        await _bildirisService.MezuniyyetBildirisleriniSilAsync(id);
 
         // Gözləyən avans ləğv olundusa Mühasibi xəbərdar et
         if (avansGozleyirdi)

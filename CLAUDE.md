@@ -333,6 +333,48 @@ mənfi faizdə `width:-2%` də eyni nəticəni verirdi).
 - İnsan oxuyan mətndə (`@x.Faiz%` etiketi) vergül qala bilər — problem yalnız
   maşın oxuyan (CSS/JS) tərəfdədir.
 
+## Bildirişlər — Paralel Yazı və Ölü Bildiriş (KRİTİK)
+
+Bildiriş yazan bütün yollar **ardıcıl** olmalıdır. `BildirisService` sorğunun
+**ortaq `IUnitOfWork`**-unu (eyni `DbContext`) işlədir; EF Core-un `DbContext`-i
+thread-safe deyil. `Task.WhenAll` ilə paralel `Add` + `SaveChanges` ya istisna
+verir (və boş `catch` onu udur → bildiriş **səssizcə itir**), ya da sətri
+**təkrar yazır**.
+
+Real hadisə (13.08.2026): bir məzuniyyət müraciəti üçün rəhbərə **iki eyni
+bildiriş** düşdü — 3,3 ms fərqlə. Başqa iki sətrin `YaradilmaTarixi`-si isə
+tick-tick eyni idi, yəni həqiqətən paralel yazılmışdılar. Bütün cədvəldə cəmi
+3 dublikat qrupu var idi — yəni qayda deyil, **yarış**; ona görə aylarla
+görünmədən qalmışdı.
+
+**Qaydalar:**
+- Toplu bildirişdə `Task.WhenAll` **İSTİFADƏ ETMƏ** — `BildirisRouter.GonderAsync`
+  ardıcıl `foreach` işlədir, yeni metod da onu çağırsın.
+- Bildiriş xətası əsas əməliyyatı pozmamalıdır, amma **izsiz də qalmamalıdır** —
+  boş `catch` yerinə `ILogger` ilə yaz.
+- `BildirisService.YaratAsync` dublikat qoruması var: eyni alıcı + növ + başlıq +
+  **mətn** + bağlı qeyd, son 15 saniyədə → yazılmır. Pəncərə qəsdən dardır;
+  sonrakı mərhələ bildirişləri (təsdiq/imtina/ödəniş) dəqiqələr sonra gəlir və
+  bloklanmır. Mətn açara **qəsdən** daxildir ki, eyni başlıqlı fərqli hadisələr
+  (məs. eyni anda təyin edilən iki tapşırıq) bir-birini bloklamasın.
+
+### Ləğv olunan qeydin bildirişləri
+
+Məzuniyyət ləğv ediləndə **yumşaq silinir**, amma bildirişlər avtomatik getmir.
+Təmizlik ləğvin **hər iki giriş nöqtəsində** var — `LegvEtAsync` (işçi) və
+`HrLegvEtAsync` (HR) → `MezuniyyetBildirisleriniSilAsync`. Biri unudularsa
+xəta yalnız o yolda təzahür edər.
+
+**Yalnız `MezuniyyetMuraciet` növü silinir/süzülür** — bu, "sənə iş gəlib,
+təsdiq et" bildirişidir və müraciət yoxdursa mənasızdır. `MezuniyyetImtina`
+(HR ləğv etdi / Mühasibə "ödənişi icra etməyin") və `MezuniyyetTesdiq`
+bildirişləri məhz məzuniyyət silinəndən **SONRA** yaradılır və `MezuniyyetId`-si
+silinmiş qeydə baxır — növ şərti olmasa süzgəc onları da gizlədərdi və işçi
+"məzuniyyətiniz ləğv edildi" xəbərini heç vaxt görməzdi.
+
+Göstərmə qatındakı süzgəc (`DiriBildirislerAsync`) keçmiş qalıqlar üçün ikinci
+qatdır; **siyahı və say eyni süzgəcdən keçir** (say = siyahı qaydası).
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
