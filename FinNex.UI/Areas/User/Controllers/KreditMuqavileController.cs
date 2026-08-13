@@ -18,6 +18,13 @@ public class KreditMuqavileController : Controller
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
 
+    // Kredit müqaviləsinin təminat bəndində göstərilə bilən ƏN ÇOX zamin sayı.
+    // Word şablonundakı {k_teminat1}…{k_teminat4} yer tutucularının sayı ilə
+    // BAĞLIDIR — biri dəyişirsə o biri də dəyişməlidir, yoxsa artıq zaminin
+    // zaminlik müqaviləsi yaranar, amma kredit müqaviləsində təminat kimi
+    // görünməz (13.08.2026: əvvəl 3 idi, dördüncü zamin səssizcə düşürdü).
+    public const int MaxZamin = 4;
+
     // Müqavilə tipləri — BMI-dəki "Müqavilə tipi" dropdown ilə eyni.
     public static readonly string[] MuqavileTipleri =
     {
@@ -129,9 +136,42 @@ public class KreditMuqavileController : Controller
         }
 
         var zaminler = (dto.Zaminler ?? new()).Where(z => !string.IsNullOrWhiteSpace(z.Ad)).ToList();
+        var ferqli = dto.GirovSahibiFerqli;
 
-        // Nömrələri ayır (NomreYaz=false olduqda preview — Oracle-a yazılmır)
-        var nomreler = await _nomreService.MenzilNomreleriAyirAsync(zaminler.Count, ct);
+        // ══ NÖMRƏDƏN ƏVVƏLKİ YOXLAMALAR ══════════════════════════════════════
+        // Nömrə ayrılan an sayğac artır və BTİ məktubu jurnala düşür — geri
+        // qaytarılmır. Ona görə uğursuz ola biləcək HƏR ŞEY buradan əvvəl
+        // yoxlanılır, yoxsa istifadəçi sənəd almır, nömrə isə itir (jurnalda
+        // boşluq + sənədsiz məktub qalır).
+
+        // Zamin limiti — şablonda {k_teminat1..4} var, 5-ci zamin kredit
+        // müqaviləsinin təminat bəndinə DÜŞMƏZDİ. Səssizcə atmaq əvəzinə açıq
+        // xəta veririk: zaminlik müqaviləsi yaranıb təminatda görünməməlidir.
+        if (zaminler.Count > MaxZamin)
+        {
+            TempData["Error"] = $"Ən çox {MaxZamin} zamin ola bilər (daxil edilib: {zaminler.Count}) — " +
+                                "nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Hazirla", new { hesabNo = dto.HesabNo, ks = dto.Ks, tarix = dto.KreditTarixi.ToString("yyyy-MM-dd") });
+        }
+
+        var templateRoot = SablonQovlugu();
+        string T(string ad) => Path.Combine(templateRoot, ad);
+
+        var ipotekaSablon = ferqli ? "Dasinmaz_emlak_ipoteka_muqavilesi.docx" : "Dasinmaz_emlak_ipoteka_muqavilesiTek.docx";
+        var mektubSablon = ferqli ? "BTI_salinma.docx" : "BTI_salinma_Tek.docx";
+
+        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", ipotekaSablon, mektubSablon, "Zaminlik_muqavilesi.docx" }
+            .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
+        if (eksikSablon != null)
+        {
+            TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot}) — nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Daşınmaz Əmlak" });
+        }
+        // ═════════════════════════════════════════════════════════════════════
+
+        // Nömrələri ayır (NomreYaz=false olduqda preview — heç nə yazılmır).
+        // İl sənədin öz tarixindən götürülür, "bu gün"dən yox.
+        var nomreler = await _nomreService.MenzilNomreleriAyirAsync(zaminler.Count, dto.MuqavileTarixi, ct);
         // Girova düşmə (BTİ) məktubu FinNex jurnalına yazılır (Oracle-a YOX).
         // İcraçı nömrəsini servis özü tapır (AppUser → Isci.IcraciNo) — jurnal
         // səhifəsindən yaradılan məktubla eyni yol, eyni nömrələmə.
@@ -141,7 +181,6 @@ public class KreditMuqavileController : Controller
             ct);
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──
-        var ferqli = dto.GirovSahibiFerqli;
 
         // 1.3 bənd — təminatlar (BMI Menzil.cs məntiqi)
         var tarixSoz = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi);
@@ -180,6 +219,7 @@ public class KreditMuqavileController : Controller
             ["{k_teminat1}"] = ZaminTeminat(0),
             ["{k_teminat2}"] = ZaminTeminat(1),
             ["{k_teminat3}"] = ZaminTeminat(2),
+            ["{k_teminat4}"] = ZaminTeminat(3),
 
             // İpoteka / girov
             ["{i_mno}"] = nomreler.IpotekaNo.ToString(),
@@ -209,20 +249,6 @@ public class KreditMuqavileController : Controller
             ["{mekno}"] = mekno,
             ["{girov_tipi}"] = GirovTipiGenitiv(dto.ObyektTipi),
         };
-
-        var templateRoot = SablonQovlugu();
-        string T(string ad) => Path.Combine(templateRoot, ad);
-
-        var ipotekaSablon = ferqli ? "Dasinmaz_emlak_ipoteka_muqavilesi.docx" : "Dasinmaz_emlak_ipoteka_muqavilesiTek.docx";
-        var mektubSablon = ferqli ? "BTI_salinma.docx" : "BTI_salinma_Tek.docx";
-
-        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", ipotekaSablon, mektubSablon, "Zaminlik_muqavilesi.docx" }
-            .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
-        if (eksikSablon != null)
-        {
-            TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot})";
-            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Daşınmaz Əmlak" });
-        }
 
         var ad = (kredit.Adi ?? "muqavile").Trim();
         var senedler = new List<(string ad, byte[] data)>
@@ -313,9 +339,32 @@ public class KreditMuqavileController : Controller
             return RedirectToAction("ZaminlikHazirla", new { hesabNo = dto.HesabNo, ks = dto.Ks, tarix = dto.KreditTarixi.ToString("yyyy-MM-dd") });
         }
 
-        // Nömrələri ayır (NomreYaz=false olduqda preview — Oracle-a yazılmır).
+        // ══ NÖMRƏDƏN ƏVVƏLKİ YOXLAMALAR ══════════════════════════════════════
+        // MenzilYarat ilə eyni səbəb: nömrə ayrılandan sonra geri qaytarılmır,
+        // ona görə uğursuz ola biləcək hər şey buradan əvvəl yoxlanılır.
+        if (zaminler.Count > MaxZamin)
+        {
+            TempData["Error"] = $"Ən çox {MaxZamin} zamin ola bilər (daxil edilib: {zaminler.Count}) — " +
+                                "nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("ZaminlikHazirla", new { hesabNo = dto.HesabNo, ks = dto.Ks, tarix = dto.KreditTarixi.ToString("yyyy-MM-dd") });
+        }
+
+        var templateRoot = SablonQovlugu();
+        string T(string ad) => Path.Combine(templateRoot, ad);
+
+        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", "Zaminlik_muqavilesi.docx" }
+            .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
+        if (eksikSablon != null)
+        {
+            TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot}) — nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Zaminlik" });
+        }
+        // ═════════════════════════════════════════════════════════════════════
+
+        // Nömrələri ayır (NomreYaz=false olduqda preview — heç nə yazılmır).
         // KreditNo = kr_zaminlik sayğacı, ZaminNolar = kr_zaminler sayğacı (ipoteka toxunulmur).
-        var nomreler = await _nomreService.ZaminlikNomreleriAyirAsync(zaminler.Count, ct);
+        // İl sənədin öz tarixindən götürülür, "bu gün"dən yox.
+        var nomreler = await _nomreService.ZaminlikNomreleriAyirAsync(zaminler.Count, dto.MuqavileTarixi, ct);
 
         var tarixSoz = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi);
 
@@ -353,18 +402,8 @@ public class KreditMuqavileController : Controller
             ["{k_teminat1}"] = ZaminTeminat(0),
             ["{k_teminat2}"] = ZaminTeminat(1),
             ["{k_teminat3}"] = ZaminTeminat(2),
+            ["{k_teminat4}"] = ZaminTeminat(3),
         };
-
-        var templateRoot = SablonQovlugu();
-        string T(string ad) => Path.Combine(templateRoot, ad);
-
-        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", "Zaminlik_muqavilesi.docx" }
-            .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
-        if (eksikSablon != null)
-        {
-            TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot})";
-            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Zaminlik" });
-        }
 
         var ad = (kredit.Adi ?? "muqavile").Trim();
         var senedler = new List<(string ad, byte[] data)>

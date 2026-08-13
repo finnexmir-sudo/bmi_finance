@@ -42,6 +42,12 @@ public class GelenHevaleService : IGelenHevaleService
     //
     // YOXLAMA BÜTÜN İLLƏR ÜZRƏDİR — nömrənin içində il var (`26` hissəsi),
     // ona görə eyni nömrə heç bir ildə təkrarlanmamalıdır.
+    // Gələn həvalə nömrəsi ƏL İLƏ yazılır (jurnaldan) — sistem nömrə vermir.
+    // Ona görə burada SİLİNMİŞLƏR QƏSDƏN sayılmır (`HamisiniGetirAsync` avtomatik
+    // `!Silinib` tətbiq edir): səhv nömrə yazılıb qeyd silinibsə, düzgün nömrənin
+    // yenidən yazılmasına mane olmamalıdır. Bu, avtomatik nömrələnən jurnallardan
+    // (XaricMektub / DaxilMektub / GedenHevale — orada QueryAll işlədilir, çünki
+    // sənəd artıq o nömrə ilə gedib) QƏSDƏN fərqlidir. 13.08.2026 qərarı.
     private async Task<Result> NomreYoxlaAsync(string? hevNom, int? istisnaId = null)
     {
         if (string.IsNullOrWhiteSpace(hevNom))

@@ -350,7 +350,17 @@
             </div>`;
         }
 
+        // Şablonda {k_teminat1}…{k_teminat4} var — 4-dən çox zamin kredit
+        // müqaviləsinin təminat bəndinə düşməzdi. Server tərəfdə də eyni limit
+        // var (KreditMuqavileController.MaxZamin); bu yalnız erkən xəbərdarlıqdır.
+        const maxZamin = @FinNex.UI.Areas.User.Controllers.KreditMuqavileController.MaxZamin;
+
         document.getElementById('zaminElave').addEventListener('click', function () {
+            // zaminIndex silinmədən sonra da artır — real sətir sayını sayırıq
+            if (zaminlerDiv.querySelectorAll('.zamin-row').length >= maxZamin) {
+                alert('Ən çox ' + maxZamin + ' zamin əlavə edilə bilər.');
+                return;
+            }
             zaminlerDiv.insertAdjacentHTML('beforeend', zaminSablon(zaminIndex++));
             zaminBos.style.display = 'none';
         });

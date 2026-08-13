@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces.Hevale;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Hevale;
 using FinNex.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.Application.Services.Hevale;
 
@@ -166,8 +167,18 @@ public class GedenHevaleService : IGedenHevaleService
         var il = tarix.Year;
 
         // İl üzrə növbəti Həvalə № — BMI formatında: {YY}-T-{N}
-        var heminIl = await _uow.Repository<GedenHevale>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Tarix != null && x.Tarix.Value.Year == il, izlemeden: true);
+        //
+        // SİLİNMİŞLƏR DƏ SAYILIR (QueryAll) — 13.08.2026. Həvalə nömrəsi bir dəfə
+        // veriləndən sonra sənəd artıq o nömrə ilə getib; qeydin silinməsi nömrəni
+        // geri qaytarmır. `HamisiniGetirAsync` avtomatik `!Silinib` tətbiq edir
+        // (EfRepositoryAsync:25) — onunla ən böyük nömrəli həvalə silinsə həmin nömrə
+        // yenidən verilirdi. Aşağıdakı `movcudNomreler` yoxlaması da eyni siyahıdan
+        // qurulur, ona görə silinmiş nömrə həm max-a, həm dublikat qoruyucusuna düşür.
+        // Eyni prinsipin mövcud nümunəsi: SenedService versiya nömrəsi (SenedFayl).
+        var heminIl = await _uow.Repository<GedenHevale>().QueryAll()
+            .AsNoTracking()
+            .Where(x => x.Tarix != null && x.Tarix.Value.Year == il)
+            .ToListAsync();
 
         var novbeti = heminIl
             .Select(x => GedenNomre(x.HevNom, il))

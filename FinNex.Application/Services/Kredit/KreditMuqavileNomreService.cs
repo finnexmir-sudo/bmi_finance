@@ -26,7 +26,12 @@ namespace FinNex.Application.Services.Kredit;
 ///   KrMenzil   → ipoteka müqaviləsi nömrəsi ({i_mno})
 ///   KrZaminler → zaminlik running nömrəsi ({zmno1})
 ///
-/// İL: nömrə CARİ TƏQVİM İLİNİN sayğacından verilir (BMI-də də SYSDATE idi).
+/// İL: nömrə MÜQAVİLƏNİN ÖZ TARİXİNİN ilindən verilir — "bu gün"dən YOX.
+/// BMI-də sayğac SYSDATE ilə işləyirdi, məktub isə sənədin tarixi ilə; nəticədə
+/// il dönümündə (31.12 tarixli müqavilə 02.01-də hazırlananda) kredit müqaviləsi
+/// yeni ilin nömrəsini, BTİ məktubu köhnə ilin nömrəsini alırdı. 13.08.2026-dan
+/// hər ikisi `MuqavileTarixi`-dən gedir — sənədin üstündəki tarix ilə nömrəsinin
+/// ili həmişə uyğundur.
 /// Yeni ildə həmin il üçün sayğac sətri olmadığı üçün nömrələmə 1-dən başlayır.
 /// </summary>
 public class KreditMuqavileNomreService : IKreditMuqavileNomreService
@@ -45,9 +50,10 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
         _xaricMektub = xaricMektub;
     }
 
-    public async Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default)
+    public async Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, DateTime muqavileTarixi,
+        CancellationToken ct = default)
     {
-        var il = DateTime.Now.Year;
+        var il = muqavileTarixi.Year;
 
         var kreditNo  = await _saygac.NomreAyirAsync(MuqavileNomreNovu.KrZaminlik, il, _nomreYaz, ct);
         var ipotekaNo = await _saygac.NomreAyirAsync(MuqavileNomreNovu.KrMenzil,   il, _nomreYaz, ct);
@@ -63,9 +69,10 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
         };
     }
 
-    public async Task<MenzilNomreleriDto> ZaminlikNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default)
+    public async Task<MenzilNomreleriDto> ZaminlikNomreleriAyirAsync(int zaminSayi, DateTime muqavileTarixi,
+        CancellationToken ct = default)
     {
-        var il = DateTime.Now.Year;
+        var il = muqavileTarixi.Year;
 
         // Yalnız zaminlik kreditinin sayğacları — ipoteka (KrMenzil) TOXUNULMUR,
         // çünki zaminlik kreditində ipoteka yoxdur.

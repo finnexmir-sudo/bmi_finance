@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces.Mektub;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Mektub;
 using FinNex.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.Application.Services.Mektub;
 
@@ -121,10 +122,19 @@ public class DaxilMektubService : IDaxilMektubService
         var il = dto.DaxTarix?.Year ?? DateTime.Now.Year;
 
         // İl üzrə növbəti Qeydiyyat № (yüklənən data + yeni qeydlərdən max+1)
-        var heminIl = await _uow.Repository<DaxilMektub>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Il == il, izlemeden: true);
-        var novbeti = heminIl.Where(x => x.Nom1.HasValue)
+        //
+        // SİLİNMİŞLƏR DƏ SAYILIR (QueryAll) — 13.08.2026. Jurnal nömrəsi bir dəfə
+        // veriləndən sonra qeydin silinməsi onu geri qaytarmır. `HamisiniGetirAsync`
+        // avtomatik `!Silinib` tətbiq edir (EfRepositoryAsync:25) — onunla ən böyük
+        // nömrəli məktub silinsə həmin nömrə yenidən verilirdi.
+        // Eyni prinsipin mövcud nümunəsi: SenedService versiya nömrəsi (SenedFayl).
+        var nomreler = await _uow.Repository<DaxilMektub>().QueryAll()
+            .AsNoTracking()
+            .Where(x => x.Il == il && x.Nom1 != null)
             .Select(x => x.Nom1!.Value)
+            .ToListAsync();
+
+        var novbeti = nomreler
             .DefaultIfEmpty(0)
             .Max() + 1;
 

@@ -14,17 +14,27 @@ namespace FinNex.Application.Interfaces.Kredit;
 public interface IKreditMuqavileNomreService
 {
     /// <summary>
-    /// Cari il üçün kredit/ipoteka/zamin nömrələrini ayırır (FinNex sayğacları).
+    /// Kredit/ipoteka/zamin nömrələrini ayırır (FinNex sayğacları).
     /// NomreYaz=true olduqda sayğacları artırır; false olduqda yalnız növbətini göstərir.
+    ///
+    /// muqavileTarixi — nömrə HANSI İLİN sayğacından veriləcəyini təyin edir.
+    /// Sənədin öz tarixidir, "bu gün" DEYİL: 31.12-də bağlanan müqavilə 02.01-də
+    /// hazırlansa belə keçən ilin sayğacından nömrə almalıdır, yoxsa sənədin
+    /// üstündəki tarix ilə nömrəsinin ili uyğunsuz olur (13.08.2026 qərarı).
+    /// Parametrin defolt dəyəri QƏSDƏN yoxdur — yeni çağırış yeri onu ötürməyi
+    /// unutsa kod compile olmasın.
     /// </summary>
-    Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default);
+    Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, DateTime muqavileTarixi,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Zaminlik krediti üçün nömrələri ayırır — yalnız kr_zaminlik (kredit müqaviləsi)
     /// və kr_zaminler (zaminlik running) sayğacları. İpoteka (kr_menzil) TOXUNULMUR,
     /// çünki zaminlik kreditində ipoteka yoxdur. IpotekaNo = 0 qaytarılır.
+    /// muqavileTarixi — yuxarıdakı ilə eyni qayda (sənədin tarixi, "bu gün" deyil).
     /// </summary>
-    Task<MenzilNomreleriDto> ZaminlikNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default);
+    Task<MenzilNomreleriDto> ZaminlikNomreleriAyirAsync(int zaminSayi, DateTime muqavileTarixi,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Girova düşmə (BTİ) məktubunu FinNex məktub jurnalına (XaricMektub) qeyd edir və

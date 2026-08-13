@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces.Mektub;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Mektub;
 using FinNex.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.Application.Services.Mektub;
 
@@ -194,13 +195,24 @@ public class XaricMektubService : IXaricMektubService
     // hələ idxal edilməyibsə nömrə 1-dən başlayar və köhnə nömrələrlə toqquşar —
     // ona görə jurnaldan nömrə verməzdən əvvəl həmin il idxal edilməlidir
     // (SenedDovriyyesi → Məktublar → BMI-dən köçürmə).
+    //
+    // SİLİNMİŞLƏR DƏ SAYILIR (QueryAll) — 13.08.2026. Jurnal nömrəsi bir dəfə
+    // veriləndən sonra məktub artıq o nömrə ilə göndərilib; qeydin silinməsi
+    // nömrəni geri qaytarmır. `HamisiniGetirAsync` avtomatik `!Silinib` tətbiq edir
+    // (EfRepositoryAsync:25) — onunla ən böyük nömrəli məktub silinsə həmin nömrə
+    // NÖVBƏTİ məktuba yenidən verilirdi və jurnalda eyni QeyNom-lu iki sətir yaranırdı.
+    // Eyni prinsipin mövcud nümunəsi: SenedService versiya nömrəsi (SenedFayl).
     public async Task<int> NovbetiNomreAsync(int il)
     {
-        var heminIl = await _uow.Repository<XaricMektub>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Il == il, izlemeden: true);
+        // ParseNum SQL-ə tərcümə olunmur — əvvəlcə yalnız QeyNom sütununu gətiririk
+        var nomreler = await _uow.Repository<XaricMektub>().QueryAll()
+            .AsNoTracking()
+            .Where(x => x.Il == il)
+            .Select(x => x.QeyNom)
+            .ToListAsync();
 
-        return heminIl
-            .Select(x => ParseNum(x.QeyNom))
+        return nomreler
+            .Select(ParseNum)
             .DefaultIfEmpty(0)
             .Max() + 1;
     }
