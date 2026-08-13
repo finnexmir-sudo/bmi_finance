@@ -18,6 +18,26 @@ public class KreditMuqavileController : Controller
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
 
+    // Word şablonları YALNIZ AZN üçündür: {k_val} sabit "AZN" yazılır və məbləğin
+    // sözlə yazılışı (KreditSozeCevir.MebleghSoze) "manat"/"qəpik" sözlərini sabit
+    // əlavə edir. Valyutalı kreditdə hər ikisi səhv olardı — həm də səssizcə.
+    // Ona görə belə kreditdə müqavilə hazırlanmasına icazə verilmir.
+    //
+    // Yoxlamanın mənbəyi: odb.licschkre.xarici_valyutada_kredit (0/1). 13.08.2026
+    // vəziyyəti: açıq portfeldə 310 kreditin HAMISINDA 0 — yəni bu gün heç bir
+    // krediti bloklamır, gələcək üçün qoruyucudur.
+    //
+    // null (sorğuda sütun yoxdur) → bloklamırıq, amma ekranda xəbərdarlıq çıxır;
+    // əks halda modul sorğu yenilənənə qədər tamamilə dayanardı.
+    private const string ValyutaXetasi =
+        "Bu kredit xarici valyutadadır — mövcud şablonlar yalnız AZN üçündür " +
+        "(məbləğ sözlə «manat/qəpik» yazılır). Müqavilə hazırlanmadı, nömrə ayrılmadı.";
+
+    private const string ValyutaSutunXeberdarligi =
+        "Valyuta yoxlaması aktiv deyil: «Kredit Müqavilə» Oracle sorğusunda " +
+        "XARICI_VALYUTA sütunu yoxdur. Admin → Oracle Sorğular-da əlavə edin " +
+        "(t.xarici_valyutada_kredit AS XARICI_VALYUTA).";
+
     // Kredit müqaviləsinin təminat bəndində göstərilə bilən ƏN ÇOX zamin sayı.
     // Word şablonundakı {k_teminat1}…{k_teminat4} yer tutucularının sayı ilə
     // BAĞLIDIR — biri dəyişirsə o biri də dəyişməlidir, yoxsa artıq zaminin
@@ -110,6 +130,15 @@ public class KreditMuqavileController : Controller
             return View("Hazirla", new KreditMuqavileSatirDto { HesabNo = hesabNo, Ks = ks });
         }
 
+        // Valyuta yoxlaması FORMA AÇILMAZDAN əvvəl — uzun formanı doldurandan sonra
+        // "olmaz" demək pis olardı. ViewBag.Xeta forması onsuz da gizlədir.
+        if (kredit.XariciValyuta == true)
+        {
+            ViewBag.Xeta = ValyutaXetasi;
+            return View("Hazirla", kredit);
+        }
+        if (kredit.XariciValyuta == null) ViewBag.ValyutaXeberdarligi = ValyutaSutunXeberdarligi;
+
         // Zaminləri Oracle-dan avtomatik yüklə (neçə zamin varsa)
         var zaminler = new List<ZaminDaxilDto>();
         try { zaminler = await _muqavileService.ZaminleriGetirAsync(hesabNo, ks); }
@@ -143,6 +172,14 @@ public class KreditMuqavileController : Controller
         // qaytarılmır. Ona görə uğursuz ola biləcək HƏR ŞEY buradan əvvəl
         // yoxlanılır, yoxsa istifadəçi sənəd almır, nömrə isə itir (jurnalda
         // boşluq + sənədsiz məktub qalır).
+
+        // Valyuta — GET-də (Hazirla) də yoxlanılır, amma forma birbaşa POST edilə
+        // bilər, ona görə burada TƏKRAR yoxlanılır (kredit Oracle-dan yenidən oxunub).
+        if (kredit.XariciValyuta == true)
+        {
+            TempData["Error"] = ValyutaXetasi;
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Daşınmaz Əmlak" });
+        }
 
         // Zamin limiti — şablonda {k_teminat1..4} var, 5-ci zamin kredit
         // müqaviləsinin təminat bəndinə DÜŞMƏZDİ. Səssizcə atmaq əvəzinə açıq
@@ -308,6 +345,14 @@ public class KreditMuqavileController : Controller
             return View("ZaminlikHazirla", new KreditMuqavileSatirDto { HesabNo = hesabNo, Ks = ks });
         }
 
+        // Valyuta yoxlaması FORMA AÇILMAZDAN əvvəl (Hazirla ilə eyni qayda)
+        if (kredit.XariciValyuta == true)
+        {
+            ViewBag.Xeta = ValyutaXetasi;
+            return View("ZaminlikHazirla", kredit);
+        }
+        if (kredit.XariciValyuta == null) ViewBag.ValyutaXeberdarligi = ValyutaSutunXeberdarligi;
+
         // Zaminləri Oracle SELECT-dən avtomatik yüklə (neçə zamin varsa o qədər)
         var zaminler = new List<ZaminDaxilDto>();
         try { zaminler = await _muqavileService.ZaminleriGetirAsync(hesabNo, ks); }
@@ -342,6 +387,15 @@ public class KreditMuqavileController : Controller
         // ══ NÖMRƏDƏN ƏVVƏLKİ YOXLAMALAR ══════════════════════════════════════
         // MenzilYarat ilə eyni səbəb: nömrə ayrılandan sonra geri qaytarılmır,
         // ona görə uğursuz ola biləcək hər şey buradan əvvəl yoxlanılır.
+
+        // Valyuta — GET-də də yoxlanılır, amma forma birbaşa POST edilə bilər,
+        // ona görə burada TƏKRAR yoxlanılır (kredit Oracle-dan yenidən oxunub).
+        if (kredit.XariciValyuta == true)
+        {
+            TempData["Error"] = ValyutaXetasi;
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Zaminlik" });
+        }
+
         if (zaminler.Count > MaxZamin)
         {
             TempData["Error"] = $"Ən çox {MaxZamin} zamin ola bilər (daxil edilib: {zaminler.Count}) — " +

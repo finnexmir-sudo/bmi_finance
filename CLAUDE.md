@@ -514,6 +514,43 @@ limitlər (məs. zamin sayı), fayl/şablon mövcudluğu, xarici asılılıqlar 
 yoxlanmış olmalıdır. Xəta mətnində "nömrələr ayrılmadı, heç nə yazılmadı" yaz ki,
 istifadəçi təkrar cəhd etməkdən çəkinməsin.
 
+### Kredit Məbləği — `summakre` (müqavilə) vs `summa` (qalıq) (KRİTİK)
+
+`odb.licschkre`-də iki məbləğ var və mənaları FƏRQLİDİR (13.08.2026, BMI datası
+ilə təsdiqləndi):
+
+| Sütun | Mənası | DTO |
+|---|---|---|
+| `summakre` | **Müqavilə məbləği** (verilən kredit) | `Mebleg` |
+| `summa` | Cari **əsas qalıq** (amortizasiya ilə azalır) | `MeblegAzn` |
+
+Müqaviləyə (`{k_meb}`, `{k_meb_soz}`) **`Mebleg` düşməlidir**. `MeblegAzn`
+işlədilsə sənəddə kreditin cari qalığı yazılar — 10 000 AZN-lik kreditin
+müqaviləsində 2 724 AZN. Səssiz, amma hüquqi olaraq dağıdıcı.
+
+Yoxlama: açıq portfeldə `AVG(summa/summakre)` ≈ 0,27 (286 kredit) və 0,46
+(22 kredit); yeni verilən kreditdə (son 30 gün) 4/4 **bərabər**. Yəni fərq
+valyuta ekvivalenti DEYİL — `MeblegAzn` adı yanıldıcıdır, dəyişdirilmədi ki,
+mövcud istinadlar pozulmasın.
+
+### Kredit Müqaviləsi — Şablonlar YALNIZ AZN üçündür (KRİTİK)
+
+`{k_val}` `KreditMuqavileController`-də sabit `"AZN"` yazılır və
+`KreditSozeCevir.MebleghSoze` (sətir 63, 72) «manat»/«qəpik» sözlərini **sabit**
+əlavə edir. Valyutalı kreditdə hər ikisi səhv olar və **heç bir xəta verməz**.
+
+Qoruyucu: `odb.licschkre.xarici_valyutada_kredit` → DTO `XariciValyuta` (`bool?`).
+`true` olduqda müqavilə hazırlanmır (forma açılmır + POST bloklanır, nömrədən
+ƏVVƏL). 13.08.2026-da açıq portfeldə **310/310 kredit `0`** — yəni bu gün heç nəyi
+bloklamır, gələcək qoruyucusudur.
+
+`null` = sorğuda sütun yoxdur → **bloklamır** (modul dayanmasın), amma formada sarı
+xəbərdarlıq çıxır. Qoruyucu səssizcə söndürülü qalmamalıdır.
+Sorğu dəyişikliyi: `docs/sql/kredit/Kredit_Muqavile_Valyuta_Sutunu.md`.
+
+Valyutalı kredit lazım olsa **üç yer birlikdə** dəyişməlidir: `{k_val}`,
+`MebleghSoze`, və kod→qısaltma xəritəsi (`kurval`-da USD/EUR qısaltması YOXDUR).
+
 ### Şablon Yer Tutucusu ilə Kod Limiti Bağlıdır (KRİTİK)
 
 Word şablonundakı `{k_teminat1}`…`{k_teminat4}` yer tutucularının **sayı** ilə koddakı

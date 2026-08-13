@@ -130,6 +130,11 @@ public class KreditMuqavileService : IKreditMuqavileService
         GirovDeyeri         = Dec(r, "GIROV_DEYERI"),
         HuquqiSexs          = (Dec(r, "HUQUQI_SEXS") ?? 0m) == 1m,
         Voen                = Str(r, "VOEN"),
+        // Sorğuda sütun yoxdursa Dec null qaytarır (Val açarı tapmır) — onu
+        // "false" saymırıq, `null` (bilinmir) buraxırıq. HUQUQI_SEXS-dən fərqli
+        // olaraq burada "bilinmir" ilə "xeyr" eyni deyil: səhv "xeyr" valyutalı
+        // kreditə AZN müqaviləsi yazdırardı.
+        XariciValyuta       = Dec(r, "XARICI_VALYUTA") is decimal xv ? xv != 0m : (bool?)null,
     };
 
     private static object? Val(Dictionary<string, object?> r, string key)

@@ -27,8 +27,22 @@ public class KreditMuqavileSatirDto
     // Kredit
     public DateTime? VerilmeTarixi { get; set; }     // t.date_open
     public string? Teyinat { get; set; }             // t.naznackredita
+    // DİQQƏT — iki məbləğin mənası (13.08.2026-da BMI datası ilə təsdiqləndi):
+    //   summakre = MÜQAVİLƏ məbləği (verilən kredit) → müqaviləyə BU düşür
+    //   summa    = cari ƏSAS QALIQ (amortizasiya ilə azalır)
+    // Yeni verilən kreditdə ikisi bərabərdir (yoxlama: son 30 gün, 4/4 bərabər),
+    // köhnə kreditlərdə summa/summakre ~0,27-yə enir. Valyuta ekvivalenti DEYİL.
+    // {k_meb} üçün `Mebleg` işlədilməlidir — `MeblegAzn` işlədilsə müqavilədə
+    // kreditin cari qalığı yazılardı (10 000 AZN-lik kredit üçün 2 724 AZN).
     public decimal? Mebleg { get; set; }             // t.summakre
     public decimal? MeblegAzn { get; set; }          // t.summa
+
+    // Valyutalı kreditmi? Mənbə: t.xarici_valyutada_kredit (0/1).
+    // null = sütun sorğuya əlavə edilməyib (yoxlama aparıla bilmir) — bu halda
+    // forma bloklanmır, amma ekranda xəbərdarlıq göstərilir.
+    // Şablonlar yalnız AZN üçündür ({k_val} sabit "AZN", məbləğ sözlə "manat/qəpik"),
+    // ona görə valyutalı kreditdə müqavilə hazırlanmasına icazə verilmir.
+    public bool? XariciValyuta { get; set; }          // t.xarici_valyutada_kredit
     public decimal? Ayliq { get; set; }              // graphpogkre — aylıq ödəniş
     public string? Fifd { get; set; }                // k.fifd
     public decimal? Faiz { get; set; }               // t.procstavkre
