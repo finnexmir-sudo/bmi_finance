@@ -182,6 +182,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<FinNex.Domain.Entities.Kredit.KreditZamin> KreditZaminler { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditRandevu> KreditRandevular { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditSmsLog> KreditSmsLoglar { get; set; }
+    // Müqavilə nömrə sayğacları — BMI odb.muqavile_nomreleri qarşılığı (normal formada)
+    public DbSet<FinNex.Domain.Entities.Kredit.MuqavileSayghaci> MuqavileSayghaclari { get; set; }
 
     // PİD (Problemli İşlər Departamenti)
     public DbSet<FinNex.Domain.Entities.Pid.PidSmsSablon> PidSmsSablonlar { get; set; }
@@ -762,6 +764,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<EmrSayghaci>()
             .HasIndex(x => new { x.Nov, x.Il })
             .IsUnique();
+
+        // Müqavilə nömrə sayğacı — bir il/növ üçün YALNIZ BİR sətir ola bilər.
+        // İki sətir olsa iki müqavilə eyni nömrəni alardı; unikal indeks bunu bazada bağlayır.
+        builder.Entity<FinNex.Domain.Entities.Kredit.MuqavileSayghaci>(e =>
+        {
+            e.ToTable("MuqavileSayghaci");
+            e.HasIndex(x => new { x.Novu, x.Il }).IsUnique();
+        });
         // Əmr reyestri — növ+il+nömrə üzrə axtarış/sıralama
         builder.Entity<Emr>()
             .HasIndex(x => new { x.Nov, x.Il, x.Nomre });

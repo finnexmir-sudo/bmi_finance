@@ -384,27 +384,35 @@ Layihədə ikinci bir verilənlər bazası mövcuddur: **Oracle (BMI)**
 - Bütün Oracle sorğuları `IOracleService` vasitəsilə icra olunur
 - Oracle sorguları `OracleSorgular` cədvəlində saxlanır (SQL Server-də), oradan oxunur
 
-### İSTİSNA — Kredit müqavilə nömrələri (yalnız 1 cədvəl)
+### İSTİSNA YOXDUR — Oracle 100% oxunur (12.08.2026-dan)
 
-Kredit müqaviləsi modulu üçün **yalnız aşağıdakı cədvələ** yazı (INSERT/UPDATE)
-icazəlidir. Səbəb: BMI (köhnə desktop) və FinNex bir müddət paralel işləyəcək və
-müqavilə nömrələri **eyni Oracle sayğacından** verilməlidir ki, nömrələr toqquşmasın.
+Əvvəl kredit müqaviləsi modulu üçün **iki** Oracle cədvəlinə yazı icazəli idi.
+Hər ikisi FinNex-ə köçürüldü, istisna **tamamilə bağlandı**:
 
-- `odb.muqavile_nomreleri` — müqavilə nömrə sayğacları (UPDATE, seed üçün INSERT)
+| Köhnə Oracle yazısı | İndi haradadır |
+|---|---|
+| ~~`odb.xaric_mektub`~~ (INSERT) | `XaricMektub` — `XaricMektubService.YaratAsync` |
+| ~~`odb.muqavile_nomreleri`~~ (UPDATE/INSERT) | `MuqavileSayghaci` — `IMuqavileSayghacService` |
 
-**~~`odb.xaric_mektub`~~ — 12.08.2026-dan SİLİNDİ.** Məktub jurnalı FinNex-ə
-köçürüldü, jurnalın sahibi artıq FinNex-dir. Girova düşmə (BTİ) məktubu
-`XaricMektubService.YaratAsync` ilə **öz bazamıza** yazılır; Oracle-a məktub
-INSERT-i yoxdur. Nömrə də oradan gəlir — jurnal səhifəsindən yaradılan məktubla
-eyni yoldan, yəni nömrələmə TƏK yerdədir.
+`KreditMuqavileNomreService` artıq Oracle-a bağlanmır (`OracleConnection` yoxdur).
+Nömrələmə də, məktub qeydi də tək yerdən — öz bazamızdan idarə olunur.
 
-Qaydalar:
-- Bu yazılar **yalnız** `IKreditMuqavileNomreService`-də olur — başqa yerdə Oracle yazısı QADAĞANDIR.
-- `IOracleService` hələ də **yalnız SELECT**-dir, dəyişdirilmir.
-- Bütün yazılar parametrli (`OracleCommand` bind) və atomik (`SELECT ... FOR UPDATE`) olmalıdır.
-- `KreditMuqavile:NomreYaz = false` (default) olduqda servis **heç nə yazmır** (preview);
-  yalnız real yoxlamadan sonra `true` edilir.
-- **Bu cədvəldən başqa Oracle-a heç bir yazı əlavə edilə bilməz.**
+**Qayda:** Oracle-a **heç bir yazı** əlavə edilə bilməz — nə birbaşa, nə dolayı.
+`KreditMuqavile:NomreYaz = false` (default) olduqda sayğaclar da, məktub da
+**yazılmır** (preview); yalnız yoxlamadan sonra `true` edilir.
+
+### Müqavilə Sayğacları — Semantika Fərqi (KRİTİK)
+
+BMI-də `odb.muqavile_nomreleri` sütunları **iki fərqli mənada** işlənirdi:
+- `KR_ZAMINLIK`, `KR_MENZIL` və digərləri → **NÖVBƏTİ** nömrə (kod dəyəri olduğu
+  kimi işlədir, sonra +1 yazır);
+- `KR_ZAMINLER` → **SONUNCU** verilmiş nömrə (`kr_zaminler + i` ilə işlənir).
+
+FinNex-də `MuqavileSayghaci.SonNomre` **həmişə sonuncudur** (`EmrSayghaci` ilə eyni
+qayda), növbəti = `SonNomre + 1`. Köçürmə zamanı "növbəti saxlayan" sayğaclardan
+**1 çıxılır** (`MuqavileSayghacService.Novler` cədvəlindəki `OracleNovbetiSaxlayir`
+bayrağı). Bu bayrağa toxunanda köçürmə ekranındakı **Növbəti** sütununu BMI-nin
+verəcəyi nömrə ilə tutuşdur — bir vahid sürüşmə bütün müqavilə nömrələrini pozar.
 
 ### Jurnal Nömrəsi Öz Bazamızdan Verilirsə — ƏVVƏLCƏ İDXAL (KRİTİK)
 

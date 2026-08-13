@@ -1,0 +1,203 @@
+@using FinNex.Application.DTOs.Kredit.Muqavile
+@model MuqavileSayghacKocurmeDto
+@{
+    ViewData["Title"] = "Müqavilə sayğacları — BMI-dən köçürmə";
+    var finnex = ViewBag.FinNexSayghaclar as List<MuqavileSayghacDto> ?? new();
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Müqavilə sayğacları</div>
+            <div class="fn-page-sub">BMI (odb.muqavile_nomreleri) → FinNex, il-il</div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ms-alert ms-alert--ok">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="ms-alert ms-alert--err">@TempData["Error"]</div>
+    }
+
+    <div class="ms-note">
+        <strong>Semantika fərqi — diqqətlə oxu:</strong> BMI-də <code>KR_ZAMINLIK</code>,
+        <code>KR_MENZIL</code> və digərləri <strong>NÖVBƏTİ</strong> nömrəni saxlayır;
+        <code>KR_ZAMINLER</code> isə <strong>SONUNCU</strong> verilmiş nömrəni.
+        FinNex-də hamısı sonuncudur, ona görə "növbəti saxlayan" sayğaclardan
+        <strong>1 çıxılır</strong>. Aşağıdakı cədvəldə hər sətir üçün xam Oracle dəyəri,
+        çevrilmiş dəyər və nəticədə veriləcək <strong>növbəti nömrə</strong> göstərilir —
+        <em>Növbəti</em> sütunu BMI-nin indi verəcəyi nömrə ilə eyni olmalıdır.
+        <br />
+        Köçürmə <strong>təkrarlana bilər</strong>: dəyər artıq eynidirsə sətir keçilir.
+        Oracle tərəfinə heç nə yazılmır (yalnız SELECT).
+    </div>
+
+    @if (!Model.Setirler.Any())
+    {
+        <div class="fn-card"><div class="ms-empty">Oracle-dan sayğac məlumatı gəlmədi.</div></div>
+    }
+    else
+    {
+        @foreach (var il in Model.Iller)
+        {
+            var setirler = Model.Setirler.Where(x => x.Il == il).ToList();
+            var qalan = setirler.Count(x => !x.Kocurulub);
+
+            <div class="fn-card ms-card">
+                <div class="ms-head">
+                    <div>
+                        <div class="ms-title">@il</div>
+                        <div class="ms-sub">
+                            @setirler.Count sayğac ·
+                            @if (qalan > 0)
+                            {
+                                <span class="ms-warn">@qalan köçürülməyib</span>
+                            }
+                            else
+                            {
+                                <span class="ms-ok">tam</span>
+                            }
+                        </div>
+                    </div>
+                    <form asp-action="Il" method="post"
+                          onsubmit="return confirm('@il ili üçün sayğaclar FinNex-ə yazılacaq. Davam edilsin?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="il" value="@il" />
+                        <button type="submit" class="ms-btn @(qalan == 0 ? "ms-btn--soft" : "")">
+                            @(qalan == 0 ? "Yenidən yoxla" : "Köçür")
+                        </button>
+                    </form>
+                </div>
+
+                <div class="ms-twrap">
+                    <table class="ms-table">
+                        <thead>
+                            <tr>
+                                <th>Sayğac</th>
+                                <th>BMI sütunu</th>
+                                <th class="ms-r">Oracle</th>
+                                <th>Saxlayır</th>
+                                <th class="ms-r">FinNex SonNömrə</th>
+                                <th class="ms-r">Növbəti</th>
+                                <th>Vəziyyət</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in setirler)
+                            {
+                                <tr>
+                                    <td class="ms-name">@s.NovuAdi</td>
+                                    <td><code>@s.OracleSutun</code></td>
+                                    <td class="ms-r ms-num">@s.OracleDeyer</td>
+                                    <td class="ms-sem">@(s.OracleNovbetiSaxlayir ? "növbəti (−1)" : "sonuncu")</td>
+                                    <td class="ms-r ms-num">
+                                        @s.YeniSonNomre
+                                        @if (s.FinNexSonNomre.HasValue && s.FinNexSonNomre.Value != s.YeniSonNomre)
+                                        {
+                                            <span class="ms-old">(indi @s.FinNexSonNomre)</span>
+                                        }
+                                    </td>
+                                    <td class="ms-r ms-num ms-next">@s.Novbeti</td>
+                                    <td>
+                                        @if (s.Kocurulub)
+                                        {
+                                            <span class="ms-ok">✓</span>
+                                        }
+                                        else if (s.FinNexSonNomre.HasValue)
+                                        {
+                                            <span class="ms-warn">fərqli</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="ms-warn">yoxdur</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+
+    @if (finnex.Any())
+    {
+        <div class="fn-card ms-card">
+            <div class="ms-head">
+                <div>
+                    <div class="ms-title">FinNex sayğacları (cari vəziyyət)</div>
+                    <div class="ms-sub">Nömrələr artıq buradan verilir</div>
+                </div>
+            </div>
+            <div class="ms-twrap">
+                <table class="ms-table">
+                    <thead>
+                        <tr>
+                            <th>İl</th><th>Sayğac</th>
+                            <th class="ms-r">SonNömrə</th><th class="ms-r">Növbəti</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in finnex)
+                        {
+                            <tr>
+                                <td class="ms-num">@f.Il</td>
+                                <td class="ms-name">@f.NovuAdi</td>
+                                <td class="ms-r ms-num">@f.SonNomre</td>
+                                <td class="ms-r ms-num ms-next">@f.Novbeti</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
+
+@section Styles {
+    <style>
+        .ms-card { margin-bottom: 18px; }
+        .ms-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+        .ms-head form { margin:0; }
+        .ms-title { font-size:15px; font-weight:700; color:#0f172a; }
+        .ms-sub { font-size:12px; color:#64748b; margin-top:2px; }
+        .ms-warn { color:#b45309; font-weight:600; }
+        .ms-ok { color:#15803d; font-weight:600; }
+        .ms-twrap { overflow-x:auto; border:1px solid #dbe2ea; border-radius:10px; }
+        .ms-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+        .ms-table thead th { background:#eef2f7; color:#334155; font-weight:700; font-size:11px;
+            text-transform:uppercase; letter-spacing:.03em; text-align:left; padding:9px 10px;
+            white-space:nowrap; border-bottom:2px solid #c7d2de; border-right:1px solid #dbe2ea; }
+        .ms-table thead th:last-child { border-right:none; }
+        .ms-table td { padding:7px 10px; color:#1e293b; border-bottom:1px solid #eef2f7;
+            border-right:1px solid #f1f5f9; }
+        .ms-table td:last-child { border-right:none; }
+        .ms-table tbody tr:nth-child(even) td { background:#fbfcfe; }
+        .ms-table tbody tr:last-child td { border-bottom:none; }
+        .ms-r { text-align:right; }
+        .ms-num { font-variant-numeric:tabular-nums; font-weight:600; color:#0f172a; }
+        .ms-next { color:#1d4ed8; }
+        .ms-name { font-weight:600; color:#0f172a; }
+        .ms-sem { color:#64748b; white-space:nowrap; }
+        .ms-old { color:#b45309; font-weight:400; font-size:11px; margin-left:4px; }
+        .ms-table code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:11px; }
+        .ms-btn { padding:6px 16px; font-size:12px; font-weight:600; border-radius:7px;
+            border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; }
+        .ms-btn:hover { background:#1d4ed8; }
+        .ms-btn--soft { background:#fff; color:#475569; border-color:#e2e8f0; }
+        .ms-btn--soft:hover { background:#f1f5f9; color:#2563eb; }
+        .ms-empty { text-align:center; color:#94a3b8; padding:24px; font-size:13px; }
+        .ms-alert { padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+        .ms-alert--ok { background:#dcfce7; border:1px solid #bbf7d0; color:#166534; }
+        .ms-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }
+        .ms-note { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:12px 16px;
+            border-radius:10px; font-size:12.5px; line-height:1.6; margin-bottom:16px; }
+        .ms-note code { background:#dbeafe; padding:1px 5px; border-radius:4px; }
+    </style>
+}

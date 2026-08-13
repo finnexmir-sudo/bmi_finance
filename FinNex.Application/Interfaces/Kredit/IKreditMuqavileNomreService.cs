@@ -3,20 +3,19 @@ using FinNex.Application.DTOs.Kredit.Muqavile;
 namespace FinNex.Application.Interfaces.Kredit;
 
 /// <summary>
-/// Müqavilə nömrələrinin Oracle (odb.muqavile_nomreleri) üzərində idarəsi
-/// və girova düşmə (BTİ) məktubunun qeydiyyatı.
+/// Müqavilə nömrələri və girova düşmə (BTİ) məktubunun qeydiyyatı.
 ///
-/// DİQQƏT: Bu, Oracle-a YAZAN yeganə servisdir. İcazə verilən istisna indi
-/// YALNIZ `odb.muqavile_nomreleri`-dir — məktub jurnalı FinNex-ə köçürüldüyü üçün
-/// məktub qeydi öz bazamıza yazılır. Başqa Oracle yazısı QADAĞANDIR.
+/// ✅ ORACLE-A YAZI YOXDUR. Həm sayğaclar (MuqavileSayghaci), həm məktub jurnalı
+/// (XaricMektub) FinNex bazasındadır. CLAUDE.md-dəki "Oracle YALNIZ SELECT"
+/// qaydasının istisnası qalmayıb.
 /// KreditMuqavile:NomreYaz = false olduqda (default) servis heç nə YAZMIR,
-/// yalnız cari nömrələri oxuyur (preview) — Samir yoxlayandan sonra true edilir.
+/// yalnız növbəti nömrələri göstərir (preview) — yoxlamadan sonra true edilir.
 /// </summary>
 public interface IKreditMuqavileNomreService
 {
     /// <summary>
-    /// Cari il üçün kredit/ipoteka/zamin nömrələrini ayırır.
-    /// NomreYaz=true olduqda sayğacları atomik artırır; false olduqda yalnız oxuyur.
+    /// Cari il üçün kredit/ipoteka/zamin nömrələrini ayırır (FinNex sayğacları).
+    /// NomreYaz=true olduqda sayğacları artırır; false olduqda yalnız növbətini göstərir.
     /// </summary>
     Task<MenzilNomreleriDto> MenzilNomreleriAyirAsync(int zaminSayi, CancellationToken ct = default);
 

@@ -88,7 +88,7 @@
         if (currentArea == "Risk") return "risk";
         if (currentArea == "Muhasibat") return "muhasibat";
         if (currentController == "Tesdiq") return "tesdiq";
-        if (currentController is "KreditMuraciet" or "KreditMuqavile") return "kredit";
+        if (currentController is "KreditMuraciet" or "KreditMuqavile" or "MuqavileSayghac") return "kredit";
         if (currentController is "PidSms" or "MehkemeIsi" or "OdenisNezareti" or "MehkemeCedvel") return "pid";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
@@ -552,6 +552,14 @@
                    class="fn-nav-item @(currentController == "KreditMuqavile" ? "active" : "")">
                     <i class="bi bi-file-earmark-text"></i> Müqavilələr
                 </a>
+                @if (isAdmin)
+                {
+                    @* Nömrə sayğaclarına toxunmaq müqavilə nömrələrini dəyişir — yalnız Admin *@
+                    <a asp-area="User" asp-controller="MuqavileSayghac" asp-action="Index"
+                       class="fn-nav-item @(currentController == "MuqavileSayghac" ? "active" : "")">
+                        <i class="bi bi-123"></i> Müqavilə sayğacları
+                    </a>
+                }
                 <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
                    class="fn-nav-item @(currentAction == "Komite" ? "active" : "")">
                     <i class="bi bi-people"></i> Kredit Komitəsi
