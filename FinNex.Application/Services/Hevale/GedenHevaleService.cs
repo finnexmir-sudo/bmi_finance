@@ -16,12 +16,42 @@ public class GedenHevaleService : IGedenHevaleService
         _uow = uow;
     }
 
-    // HevNom sonundakı rəqəmi oxu (nömrələmə üçün) — "26-14" → 14, "25-3-7" → 7
+    // ── GEDƏN HƏVALƏ NÖMRƏSİ — BMI formatı: {YY}-T-{N} ────────────────────
+    //
+    // 13.08.2026 yoxlaması (odb.geden_hevale, 9835 sətir):
+    //   9696 sətir  "26-T-9"    → ortada LATIN T (bayt 84)   ← cari qayda
+    //    138 sətir  "07-T-698"  → ortada KİRİL Т (208,162)   ← yalnız 2006–2007
+    //      1 sətir  "07-T474"   → ikinci tire yoxdur (səhv giriş)
+    //
+    // Əvvəl kod `{YY}-{N}` yazırdı (məs. "26-24") — BMI ilə uyğunsuz idi.
+    // İndi `{YY}-T-{N}` yazılır; T LATINDIR (cari illərdə işlənən variant).
+
+    private const string GedenAyirici = "-T-";
+
+    // Sıralama üçün — formatdan asılı olmayan, sadə oxunuş.
+    // Yalnız GÖSTƏRMƏ sırasına təsir edir, nömrə vermir.
     private static int SonReqem(string? hevNom)
     {
         if (string.IsNullOrWhiteSpace(hevNom)) return 0;
         var son = hevNom.Trim().Split('-').LastOrDefault();
         return int.TryParse(son, out var n) ? n : 0;
+    }
+
+    // Nömrə VERMƏK üçün — yalnız "{YY}-T-{N}" şablonuna uyğun sətirlər sayılır.
+    // Kiril "Т"-li köhnə sətirlər və formatsızlar (07-T474) nəzərə alınmır:
+    // onlar 2006–2007-dədir, cari ilin sayğacına qarışmamalıdır.
+    // Uyğun gəlməyən sətir üçün null qaytarılır (0 yox) — 0 "sıfırıncı nömrə"
+    // kimi başa düşülüb max hesabını yanılda bilərdi.
+    private static int? GedenNomre(string? hevNom, int il)
+    {
+        if (string.IsNullOrWhiteSpace(hevNom)) return null;
+
+        var prefiks = $"{il % 100:D2}{GedenAyirici}";          // məs. "26-T-"
+        var t = hevNom.Trim();
+        if (!t.StartsWith(prefiks, StringComparison.Ordinal)) return null;
+
+        var quyruq = t[prefiks.Length..];
+        return int.TryParse(quyruq, out var n) ? n : null;
     }
 
     // İcraçı nömrəsi → işçi adı xəritəsi
@@ -135,11 +165,31 @@ public class GedenHevaleService : IGedenHevaleService
         var tarix = dto.Tarix ?? DateTime.Now;
         var il = tarix.Year;
 
-        // İl üzrə növbəti Həvalə № (yüklənən data + yeni qeydlərdən max+1)
+        // İl üzrə növbəti Həvalə № — BMI formatında: {YY}-T-{N}
         var heminIl = await _uow.Repository<GedenHevale>().HamisiniGetirAsync(
             predicate: x => !x.Silinib && x.Tarix != null && x.Tarix.Value.Year == il, izlemeden: true);
-        var novbeti = heminIl.Select(x => SonReqem(x.HevNom)).DefaultIfEmpty(0).Max() + 1;
-        var hevNom = $"{il % 100:D2}-{novbeti}";
+
+        var novbeti = heminIl
+            .Select(x => GedenNomre(x.HevNom, il))
+            .Where(n => n.HasValue)
+            .Select(n => n!.Value)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        // Təhlükəsizlik: gözlənilməz formatlı sətir səbəbindən hesablanan nömrə
+        // artıq mövcuddursa boş nömrəyə qədər irəlilə. Jurnal nömrəsi təkrarlanmamalıdır.
+        var movcudNomreler = heminIl
+            .Where(x => !string.IsNullOrWhiteSpace(x.HevNom))
+            .Select(x => x.HevNom!.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        string hevNom;
+        do
+        {
+            hevNom = $"{il % 100:D2}{GedenAyirici}{novbeti}";
+            novbeti++;
+        }
+        while (movcudNomreler.Contains(hevNom));
 
         var entity = new GedenHevale
         {

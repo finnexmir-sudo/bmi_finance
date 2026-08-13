@@ -9,7 +9,7 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Gələn həvaləni redaktə et</div>
-            <div class="fn-page-sub">Həvalə № @(Model.HevNom ?? "—") — dəyişməz</div>
+            <div class="fn-page-sub">Həvalə № əl ilə yazılır — səhv olarsa düzəldilə bilər</div>
         </div>
         <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
@@ -24,6 +24,15 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" value="@Model.Id" />
             <div class="dm-grid">
+                @* Həvalə № — ƏL İLƏ yazıldığı üçün redaktə oluna bilər (səhv yazıla bilər).
+                   Sahə HƏMİŞƏ render olunmalıdır: POST-da gəlməsə servis onu boş sayıb
+                   redaktəni bloklayardı. Dublikat yoxlaması servisdədir. *@
+                <div>
+                    <label>Həvalə № *</label>
+                    <input type="text" name="HevNom" value="@Model.HevNom" class="fn-input"
+                           placeholder="məs. 046001" autocomplete="off" />
+                    <div class="dm-hint-sm">Təkrar nömrə qəbul edilmir.</div>
+                </div>
                 <div>
                     <label>Tarix</label>
                     <input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="fn-input" />
@@ -112,6 +121,7 @@
         .dm-grid .dm-full { grid-column:1/-1; }
         .dm-grid .dm-2col { display:grid; grid-template-columns:2fr 1fr; gap:10px; }
         .dm-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
+        .dm-hint-sm { font-size:11px; color:#94a3b8; margin-top:4px; line-height:1.35; }
         .dm-actions { display:flex; gap:10px; margin-top:18px; }
         .dm-alert { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:10px; font-size:13px; margin-bottom:14px; }
         .dm-alert--err { background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; }

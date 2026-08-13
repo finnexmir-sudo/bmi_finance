@@ -25,9 +25,18 @@ public class GelenHevaleListDto
     public bool      FaylVar   { get; set; }
 }
 
-// Yaratmaq üçün (HevNom, Icra avtomatik təyin olunur)
+// Yaratmaq üçün (Icra avtomatik; HevNom 2026-da ƏL İLƏ yazılır)
 public class GelenHevaleCreateDto
 {
+    // HƏVALƏ № — 2026-cı ildə istifadəçi ÖZÜ yazır.
+    //
+    // BMI-də bu jurnalın nömrəsi `{VV}{Y}{NNN}` formasındadır (məs. 046001 =
+    // 04 valyuta + 6 ilin son rəqəmi + 001 sıra) və 10 596 sətrin hamısı belədir.
+    // Nömrə bu günə qədər kağız jurnaldan götürülüb əl ilə yazılırdı.
+    // 2027-dən avtomatlaşdırılacaq: `{VV}{YY}{NNN}`, valyuta kodu kurval
+    // (SOKNAMEVALUT) siyahısından — o vaxta qədər əl ilə davam edir.
+    public string?   HevNom  { get; set; }
+
     public DateTime? Tarix   { get; set; }
     public string?   Saa     { get; set; }
     public string?   HesNom  { get; set; }
@@ -42,10 +51,12 @@ public class GelenHevaleCreateDto
     public string?   DecNom  { get; set; }
 }
 
-// Redaktə üçün (HevNom dəyişməz)
+// Redaktə üçün (HevNom da dəyişdirilə bilər — əl ilə yazıldığı üçün səhv olarsa
+// düzəldilməlidir; dublikat yoxlaması servisdədir)
 public class GelenHevaleEditDto
 {
     public int       Id      { get; set; }
+    public string?   HevNom  { get; set; }
     public DateTime? Tarix   { get; set; }
     public string?   Saa     { get; set; }
     public string?   HesNom  { get; set; }
@@ -59,7 +70,6 @@ public class GelenHevaleEditDto
     public string?   GonTip  { get; set; }
     public string?   DecNom  { get; set; }
     // Göstərmə üçün (redaktə olunmur)
-    public string?   HevNom         { get; set; }
     public string?   MovcudFaylYolu { get; set; }
     public int?      YaradanId      { get; set; }
 }

@@ -65,6 +65,13 @@ public class GelenHevaleController : Controller
         var faylYolu = await QosmaYazAsync(fayl);
         var res = await _service.YaratAsync(dto, GetUserId(), faylYolu);
         TempData[res.Success ? "Success" : "Error"] = res.Message;
+
+        // Xəta olarsa forma DOLU qaytarılır. Həvalə № əl ilə yazıldığı üçün
+        // "bu nömrə artıq var" xətası real haldır; Index-ə yönləndirsək
+        // istifadəçi yazdığı bütün sahələri itirərdi.
+        if (!res.Success)
+            return View(dto);
+
         return RedirectToAction(nameof(Index));
     }
 

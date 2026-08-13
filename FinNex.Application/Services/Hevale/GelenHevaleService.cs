@@ -16,11 +16,47 @@ public class GelenHevaleService : IGelenHevaleService
         _uow = uow;
     }
 
+    // YALNIZ SIRALAMA üçün — nömrə VERMİR (nömrə əl ilə yazılır, bax: NomreYoxlaAsync).
+    // Formatdan asılı olmayan sadə oxunuş: "046001" → 46001, "22-G-82" → 82.
+    // Eyni tarixli sətirləri təxmini nömrə sırası ilə düzür, başqa təsiri yoxdur.
     private static int SonReqem(string? hevNom)
     {
         if (string.IsNullOrWhiteSpace(hevNom)) return 0;
         var son = hevNom.Trim().Split('-').LastOrDefault();
         return int.TryParse(son, out var n) ? n : 0;
+    }
+
+    // ── HƏVALƏ № — 2026-da ƏL İLƏ, 2027-dən avtomatik ─────────────────────
+    //
+    // BMI-də bu jurnalın nömrəsi `{VV}{Y}{NNN}` formasındadır — 04(valyuta) +
+    // 6(ilin son rəqəmi) + 001(sıra). 13.08.2026 yoxlaması: 10 596 sətrin
+    // hamısı bu formadadır (cəmi 3 istisna: iki "22-G-8#" və bir "150062.").
+    //
+    // Əvvəl kod `{YY}-{N}` avtomatik yazırdı — bu, BMI qaydası ilə ümumiyyətlə
+    // uyğun deyildi və nömrələmə səhv gedirdi. İndi istifadəçi ÖZÜ yazır
+    // (bu günə qədər kağız jurnaldan götürdüyü kimi).
+    //
+    // 2027 planı: `{VV}{YY}{NNN}` — valyuta kodu kurval (SOKNAMEVALUT)
+    // siyahısından, sıra (valyuta, il) üzrə sayğacdan. O vaxt bu metod
+    // avtomatik nömrə verəcək; indi yalnız dublikatı yoxlayır.
+    //
+    // YOXLAMA BÜTÜN İLLƏR ÜZRƏDİR — nömrənin içində il var (`26` hissəsi),
+    // ona görə eyni nömrə heç bir ildə təkrarlanmamalıdır.
+    private async Task<Result> NomreYoxlaAsync(string? hevNom, int? istisnaId = null)
+    {
+        if (string.IsNullOrWhiteSpace(hevNom))
+            return Result.Fail("Həvalə № boş ola bilməz — jurnaldakı nömrəni yazın.");
+
+        var nom = hevNom.Trim();
+
+        var movcuddur = (await _uow.Repository<GelenHevale>().HamisiniGetirAsync(
+                x => !x.Silinib && x.HevNom != null, izlemeden: true))
+            .Any(x => string.Equals(x.HevNom!.Trim(), nom, StringComparison.OrdinalIgnoreCase)
+                   && (istisnaId == null || x.Id != istisnaId.Value));
+
+        return movcuddur
+            ? Result.Fail($"Həvalə № «{nom}» artıq mövcuddur — jurnal nömrəsi təkrarlana bilməz.")
+            : Result.Ok();
     }
 
     private async Task<Dictionary<int, string?>> IcraciAdMapAsync()
@@ -128,13 +164,12 @@ public class GelenHevaleService : IGelenHevaleService
             predicate: x => x.AppUserId == yaradanUserId && !x.Silinib, izlemeden: true)).FirstOrDefault();
         short? icraNo = (isci?.IcraciNo is int no && no > 0 && no <= short.MaxValue) ? (short)no : (short?)null;
 
-        var tarix = dto.Tarix ?? DateTime.Now;
-        var il = tarix.Year;
+        // Həvalə № istifadəçidən gəlir (bax: NomreYoxlaAsync şərhi)
+        var nomreYoxlama = await NomreYoxlaAsync(dto.HevNom);
+        if (!nomreYoxlama.Success)
+            return Result<string>.Fail(nomreYoxlama.Message ?? "Həvalə № yanlışdır.");
 
-        var heminIl = await _uow.Repository<GelenHevale>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Tarix != null && x.Tarix.Value.Year == il, izlemeden: true);
-        var novbeti = heminIl.Select(x => SonReqem(x.HevNom)).DefaultIfEmpty(0).Max() + 1;
-        var hevNom = $"{il % 100:D2}-{novbeti}";
+        var hevNom = dto.HevNom!.Trim();
 
         var entity = new GelenHevale
         {
@@ -199,6 +234,12 @@ public class GelenHevaleService : IGelenHevaleService
         if (!isAdmin && e.YaradanIcraciId != userId)
             return Result.Fail("Yalnız öz qeydinizi və ya Admin dəyişə bilər.");
 
+        // Nömrə əl ilə yazıldığı üçün səhv ola bilər — düzəldilməsinə icazə verilir,
+        // amma dublikat yaratmamalıdır (öz sətri yoxlamadan kənarda saxlanılır).
+        var nomreYoxlama = await NomreYoxlaAsync(dto.HevNom, dto.Id);
+        if (!nomreYoxlama.Success) return nomreYoxlama;
+
+        e.HevNom  = dto.HevNom!.Trim();
         e.Tarix   = dto.Tarix;
         e.Saa     = dto.Saa?.Trim();
         e.HesNom  = dto.HesNom?.Trim();
