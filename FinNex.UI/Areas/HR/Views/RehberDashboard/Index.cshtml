@@ -5,8 +5,14 @@
 
     var umumiIsci = Model.UmumiIsciSayi > 0 ? Model.UmumiIsciSayi : 1;
 
+    // "Diqqət tələb edir" = RƏHBƏRİN öz təsdiqini gözləyən işlər.
+    // AVANS BURADA YOXDUR (qəsdən): avans müraciəti yalnız Mühasibə bildiriş
+    // göndərir (User/AvansController) və təsdiq səhifəsi HR/Admin/Mühasibə
+    // bağlıdır (HR/AvansController) — rəhbər rolu orada yoxdur. Say-a daxil
+    // olsaydı rəhbərə mövcud olmayan iş göstərilərdi.
+    // Avans yalnız məlumat KPI-ı kimi aşağıda qalır ("AVANS (BU AY)").
     int actionTotal = Model.GozleyenMezuniyyetTesdiqi + Model.GozleyenIcazeTesdiqi
-                    + Model.GozleyenAvansSayi + Model.MaasLayiheSayi
+                    + Model.MaasLayiheSayi
                     + Model.GozleyenSenedSayi + Model.KritikMezBalansSayi;
 
     var saatIndi = DateTime.Now.Hour;
@@ -117,12 +123,11 @@
             <div class="rd-action-num">@Model.GozleyenIcazeTesdiqi</div>
             <div class="rd-action-lbl">İcazə təsdiqi</div>
         </a>
-        <a asp-area="HR" asp-controller="Avans" asp-action="Index"
-           class="rd-action-tile @(Model.GozleyenAvansSayi > 0 ? "rd-action-tile--alert" : "")">
-            <i class="bi bi-cash-coin"></i>
-            <div class="rd-action-num">@Model.GozleyenAvansSayi</div>
-            <div class="rd-action-lbl">Avans müraciəti</div>
-        </a>
+        @* Avans kartı QƏSDƏN silindi (13.08.2026): avans axını rəhbərdən keçmir —
+           bildiriş yalnız Mühasibə gedir, HR/Avans səhifəsi isə HR/Admin/Mühasibə
+           bağlıdır. Kart həm yalançı iş göstərirdi, həm də təmiz Rəhbər rolu ilə
+           klikləyəndə "Access Denied" verirdi (yalnız Admin-də açılırdı).
+           Rəqəm aşağıda "AVANS (BU AY)" KPI kartında məlumat kimi qalır. *@
         <a asp-area="HR" asp-controller="Maas" asp-action="Index"
            class="rd-action-tile @(Model.MaasLayiheSayi > 0 ? "rd-action-tile--info" : "")">
             <i class="bi bi-file-earmark-check"></i>
