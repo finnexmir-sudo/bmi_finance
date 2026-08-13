@@ -196,8 +196,12 @@
                 </a>
             }
 
+            @* "Ümumi xidmətlər" (SenedDovriyyesi + PR_Odenis_Tapsirigi) BİLƏRƏKDƏN bu
+               siyahıda deyil — o, departament deyil, hamının işlətdiyi xidmətdir və
+               ayrıca tab kimi aşağıda verilir. Buraya "umumi" qaytarılsa, Ümumi
+               səhifələrində HƏM bu dropdown, HƏM də öz tabı aktiv görünər. *@
             @{
-                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "umumi" or "pid";
+                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "pid";
                 var departActiveCls = isDepartModule ? " fn-topnav-tab--active" : "";
             }
             <div class="fn-topnav-dropdown @(isDepartModule ? "fn-topnav-dropdown--active" : "")">
@@ -236,14 +240,6 @@
                             </div>
                         </a>
                     }
-                    <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
-                       class="fn-topnav-dd-item @(activeModule == "umumi" ? "fn-topnav-dd-item--active" : "")">
-                        <i class="bi bi-folder2"></i>
-                        <div>
-                            <div class="fn-topnav-dd-title">Ümumi</div>
-                            <div class="fn-topnav-dd-sub">Sənəd dövriyyəsi, Swift / ödəniş</div>
-                        </div>
-                    </a>
                     <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Monitorinq"
                        class="fn-topnav-dd-item @(activeModule == "pid" ? "fn-topnav-dd-item--active" : "")">
                         <i class="bi bi-shield-exclamation"></i>
@@ -270,6 +266,14 @@
                     </a>
                 </div>
             </div>
+
+            @* Ümumi xidmətlər — sənəd dövriyyəsi, məktublar, həvalə, Swift / ödəniş.
+               Departament deyil (bir şöbəyə aid deyil), ona görə "Departamentlər"
+               dropdown-undan çıxarılıb ayrıca tab edilib. Dropdown-dakı kimi
+               burada da icazə şərti YOXDUR — bütün istifadəçilər görür. *@
+            <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index" class="@TabCls("umumi")">
+                <i class="bi bi-folder2"></i><span>Ümumi xidmətlər</span>
+            </a>
 
             @if (isMuhasib || isRehberRol)
             {
