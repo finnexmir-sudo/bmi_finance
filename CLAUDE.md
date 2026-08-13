@@ -121,6 +121,28 @@ Nəticədə `FinNex.Application` build olmadı (CS0535 + CS1501), bu da `FinNex.
 - Bir layihə build olmayanda asılı layihələrdəki xətalar yalançı istiqamətə
   yönəldə bilər — **kök səbəb həmişə build olmayan layihədədir**, oradan başla.
 
+## Namespace Adı Entity Adını Kölgələyir (CS0118) — Kaskad Build Xətası (KRİTİK)
+
+C#-da alt namespace adı, valideyn namespace-dəki **tip adı** ilə eyni olarsa, həmin
+valideyn namespace-in bütün fayllarında o ad artıq **tipi yox, namespace-i** göstərir
+(CS0118: "is a namespace but is used like a type"). Fayllar bir-birinə toxunmasa belə.
+
+Real nümunə (13.08.2026): BMI `kurval` cədvəli üçün `FinNex.Application.Services.Valyuta`
+namespace-i yaradıldı. Mövcud `FinNex.Application/Services/ValyutaService.cs` faylı
+`FinNex.Application.Services` namespace-indədir və `Repository<Valyuta>()` yazır —
+burada `Valyuta` **entity**-dir (`FinNex.Domain.Entities.Valyuta`). Yeni alt namespace
+həmin adı kölgələdi → `FinNex.Application` build olmadı → `FinNex.UI` və `FinNex.Tests`
+**CS0006** verdi ("Metadata file 'FinNex.Application.dll' could not be found").
+Görünən xəta 4 layihədə idi, kök səbəb isə tək bir qovluq adında.
+
+**Qaydalar:**
+- Yeni qovluq/namespace adı seçəndə əvvəlcə yoxla ki, həmin adda **entity/DTO/servis
+  tipi** yoxdur: `grep -rn "class <Ad>\b\|record <Ad>\b\|enum <Ad>\b" --include=*.cs`.
+- Toqquşma varsa namespace-i başqa cür adlandır (mənbə cədvəlin adı yaxşı seçimdir —
+  burada `Kurval`), tipi yenidən adlandırma.
+- CS0006 ("Metadata file … .dll could not be found") **əsl xəta deyil** — asılı olduğu
+  layihə build olmayıb deməkdir. Həmişə build olmayan layihənin **öz** xətasından başla.
+
 ## Məzuniyyət Təsdiq Axını — İki Yerdə Dublikat Routing (KRİTİK)
 
 Məzuniyyət müraciətinin **ilkin təsdiqçisini** (şöbə rəisi / rəhbər) təyin edən

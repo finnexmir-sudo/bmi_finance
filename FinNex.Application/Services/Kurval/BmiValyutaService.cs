@@ -1,11 +1,11 @@
 using System.Globalization;
-using FinNex.Application.DTOs.Valyuta;
+using FinNex.Application.DTOs.Kurval;
 using FinNex.Application.Interfaces.Oracle;
-using FinNex.Application.Interfaces.Valyuta;
+using FinNex.Application.Interfaces.Kurval;
 using FinNex.Domain.Entities.Sorgular;
 using FinNex.Domain.Interfaces;
 
-namespace FinNex.Application.Services.Valyuta;
+namespace FinNex.Application.Services.Kurval;
 
 public class BmiValyutaService : IBmiValyutaService
 {

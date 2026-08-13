@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using FinNex.Application.DTOs.Hevale;
 using FinNex.Application.Interfaces.Hevale;
-using FinNex.Application.Interfaces.Valyuta;
+using FinNex.Application.Interfaces.Kurval;
 using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -5,8 +5,8 @@
     // Əvvəl burada sabit massiv var idi ("AZN","USD"…); indi seçilən dəyər KODDUR
     // (kurval.SOKNAMEVALUT: "00","01"…), çünki kurval-da USD/EUR qısaltması yoxdur.
     // Oracle əlçatmaz olsa servis sabit ehtiyat siyahı qaytarır — siyahı boş qalmır.
-    var valyutalar = ViewBag.Valyutalar as IList<FinNex.Application.DTOs.Valyuta.BmiValyutaDto>
-                     ?? new List<FinNex.Application.DTOs.Valyuta.BmiValyutaDto>();
+    var valyutalar = ViewBag.Valyutalar as IList<FinNex.Application.DTOs.Kurval.BmiValyutaDto>
+                     ?? new List<FinNex.Application.DTOs.Kurval.BmiValyutaDto>();
     var resTipleri = new[] { "Rezident", "Qeyri-rezident" };
 }
 

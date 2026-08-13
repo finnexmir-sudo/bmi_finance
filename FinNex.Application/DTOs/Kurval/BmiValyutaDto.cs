@@ -1,4 +1,4 @@
-namespace FinNex.Application.DTOs.Valyuta;
+namespace FinNex.Application.DTOs.Kurval;
 
 /// <summary>
 /// Valyuta — BMI `kurval` cədvəlindən (Oracle, YALNIZ OXU).

@@ -1,6 +1,6 @@
-using FinNex.Application.DTOs.Valyuta;
+using FinNex.Application.DTOs.Kurval;
 
-namespace FinNex.Application.Interfaces.Valyuta;
+namespace FinNex.Application.Interfaces.Kurval;
 
 /// <summary>
 /// Valyuta siyahısı — BMI `kurval` cədvəlindən oxunur (YALNIZ SELECT).
