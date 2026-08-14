@@ -397,6 +397,36 @@ silinmiş qeydə baxır — növ şərti olmasa süzgəc onları da gizlədərdi
 Göstərmə qatındakı süzgəc (`DiriBildirislerAsync`) keçmiş qalıqlar üçün ikinci
 qatdır; **siyahı və say eyni süzgəcdən keçir** (say = siyahı qaydası).
 
+## İŞLƏK FUNKSİYANI SİLMƏK — YALNIZ AÇIQ İCAZƏ İLƏ (KRİTİK)
+
+**Heç bir işlək funksiya istifadəçinin açıq icazəsi olmadan silinə bilməz.**
+Refaktor, birləşdirmə, "dublikatı təmizləmə" — heç biri bunun istisnası deyil.
+
+Real hadisə (29.07.2026 → 14.08.2026, 17 gün gizli qaldı): Rəhbər Davamiyyət
+səhifəsi HR-dakının kopyası idi və birləşdirildi (`5fb0b698`). Amma silinən
+`RehberDashboardController`-də **yalnız orada olan** `ErkenCixisIcazeVer`
+action-ı da vardı — səhifə ilə birlikdə getdi. Düymə isə ortaq JS faylında
+qaldı və vahid səhifədə görünməyə davam etdi.
+
+Nəticə: rəhbər 29.07-yə qədər erkən çıxış icazəsi verə bilirdi, sonra **heç kim**
+verə bilmədi. Səssiz idi — endpoint boş sətrə düşür, `fetch('')` cari səhifəyə
+POST edir, `r.json()` sınır, `.catch` düyməni geri qaytarır. İşçilər isə həmin
+günlərdə "tez çıxan" kimi qeydə düşdü.
+
+**Qaydalar:**
+- Silinən faylın/sinifin içindəkiləri **bir-bir sadala**. "Dublikatdır" qərarı
+  fayl adına görə verilə bilməz — iki səhifə eyni görünüb, birində əlavə
+  action/düymə/məntiq ola bilər.
+- Silməzdən əvvəl istifadəçiyə **siyahı ilə** göstər: "bunlar silinəcək,
+  təsdiq edirsinizmi?" — ümumi "dublikatı silirəm" cümləsi icazə deyil.
+- Kod iki yerdə idisə, birləşdirmə **birləşdirmə** olmalıdır: hər iki tərəfin
+  unikal hissəsi qalan tərəfə **köçürülməli**, sonra silinməlidir.
+- **Front-end ilə back-end ayrı fayllardadır**: controller action silinəndə
+  onu çağıran düymə/JS də yoxlanmalıdır. `grep` ilə action adını, endpoint
+  URL-ini və `data-*` atributunu axtar.
+- JS-də endpoint həmişə **default URL** ilə oxunsun (`endpoint(ad, '/default')`),
+  `|| ''` YAZMA — boş ünvana POST səssizcə uğursuz olur və heç bir iz qalmır.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
