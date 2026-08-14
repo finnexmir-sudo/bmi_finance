@@ -46,6 +46,22 @@ public class KreditMuqavileController : Controller
     private const string DypGonYer  = "DYP";
     private const string DypQisaMez = "avto gir sal";
 
+    // Jurnal sətrinin qısa məzmununa müştərinin adını da yazır — jurnala baxanda
+    // məktubun kimə aid olduğu görünsün (14.08.2026 tələbi, DYP üçün).
+    // QISA_MEZ sütunu 255 simvoldur (AppDbContext:246); ad gözlənilməz uzun olsa
+    // SQL xətası verməsin deyə kəsirik — məktub yazılmaması daha pisdir, çünki
+    // bu nöqtədə nömrələr ARTIQ ayrılıb.
+    private const int QisaMezMax = 255;
+
+    private static string QisaMezAdla(string sabit, string? musteriAdi)
+    {
+        var ad = (musteriAdi ?? "").Trim();
+        if (ad.Length == 0) return sabit;
+
+        var metn = $"{sabit} — {ad}";
+        return metn.Length <= QisaMezMax ? metn : metn[..QisaMezMax];
+    }
+
     // Kredit müqaviləsinin təminat bəndində göstərilə bilən ƏN ÇOX zamin sayı.
     // Word şablonundakı {k_teminat1}…{k_teminat4} yer tutucularının sayı ilə
     // BAĞLIDIR — biri dəyişirsə o biri də dəyişməlidir, yoxsa artıq zaminin
@@ -621,11 +637,12 @@ public class KreditMuqavileController : Controller
         // KreditNo = kr_zaminlik, AvtoNo = kr_avtomobil, ZaminNolar = kr_zaminler.
         var nomreler = await _nomreService.AvtomobilNomreleriAyirAsync(zaminler.Count, dto.MuqavileTarixi, ct);
 
-        // DYP məktubu FinNex jurnalına yazılır (BTİ ilə eyni yol, fərqli mətn)
+        // DYP məktubu FinNex jurnalına yazılır (BTİ ilə eyni yol, fərqli mətn).
+        // Qısa məzmunda müştərinin adı da gedir: "avto gir sal — Ad Soyad Ata".
         var mekno = await _nomreService.MektubQeydiyyatiAsync(
             dto.MuqavileTarixi,
             int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
-            DypGonYer, DypQisaMez,
+            DypGonYer, QisaMezAdla(DypQisaMez, kredit.Adi),
             ct);
 
         var tarixSoz = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi);
