@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ClosedXML.Excel;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
@@ -45,7 +46,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // əməliyyatı BLOKLAMAMALIDIR (audit sahəsi 0 qalır).
         private async Task<int?> CariIsciIdAsync()
         {
-            var xam = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var xam = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(xam, out var appUserId)) return null;
 
             var isci = await _unitOfWork.Repository<Isci>()
