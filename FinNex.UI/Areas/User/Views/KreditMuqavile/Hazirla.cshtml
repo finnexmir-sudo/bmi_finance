@@ -133,10 +133,10 @@
                             <option value="Sonrakı İpoteka">Sonrakı İpoteka</option>
                         </select>
                     </div>
-                    <div><label>Girov dəyəri</label><input type="number" step="0.01" name="GirovDeyeri" value="@Model.GirovDeyeri?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="fn-input" /></div>
+                    <div><label>Girov dəyəri</label><input type="number" step="0.01" name="GirovDeyeri" data-vacib="Girov dəyəri" value="@Model.GirovDeyeri?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="fn-input" /></div>
                     <div>
                         <label>Hüquq obyektinin adı</label>
-                        <select name="ObyektTipi" id="obyektTipi" class="fn-input">
+                        <select name="ObyektTipi" id="obyektTipi" class="fn-input" data-vacib="Hüquq obyektinin adı">
                             <option value="">— seçin —</option>
                             @foreach (var t in FinNex.UI.Areas.User.Controllers.KreditMuqavileController.ObyektTipleri)
                             {
@@ -147,32 +147,32 @@
                             Hüquq obyektinin adını seçin — müqavilə və BTİ məktubu üçün lazımdır.
                         </div>
                     </div>
-                    <div><label>Çıxarış seriya/№-si</label><input type="text" name="CixarisNo" class="fn-input" placeholder="məs. MR-123456" /></div>
-                    <div><label>Qeydiyyat №</label><input type="text" name="QeydiyyatNo" value="@Model.TeminatNo" class="fn-input" /></div>
-                    <div><label>Qeydiyyat tarixi</label><input type="date" name="QeydiyyatTarixi" class="fn-input" /></div>
-                    <div><label>Reyestr №</label><input type="text" name="ReyestrNo" class="fn-input" /></div>
-                    <div><label>Reyestr kitab №</label><input type="text" name="ReyestrKitabNo" class="fn-input" /></div>
-                    <div><label>Reyestr vərəq №</label><input type="text" name="ReyestrVereqNo" class="fn-input" /></div>
-                    <div><label>Ərazi</label><input type="text" name="Erazi" class="fn-input" /></div>
+                    <div><label>Çıxarış seriya/№-si</label><input type="text" name="CixarisNo" class="fn-input" placeholder="məs. MR-123456" data-vacib="Çıxarış seriya/№-si" /></div>
+                    <div><label>Qeydiyyat №</label><input type="text" name="QeydiyyatNo" value="@Model.TeminatNo" class="fn-input" data-vacib="Qeydiyyat №" /></div>
+                    <div><label>Qeydiyyat tarixi</label><input type="date" name="QeydiyyatTarixi" class="fn-input" data-vacib="Qeydiyyat tarixi" /></div>
+                    <div><label>Reyestr №</label><input type="text" name="ReyestrNo" class="fn-input" data-vacib="Reyestr №" /></div>
+                    <div><label>Reyestr kitab №</label><input type="text" name="ReyestrKitabNo" class="fn-input" data-vacib="Reyestr kitab №" /></div>
+                    <div><label>Reyestr vərəq №</label><input type="text" name="ReyestrVereqNo" class="fn-input" data-vacib="Reyestr vərəq №" /></div>
+                    <div><label>Ərazi</label><input type="text" name="Erazi" class="fn-input" data-vacib="Ərazi (BTİ məktubunun ünvanı)" /></div>
 
                     <!-- Obyekt tipinə görə göstərilən sahələr (sərbəst mətn: "120 m²", "6 sot") -->
                     <div class="cx-cond" data-tipler="menzil ferdi qeyri" style="display:none">
-                        <label>Ümumi sahə</label><input type="text" name="UmumiSahe" class="fn-input" placeholder="məs. 120 m²" />
+                        <label>Ümumi sahə</label><input type="text" name="UmumiSahe" class="fn-input" placeholder="məs. 120 m²" data-vacib="Ümumi sahə" />
                     </div>
                     <div class="cx-cond" data-tipler="menzil ferdi" style="display:none">
-                        <label>Yaşayış sahəsi</label><input type="text" name="YasayisSahe" class="fn-input" placeholder="məs. 80 m²" />
+                        <label>Yaşayış sahəsi</label><input type="text" name="YasayisSahe" class="fn-input" placeholder="məs. 80 m²" data-vacib="Yaşayış sahəsi" />
                     </div>
                     <div class="cx-cond" data-tipler="ferdi" style="display:none">
                         <label>Yardımçı sahə</label><input type="text" name="YardimciSahe" class="fn-input" />
                     </div>
                     <div class="cx-cond" data-tipler="ferdi torpaq" style="display:none">
-                        <label>Torpaq sahəsi</label><input type="text" name="TorpaqSahe" class="fn-input" placeholder="məs. 6 sot" />
+                        <label>Torpaq sahəsi</label><input type="text" name="TorpaqSahe" class="fn-input" placeholder="məs. 6 sot" data-vacib="Torpaq sahəsi" />
                     </div>
                     <div class="cx-cond" data-tipler="menzil ferdi" style="display:none">
-                        <label>Otaqların sayı</label><input type="text" name="OtaqSayi" class="fn-input" />
+                        <label>Otaqların sayı</label><input type="text" name="OtaqSayi" class="fn-input" data-vacib="Otaqların sayı" />
                     </div>
 
-                    <div class="kmh-full"><label>İpoteka ünvanı</label><input type="text" name="IpotekaUnvan" value="@Model.GirovUnvan" class="fn-input" /></div>
+                    <div class="kmh-full"><label>İpoteka ünvanı</label><input type="text" name="IpotekaUnvan" value="@Model.GirovUnvan" class="fn-input" data-vacib="İpoteka ünvanı" /></div>
                     <div class="kmh-full"><label>Digər çıxarış məlumatı</label><input type="text" name="DigerCixarisMelumati" class="fn-input" /></div>
                 </div>
             </div>

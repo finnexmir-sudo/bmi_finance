@@ -129,8 +129,14 @@ public class KreditMuqavileService : IKreditMuqavileService
         Unvan               = Str(r, "UNVAN"),
         Olke                = Str(r, "OLKE"),
         Fin                 = Str(r, "FIN"),
-        GirovUnvan          = Str(r, "GIROV_UNVAN"),
-        TeminatNo           = Str(r, "TEMINAT_NO"),
+        // BMI-də bu iki sahə doldurulmayanda "0" / "00" qalır (14.08.2026 yoxlaması:
+        // açıq kreditlərin çoxunda registryno = 0, anyinfotodisting = 0).
+        // Onlar formada ÖNCƏDƏN DOLDURULUR və oradan müqaviləyə/BTİ məktubuna düşür:
+        // «qeydiyyat nömrəsi: 0», «ona məxsus 00 ünvanında yerləşən» kimi.
+        // Boş sahə operatorun gözünə dəyir, "0" isə real dəyər kimi görünür və
+        // səssizcə sənədə keçir — ona görə mənasız dəyərləri BOŞ sayırıq.
+        GirovUnvan          = StrMenali(r, "GIROV_UNVAN"),
+        TeminatNo           = StrMenali(r, "TEMINAT_NO"),
         CixarisTarixi       = Dat(r, "CIXARIS_TARIXI"),
         CariHesab           = Str(r, "CARI_HESAB"),
         GirovDeyeri         = Dec(r, "GIROV_DEYERI"),
@@ -154,6 +160,24 @@ public class KreditMuqavileService : IKreditMuqavileService
 
     private static string? Str(Dictionary<string, object?> r, string key)
         => Val(r, key)?.ToString()?.Trim();
+
+    /// <summary>
+    /// `Str` kimidir, amma BMI-nin "doldurulmayıb" işarələrini BOŞ sayır: "0",
+    /// "00", "-", "—". Belə dəyərlər formada öncədən doldurulub sənədə düşəndə
+    /// real məlumat kimi görünür və heç kim səhvi tutmur.
+    /// YALNIZ mətn sahələri üçündür — məbləğ/nömrə sahələrində 0 mənalı ola bilər.
+    /// </summary>
+    private static string? StrMenali(Dictionary<string, object?> r, string key)
+    {
+        var s = Str(r, key);
+        if (string.IsNullOrWhiteSpace(s)) return null;
+
+        var t = s.Trim();
+        // Yalnız sıfırlardan ibarətdir ("0", "00", "000"…) və ya tire
+        if (t.All(c => c == '0') || t == "-" || t == "—") return null;
+
+        return t;
+    }
 
     private static decimal? Dec(Dictionary<string, object?> r, string key)
     {
