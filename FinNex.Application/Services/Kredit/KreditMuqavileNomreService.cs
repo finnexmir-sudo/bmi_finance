@@ -89,10 +89,32 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
         };
     }
 
-    // Girova düşmə (BTİ) məktubu — FinNex məktub jurnalına yazılır.
+    public async Task<MenzilNomreleriDto> AvtomobilNomreleriAyirAsync(int zaminSayi, DateTime muqavileTarixi,
+        CancellationToken ct = default)
+    {
+        var il = muqavileTarixi.Year;
+
+        // İpoteka (KrMenzil) TOXUNULMUR — avtomobil girovunun öz sayğacı var.
+        var kreditNo = await _saygac.NomreAyirAsync(MuqavileNomreNovu.KrZaminlik, il, _nomreYaz, ct);
+        var avtoNo   = await _saygac.NomreAyirAsync(MuqavileNomreNovu.KrAvtomobil, il, _nomreYaz, ct);
+        var zaminNolar = await _saygac.NomreAyirAsync(
+            MuqavileNomreNovu.KrZaminler, il, zaminSayi, _nomreYaz, ct);
+
+        return new MenzilNomreleriDto
+        {
+            KreditNo   = kreditNo,
+            IpotekaNo  = 0,
+            AvtoNo     = avtoNo,
+            ZaminNolar = zaminNolar,
+            Yazildi    = _nomreYaz
+        };
+    }
+
+    // Girova düşmə (BTİ / DYP) məktubu — FinNex məktub jurnalına yazılır.
     // Qeyd də, nömrə də jurnal səhifəsindəki ilə eyni yoldan gəlir
     // (XaricMektubService), yəni nömrələmə TƏK yerdən idarə olunur.
-    public async Task<string> MektubQeydiyyatiAsync(DateTime tarix, int yaradanUserId, CancellationToken ct = default)
+    public async Task<string> MektubQeydiyyatiAsync(DateTime tarix, int yaradanUserId,
+        string gonYer, string qisaMez, CancellationToken ct = default)
     {
         var il = tarix.Year;
 
@@ -106,8 +128,8 @@ public class KreditMuqavileNomreService : IKreditMuqavileNomreService
         var netice = await _xaricMektub.YaratAsync(new XaricMektubCreateDto
         {
             Tarix   = tarix,
-            GonYer  = "Mənzil",
-            QisaMez = "mənzil gir sal"
+            GonYer  = gonYer,
+            QisaMez = qisaMez
         }, yaradanUserId);
 
         if (!netice.Success)

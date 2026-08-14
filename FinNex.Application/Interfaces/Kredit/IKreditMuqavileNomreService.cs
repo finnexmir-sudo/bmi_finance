@@ -37,12 +37,28 @@ public interface IKreditMuqavileNomreService
         CancellationToken ct = default);
 
     /// <summary>
+    /// Avtomobil girovu üçün nömrələri ayırır — kr_zaminlik (kredit müqaviləsi),
+    /// kr_avtomobil (avtomobil ipoteka müqaviləsi) və kr_zaminler (zaminliklər).
+    /// İpoteka (kr_menzil) TOXUNULMUR — avtomobildə daşınmaz əmlak girovu yoxdur;
+    /// IpotekaNo = 0 qaytarılır, AvtoNo doldurulur.
+    /// muqavileTarixi — nömrənin İLİ (sənədin öz tarixi, "bu gün" deyil).
+    /// </summary>
+    Task<MenzilNomreleriDto> AvtomobilNomreleriAyirAsync(int zaminSayi, DateTime muqavileTarixi,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Girova düşmə (BTİ) məktubunu FinNex məktub jurnalına (XaricMektub) qeyd edir və
     /// nömrəsini ({mekno}, "il-nömrə" formatında) qaytarır. Oracle-a YAZILMIR.
     /// NomreYaz=false olduqda yazmır, yalnız növbəti nömrəni göstərir (preview).
     ///
     /// yaradanUserId — AppUser id: həm sahiblik, həm də icraçı nömrəsi (Isci.IcraciNo)
     /// bu istifadəçidən tapılır. Jurnal səhifəsindən yaradılan məktubla eyni qayda.
+    ///
+    /// gonYer / qisaMez — jurnal sətrinin sahələri. Daşınmaz əmlakda BTİ məktubu
+    /// («Mənzil» / «mənzil gir sal»), avtomobildə DYP məktubu — mətnlər fərqlidir,
+    /// ona görə parametrdir. Defolt dəyər QƏSDƏN yoxdur: yeni axın onu ötürməyi
+    /// unutsa kod compile olmasın, məktub səhv adla jurnala düşməsin.
     /// </summary>
-    Task<string> MektubQeydiyyatiAsync(DateTime tarix, int yaradanUserId, CancellationToken ct = default);
+    Task<string> MektubQeydiyyatiAsync(DateTime tarix, int yaradanUserId,
+        string gonYer, string qisaMez, CancellationToken ct = default);
 }

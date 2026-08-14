@@ -38,6 +38,14 @@ public class KreditMuqavileController : Controller
         "XARICI_VALYUTA sütunu yoxdur. Admin → Oracle Sorğular-da əlavə edin " +
         "(t.xarici_valyutada_kredit AS XARICI_VALYUTA).";
 
+    // Girova düşmə məktublarının jurnal (XaricMektub) sahələri.
+    // Daşınmaz əmlakda BTİ (Əmlak Komitəsi), avtomobildə DYP — mətnlər BMI-dəki
+    // jurnal qeydləri ilə eyni olmalıdır ki, köhnə və yeni sətirlər tutuşsun.
+    private const string BtiGonYer  = "Mənzil";
+    private const string BtiQisaMez = "mənzil gir sal";
+    private const string DypGonYer  = "DYP";
+    private const string DypQisaMez = "avto gir sal";
+
     // Kredit müqaviləsinin təminat bəndində göstərilə bilən ƏN ÇOX zamin sayı.
     // Word şablonundakı {k_teminat1}…{k_teminat4} yer tutucularının sayı ilə
     // BAĞLIDIR — biri dəyişirsə o biri də dəyişməlidir, yoxsa artıq zaminin
@@ -215,6 +223,7 @@ public class KreditMuqavileController : Controller
         var mekno = await _nomreService.MektubQeydiyyatiAsync(
             dto.MuqavileTarixi,
             int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+            BtiGonYer, BtiQisaMez,
             ct);
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──
@@ -491,6 +500,220 @@ public class KreditMuqavileController : Controller
 
         var zip = KreditWordService.ZipYarat(senedler);
         var zipAd = $"Zaminlik_{ad}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+        return File(zip, "application/zip", zipAd);
+    }
+
+    // ═══════════════ AVTOMOBİL ═══════════════════════════════════════════════
+    // Şablon faylları (ad dəqiq belə olmalıdır):
+    //   Avtomobil_girov_muqavilesi.docx — avtomobil ipoteka müqaviləsi
+    //   DYP_salinma.docx                — D.Y.P.-yə girova salınma məktubu
+    private const string AvtoSablon = "Avtomobil_girov_muqavilesi.docx";
+    private const string DypSablon  = "DYP_salinma.docx";
+
+    // Səviyyə 2 — Avtomobil hazırlama formasını göstərir
+    [HttpGet]
+    public async Task<IActionResult> AvtomobilHazirla(string hesabNo, string ks, DateTime? tarix)
+    {
+        var seciliTarix = tarix ?? DateTime.Today;
+        KreditMuqavileSatirDto? kredit = null;
+        try
+        {
+            kredit = await _muqavileService.KrediGetirAsync(hesabNo, ks, seciliTarix);
+        }
+        catch (Exception ex)
+        {
+            ViewBag.Xeta = "Oracle-dan məlumat alınmadı: " + ex.Message;
+        }
+
+        if (kredit == null)
+        {
+            ViewBag.Xeta ??= "Kredit tapılmadı.";
+            return View("AvtomobilHazirla", new KreditMuqavileSatirDto { HesabNo = hesabNo, Ks = ks });
+        }
+
+        // Valyuta yoxlaması FORMA AÇILMAZDAN əvvəl (Hazirla ilə eyni qayda)
+        if (kredit.XariciValyuta == true)
+        {
+            ViewBag.Xeta = ValyutaXetasi;
+            return View("AvtomobilHazirla", kredit);
+        }
+        if (kredit.XariciValyuta == null) ViewBag.ValyutaXeberdarligi = ValyutaSutunXeberdarligi;
+
+        var zaminler = new List<ZaminDaxilDto>();
+        try { zaminler = await _muqavileService.ZaminleriGetirAsync(hesabNo, ks); }
+        catch { /* zamin sorğusu uğursuz olarsa forma zaminsiz açılır */ }
+
+        ViewBag.SeciliTarix = seciliTarix;
+        ViewBag.Zaminler = zaminler;
+        ViewBag.Teyinatlar = Teyinatlar;
+        ViewBag.Olkeler = Olkeler;
+        return View("AvtomobilHazirla", kredit);
+    }
+
+    // Səviyyə 2 — Avtomobil sənədlərini yaradır
+    // (kredit müqaviləsi + avtomobil ipotekası + DYP məktubu + zaminliklər) → .zip
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AvtomobilYarat(AvtomobilMuqavileYaratDto dto, CancellationToken ct)
+    {
+        var kredit = await _muqavileService.KrediGetirAsync(dto.HesabNo, dto.Ks, dto.KreditTarixi, ct);
+        if (kredit == null)
+        {
+            TempData["Error"] = "Kredit tapılmadı — nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Avtomobil" });
+        }
+
+        var zaminler = (dto.Zaminler ?? new()).Where(z => !string.IsNullOrWhiteSpace(z.Ad)).ToList();
+
+        IActionResult FormayaQaytar(string xeta)
+        {
+            TempData["Error"] = xeta;
+            return RedirectToAction("AvtomobilHazirla",
+                new { hesabNo = dto.HesabNo, ks = dto.Ks, tarix = dto.KreditTarixi.ToString("yyyy-MM-dd") });
+        }
+
+        // ══ NÖMRƏDƏN ƏVVƏLKİ YOXLAMALAR ══════════════════════════════════════
+        // Nömrə ayrılandan sonra geri qaytarılmır (sayğac artır, DYP məktubu
+        // jurnala düşür) — uğursuz ola biləcək hər şey buradan əvvəl yoxlanılır.
+
+        if (kredit.XariciValyuta == true)
+        {
+            TempData["Error"] = ValyutaXetasi;
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Avtomobil" });
+        }
+
+        if (zaminler.Count > MaxZamin)
+            return FormayaQaytar($"Ən çox {MaxZamin} zamin ola bilər (daxil edilib: {zaminler.Count}) — " +
+                                 "nömrələr ayrılmadı, heç nə yazılmadı.");
+
+        // Avtomobilin təsviri sənədin PREDMETİDİR — boş buraxıla bilməz.
+        // Model olmadan müqavilə hansı avtomobili girov qoyduğunu göstərmir.
+        if (string.IsNullOrWhiteSpace(dto.Model))
+            return FormayaQaytar("Avtomobilin modeli boş ola bilməz — nömrələr ayrılmadı, heç nə yazılmadı.");
+        if (!(dto.AvtoDeyeri > 0))   // null da bura düşür (lifted müqayisə false verir)
+            return FormayaQaytar("Avtomobilin bazar dəyəri daxil edilməlidir — nömrələr ayrılmadı, heç nə yazılmadı.");
+
+        var templateRoot = SablonQovlugu();
+        string T(string ad) => Path.Combine(templateRoot, ad);
+
+        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", AvtoSablon, DypSablon, "Zaminlik_muqavilesi.docx" }
+            .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
+        if (eksikSablon != null)
+        {
+            TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot}) — nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Avtomobil" });
+        }
+
+        // {a_mno} — avtomobil girovunun ÖZ nömrəsi. Şablonda bu yer tutucu yoxdursa
+        // başlıqda böyük ehtimalla {k_mno} qalıb, yəni sənədin üstündə girov nömrəsi
+        // yerinə KREDİT müqaviləsinin nömrəsi çıxacaq — səssiz və hüquqi olaraq səhv.
+        // Ona görə burada dayanırıq (nömrədən ƏVVƏL).
+        var teminatsizSablon = new[] { AvtoSablon, DypSablon }
+            .FirstOrDefault(f => !KreditWordService.TokenVarmi(T(f), "{a_mno}"));
+        if (teminatsizSablon != null)
+            return FormayaQaytar(
+                $"«{teminatsizSablon}» şablonunda {{a_mno}} yer tutucusu tapılmadı. " +
+                "Avtomobil girovunun öz nömrəsi bu yer tutucuya yazılır — şablonda başlıqdakı " +
+                "{k_mno} onunla əvəz edilməlidir. Nömrələr ayrılmadı, heç nə yazılmadı.");
+        // ═════════════════════════════════════════════════════════════════════
+
+        // Nömrələri ayır (NomreYaz=false olduqda preview — heç nə yazılmır).
+        // KreditNo = kr_zaminlik, AvtoNo = kr_avtomobil, ZaminNolar = kr_zaminler.
+        var nomreler = await _nomreService.AvtomobilNomreleriAyirAsync(zaminler.Count, dto.MuqavileTarixi, ct);
+
+        // DYP məktubu FinNex jurnalına yazılır (BTİ ilə eyni yol, fərqli mətn)
+        var mekno = await _nomreService.MektubQeydiyyatiAsync(
+            dto.MuqavileTarixi,
+            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+            DypGonYer, DypQisaMez,
+            ct);
+
+        var tarixSoz = KreditSozeCevir.TarixiSoze(dto.MuqavileTarixi);
+
+        // 1.3 bənd — təminatlar. Avtomobildə girov sahibi HƏMİŞƏ borcalandır.
+        var avtoTeminat = $"{tarixSoz} il tarixli {nomreler.AvtoNo} nömrəli " +
+                          $"{kredit.Adi} ilə bağlanmış AVTOMOBİL İPOTEKA MÜQAVİLƏSİ";
+
+        // Girov mövcud olduğu üçün zamin sətirləri vergüllə başlayır (Menzil ilə eyni)
+        string ZaminTeminat(int idx)
+        {
+            if (idx >= zaminler.Count) return "";
+            var no = idx < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[idx] : 0;
+            return $",{tarixSoz} il tarixli {no} nömrəli {zaminler[idx].Ad} tərəfindən verilmiş zaminlik müqaviləsi";
+        }
+
+        var ortak = new Dictionary<string, string?>
+        {
+            // Kredit / borcalan
+            ["{k_mno}"] = nomreler.KreditNo.ToString(),
+            ["{k_tar_soz}"] = tarixSoz,
+            ["{k_saa}"] = KreditSozeCevir.BaslikRegistri(kredit.Adi),
+            ["{k_kimlik}"] = BorcaluKimlik(kredit, dto.BorcalanOlke, dto.DirektorAd, dto.DirektorVesiqe, dto.DirektorOlke),
+            ["{k_olke}"] = dto.BorcalanOlke,
+            ["{k_ves}"] = VesiqeVeyaVoen(kredit),
+            ["{k_mud}"] = AyMuddet(kredit.Muddet).ToString(),
+            ["{k_mud_soz}"] = KreditSozeCevir.MuddetSoze(AyMuddet(kredit.Muddet)),
+            ["{k_meb}"] = Pul(kredit.Mebleg),
+            ["{k_meb_soz}"] = KreditSozeCevir.MebleghSozeQepiksiz(kredit.Mebleg ?? 0),
+            ["{k_val}"] = "AZN",
+            ["{k_faiz}"] = Faiz(kredit.Faiz),
+            ["{k_cfaiz}"] = Faiz(kredit.VkFaiz),
+            ["{k_ay_odenis}"] = Pul(kredit.Ayliq),
+            ["{k_ay_odenis_soz}"] = KreditSozeCevir.MebleghSoze(kredit.Ayliq ?? 0),
+            ["{k_fifd}"] = Reqem(kredit.Fifd),
+            ["{k_teyinat}"] = string.IsNullOrWhiteSpace(dto.Teyinat) ? kredit.Teyinat : dto.Teyinat,
+            ["{k_unvan}"] = kredit.Unvan,
+            ["{k_tel}"] = kredit.Mobil,
+            ["{k_teminatavto}"] = avtoTeminat,
+            ["{k_teminat1}"] = ZaminTeminat(0),
+            ["{k_teminat2}"] = ZaminTeminat(1),
+            ["{k_teminat3}"] = ZaminTeminat(2),
+            ["{k_teminat4}"] = ZaminTeminat(3),
+
+            // Avtomobil (ipoteka predmeti) — {a_mno} girovun ÖZ nömrəsidir
+            ["{a_mno}"] = nomreler.AvtoNo.ToString(),
+            ["{k_model}"] = dto.Model,
+            ["{k_muherrik}"] = dto.Muherrik,
+            ["{k_ban}"] = dto.Ban,
+            ["{k_reng}"] = dto.Reng,
+            ["{k_il}"] = dto.Il,
+            ["{k_avto_deyer}"] = Pul(dto.AvtoDeyeri),
+            ["{k_avto_deyer_soz}"] = KreditSozeCevir.MebleghSozeQepiksiz(dto.AvtoDeyeri ?? 0),
+
+            // Məktub
+            ["{mekno}"] = mekno,
+        };
+
+        var ad = (kredit.Adi ?? "muqavile").Trim();
+        var senedler = new List<(string ad, byte[] data)>
+        {
+            ($"Kredit müqaviləsi - {ad}.docx", KreditWordService.Doldur(T("Kredit_muqavili_yeni.docx"), ortak)),
+            ($"Avtomobil ipoteka müqaviləsi - {ad}.docx", KreditWordService.Doldur(T(AvtoSablon), ortak)),
+            ($"DYP məktubu - {ad}.docx", KreditWordService.Doldur(T(DypSablon), ortak)),
+        };
+
+        for (var i = 0; i < zaminler.Count; i++)
+        {
+            var z = zaminler[i];
+            var zdict = new Dictionary<string, string?>(ortak)
+            {
+                ["{zsaa1}"] = z.Huquqi ? KreditSozeCevir.BaslikRegistri(z.DirektorAd) : z.Ad,
+                ["{zves1}"] = z.Huquqi
+                    ? (z.DirektorVesiqe ?? "")
+                    : string.Join(",", new[] { z.Pasport, z.Fin }.Where(s => !string.IsNullOrWhiteSpace(s))),
+                ["{ztel}"] = z.Telefon,
+                ["{zunvan}"] = z.Unvan,
+                ["{zolke1}"] = z.Huquqi
+                    ? $"hüquqi şəxs {KreditSozeCevir.BaslikRegistri(z.Ad)} (VÖEN: {z.Voen}), direktoru {z.DirektorOlke}"
+                    : z.Olke,
+                ["{zmno1}"] = (i < nomreler.ZaminNolar.Count ? nomreler.ZaminNolar[i] : 0).ToString(),
+                ["{ztar1_soz}"] = tarixSoz,
+            };
+            senedler.Add(($"Zaminlik - {z.Ad}.docx", KreditWordService.Doldur(T("Zaminlik_muqavilesi.docx"), zdict)));
+        }
+
+        var zip = KreditWordService.ZipYarat(senedler);
+        var zipAd = $"Avtomobil_{ad}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
         return File(zip, "application/zip", zipAd);
     }
 

@@ -116,6 +116,16 @@
                                             Müqavilə hazırla
                                         </a>
                                     }
+                                    else if (seciliTip == "Avtomobil")
+                                    {
+                                        <a class="fn-btn fn-btn--outline"
+                                           asp-action="AvtomobilHazirla"
+                                           asp-route-hesabNo="@k.HesabNo"
+                                           asp-route-ks="@k.Ks"
+                                           asp-route-tarix="@seciliTarix.ToString("yyyy-MM-dd")">
+                                            Müqavilə hazırla
+                                        </a>
+                                    }
                                     else
                                     {
                                         <button type="button" class="fn-btn fn-btn--outline kmq-hazirla"
@@ -173,7 +183,7 @@
         document.querySelectorAll('.kmq-hazirla').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 alert('"' + seciliTip + '" tipi üçün hazırlama növbəti mərhələdə qoşulacaq.\n' +
-                      'Hazırda yalnız "Daşınmaz Əmlak" hazırdır.');
+                      'Hazırda "Daşınmaz Əmlak", "Zaminlik" və "Avtomobil" hazırdır.');
             });
         });
     </script>

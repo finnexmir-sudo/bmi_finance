@@ -31,6 +31,33 @@ public static class KreditWordService
         return ms.ToArray();
     }
 
+    /// <summary>
+    /// Şablonda verilmiş yer tutucunun (məs. "{a_mno}") olub-olmadığını yoxlayır.
+    ///
+    /// NİYƏ LAZIMDIR: kod bir tokeni doldurur, şablonda o token yoxdursa Doldur()
+    /// heç bir xəta vermir — dəyər sadəcə itir. Nömrə ilə bağlı tokenlərdə bu
+    /// SƏSSİZ və TƏHLÜKƏLİDİR: məsələn avtomobil müqaviləsinin başlığında
+    /// {a_mno} əvəzinə {k_mno} qalarsa, sənədin üstündə girov nömrəsi yerinə
+    /// kredit müqaviləsinin nömrəsi çıxar və heç kim bunu görməz.
+    ///
+    /// Yoxlama Doldur() ilə eyni mətn görüntüsündən gedir: paraqrafın bütün
+    /// run-ları birləşdirilir, çünki Word tokeni bir neçə run-a bölə bilər.
+    /// </summary>
+    public static bool TokenVarmi(string templatePath, string token)
+    {
+        using var doc = WordprocessingDocument.Open(templatePath, false);
+        var main = doc.MainDocumentPart!;
+
+        bool Var(OpenXmlElement? root) =>
+            root != null && root.Descendants<Paragraph>().Any(p =>
+                string.Concat(p.Descendants<Text>().Select(t => t.Text))
+                      .Contains(token, StringComparison.Ordinal));
+
+        return Var(main.Document.Body)
+            || main.HeaderParts.Any(h => Var(h.Header))
+            || main.FooterParts.Any(f => Var(f.Footer));
+    }
+
     public static byte[] ZipYarat(IEnumerable<(string ad, byte[] data)> senedler)
     {
         using var ms = new MemoryStream();
