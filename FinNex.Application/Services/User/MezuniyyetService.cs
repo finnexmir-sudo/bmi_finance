@@ -624,17 +624,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         // Balansı geri qaytar — FifoKes ilə kəsilən eyni effektiv gün sayı (LIFO)
         await BalansiGeriQaytarAsync(m.IsciId, m.Nov, m.EfektivGunSayi);
 
-        // Davamiyyətdəki icazəli/xəstəlik/ezamiyyət qeydlərini sil
-        var davQeydleri = await _unitOfWork.Repository<Davamiyyet>()
-            .HamisiniGetirAsync(x =>
-                x.IsciId == m.IsciId &&
-                (x.Status == DavamiyyetStatus.Icazeli ||
-                 x.Status == DavamiyyetStatus.Xestelik ||
-                 x.Status == DavamiyyetStatus.Ezamiyyet) &&
-                x.Tarix >= m.BaslamaTarixi &&
-                x.Tarix <= m.BitmeTarixi);
-        foreach (var dav in davQeydleri)
-            await _unitOfWork.Repository<Davamiyyet>().YumshakSilAsync(dav.Id);
+        // Məzuniyyətin yaratdığı davamiyyət qeydlərini sil.
+        // ODENISSIZ MEZUNIYYET DƏ DAXİLDİR — əvvəl siyahıdan kənarda qalmışdı və
+        // öz hesabına məzuniyyət ləğv olunanda davamiyyətdə sətir qalırdı
+        // (14.08.2026). Siyahı: MezuniyyetDavamiyyetStatuslari.
+        await DavamiyyetIzleriniSilAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
 
         // Gözləyən avansı sıfırla (ödəniş hələ edilməyib)
         if (avansGozleyirdi)
@@ -1012,14 +1006,15 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (skipYeni.Any(b => b.Tarix.Date == gun.Date)) continue;
                 await DavamiyyetUpsertAsync(m.IsciId, gun, status);
             }
+            // Aralıqdan ÇIXAN günlərin izlərini sil. OdenissizMezuniyyet də
+            // daxildir (14.08.2026 düzəlişi) — əks halda öz hesabına məzuniyyətin
+            // tarixi qısaldılanda köhnə günlərdə sətir qalırdı.
             for (var gun = kohneBaslama; gun <= kohneBitme; gun = gun.AddDays(1))
             {
                 if (gun >= yeniBaslama && gun <= yeniBitme) continue;
                 var dav = await _unitOfWork.Repository<Davamiyyet>()
                     .GetirAsync(x => x.IsciId == m.IsciId && x.Tarix.Date == gun.Date &&
-                                     (x.Status == DavamiyyetStatus.Icazeli ||
-                                      x.Status == DavamiyyetStatus.Xestelik ||
-                                      x.Status == DavamiyyetStatus.Ezamiyyet));
+                                     MezuniyyetDavamiyyetStatuslari.Contains(x.Status));
                 if (dav != null)
                     await _unitOfWork.Repository<Davamiyyet>().YumshakSilAsync(dav.Id);
             }
@@ -1050,6 +1045,267 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             await transaction.RollbackAsync();
             throw;
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ADMIN DÜZƏLİŞLƏRİ — ləğv və növ dəyişikliyi
+    // ════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Məzuniyyətin YARATDIĞI davamiyyət statusları. Ləğv/dəyişiklik zamanı
+    /// yalnız bunlar silinir — işçinin öz cihaz qeydinə (İşdə/Gecikmə) və
+    /// Qayıb-a TOXUNULMUR.
+    ///
+    /// DİQQƏT: `OdenissizMezuniyyet` uzun müddət bu siyahıdan KƏNARDA qalmışdı
+    /// (14.08.2026-da aşkarlandı) — nəticədə öz hesabına məzuniyyət ləğv/dəyişik
+    /// olanda davamiyyətdə "Ödənişsiz məzuniyyət" sətri qalırdı. Maaşa təsir
+    /// etmirdi (`OzHesabinaIsGunuSayAsync` Mezuniyyet cədvəlindən oxuyur),
+    /// amma davamiyyət ekranında ləğv edilmiş gün hələ məzuniyyət kimi görünürdü.
+    /// Siyahı `AdminTarixDeyisAsync`-dəki Nov→Status xəritəsi ilə uzlaşmalıdır.
+    /// </summary>
+    private static readonly DavamiyyetStatus[] MezuniyyetDavamiyyetStatuslari =
+    {
+        DavamiyyetStatus.Icazeli,
+        DavamiyyetStatus.Xestelik,
+        DavamiyyetStatus.Ezamiyyet,
+        DavamiyyetStatus.OdenissizMezuniyyet,
+    };
+
+    /// <summary>Növ → davamiyyət statusu. AdminTarixDeyisAsync ilə eyni xəritə.</summary>
+    private static DavamiyyetStatus NovunDavamiyyetStatusu(MezuniyyetNovu nov) => nov switch
+    {
+        MezuniyyetNovu.Xestelik   => DavamiyyetStatus.Xestelik,
+        MezuniyyetNovu.Ezamiyyet  => DavamiyyetStatus.Ezamiyyet,
+        MezuniyyetNovu.OzHesabina => DavamiyyetStatus.OdenissizMezuniyyet,
+        _                          => DavamiyyetStatus.Icazeli
+    };
+
+    /// <summary>
+    /// Məzuniyyətin toxunduğu aylardan maaşı BAĞLI olan varsa onu qaytarır.
+    ///
+    /// Hədd `Təsdiqləndi`-dir, `Ödənildi` deyil: MaasStatus sənədində açıq yazılıb
+    /// ki, "təsdiqlənmiş maaş üzərində dəyişiklik etmək olmaz" — mühasib onu
+    /// yoxlayıb imzalayıb. Admin onu səssizcə etibarsız edə bilməz (14.08.2026 qərarı).
+    ///
+    /// FƏRQ — `GeriyeQeydEtAsync`-dəki bənzər yoxlama yalnız `Ödənildi`-ni bloklayır.
+    /// O, HR-in gündəlik axınıdır və qəsdən daha yumşaqdır; bu isə admin düzəlişidir.
+    /// İkisini eyniləşdirmək qərarı istifadəçidədir — o vaxta qədər fərq QƏSDƏNdir.
+    ///
+    /// Çoxaylı məzuniyyət üçün HƏR ay yoxlanılır — biri bağlıdırsa əməliyyat dayanır.
+    /// </summary>
+    private async Task<(int Il, int Ay, MaasStatus Status)?> MaasBagliAyAsync(
+        int isciId, DateTime baslama, DateTime bitme)
+    {
+        var aylar = new HashSet<(int Il, int Ay)>();
+        for (var g = baslama.Date; g <= bitme.Date; g = g.AddDays(1))
+            aylar.Add((g.Year, g.Month));
+
+        foreach (var (il, ay) in aylar.OrderBy(x => x.Il).ThenBy(x => x.Ay))
+        {
+            var maas = await _unitOfWork.Repository<Maas>().GetirAsync(
+                x => !x.Silinib && x.IsciId == isciId && x.Il == il && x.Ay == ay
+                  && (x.Status == MaasStatus.Tesdiqlendi || x.Status == MaasStatus.Odenildi),
+                izlemeden: true);
+
+            if (maas != null) return (il, ay, maas.Status);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Məzuniyyətin davamiyyət izlərini silir (yalnız məzuniyyətin yaratdıqları).
+    /// </summary>
+    private async Task DavamiyyetIzleriniSilAsync(int isciId, DateTime baslama, DateTime bitme)
+    {
+        var qeydler = await _unitOfWork.Repository<Davamiyyet>()
+            .HamisiniGetirAsync(x =>
+                x.IsciId == isciId &&
+                MezuniyyetDavamiyyetStatuslari.Contains(x.Status) &&
+                x.Tarix >= baslama && x.Tarix <= bitme);
+
+        foreach (var dav in qeydler)
+            await _unitOfWork.Repository<Davamiyyet>().YumshakSilAsync(dav.Id);
+    }
+
+    public async Task<Result> AdminLegvEtAsync(int id, string sebeb, int adminId)
+    {
+        if (string.IsNullOrWhiteSpace(sebeb))
+            return Result.Fail("Ləğv səbəbi qeyd edilməlidir — admin düzəlişi audit üçün səbəbsiz aparıla bilməz.");
+
+        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        if (m == null) return Result.Fail("Müraciət tapılmadı.");
+
+        if (m.Status != MezuniyyetStatus.Tesdiqlenib)
+            return Result.Fail("Yalnız təsdiqlənmiş məzuniyyət ləğv edilə bilər.");
+
+        // ADMIN: "məzuniyyət başlayıb" və "işçinin ləğv müraciəti olmalıdır"
+        // yoxlamaları QƏSDƏN YOXDUR — bu metod məhz həmin halların düzəlişidir.
+
+        if (m.OdenisStatus == MezuniyyetOdenisStatus.Odenilib ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis)
+            return Result.Fail("Qabaqcadan ödəniş icra olunub/planlanıb — ləğv mümkün deyil. Əvvəlcə pulun geri-alınması həll olunmalıdır.");
+
+        var korreksiyaVar = await _unitOfWork.Repository<Mezuniyyet>()
+            .MovcuddurmuAsync(x => x.KorreksiyaOlunanMezuniyyetId == id && !x.Silinib);
+        if (korreksiyaVar)
+            return Result.Fail("Bu məzuniyyətə dövlət-vəzifə korreksiyası tətbiq olunub — əvvəlcə korreksiya ləğv edilməlidir.");
+
+        var bagliAy = await MaasBagliAyAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
+        if (bagliAy != null)
+            return Result.Fail($"{bagliAy.Value.Ay:00}.{bagliAy.Value.Il} ayının maaşı «{bagliAy.Value.Status}» statusundadır — " +
+                               "məzuniyyət ləğv edilə bilməz. Əvvəlcə həmin ayın maaşı açılmalıdır.");
+
+        var avansGozleyirdi = m.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir;
+
+        using var transaction = await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            // Balans geri (öz hesabına üçün BalansiGeriQaytarAsync onsuz da təsirsizdir)
+            await BalansiGeriQaytarAsync(m.IsciId, m.Nov, m.EfektivGunSayi);
+
+            await DavamiyyetIzleriniSilAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
+
+            if (avansGozleyirdi)
+            {
+                m.OdenenMebleg = null;
+                m.OdenenMeblegBrut = null;
+                m.OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir;
+                m.PlanliOdenisTarixi = null;
+            }
+
+            // ƏMR NÖMRƏSİ QƏSDƏN SAXLANILIR (EmrRegem/EmrIl/EmrSuffiks toxunulmur):
+            // əmr real verilib, nömrə reyestrdə istifadə olunub. Onu boşaltmaq
+            // nömrənin yenidən verilməsinə yol açardı (14.08.2026 qərarı).
+            m.Status = MezuniyyetStatus.LegvEdildi;
+            m.ImtinaSebebi = $"Admin ləğvi: {sebeb.Trim()}";
+            await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+
+            await _unitOfWork.Repository<Mezuniyyet>().YumshakSilAsync(id);
+            await _unitOfWork.YaddaSaxlaAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+
+        // Bildirişlər — HR ləğvi ilə eyni sıra: əvvəlcə köhnə "təsdiq et"
+        // bildirişləri təmizlənir, SONRA "ləğv edildi" bildirişi göndərilir.
+        await _bildirisService.MezuniyyetBildirisleriniSilAsync(id);
+        await NotifyIsciForHrCancelAsync(m, sebeb);
+        if (avansGozleyirdi)
+            await NotifyMuhasibForCancelAsync(m);
+
+        return Result.Ok("Məzuniyyət admin tərəfindən ləğv edildi."
+            + (avansGozleyirdi ? " Gözləyən ödəniş sıfırlandı, Mühasibə bildiriş göndərildi." : "")
+            + " Həmin ayın maaşı yenidən hesablanmalıdır.");
+    }
+
+    // Admin növ dəyişikliyində icazəli hədəf növlər — bax: interfeys şərhi.
+    private static readonly MezuniyyetNovu[] NovDeyisIcazeli =
+    {
+        MezuniyyetNovu.Illik,
+        MezuniyyetNovu.OzHesabina,
+    };
+
+    public async Task<Result> AdminNovDeyisAsync(int id, MezuniyyetNovu yeniNov, string sebeb, int adminId)
+    {
+        if (string.IsNullOrWhiteSpace(sebeb))
+            return Result.Fail("Dəyişiklik səbəbi qeyd edilməlidir — admin düzəlişi audit üçün səbəbsiz aparıla bilməz.");
+
+        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        if (m == null) return Result.Fail("Müraciət tapılmadı.");
+
+        if (m.Status != MezuniyyetStatus.Tesdiqlenib)
+            return Result.Fail("Yalnız təsdiqlənmiş məzuniyyətin növü düzəldilə bilər.");
+
+        if (m.Nov == yeniNov)
+            return Result.Fail("Növ onsuz da eynidir.");
+
+        if (!NovDeyisIcazeli.Contains(m.Nov) || !NovDeyisIcazeli.Contains(yeniNov))
+            return Result.Fail("Növ dəyişikliyi yalnız «İllik» və «Öz hesabına» arasında mümkündür. " +
+                               "Xəstəlik və Ezamiyyət ayrı modullardır, dövlət vəzifəsinin isə öz korreksiya mexanizmi var — " +
+                               "belə hallarda məzuniyyəti ləğv edib düzgün növdə yenidən qeyd edin.");
+
+        // Ödəniş məbləği növdən asılıdır (öz hesabına ödənişsizdir) — gözləyən
+        // ödənişi burada yenidən hesablamırıq, çünki ödəniş tipi/qaydası da
+        // dəyişməli ola bilər. Açıq xəta veririk ki, səssiz uyğunsuzluq yaranmasın.
+        if (m.OdenisStatus == MezuniyyetOdenisStatus.Odenilib ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir)
+            return Result.Fail("Bu məzuniyyətdə qabaqcadan ödəniş var (ödənilib/planlanıb/gözləyir) — " +
+                               "növ dəyişdirilə bilməz. Əvvəlcə ödəniş məsələsi həll olunmalıdır.");
+
+        var korreksiyaVar = await _unitOfWork.Repository<Mezuniyyet>()
+            .MovcuddurmuAsync(x => x.KorreksiyaOlunanMezuniyyetId == id && !x.Silinib);
+        if (korreksiyaVar)
+            return Result.Fail("Bu məzuniyyətə dövlət-vəzifə korreksiyası tətbiq olunub — növ dəyişdirilə bilməz.");
+
+        var bagliAy = await MaasBagliAyAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
+        if (bagliAy != null)
+            return Result.Fail($"{bagliAy.Value.Ay:00}.{bagliAy.Value.Il} ayının maaşı «{bagliAy.Value.Status}» statusundadır — " +
+                               "növ dəyişdirilə bilməz. Əvvəlcə həmin ayın maaşı açılmalıdır.");
+
+        var gun = m.EfektivGunSayi;
+
+        // Yeni növ balansdan çıxırsa (İllik) — kifayət edirmi?
+        // Öz hesabına balansa dəymir, ona görə yoxlama yalnız İllik üçündür.
+        if (yeniNov == MezuniyyetNovu.Illik)
+        {
+            var qaliq = await _unitOfWork.Repository<MezuniyyetBalans>().Query()
+                .Where(x => !x.Silinib && x.IsciId == m.IsciId && x.Nov == MezuniyyetNovu.Illik)
+                .SumAsync(x => (int?)(x.ToplamGun - x.IstifadeOlunanGun)) ?? 0;
+
+            if (qaliq < gun)
+                return Result.Fail($"Kifayət qədər əmək məzuniyyəti balansı yoxdur. Qalıq: {qaliq} gün, tələb: {gun} gün.");
+        }
+
+        var kohneNov = m.Nov;
+
+        using var transaction = await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            // 1) Köhnə növdən balansı geri qaytar
+            await BalansiGeriQaytarAsync(m.IsciId, kohneNov, gun);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            // 2) Növü dəyiş
+            m.Nov = yeniNov;
+            m.GunHesabiDuzelisiSebebi = $"Admin növ dəyişikliyi ({kohneNov} → {yeniNov}): {sebeb.Trim()}";
+
+            // 3) Yeni növdən kəs
+            await BalansiFifoKesAsync(m.IsciId, yeniNov, gun);
+
+            // 4) Davamiyyət statusunu yeni növə uyğunlaşdır.
+            //    Əvvəlcə köhnə izlər silinir, sonra yeni status yazılır — belə
+            //    olmasa üst-üstə düşən gündə köhnə status qalardı.
+            await DavamiyyetIzleriniSilAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            var yeniStatus = NovunDavamiyyetStatusu(yeniNov);
+            var skipBayram = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= m.BaslamaTarixi && x.Tarix <= m.BitmeTarixi
+                                      && x.Tip == GunTipi.Bayram && !x.MezuniyyetdeHesablanir);
+
+            for (var gunu = m.BaslamaTarixi.Date; gunu <= m.BitmeTarixi.Date; gunu = gunu.AddDays(1))
+            {
+                if (skipBayram.Any(b => b.Tarix.Date == gunu.Date)) continue;
+                await DavamiyyetUpsertAsync(m.IsciId, gunu, yeniStatus);
+            }
+
+            await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+            await _unitOfWork.YaddaSaxlaAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+
+        return Result.Ok($"Məzuniyyətin növü dəyişdirildi: {kohneNov} → {yeniNov} ({gun} gün). " +
+                         "Həmin ayın maaşı yenidən hesablanmalıdır.");
     }
 
     /// <summary>
@@ -2688,6 +2944,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     private async Task BalansiGeriQaytarAsync(int isciId, MezuniyyetNovu nov, int gun)
     {
         if (gun <= 0) return;
+        // Öz hesabına (ödənişsiz) məzuniyyət illik balansa DƏYMİR (Ə.M. 129) —
+        // `BalansiFifoKesAsync` onu heç vaxt KƏSMİR, deməli geri də qaytarmamalıyıq.
+        // Qoruma əvvəl yalnız kəsmə tərəfində var idi: OzHesabina növündə balans
+        // sətri mövcud olsaydı, ləğv/növ-dəyiş zamanı kəsilməmiş günlər geri
+        // qaytarılar və balans şişərdi (14.08.2026 — cüt simmetrik edildi).
+        if (nov == MezuniyyetNovu.OzHesabina) return;
 
         var repo = _unitOfWork.Repository<MezuniyyetBalans>();
 

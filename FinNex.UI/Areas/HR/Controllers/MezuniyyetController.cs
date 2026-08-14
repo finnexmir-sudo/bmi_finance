@@ -284,6 +284,36 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detal), new { id });
         }
 
+        // ADMIN: səhvən yazılmış məzuniyyəti tamamilə ləğv edir — başlayıb/keçmiş
+        // olsa da. HR yolu bunu edə bilmir (həm "başlayıb" bloku, həm işçinin ləğv
+        // müraciəti tələbi). Maaşı təsdiqlənmiş/ödənilmiş ay bloklanır.
+        // AdminTarixDeyis ilə eyni qorunma: rol yuxarıdakı atributla, isciId yalnız audit.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Admin)]
+        public async Task<IActionResult> AdminLegvEt(int id, string sebeb)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            var result = await _mezuniyyetService.AdminLegvEtAsync(id, sebeb, isciId ?? 0);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            // Ləğvdən sonra qeyd soft-delete olunur — detal səhifəsi əvəzinə siyahıya
+            return result.Success
+                ? RedirectToAction(nameof(Hr))
+                : RedirectToAction(nameof(Detal), new { id });
+        }
+
+        // ADMIN: səhv seçilmiş növü düzəldir (İllik ↔ Öz hesabına).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Admin)]
+        public async Task<IActionResult> AdminNovDeyis(int id, MezuniyyetNovu yeniNov, string sebeb)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            var result = await _mezuniyyetService.AdminNovDeyisAsync(id, yeniNov, sebeb, isciId ?? 0);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         [HttpGet]

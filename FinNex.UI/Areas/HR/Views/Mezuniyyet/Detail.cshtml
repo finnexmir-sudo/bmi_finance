@@ -111,6 +111,29 @@
                     <i class="bi bi-shield-lock"></i> Tarix düzəlt (admin)
                 </button>
             }
+
+            @* ADMIN: ləğv və növ düzəlişi. Tarix düzəlişindən FƏRQLİ olaraq burada
+               "başlayıb" şərti YOXDUR — səhv qeyd gələcək tarixli də ola bilər və
+               HR onu da ləğv edə bilmir (işçinin ləğv müraciəti tələb olunur). *@
+            @if (User.IsInRole(RoleNames.Admin)
+                 && m.Status == MezuniyyetStatus.Tesdiqlenib
+                 && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
+                 && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+            {
+                @* Növ düzəlişi yalnız İllik ↔ Öz hesabına arasında mümkündür —
+                   digər növlərdə düymə göstərilmir (server tərəf də bloklayır). *@
+                @if (m.Nov == MezuniyyetNovu.Illik || m.Nov == MezuniyyetNovu.OzHesabina)
+                {
+                    <button type="button" onclick="adminNovModalAc()"
+                            style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #b45309;background:#fff7ed;color:#9a3412;font-size:13px;font-weight:600;cursor:pointer;">
+                        <i class="bi bi-shield-lock"></i> Növ düzəlt (admin)
+                    </button>
+                }
+                <button type="button" onclick="adminLegvModalAc()"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #b91c1c;background:#fef2f2;color:#b91c1c;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-x-octagon"></i> Ləğv et (admin)
+                </button>
+            }
             @{
                 var backAction = string.IsNullOrEmpty(Model.ReturnAction) ? "Hr" : Model.ReturnAction;
                 var backActionMapped = backAction switch
@@ -512,6 +535,98 @@
             function adminTarixModalAc() { document.getElementById('adminTarixModal').style.display = 'flex'; }
             function adminTarixModalBag() { document.getElementById('adminTarixModal').style.display = 'none'; }
         </script>
+    }
+
+    @* ── ADMIN Ləğv / Növ — modallar ───────────────────────────────────────
+       Şərt yuxarıdakı düymələrlə EYNİ olmalıdır: "başlayıb" yoxlaması YOXDUR.
+       Biri dəyişsə düymə görünüb modal olmaz (və ya əksi) — ikisini birlikdə dəyiş. *@
+    @if (User.IsInRole(RoleNames.Admin)
+         && m.Status == MezuniyyetStatus.Tesdiqlenib
+         && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
+         && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+    {
+        @* ── ADMIN Ləğv — modal ────────────────────────────────────────────── *@
+        <div id="adminLegvModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:12px;width:100%;max-width:480px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
+                    <div style="font-size:15px;font-weight:700;color:#1a2332;">
+                        <i class="bi bi-x-octagon" style="margin-right:6px;color:#b91c1c;"></i>
+                        Admin: məzuniyyəti ləğv et
+                    </div>
+                    <button type="button" onclick="adminLegvModalBag()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
+                </div>
+                <form asp-area="HR" asp-controller="Mezuniyyet" asp-action="AdminLegvEt" method="post">
+                    <input type="hidden" name="id" value="@m.Id" />
+                    <div style="padding:20px;">
+                        <div style="margin-bottom:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;font-size:12px;color:#b91c1c;line-height:1.6;">
+                            <i class="bi bi-exclamation-triangle" style="margin-right:5px;"></i>
+                            Məzuniyyət tamamilə ləğv edilir (başlayıb/keçmiş olsa belə). Balans geri qaytarılır,
+                            davamiyyət qeydləri silinir, gözləyən ödəniş sıfırlanır.
+                            <b>Maaşı təsdiqlənmiş və ya ödənilmiş ay bloklanır.</b>
+                            Əmr nömrəsi bazada qalır — əməliyyat baş verib.
+                            Ləğvdən sonra həmin ayın maaşı <b>yenidən hesablanmalıdır</b>.
+                        </div>
+                        <label class="fn-sbi-label">Səbəb <span style="color:#b91c1c">*</span></label>
+                        <textarea name="sebeb" class="fn-input" rows="2" required
+                                  placeholder="məs. işçi işə gəlmədi, səhvən öz hesabına yazıldı, rəhbər güzəşt etdi"></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
+                        <button type="button" onclick="adminLegvModalBag()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">İmtina</button>
+                        <button type="submit" style="padding:8px 18px;border-radius:8px;border:none;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Ləğv et</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+            function adminLegvModalAc() { document.getElementById('adminLegvModal').style.display = 'flex'; }
+            function adminLegvModalBag() { document.getElementById('adminLegvModal').style.display = 'none'; }
+        </script>
+
+        @* ── ADMIN Növ dəyişikliyi — modal (yalnız İllik ↔ Öz hesabına) ────── *@
+        @if (m.Nov == MezuniyyetNovu.Illik || m.Nov == MezuniyyetNovu.OzHesabina)
+        {
+            var hedefNov = m.Nov == MezuniyyetNovu.Illik ? MezuniyyetNovu.OzHesabina : MezuniyyetNovu.Illik;
+            var hedefAd  = hedefNov == MezuniyyetNovu.Illik ? "İllik (əmək) məzuniyyəti" : "Öz hesabına (ödənişsiz)";
+            <div id="adminNovModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
+                <div style="background:#fff;border-radius:12px;width:100%;max-width:480px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
+                        <div style="font-size:15px;font-weight:700;color:#1a2332;">
+                            <i class="bi bi-shield-lock" style="margin-right:6px;color:#9a3412;"></i>
+                            Admin: məzuniyyətin növünü düzəlt
+                        </div>
+                        <button type="button" onclick="adminNovModalBag()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
+                    </div>
+                    <form asp-area="HR" asp-controller="Mezuniyyet" asp-action="AdminNovDeyis" method="post">
+                        <input type="hidden" name="id" value="@m.Id" />
+                        <input type="hidden" name="yeniNov" value="@((int)hedefNov)" />
+                        <div style="padding:20px;">
+                            <div style="margin-bottom:12px;font-size:13px;color:#374151;line-height:1.7;">
+                                Cari növ: <b>@m.Nov</b><br />
+                                Yeni növ: <b>@hedefAd</b>
+                            </div>
+                            <div style="margin-bottom:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;font-size:12px;color:#9a3412;line-height:1.6;">
+                                <i class="bi bi-exclamation-triangle" style="margin-right:5px;"></i>
+                                Balans köhnə növdən geri qaytarılır, yeni növdən kəsilir; davamiyyət statusu yenilənir.
+                                <b>İllik-ə çevirmək üçün balansda kifayət qədər gün olmalıdır.</b>
+                                Qabaqcadan ödənişi olan və maaşı bağlı ayın məzuniyyəti bloklanır.
+                                Dəyişiklikdən sonra həmin ayın maaşı <b>yenidən hesablanmalıdır</b>.
+                            </div>
+                            <label class="fn-sbi-label">Səbəb <span style="color:#b91c1c">*</span></label>
+                            <textarea name="sebeb" class="fn-input" rows="2" required
+                                      placeholder="məs. səhvən öz hesabına seçilib, illik olmalıdır"></textarea>
+                        </div>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
+                            <button type="button" onclick="adminNovModalBag()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">İmtina</button>
+                            <button type="submit" style="padding:8px 18px;border-radius:8px;border:none;background:#9a3412;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Növü dəyiş</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <script>
+                function adminNovModalAc() { document.getElementById('adminNovModal').style.display = 'flex'; }
+                function adminNovModalBag() { document.getElementById('adminNovModal').style.display = 'none'; }
+            </script>
+        }
     }
 
     @* ── ƌvəzedici konflikti (soft-warn) ───────────────────────────────── *@

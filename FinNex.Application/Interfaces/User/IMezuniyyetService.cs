@@ -54,6 +54,27 @@ namespace FinNex.Application.Interfaces
         // Balans/davamiyyət/avans eyni atomar məntiqlə uzlaşdırılır; ödənilmiş avans bloklanır.
         Task<Result> AdminTarixDeyisAsync(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb, int adminId);
 
+        // ADMIN: səhvən yazılmış məzuniyyəti tamamilə LƏĞV edir — başlayıb/keçmiş
+        // olsa da (HR yolunda bu mümkün deyil: həm "başlayıb" bloku, həm də işçinin
+        // ləğv müraciəti tələb olunur). Real hadisə 14.08.2026: işçi işə gəlmədi,
+        // HR ona 1 gün öz hesabına yazdı, rəhbər güzəşt etdi — geri götürmək
+        // mümkün olmadı.
+        //
+        // MAAŞ QORUYUCUSU: məzuniyyətin toxunduğu HƏR ay üçün maaş `Təsdiqləndi`
+        // və ya `Ödənildi` statusundadırsa bloklanır — təsdiqlənmiş hesablamanı
+        // səssizcə etibarsız etmək olmaz. Səbəb məcburidir (audit).
+        Task<Result> AdminLegvEtAsync(int id, string sebeb, int adminId);
+
+        // ADMIN: səhv NÖV seçilibsə düzəldir (məs. "öz hesabına" əvəzinə "illik").
+        // Balans köhnə növdən geri qaytarılır, yeni növdən kəsilir; davamiyyət
+        // statusu yeni növə uyğunlaşdırılır. Maaş qoruyucusu ləğvdəki ilə eynidir.
+        //
+        // YALNIZ İllik ↔ Öz hesabına arasında: Xəstəlik və Ezamiyyət ayrı
+        // modullardır (Xestelik / EzamiyyetMuraciet entity-ləri) — bura çevirmək
+        // həmin modulların bilmədiyi "yetim" qeyd yaradardı. Dövlət vəzifəsinin
+        // isə öz korreksiya mexanizmi var.
+        Task<Result> AdminNovDeyisAsync(int id, MezuniyyetNovu yeniNov, string sebeb, int adminId);
+
         // Təsdiq paneli üçün
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();
