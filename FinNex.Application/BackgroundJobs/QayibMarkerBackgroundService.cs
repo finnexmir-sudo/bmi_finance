@@ -93,15 +93,44 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 .GroupBy(x => x.Tarix)
                 .ToDictionary(g => g.Key, g => g.First().Tip);
 
-            // Backfill dövründə mövcud davamiyyət qeydləri (işçi+tarix cütləri)
-            var movcudQeydler = await db.Set<Davamiyyet>()
+            // Backfill dövründə mövcud davamiyyət qeydləri (işçi+tarix cütləri).
+            //
+            // SİLİNMİŞLƏR DƏ GƏTİRİLİR (14.08.2026) — və bu, kritikdir:
+            // `Davamiyyet`-də (IsciId, Tarix) üzrə UNİKAL indeks var və o, `Silinib`-i
+            // FİLTRLƏMİR (AppDbContext:760). Yalnız aktiv qeydlərə baxsaydıq,
+            // yumşaq silinmiş günə YENİ sətir INSERT etməyə çalışardıq və unikal
+            // indeks pozulardı. AddRange + tək SaveChanges olduğu üçün bu, həmin
+            // gedişdə BÜTÜN Qayıb qeydlərini uçurardı — üstəlik səssizcə, çünki
+            // istisna yuxarıda tutulub yalnız loga yazılır.
+            //
+            // Belə silinmiş sətirlər real yaranır: məzuniyyət ləğv olunanda onun
+            // davamiyyət izləri yumşaq silinir (HrLegvEtAsync / AdminLegvEtAsync).
+            // Admin ləğvi məhz KEÇMİŞ günlərə işlədiyi üçün nəticəsi demək olar ki,
+            // həmişə bu 7 günlük pəncərəyə düşür.
+            //
+            // Silinmiş sətri təkrar INSERT etmək əvəzinə DİRİLDİRİK: gün faktiki
+            // olaraq qeydsizdir, ona Qayıb yazılmalıdır. (Qayıb özü maaşa təsir
+            // etmir — kəsinti üçün `MaasdanKes` ayrıca işarələnməlidir.)
+            var pencereQeydleri = await db.Set<Davamiyyet>()
                 .AsNoTracking()
-                .Where(x => !x.Silinib && x.Tarix.Date >= baslanic && x.Tarix.Date <= bugun)
-                .Select(x => new { x.IsciId, Tarix = x.Tarix.Date })
+                .Where(x => x.Tarix.Date >= baslanic && x.Tarix.Date <= bugun)
+                .Select(x => new { x.Id, x.IsciId, Tarix = x.Tarix.Date, x.Silinib })
                 .ToListAsync(ct);
 
+            // Aktiv qeyd var → toxunma
             var movcudSet = new HashSet<string>(
-                movcudQeydler.Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
+                pencereQeydleri.Where(x => !x.Silinib)
+                               .Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
+
+            // Yalnız silinmiş qeyd var → yenisini INSERT etmə, mövcudu dirilt
+            var silinmisDict = pencereQeydleri
+                .Where(x => x.Silinib)
+                .Select(x => new { Key = $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}", x.Id })
+                .Where(x => !movcudSet.Contains(x.Key))
+                .GroupBy(x => x.Key)
+                .ToDictionary(g => g.Key, g => g.First().Id);
+
+            var dirildilecekler = new List<(int Id, DavamiyyetStatus Status)>();
 
             // Backfill dövründə təsdiqlənmiş saatlıq icazələr — bu günlər Icazeli yazılacaq
             var icazeQeydler = await db.Set<Icaze>()
@@ -188,6 +217,14 @@ namespace FinNex.Infrastructure.BackgroundJobs
                             ? DavamiyyetStatus.Icazeli
                             : DavamiyyetStatus.Qayib;
 
+                    // Yumşaq silinmiş sətir varsa YENİ yazmırıq — unikal indeks
+                    // (IsciId, Tarix) Silinib-i filtrləmir, INSERT pozulardı.
+                    if (silinmisDict.TryGetValue(key, out var silinmisId))
+                    {
+                        dirildilecekler.Add((silinmisId, status));
+                        continue;
+                    }
+
                     yeniQeydler.Add(new Davamiyyet
                     {
                         IsciId = isci.Id,
@@ -201,11 +238,36 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 }
             }
 
-            if (yeniQeydler.Count > 0)
+            // Silinmiş sətirləri dirilt (yeni INSERT əvəzinə) — indekslə toqquşmasın
+            if (dirildilecekler.Count > 0)
             {
+                var idler = dirildilecekler.Select(x => x.Id).ToList();
+                var statusDict = dirildilecekler.ToDictionary(x => x.Id, x => x.Status);
+
+                var qeydler = await db.Set<Davamiyyet>()
+                    .Where(x => idler.Contains(x.Id))
+                    .ToListAsync(ct);
+
+                foreach (var q in qeydler)
+                {
+                    q.Silinib = false;
+                    q.SilinmeTarixi = null;
+                    q.Status = statusDict[q.Id];
+                    q.GirisVaxti = null;
+                    q.CixisVaxti = null;
+                    q.YenilenmeTarixi = indi;
+                }
+            }
+
+            if (yeniQeydler.Count > 0)
                 await db.Set<Davamiyyet>().AddRangeAsync(yeniQeydler, ct);
+
+            if (yeniQeydler.Count > 0 || dirildilecekler.Count > 0)
+            {
                 await db.SaveChangesAsync(ct);
-                _logger.LogInformation("QayibMarker: {Count} Qayib qeydi yaradıldı", yeniQeydler.Count);
+                _logger.LogInformation(
+                    "QayibMarker: {Yeni} yeni, {Dirilen} dirildilmiş davamiyyət qeydi",
+                    yeniQeydler.Count, dirildilecekler.Count);
             }
 
             // Dünən görüşdən qayıtmayan iştirakçıların CihazQayidisVaxti-ni iş günü sonuna qoy
