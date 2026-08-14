@@ -22,18 +22,39 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IJetonTeklifleriService _teklifService;
         private readonly IBildirisRouter _bildirisRouter;
 
+        private readonly ILogger<DavamiyyetController> _logger;
+
         public DavamiyyetController(
             IDavamiyyetService davamiyyetService,
             IIsciService isciService,
             IUnitOfWork unitOfWork,
             IJetonTeklifleriService teklifService,
-            IBildirisRouter bildirisRouter)
+            IBildirisRouter bildirisRouter,
+            ILogger<DavamiyyetController> logger)
         {
             _davamiyyetService = davamiyyetService;
             _isciService = isciService;
             _unitOfWork = unitOfWork;
             _teklifService = teklifService;
             _bildirisRouter = bildirisRouter;
+            _logger = logger;
+        }
+
+        // Cari istifadəçinin işçi qeydi (AppUser → Isci.AppUserId).
+        // Tapılmasa null — admin hesabı işçiyə bağlı olmaya bilər və bu,
+        // əməliyyatı BLOKLAMAMALIDIR (audit sahəsi 0 qalır).
+        private async Task<int?> CariIsciIdAsync()
+        {
+            var xam = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (!int.TryParse(xam, out var appUserId)) return null;
+
+            var isci = await _unitOfWork.Repository<Isci>()
+                .Query()
+                .Where(x => x.AppUserId == appUserId && !x.Silinib)
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync();
+
+            return isci;
         }
 
         public async Task<IActionResult> Index()
@@ -936,6 +957,62 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await _teklifService.DavamiyyetYoxlaAsync(result.Data.Id);
 
             return Ok(new { message = "Qayıb uğurla qeyd edildi." });
+        }
+
+        // ── POST: Erkən çıxış icazəsi ver (YALNIZ bugün üçün) ──────────────
+        // İşçiyə bugünə icazə verilir → ErkenCixisIcaze qeydi yaranır və davamiyyət
+        // həmin günü "tez çıxdı" saymır (HR/Davamiyyet:414, ADMS:398, User:283).
+        //
+        // TARİXÇƏ: bu action əvvəl RehberDashboardController-də idi. 29.07.2026-da
+        // (5fb0b698) Rəhbər Davamiyyət dublikat səhifəsi silinərkən action da onunla
+        // birlikdə getdi, amma düymə `hr-davamiyyet.js`-də qaldı — nəticədə düymə
+        // görünürdü, POST isə boş ünvana gedirdi və heç nə yazılmırdı. Rəhbər
+        // əvvəllər verə bilirdi, sonra heç kim verə bilmədi. 14.08.2026-da bərpa
+        // olundu, indi vahid səhifədədir.
+        //
+        // Rol: controller səviyyəsindəki [Authorize] — HR + Admin + Rəhbər.
+        // Ayrıca məhdudiyyət qoyulmadı, çünki səhifənin özü onsuz da bu üç rola açıqdır
+        // və icazəni praktikada rəhbər/HR verir.
+        //
+        // YALNIZ BUGÜN: keçmiş günə icazə vermək intizam qeydini geriyə dəyişmək
+        // deməkdir — orijinal davranış saxlanılır (kommit c75bbd2b).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ErkenCixisIcazeVer(int isciId)
+        {
+            if (isciId <= 0)
+                return Json(new { success = false, message = "İşçi seçilməyib." });
+
+            try
+            {
+                var bugun = DateTime.Today;
+
+                // İdempotent — bu gün üçün artıq icazə varsa təkrar yaratma
+                var movcud = await _unitOfWork.Repository<ErkenCixisIcaze>()
+                    .Query()
+                    .AnyAsync(x => !x.Silinib && x.IsciId == isciId && x.Tarix.Date == bugun);
+                if (movcud)
+                    return Json(new { success = true, message = "Artıq verilib." });
+
+                // İcazəni verən — cari istifadəçinin işçisi. Tapılmasa 0 qalır
+                // (məs. admin hesabı işçiyə bağlı deyil) və bu, icazəni BLOKLAMIR.
+                var verenIsciId = await CariIsciIdAsync() ?? 0;
+
+                await _unitOfWork.Repository<ErkenCixisIcaze>().YaratAsync(new ErkenCixisIcaze
+                {
+                    IsciId = isciId,
+                    Tarix = bugun,
+                    IcazeVerenIsciId = verenIsciId
+                });
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ErkenCixisIcazeVer xətası — isciId={IsciId}", isciId);
+                return Json(new { success = false, message = "Xəta baş verdi." });
+            }
         }
 
         [HttpPost]

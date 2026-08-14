@@ -1094,8 +1094,16 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.appendChild(elapsedTooltip);
 
     var suppressElapsedClose = false;
-    var erkenCixisEndpoint = document.querySelector('.hrd-page')
-        ?.getAttribute('data-endpoint-erkencixis') || '';
+    // Digər altı endpoint kimi `endpoint()` helper-i ilə — atribut yoxdursa
+    // default HR controller-ə gedir.
+    //
+    // ƏVVƏL BELƏ DEYİLDİ və düymə səssizcə işləmirdi: atribut birbaşa oxunub
+    // `|| ''` ilə BOŞ sətrə düşürdü, `fetch('')` isə cari səhifəyə (Index) POST
+    // edirdi → HTML qayıdır → `r.json()` sınır → `.catch` düyməni geri qaytarır.
+    // Heç bir xəta göstərilmirdi. Səbəb: action 29.07.2026-da RehberDashboard-dan
+    // silinən dublikat səhifə ilə birlikdə getmişdi (5fb0b698); 14.08.2026-da
+    // HR/Davamiyyet-ə bərpa olundu.
+    var erkenCixisEndpoint = endpoint('erkencixis', '/HR/Davamiyyet/ErkenCixisIcazeVer');
 
     tableBody.addEventListener('click', function (e) {
         if (e.target.closest('button[data-action="erken-icaze"]')) return;
