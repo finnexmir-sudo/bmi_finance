@@ -9,6 +9,8 @@
     var zaminler = ViewBag.Zaminler as List<ZaminDaxilDto> ?? new List<ZaminDaxilDto>();
     var teyinatlar = ViewBag.Teyinatlar as string[] ?? new string[0];
     var olkeler = ViewBag.Olkeler as string[] ?? new string[0];
+    // Borcalanın ölkəsi Oracle-dan gəlir (r.grajdanstvo) — öncədən seçili göstərilir
+    var seciliOlke = ViewBag.SeciliOlke as string;
     var ayMuddet = FinNex.UI.Areas.User.Controllers.KreditMuqavileController.AyMuddet(Model.Muddet);
 }
 
@@ -42,7 +44,7 @@
 
     @if (xeta == null)
     {
-        <form asp-action="MenzilYarat" method="post">
+        <form asp-action="MenzilYarat" method="post" data-bos-yoxlama>
             @Html.AntiForgeryToken()
             <input type="hidden" name="HesabNo" value="@Model.HesabNo" />
             <input type="hidden" name="Ks" value="@Model.Ks" />
@@ -74,7 +76,7 @@
                 <div class="kmh-grid">
                     <div>
                         <label>Kredit təyinatı</label>
-                        <select name="Teyinat" class="fn-input">
+                        <select name="Teyinat" class="fn-input" data-vacib="Kredit təyinatı">
                             <option value="">— seçin —</option>
                             @foreach (var t in teyinatlar) { <option value="@t">@t</option> }
                         </select>
@@ -83,9 +85,13 @@
                     {
                         <div>
                             <label>Borcalanın ölkəsi</label>
-                            <select name="BorcalanOlke" class="fn-input">
+                            <select name="BorcalanOlke" class="fn-input" data-vacib="Borcalanın ölkəsi">
                                 <option value="">— seçin —</option>
-                                @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                                @foreach (var o in olkeler)
+                                {
+                                    if (o == seciliOlke) { <option value="@o" selected>@o</option> }
+                                    else { <option value="@o">@o</option> }
+                                }
                             </select>
                         </div>
                     }
@@ -99,12 +105,16 @@
                     <div class="kmh-sec-title">Hüquqi şəxs — direktor məlumatı</div>
                     <div class="kmh-grid">
                         <div><label>VÖEN (Oracle-dan)</label><input type="text" class="fn-input" value="@Model.Voen" readonly /></div>
-                        <div><label>Direktor adı</label><input type="text" name="DirektorAd" class="fn-input" placeholder="Ad Soyad Ata adı" /></div>
-                        <div><label>Direktor vəsiqəsi (seriya, FİN)</label><input type="text" name="DirektorVesiqe" class="fn-input" /></div>
+                        <div><label>Direktor adı</label><input type="text" name="DirektorAd" class="fn-input" placeholder="Ad Soyad Ata adı" data-vacib="Direktor adı" /></div>
+                        <div><label>Direktor vəsiqəsi (seriya, FİN)</label><input type="text" name="DirektorVesiqe" class="fn-input" data-vacib="Direktor vəsiqəsi" /></div>
                         <div><label>Direktor ölkəsi</label>
-                            <select name="DirektorOlke" class="fn-input">
+                            <select name="DirektorOlke" class="fn-input" data-vacib="Direktor ölkəsi">
                                 <option value="">— seçin —</option>
-                                @foreach (var o in olkeler) { <option value="@o">@o</option> }
+                                @foreach (var o in olkeler)
+                                {
+                                    if (o == seciliOlke) { <option value="@o" selected>@o</option> }
+                                    else { <option value="@o">@o</option> }
+                                }
                             </select>
                         </div>
                     </div>
@@ -207,7 +217,7 @@
                                 <div><label>Telefon</label><input type="text" name="Zaminler[@i].Telefon" value="@z.Telefon" class="fn-input" /></div>
                                 <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[@i].Unvan" value="@z.Unvan" class="fn-input" /></div>
                                 <div><label>Ölkə</label>
-                                    <select name="Zaminler[@i].Olke" class="fn-input">
+                                    <select name="Zaminler[@i].Olke" class="fn-input" data-vacib="Zamin @(i+1) — ölkə">
                                         <option value="">— seçin —</option>
                                         @foreach (var o in olkeler)
                                         {
@@ -300,6 +310,7 @@
 }
 
 @section Scripts {
+    <script src="~/js/kredit-muqavile-bos-yoxlama.js" asp-append-version="true"></script>
     <script>
         document.getElementById('ferqliChk').addEventListener('change', function () {
             document.getElementById('sahibBlok').classList.toggle('acik', this.checked);
@@ -355,7 +366,7 @@
                     <div><label>FİN</label><input type="text" name="Zaminler[${i}].Fin" class="fn-input" /></div>
                     <div><label>Telefon</label><input type="text" name="Zaminler[${i}].Telefon" class="fn-input" /></div>
                     <div class="kmh-full"><label>Ünvan</label><input type="text" name="Zaminler[${i}].Unvan" class="fn-input" /></div>
-                    <div><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input">${olkeOptions}</select></div>
+                    <div><label>Ölkə</label><select name="Zaminler[${i}].Olke" class="fn-input" data-vacib="Zamin ${i + 1} — ölkə">${olkeOptions}</select></div>
                     <div><label>Pasport tarixi</label><input type="text" name="Zaminler[${i}].PasportTarixi" class="fn-input" /></div>
                 </div>
             </div>`;

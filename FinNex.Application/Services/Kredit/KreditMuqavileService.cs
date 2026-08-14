@@ -58,6 +58,12 @@ public class KreditMuqavileService : IKreditMuqavileService
             Fin = Str(r, "FIN"),
             Telefon = Str(r, "TELEFON"),
             Unvan = Str(r, "UNVAN"),
+            // Zaminin ölkəsi BMI-də var: creditinfoguarantee.COUNTRYCODE ("AZE").
+            // Sorğu onu `countrycode` ilə birləşdirib ADI qaytarmalıdır (OLKE) —
+            // müqaviləyə ad düşür, kod yox. Sorğuda sütun yoxdursa null qalır və
+            // forma köhnə kimi işləyir (operator əl ilə seçir).
+            // Sorğu dəyişikliyi: docs/sql/kredit/Kredit_Zaminleri_Olke_Sutunu.md
+            Olke = Str(r, "OLKE"),
         }).ToList();
     }
 

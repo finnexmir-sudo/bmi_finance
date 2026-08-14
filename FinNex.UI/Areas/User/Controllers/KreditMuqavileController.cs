@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using FinNex.Application.DTOs.Kredit.Muqavile;
 using FinNex.Application.Helpers.Kredit;
+using FinNex.Application.Interfaces.Countrycode;
 using FinNex.Application.Interfaces.Kredit;
 using FinNex.UI.Services.Kredit;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +18,7 @@ public class KreditMuqavileController : Controller
     private readonly IKreditMuqavileNomreService _nomreService;
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
+    private readonly IBmiOlkeService _olkeService;
 
     // Word şablonları YALNIZ AZN üçündür: {k_val} sabit "AZN" yazılır və məbləğin
     // sözlə yazılışı (KreditSozeCevir.MebleghSoze) "manat"/"qəpik" sözlərini sabit
@@ -82,12 +84,10 @@ public class KreditMuqavileController : Controller
         "Xeyir iş", "Müalicə xərci", "İstirahət Xərci", "Dövriyyə vəsaitinin artırılması"
     };
 
-    // Ölkələr — BMI dialoqundakı siyahı ({k_olke}/{i_olke}/{zolke1})
-    public static readonly string[] Olkeler =
-    {
-        "Azərbaycan Respublikası", "İran İslam Respublikası", "Rusiya Respublikası",
-        "Türkiyə Respublikası", "Gürcüstan Respublikası"
-    };
+    // Ölkələr ({k_olke}/{i_olke}/{zolke1}) artıq SABİT DEYİL — BMI `countrycode`
+    // kataloqundan canlı oxunur (IBmiOlkeService). Əvvəlki 5 sabit ölkə həmin
+    // servisin ehtiyat siyahısına köçürüldü: Oracle əlçatmaz olsa forma köhnə
+    // davranışa qayıdır, ölkəsiz qalmır.
 
     // İpoteka obyektinin tipi — köhnə BMI "Hüquq obyektinin adı" (seçiliyə uyğun sahələr).
     // Kod → görünən ad. Kod formadan gəlir, sənəddə ad işlədilir.
@@ -102,13 +102,27 @@ public class KreditMuqavileController : Controller
     public KreditMuqavileController(
         IKreditMuqavileService muqavileService,
         IKreditMuqavileNomreService nomreService,
+        IBmiOlkeService olkeService,
         IConfiguration config,
         IWebHostEnvironment env)
     {
         _muqavileService = muqavileService;
         _nomreService = nomreService;
+        _olkeService = olkeService;
         _config = config;
         _env = env;
+    }
+
+    // Formanın ölkə sahələrini hazırlayır: siyahı + borcalanın ölkəsi.
+    //
+    // Borcalanın ölkəsi Oracle-da ONSUZ DA VAR (`r.grajdanstvo` → DTO.Olke) —
+    // əvvəl istifadə edilmirdi və operator onu əl ilə yenidən seçirdi.
+    // AdaCevirAsync həm kod ("AZE"), həm hazır ad qəbul edir, ona görə
+    // grajdanstvo-nun hansı formatda saxlandığını bilmək lazım deyil.
+    private async Task OlkeleriDoldurAsync(KreditMuqavileSatirDto kredit, CancellationToken ct = default)
+    {
+        ViewBag.Olkeler = (await _olkeService.SiyahiAsync(ct)).Select(o => o.Ad).ToArray();
+        ViewBag.SeciliOlke = await _olkeService.AdaCevirAsync(kredit.Olke, ct);
     }
 
     // Səviyyə 1 — Seçim səhifəsi: tarixə görə verilmiş kreditlərin siyahısı.
@@ -171,7 +185,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
-        ViewBag.Olkeler = Olkeler;
+        await OlkeleriDoldurAsync(kredit);
         ViewBag.ObyektTipleri = ObyektTipleri;
         return View("Hazirla", kredit);
     }
@@ -410,7 +424,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
-        ViewBag.Olkeler = Olkeler;
+        await OlkeleriDoldurAsync(kredit);
         return View("ZaminlikHazirla", kredit);
     }
 
@@ -586,7 +600,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
-        ViewBag.Olkeler = Olkeler;
+        await OlkeleriDoldurAsync(kredit);
         return View("AvtomobilHazirla", kredit);
     }
 
