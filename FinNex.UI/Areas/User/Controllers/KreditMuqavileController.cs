@@ -228,6 +228,26 @@ public class KreditMuqavileController : Controller
             TempData["Error"] = $"Şablon tapılmadı: {eksikSablon} ({templateRoot}) — nömrələr ayrılmadı, heç nə yazılmadı.";
             return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Daşınmaz Əmlak" });
         }
+
+        // {i_mno} — İPOTEKA müqaviləsinin nömrəsi. Həm müqavilənin özündə (başlıq),
+        // həm BTİ məktubunda bu yer tutucu olmalıdır: məktub «… {i_ipnovu} müqaviləsinə
+        // əsasən …» deyir, yəni ipoteka müqaviləsindən danışır.
+        //
+        // 14.08.2026-a qədər məktubda səhvən {k_mno} yazılırdı — bütün sənədlər ortaq
+        // lüğətdən doldurulduğu üçün ora KREDİT müqaviləsinin nömrəsi düşürdü. Əmlak
+        // Komitəsinə gedən məktubda yanlış müqavilə nömrəsi deməkdir. Şablonlar
+        // düzəldilir; bu yoxlama düzəlişin unudulmadığını təmin edir, çünki səhv
+        // tamamilə səssizdir (heç bir xəta çıxmır, sadəcə başqa rəqəm yazılır).
+        var nomresizSablon = new[] { ipotekaSablon, mektubSablon }
+            .FirstOrDefault(f => !KreditWordService.TokenVarmi(T(f), "{i_mno}"));
+        if (nomresizSablon != null)
+        {
+            TempData["Error"] =
+                $"«{nomresizSablon}» şablonunda {{i_mno}} yer tutucusu tapılmadı. " +
+                "Məktubda/müqavilədə İPOTEKA müqaviləsinin nömrəsi bu yer tutucuya yazılır — " +
+                "şablondakı {k_mno} onunla əvəz edilməlidir. Nömrələr ayrılmadı, heç nə yazılmadı.";
+            return RedirectToAction("Index", new { tarix = dto.KreditTarixi.ToString("yyyy-MM-dd"), tip = "Daşınmaz Əmlak" });
+        }
         // ═════════════════════════════════════════════════════════════════════
 
         // Nömrələri ayır (NomreYaz=false olduqda preview — heç nə yazılmır).
@@ -236,10 +256,14 @@ public class KreditMuqavileController : Controller
         // Girova düşmə (BTİ) məktubu FinNex jurnalına yazılır (Oracle-a YOX).
         // İcraçı nömrəsini servis özü tapır (AppUser → Isci.IcraciNo) — jurnal
         // səhifəsindən yaradılan məktubla eyni yol, eyni nömrələmə.
+        // Qısa məzmunda müştərinin adı da gedir: "mənzil gir sal — Ad Soyad Ata".
+        // Girov sahibi borcalandan fərqli olduqda məktub ONUN adına yazılır
+        // ({i_saa}), ona görə jurnalda da həmin ad görünməlidir.
+        var mektubAdi = ferqli && !string.IsNullOrWhiteSpace(dto.SahibAd) ? dto.SahibAd : kredit.Adi;
         var mekno = await _nomreService.MektubQeydiyyatiAsync(
             dto.MuqavileTarixi,
             int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
-            BtiGonYer, BtiQisaMez,
+            BtiGonYer, QisaMezAdla(BtiQisaMez, mektubAdi),
             ct);
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──
@@ -624,11 +648,11 @@ public class KreditMuqavileController : Controller
         // başlıqda böyük ehtimalla {k_mno} qalıb, yəni sənədin üstündə girov nömrəsi
         // yerinə KREDİT müqaviləsinin nömrəsi çıxacaq — səssiz və hüquqi olaraq səhv.
         // Ona görə burada dayanırıq (nömrədən ƏVVƏL).
-        var teminatsizSablon = new[] { AvtoSablon, DypSablon }
+        var nomresizSablon = new[] { AvtoSablon, DypSablon }
             .FirstOrDefault(f => !KreditWordService.TokenVarmi(T(f), "{a_mno}"));
-        if (teminatsizSablon != null)
+        if (nomresizSablon != null)
             return FormayaQaytar(
-                $"«{teminatsizSablon}» şablonunda {{a_mno}} yer tutucusu tapılmadı. " +
+                $"«{nomresizSablon}» şablonunda {{a_mno}} yer tutucusu tapılmadı. " +
                 "Avtomobil girovunun öz nömrəsi bu yer tutucuya yazılır — şablonda başlıqdakı " +
                 "{k_mno} onunla əvəz edilməlidir. Nömrələr ayrılmadı, heç nə yazılmadı.");
         // ═════════════════════════════════════════════════════════════════════
