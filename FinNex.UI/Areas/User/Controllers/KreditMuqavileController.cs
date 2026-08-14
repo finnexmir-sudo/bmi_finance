@@ -4,6 +4,7 @@ using FinNex.Application.DTOs.Kredit.Muqavile;
 using FinNex.Application.Helpers.Kredit;
 using FinNex.Application.Interfaces.Countrycode;
 using FinNex.Application.Interfaces.Kredit;
+using FinNex.Application.Services.Countrycode;
 using FinNex.UI.Services.Kredit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -113,16 +114,34 @@ public class KreditMuqavileController : Controller
         _env = env;
     }
 
-    // Formanın ölkə sahələrini hazırlayır: siyahı + borcalanın ölkəsi.
+    // Formanın ölkə sahələrini hazırlayır: siyahı + borcalanın ölkəsi + zaminlərinki.
     //
-    // Borcalanın ölkəsi Oracle-da ONSUZ DA VAR (`r.grajdanstvo` → DTO.Olke) —
-    // əvvəl istifadə edilmirdi və operator onu əl ilə yenidən seçirdi.
-    // AdaCevirAsync həm kod ("AZE"), həm hazır ad qəbul edir, ona görə
-    // grajdanstvo-nun hansı formatda saxlandığını bilmək lazım deyil.
-    private async Task OlkeleriDoldurAsync(KreditMuqavileSatirDto kredit, CancellationToken ct = default)
+    // Ölkə Oracle-da ONSUZ DA VAR, əvvəl istifadə edilmirdi və operator əlindəki
+    // məlumatı yenidən seçirdi:
+    //   borcalan → «Kredit Müqavilə» sorğusunun OLKE sütunu (creditinfo.countrycode)
+    //   zamin    → «Kredit Zaminləri» sorğusunun OLKE sütunu (creditinfoguarantee.countrycode)
+    //
+    // HƏR İKİSİ eyni çeviricidən keçir. Səbəb: sorğu bəzən KODU ("AZE"), bəzən
+    // hazır ADI (countrycode ilə join edilibsə) qaytara bilər — 14.08.2026-da
+    // borcalan sorğusu 2 hərfli koddan (grajdanstvo) 3 hərfliyə (countrycode)
+    // keçirildi. Çevirici hər iki formatı qəbul etdiyi üçün sorğu dəyişəndə kod
+    // sınmır; tanınmayan dəyər isə OLDUĞU KİMİ qalır (məlumat itmir).
+    //
+    // Siyahı BİR DƏFƏ oxunur — həm dropdown, həm də seçili dəyərlər üçün.
+    private async Task OlkeleriDoldurAsync(KreditMuqavileSatirDto kredit,
+        List<ZaminDaxilDto>? zaminler = null, CancellationToken ct = default)
     {
-        ViewBag.Olkeler = (await _olkeService.SiyahiAsync(ct)).Select(o => o.Ad).ToArray();
-        ViewBag.SeciliOlke = await _olkeService.AdaCevirAsync(kredit.Olke, ct);
+        var siyahi = await _olkeService.SiyahiAsync(ct);
+        ViewBag.Olkeler = siyahi.Select(o => o.Ad).ToArray();
+
+        // Çevirmə məntiqi servisdədir (tək implementasiya) — burada yalnız
+        // hazır siyahı ötürülür ki, hər dəyər üçün Oracle-a getməyək.
+        ViewBag.SeciliOlke = BmiOlkeService.Ada(siyahi, kredit.Olke);
+
+        // Zaminin ölkəsi birbaşa formada göstərilir (z.Olke) — kod gəlibsə
+        // heç bir seçimə uyğun gəlməzdi, ona görə burada ada çevrilir.
+        if (zaminler != null)
+            foreach (var z in zaminler) z.Olke = BmiOlkeService.Ada(siyahi, z.Olke);
     }
 
     // Səviyyə 1 — Seçim səhifəsi: tarixə görə verilmiş kreditlərin siyahısı.
@@ -185,7 +204,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
-        await OlkeleriDoldurAsync(kredit);
+        await OlkeleriDoldurAsync(kredit, zaminler);
         ViewBag.ObyektTipleri = ObyektTipleri;
         return View("Hazirla", kredit);
     }
@@ -424,7 +443,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
-        await OlkeleriDoldurAsync(kredit);
+        await OlkeleriDoldurAsync(kredit, zaminler);
         return View("ZaminlikHazirla", kredit);
     }
 
@@ -600,7 +619,7 @@ public class KreditMuqavileController : Controller
         ViewBag.SeciliTarix = seciliTarix;
         ViewBag.Zaminler = zaminler;
         ViewBag.Teyinatlar = Teyinatlar;
-        await OlkeleriDoldurAsync(kredit);
+        await OlkeleriDoldurAsync(kredit, zaminler);
         return View("AvtomobilHazirla", kredit);
     }
 

@@ -81,14 +81,22 @@ public class BmiOlkeService : IBmiOlkeService
     }
 
     public async Task<string?> AdaCevirAsync(string? kodVeyaAd, CancellationToken ct = default)
+        => Ada(await SiyahiAsync(ct), kodVeyaAd);
+
+    /// <summary>
+    /// Çevirmənin YEGANƏ implementasiyası. Hazır siyahı ilə işlədiyi üçün bir
+    /// səhifədə çox dəyər çevirmək lazım olanda (borcalan + bütün zaminlər)
+    /// Oracle-a təkrar müraciət olunmur — çağıran siyahını bir dəfə alır.
+    /// `AdaCevirAsync` da buna delegasiya edir ki, məntiq iki yerdə yazılmasın.
+    /// </summary>
+    public static string? Ada(IList<BmiOlkeDto> siyahi, string? kodVeyaAd)
     {
         var deyer = (kodVeyaAd ?? "").Trim();
         if (deyer.Length == 0) return null;
 
-        var siyahi = await SiyahiAsync(ct);
-
         // Əvvəlcə KOD kimi yoxlanılır (Oracle sahələri adətən kod saxlayır:
-        // creditinfoguarantee.COUNTRYCODE = "AZE"), sonra AD kimi.
+        // creditinfo.COUNTRYCODE / creditinfoguarantee.COUNTRYCODE = "AZE"),
+        // sonra AD kimi (sorğu countrycode ilə join edilibsə hazır ad gəlir).
         var tapilan =
             siyahi.FirstOrDefault(o => string.Equals(o.Kod, deyer, StringComparison.OrdinalIgnoreCase))
             ?? siyahi.FirstOrDefault(o => string.Equals(o.Ad, deyer, StringComparison.OrdinalIgnoreCase));
