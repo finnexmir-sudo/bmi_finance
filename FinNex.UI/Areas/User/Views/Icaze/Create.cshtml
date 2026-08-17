@@ -126,7 +126,37 @@
                     </div>
                 </div>
 
-                @* ── Jeton (yalnız Rəhbər üçün) ── *@
+                @* ── Jetonla uzatma (balansı olan HƏR işçi üçün) ──
+                   Tutulacaq miqdar burada yazılmır — serverdə pəncərədən hesablanır
+                   (IcazeService.MecburiJetonSaat). Aşağıdakı JS yalnız göstərir. *@
+                @{
+                    decimal crJetonBalans = ViewBag.JetonBalansi is decimal jb ? jb : 0m;
+                }
+                @if (crJetonBalans > 0)
+                {
+                    <div class="fn-form-group">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+                            @* data-jeton-balans: invariant format — az-AZ vergülü JS-də sınardı. *@
+                            <input asp-for="JetonlaUzat" type="checkbox" id="jetonlaUzat"
+                                   data-jeton-balans="@(crJetonBalans.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))"
+                                   style="width:16px;height:16px" />
+                            <span>Artıq müddəti jetonumdan ödə</span>
+                        </label>
+                        <span class="fn-label-hint" style="margin-left:24px;display:block;margin-top:4px">
+                            Aktiv jeton balansınız: <strong>@crJetonBalans.ToString("0.##") saat</strong>.
+                            İşarələsəniz icazə <strong>@crMaxMetn</strong> üstünə balansınız qədər də uzana bilər —
+                            3 saatı aşan hissə jetonunuzdan tutulur, illik icazə sayğacınıza yazılmır.
+                            Rəhbər təsdiq zamanı bundan artıq saatı da jetonla ödənmiş saya bilər.
+                        </span>
+                        <div id="jetonTutulmaBox" class="fn-label-hint"
+                             style="display:none;margin-left:24px;margin-top:6px;padding:6px 10px;border-radius:6px;
+                                    background:#fff8e8;color:#8a6a18;font-weight:600">
+                            <span id="jetonTutulmaText"></span>
+                        </div>
+                    </div>
+                }
+
+                @* ── Jetonla ödəmə saatı (yalnız Rəhbər — öz müraciəti dərhal təsdiqlənir) ── *@
                 @if (User.IsInRole(FinNex.Domain.RoleNames.Rehber) && ViewBag.JetonBalansi is decimal balans && balans > 0)
                 {
                     <div class="fn-info-box" style="background:#fff8e8;border-color:#f0d785;color:#8a6a18;margin-bottom:8px">
@@ -144,14 +174,6 @@
                         <small style="color:#6b7280;font-size:12px">
                             Müraciət birbaşa təsdiqlənəcəyi üçün bu addımda jeton saatını özünüz təyin edin.
                         </small>
-                    </div>
-                }
-                else if (ViewBag.JetonBalansi is decimal bal && bal > 0)
-                {
-                    <div class="fn-info-box" style="background:#fff8e8;border-color:#f0d785;color:#8a6a18">
-                        <i class="bi bi-coin"></i>
-                        Aktiv jeton balansınız: <strong>@bal.ToString("0.##") saat</strong>.
-                        Rəhbər təsdiq zamanı bu icazənin neçə saatını jetonla ödənmiş kimi seçə bilər.
                     </div>
                 }
 

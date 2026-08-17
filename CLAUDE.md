@@ -287,6 +287,42 @@ xəta verməz. Çıxılma həm PLANA, həm FAKTİKİYƏ eyni cür tətbiq olunur
 `GetDovriyyeAsync`, `DashboardService` illik balans, `RehberTesdiqAsync` jeton limiti) —
 altısı da eyni helper-i çağırmalıdır.
 
+## İcazə — Jetonla Uzatma (17.08.2026-dan)
+
+Adi saatlıq icazə **3 saatdır** (`IcazeService.AdiIcazeMaxDeq`). Onu uzadan **iki**
+güzəşt var və hər ikisinin **qarşılığı** sayğacdan çıxılır:
+
+| Güzəşt | Pəncərəyə əlavə | Sayğacdan çıxılan |
+|---|---|---|
+| «Nahara çıxmıram» | +nahar fasiləsi (45 dəq) | `NaharCixilmaSaat` (sabit) |
+| «Artıq müddəti jetonumdan ödə» | +jeton balansı qədər | `JetonOdenenSaat` |
+
+Nəticədə **sayğaca yazılan icazə heç vaxt 3 saatı keçmir**. Nümunə: 13:00–17:45
+(285 dəq) + nahar + 1 saat jeton → 285 − 45 − 60 = **180 dəq**.
+
+**Jeton MİQDARI heç yerdə əl ilə yazılmır** — pəncərədən hesablanır:
+`IcazeService.MecburiJetonSaat` (= `EffektivDeq − 180`, yuxarı yuvarlaqlaşdırılmış).
+İşçi yalnız **checkbox** işarələyir. Miqdarı iki yerdə (formada və düsturda) saxlasaq,
+biri dəyişəndə o biri köhnə qalar və illik 36 saatlıq balans səssizcə pozular.
+
+**Toxunanda hamısını tutuşdur:**
+- `IcazeService.YaratAsync` — limit + balans yoxlaması, `JetonOdenenSaat` yazılır;
+- `IcazeService.RehberTesdiqAsync` — rəhbər jetonu **ARTIRA** bilər, məcburi həddin
+  altına **SALA bilməz** (`Math.Max(secilen, mecburi)`); rəhbər nahar işarəsini
+  götürsə effektiv müddət artır → məcburi jeton da artır;
+- `IcazeService.HrTesdiqAsync` — rəhbər yoxdursa müraciət birbaşa HR-a düşür və
+  formada jeton sahəsi YOXDUR; balans təsdiqdən **ƏVVƏL** yenidən yoxlanır
+  (sonra yoxlasaq icazə artıq «Təsdiqlənib» olardı);
+- `Create.cshtml` + `user_create_icaze.js` — göstərmə qatı, serverdəki düsturu təkrarlayır;
+- `IcazeDetal.cshtml` — `min = mecburiJeton`, `value = max(istək, mecburi)`.
+
+**Sayğac tərəfi əvvəldən hazırdır** — bu üç yer `JetonOdenenSaat`-ı onsuz da çıxır:
+`DashboardService` (illik balans), `IcazeIndexVM.IstifadeOlunanSaat`,
+`GetIsciIzlemeAsync.PlanEfektiv`. Yeni bir sayğac yazsan, orada da çıxmalıdır.
+
+**Diqqət:** `RehberTesdiqAsync`-in `jetonOdenenSaat` parametri **nullable**-dır —
+`null` «forma göndərməyib, işçinin miqdarını saxla», `0` isə «sıfırla» deməkdir.
+
 ## Şərtli Render Olunan Form Sahəsi + Default Parametr = Səssiz Data İtkisi (KRİTİK)
 
 Bir checkbox/input `@if (...)` şərti ilə render olunursa və POST-u qəbul edən metod həmin

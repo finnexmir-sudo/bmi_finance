@@ -120,6 +120,9 @@ namespace FinNex.UI.Areas.User.Controllers
             if (!ModelState.IsValid)
             {
                 vm.EvezEdenList = await BuildEvezEdenListAsync(isciId.Value);
+                // Jeton balansı da doldurulmalıdır: onsuz forma yenidən göstəriləndə
+                // jeton bloku render olunmur və işçinin uzatma seçimi səssizcə itir.
+                ViewBag.JetonBalansi = await _jetonService.AktivSaatBalansiAsync(isciId.Value);
                 ViewBag.NaharMuddetDeqiqe = await _icazeService.NaharMuddetDeqiqeAsync();
                 return View(vm);
             }
@@ -133,6 +136,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 BitisSaati = bitisTs,
                 Sebeb = vm.Sebeb,
                 NaharNezereAlinmasin = vm.NaharNezereAlinmasin,
+                // Uzatma seçimi hər işçi üçün açıqdır — tutulacaq miqdar formada
+                // yazılmır, servisdə pəncərədən hesablanır (IcazeService.MecburiJetonSaat).
+                JetonlaUzat = vm.JetonlaUzat,
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
                 MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),
@@ -145,6 +151,9 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 TempData["Error"] = result.Message;
                 vm.EvezEdenList = await BuildEvezEdenListAsync(isciId.Value);
+                // Jeton balansı da doldurulmalıdır: onsuz forma yenidən göstəriləndə
+                // jeton bloku render olunmur və işçinin uzatma seçimi səssizcə itir.
+                ViewBag.JetonBalansi = await _jetonService.AktivSaatBalansiAsync(isciId.Value);
                 ViewBag.NaharMuddetDeqiqe = await _icazeService.NaharMuddetDeqiqeAsync();
                 return View(vm);
             }

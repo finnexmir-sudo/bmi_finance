@@ -26,6 +26,12 @@ namespace FinNex.Application.DTOs.HR.Icaze
         // Nahar fasiləsini icazəyə qatır (işçi nahara çıxmır) — max 3 saat 45 dəqiqəyə imkan verir
         public bool NaharNezereAlinmasin { get; set; } = false;
 
+        // "Artıq müddəti jetonumdan ödə" — 3 saatlıq həddi aşan hissə işçinin
+        // jeton balansından tutulur, buna görə pəncərə balans qədər uzun ola bilər.
+        // Tutulacaq MİQDAR yazılmır, pəncərədən HESABLANIR (IcazeService.MecburiJetonSaat) —
+        // güzəşt (uzun pəncərə) ilə çıxılma (jeton) beləcə heç vaxt bir-birindən ayrılmır.
+        public bool JetonlaUzat { get; set; } = false;
+
         // Rol əsaslı workflow — controller tərəfindən doldurulur
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }

@@ -103,20 +103,60 @@ namespace FinNex.Application.Services
                     .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
                 var yaratNaharDeq = yaratParam?.NaharMuddetDeqiqe ?? 45;
 
-                var icazeDeq = (int)(dto.BitisSaati - dto.BaslamaSaati).TotalMinutes;
-                var maxDeq = dto.NaharNezereAlinmasin ? 180 + yaratNaharDeq : 180;
-                if (icazeDeq > maxDeq)
+                // ── Jeton ilə uzatma ──────────────────────────────────────────
+                // İşçi "artıq müddəti jetonumdan ödə" seçibsə, 3 saatı aşan hissə
+                // jetondan tutulur → pəncərə balans qədər uzun ola bilər.
+                // MİQDAR yazılmır, MecburiJetonSaat ilə hesablanır (bax: helper şərhi).
+                // Balans həmişə oxunur — yalnız yoxlama üçün yox, xəta mətnindəki
+                // ipucu üçün də lazımdır ("jetonunuz var, seçimi işarələyin").
+                var jetonBalans = await _jetonService.AktivSaatBalansiAsync(dto.IsciId);
+
+                var lazimJeton = dto.JetonlaUzat
+                    ? MecburiJetonSaat(dto.BaslamaSaati, dto.BitisSaati, dto.NaharNezereAlinmasin, yaratNaharDeq)
+                    : 0m;
+
+                if (lazimJeton > jetonBalans)
+                    return Result<IcazeListDto>.Fail(
+                        $"Jeton balansı kifayət etmir: bu pəncərə üçün {lazimJeton:0.##} saat jeton lazımdır, " +
+                        $"balansınız isə {jetonBalans:0.##} saatdır. İcazəni qısaldın və ya jeton seçimini götürün.");
+
+                var lazimJetonDeq = (int)Math.Round(lazimJeton * 60m, MidpointRounding.AwayFromZero);
+
+                // Yekun yoxlama HƏMİŞƏ eyni invariantdır: sayğaca yazılan ≤ 3 saat.
+                // (Jeton seçilibsə lazimJeton onsuz da bunu təmin edir — şərt yalnız
+                //  seçilməyən halda işə düşür, yəni köhnə davranış qorunur.)
+                var sayilanDeq = EffektivDeq(dto.BaslamaSaati, dto.BitisSaati,
+                                             dto.NaharNezereAlinmasin, yaratNaharDeq) - lazimJetonDeq;
+                if (sayilanDeq > AdiIcazeMaxDeq)
                 {
+                    var maxDeq = dto.NaharNezereAlinmasin ? AdiIcazeMaxDeq + yaratNaharDeq : AdiIcazeMaxDeq;
                     var maxSaat = maxDeq / 60; var maxQaliq = maxDeq % 60;
                     // Çıxışlıq hal şəkilçisi son sözə görə dəyişir: "...dəqiqədən" / "...saatdan".
                     var maxMetn = maxQaliq > 0
                         ? $"{maxSaat} saat {maxQaliq} dəqiqədən"
                         : $"{maxSaat} saatdan";
+                    var jetonIpucu = jetonBalans > 0
+                        ? " Daha uzun icazə üçün «Artıq müddəti jetonumdan ödə» seçimini işarələyin."
+                        : " Daha uzun icazə üçün jeton balansı lazımdır.";
                     return Result<IcazeListDto>.Fail(
-                        dto.NaharNezereAlinmasin
+                        (dto.NaharNezereAlinmasin
                             ? $"Nahar icazəyə qatıldıqda icazə {maxMetn} çox ola bilməz."
-                            : $"İcazə 3 saatdan çox ola bilməz. Nahara çıxmırsınızsa müraciətdə qeyd edin (max {180 + yaratNaharDeq} dəqiqə).");
+                            : $"İcazə 3 saatdan çox ola bilməz. Nahara çıxmırsınızsa müraciətdə qeyd edin (max {AdiIcazeMaxDeq + yaratNaharDeq} dəqiqə).")
+                        + jetonIpucu);
                 }
+
+                // Yekun jeton = məcburi (uzatma) ilə könüllü (rəhbərin öz müraciətində
+                // yazdığı) miqdarın böyüyü. Məcburidən aşağı düşə bilməz.
+                var yekunJeton = Math.Max(Math.Max(0m, dto.JetonOdenenSaat), lazimJeton);
+                if (yekunJeton > jetonBalans)
+                    return Result<IcazeListDto>.Fail(
+                        $"Jeton balansı kifayət etmir ({jetonBalans:0.##} saat mövcud, {yekunJeton:0.##} saat tələb olundu).");
+
+                var efektivSaatYarat = (decimal)EffektivDeq(dto.BaslamaSaati, dto.BitisSaati,
+                                            dto.NaharNezereAlinmasin, yaratNaharDeq) / 60m;
+                if (yekunJeton > efektivSaatYarat)
+                    return Result<IcazeListDto>.Fail(
+                        $"Jeton ödənişi ({yekunJeton:0.##} saat) effektiv icazə saatından ({efektivSaatYarat:0.##} saat) çox ola bilməz.");
 
                 // YENİ AXİN:
                 //   Rəhbər müraciəti   → birbaşa Tesdiqlenib (özü Rəhbər olduğu üçün)
@@ -168,6 +208,9 @@ namespace FinNex.Application.Services
                     BitisSaati = dto.BitisSaati,
                     Sebeb = dto.Sebeb,
                     NaharNezereAlinmasin = dto.NaharNezereAlinmasin,
+                    // Müraciət anında yazılır (yuxarıda yoxlanıb): uzatma üçün məcburi
+                    // olan miqdar. Təsdiq mərhələsində rəhbər ARTIRA bilər, AZALDA bilməz.
+                    JetonOdenenSaat = yekunJeton,
                     Status = ilkinStatus
                 };
 
@@ -177,31 +220,20 @@ namespace FinNex.Application.Services
                 // Rəhbər özü müraciət edibsə — IcazeCixisGiris dərhal yarat
                 if (ilkinStatus == IcazeStatus.Tesdiqlenib)
                 {
-                    // Jeton ödəməsi varsa — yoxla və entityə yaz
-                    if (dto.JetonOdenenSaat > 0)
-                    {
-                        var icazeSaati = (decimal)(dto.BitisSaati - dto.BaslamaSaati).TotalHours;
-                        if (dto.JetonOdenenSaat > icazeSaati)
-                            return Result<IcazeListDto>.Fail(
-                                $"Jeton ödənişi ({dto.JetonOdenenSaat:0.##} saat) icazənin ümumi saatından ({icazeSaati:0.##} saat) çox ola bilməz.");
-                        var balans = await _jetonService.AktivSaatBalansiAsync(dto.IsciId);
-                        if (dto.JetonOdenenSaat > balans)
-                            return Result<IcazeListDto>.Fail(
-                                $"Jeton balansı kifayət etmir ({balans:0.##} saat mövcud, {dto.JetonOdenenSaat:0.##} saat tələb olundu).");
-                        entity.JetonOdenenSaat = dto.JetonOdenenSaat;
-                    }
+                    // Jeton yoxlamaları (balans + effektiv saat) yuxarıda, NÖMRƏ/QEYD
+                    // yaranmadan əvvəl edilib — burada yalnız təsdiq və xərclənmə qalır.
                     entity.RehberTesdiq = true;
                     entity.RehberTesdiqTarixi = DateTime.Now;
                     entity.HrTesdiq = true;
                     entity.HrTesdiqTarixi = DateTime.Now;
                     await _unitOfWork.Repository<Icaze>().YenileAsync(entity);
                     await _unitOfWork.YaddaSaxlaAsync();
-                    if (dto.JetonOdenenSaat > 0)
-                    {
-                        var jetonRes = await _ConsumeJetonsForIcazeAsync(entity);
-                        if (!jetonRes.Success)
-                            return Result<IcazeListDto>.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
-                    }
+                    // dto.JetonOdenenSaat yox, entity.JetonOdenenSaat (= yekunJeton) —
+                    // uzatma üçün məcburi jeton əl ilə yazılmır, hesablanır; şərti
+                    // köhnə sahəyə bağlasaq uzadılmış icazədə jeton tutulmazdı.
+                    var jetonRes = await _ConsumeJetonsForIcazeAsync(entity);
+                    if (!jetonRes.Success)
+                        return Result<IcazeListDto>.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
                     await _YaratCixisGirisAsync(entity.Id, false);
                     await _GecikmeYenileAsync(entity);
                     await NotifySobeReisiAsync(entity);
@@ -535,7 +567,10 @@ namespace FinNex.Application.Services
         }
 
         // Rəhbər təsdiq edir → Tesdiqlenib + IcazeCixisGiris yaranır
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool? naharNezereAlinmasin = null, bool birdefelik = false)
+        // jetonOdenenSaat NULLABLE-dır: forma sahəni göndərməyibsə işçinin müraciətdəki
+        // miqdarı SAXLANILIR (0 "sıfırla" deməkdir, "göndərilməyib" yox).
+        // Bax: CLAUDE.md — "Şərtli Render Olunan Form Sahəsi + Default Parametr".
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal? jetonOdenenSaat = null, bool? naharNezereAlinmasin = null, bool birdefelik = false)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -560,25 +595,36 @@ namespace FinNex.Application.Services
                 : 0m;
             var efektivSaat = Math.Max(0m, icazeSaatiRaw - naharCix);
 
-            // Jeton miqdarı yalnız təsdiq vəziyyətində nəzərə alınır
-            if (status && jetonOdenenSaat > 0)
+            // ── Jeton ────────────────────────────────────────────────────────
+            // Pəncərə 3 saatı aşırsa artıq hissə MƏCBURİ jetondur — rəhbər onu
+            // azalda bilməz, yalnız ARTIRA bilər. Azaltmaq mümkün olsaydı,
+            // uzadılmış icazə sayğaca 3 saatdan çox düşərdi (illik balans pozulardı).
+            // Diqqət: rəhbər nahar işarəsini götürəndə effektiv müddət artır və
+            // məcburi jeton da artır — ona görə naharSecimi ilə hesablanır.
+            var mecburiJeton = MecburiJetonSaat(icaze.BaslamaSaati, icaze.BitisSaati, naharSecimi, naharDeq);
+            var secilenJeton = Math.Max(0m, jetonOdenenSaat ?? icaze.JetonOdenenSaat);
+            var yekunJeton = Math.Max(secilenJeton, mecburiJeton);
+
+            if (status && yekunJeton > 0)
             {
-                if (jetonOdenenSaat > efektivSaat)
+                if (yekunJeton > efektivSaat)
                     return Result.Fail(
-                        $"Jeton ödənişi ({jetonOdenenSaat:0.##} saat) effektiv icazə saatından " +
+                        $"Jeton ödənişi ({yekunJeton:0.##} saat) effektiv icazə saatından " +
                         $"({efektivSaat:0.##} saat) çox ola bilməz.");
 
                 var balans = await _jetonService.AktivSaatBalansiAsync(icaze.IsciId);
-                if (jetonOdenenSaat > balans)
-                    return Result.Fail(
-                        $"İşçinin aktiv jeton balansı kifayət etmir " +
-                        $"({balans:0.##} saat mövcud, {jetonOdenenSaat:0.##} saat tələb olundu).");
+                if (yekunJeton > balans)
+                    return Result.Fail(mecburiJeton > secilenJeton
+                        ? $"Bu icazə 3 saatdan uzundur — artıq {mecburiJeton:0.##} saat jetondan ödənilməlidir, " +
+                          $"işçinin balansı isə {balans:0.##} saatdır. Təsdiq etmək üçün icazə qısaldılmalıdır."
+                        : $"İşçinin aktiv jeton balansı kifayət etmir " +
+                          $"({balans:0.##} saat mövcud, {yekunJeton:0.##} saat tələb olundu).");
             }
 
             icaze.RehberTesdiq = status;
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
-            icaze.JetonOdenenSaat = status ? jetonOdenenSaat : 0;
+            icaze.JetonOdenenSaat = status ? yekunJeton : 0;
             icaze.NaharNezereAlinmasin = status && naharSecimi;
 
             if (!status)
@@ -623,6 +669,36 @@ namespace FinNex.Application.Services
 
             if (icaze.Status != IcazeStatus.HrTesdiqinde)
                 return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}).");
+
+            // ── Jeton (HR yolu: rəhbər yoxdursa müraciət birbaşa buraya düşür) ──
+            // Bu axında jeton sahəsi formada YOXDUR — işçinin müraciətdə hesablanmış
+            // məcburi miqdarı olduğu kimi qalır. Balans müraciətdən sonra dəyişə bilər
+            // (jeton vaxtı bitib və ya başqa yerdə xərclənib), ona görə təsdiqdən ƏVVƏL
+            // yenidən yoxlanır: sonra yoxlasaq icazə artıq "Təsdiqlənib" olardı və
+            // FIFO xətası yalnız mesajda qalardı.
+            if (status)
+            {
+                var hrParam = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
+                var hrNaharDeq = hrParam?.NaharMuddetDeqiqe ?? 45;
+                var hrMecburi = MecburiJetonSaat(icaze.BaslamaSaati, icaze.BitisSaati,
+                                                 icaze.NaharNezereAlinmasin, hrNaharDeq);
+                var hrYekun = Math.Max(icaze.JetonOdenenSaat, hrMecburi);
+                if (hrYekun > 0)
+                {
+                    var hrBalans = await _jetonService.AktivSaatBalansiAsync(icaze.IsciId);
+                    if (hrYekun > hrBalans)
+                        return Result.Fail(
+                            $"İşçinin aktiv jeton balansı kifayət etmir " +
+                            $"({hrBalans:0.##} saat mövcud, {hrYekun:0.##} saat tələb olundu). " +
+                            "Uzadılmış icazə jetonla ödənilməlidir — təsdiq üçün icazə qısaldılmalıdır.");
+                }
+                icaze.JetonOdenenSaat = hrYekun;
+            }
+            else
+            {
+                icaze.JetonOdenenSaat = 0;
+            }
 
             icaze.HrTesdiq = status;
             icaze.HrId = hrId > 0 ? hrId : icaze.HrId;
@@ -1029,6 +1105,48 @@ namespace FinNex.Application.Services
             if (pencere <= 0) return 0;
             var cixilan = naharDeq / 60.0;
             return cixilan < pencere ? cixilan : pencere;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // Jeton ilə uzatma — güzəşt və çıxılma AYRILMAZDIR
+        // ════════════════════════════════════════════════════════
+        //
+        // Qayda (17.08.2026): adi saatlıq icazə 3 saatdır. İşçi nahara çıxmırsa
+        // nahar fasiləsi qədər (NaharCixilmaSaat), jetonu varsa jeton saatı qədər
+        // uzun pəncərə götürə bilər. Hər iki güzəştin qarşılığı var:
+        //   • nahar  → sayğacdan sabit nahar fasiləsi çıxılır;
+        //   • jeton  → sayğacdan jeton saatı çıxılır (DashboardService, IcazeIndexVM,
+        //              GetIsciIzlemeAsync — hamısı JetonOdenenSaat-ı çıxır).
+        // Beləcə SAYĞACA YAZILAN icazə heç vaxt 3 saatı keçmir.
+        //
+        // KRİTİK: jeton MİQDARI heç yerdə əl ilə yazılmır — pəncərədən burada
+        // hesablanır. Əgər limiti (AdiIcazeMaxDeq / uzatma qaydası) dəyişirsənsə,
+        // bu funksiyanı da dəyiş: biri o birindən ayrı düşərsə məntiq səssizcə sınır
+        // (illik 36 saatlıq balansdan artıq/az gedər və heç bir xəta verməz).
+        // Bax: CLAUDE.md — "İcazə — Nahar Güzəşti: Güzəşt və Çıxılma AYRILMAZDIR".
+
+        /// <summary>Nahar/jeton güzəştindən əvvəlki adi icazə limiti (dəqiqə).</summary>
+        internal const int AdiIcazeMaxDeq = 180;
+
+        /// <summary>Pəncərədən sabit nahar fasiləsi çıxıldıqdan sonra qalan dəqiqə.</summary>
+        internal static int EffektivDeq(TimeSpan bas, TimeSpan bitis, bool nahar, int naharDeq)
+        {
+            var pencereDeq = (int)Math.Round((bitis - bas).TotalMinutes);
+            if (pencereDeq <= 0) return 0;
+            var cixilan = nahar ? Math.Min(naharDeq, pencereDeq) : 0;
+            return pencereDeq - cixilan;
+        }
+
+        /// <summary>
+        /// Bu pəncərənin 3 saatlıq həddi aşan hissəsi — MƏCBURİ jeton (saat).
+        /// 0 qayıdırsa icazə adi limitə sığır və jeton tələb olunmur.
+        /// </summary>
+        internal static decimal MecburiJetonSaat(TimeSpan bas, TimeSpan bitis, bool nahar, int naharDeq)
+        {
+            var artiqDeq = EffektivDeq(bas, bitis, nahar, naharDeq) - AdiIcazeMaxDeq;
+            if (artiqDeq <= 0) return 0m;
+            // Yuxarı yuvarlaqlaşdırma: 1 dəqiqə də olsa aşırsa, jeton tutulmalıdır.
+            return Math.Ceiling(artiqDeq / 60m * 100m) / 100m;
         }
 
         public async Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr)

@@ -35,6 +35,8 @@ function hesabla() {
     if (bas === null || bitis === null) {
         box.style.display = 'none';
         if (errBox) errBox.style.display = 'none';
+        naharEfektivGoster(0);
+        jetonTutulmaGoster(0);
         return;
     }
 
@@ -42,6 +44,8 @@ function hesabla() {
 
     if (diff <= 0) {
         box.style.display = 'none';
+        naharEfektivGoster(0);
+        jetonTutulmaGoster(0);
         if (errBox) {
             errBox.style.display = 'flex';
             errBox.textContent = 'Bitmə saatı başlama saatından sonra olmalıdır.';
@@ -60,6 +64,7 @@ function hesabla() {
     box.style.display = 'flex';
 
     naharEfektivGoster(diff);
+    jetonTutulmaGoster(diff);
 }
 
 // ── Nahar seçiləndə sayğaca yazılacaq (effektiv) müddəti göstər ──
@@ -73,6 +78,24 @@ function deqMetn(t) {
     return x || '0 dəqiqə';
 }
 
+// Serverdəki qayda ilə eyni olmalıdır: IcazeService.EffektivDeq / MecburiJetonSaat.
+// Bu yalnız GÖSTƏRMƏ qatıdır — yekun qərarı server verir.
+var ADI_MAX_DEQ = 180;
+
+function naharDeqiqesi() {
+    var cb = document.querySelector('input[name="NaharNezereAlinmasin"]');
+    if (!cb) return 45;
+    var n = parseInt(cb.getAttribute('data-nahar-deq'), 10);
+    return isNaN(n) ? 45 : n;
+}
+
+// Pəncərədən sabit nahar fasiləsi çıxıldıqdan sonra qalan dəqiqə.
+function effektivDeq(diff) {
+    var cb = document.querySelector('input[name="NaharNezereAlinmasin"]');
+    var cixilan = (cb && cb.checked) ? Math.min(naharDeqiqesi(), diff) : 0;
+    return Math.max(0, diff - cixilan);
+}
+
 function naharEfektivGoster(diff) {
     var cb = document.querySelector('input[name="NaharNezereAlinmasin"]');
     var kutu = document.getElementById('naharEfektivBox');
@@ -84,11 +107,51 @@ function naharEfektivGoster(diff) {
         return;
     }
 
-    var naharDeq = parseInt(cb.getAttribute('data-nahar-deq'), 10);
-    if (isNaN(naharDeq)) naharDeq = 45;
-
-    var sayilan = Math.max(0, diff - Math.min(naharDeq, diff));
+    var naharDeq = naharDeqiqesi();
+    var sayilan = effektivDeq(diff);
     mtn.textContent = deqMetn(sayilan) + ' (pəncərə ' + deqMetn(diff) + ', −' + Math.min(naharDeq, diff) + ' dəq nahar)';
+    kutu.style.display = 'block';
+}
+
+// ── Jetonla uzatma: tutulacaq miqdarı göstər ──
+// Miqdar formada YAZILMIR — pəncərədən hesablanır (serverdə MecburiJetonSaat).
+// İşçi nə qazandığını (uzun pəncərə) və nəyin qarşılığında (jeton) eyni anda görsün.
+function jetonTutulmaGoster(diff) {
+    var uzatCb = document.getElementById('jetonlaUzat');
+    var kutu = document.getElementById('jetonTutulmaBox');
+    var mtn = document.getElementById('jetonTutulmaText');
+    if (!uzatCb || !kutu || !mtn) return;
+
+    var balans = parseFloat(uzatCb.getAttribute('data-jeton-balans'));
+    if (isNaN(balans)) balans = 0;
+
+    if (!uzatCb.checked || !diff || diff <= 0) {
+        kutu.style.display = 'none';
+        return;
+    }
+
+    var artiqDeq = effektivDeq(diff) - ADI_MAX_DEQ;
+    if (artiqDeq <= 0) {
+        mtn.textContent = 'Bu icazə 3 saatlıq limitə sığır — jeton tutulmayacaq.';
+        kutu.style.background = '#ecfdf5';
+        kutu.style.color = '#065f46';
+        kutu.style.display = 'block';
+        return;
+    }
+
+    var tutulacaq = Math.ceil(artiqDeq / 60 * 100) / 100;
+    if (tutulacaq > balans) {
+        mtn.textContent = 'Bu pəncərə üçün ' + tutulacaq.toFixed(2) + ' saat jeton lazımdır, '
+            + 'balansınız isə ' + balans + ' saatdır — icazəni qısaldın.';
+        kutu.style.background = '#fee2e2';
+        kutu.style.color = '#991b1b';
+    } else {
+        mtn.textContent = 'Jetonunuzdan tutulacaq: ' + tutulacaq.toFixed(2) + ' saat '
+            + '(qalıq ' + (balans - tutulacaq).toFixed(2) + ' saat). '
+            + 'İllik icazə sayğacınıza 3 saat yazılacaq.';
+        kutu.style.background = '#fff8e8';
+        kutu.style.color = '#8a6a18';
+    }
     kutu.style.display = 'block';
 }
 
@@ -100,5 +163,8 @@ bitisEl.addEventListener('input', maskSaat);
 
 var naharCb = document.querySelector('input[name="NaharNezereAlinmasin"]');
 if (naharCb) naharCb.addEventListener('change', hesabla);
+
+var uzatCbEl = document.getElementById('jetonlaUzat');
+if (uzatCbEl) uzatCbEl.addEventListener('change', hesabla);
 
 hesabla();

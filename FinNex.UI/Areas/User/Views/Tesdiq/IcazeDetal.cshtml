@@ -288,7 +288,6 @@
                     {
                         decimal balans = ViewBag.JetonBalansi != null ? (decimal)ViewBag.JetonBalansi : 0m;
                         decimal icazeSaatiRaw = (decimal)(Model.IcazeSaati ?? 0);
-                        decimal maxJeton = Math.Min(balans, icazeSaatiRaw);
                         int rTotalDeq = (int)Math.Round((double)icazeSaatiRaw * 60);
                         int rH = rTotalDeq / 60; int rM = rTotalDeq % 60;
 
@@ -303,6 +302,22 @@
                         int eDeq = (int)Math.Round((double)efektivSaat * 60);
                         int eH = eDeq / 60; int eM = eDeq % 60;
 
+                        // ── Jetonla uzatma (bax: IcazeService.MecburiJetonSaat) ──
+                        // Pəncərənin 3 saatı aşan hissəsi MƏCBURİ jetondur. Rəhbər onu
+                        // AZALDA bilməz — azalsa icazə sayğaca 3 saatdan çox düşərdi.
+                        // Checkbox-un cari vəziyyətinə görə hesablanır: naharı götürsə
+                        // effektiv müddət artır, məcburi jeton da artır (JS yeniləyir).
+                        decimal cariEfektiv = Model.NaharNezereAlinmasin ? efektivSaat : icazeSaatiRaw;
+                        int cariArtiqDeq = (int)Math.Round((double)cariEfektiv * 60) - 180;
+                        decimal mecburiJeton = cariArtiqDeq <= 0
+                            ? 0m
+                            : Math.Ceiling(cariArtiqDeq / 60m * 100m) / 100m;
+                        // İşçinin müraciətdə hesablanmış miqdarı — forma bununla açılır ki,
+                        // rəhbər heç nə yazmasa da seçim SİLİNMƏSİN (0 = "sıfırla" deməkdir).
+                        decimal istekJeton = ViewBag.JetonOdenenSaat != null ? (decimal)ViewBag.JetonOdenenSaat : 0m;
+                        decimal baslangicJeton = Math.Max(istekJeton, mecburiJeton);
+                        decimal maxJeton = Math.Min(balans, cariEfektiv);
+
                             <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
                                 @if (Model.NaharNezereAlinmasin)
                                 {
@@ -311,6 +326,10 @@
                                         3 saatdan uzun (max @(180 + naharDeq) dəq) ola bilib.<br />
                                         Təsdiq etsəniz sayğaca <strong>@cixilanDeq dəq az</strong> yazılacaq:
                                         pəncərə @rH saat@(rM > 0 ? $" {rM} dəq" : "") → sayılan <strong>@eH saat@(eM > 0 ? $" {eM} dəq" : "")</strong>.
+                                        @if (mecburiJeton > 0)
+                                        {
+                                            <text><br />Bundan artıq hissə <strong>jetondan</strong> ödənilir (aşağıda).</text>
+                                        }
                                     </div>
                                 }
                                 else
@@ -349,15 +368,46 @@
                                 <strong>İcazə müddəti:</strong>
                                 <span id="icazeSaatDisplay">@rH saat@(rM > 0 ? $" {rM} dəq" : "")</span>
                             </div>
+                            @if (mecburiJeton > 0)
+                            {
+                                <div id="mecburiJetonQeyd" style="font-size:12px;color:#7c2d12;background:#ffedd5;padding:8px 10px;border-radius:6px;margin-bottom:8px;line-height:1.5;font-weight:600">
+                                    ⚠ Bu icazə 3 saatdan uzundur — artıq müddət jetondan ödənilir.
+                                    Ən az <strong><span id="mecburiJetonLabel">@mecburiJeton.ToString("0.##")</span> saat</strong> tutulmalıdır, bundan aşağı salmaq olmaz.
+                                    @if (mecburiJeton > balans)
+                                    {
+                                        <span style="display:block;margin-top:4px;color:#991b1b">
+                                            İşçinin balansı (@balans.ToString("0.##") saat) kifayət etmir — bu icazə təsdiqlənə bilməz, qısaldılmalıdır.
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div id="mecburiJetonQeyd" style="display:none;font-size:12px;color:#7c2d12;background:#ffedd5;padding:8px 10px;border-radius:6px;margin-bottom:8px;line-height:1.5;font-weight:600">
+                                    ⚠ Ən az <strong><span id="mecburiJetonLabel">0</span> saat</strong> jeton tutulmalıdır.
+                                </div>
+                            }
                             <label style="font-size:12px;color:#374151;display:block;margin-bottom:4px">
                                 Jetonla ödənən saat
                                 <small style="color:#8a93a8">(maks: <span id="maxJetonLabel">@maxJeton.ToString("0.##")</span>)</small>
                             </label>
-                            <input type="number" name="jetonOdenenSaat" id="jetonInput" value="0"
-                                   min="0" max="@(maxJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" step="0.25"
+                            @* value: işçinin müraciətdəki miqdarı ilə açılır — 0 ilə açılsaydı
+                               rəhbər toxunmadan təsdiq edəndə uzatma jetonu silinərdi. *@
+                            <input type="number" name="jetonOdenenSaat" id="jetonInput"
+                                   value="@baslangicJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                   min="@mecburiJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                   max="@(maxJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" step="0.01"
                                    style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px" />
                             <small style="color:#6b7280;font-size:11px;display:block;margin-top:4px">
-                                <strong>0 = tam adi icazə</strong> (jeton tutulmur). Jetonla örtmək istəsən saat yaz — tam örtmək üçün maks. dəyəri (@maxJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)) qoy. Təsdiqdən sonra jeton FIFO ilə tutulur.
+                                @if (mecburiJeton > 0)
+                                {
+                                    <text><strong>Məcburi hissə dəyişdirilə bilməz</strong> — istəsən daha çoxunu jetonla örtə bilərsən.</text>
+                                }
+                                else
+                                {
+                                    <text><strong>0 = tam adi icazə</strong> (jeton tutulmur). Jetonla örtmək istəsən saat yaz.</text>
+                                }
+                                Tam örtmək üçün maks. dəyəri (@maxJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)) qoy. Təsdiqdən sonra jeton FIFO ilə tutulur.
                             </small>
                         </div>
 
@@ -372,9 +422,16 @@
 
                         <script>
                         (function(){
-                            var rawSaat = @icazeSaatiRaw;
+                            // DİQQƏT: server mədəniyyəti az-AZ-dır — `@@decimal` birbaşa yazılsa
+                            // JS-ə "4,75" düşür və vergül operatoru kimi oxunur (rawSaat = 75).
+                            // Ona görə bütün rəqəmlər InvariantCulture ilə yazılır.
+                            // Bax: CLAUDE.md — "Razor → CSS/JS Rəqəm — Mədəniyyət Tələsi".
+                            var rawSaat  = @(icazeSaatiRaw.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
                             var naharSaat = @(naharCixilma.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
-                            var balans = @balans;
+                            var balans   = @(balans.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
+                            var istekJeton = @(istekJeton.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
+                            var ADI_MAX = 3; // saat — IcazeService.AdiIcazeMaxDeq
+
                             function fmtSaat(h){
                                 var t = Math.round(h * 60);
                                 var s = Math.floor(t/60), m = t%60;
@@ -385,20 +442,36 @@
                             var saatDisplay = document.getElementById('icazeSaatDisplay');
                             var efektiv = document.getElementById('naharEfektiv');
                             var inp = document.getElementById('jetonInput');
-                            if (cb) {
-                                cb.addEventListener('change', function(){
-                                    var eff = cb.checked ? Math.max(0, rawSaat - naharSaat) : rawSaat;
-                                    var maxJ = Math.min(balans, eff);
-                                    maxLabel.textContent = maxJ % 1 === 0 ? maxJ.toFixed(0) : maxJ.toFixed(2);
-                                    inp.max = maxJ;
-                                    if (parseFloat(inp.value) > maxJ) inp.value = maxJ;
-                                    saatDisplay.textContent = fmtSaat(eff);
-                                    if (efektiv) {
-                                        efektiv.textContent = 'Effektiv icazə: ' + fmtSaat(eff);
-                                        efektiv.style.display = cb.checked ? 'block' : 'none';
-                                    }
-                                });
+                            var mecQeyd = document.getElementById('mecburiJetonQeyd');
+                            var mecLabel = document.getElementById('mecburiJetonLabel');
+
+                            // Nahar işarəsi dəyişəndə effektiv müddət dəyişir → məcburi jeton da
+                            // dəyişir. İkisi AYRILMAZDIR: naharı götürsən jeton artır.
+                            function yenile(){
+                                if (!cb) return;
+                                var eff = cb.checked ? Math.max(0, rawSaat - naharSaat) : rawSaat;
+                                var maxJ = Math.min(balans, eff);
+                                // 1e-6: float qalığı (4.0000000001) səbəbsiz 0.01 saat artırmasın.
+                                var mecburi = Math.max(0, Math.ceil((eff - ADI_MAX) * 100 - 1e-6) / 100);
+
+                                maxLabel.textContent = maxJ % 1 === 0 ? maxJ.toFixed(0) : maxJ.toFixed(2);
+                                inp.max = maxJ;
+                                inp.min = mecburi;
+                                if (parseFloat(inp.value) < mecburi || isNaN(parseFloat(inp.value)))
+                                    inp.value = Math.max(mecburi, istekJeton).toFixed(2);
+                                if (parseFloat(inp.value) > maxJ) inp.value = maxJ;
+
+                                if (mecQeyd && mecLabel) {
+                                    mecLabel.textContent = mecburi.toFixed(2);
+                                    mecQeyd.style.display = mecburi > 0 ? 'block' : 'none';
+                                }
+                                saatDisplay.textContent = fmtSaat(eff);
+                                if (efektiv) {
+                                    efektiv.textContent = 'Effektiv icazə: ' + fmtSaat(eff);
+                                    efektiv.style.display = cb.checked ? 'block' : 'none';
+                                }
                             }
+                            if (cb) cb.addEventListener('change', yenile);
                         })();
                         </script>
                     }

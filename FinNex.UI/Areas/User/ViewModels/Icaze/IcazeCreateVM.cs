@@ -32,6 +32,11 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
         [Display(Name = "Nahar fasiləsini icazəyə qat")]
         public bool NaharNezereAlinmasin { get; set; } = false;
 
+        // Artıq müddəti jetonla ödə — 3 saatı aşan hissə balansdan tutulur,
+        // buna görə pəncərə jeton balansı qədər uzun ola bilər.
+        [Display(Name = "Artıq müddəti jetonumdan ödə")]
+        public bool JetonlaUzat { get; set; } = false;
+
         [Range(0, 24, ErrorMessage = "Jeton saatı 0–24 aralığında olmalıdır")]
         public decimal JetonOdenenSaat { get; set; } = 0;
 
