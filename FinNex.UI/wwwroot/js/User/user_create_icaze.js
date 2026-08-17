@@ -109,7 +109,15 @@ function naharEfektivGoster(diff) {
 
     var naharDeq = naharDeqiqesi();
     var sayilan = effektivDeq(diff);
-    mtn.textContent = deqMetn(sayilan) + ' (pəncərə ' + deqMetn(diff) + ', −' + Math.min(naharDeq, diff) + ' dəq nahar)';
+
+    // Jetonla uzatma da seçilibsə bu rəqəm HƏLƏ son deyil — jeton aşağıdakı
+    // qutuda çıxılır. Eyni səhifədə iki fərqli "sayğaca yazılacaq" rəqəmi
+    // görünməsin deyə burada ara nəticə kimi adlandırılır.
+    var uzatCb = document.getElementById('jetonlaUzat');
+    var jetonlaCixilir = uzatCb && uzatCb.checked && (sayilan - ADI_MAX_DEQ) > 0;
+
+    mtn.textContent = (jetonlaCixilir ? 'Nahardan sonra: ' : 'Sayğaca yazılacaq: ')
+        + deqMetn(sayilan) + ' (pəncərə ' + deqMetn(diff) + ', −' + Math.min(naharDeq, diff) + ' dəq nahar)';
     kutu.style.display = 'block';
 }
 

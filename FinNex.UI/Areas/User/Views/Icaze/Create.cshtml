@@ -122,7 +122,9 @@
                     <div id="naharEfektivBox" class="fn-label-hint"
                          style="display:none;margin-left:24px;margin-top:6px;padding:6px 10px;border-radius:6px;
                                 background:#fef3c7;color:#92400e;font-weight:600">
-                        Sayğaca yazılacaq: <span id="naharEfektivText"></span>
+                    @* Etiket JS-dədir: jetonla uzatma seçiləndə bu rəqəm son deyil,
+                       "Nahardan sonra:" olur — iki fərqli "sayğaca yazılacaq" görünməsin. *@
+                        <span id="naharEfektivText"></span>
                     </div>
                 </div>
 
@@ -205,5 +207,4 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/User/user_create_icaze.js" asp-append-version="true"></script>
-}
 }
