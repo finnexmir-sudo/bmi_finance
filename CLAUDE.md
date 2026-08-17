@@ -541,6 +541,21 @@ verə bilmədi. Səssiz idi — endpoint boş sətrə düşür, `fetch('')` cari
 POST edir, `r.json()` sınır, `.catch` düyməni geri qaytarır. İşçilər isə həmin
 günlərdə "tez çıxan" kimi qeydə düşdü.
 
+**İKİNCİ DALĞA (17.08.2026):** action 14.08-də bərpa olundu, amma **onu qidalandıran
+DATA da silinmişdi** və bu 3 gün də gözdən qaçdı. `hr-davamiyyet.js` serverdən
+`isciId`, `erkenIcaze`, `cixisQirmizi`, `isSaatiQirmizi`, `isSaatiSebeb` oxuyurdu —
+beşi də silinmiş `RehberDashboardController`-də idi, yeni `HR/DavamiyyetController`-ə
+köçürülməmişdi. JS-də hamısı `undefined` olur, amma **heç bir xəta çıxmır**:
+
+- `data-isci-id` boş → düymə POST-u `isciId=0` göndərir → servis «İşçi seçilməyib»
+  qaytarır → JS yalnız düyməni bərpa edir → **rəhbər «vurdum» deyir, baza boşdur**;
+- `data-erken-icaze` həmişə `0` → icazə verilsə də düymə yenidən çıxır;
+- `data-issaati-sebeb` boş → «niyə qırmızı» izahı ümumiyyətlə görünmür.
+
+**Qayda:** action bərpa edəndə **onun bütün giriş datasını** da bərpa et. JS-in
+oxuduğu hər `r.<sahə>` üçün serverin həmin adı göndərdiyini `grep` ilə yoxla —
+JavaScript olmayan sahəni `undefined` edir, səssizcə.
+
 **Qaydalar:**
 - Silinən faylın/sinifin içindəkiləri **bir-bir sadala**. "Dublikatdır" qərarı
   fayl adına görə verilə bilməz — iki səhifə eyni görünüb, birində əlavə

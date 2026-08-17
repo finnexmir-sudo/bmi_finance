@@ -439,9 +439,75 @@ namespace FinNex.UI.Areas.HR.Controllers
                         && !gorushOrtuyur
                         && !elilCumeBagisla;
 
+                    // ── 17.08.2026-da BƏRPA: JS-in oxuduğu, amma serverin GÖNDƏRMƏDİYİ sahələr ──
+                    // `isciId`, `erkenIcaze`, `cixisQirmizi`, `isSaatiQirmizi`, `isSaatiSebeb`
+                    // 29.07.2026-da (5fb0b698) Rəhbər Davamiyyət dublikat səhifəsi silinərkən
+                    // `ErkenCixisIcazeVer` action-ı ilə BİRLİKDƏ getdi. `hr-davamiyyet.js` isə
+                    // onları oxumağa davam etdi və hamısı `undefined` oldu:
+                    //   • `data-isci-id` BOŞ qalırdı → "erkən çıxışa icazə ver" düyməsi POST-u
+                    //     isciId=0 ilə göndərirdi, servis "İşçi seçilməyib" qaytarırdı. JS yalnız
+                    //     düyməni bərpa edir, mesaj göstərmir → rəhbər "vurdum" deyir, bazada
+                    //     ErkenCixisIcaze qeydi olmur (real hadisə: 17.08.2026, Rafael Quliyev).
+                    //   • `data-erken-icaze` həmişə "0" → icazə verilsə də tooltip yenə düymə göstərir.
+                    //   • `data-issaati-sebeb` boş → "niyə qırmızı" izahı heç vaxt görünmürdü.
+                    // QAYDA (CLAUDE.md): controller action silinəndə onu çağıran JS-i də yoxla —
+                    // burada action bərpa olundu, amma onu QİDALANDIRAN data sahələri unudulmuşdu.
+                    bool erkenIcazeVar = erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date));
+
+                    // Cari `tezCixanFlag` onsuz da bütün örtükləri (icazə/ezamiyyət/tədbir/
+                    // fərdi icazə/əlil) nəzərə alır → köhnə `cixisQirmizi` ilə eynidir.
+                    bool cixisQirmizi = tezCixanFlag;
+                    var normaDeq = Math.Max(0,
+                        (int)(gunCixis - parametri.StandartGirisVaxti).TotalMinutes - parametri.NaharMuddetDeqiqe);
+                    bool isSaatiAz = islemeSaatiDeq.HasValue && islemeSaatiDeq.Value < normaDeq;
+                    bool isSaatiQirmizi = isSaatiAz && cixisQirmizi;
+
+                    string isSaatiSebeb;
+                    if (!x.CixisVaxti.HasValue)
+                        isSaatiSebeb = "";
+                    else if (x.CixisVaxti.Value.TimeOfDay >= gunHedd)
+                    {
+                        var elanMetn = elanDict.TryGetValue(x.Tarix.Date, out var elanTs)
+                            ? elanTs.ToString(@"hh\:mm")
+                            : null;
+                        isSaatiSebeb = elanMetn != null
+                            ? "İş günü erkən bitirilib (" + elanMetn + ") — vaxtında gedib, erkən çıxış sayılmır."
+                            : "Standart çıxış vaxtında gedib — erkən çıxış sayılmır.";
+                    }
+                    else if (erkenIcazeVar)
+                        isSaatiSebeb = "Rəhbər fərdi erkən çıxış icazəsi verib — erkən çıxış sayılmır.";
+                    else if (ezamiyyetOrtuyur || x.Status == DavamiyyetStatus.Ezamiyyet)
+                        isSaatiSebeb = "Təsdiqlənmiş ezamiyyət var — erkən çıxış sayılmır.";
+                    else if (icazeOrtuyur || x.Status == DavamiyyetStatus.Icazeli)
+                        isSaatiSebeb = "Təsdiqlənmiş icazə var — çıxış icazə daxilindədir.";
+                    else if (gorushOrtuyur)
+                        isSaatiSebeb = "Tədbirdə (offline görüş) olub — çıxış tədbir pəncərəsindədir.";
+                    else if (elilCumeBagisla)
+                        isSaatiSebeb = "Əlil işçi qısaldılmış gündə normanı (4 saat) doldurub — erkən çıxış sayılmır.";
+                    else
+                    {
+                        var cixisMetn = x.CixisVaxti.Value.TimeOfDay.ToString(@"hh\:mm");
+                        var isaatPart = islemeSaatiDeq.HasValue
+                            ? " İşlənmə: " + (islemeSaatiDeq.Value / 60) + " s " + (islemeSaatiDeq.Value % 60) + " d"
+                              + (isSaatiAz ? " (norma " + (normaDeq / 60) + " s)." : ".")
+                            : "";
+                        // Örtməyən icazə də ola bilər: icazə çıxışdan SONRA başlayır.
+                        var icazeBas = icazeList
+                            .Where(i => i.IsciId == x.IsciId && i.Tarix == x.Tarix.Date)
+                            .Select(i => (TimeSpan?)i.Bas)
+                            .FirstOrDefault();
+                        var icazeBasMetn = icazeBas.HasValue ? icazeBas.Value.ToString(@"hh\:mm") : null;
+                        isSaatiSebeb = icazeBasMetn != null
+                            ? "İcazə " + icazeBasMetn + "-dan başlayır, amma işçi ondan ƏVVƏL (" + cixisMetn + ") çıxıb." + isaatPart
+                            : "İş günü bitməyib, erkən çıxıb (" + cixisMetn + ") — icazə/ezamiyyət/fərdi icazə yoxdur." + isaatPart;
+                    }
+
                     return new
                     {
                         id = x.Id,
+                        // KRİTİK: JS `data-isci-id` bundan doldurur — bu olmadan erkən çıxış
+                        // icazəsi, "Qayıb yaz" və admin düzəlişi düymələri işləmir.
+                        isciId = x.IsciId,
                         isciTamAd = x.IsciTamAd ?? "-",
                         departamentAd = x.DepartamentAd ?? "-",
                         tarix = x.Tarix,
@@ -453,7 +519,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                         qayibSebebi = x.QayibSebebi ?? "",
                         tezCixan = tezCixanFlag,
                         islemeSaatiDeq,
-                        naharCixildi
+                        naharCixildi,
+                        erkenIcaze = erkenIcazeVar,
+                        cixisQirmizi,
+                        isSaatiQirmizi,
+                        isSaatiSebeb
                     };
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
 

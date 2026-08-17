@@ -765,6 +765,7 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '<tr data-giris="' + (r.girisVaxti || '') + '" data-cixis="' + (r.cixisVaxti || '') +
                 '" data-isci-id="' + (r.isciId || '') +
                 '" data-erken-icaze="' + (r.erkenIcaze ? '1' : '0') +
+                '" data-tez-cixan="' + (r.tezCixan ? '1' : '0') +
                 '" data-issaati-qirmizi="' + (r.isSaatiQirmizi ? '1' : '0') +
                 '" data-cixis-qirmizi="' + (r.cixisQirmizi ? '1' : '0') +
                 '" data-issaati-sebeb="' + ((r.isSaatiSebeb || '').replace(/"/g, '&quot;')) + '" style="cursor:pointer;">' +
@@ -1143,6 +1144,31 @@ document.addEventListener('DOMContentLoaded', function () {
                        (qirmizidir ? 'color:#fca5a5;' : 'color:#86efac;') + '">' +
                        (qirmizidir ? '&#9888;&#65039; ' : '&#10003; ') + issaatiSebeb + '</div>';
             }
+
+            // ── ÇIXIŞDAN SONRA DA İCAZƏ VERİLƏ BİLƏR (17.08.2026) ──
+            // Əvvəl düymə YALNIZ hələ işdə olan işçidə görünürdü: cihaza vuran kimi
+            // yox olurdu. Real axın isə tərsinədir — rəhbər "get" deyir, işçi çıxır,
+            // rəhbər sistemi SONRA açır və düymə artıq yoxdur. Nəticədə işçi "tez
+            // çıxan" kimi qalır və rəhbər "mən icazə verdim axı" deyir, bazada isə
+            // ErkenCixisIcaze qeydi olmur (real hadisə: 17.08.2026, Rafael Quliyev).
+            // Şərt dar saxlanılır: YALNIZ bugün (servis onsuz da bugünü yazır) və
+            // YALNIZ serverin "tez çıxan" saydığı sətir.
+            var cxTezCixan = row.getAttribute('data-tez-cixan') === '1';
+            var cxDate = new Date(cixisStr);
+            var cxBugun = new Date();
+            var cxEyniGun = cxDate.getFullYear() === cxBugun.getFullYear()
+                         && cxDate.getMonth() === cxBugun.getMonth()
+                         && cxDate.getDate() === cxBugun.getDate();
+            if (hasIcaze) {
+                msg += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:#34d399;">&#10003; Erkən çıxış icazəsi verildi</div>';
+            } else if (cxEyniGun && cxTezCixan) {
+                msg += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);">' +
+                    '<button data-action="erken-icaze" data-isci-id="' + isciId + '" ' +
+                    'style="background:#3b82f6;color:#fff;border:none;padding:6px 12px;border-radius:6px;' +
+                    'font-size:11px;cursor:pointer;width:100%;font-weight:600;white-space:nowrap;">' +
+                    'Erkən çıxışına icazə ver' +
+                    '</button></div>';
+            }
         } else {
             var girisDate = new Date(girisStr);
             var bugun = new Date();
@@ -1224,6 +1250,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:#34d399;">&#10003; Erkən çıxış icazəsi verildi</div>';
                 var activeRow = tableBody.querySelector('tr[data-isci-id="' + isciId + '"]');
                 if (activeRow) activeRow.setAttribute('data-erken-icaze', '1');
+                // Çıxmış işçiyə icazə veriləndə "Tez çıxan" sayğacı və sətrin rəngi
+                // dərhal dəyişməlidir — yoxsa istifadəçi icazənin işlədiyinə inanmır.
+                // Yalnız atribut yeniləmək kifayət etmir (KPI serverdə hesablanır).
+                loadData({ tarix: inputTarix.value || toLocalDateStr(new Date()) });
             } else {
                 btn.disabled = false;
                 btn.textContent = 'İşdən erkən getməsinə icazə ver';
