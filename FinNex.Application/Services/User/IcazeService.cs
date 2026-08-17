@@ -211,6 +211,12 @@ namespace FinNex.Application.Services
                     // Müraciət anında yazılır (yuxarıda yoxlanıb): uzatma üçün məcburi
                     // olan miqdar. Təsdiq mərhələsində rəhbər ARTIRA bilər, AZALDA bilməz.
                     JetonOdenenSaat = yekunJeton,
+                    // Birdəfəlik əl ilə işarələnmir — pəncərədən hesablanır (BirdefelikMi):
+                    // icazə iş gününün sonuna qədərdirsə işçi qayıtmır. Əvvəl bu, təsdiq
+                    // ekranındakı checkbox-dan gəlirdi və rəhbərin öz müraciətində HEÇ VAXT
+                    // qoyulmurdu (sabit `false`) — gün-sonu icazəsində qayıdış skanı
+                    // boş yerə gözlənilirdi. Təsdiq anında yenidən hesablanır.
+                    Birdefelik = BirdefelikMi(dto.BitisSaati, yaratParam?.StandartCixisVaxti),
                     Status = ilkinStatus
                 };
 
@@ -234,7 +240,7 @@ namespace FinNex.Application.Services
                     var jetonRes = await _ConsumeJetonsForIcazeAsync(entity);
                     if (!jetonRes.Success)
                         return Result<IcazeListDto>.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
-                    await _YaratCixisGirisAsync(entity.Id, false);
+                    await _YaratCixisGirisAsync(entity.Id, entity.Birdefelik);
                     await _GecikmeYenileAsync(entity);
                     await NotifySobeReisiAsync(entity);
                     await NotifyHrMalumatAsync(entity);
@@ -570,7 +576,12 @@ namespace FinNex.Application.Services
         // jetonOdenenSaat NULLABLE-dır: forma sahəni göndərməyibsə işçinin müraciətdəki
         // miqdarı SAXLANILIR (0 "sıfırla" deməkdir, "göndərilməyib" yox).
         // Bax: CLAUDE.md — "Şərtli Render Olunan Form Sahəsi + Default Parametr".
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal? jetonOdenenSaat = null, bool? naharNezereAlinmasin = null, bool birdefelik = false)
+        //
+        // 17.08.2026: `naharNezereAlinmasin` və `birdefelik` parametrləri ÇIXARILDI.
+        // Nahar seçimi işçinin müraciətindəkidir (rəhbər razı deyilsə imtina edir),
+        // birdəfəlik isə pəncərədən hesablanır (BirdefelikMi) — hər ikisi təsdiq
+        // ekranında təkrar soruşulurdu və unudulanda işçinin seçimini silirdi.
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal? jetonOdenenSaat = null)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -583,10 +594,8 @@ namespace FinNex.Application.Services
                 .Query().Where(x => !x.Silinib).FirstOrDefaultAsync();
             var naharDeq = isParam?.NaharMuddetDeqiqe ?? 45;
 
-            // Forma nahar seçimini göndərməyibsə (null) — işçinin müraciətdəki seçimi SAXLANILIR.
-            // Əvvəl parametr `bool = false` idi: təsdiq səhifəsində checkbox render olunmayanda
-            // (nahara toxunmayan pəncərələrdə) işçinin seçimi səssizcə silinirdi.
-            var naharSecimi = naharNezereAlinmasin ?? icaze.NaharNezereAlinmasin;
+            // Nahar seçimi YALNIZ işçinindir — təsdiq ekranında üstələnmir.
+            var naharSecimi = icaze.NaharNezereAlinmasin;
 
             var icazeSaatiRaw = (decimal)icaze.IcazeSaati;
             // Nahar çıxılması SABİT fasilə müddətidir (bax: NaharCixilmaSaat şərhi).
@@ -599,8 +608,7 @@ namespace FinNex.Application.Services
             // Pəncərə 3 saatı aşırsa artıq hissə MƏCBURİ jetondur — rəhbər onu
             // azalda bilməz, yalnız ARTIRA bilər. Azaltmaq mümkün olsaydı,
             // uzadılmış icazə sayğaca 3 saatdan çox düşərdi (illik balans pozulardı).
-            // Diqqət: rəhbər nahar işarəsini götürəndə effektiv müddət artır və
-            // məcburi jeton da artır — ona görə naharSecimi ilə hesablanır.
+            // İşçinin nahar seçiminə görə hesablanır (rəhbər onu üstələyə bilmir).
             var mecburiJeton = MecburiJetonSaat(icaze.BaslamaSaati, icaze.BitisSaati, naharSecimi, naharDeq);
             var secilenJeton = Math.Max(0m, jetonOdenenSaat ?? icaze.JetonOdenenSaat);
             var yekunJeton = Math.Max(secilenJeton, mecburiJeton);
@@ -625,7 +633,9 @@ namespace FinNex.Application.Services
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
             icaze.JetonOdenenSaat = status ? yekunJeton : 0;
-            icaze.NaharNezereAlinmasin = status && naharSecimi;
+            // NaharNezereAlinmasin-a TOXUNULMUR — işçinin müraciətdəki seçimidir.
+            // Əvvəl `status && naharSecimi` yazılırdı: imtinada işçinin qeydi silinirdi
+            // və imtina edilmiş müraciətə sonradan baxanda "nahar seçilməyib" görünürdü.
 
             if (!status)
             {
@@ -639,7 +649,8 @@ namespace FinNex.Application.Services
 
             // Rəhbər SON təsdiqdir — HR addımı çıxarıldı (təsdiq rəhbərlə yekunlaşır).
             icaze.Status = IcazeStatus.Tesdiqlenib;
-            icaze.Birdefelik = birdefelik;   // rəhbər birdəfəlik (qayıtmayacaq) işarələyə bilər
+            // Birdəfəlik = pəncərədən hesablanır (gün sonuna qədərdirsə işçi qayıtmır).
+            icaze.Birdefelik = BirdefelikMi(icaze.BitisSaati, isParam?.StandartCixisVaxti);
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
@@ -661,8 +672,9 @@ namespace FinNex.Application.Services
             return Result.Ok("Rəhbər qərarı qeydə alındı.");
         }
 
-        // HR təsdiq edir — birdefelik seçimi ilə
-        public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0, bool birdefelik = false)
+        // HR təsdiq edir (rəhbər yoxdursa). `birdefelik` parametri 17.08.2026-da çıxarıldı —
+        // pəncərədən hesablanır (BirdefelikMi).
+        public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -694,6 +706,8 @@ namespace FinNex.Application.Services
                             "Uzadılmış icazə jetonla ödənilməlidir — təsdiq üçün icazə qısaldılmalıdır.");
                 }
                 icaze.JetonOdenenSaat = hrYekun;
+                // Birdəfəlik = pəncərədən hesablanır (gün sonuna qədərdirsə işçi qayıtmır).
+                icaze.Birdefelik = BirdefelikMi(icaze.BitisSaati, hrParam?.StandartCixisVaxti);
             }
             else
             {
@@ -705,7 +719,6 @@ namespace FinNex.Application.Services
             icaze.HrTesdiqTarixi = DateTime.Now;
             icaze.Status = status ? IcazeStatus.Tesdiqlenib : IcazeStatus.ImtinaEdildi;
             if (!status) icaze.ImtinaSebebi = qeyd;
-            if (status) icaze.Birdefelik = birdefelik;
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
@@ -719,7 +732,7 @@ namespace FinNex.Application.Services
                 if (!jetonRes.Success)
                     return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
 
-                await _YaratCixisGirisAsync(icaze.Id, birdefelik);
+                await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
                 await _GecikmeYenileAsync(icaze);
                 await NotifySobeReisiAsync(icaze);
             }
@@ -1127,6 +1140,32 @@ namespace FinNex.Application.Services
 
         /// <summary>Nahar/jeton güzəştindən əvvəlki adi icazə limiti (dəqiqə).</summary>
         internal const int AdiIcazeMaxDeq = 180;
+
+        // ════════════════════════════════════════════════════════
+        // Birdəfəlik çıxış — ƏL İLƏ İŞARƏLƏNMİR, HESABLANIR (17.08.2026)
+        // ════════════════════════════════════════════════════════
+        //
+        // "Birdəfəlik" = işçi qayıtmayacaq → qayıdış skanı gözlənilmir, faktiki
+        // müddət çıxışdan icazə sonuna qədər sayılır.
+        //
+        // Əvvəl bunu rəhbər/HR təsdiq ekranında checkbox ilə işarələyirdi. İki
+        // problem vardı: (a) təsdiq anında işçinin qayıdıb-qayıtmayacağı rəhbərə
+        // məlum deyil; (b) işarələnməsə də `IcazeFaktikiSaat` onsuz da eyni nəticəni
+        // çıxarırdı (`bitisSaati >= gunSonu` şərti) — yəni məlumat pəncərədə var idi,
+        // düymə isə onu yalnız TƏKRAR soruşurdu və unudulanda ADMS/gecə işi köhnə
+        // yolla gedirdi. İndi tək mənbədən hesablanır.
+        //
+        // Qayda: icazə iş gününün sonuna qədərdirsə (bitmə saatı ≥ StandartCixisVaxti)
+        // işçi qayıtmır. Gün ortasındakı icazədə isə qayıdış gözlənilir — cihaz
+        // qeydi olmasa gecə işi (PlanUzreBaglamaBackgroundService) planla bağlayır.
+        //
+        // DİQQƏT: bayraqdan asılı 5 yer var — ADMSController (çıxış statusu + ikinci
+        // skan), PlanUzreBaglamaBackgroundService, IcazeFaktikiSaat, CixisQayidisAnomaliya.
+        // Bu qaydanı dəyişsən hamısı avtomatik uyğunlaşır (hamısı eyni bayrağı oxuyur),
+        // amma jeton redim axını (JetonService) QƏSDƏN kənardadır: orada tam iş günü
+        // `jTamIsGunu` ilə ayrıca idarə olunur (işçi ümumiyyətlə gəlmir, cihaz qeydi yoxdur).
+        internal static bool BirdefelikMi(TimeSpan bitisSaati, TimeSpan? standartCixis)
+            => bitisSaati >= (standartCixis ?? new TimeSpan(17, 45, 0));
 
         /// <summary>Pəncərədən sabit nahar fasiləsi çıxıldıqdan sonra qalan dəqiqə.</summary>
         internal static int EffektivDeq(TimeSpan bas, TimeSpan bitis, bool nahar, int naharDeq)

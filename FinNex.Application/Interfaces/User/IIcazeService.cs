@@ -31,8 +31,9 @@ namespace FinNex.Application.Interfaces
         // naharNezereAlinmasin: null = forma göndərməyib → işçinin müraciətdəki seçimi saxlanılır.
         // jetonOdenenSaat: null = forma göndərməyib → işçinin müraciətdəki miqdarı saxlanılır.
         // Rəhbər miqdarı ARTIRA bilər, uzatma üçün məcburi olan həddin altına SALA bilməz.
-        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal? jetonOdenenSaat = null, bool? naharNezereAlinmasin = null, bool birdefelik = false);
-        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0, bool birdefelik = false);
+        // Nahar seçimi (işçinin) və birdəfəlik (pəncərədən hesablanır) təsdiqdə üstələnmir.
+        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal? jetonOdenenSaat = null);
+        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0);
         Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(DateTime? tarixFrom, DateTime? tarixTo, int? departamentId, int? status, string? axtaris);
 
         // Cihaz çıxış/qayıdış dövriyyəsi

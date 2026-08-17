@@ -323,6 +323,34 @@ biri dəyişəndə o biri köhnə qalar və illik 36 saatlıq balans səssizcə 
 **Diqqət:** `RehberTesdiqAsync`-in `jetonOdenenSaat` parametri **nullable**-dır —
 `null` «forma göndərməyib, işçinin miqdarını saxla», `0` isə «sıfırla» deməkdir.
 
+### Təsdiq Ekranında ÜSTƏLƏNMƏYƏN Seçimlər (17.08.2026)
+
+Təsdiq ekranından **iki checkbox çıxarıldı**; hər ikisi «məlumat onsuz da var idi,
+düymə isə onu təkrar soruşurdu» kateqoriyasındandır:
+
+1. **«Naharı nəzərə alma»** — seçim işçinindir. Rəhbər razı deyilsə səbəb yazıb
+   **imtina edir**. Üstələmə saxlansaydı jeton qaydası ilə **çıxılmaz vəziyyət**
+   yaranırdı: işarəni götürmək effektiv müddəti (və məcburi jetonu) artırır, balans
+   çatmayan işçidə müraciət ümumiyyətlə təsdiqlənə bilmirdi — rəhbər isə pəncərəni
+   o ekranda qısalda bilmir. `RehberTesdiqAsync` artıq `NaharNezereAlinmasin`-a
+   **toxunmur** (imtinada da silmir).
+2. **«Birdəfəlik çıxış»** — `IcazeService.BirdefelikMi` ilə **hesablanır**:
+   `bitisSaati >= StandartCixisVaxti` → işçi qayıtmır. Rəhbər təsdiq anında bunu
+   bilmirdi; üstəlik `IcazeFaktikiSaat` onsuz da eyni nəticəni çıxarırdı
+   (`bitisSaati >= gunSonu`), yəni düymə unudulanda ADMS və gecə işi köhnə yolla
+   gedirdi. Üç yerdə eyni helper-dən yazılır: `YaratAsync` (entity initializer),
+   `RehberTesdiqAsync`, `HrTesdiqAsync`.
+
+Bayraqdan asılı 5 yer var — `ADMSController` (çıxış statusu + ikinci skan),
+`PlanUzreBaglamaBackgroundService`, `IcazeFaktikiSaat`, `CixisQayidisAnomaliya`.
+Hamısı eyni bayrağı oxuduğu üçün qaydanı dəyişəndə avtomatik uyğunlaşır.
+**İSTİSNA:** jeton redim axını (`JetonService`) qəsdən kənardadır — orada tam iş
+günü `jTamIsGunu` ilə ayrıca idarə olunur (işçi ümumiyyətlə gəlmir, cihaz qeydi yoxdur).
+
+**Ümumi qayda:** təsdiq ekranında yalnız təsdiqçinin **əlavə məlumatı olan** sahə
+qalmalıdır. Sistemin özü hesablaya bildiyi və ya işçinin onsuz da bildirdiyi şeyi
+təkrar soruşma — unudulanda səssizcə səhv dəyər yazılır.
+
 ## Şərtli Render Olunan Form Sahəsi + Default Parametr = Səssiz Data İtkisi (KRİTİK)
 
 Bir checkbox/input `@if (...)` şərti ilə render olunursa və POST-u qəbul edən metod həmin

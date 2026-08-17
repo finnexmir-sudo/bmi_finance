@@ -341,7 +341,7 @@ namespace FinNex.UI.Areas.User.Controllers
         // POST /User/Tesdiq/IcazeTesdiq
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false, decimal? jetonOdenenSaat = null, bool? naharNezereAlinmasin = null)
+        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, decimal? jetonOdenenSaat = null)
         {
             var appUser = await _userManager.GetUserAsync(User);
             var tesdiqciIsciId = appUser?.IsciId ?? 0;
@@ -353,10 +353,10 @@ namespace FinNex.UI.Areas.User.Controllers
                     result = await _icazeService.SobeReisiTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Rehber":
-                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat, naharNezereAlinmasin, birdefelik);
+                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat);
                     break;
                 case "Hr":
-                    result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId, birdefelik);
+                    result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 default:
                     TempData["Error"] = "Naməlum rol.";
