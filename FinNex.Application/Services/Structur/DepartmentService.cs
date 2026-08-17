@@ -35,6 +35,22 @@ namespace FinNex.Application.Services.Structur
             await _unitOfWork.YaddaSaxlaAsync();
         }
 
+        // ── İŞÇİ SAYI: AKTİV TƏYİNAT = `Aktivdir` (17.08.2026) ───────────────
+        // Əvvəl şərt `BitmeTarixi == null` idi. `IsciService.TeyinatRedakteEtAsync`
+        // redaktədə `BitmeTarixi`-ni formadan yazır, `Aktivdir`-ə toxunmur → sətir
+        // `Aktivdir=1` VƏ `BitmeTarixi=<tarix>` qalır. Bazada 29 təyinatın 22-si belə
+        // idi → departamentlərin çoxu "0 işçi" görünürdü, halbuki İşçilər siyahısı
+        // (Aktivdir ilə işləyir) hamısını göstərirdi. `BitmeTarixi` planlaşdırılmış
+        // bitmə tarixidir — sətrin bitdiyini SÜBUT ETMİR.
+        //
+        // Şərtin dörd hissəsi də lazımdır:
+        //   t.Aktivdir            → cari təyinat (köhnəsi say=ikiqat olmasın)
+        //   !t.Silinib            → yumşaq silinmiş təyinat sayılmasın (əvvəl YOX idi)
+        //   t.Isci.Status==Aktiv  → çıxmış işçi sayılmasın (təyinat avtomatik bağlanmır)
+        //   !t.Isci.Silinib       → silinmiş işçi sayılmasın
+        // Eyni şərt OrganizasiyaController və VezifeService-də təkrarlanır — birini
+        // dəyişəndə o birilərini də tutuşdur (say = siyahı qaydası).
+
         // Parametrsiz HamisiniGetirAsync — IsciSayi IsciTeyinat-dan hesablanır
         public override async Task<Result<IList<DepartmentListDto>>> HamisiniGetirAsync()
         {
@@ -48,8 +64,8 @@ namespace FinNex.Application.Services.Structur
                     Ad = d.Ad,
                     Aciqlama = d.Aciqlama,
                     IsciSayi = d.IsciTeyinatlar
-                        .Count(t => t.BitmeTarixi == null &&
-                                    t.Isci.Status == IsciStatus.Aktiv)
+                        .Count(t => t.Aktivdir && !t.Silinib
+                                 && t.Isci.Status == IsciStatus.Aktiv && !t.Isci.Silinib)
                 })
                 .ToListAsync();
 
@@ -77,8 +93,8 @@ namespace FinNex.Application.Services.Structur
                     Ad = d.Ad,
                     Aciqlama = d.Aciqlama,
                     IsciSayi = d.IsciTeyinatlar
-                        .Count(t => t.BitmeTarixi == null &&
-                                    t.Isci.Status == IsciStatus.Aktiv)
+                        .Count(t => t.Aktivdir && !t.Silinib
+                                 && t.Isci.Status == IsciStatus.Aktiv && !t.Isci.Silinib)
                 })
                 .ToListAsync();
 
@@ -97,8 +113,8 @@ namespace FinNex.Application.Services.Structur
                     Ad = d.Ad,
                     Aciqlama = d.Aciqlama,
                     IsciSayi = d.IsciTeyinatlar
-                        .Count(t => t.BitmeTarixi == null &&
-                                    t.Isci.Status == IsciStatus.Aktiv)
+                        .Count(t => t.Aktivdir && !t.Silinib
+                                 && t.Isci.Status == IsciStatus.Aktiv && !t.Isci.Silinib)
                 })
                 .ToListAsync();
 

@@ -166,6 +166,41 @@ yalnız əvəzedici yolunda görünürdü, ona görə diaqnoz çətinləşdi.
 əvəzedici / birbaşa qeyd) varsa, status/routing qaydasını dəyişəndə hamısını
 tutuşdur — biri köhnə məntiqlə qalarsa, xəta yalnız o yolda təzahür edər.
 
+## Aktiv Təyinat — `Aktivdir` vs `BitmeTarixi` (KRİTİK)
+
+`IsciTeyinat`-da «cari təyinat» üçün **iki fərqli tərif** işlədilirdi və layihə ikiyə
+bölünmüşdü: ~35 yer `t.Aktivdir`, ~37 yer `t.BitmeTarixi == null`.
+
+**Doğru tərif `Aktivdir`-dir.** `BitmeTarixi` **planlaşdırılmış** bitmə tarixidir —
+sətrin bitdiyini sübut etmir. `IsciService.TeyinatRedakteEtAsync` redaktədə
+`BitmeTarixi`-ni formadan olduğu kimi yazır, `Aktivdir`-ə **toxunmur** → sətir
+`Aktivdir=1` **VƏ** `BitmeTarixi=<tarix>` vəziyyətində qalır.
+
+Real hadisə (17.08.2026): bazada 29 təyinatın **22-si** məhz belə idi. Nəticə —
+**İşçilər** siyahısı (`Aktivdir`, `HRProfile.cs:63`) 26 işçinin hamısını şöbəsi ilə
+göstərirdi, **Departamentlər** və **Organizasiya Sxemi** (`BitmeTarixi == null`) isə
+cəmi 6-nı sayırdı: departamentlərin çoxu «0 işçi / İşçi yoxdur» görünürdü. Heç bir
+xəta çıxmırdı — sadəcə şirkət boş görünürdü.
+
+**Aktiv təyinat şərtinin DÖRD hissəsi də lazımdır:**
+
+```csharp
+t.Aktivdir                        // cari təyinat (köhnəsi say=ikiqat olmasın)
+&& !t.Silinib                     // yumşaq silinmiş təyinat sayılmasın
+&& t.Isci.Status == IsciStatus.Aktiv   // ÇIXMIŞ İŞÇİ — təyinat avtomatik bağlanmır
+&& !t.Isci.Silinib
+```
+
+Üçüncü şərt xüsusilə vacibdir: işçi işdən çıxanda `IsciTeyinat` sətri **passivləşmir**,
+`IsciStrukturRolu` sətri də deaktiv olmur. Filtr qoyulmasa çıxmış işçi sxemdə və
+sayğacda qalır.
+
+Düzəldilən yerlər: `DepartmentService` (3 sorğu), `VezifeService`,
+`OrganizasiyaController` (təyinatlar + struktur rolları). **Qalan `BitmeTarixi == null`
+istifadələri (Hesabat, Performans, MaasHesablamaService) hələ köhnədir** — onlar
+filtered `Include` olduğu üçün yalnız şöbə/vəzifə **göstərişini** boşaldır, məbləği
+pozmur; toxunanda bu bölməni tutuşdur.
+
 ## İşçi Siyahıları — Sıralama və Filtr Qaydası (KRİTİK)
 
 İşçi siyahısı göstərən **hər** səhifədə eyni qayda tətbiq olunmalıdır — mənbə

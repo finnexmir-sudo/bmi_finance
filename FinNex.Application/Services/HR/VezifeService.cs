@@ -108,9 +108,11 @@ public class VezifeService
                 IsActive = v.Aktivdir,
                 EsasMezuniyyetGunu = v.EsasMezuniyyetGunu,
                 YonlukHal = v.YonlukHal,
+                // Aktiv təyinat şərti — bax: DepartmentService (eyni qayda,
+                // `BitmeTarixi` YOX, `Aktivdir` + işçinin öz statusu).
                 IsciSayi = v.IsciTeyinatlar
-                    .Count(t => t.BitmeTarixi == null &&
-                                t.Isci.Status == IsciStatus.Aktiv)
+                    .Count(t => t.Aktivdir && !t.Silinib
+                             && t.Isci.Status == IsciStatus.Aktiv && !t.Isci.Silinib)
             })
             .ToListAsync();
 
