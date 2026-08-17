@@ -78,14 +78,26 @@
                             var sH = totalDeq / 60; var sM = totalDeq % 60;
                         }
                         @sH saat@(sM > 0 ? $" {sM} dəqiqə" : "")
-                        @if (Model.NaharNezereAlinmasin)
-                        {
+                        @{
+                            // Sayğaca yazılan = pəncərə − nahar − jeton. Etiketdə YEKUN rəqəm
+                            // göstərilir: əvvəl yalnız "nahar çıxıldı → X" yazılırdı və jetonla
+                            // uzadılmış icazədə həmin X son rəqəm deyildi (4 saat görünürdü,
+                            // sayğaca isə 3 saat düşürdü).
                             int naharDeqInfo = ViewBag.NaharMuddetDeqiqe ?? 45;
-                            var effDeq = Math.Max(0, totalDeq - naharDeqInfo);
-                            var eH = effDeq / 60; var eM = effDeq % 60;
+                            int cixNaharDeq = Model.NaharNezereAlinmasin ? Math.Min(naharDeqInfo, totalDeq) : 0;
+                            decimal infoJeton = ViewBag.JetonOdenenSaat != null ? (decimal)ViewBag.JetonOdenenSaat : 0m;
+                            int cixJetonDeq = (int)Math.Round(infoJeton * 60m, MidpointRounding.AwayFromZero);
+                            int yekunDeq = Math.Max(0, totalDeq - cixNaharDeq - cixJetonDeq);
+                            var yH = yekunDeq / 60; var yM = yekunDeq % 60;
+                            var cixParcalar = new List<string>();
+                            if (cixNaharDeq > 0) cixParcalar.Add($"nahar −{cixNaharDeq} dəq");
+                            if (cixJetonDeq > 0) cixParcalar.Add($"jeton −{infoJeton.ToString("0.##")} saat");
+                        }
+                        @if (cixParcalar.Count > 0)
+                        {
                             <span style="margin-left:8px;font-size:11px;background:#fef3c7;color:#92400e;
                                          padding:2px 7px;border-radius:5px;font-weight:600">
-                                Nahar çıxıldı → @eH saat@(eM > 0 ? $" {eM} dəq" : "")
+                                @string.Join(", ", cixParcalar) → sayğaca @yH saat@(yM > 0 ? $" {yM} dəq" : "")
                             </span>
                         }
                     </span>
@@ -321,15 +333,33 @@
                             <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
                                 @if (Model.NaharNezereAlinmasin)
                                 {
+                                    @{
+                                        // Yekun = pəncərə − nahar − məcburi jeton. Qalın rəqəm HƏMİŞƏ
+                                        // yekun olmalıdır: əvvəl ara nəticə (nahardan sonrakı) qalın
+                                        // yazılırdı və jetonlu icazədə səhv rəqəm yadda qalırdı.
+                                        int rbYekunDeq = Math.Max(0, eDeq - (int)Math.Round(mecburiJeton * 60m, MidpointRounding.AwayFromZero));
+                                        var yH2 = rbYekunDeq / 60; var yM2 = rbYekunDeq % 60;
+                                    }
                                     <div style="font-size:12px;color:#92400e;background:#fef3c7;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-weight:600;line-height:1.5">
-                                        ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — buna görə icazə
-                                        3 saatdan uzun (max @(180 + naharDeq) dəq) ola bilib.<br />
-                                        Təsdiq etsəniz sayğaca <strong>@cixilanDeq dəq az</strong> yazılacaq:
-                                        pəncərə @rH saat@(rM > 0 ? $" {rM} dəq" : "") → sayılan <strong>@eH saat@(eM > 0 ? $" {eM} dəq" : "")</strong>.
+                                        ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — icazə
                                         @if (mecburiJeton > 0)
                                         {
-                                            <text><br />Bundan artıq hissə <strong>jetondan</strong> ödənilir (aşağıda).</text>
+                                            <text>nahar güzəşti (max @(180 + naharDeq) dəq) <strong>və jetonu</strong> ilə uzanıb.</text>
                                         }
+                                        else
+                                        {
+                                            <text>buna görə 3 saatdan uzun (max @(180 + naharDeq) dəq) ola bilib.</text>
+                                        }
+                                        <br />
+                                        @{
+                                            // Sətir-içi @@if yerinə hazır mətn — Razor-da markup ortasında
+                                            // şərt açmaq oxunaqlığı pozur və asan sınır.
+                                            var rbCixMetn = mecburiJeton > 0
+                                                ? $"− nahar {cixilanDeq} dəq − jeton {mecburiJeton.ToString("0.##")} saat"
+                                                : $"− nahar {cixilanDeq} dəq";
+                                        }
+                                        Pəncərə @rH saat@(rM > 0 ? $" {rM} dəq" : "") @rbCixMetn
+                                        → sayğaca <strong>@yH2 saat@(yM2 > 0 ? $" {yM2} dəq" : "")</strong> yazılacaq.
                                     </div>
                                 }
                                 else
