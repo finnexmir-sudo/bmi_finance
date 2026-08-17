@@ -402,6 +402,35 @@ yalnız son_gun sorğusuna bağlanmışdı → iyulda "son gün" sayıldı, mən
 şərti ilə birləşdir (məs. mənfəət üçün: ay=dekabr **VƏ** 50130 qalığı=0
 **VƏ** ildə sonrakı gün yoxdur). "Ən son yüklənmiş gün" ≠ "ilin son günü".
 
+## Razor — `@if {}` Blokunun İçində Kod Bloku Açma (RZ1010)
+
+Razor-da kontekst iki cürdür və qayda **əksinədir**:
+
+| Haradasan | C# ifadə yazmaq üçün |
+|---|---|
+| **Markup** içində (`<div>…`, səhifə gövdəsi) | `@{ var x = 5; }` — kod bloku AÇ |
+| **Kod bloku** içində (`@if (…) { … }`, `@foreach`, `@{ }`) | birbaşa `var x = 5;` — AÇMA |
+
+`@if` blokunun gövdəsi **onsuz da C# kontekstidir**; orada `@{` yazmaq
+**RZ1010** verir: *"Unexpected '{' after '@' character…"*. HTML tag-ı görünən
+kimi Razor markup-a keçir — ondan sonra yenidən `@{` düzgündür.
+
+```cshtml
+@if (sert)
+{
+    int a = 5;                 @* ✅ birbaşa *@
+    <div>
+        @{ var b = a * 2; }    @* ✅ artıq markup içindəyik *@
+        @b
+    </div>
+}
+```
+
+17.08.2026-da `IcazeDetal.cshtml`-də `@if` gövdəsində `@{` yazıldı → tək bu xəta
+bütün `FinNex.UI` build-ini dayandırdı. **Qayda:** şərtli mətni markup ortasında
+qurma — dəyəri `@if` gövdəsinin əvvəlində hazır dəyişənə yaz, markup-da yalnız
+`@dəyişən` çağır.
+
 ## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
 
 Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur

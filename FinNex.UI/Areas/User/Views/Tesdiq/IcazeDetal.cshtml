@@ -333,13 +333,20 @@
                             <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
                                 @if (Model.NaharNezereAlinmasin)
                                 {
-                                    @{
-                                        // Yekun = pəncərə − nahar − məcburi jeton. Qalın rəqəm HƏMİŞƏ
-                                        // yekun olmalıdır: əvvəl ara nəticə (nahardan sonrakı) qalın
-                                        // yazılırdı və jetonlu icazədə səhv rəqəm yadda qalırdı.
-                                        int rbYekunDeq = Math.Max(0, eDeq - (int)Math.Round(mecburiJeton * 60m, MidpointRounding.AwayFromZero));
-                                        var yH2 = rbYekunDeq / 60; var yM2 = rbYekunDeq % 60;
-                                    }
+                                    // Yekun = pəncərə − nahar − məcburi jeton. Qalın rəqəm HƏMİŞƏ
+                                    // yekun olmalıdır: əvvəl ara nəticə (nahardan sonrakı) qalın
+                                    // yazılırdı və jetonlu icazədə səhv rəqəm yadda qalırdı.
+                                    // QEYD (RZ1010): if blokunun içi ONSUZ DA kod kontekstidir —
+                                    // burada kod bloku açmaq ("at" + fiqurlu mötərizə) xəta verir,
+                                    // ifadələr birbaşa yazılır. Markup-ın (tag-ın) içində isə əksinə.
+                                    int rbYekunDeq = Math.Max(0, eDeq - (int)Math.Round(mecburiJeton * 60m, MidpointRounding.AwayFromZero));
+                                    var yH2 = rbYekunDeq / 60; var yM2 = rbYekunDeq % 60;
+                                    // Şərti mətn də burada hazırlanır — markup ortasında şərt açmaq
+                                    // həm oxunaqlığı pozur, həm də yuxarıdakı kimi asan sınır.
+                                    var rbCixMetn = mecburiJeton > 0
+                                        ? $"− nahar {cixilanDeq} dəq − jeton {mecburiJeton.ToString("0.##")} saat"
+                                        : $"− nahar {cixilanDeq} dəq";
+
                                     <div style="font-size:12px;color:#92400e;background:#fef3c7;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-weight:600;line-height:1.5">
                                         ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — icazə
                                         @if (mecburiJeton > 0)
@@ -351,13 +358,6 @@
                                             <text>buna görə 3 saatdan uzun (max @(180 + naharDeq) dəq) ola bilib.</text>
                                         }
                                         <br />
-                                        @{
-                                            // Sətir-içi @@if yerinə hazır mətn — Razor-da markup ortasında
-                                            // şərt açmaq oxunaqlığı pozur və asan sınır.
-                                            var rbCixMetn = mecburiJeton > 0
-                                                ? $"− nahar {cixilanDeq} dəq − jeton {mecburiJeton.ToString("0.##")} saat"
-                                                : $"− nahar {cixilanDeq} dəq";
-                                        }
                                         Pəncərə @rH saat@(rM > 0 ? $" {rM} dəq" : "") @rbCixMetn
                                         → sayğaca <strong>@yH2 saat@(yM2 > 0 ? $" {yM2} dəq" : "")</strong> yazılacaq.
                                     </div>
