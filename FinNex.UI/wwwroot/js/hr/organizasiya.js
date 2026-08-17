@@ -113,9 +113,13 @@
 
     function getInitials(name) {
         if (!name) return '?';
-        var parts = name.trim().split(' ');
+        // split(' ') ilə yazılsaydı, adda cüt boşluq olanda ("SƏXAVƏT  BAXŞALIYEV")
+        // parts[1] BOŞ sətir olur və ''[0] → undefined → avatarda "Sundefined" görünür.
+        // \s+ bütün ardıcıl boşluqları bir ayırıcı sayır; filter isə baş/son boşluğu atır.
+        var parts = name.trim().split(/\s+/).filter(function (p) { return p.length > 0; });
         if (parts.length >= 2) return parts[0][0] + parts[1][0];
-        return name[0];
+        if (parts.length === 1) return parts[0][0];
+        return '?';
     }
 
     function escHtml(str) {
