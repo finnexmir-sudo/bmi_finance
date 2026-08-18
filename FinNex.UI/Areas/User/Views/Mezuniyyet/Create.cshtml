@@ -681,16 +681,26 @@
                 fetch(`/User/Mezuniyyet/Preview?baslama=${baslama}&bitme=${bitme}&odenisTipi=${tipi}`)
                     .then(r => r.json())
                     .then(data => {
+                        // Köhnəlmiş cavabı ATMA qoruyucusu: istifadəçi tarixi ard-arda
+                        // dəyişəndə bir neçə sorğu paralel gedir və cavablar SIRA İLƏ
+                        // gəlmir. Bu yoxlama olmasa gec gələn köhnə cavab ekrandakı
+                        // düzgün hesablamanı üstələyər — maaş/ödəniş rəqəmində səssiz
+                        // səhv deməkdir.
+                        if (key !== lastKey) return;
+
                         if (!data.success) { previewBox.style.display = 'none'; return; }
                         previewBox.style.display = 'block';
 
                         document.getElementById('mpTeqvimGun').textContent = data.teqvimGun + ' gün';
                         document.getElementById('mpIsGun').textContent = data.isGun + ' gün';
 
-                        // Header-i də backend-dən gələn dəqiq iş günü ilə yenilə
+                        // Header-i backend-dən gələn DƏQİQ iş günü ilə tamamla.
+                        // «~» yazılmır — bu rəqəm təxmin deyil, serverin hesabladığı
+                        // ödənilən gündür (user_create_mezuniyyet.js yalnız təqvim
+                        // gününü yazır, iş gününü UYDURMUR).
                         var headerTxt = document.getElementById('durationText');
                         if (headerTxt) {
-                            headerTxt.textContent = data.teqvimGun + ' təqvim günü (~' + data.isGun + ' iş günü)';
+                            headerTxt.textContent = data.teqvimGun + ' təqvim günü (' + data.isGun + ' iş günü)';
                         }
                         document.getElementById('mpCariMaas').textContent = fmt(data.cariMaas);
 

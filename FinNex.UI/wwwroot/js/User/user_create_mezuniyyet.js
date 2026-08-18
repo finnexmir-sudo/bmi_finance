@@ -6,7 +6,23 @@ document.querySelectorAll('.fn-nov-radio').forEach(function (radio) {
     });
 });
 
-// Müddət hesabla
+// Müddət hesabla — YALNIZ təqvim günü.
+//
+// 18.08.2026-ya qədər burada iş günü də «hesablanırdı»: `Math.round(diff*5/7)`,
+// yəni sadəcə həftəsonu təxmini. Eyni `#durationText` elementinə Create.cshtml-dəki
+// preview də yazır və ora BACKEND-in DƏQİQ rəqəmi (`data.isGun`) düşür. İki yazıcı,
+// sıra zəmanəti yoxdur → hansı sonra işləsə o qalır:
+//   • preview sonra gəlsə  → 5 (düzgün)
+//   • bu funksiya sonra işləsə, yaxud preview keş qoruyucusuna (`key === lastKey`)
+//     ilişib fetch etməsə → 4 (SƏHV)
+// Real hadisə: 20–24.08.2026 üçün başlıq gah «~5 iş günü», gah «~4 iş günü»
+// göstərirdi, halbuki aşağıdakı «İŞ GÜNÜ» kartı (yalnız backend yazır) həmişə 5 idi.
+//
+// Üstəlik təxminin özü səhv idi: əmək məzuniyyətində ödənilən günlər TƏQVİM günüdür
+// (yalnız bayramlar çıxılır), həftəsonu çıxılmır — ×5/7 burada mənasızdır.
+//
+// QAYDA: bu funksiya rəqəmi UYDURMUR. Təqvim günü lokal hesablanır (dərhal görünür),
+// iş günü isə yalnız backend cavabı gələndə əlavə olunur. Bax: Create.cshtml → refreshPreview.
 function hesabla() {
     var bas = document.getElementById('baslamaTarixi').value;
     var bitis = document.getElementById('bitmeTarixi').value;
@@ -21,7 +37,7 @@ function hesabla() {
 
     if (diff <= 0) { box.style.display = 'none'; return; }
 
-    txt.textContent = diff + ' təqvim günü (~' + Math.max(1, Math.round(diff * 5 / 7)) + ' iş günü)';
+    txt.textContent = diff + ' təqvim günü';
     box.style.display = 'flex';
 }
 

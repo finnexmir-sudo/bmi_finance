@@ -483,6 +483,40 @@ mənfi faizdə `width:-2%` də eyni nəticəni verirdi).
 - İnsan oxuyan mətndə (`@x.Faiz%` etiketi) vergül qala bilər — problem yalnız
   maşın oxuyan (CSS/JS) tərəfdədir.
 
+## Bir Elementə İKİ YAZICI — Təxmin vs Serverin Dəqiq Rəqəmi (KRİTİK)
+
+Eyni DOM elementinə həm **lokal təxmin**, həm də **serverin dəqiq cavabı** yazılırsa,
+nəticə hansının sonra işləməsindən asılı olur — sıra zəmanəti yoxdur. Ekranda rəqəm
+gah düzgün, gah səhv görünər və heç bir xəta çıxmaz.
+
+Real hadisə (18.08.2026, Yeni məzuniyyət müraciəti): `#durationText`-ə
+`user_create_mezuniyyet.js` təxmin (`Math.round(diff*5/7)` = həftəsonu ehtimalı),
+`Create.cshtml` preview-u isə backend-in dəqiq `data.isGun`-unu yazırdı. 20–24.08.2026
+üçün başlıq gah «~5 iş günü», gah «~4» göstərirdi; aşağıdakı **İŞ GÜNÜ kartı**
+(yalnız backend yazır) isə həmişə **5** idi — yəni səhv olan başlıq idi. Preview-un
+keş qoruyucusu (`key === lastKey` → fetch etmir) hallarında təxmin ekranda tək qalırdı.
+
+Üstəlik təxminin özü yanlış idi: **əmək məzuniyyətində ödənilən gün TƏQVİM günüdür**
+(`MezuniyyetService.HesablaIsGunuAsync` — həftəsonu **sayılır**, yalnız
+`MezuniyyetdeHesablanir=false` bayramlar çıxılır). ×5/7 burada mənasızdır.
+
+**Qaydalar:**
+- Lokal JS **rəqəm uydurmasın**. Dərhal göstərilə bilən hissəni yaz (təqvim günü),
+  serverdən gələni gözlə. Serverin rəqəmi yazılırsa «~» qoyma — təxmin deyil.
+- Async cavabda **köhnəlmiş cavab qoruyucusu** olsun: sorğu başlayanda açarı saxla,
+  cavab gələndə `if (key !== lastKey) return;`. Ard-arda dəyişikliklərdə cavablar
+  sıra ilə gəlmir — gec gələn köhnə cavab düzgün hesablamanı üstələyər.
+- İki göstərici eyni kəmiyyəti göstərirsə (başlıq + kart), **mənbələri də eyni olsun**.
+  Fərqli mənbə = gec-tez fərqli rəqəm.
+
+**Hələ uyğunsuz qalan (təsdiq gözləyir):** HR tərəfindəki `Mezuniyyet/Create.cshtml`,
+`Mezuniyyet/Edit.cshtml`, `XestelikEzamiyyet/Create.cshtml`, `XestelikEzamiyyet/Edit.cshtml`
+«Hesablanmış iş günü»-nü **həftəsonusuz** sayır (`day !== 0 && day !== 6`) — serverin
+təqvim günü qaydası ilə uyğun gəlmir (20–24.08 → ekranda 3, balansdan 5 düşür).
+Yalnız GÖSTƏRMƏ qatıdır (server `HesablaIsGunuAsync` ilə yenidən hesablayır), amma
+HR-ı yanılda bilər. Toxunanda əvvəlcə xəstəlik/ezamiyyət üçün qaydanın fərqli olub-
+olmadığını istifadəçidən soruş.
+
 ## Bildirişlər — Paralel Yazı və Ölü Bildiriş (KRİTİK)
 
 Bildiriş yazan bütün yollar **ardıcıl** olmalıdır. `BildirisService` sorğunun
