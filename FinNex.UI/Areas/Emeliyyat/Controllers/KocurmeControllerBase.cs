@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using FinNex.Application.DTOs.Emeliyyat;
+using FinNex.Application.Helpers.Emeliyyat;
 using FinNex.Application.Helpers.Kredit;
 using FinNex.Application.Interfaces.Emeliyyat;
 using FinNex.Domain;
@@ -153,10 +154,14 @@ public abstract class KocurmeControllerBase : Controller
         // ƏVVƏL SƏHV İDİ: «Məbləğ rəqəmlə» yerinə `Mebleg` (900.00) yazılırdı —
         // yəni müştəridən alınan məbləğ, köçürülən yox. Sənədin ƏSAS rəqəmi səhv
         // çıxırdı. «Məbləğ yazı ilə» isə sabit boş idi.
-        bool konversiya = m.KocurulenValyuta is "Rial" or "Rubl";
+        //
+        // Hesablama `KocurmeValyuta` helper-indədir — eyni qayda Gedən həvalə
+        // jurnalına yazılan məbləğ üçün də lazımdır (KocurmeService), iki nüsxə
+        // saxlansa biri mütləq köhnə qalar.
+        bool konversiya = KocurmeValyuta.Konversiya(m.KocurulenValyuta);
         decimal mebleg  = m.Mebleg ?? 0m;
         decimal kurs    = m.IranRial ?? 0m;
-        decimal geden   = konversiya ? mebleg * kurs : mebleg;   // sənədin əsas rəqəmi
+        decimal geden   = KocurmeValyuta.KocurulenMebleg(m.KocurulenValyuta, m.Mebleg, m.IranRial);   // sənədin əsas rəqəmi
 
         // Rəqəm formatı: köhnə forma qrup ayırıcısı və artıq sıfır yazmır (765000000).
         // Onluq yalnız real varsa görünür. Mədəniyyət az-AZ — sənəd insan üçündür,
@@ -167,15 +172,7 @@ public abstract class KocurmeControllerBase : Controller
         // Valyuta adları — köhnə sənəddəki yazılışla eyni.
         // Diqqət: «Valyuta növü» sətrində «İran Rialı» (böyük R), «Satılan» sətrində
         // «İran rialı» (kiçik r) — köhnə formada belədir, qəsdən fərqli saxlanılıb.
-        string ValyutaNovu(string? v) => v switch
-        {
-            "Rial" => "İran Rialı",
-            "Rubl" => "Rubl",
-            "USD"  => "ABŞ dolları",
-            "Avro" => "Avro",
-            "AZN"  => "AZN",
-            _      => v ?? ""
-        };
+        string ValyutaNovu(string? v) => KocurmeValyuta.Adi(v);
         string SatilanAdi(string? v) => v == "Rial" ? "İran rialı" : (v ?? "");
 
         var tokenler = new Dictionary<string, string?>

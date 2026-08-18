@@ -273,6 +273,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.AlBank).HasColumnName("AL_BANK").HasMaxLength(40);
             e.Property(x => x.Icra).HasColumnName("ICRA");
             e.HasIndex(x => x.Tarix);
+            // Pul köçürməsi bağı — FinNex sahəsi (BMI-də yoxdur). Köçürmə redaktə/
+            // silinəndə jurnal sətrini tapmaq üçün indeks lazımdır.
+            e.HasIndex(x => x.KocurmeId);
         });
 
         // Gələn həvalə — BMI odb.gelen_hevale sütun adları ilə

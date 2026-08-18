@@ -26,5 +26,20 @@ namespace FinNex.Domain.Entities.Hevale
         public string?   AlBank     { get; set; }   // AL_BANK — alan bank
         public short?    Icra       { get; set; }   // ICRA — icraçı (Isci.IcraciNo)
         public string?   FaylYolu   { get; set; }   // Yeni yükləmələr üçün DMS nisbi yolu (FinNex — Oracle-da yoxdur)
+
+        /// <summary>
+        /// Bu sətri hansı «Pul köçürməsi» (<c>Kocurme</c>) yaratdı — FinNex sahəsi,
+        /// BMI-də qarşılığı YOXDUR (18.08.2026).
+        ///
+        /// <c>null</c> = BMI idxalı və ya Gedən həvalə səhifəsindən əl ilə yazılan sətir.
+        /// Dolu   = Əməliyyat → Pul köçürməsi tərəfindən yaradılıb; köçürmə redaktə/
+        ///          silinəndə bu sətir də ona uyğun yenilənir.
+        ///
+        /// NİYƏ NÖMRƏ İLƏ (HevNom) BAĞLAMIRIQ: mövcud datada nömrə hələ unikal deyil —
+        /// test məqsədli <c>Kocurme</c> «26-T-1» ilə real BMI idxalı «26-T-1» üst-üstə
+        /// düşür. Nömrə ilə bağlasaq test köçürməsinin silinməsi REAL jurnal sətrini
+        /// silərdi. Açıq bağ bu riski tamamilə aradan qaldırır.
+        /// </summary>
+        public int?      KocurmeId  { get; set; }
     }
 }

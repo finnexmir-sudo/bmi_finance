@@ -244,6 +244,16 @@ public class GedenHevaleService : IGedenHevaleService
         if (!isAdmin && e.YaradanIcraciId != userId)
             return Result.Fail("Yalnız öz qeydinizi və ya Admin silə bilər.");
 
+        // Pul köçürməsindən yaranan sətir burada silinə bilməz — mənbə köçürmədir.
+        // Burada silinsə köçürmə qeydi sahibsiz qalar və jurnalda izi itərdi;
+        // köçürmə silinəndə bu sətir onsuz da avtomatik silinir (KocurmeService.SilAsync).
+        // REDAKTƏ isə açıqdır: jurnalın yalnız köçürmədən gələn 5 sahəsi üstələnir,
+        // əl ilə doldurulan sahələr (Ölkə, Hesab №, rezident tipi…) qalır.
+        if (e.KocurmeId != null)
+            return Result.Fail(
+                "Bu həvalə «Pul köçürməsi»ndən yaranıb — Əməliyyat → Pul köçürməsi " +
+                "səhifəsindən silinməlidir.");
+
         e.Silinib       = true;
         e.SilinmeTarixi = DateTime.Now;
         e.SilenIcraciId = userId;
