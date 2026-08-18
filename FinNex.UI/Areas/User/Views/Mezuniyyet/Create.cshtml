@@ -78,7 +78,10 @@
                             <rect x="1" y="1.5" width="12" height="11" rx="2" stroke="#1e9b6b" stroke-width="1.2" />
                             <path d="M1 5h12" stroke="#1e9b6b" stroke-width="1.2" />
                         </svg>
-                        Seçilmiş müddət: <strong id="durationText"></strong>
+                        @* İKİ AYRI element — biri lokal JS-in (təqvim günü), digəri
+                           serverin (iş günü). Eyni elementə iki yazıcı qoyanda biri
+                           o birini üstələyirdi. Bax: user_create_mezuniyyet.js *@
+                        Seçilmiş müddət: <strong id="durationText"></strong><strong id="durationIsGun"></strong>
                     </div>
 
                     @* ── Ödəniş vaxtı seçimi (yalnız illik — öz hesabına-da ödəniş yoxdur) ── *@
@@ -658,6 +661,16 @@
                 : '0.00 ₼';
 
             let lastKey = '';
+            // Son serverin iş günü — keş halında başlığı BƏRPA etmək üçün.
+            // `hesabla()` (user_create_mezuniyyet.js) hər `change`-də iş günü hissəsini
+            // təmizləyir; fetch getməsə (key === lastKey) mötərizə birdəfəlik itərdi.
+            let lastIsGun = null;
+
+            // « (N iş günü)» — YALNIZ bu funksiya yazır (öz elementinə).
+            function isGunuYaz(isGun) {
+                const el = document.getElementById('durationIsGun');
+                if (el) el.textContent = (isGun != null) ? ` (${isGun} iş günü)` : '';
+            }
 
             function getOdenisTipi() {
                 for (const r of odenisTipiRadios) if (r.checked) return parseInt(r.value) || 1;
@@ -675,7 +688,12 @@
                     return;
                 }
                 const key = baslama + '|' + bitme + '|' + tipi;
-                if (!force && key === lastKey) return;
+                if (!force && key === lastKey) {
+                    // Eyni sorğu — təkrar fetch etmirik, amma `hesabla()` iş günü
+                    // hissəsini təmizlədiyi üçün onu son cavabdan geri yazmalıyıq.
+                    isGunuYaz(lastIsGun);
+                    return;
+                }
                 lastKey = key;
 
                 fetch(`/User/Mezuniyyet/Preview?baslama=${baslama}&bitme=${bitme}&odenisTipi=${tipi}`)
@@ -688,20 +706,19 @@
                         // səhv deməkdir.
                         if (key !== lastKey) return;
 
-                        if (!data.success) { previewBox.style.display = 'none'; return; }
+                        // Uğursuz cavabda köhnə iş günü YADDA QALMAMALIDIR — sonrakı
+                        // keş bərpası onu yeni aralığın yanına yazardı.
+                        if (!data.success) { lastIsGun = null; isGunuYaz(null); previewBox.style.display = 'none'; return; }
                         previewBox.style.display = 'block';
 
                         document.getElementById('mpTeqvimGun').textContent = data.teqvimGun + ' gün';
                         document.getElementById('mpIsGun').textContent = data.isGun + ' gün';
 
-                        // Header-i backend-dən gələn DƏQİQ iş günü ilə tamamla.
-                        // «~» yazılmır — bu rəqəm təxmin deyil, serverin hesabladığı
-                        // ödənilən gündür (user_create_mezuniyyet.js yalnız təqvim
-                        // gününü yazır, iş gününü UYDURMUR).
-                        var headerTxt = document.getElementById('durationText');
-                        if (headerTxt) {
-                            headerTxt.textContent = data.teqvimGun + ' təqvim günü (' + data.isGun + ' iş günü)';
-                        }
+                        // Başlığın iş günü hissəsi — ÖZ elementinə yazılır, təqvim
+                        // gününə toxunulmur (onu `hesabla()` yazır). «~» yoxdur:
+                        // bu rəqəm təxmin deyil, serverin hesabladığı ödənilən gündür.
+                        lastIsGun = data.isGun;
+                        isGunuYaz(data.isGun);
                         document.getElementById('mpCariMaas').textContent = fmt(data.cariMaas);
 
                         // Tarixçə xəbərdarlıqları
@@ -925,7 +942,7 @@
                             warn.style.display = 'none';
                         }
                     })
-                    .catch(() => { previewBox.style.display = 'none'; });
+                    .catch(() => { lastIsGun = null; isGunuYaz(null); previewBox.style.display = 'none'; });
             }
 
             // Növə görə UI: öz hesabına-da balans/ödəniş/preview gizlənir.

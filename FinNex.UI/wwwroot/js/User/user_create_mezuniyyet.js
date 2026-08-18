@@ -23,11 +23,22 @@ document.querySelectorAll('.fn-nov-radio').forEach(function (radio) {
 //
 // QAYDA: bu funksiya rəqəmi UYDURMUR. Təqvim günü lokal hesablanır (dərhal görünür),
 // iş günü isə yalnız backend cavabı gələndə əlavə olunur. Bax: Create.cshtml → refreshPreview.
+//
+// HƏR YAZICININ ÖZ ELEMENTİ VAR (18.08.2026, ikinci düzəliş):
+//   #durationText  → təqvim günü — YALNIZ bu fayl yazır
+//   #durationIsGun → « (N iş günü)» — YALNIZ Create.cshtml-dəki preview yazır
+// Əvvəl ikisi də `#durationText`-ə yazırdı: bu funksiya sonra işləyəndə mötərizə
+// itir və geri qayıtmırdı (preview keş qoruyucusuna ilişib fetch etmirdi) —
+// ekranda «5 təqvim günü (5 iş günü)» gah tam, gah yarımçıq görünürdü.
+//
+// Tarix dəyişəndə iş günü hissəsi TƏMİZLƏNİR: köhnə aralığın rəqəmi yeni aralığın
+// yanında qalsa (məs. «5 təqvim günü (7 iş günü)») bu, boşluqdan da pisdir.
 function hesabla() {
     var bas = document.getElementById('baslamaTarixi').value;
     var bitis = document.getElementById('bitmeTarixi').value;
     var box = document.getElementById('durationBox');
     var txt = document.getElementById('durationText');
+    var isGunTxt = document.getElementById('durationIsGun');
 
     if (!bas || !bitis) { box.style.display = 'none'; return; }
 
@@ -38,6 +49,7 @@ function hesabla() {
     if (diff <= 0) { box.style.display = 'none'; return; }
 
     txt.textContent = diff + ' təqvim günü';
+    if (isGunTxt) isGunTxt.textContent = '';   // serverin cavabını gözləyir
     box.style.display = 'flex';
 }
 

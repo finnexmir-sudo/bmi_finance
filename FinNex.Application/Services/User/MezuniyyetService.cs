@@ -61,6 +61,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         {
             try
             {
+                // 0. Üst-üstə düşən məzuniyyət — HƏR ŞEYDƏN ƏVVƏL.
+                // Balansdan, əmrdən, bildirişdən əvvəl dayandırılmalıdır: qeyd yaransa
+                // balansdan ikinci dəfə gün düşür və geri qaytarmaq əl işi tələb edir.
+                if (await TarixKonfliktiVarmiAsync(dto.IsciId, dto.BaslamaTarixi, dto.BitmeTarixi))
+                    return Result<MezuniyyetDto>.Fail(
+                        KonfliktMesaji(dto.BaslamaTarixi, dto.BitmeTarixi));
+
                 // 1. İş günlərini hesabla
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
 
@@ -204,6 +211,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             // Tarixlər dəyişibsə iş günlərini yenidən hesabla
             bool tarixDeyisib = entity.BaslamaTarixi != dto.BaslamaTarixi || entity.BitmeTarixi != dto.BitmeTarixi;
 
+            // Yeni aralıq işçinin BAŞQA məzuniyyəti ilə üst-üstə düşməsin (özü xaric).
+            // Entity-yə YAZMAZDAN ƏVVƏL — yazıldıqdan sonra yoxlasaq öz yeni tarixi
+            // ilə özünü müqayisə edərdik.
+            if (tarixDeyisib &&
+                await TarixKonfliktiVarmiAsync(entity.IsciId, dto.BaslamaTarixi, dto.BitmeTarixi, entity.Id))
+                return Result.Fail(KonfliktMesaji(dto.BaslamaTarixi, dto.BitmeTarixi));
+
             entity.BaslamaTarixi = dto.BaslamaTarixi;
             entity.BitmeTarixi = dto.BitmeTarixi;
             entity.Nov = dto.Nov;
@@ -275,6 +289,53 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     //     kimi hallar (məs. Qurban bayramı) per-day konfiqurasiya olunur.
     //   - HR təsdiq zamanı əl ilə düzəliş etmək imkanı var (override
     //     MezuniyyetService.HrTesdiqAsync-də tətbiq olunur).
+    /// <summary>
+    /// Eyni işçinin həmin tarix aralığında ARTIQ diri məzuniyyəti varmı?
+    ///
+    /// 18.08.2026 — REAL HADİSƏ: bu yoxlama yalnız HR-ın «Geriyə qeyd» axınında
+    /// (`GeriyeQeydYaratAsync`) var idi; işçinin öz müraciətində (`YaratAsync`) YOX idi.
+    /// Nəticədə eyni işçi 20–24.08.2026 üçün İKİ eyni məzuniyyət yarada bildi və
+    /// balansdan **iki dəfə** 5 gün düşdü (53 → 43). Heç bir xəta çıxmadı.
+    ///
+    /// Ona görə qayda ORTAQ metoda çıxarıldı — bir giriş nöqtəsində dəyişib
+    /// digərini unutmaq mümkün olmasın. Bax: CLAUDE.md — «İki Yerdə Dublikat Routing».
+    ///
+    /// <param name="xaricId">
+    /// Redaktə/tarix dəyişmə yollarında qeydin ÖZÜ konflikt sayılmasın deyə.
+    /// Yaratmada null.
+    /// </param>
+    ///
+    /// Növ şərti QƏSDƏN YOXDUR: işçi eyni gündə həm xəstə, həm məzuniyyətdə ola
+    /// bilməz — fiziki olaraq bir statusdadır. İmtina və ləğv edilmiş qeydlər
+    /// bloklamır (diri statuslar siyahısı aşağıdadır).
+    /// </summary>
+    private async Task<bool> TarixKonfliktiVarmiAsync(
+        int isciId, DateTime baslama, DateTime bitme, int? xaricId = null)
+    {
+        var diriStatuslar = new[]
+        {
+            MezuniyyetStatus.Gozlemede,
+            MezuniyyetStatus.SobeReisiTesdiqinde,
+            MezuniyyetStatus.RehberTesdiqinde,
+            MezuniyyetStatus.HrTesdiqinde,
+            MezuniyyetStatus.Tesdiqlenib
+        };
+
+        return await _unitOfWork.Repository<Mezuniyyet>()
+            .MovcuddurmuAsync(x =>
+                !x.Silinib &&
+                x.IsciId == isciId &&
+                (xaricId == null || x.Id != xaricId) &&
+                diriStatuslar.Contains(x.Status) &&
+                x.BaslamaTarixi <= bitme &&
+                x.BitmeTarixi >= baslama);
+    }
+
+    // Konflikt mesajı — hər yerdə eyni mətn görünsün.
+    private static string KonfliktMesaji(DateTime baslama, DateTime bitme) =>
+        $"Bu tarix aralığında ({baslama:dd.MM.yyyy} – {bitme:dd.MM.yyyy}) işçinin artıq " +
+        "məzuniyyət müraciəti var. Əvvəlcə onu ləğv edin və ya başqa tarix seçin.";
+
     private async Task<int> HesablaIsGunuAsync(DateTime baslangic, DateTime bitis)
     {
         // Bayramlardan yalnız "hesablanmır" olanlar skip olunur
@@ -825,6 +886,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         if (m.BaslamaTarixi.Date == yeniBaslama && m.BitmeTarixi.Date == yeniBitme)
             return Result.Fail("Tarixlər onsuz da eynidir.");
 
+        // Yeni aralıq işçinin BAŞQA məzuniyyəti ilə üst-üstə düşməsin.
+        // xaricId = m.Id — qeydin özü konflikt sayılmasın.
+        if (await TarixKonfliktiVarmiAsync(m.IsciId, yeniBaslama, yeniBitme, m.Id))
+            return Result.Fail(KonfliktMesaji(yeniBaslama, yeniBitme));
+
         int yeniGun = await HesablaIsGunuAsync(yeniBaslama, yeniBitme);
         if (yeniGun <= 0)
             return Result.Fail("Yeni tarix aralığında heç bir hesablanan gün yoxdur.");
@@ -954,6 +1020,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         if (m.BaslamaTarixi.Date == yeniBaslama && m.BitmeTarixi.Date == yeniBitme)
             return Result.Fail("Tarixlər onsuz da eynidir.");
+
+        // Yeni aralıq işçinin BAŞQA məzuniyyəti ilə üst-üstə düşməsin (özü xaric).
+        // ADMIN də bundan azad deyil: üst-üstə düşən iki qeyd balansı ikiqat kəsir.
+        if (await TarixKonfliktiVarmiAsync(m.IsciId, yeniBaslama, yeniBitme, m.Id))
+            return Result.Fail(KonfliktMesaji(yeniBaslama, yeniBitme));
 
         int yeniGun = await HesablaIsGunuAsync(yeniBaslama, yeniBitme);
         if (yeniGun <= 0)
@@ -2446,25 +2517,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 }
 
                 // ── 2. Eyni tarix aralığında mövcud məzuniyyət yoxlanışı ──
-                var aktivStatuslar = new[]
-                {
-                    MezuniyyetStatus.SobeReisiTesdiqinde,
-                    MezuniyyetStatus.RehberTesdiqinde,
-                    MezuniyyetStatus.HrTesdiqinde,
-                    MezuniyyetStatus.Tesdiqlenib,
-                    MezuniyyetStatus.Gozlemede
-                };
-
-                var konflikt = await _unitOfWork.Repository<Mezuniyyet>()
-                    .MovcuddurmuAsync(x =>
-                        !x.Silinib &&
-                        x.IsciId == dto.IsciId &&
-                        aktivStatuslar.Contains(x.Status) &&
-                        x.BaslamaTarixi <= dto.BitmeTarixi &&
-                        x.BitmeTarixi >= dto.BaslamaTarixi);
-
-                if (konflikt)
-                    return Result<MezuniyyetDto>.Fail("Bu tarix aralığında işçinin artıq məzuniyyəti mövcuddur.");
+                // Qayda ORTAQ metoddadır — işçinin öz müraciəti (`YaratAsync`) də
+                // eyni yoxlamadan keçir. İkisi ayrı yazılsaydı biri köhnə qalardı
+                // (məhz belə olmuşdu, bax: TarixKonfliktiVarmiAsync şərhi).
+                if (await TarixKonfliktiVarmiAsync(dto.IsciId, dto.BaslamaTarixi, dto.BitmeTarixi))
+                    return Result<MezuniyyetDto>.Fail(
+                        KonfliktMesaji(dto.BaslamaTarixi, dto.BitmeTarixi));
 
                 // ── 3. İş günlərinin sayı ──────────────────────────────
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);

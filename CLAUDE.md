@@ -166,6 +166,35 @@ yalnız əvəzedici yolunda görünürdü, ona görə diaqnoz çətinləşdi.
 əvəzedici / birbaşa qeyd) varsa, status/routing qaydasını dəyişəndə hamısını
 tutuşdur — biri köhnə məntiqlə qalarsa, xəta yalnız o yolda təzahür edər.
 
+## Üst-Üstə Düşən Məzuniyyət — Yoxlama BÜTÜN Giriş Nöqtələrində (KRİTİK)
+
+İşçi eyni tarixlərə **iki məzuniyyət** yaza bilməz — balansdan ikiqat gün düşür.
+18.08.2026-ya qədər bu yoxlama **yalnız HR-ın «Geriyə qeyd» axınında** var idi;
+işçinin öz müraciətində (`YaratAsync`) **yox idi**. Test: Anar 20–24.08.2026 üçün
+iki eyni müraciət göndərdi, hər ikisi təsdiqləndi, balans **53 → 43** oldu.
+Heç bir xəta çıxmadı.
+
+İndi qayda ortaq metoddadır — `MezuniyyetService.TarixKonfliktiVarmiAsync`.
+Tətbiq olunan **beş** yer:
+
+| Giriş nöqtəsi | `xaricId` |
+|---|---|
+| `YaratAsync` (işçi müraciəti) | yox |
+| `GeriyeQeydYaratAsync` (HR) | yox |
+| `YenileAsync` (HR redaktə) | qeydin özü |
+| `HrTarixDeyisAsync` | qeydin özü |
+| `AdminTarixDeyisAsync` | qeydin özü |
+
+**Qaydalar:**
+- Diri statuslar: `Gozlemede`, `SobeReisiTesdiqinde`, `RehberTesdiqinde`,
+  `HrTesdiqinde`, `Tesdiqlenib`. İmtina və ləğv **bloklamır**.
+- **Növ şərti QƏSDƏN yoxdur** — işçi eyni gündə həm xəstə, həm məzuniyyətdə ola
+  bilməz; fiziki olaraq bir statusdadır.
+- Yoxlama **hər şeydən əvvəl** olmalıdır (balans, əmr, bildirişdən qabaq) —
+  qeyd yaranandan sonra balansı geri qaytarmaq əl işi tələb edir.
+- Redaktə yollarında `xaricId` **məcburidir**, yoxsa qeyd özü ilə toqquşar.
+- Yeni bir yaratma/tarix dəyişmə yolu əlavə edəndə bu cədvələ sətir əlavə et.
+
 ## Rol Prioriteti — Servis ilə Göstərmə Qatı Eyni Sırada Olmalıdır (KRİTİK)
 
 Bir işçidə **birdən çox rol** ola bilər (real nümunə: Anar İbrahimov — `Operator` +
@@ -528,9 +557,20 @@ keş qoruyucusu (`key === lastKey` → fetch etmir) hallarında təxmin ekranda 
 (`MezuniyyetService.HesablaIsGunuAsync` — həftəsonu **sayılır**, yalnız
 `MezuniyyetdeHesablanir=false` bayramlar çıxılır). ×5/7 burada mənasızdır.
 
+**HƏLL: hər yazıcıya ÖZ elementi.** Birinci düzəlişdə yalnız təxmin silinmişdi,
+amma element hələ ortaq idi — `hesabla()` iş günü hissəsini silir, preview isə keş
+qoruyucusuna ilişib fetch etmirdi → mötərizə **birdəfəlik itirdi** («5 təqvim günü»
+yazılırdı, aşağıdakı kart isə 5 iş günü göstərirdi). İndi:
+`#durationText` (təqvim günü, JS) + `#durationIsGun` (iş günü, preview) —
+heç biri o birini üstələmir. Keş halında preview son cavabdan (`lastIsGun`) bərpa
+edir; uğursuz cavabda `lastIsGun = null` olur ki, köhnə rəqəm yeni aralığın yanına
+düşməsin.
+
 **Qaydalar:**
 - Lokal JS **rəqəm uydurmasın**. Dərhal göstərilə bilən hissəni yaz (təqvim günü),
   serverdən gələni gözlə. Serverin rəqəmi yazılırsa «~» qoyma — təxmin deyil.
+- İki mənbə bir sətri paylaşırsa **iki element** işlət. «Yazıcılardan birini
+  susdurmaq» kifayət deyil — susan yazıcı da elementi təmizləyir.
 - Async cavabda **köhnəlmiş cavab qoruyucusu** olsun: sorğu başlayanda açarı saxla,
   cavab gələndə `if (key !== lastKey) return;`. Ard-arda dəyişikliklərdə cavablar
   sıra ilə gəlmir — gec gələn köhnə cavab düzgün hesablamanı üstələyər.
