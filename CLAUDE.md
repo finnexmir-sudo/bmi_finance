@@ -706,6 +706,28 @@ Yoxlama: açıq portfeldə `AVG(summa/summakre)` ≈ 0,27 (286 kredit) və 0,46
 valyuta ekvivalenti DEYİL — `MeblegAzn` adı yanıldıcıdır, dəyişdirilmədi ki,
 mövcud istinadlar pozulmasın.
 
+### Pul Köçürməsi Ərizəsi — «Məbləğ» KÖÇÜRÜLƏNDİR (KRİTİK)
+
+`Erize1.docx`-də «Məbləğ rəqəmlə» xanası **köçürülən** məbləğdir, müştəridən
+alınan yox. Rial/Rubl köçürməsində bu, `Mebleg × IranRial`-dır:
+
+```
+Məbləğ 900 (USD) × kurs 850 000 = 765 000 000 (rial)   ← sənədin ƏSAS rəqəmi
+Alınan valyuta və məbləğ: 900                          ← Mebleg
+```
+
+18.08.2026-ya qədər kod ora `Mebleg`-i (900) yazırdı — sənədin əsas rəqəmi səhv
+idi. Dəyərlər BMI-nin köhnə formasından ölçülüb (istinad sənəd: 26-T-24).
+
+**«Məbləğ yazı ilə» üçün `KreditSozeCevir.MebleghSoze` İŞLƏTMƏ** — o, «manat»/
+«qəpik» sözlərini sabit əlavə edir (kredit müqaviləsi üçün yazılıb) və rial/dollar
+köçürməsində səhv olar. Düzgünü **`MebleghSozeQepiksiz`**: yalnız tam hissə,
+valyuta sözü olmadan (`765000000` → «yeddi yüz altmış beş milyon»).
+
+Rəqəm formatı: qrup ayırıcısı **yoxdur**, artıq sıfır **yoxdur** (`0.##`, az-AZ).
+Valyuta adı iki cür yazılır — «Valyuta növü» sətrində «İran **R**ialı», «Satılan»
+sətrində «İran **r**ialı»; köhnə formada belədir, qəsdən saxlanılıb.
+
 ### Kredit Müqaviləsi — Şablonlar YALNIZ AZN üçündür (KRİTİK)
 
 `{k_val}` `KreditMuqavileController`-də sabit `"AZN"` yazılır və

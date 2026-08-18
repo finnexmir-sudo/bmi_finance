@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using FinNex.Application.DTOs.Emeliyyat;
+using FinNex.Application.Helpers.Kredit;
 using FinNex.Application.Interfaces.Emeliyyat;
 using FinNex.Domain;
 using FinNex.UI.Services.Kredit;
@@ -140,7 +141,43 @@ public abstract class KocurmeControllerBase : Controller
         var sablon = Path.Combine(_env.WebRootPath, "Files", "Word", "Emeliyyat", "Erize1.docx");
         if (!System.IO.File.Exists(sablon)) { TempData["Error"] = "Ərizə şablonu tapılmadı."; return RedirectToAction(nameof(Detal), new { id }); }
 
-        string F(decimal? v) => v.HasValue ? v.Value.ToString("#,0.00", CultureInfo.InvariantCulture) : "";
+        // ── Word dəyərləri BMI-nin köhnə formasından ÖLÇÜLÜB (18.08.2026) ──
+        // İstinad sənəd 26-T-24 (giriş: Məbləğ 900, İran Rial kursu 850000):
+        //   Məbləğ rəqəmlə   765000000                     ← Mebleg × kurs (KÖÇÜRÜLƏN)
+        //   Məbləğ yazı ilə  yeddi yüz altmış beş milyon   ← valyuta sözü YOX
+        //   Valyuta növü     İran Rialı
+        //   Alınan           900
+        //   Satılan          765000000 İran rialı
+        //   Məzənnə          850000
+        //
+        // ƏVVƏL SƏHV İDİ: «Məbləğ rəqəmlə» yerinə `Mebleg` (900.00) yazılırdı —
+        // yəni müştəridən alınan məbləğ, köçürülən yox. Sənədin ƏSAS rəqəmi səhv
+        // çıxırdı. «Məbləğ yazı ilə» isə sabit boş idi.
+        bool konversiya = m.KocurulenValyuta is "Rial" or "Rubl";
+        decimal mebleg  = m.Mebleg ?? 0m;
+        decimal kurs    = m.IranRial ?? 0m;
+        decimal geden   = konversiya ? mebleg * kurs : mebleg;   // sənədin əsas rəqəmi
+
+        // Rəqəm formatı: köhnə forma qrup ayırıcısı və artıq sıfır yazmır (765000000).
+        // Onluq yalnız real varsa görünür. Mədəniyyət az-AZ — sənəd insan üçündür,
+        // ekranlardakı format da belədir (CSS/JS-dən fərqli olaraq invariant DEYİL).
+        var azAz = CultureInfo.GetCultureInfo("az-Latn-AZ");
+        string N(decimal v) => v.ToString("0.##", azAz);
+
+        // Valyuta adları — köhnə sənəddəki yazılışla eyni.
+        // Diqqət: «Valyuta növü» sətrində «İran Rialı» (böyük R), «Satılan» sətrində
+        // «İran rialı» (kiçik r) — köhnə formada belədir, qəsdən fərqli saxlanılıb.
+        string ValyutaNovu(string? v) => v switch
+        {
+            "Rial" => "İran Rialı",
+            "Rubl" => "Rubl",
+            "USD"  => "ABŞ dolları",
+            "Avro" => "Avro",
+            "AZN"  => "AZN",
+            _      => v ?? ""
+        };
+        string SatilanAdi(string? v) => v == "Rial" ? "İran rialı" : (v ?? "");
+
         var tokenler = new Dictionary<string, string?>
         {
             ["{T}"] = m.HevaleNo,
@@ -149,12 +186,16 @@ public abstract class KocurmeControllerBase : Controller
             ["{bank_adi}"] = m.BankAd, ["{filial}"] = m.Filial,
             ["{a_adi}"] = m.AlanAd, ["{a_soyadi}"] = m.AlanSoyad, ["{a_ataadi}"] = m.AlanAtaAd,
             ["{a_hesab}"] = m.AlanHesab, ["{a_passport}"] = m.AlanPassport,
-            ["{mebleg}"] = F(m.Mebleg), ["{m_yaziile}"] = "",
-            ["{valyuta_novu}"] = m.KocurulenValyuta,
+            ["{mebleg}"] = N(geden),
+            // Tam hissə, valyuta sözü OLMADAN — `MebleghSoze` işlətməyin, o «manat»/
+            // «qəpik» sözlərini SABİT əlavə edir (kredit müqaviləsi üçün yazılıb) və
+            // dollar/rial köçürməsində səhv olar. Bax: CLAUDE.md — valyuta tələsi.
+            ["{m_yaziile}"] = KreditSozeCevir.MebleghSozeQepiksiz(geden),
+            ["{valyuta_novu}"] = ValyutaNovu(m.KocurulenValyuta),
             ["{meqsed}"] = m.Meqsed, ["{elave}"] = m.Elave, ["{qeyd}"] = m.Qeyd,
-            ["{alinan_valyuta}"] = $"{F(m.Mebleg)} {m.MedaxilValyuta}".Trim(),
-            ["{satilan_valyuta}"] = (m.KocurulenValyuta is "Rial" or "Rubl") ? $"{F(m.Mebleg * (m.IranRial ?? 0m))} {m.KocurulenValyuta}".Trim() : "",
-            ["{mezenne}"] = (m.KocurulenValyuta is "Rial" or "Rubl") ? F(m.IranRial) : "",
+            ["{alinan_valyuta}"] = $"{N(mebleg)} {ValyutaNovu(m.MedaxilValyuta)}".Trim(),
+            ["{satilan_valyuta}"] = konversiya ? $"{N(geden)} {SatilanAdi(m.KocurulenValyuta)}".Trim() : "",
+            ["{mezenne}"] = konversiya ? N(kurs) : "",
             ["{tarix}"] = m.Tarix?.ToString("dd.MM.yyyy")
         };
         var bytes = KreditWordService.Doldur(sablon, tokenler);
