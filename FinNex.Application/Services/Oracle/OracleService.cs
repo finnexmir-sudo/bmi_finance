@@ -133,7 +133,10 @@ public class OracleService : IOracleService
         }
 
         // Bura yalnız bütün cəhdlər keçici xəta ilə bitəndə düşür.
-        throw sonXeta ?? new InvalidOperationException("Oracle sorğusu icra edilmədi.");
+        // `??` ilə yazmaq OLMAZ: `OracleException` və `InvalidOperationException`
+        // arasında ortaq tip çıxarıla bilmir (CS0019) — ayrıca `throw` lazımdır.
+        if (sonXeta != null) throw sonXeta;
+        throw new InvalidOperationException("Oracle sorğusu icra edilmədi.");
     }
 
     // Yalnız SELECT / WITH icazəlidir — Oracle yazma (DML/DDL) qəti qadağandır.
