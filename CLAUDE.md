@@ -174,7 +174,7 @@ işçinin öz müraciətində (`YaratAsync`) **yox idi**. Test: Anar 20–24.08.
 iki eyni müraciət göndərdi, hər ikisi təsdiqləndi, balans **53 → 43** oldu.
 Heç bir xəta çıxmadı.
 
-İndi qayda ortaq metoddadır — `MezuniyyetService.TarixKonfliktiVarmiAsync`.
+İndi qayda ortaq metoddadır — `MezuniyyetService.TarixKonfliktiTapAsync`.
 Tətbiq olunan **beş** yer:
 
 | Giriş nöqtəsi | `xaricId` |
@@ -185,9 +185,27 @@ Tətbiq olunan **beş** yer:
 | `HrTarixDeyisAsync` | qeydin özü |
 | `AdminTarixDeyisAsync` | qeydin özü |
 
+**Yoxlama TAM BƏRABƏRLİYƏ yox, KƏSİŞMƏYƏ baxır** — klassik interval düsturu
+(`A1 <= B2 && A2 >= B1`). Mövcud **20–24.08** üçün:
+
+| Yeni aralıq | Nəticə |
+|---|---|
+| 20–24 (eyni) | ✗ blok |
+| 22–26 (qismən) | ✗ blok |
+| 18–26 (əhatə edir) | ✗ blok |
+| 21–23 (içəridə) | ✗ blok |
+| 24–28 (bir gün toxunur) | ✗ blok |
+| 25–28 (tam ayrı) | ✓ keçir |
+
 **Qaydalar:**
+- `.Date` **hər iki tərəfdə** məcburidir. Bazadakı tarixlər saat komponenti daşıya
+  bilir; saatsız müqayisədə sərhəd günü sürüşür (mövcud bitmə `24.08 00:00`, yeni
+  başlama `24.08 10:00` → `00:00 >= 10:00` yalan çıxır və 24 avqust İKİ məzuniyyətə
+  düşərdi).
 - Diri statuslar: `Gozlemede`, `SobeReisiTesdiqinde`, `RehberTesdiqinde`,
   `HrTesdiqinde`, `Tesdiqlenib`. İmtina və ləğv **bloklamır**.
+- Xəta mətni **toqquşan qeydin** tarixlərini və statusunu yazır, seçilənləri yox —
+  işçi «niyə keçmədi» sualına cavabı ekranda görsün.
 - **Növ şərti QƏSDƏN yoxdur** — işçi eyni gündə həm xəstə, həm məzuniyyətdə ola
   bilməz; fiziki olaraq bir statusdadır.
 - Yoxlama **hər şeydən əvvəl** olmalıdır (balans, əmr, bildirişdən qabaq) —
