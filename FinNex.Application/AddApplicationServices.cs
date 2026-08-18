@@ -77,6 +77,8 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<FinNex.Application.Interfaces.Hevale.IHevaleImportService, FinNex.Application.Services.Hevale.HevaleImportService>();
         services.AddScoped<FinNex.Application.Interfaces.Kurval.IBmiValyutaService, FinNex.Application.Services.Kurval.BmiValyutaService>();
         services.AddScoped<FinNex.Application.Interfaces.Countrycode.IBmiOlkeService, FinNex.Application.Services.Countrycode.BmiOlkeService>();
+        // VM 98.2.1 — işçi kreditləri üzrə hesabi gəlirin bazar dərəcəsi
+        services.AddScoped<FinNex.Application.Interfaces.Kredit.IKreditFaizDerecesiService, FinNex.Application.Services.Kredit.KreditFaizDerecesiService>();
         services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.IKocurmeService, FinNex.Application.Services.Emeliyyat.KocurmeService>();
         services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.ITelebeKocurmeService, FinNex.Application.Services.Emeliyyat.TelebeKocurmeService>();
         services.AddScoped<FinNex.Application.Interfaces.Risk.IRiskService, FinNex.Application.Services.Risk.RiskService>();

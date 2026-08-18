@@ -81,6 +81,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<EzamiyyetMekan> EzamiyyetMekanlar { get; set; }
     public DbSet<EzamiyyetMuraciet> EzamiyyetMuracietler { get; set; }
 
+    // VM 98.2.1 — işçi kreditləri üzrə hesabi gəlir hesablamasında istifadə olunan
+    // bazar faiz dərəcəsi (mühasib əl ilə idarə edir, dəyişəndə yeni sətir)
+    public DbSet<KreditFaizDerecesi> KreditFaizDereceleri { get; set; }
+
     // Mərkəzi əmr reyestri + nömrə sayğacı (məzuniyyət, maaş dəyişikliyi, ...)
     public DbSet<Emr> Emrler { get; set; }
     public DbSet<EmrSayghaci> EmrSayghaclari { get; set; }
@@ -253,6 +257,17 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         });
 
         // Gedən həvalə — BMI odb.geden_hevale sütun adları ilə (Oracle datası yüklənə bilsin)
+        // VM 98.2.1 — bazar faiz dərəcəsi tarixçəsi.
+        // (Tarix, ValyutaKodu) üzrə indeks: axtarış həmişə «bu tarixdən əvvəlki
+        // ən son sətir, həmin valyuta üçün» şəklindədir.
+        builder.Entity<KreditFaizDerecesi>(e =>
+        {
+            e.Property(x => x.ValyutaKodu).HasMaxLength(2).IsRequired();
+            e.Property(x => x.Derece).HasPrecision(9, 4);
+            e.Property(x => x.Qeyd).HasMaxLength(300);
+            e.HasIndex(x => new { x.ValyutaKodu, x.Tarix });
+        });
+
         builder.Entity<GedenHevale>(e =>
         {
             e.ToTable("GedenHevale");
