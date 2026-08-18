@@ -1,0 +1,124 @@
+@model IList<FinNex.Application.DTOs.Kredit.KreditFaizDerecesiDto>
+@{
+    ViewData["Title"] = "Kredit faiz dərəcəsi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    // Cari (bugün qüvvədə olan) dərəcələri əvvəlcədən hesablayırıq — şərti
+    // markup içində qurmuruq (CLAUDE.md — Razor qaydası).
+    var bugun = DateTime.Today;
+    var cariIdler = Model
+        .Where(x => x.Tarix.Date <= bugun)
+        .GroupBy(x => x.ValyutaKodu)
+        .Select(g => g.OrderByDescending(x => x.Tarix).ThenByDescending(x => x.Id).First().Id)
+        .ToHashSet();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/guzest.css" asp-append-version="true" />
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="gz-page">
+    <div class="gz-head">
+        <div>
+            <div class="gz-title">Kredit faiz dərəcəsi (bazar)</div>
+            <div class="gz-sub">
+                İşçi krediti bu dərəcədən aşağı faizlə verilirsə, fərq VM-nin 98.2.1-ci
+                maddəsinə əsasən hesabi gəlir sayılır və vergi bazalarına düşür.
+            </div>
+        </div>
+        <a asp-action="Create" class="gz-btn gz-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni dərəcə
+        </a>
+    </div>
+
+    <div class="alert alert-info" style="border-left:4px solid #2d6cdf">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Dərəcə dəyişəndə köhnəsini düzəltməyin — YENİ sətir əlavə edin.</strong>
+        Sistem hər dövr üçün həmin dövrdə qüvvədə olan dərəcəni tapır; köhnə sətir
+        silinsə keçmiş aylar yenidən hesablana bilməz.
+    </div>
+
+    <div class="gz-card">
+        @if (!Model.Any())
+        {
+            <div class="gz-empty">
+                <i class="bi bi-percent"></i>
+                <p>
+                    Hələ dərəcə yazılmayıb — VM 98.2.1 hesablaması işləməyəcək.<br />
+                    AZN üçün cari dəyəri («Banklararası kredit dərəcəsi») əlavə edin.
+                </p>
+            </div>
+        }
+        else
+        {
+            <table class="gz-table">
+                <thead>
+                    <tr>
+                        <th>Qüvvəyə minmə tarixi</th>
+                        <th>Valyuta</th>
+                        <th class="gz-num">Dərəcə</th>
+                        <th>Qeyd</th>
+                        <th>Status</th>
+                        <th class="gz-act">Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        var cariMi = cariIdler.Contains(d.Id);
+                        var gelecekMi = d.Tarix.Date > bugun;
+                        <tr>
+                            <td><strong>@d.Tarix.ToString("dd.MM.yyyy")</strong></td>
+                            <td>@(string.IsNullOrWhiteSpace(d.ValyutaAdi) ? d.ValyutaKodu : $"{d.ValyutaKodu} — {d.ValyutaAdi}")</td>
+                            <td class="gz-num"><strong>@d.Derece.ToString("0.####")%</strong></td>
+                            <td>@(d.Qeyd ?? "—")</td>
+                            <td>
+                                @if (gelecekMi)
+                                {
+                                    <span class="gz-status">Gələcək</span>
+                                }
+                                else if (cariMi)
+                                {
+                                    <span class="gz-status gz-status--ok">Qüvvədə</span>
+                                }
+                                else
+                                {
+                                    <span class="gz-status">Arxiv</span>
+                                }
+                            </td>
+                            <td class="gz-act">
+                                <a asp-action="Edit" asp-route-id="@d.Id"
+                                   class="gz-btn gz-btn--outline gz-btn--sm" title="Səhv yazılıbsa düzəldin">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@d.Id" method="post"
+                                      style="display:inline"
+                                      onsubmit="return confirm('Bu dərəcə silinsin? Həmin dövrə düşən keçmiş hesablamalar artıq təkrarlana bilməyəcək.');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="gz-btn gz-btn--danger gz-btn--sm">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

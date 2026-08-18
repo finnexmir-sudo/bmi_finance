@@ -1072,6 +1072,11 @@
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "IsciHYS" ? "active" : "")">
                                     <i class="bi bi-percent"></i> HYS Təyinatları
                                 </a>
+                                @* VM 98.2.1 — işçi kreditinin hesabi gəliri bu dərəcəyə görə hesablanır *@
+                                <a asp-area="HR" asp-controller="KreditFaizDerecesi" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "KreditFaizDerecesi" ? "active" : "")">
+                                    <i class="bi bi-graph-up"></i> Kredit faiz dərəcəsi
+                                </a>
                             </div>
                         </div>
                     }
