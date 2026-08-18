@@ -621,6 +621,26 @@ Layihədə ikinci bir verilənlər bazası mövcuddur: **Oracle (BMI)**
 - Bütün Oracle sorğuları `IOracleService` vasitəsilə icra olunur
 - Oracle sorguları `OracleSorgular` cədvəlində saxlanır (SQL Server-də), oradan oxunur
 
+### ORA-12570 və Digər Keçici Şəbəkə Xətaları (18.08.2026)
+
+Mühasibat → Balans İcmalı bəzən **«ORA-12570: TNS:packet reader failure»** verirdi,
+bir azdan eyni səhifə normal açılırdı. Bu, sorğunun və ya kodun səhvi **DEYİL** —
+Oracle ilə TCP sessiyası qırılır: hovuzdakı (pool) bağlantının sessiyasını aradakı
+firewall/NAT boşdayanmaya görə səssizcə bağlayır, ADO.NET isə bunu bilmir.
+
+`OracleService` indi belə xətalarda **yeni bağlantı ilə 3 dəfəyə qədər təkrar cəhd**
+edir (`CehdEtAsync`, 200/400 ms fasilə + `ClearAllPools()`). Təkrar təhlükəsizdir:
+servis yalnız SELECT icra edir (`YalnizSelect`), Oracle-a yazı onsuz da qadağandır.
+
+**Siyahıya yalnız şəbəkə xətaları salınır** (12570, 12571, 12537, 12152, 3113, 3114,
+12547, 12560). Sintaksis (ORA-00904), hüquq (ORA-00942) və vaxt aşımı (ORA-01013)
+**təkrarlanmır** — onları təkrarlamaq xətanı gizlədib istifadəçini 3 dəfə uzun
+gözlətməkdən başqa nəyə yaramaz.
+
+Xəta yenə də təkrarlanırsa problem koddadır deyil: bağlantı sətrinə
+`Validate Connection=true` əlavə edin (ölü hovuz bağlantısı istifadədən əvvəl
+yoxlanır) və ya şəbəkə/firewall boşdayanma müddətinə baxın.
+
 ### İSTİSNA YOXDUR — Oracle 100% oxunur (12.08.2026-dan)
 
 Əvvəl kredit müqaviləsi modulu üçün **iki** Oracle cədvəlinə yazı icazəli idi.
