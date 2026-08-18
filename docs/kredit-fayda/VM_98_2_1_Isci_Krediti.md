@@ -62,6 +62,8 @@ FinNex-də isə `TopluHesabla` səhifəsində əl ilə daxil edilir.
 
 ```sql
 SELECT SUBSTR(l.licschpkre,10,6) AS musteri_kodu,
+       r.pincode                 AS fin,            -- ← İŞÇİ BAĞI
+       r.name_regnom             AS musteri_adi,
        SUBSTR(l.licschpkre, 6,2) AS valyuta,          -- '00' = AZN
        l.subschkre               AS subkod,
        l.procstavkre             AS isci_faizi,       -- 8
@@ -72,11 +74,15 @@ FROM   licschkre l
 JOIN   arh_dd a ON  a.ssd = l.subschkre
                 AND (   (a.debet = l.licschpkre  AND a.kredit = l.trlicschkre)
                      OR (a.debet = l.licschppkre AND a.kredit = l.trlicsch_19) )
+LEFT JOIN regnom r ON r.regnom = SUBSTR(l.licschpkre,10,6)   -- ← LEFT, İNNER YOX
 WHERE  l.tipzaloga = 10
   AND  a.date_oper BETWEEN '{BAS}' AND '{SON}'
-GROUP BY SUBSTR(l.licschpkre,10,6), SUBSTR(l.licschpkre,6,2),
-         l.subschkre, l.procstavkre, l.procstav_19
+GROUP BY SUBSTR(l.licschpkre,10,6), r.pincode, r.name_regnom,
+         SUBSTR(l.licschpkre,6,2), l.subschkre, l.procstavkre, l.procstav_19
 ```
+
+Hazır INSERT: `docs/sql/kredit/Isci_Kredit_Faizi_OracleSorgu.sql`
+(`to_date(''{BAS}'',''dd/mm/yyyy'')` — layihənin Oracle konvensiyası).
 
 **`date_close` şərti QƏSDƏN yoxdur.** Dövrü provodkalar özü təyin edir:
 - ay ortasında **bağlanan** kredit → o günə qədər faiz hesablanıb → düşür ✅
@@ -158,19 +164,46 @@ Bugünkü portfeldə hamısı 8% / vk 13%-dir, yəni vk hissəsi həmişə 0 ç�
 ## 7. Qurulacaq struktur
 
 ```
-KreditFaizDerecesi      (Id, Tarix, Valyuta, Derece, Qeyd)
-IsciKreditMusteriKodu   (Id, IsciId, MusteriKodu)
+KreditFaizDerecesi      (Id, Tarix, ValyutaKodu, Derece, Qeyd)   ✅ QURULDU
 KreditFaydaDovru        (Id, Bas, Son, Hesablanma)      ← dövr yaddaşı
-OracleSorgular          → «İşçi Kredit Faizi» ({BAS}/{SON})
+OracleSorgular          → «Isci Kredit Faizi» ({BAS}/{SON})      ✅ SQL HAZIR
         ↓
 IsciKreditFaydaService.HesablaAsync(bas, son)
-        ↓
-Baxış ekranı (mühasib yoxlayır / üstələyir)
-        ↓
-MaasElave.VM9821Meblegi          ← MÖVCUD sahə
+        ↓  FIN ilə işçiyə bağlanır (əl ilə cədvəl YOXDUR)
+TopluHesabla → VM9821Meblegi sahəsi HAZIR DOLU gəlir  ← MÖVCUD sahə
 ```
 
-Sıra: sorğu → dərəcə + dövr → müştəri kodu bağı → servis → ekran → yazma.
+Sıra: dərəcə ✅ → sorğu ✅ → servis → dövr yaddaşı → TopluHesabla inteqrasiyası.
+
+### 7.2 İŞÇİ BAĞI — FIN üzrə AVTOMATİK (18.08.2026 ölçüldü)
+
+`IsciKreditMusteriKodu` cədvəli **LƏĞV EDİLDİ** — lazım deyil. BMI-nin `regnom`
+cədvəlində FIN var və FinNex-dəki ilə **eynidir**:
+
+```
+Oracle: licschkre.tipzaloga=10 → SUBSTR(licschpkre,10,6) → regnom.pincode (FIN)
+                                                                 ↓ FIN üzrə
+FinNex: Isciler.FIN → IsciId → maaş
+```
+
+40 sətir üzərində yoxlanıldı, tutuşan hər FIN **simvol-simvol eyni**:
+`11AN3Y1` (Sərvanuş), `2FATQTQ` (Qulu Zadə), `1MMWSTV` (Mahmudova),
+`2GZ1KS3` (Heydərova), `1E0B33` (Najafimarganmaskan), `4XJXXL7` (Nadirova),
+`6JUNK3H` (Bəkirov).
+
+Əl ilə cədvəldən üstündür: mühasibin Exceldə etdiyi səhv (bir kodu **iki** nəfərə
+yazmaq — `019703`) FIN bağında **fiziki olaraq mümkün deyil**.
+
+**BAĞLANMAYAN SƏTİRLƏR — səssizcə atılmır:**
+
+| Hal | Nümunə | Davranış |
+|---|---|---|
+| `regnom`-da FIN yanlış | `000091 NAZARİ MORTEZA` → pincode = «XX» | ekranda «işçi tapılmadı», cəmə düşmür |
+| FinNex-də belə FIN yoxdur | işdən çıxmış / bizim işçi deyil | eyni |
+| Oracle-da 40, FinNex-də 25 işçi | normaldır | dövr filtri onsuz da azaldır (iyul: 15) |
+
+Ona görə Oracle sorğusunda **LEFT JOIN** məcburidir — INNER JOIN yazsaq belə
+sətirlər sorğudan düşər və hesabi gəlir səssizcə əskik qalar.
 
 ### 7.1 Nəticə haraya yazılır — MÖVCUD MEXANİZM (18.08.2026 yoxlanıldı)
 
