@@ -47,10 +47,16 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var rehberdirmi = User.IsInRole(RoleNames.Rehber);
             var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            // HR bayrağı ƏVVƏL göndərilmirdi (false qalırdı). `SobeReisiKecildi`/
+            // `RehberKecildi`/`HrKecildi` onu oxuyur — nəticədə HR rolu olan işçidə
+            // bu portal səhifəsi eyni siyahını `Mezuniyyet/Index` və `Icaze/Index`-dən
+            // FƏRQLİ göstərirdi (o ikisi bayrağı göndərir). Göndərilməyən sahə
+            // JavaScript kimi susmur — sadəcə `false` sayılır və səhv addım gizlənir.
+            var hrdirmi = User.IsInRole(RoleNames.HR);
             var mezList = mezResult.Success ? mezResult.Data!.ToList() : new();
             var icazeList = icazeResult.Success ? icazeResult.Data!.ToList() : new();
-            foreach (var m in mezList) { m.MuracietSahibiRehberdirmi = rehberdirmi; m.MuracietSahibiSobeReisidirmi = sobeReisidirmi; }
-            foreach (var ic in icazeList) { ic.MuracietSahibiRehberdirmi = rehberdirmi; ic.MuracietSahibiSobeReisidirmi = sobeReisidirmi; }
+            foreach (var m in mezList) { m.MuracietSahibiRehberdirmi = rehberdirmi; m.MuracietSahibiSobeReisidirmi = sobeReisidirmi; m.MuracietSahibiHrdirmi = hrdirmi; }
+            foreach (var ic in icazeList) { ic.MuracietSahibiRehberdirmi = rehberdirmi; ic.MuracietSahibiSobeReisidirmi = sobeReisidirmi; ic.MuracietSahibiHrdirmi = hrdirmi; }
 
             var model = new MuracietPortalViewModel
             {

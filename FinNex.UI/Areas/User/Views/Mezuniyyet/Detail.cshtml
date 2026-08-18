@@ -115,7 +115,9 @@
                         </div>
                         }
 
-                        @if ((!Model.MuracietSahibiRehberdirmi && !Model.MuracietSahibiSobeReisidirmi) && (Model.SobeReisiTesdiq != null || Model.WorkflowAddim <= 1))
+                        @* Addım şərtləri VM-dədir (SobeReisiAddimiVar / RehberAddimiVar) —
+                           servisin marşrutlaşdırma prioritetini eyni ilə təkrarlayır. *@
+                        @if (Model.SobeReisiAddimiVar && (Model.SobeReisiTesdiq != null || Model.WorkflowAddim <= 1))
                         {
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 1 ? "fn-wt-connector--done" : "")"></div>
 
@@ -141,7 +143,7 @@
                         </div>
                         }
 
-                        @if (!Model.MuracietSahibiRehberdirmi && (Model.RehberTesdiq != null || Model.WorkflowAddim <= 2))
+                        @if (Model.RehberAddimiVar && (Model.RehberTesdiq != null || Model.WorkflowAddim <= 2))
                         {
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 2 ? "fn-wt-connector--done" : "")"></div>
 

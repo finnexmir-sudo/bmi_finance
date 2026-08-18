@@ -21,6 +21,27 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         public bool MuracietSahibiSobeReisidirmi { get; set; }
         public bool MuracietSahibiHrdirmi { get; set; }
 
+        // ── Hansı təsdiq addımı bu müraciətdə VAR ────────────────────────────
+        // `MezuniyyetService.YaratAsync` (sətir 95-107) marşrutlaşdırmasının güzgüsü.
+        // Orada şərtlərin SIRASI vacibdir — HR şərti Rəhbərdən ƏVVƏL yoxlanılır:
+        //   HR         → Şöbə rəisi YOX, Rəhbər VAR, HR atlanır (özünü təsdiqləməsin)
+        //   Rəhbər     → Şöbə rəisi YOX, Rəhbər YOX, birbaşa HR
+        //   Şöbə rəisi → Şöbə rəisi YOX, Rəhbər VAR, HR VAR
+        //   adi işçi   → hamısı
+        //
+        // 18.08.2026 — REAL HADİSƏ: view yalnız `MuracietSahibiRehberdirmi`-yə baxırdı.
+        // HR + Rəhbər rolu BİRLİKDƏ olan işçidə (Anar İbrahimov: Operator+HR+Rehber)
+        // servis HR şərtini əvvəl yoxlayıb müraciəti `RehberTesdiqinde`-yə salır, view isə
+        // Rəhbər addımını gizlədirdi → işçi öz ekranında «Müraciət göndərildi → HR»
+        // görürdü, halbuki müraciət Rəhbərdə (Nəcəfi müdirdə) gözləyirdi. Xəta çıxmırdı.
+        //
+        // Şərti markup içində qurma — dəyəri burada hesabla, Razor yalnız oxusun.
+        public bool SobeReisiAddimiVar =>
+            !MuracietSahibiHrdirmi && !MuracietSahibiRehberdirmi && !MuracietSahibiSobeReisidirmi;
+
+        public bool RehberAddimiVar =>
+            MuracietSahibiHrdirmi || !MuracietSahibiRehberdirmi;
+
         // ── Məzuniyyət məlumatları ─────────────────────────────
         public string NovText { get; set; } = null!;
         public string StatusText { get; set; } = null!;

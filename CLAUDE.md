@@ -166,6 +166,34 @@ yalnız əvəzedici yolunda görünürdü, ona görə diaqnoz çətinləşdi.
 əvəzedici / birbaşa qeyd) varsa, status/routing qaydasını dəyişəndə hamısını
 tutuşdur — biri köhnə məntiqlə qalarsa, xəta yalnız o yolda təzahür edər.
 
+## Rol Prioriteti — Servis ilə Göstərmə Qatı Eyni Sırada Olmalıdır (KRİTİK)
+
+Bir işçidə **birdən çox rol** ola bilər (real nümunə: Anar İbrahimov — `Operator` +
+`HR` + `Rehber`). Belə halda marşrutu **şərtlərin SIRASI** həll edir və göstərmə qatı
+həmin sıranı **eyni ilə** təkrarlamalıdır.
+
+**İki modulda prioritet QƏSDƏN FƏRQLİDİR — «eyniləşdirmək» olmaz:**
+
+| Modul | Sıra | HR+Rəhbər olan işçinin öz müraciəti |
+|---|---|---|
+| `MezuniyyetService.YaratAsync:95` | **HR → Rəhbər → ŞöbəRəisi** | `RehberTesdiqinde` — Rəhbər addımı VAR |
+| `IcazeService.YaratAsync:174` | **Rəhbər → HR → ŞöbəRəisi** | `Tesdiqlenib` — birbaşa təsdiq |
+
+Real hadisə (18.08.2026): `MezuniyyetListDto.RehberKecildi` və
+`User/Views/Mezuniyyet/Detail.cshtml` yalnız `MuracietSahibiRehberdirmi`-yə baxırdı.
+Servis isə HR şərtini əvvəl yoxlayır → müraciət **Rəhbərdə gözləyirdi**, view isə Rəhbər
+addımını **keçilmiş sayıb gizlədirdi**: işçi öz «Müraciət gedişatı» ekranında
+«Müraciət göndərildi → HR» görürdü. Heç bir xəta çıxmırdı, sadəcə ekran yalan danışırdı.
+
+**Qaydalar:**
+- Addım şərtini markup içində qurma — VM-də hesabla (`SobeReisiAddimiVar`,
+  `RehberAddimiVar`) və Razor yalnız oxusun.
+- **Rol bayraqlarını BÜTÜN controller-lər göndərsin.** `MuracietController` (birləşmiş
+  portal) `MuracietSahibiHrdirmi`-ni göndərmirdi (`false` qalırdı) — nəticədə EYNİ siyahı
+  `Mezuniyyet/Index` və `Icaze/Index`-dən fərqli görünürdü. Göndərilməyən `bool` sahə
+  susmur, `false` sayılır və səhv addımı gizlədir.
+- Marşrut şərtinə toxunanda **hər iki modulun** DTO-sunu və view-larını tutuşdur.
+
 ## Aktiv Təyinat — `Aktivdir` vs `BitmeTarixi` (KRİTİK)
 
 `IsciTeyinat`-da «cari təyinat» üçün **iki fərqli tərif** işlədilirdi və layihə ikiyə
