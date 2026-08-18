@@ -3,6 +3,7 @@ using FinNex.Application.DTOs.Emeliyyat;
 using FinNex.Application.Interfaces.Emeliyyat;
 using FinNex.Domain.Entities.Emeliyyat;
 using FinNex.Domain.Entities.HR;
+using FinNex.Application.Services.Hevale;
 using FinNex.Domain.Interfaces;
 
 namespace FinNex.Application.Services.Emeliyyat;
@@ -76,11 +77,7 @@ public class KocurmeService : IKocurmeService
     public async Task<string> NovbetiHevaleNoAsync(string novu)
     {
         var il = DateTime.Now.Year;
-        var heminIl = await _uow.Repository<Kocurme>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Novu == novu && x.Tarix != null && x.Tarix.Value.Year == il,
-            izlemeden: true);
-        var novbeti = heminIl.Select(x => SonReqem(x.HevaleNo)).DefaultIfEmpty(0).Max() + 1;
-        return $"{il % 100:D2}-{Prefiks(novu)}-{novbeti}";
+        return await HevaleNomreHelper.NovbetiAsync(_uow, il, Prefiks(novu));
     }
 
     public async Task<KocurmeCreateDto?> TekrarMelumatiAsync(int id, string novu)
@@ -131,11 +128,9 @@ public class KocurmeService : IKocurmeService
         var tarix = dto.Tarix ?? DateTime.Now;
         var il = tarix.Year;
 
-        var heminIl = await _uow.Repository<Kocurme>().HamisiniGetirAsync(
-            predicate: x => !x.Silinib && x.Novu == novu && x.Tarix != null && x.Tarix.Value.Year == il,
-            izlemeden: true);
-        var novbeti = heminIl.Select(x => SonReqem(x.HevaleNo)).DefaultIfEmpty(0).Max() + 1;
-        var hevaleNo = $"{il % 100:D2}-{Prefiks(novu)}-{novbeti}";
+        // Nömrə YAZILAN anda yenidən hesablanır (forma preview-dan sonra başqası
+        // nömrə almış ola bilər). Mənbə eyni helper-dir — bax: NovbetiHevaleNoAsync.
+        var hevaleNo = await HevaleNomreHelper.NovbetiAsync(_uow, il, Prefiks(novu));
 
         var e = new Kocurme { Novu = novu, HevaleNo = hevaleNo, YaradanIcraciId = yaradanUserId, Icra = icraNo };
         Doldur(e, dto);
