@@ -164,6 +164,9 @@ public class IsciKreditFaydaService : IIsciKreditFaydaService
         // saxlanılır və ekranda göstərilir.
         var dereceKes = new Dictionary<string, decimal?>(StringComparer.OrdinalIgnoreCase);
 
+        // Yalnız dərəcə TAPILMAYANDA yüklənir — diaqnostika üçün (aşağı bax).
+        IList<DTOs.Kredit.KreditFaizDerecesiDto>? hamiDereceler = null;
+
         foreach (var s in faizSetirler)
         {
             var kod     = Metn(s, "MUSTERI_KODU");
@@ -214,7 +217,22 @@ public class IsciKreditFaydaService : IIsciKreditFaydaService
             {
                 // SƏSSİZCƏ 0 SAYMIRIQ — dərəcəsiz valyutada hesabi gəlir hesablansaydı
                 // 0 çıxardı və işçi vergidən qanunsuz yayınardı. Sətir görünür.
-                setir.Problem ??= $"«{valyuta}» valyutası üçün bazar dərəcəsi təyin edilməyib.";
+                //
+                // İKİ FƏRQLİ HAL, İKİ FƏRQLİ MƏTN: «dərəcə yoxdur» ilə «dərəcə var,
+                // amma bu dövrdən SONRAKI tarixdən qüvvədədir» eyni deyil. İkinci hal
+                // real tələdir — mühasib dərəcəni bu gün yazır, keçmiş dövrü hesablayır
+                // və «təyin edilməyib» görüb çaşır. Mətn nə etmək lazım olduğunu desin.
+                hamiDereceler ??= await _derece.HamisiniGetirAsync();
+                var enErken = hamiDereceler
+                    .Where(x => string.Equals(x.ValyutaKodu, valyuta, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x.Tarix)
+                    .FirstOrDefault();
+
+                setir.Problem ??= enErken == null
+                    ? $"«{valyuta}» valyutası üçün bazar dərəcəsi təyin edilməyib."
+                    : $"«{valyuta}» dərəcəsi yalnız {enErken.Tarix:dd.MM.yyyy} tarixindən qüvvədədir — " +
+                      $"bu dövrün sonu ({netice.Son:dd.MM.yyyy}) ondan əvvəldir. " +
+                      "Dərəcə sətrinin tarixini geriyə çəkin və ya daha erkən tarixli sətir əlavə edin.";
             }
             else
             {
