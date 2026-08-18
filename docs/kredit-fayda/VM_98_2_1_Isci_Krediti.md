@@ -1,6 +1,6 @@
 # İşçi Kreditləri üzrə VM 98.2.1 Hesabi Gəliri — Razılaşdırılmış Layihə
 
-**Status:** təsdiq gözlənilir (mühasiblə 1 sual) · **Tarix:** 18.08.2026
+**Status:** düstur TƏSDİQLƏNDİ (18.08.2026) · qurulma gözləyir · **Tarix:** 18.08.2026
 **Mənbə:** mühasibin `202607_isciler_kredit_uzre_gelir_vergisi.xlsx` faylı + BMI Oracle
 
 ---
@@ -172,15 +172,35 @@ MaasElave.VM9821Meblegi          ← MÖVCUD sahə
 
 Sıra: sorğu → dərəcə + dövr → müştəri kodu bağı → servis → ekran → yazma.
 
+### 7.1 Nəticə haraya yazılır — MÖVCUD MEXANİZM (18.08.2026 yoxlanıldı)
+
+`VM9821Meblegi` **saxlanılan sahə DEYİL** — `TopluHesabla` formasının POST
+sahəsidir (`TopluHesabla.cshtml:740` → `ferdiElaveler[i].VM9821Meblegi` →
+`FerdiElaveDto`). Hesablama zamanı `MaasHesablamaService`-ə ötürülür və nəticə
+`MaasDetay`-a «VM 98.2.1 Gəlirləri» sətri kimi düşür (`:1181`).
+
+Yəni yeni cədvəl lazım deyil: servis rəqəmi hesablayır, forma sahəsi **hazır
+dolu gəlir**, mühasib istəsə üstələyir. Saxlanan yalnız **dərəcə** və **dövr**
+olacaq (mühasib hər dəfə yazmasın).
+
 ---
 
-## 8. AÇIQ SUAL — mühasibin təsdiqi lazımdır
+## 8. TƏSDİQLƏNDİ (18.08.2026)
 
-**Vaxtı keçmiş faiz 13%-dir, bazar 9,25%. Həmin hissəyə görə vergi YAZILMIR
-(`MAX(0, …)`) — düzdürmü?**
+**Sual idi:** vaxtı keçmiş faiz 13%-dir, bazar 9,25%. Həmin hissəyə görə hesabi
+gəlir YAZILMIR (`MAX(0, …)`) — düzdürmü?
 
-Bu, məntiqi nəticədir (güzəşt olmayan yerdə güzəşt vergisi olmaz), qanun mətni
-deyil. Cavab əksinə olsa kodda bir sətir dəyişir.
+**Cavab (istifadəçi):** *«gecikmə faizi MB-dəki faizdən aşağı olduğu halda nəzərə
+alınacaq»* — yəni vaxtı keçmiş faiz **yalnız öz dərəcəsi bazar dərəcəsindən AŞAĞI
+olanda** hesabi gəlir yaradır. Bu, `MAX(0, …)`-ın dediyinin eynidir:
+
+| vk dərəcəsi | Bazar | `MAX(0, faiz × (bazar − vk) / vk)` | Nəticə |
+|---|---|---|---|
+| 13% | 9,25% | mənfi → 0 | gəlir YOX ✅ |
+| 9% | 9,25% | müsbət kiçik | gəlir VAR ✅ |
+
+**Düstur olduğu kimi qalır — §5 dəyişmir.** `+5` sabiti yazılmır; `procstav_19`
+bazadan oxunur, dərəcə dəyişsə kod özü uyğunlaşır.
 
 ---
 
@@ -197,7 +217,11 @@ deyil. Cavab əksinə olsa kodda bir sətir dəyişir.
 Sorğu `24-06-2026 … 24-07-2026` aralığı ilə işlədildi — 15 sətir. `faiz_adi`
 sütunu Excel-in `M` sütunu ilə **hamısında eyni** çıxdı:
 
-| Müştəri | Sorğu | Excel `M` | Vergi (×0,15625) | Excel `Netice` |
+Sütun adı: **hesabi gəlir** (vergi DEYİL) — `fayda = faiz × (9,25 − 8) / 8 =
+faiz × 0,15625`. Bu məbləğ 13-cü sütuna düşür, vergi/DSMF/İTSS/işsizlik isə
+ondan **sonra** maaş hesablamasında tutulur.
+
+| Müştəri | Sorğu | Excel `M` | Hesabi gəlir (×0,15625) | Excel `Netice` |
 |---|---|---|---|---|
 | 000054 | 120,58 | 120,58 | 18,84 | 18,84 |
 | 000056 | 122,92 | 122,92 | 19,21 | 19,21 |
