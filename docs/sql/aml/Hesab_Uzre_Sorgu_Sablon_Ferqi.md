@@ -362,6 +362,47 @@ yüksəkdir; real kodlar yalnız daxili (manat) ödənişlərdədir.
 > **AS sütununun** («Kommunal ödəniş kodu, mobil nömrə və s.») lüğətidir.
 > Həmin sütun hazırda boşdur — dolduranda bu cədvəl işlənəcək.
 
-**Növbəti addım:** `docs/sql/aml/03_PlatSystem_Kod_Axtarisi.sql` — sütun şərhi,
-`all_source` (PL/SQL mənbəyi) və view mətnlərində axtarış, plus hər kod üçün
-3 nümunə sətir (əməliyyatçı kodu tanıya bilsin).
+### 8.1 ✅ TAPILDI — xəritə PL/SQL mənbəyindədir (lüğət cədvəli YOXDUR)
+
+`all_source` axtarışı cavabı verdi. **`ODB.PROC_IPS_INS_VNESH_POSTUPL`, 48-ci sətir:**
+
+```
+-- p_PLAT_SYSTEM >>>  0 = XOHKS, 1 = SWIFT, 2 = INTERNAL, 3 = APUS,
+--                    4 = V-Shape, 5 = HOP, 6 = IPS
+```
+
+İki müstəqil təsdiq:
+
+| Mənbə | Sübut |
+|---|---|
+| `ODB.PCG_IPS` (paket, 48) | `c_ips_plat_system_id CONSTANT INTEGER := 6;` → **6 = IPS** |
+| `ODB.TRG_CHECK_I_DOC_VNESH_NACVAL` (53) | «0=XOHKS, 1=SWIFT, 2=INTERNAL» |
+
+Trigger-lərdəki icazə siyahıları da uyğundur: `doc_vnesh_nacval` yalnız
+`(0, 2, 4, 6)`, `doc_vnesh_postupl` yalnız `(0, 4, 6)` qəbul edir — real
+datada gördüyümüz dəyərlərlə tam üst-üstə düşür.
+
+**Tətbiq olunan xəritə (G sütunu):**
+
+| Kod | Ad |
+|---|---|
+| 0 | XÖHKS |
+| 1 | SWIFT |
+| 2 | Bank daxili |
+| 3 | APUS |
+| 4 | V-Shape |
+| 5 | HOP |
+| 6 | IPS |
+
+Xəritə `CASE` şəklində **sorğunun içindədir** (bazada lüğət cədvəli yoxdur).
+Sorğu `OracleSorgular`-da saxlandığı üçün yeni ödəniş sistemi əlavə olunanda
+admin kod dəyişmədən oradan yeniləyə bilər.
+
+> ⚠️ **AÇIQ QALAN:** `doc_vnesh_inval` (404 sətir) və `doc_vnesh_swift`
+> (82 sətir) sətirlərinin **hamısında dəyər 0-dır**, yəni hesabatda «XÖHKS»
+> yazılacaq — halbuki onlar xarici əməliyyatlardır. Ehtimal ki, həmin iki
+> cədvəldə bu sahə ümumiyyətlə doldurulmur və 0 sadəcə default-dur
+> (`TRG_CHECK_I_DOC_VNESH_INVAL` `plat_system = 1` halını yoxlayır, deməli
+> 1 = SWIFT gözlənilir, amma yazılmır). Lüğət **olduğu kimi** tətbiq edilib —
+> uydurma düzəliş edilməyib. Xarici sətirlərdə «SWIFT» yazılması lazımdırsa,
+> dəyişiklik tək yerdədir: həmin `CASE`.

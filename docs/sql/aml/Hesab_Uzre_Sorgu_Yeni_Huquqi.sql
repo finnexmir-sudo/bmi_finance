@@ -62,7 +62,30 @@ select
          when x.krtam = '25010000000000300000'
               then 'ATM'
     end                                                                 cat_kan,      -- F
-    x.odeme_sistemi,                                                    -- G
+    -- G  Ödəniş sisteminin növü — kod → ad.
+    --    Xəritənin mənbəyi: ODB.PROC_IPS_INS_VNESH_POSTUPL, 48-ci sətir:
+    --      «p_PLAT_SYSTEM >>> 0 = XOHKS, 1 = SWIFT, 2 = INTERNAL,
+    --                         3 = APUS, 4 = V-Shape, 5 = HOP, 6 = IPS»
+    --    Təsdiq: PCG_IPS → `c_ips_plat_system_id CONSTANT INTEGER := 6`
+    --            TRG_CHECK_I_DOC_VNESH_NACVAL → «0=XOHKS, 1=SWIFT, 2=INTERNAL»
+    --    Bazada LÜĞƏT CƏDVƏLİ YOXDUR — xəritə yalnız PL/SQL mənbəyində var,
+    --    ona görə burada saxlanılır. Yeni sistem əlavə olunsa bu CASE yenilənir.
+    --
+    --    ⚠️ DİQQƏT: `doc_vnesh_inval` və `doc_vnesh_swift` sətirlərinin
+    --    HAMISINDA dəyər 0-dır (yəni «XÖHKS» kimi oxunur), halbuki onlar
+    --    xarici əməliyyatlardır. Ehtimal ki, o iki cədvəldə sahə doldurulmur
+    --    və 0 sadəcə default-dur. Lüğət OLDUĞU KİMİ tətbiq olunub — uydurma
+    --    düzəliş edilməyib.
+    case x.odeme_sistemi
+         when '0' then 'XÖHKS'
+         when '1' then 'SWIFT'
+         when '2' then 'Bank daxili'
+         when '3' then 'APUS'
+         when '4' then 'V-Shape'
+         when '5' then 'HOP'
+         when '6' then 'IPS'
+         else x.odeme_sistemi
+    end                                                                 odeme_sistemi, -- G
     x.alt_nov,                                                          -- H
 
     -- I  Göndərənin adı (C#: Cells[4]) — hesabın `licsch` adı üstələyir.
