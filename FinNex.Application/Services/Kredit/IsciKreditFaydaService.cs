@@ -50,24 +50,68 @@ public class IsciKreditFaydaService : IIsciKreditFaydaService
 
     // ── Oracle köməkçiləri ────────────────────────────────────────────────
     // Sütun adı böyük/kiçik hərflə gələ bilər — müqayisə həssas deyil.
-    private static string Metn(IDictionary<string, object?> s, string sutun)
+    private static object? Deyer(IDictionary<string, object?> s, string sutun)
     {
         foreach (var kv in s)
             if (string.Equals(kv.Key, sutun, StringComparison.OrdinalIgnoreCase))
-                return kv.Value?.ToString()?.Trim() ?? "";
-        return "";
+                return kv.Value is DBNull ? null : kv.Value;
+        return null;
     }
 
+    private static string Metn(IDictionary<string, object?> s, string sutun)
+        => Deyer(s, sutun)?.ToString()?.Trim() ?? "";
+
+    /// <summary>
+    /// Oracle sütununu decimal-a çevirir.
+    ///
+    /// ⚠️ RƏQƏMİ STRİNGƏ ÇEVİRİB GERİ PARSE ETMƏ. `OracleService` sətirləri
+    /// `reader.GetValue()` ilə oxuyur, yəni NUMBER sütunu artıq `decimal`
+    /// obyektidir. `ToString()` isə CARİ mədəniyyəti (az-AZ) işlədir:
+    ///     120.58m → "120,58" → TryParse(NumberStyles.Any, Invariant) → 12058
+    /// çünki Invariant üçün vergül MİN AYIRICISIDIR. Dəqiq 100× səhv.
+    ///
+    /// REAL HADİSƏ (19.08.2026): Axundovun faizi 120,58 ₼ əvəzinə 12 058,00 ₼
+    /// göründü, hesabi gəlir 18,84 əvəzinə 1 884,06 çıxdı. Səhv məhz burada idi.
+    ///
+    /// İndi rəqəm tipi BİRBAŞA götürülür — çevirmə yoxdur, mədəniyyət qarışmır.
+    /// Yalnız sütun həqiqətən MƏTN olanda parse edilir; orada da əvvəlcə
+    /// `NumberStyles.Float` (min ayırıcısına İCAZƏ VERMİR) ilə invariant,
+    /// sonra cari mədəniyyət yoxlanılır — hansı ayırıcı gəlirsə düzgün oxunsun.
+    /// </summary>
     private static decimal Reqem(IDictionary<string, object?> s, string sutun)
     {
-        var xam = Metn(s, sutun);
+        var v = Deyer(s, sutun);
+        if (v == null) return 0m;
+
+        switch (v)
+        {
+            case decimal d: return d;
+            case double db: return (decimal)db;
+            case float f:   return (decimal)f;
+            case int i:     return i;
+            case long l:    return l;
+            case short sh:  return sh;
+            case byte b:    return b;
+        }
+
+        // Oracle sürücüsü öz tipini (OracleDecimal) qaytara bilər — o da IConvertible-dır.
+        if (v is IConvertible conv && v is not string)
+        {
+            try { return conv.ToDecimal(CultureInfo.InvariantCulture); }
+            catch { /* aşağıdakı mətn yoluna düşür */ }
+        }
+
+        var xam = v.ToString()?.Trim() ?? "";
         if (xam.Length == 0) return 0m;
-        // Oracle rəqəmi nöqtə ilə qaytarır — InvariantCulture MƏCBURİDİR.
-        // Server mədəniyyəti az-AZ olduğu üçün nöqtəli dəyər `Parse`-da 12058
-        // kimi oxunardı (CLAUDE.md — mədəniyyət tələsi).
-        return decimal.TryParse(xam, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)
-            ? d
-            : 0m;
+
+        // `Float` — min ayırıcısına icazə vermir, ona görə "120,58" invariant-da
+        // UĞURSUZ olur və cari mədəniyyətə keçir (orada vergül onluqdur).
+        if (decimal.TryParse(xam, NumberStyles.Float, CultureInfo.InvariantCulture, out var inv))
+            return inv;
+        if (decimal.TryParse(xam, NumberStyles.Float, CultureInfo.CurrentCulture, out var cari))
+            return cari;
+
+        return 0m;
     }
 
     private async Task<string?> SorguMetniAsync(string ad)

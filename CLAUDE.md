@@ -541,6 +541,33 @@ bütün `FinNex.UI` build-ini dayandırdı. **Qayda:** şərtli mətni markup or
 qurma — dəyəri `@if` gövdəsinin əvvəlində hazır dəyişənə yaz, markup-da yalnız
 `@dəyişən` çağır.
 
+## Oracle Rəqəmi — `ToString()` + `Parse` = 100× SƏHV (KRİTİK)
+
+`OracleService` sətirləri `reader.GetValue()` ilə oxuyur — NUMBER sütunu artıq
+**`decimal` obyektidir**. Onu stringə çevirib geri parse etmək **dəqiq 100× səhv**
+verir, çünki iki mədəniyyət qarışır:
+
+```
+120.58m  →  .ToString()          →  "120,58"   (CARİ mədəniyyət: az-AZ)
+"120,58" →  TryParse(Any, Invariant) →  12058   (vergül = MİN AYIRICISI)
+```
+
+Real hadisə (19.08.2026, VM 98.2.1): Axundovun dövr faizi 120,58 ₼ əvəzinə
+**12 058,00 ₼** göründü, hesabi gəlir 18,84 əvəzinə **1 884,06** çıxdı və
+maaş formasına düşdü. Heç bir xəta yox idi — nisbət tam 100 olduğu üçün tapıldı.
+Tam ədədlər (`isci_faizi`=8, `vk_faizi`=13) ayırıcı daşımadığı üçün düz oxunurdu,
+yəni səhv YALNIZ onluqlu sütunlarda idi.
+
+**Qaydalar:**
+- Oracle rəqəmini **stringə çevirmə**. Tipi birbaşa götür:
+  `case decimal d: return d;` … (nümunə: `RiskService.Dec`, `KreditMuqavileService.Dec`
+  — onlar əvvəldən belədir, ona görə bu tələyə düşmürlər).
+- Sütun həqiqətən **mətn** olanda parse et və `NumberStyles.Any` İŞLƏTMƏ —
+  o, min ayırıcısına icazə verir. `NumberStyles.Float` ilə əvvəlcə invariant,
+  uğursuz olsa cari mədəniyyət yoxla (vergüllü mətn belə düzgün oxunur).
+- Yeni Oracle sahəsi əlavə edəndə **ondalıqlı bir dəyəri əl ilə tutuşdur** —
+  tam ədədlər səhvi gizlədir.
+
 ## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
 
 Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur
