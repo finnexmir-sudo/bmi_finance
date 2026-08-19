@@ -1,0 +1,112 @@
+@model MasinCreateDto
+@{
+    ViewData["Title"] = "Yeni maşın";
+    var basliq = "Yeni maşın";
+    var action = "Create";
+}
+@{
+    var departamentler = ViewBag.Departamentler as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                         ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var surucular = ViewBag.Surucular as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                    ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+}
+
+<h4 class="mb-3">@basliq</h4>
+
+@* Şərtsiz render olunsa, xəta olmayan hallarda BOŞ qırmızı qutu görünərdi —
+   layihədə `validation-summary-valid { display:none }` CSS qaydası yoxdur.
+   Sinif QƏSDƏN `fn-alert` DEYİL: `user-area.js` onu 4 saniyəyə silir və
+   istifadəçi xətanı oxumağa macal tapmır (CLAUDE.md). *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger avtopark-val-summary" role="alert"></div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="@action" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="DovletNomresi" class="form-label"></label>
+                    <input asp-for="DovletNomresi" class="form-control" placeholder="10-AA-123" />
+                    <span asp-validation-for="DovletNomresi" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Marka" class="form-label"></label>
+                    <input asp-for="Marka" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Model" class="form-label"></label>
+                    <input asp-for="Model" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="BuraxilisIli" class="form-label"></label>
+                    <input asp-for="BuraxilisIli" type="number" class="form-control" />
+                    <span asp-validation-for="BuraxilisIli" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Reng" class="form-label"></label>
+                    <input asp-for="Reng" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Novu" class="form-label"></label>
+                    <input asp-for="Novu" class="form-control" placeholder="minik / mikroavtobus / yük" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Status" class="form-label"></label>
+                    @* Enum adları koddadır («IstifadedenCixib») — istifadəçiyə
+                       Azərbaycan dilində göstərilir, ona görə siyahı əl ilə qurulur. *@
+                    @* value RƏQƏM YOX, ENUM ADIDIR: `asp-for` model dəyərini
+                       enum ADI kimi ("Aktiv") render edir və `selected`-i həmin
+                       mətnə görə qoyur. Rəqəm yazsaydıq redaktədə cari status
+                       seçilməmiş görünərdi — səssiz səhv. *@
+                    <select asp-for="Status" class="form-select">
+                        <option value="@MasinStatus.Aktiv">Aktiv</option>
+                        <option value="@MasinStatus.Temirde">Təmirdə</option>
+                        <option value="@MasinStatus.IstifadedenCixib">İstifadədən çıxıb</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="Ban" class="form-label"></label>
+                    <input asp-for="Ban" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Vin" class="form-label"></label>
+                    <input asp-for="Vin" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DepartamentId" class="form-label"></label>
+                    <select asp-for="DepartamentId" asp-items="departamentler" class="form-select">
+                        <option value="">— ümumi istifadə —</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="TehkimSurucuId" class="form-label"></label>
+                    <select asp-for="TehkimSurucuId" asp-items="surucular" class="form-select">
+                        <option value="">— təhkim olunmayıb —</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Qeyd" class="form-label"></label>
+                    <textarea asp-for="Qeyd" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Yadda saxla</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

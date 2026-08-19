@@ -83,6 +83,10 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<FinNex.Application.Interfaces.Kredit.IIsciKreditFaydaService, FinNex.Application.Services.Kredit.IsciKreditFaydaService>();
         services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.IKocurmeService, FinNex.Application.Services.Emeliyyat.KocurmeService>();
         services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.ITelebeKocurmeService, FinNex.Application.Services.Emeliyyat.TelebeKocurmeService>();
+        // Avtopark — xidməti maşınlar, açar jurnalı, müddət izləmə
+        services.AddScoped<FinNex.Application.Interfaces.Avtopark.IMasinService, FinNex.Application.Services.Avtopark.MasinService>();
+        services.AddScoped<FinNex.Application.Interfaces.Avtopark.IMasinMuracietService, FinNex.Application.Services.Avtopark.MasinMuracietService>();
+        services.AddScoped<FinNex.Application.Interfaces.Avtopark.IMasinMuddetService, FinNex.Application.Services.Avtopark.MasinMuddetService>();
         services.AddScoped<FinNex.Application.Interfaces.Risk.IRiskService, FinNex.Application.Services.Risk.RiskService>();
         services.AddScoped<FinNex.Application.Interfaces.Muhasibat.IMuhasibatService, FinNex.Application.Services.Muhasibat.MuhasibatService>();
         services.AddScoped<IVezifeService, VezifeService>();

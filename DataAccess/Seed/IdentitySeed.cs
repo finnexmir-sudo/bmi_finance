@@ -18,7 +18,10 @@ namespace FinNex.DataAccess.Seed
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            string[] roles = { RoleNames.Admin, RoleNames.Operator, RoleNames.Viewer, RoleNames.KreditAdmin };
+            // Kassa — Avtopark açar jurnalı («Çıxdı / Gəldi» düymələri).
+            // Rol yaradılır, amma HEÇ KİMƏ avtomatik verilmir: kimin kassada
+            // işlədiyini Admin → İstifadəçi idarəetməsi ekranında təyin edir.
+            string[] roles = { RoleNames.Admin, RoleNames.Operator, RoleNames.Viewer, RoleNames.KreditAdmin, RoleNames.Kassa };
 
             foreach (var role in roles)
             {

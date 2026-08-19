@@ -1,6 +1,7 @@
 ﻿using FinNex.Domain;
 using FinNex.Domain.Entities;
 using FinNex.Domain.Entities.AI;
+using FinNex.Domain.Entities.Avtopark;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Mektub;
@@ -84,6 +85,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // VM 98.2.1 — işçi kreditləri üzrə hesabi gəlir hesablamasında istifadə olunan
     // bazar faiz dərəcəsi (mühasib əl ilə idarə edir, dəyişəndə yeni sətir)
     public DbSet<KreditFaizDerecesi> KreditFaizDereceleri { get; set; }
+
+    // Avtopark — xidməti maşınlar, açar jurnalı, müddət izləmə
+    public DbSet<Masin> Masinlar { get; set; }
+    public DbSet<MasinMuraciet> MasinMuracietler { get; set; }
+    public DbSet<MasinMuddetNovu> MasinMuddetNovleri { get; set; }
+    public DbSet<MasinMuddet> MasinMuddetler { get; set; }
+    public DbSet<AvtoparkXeberdarliqAlicisi> AvtoparkXeberdarliqAlicilari { get; set; }
 
     // Mərkəzi əmr reyestri + nömrə sayğacı (məzuniyyət, maaş dəyişikliyi, ...)
     public DbSet<Emr> Emrler { get; set; }
@@ -266,6 +274,86 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Derece).HasPrecision(9, 4);
             e.Property(x => x.Qeyd).HasMaxLength(300);
             e.HasIndex(x => new { x.ValyutaKodu, x.Tarix });
+        });
+
+        // ── Avtopark ────────────────────────────────────────────────────────
+        // DİQQƏT — CASCADE YOLLARI: `MasinMuraciet`-də İşçiyə DÖRD ayrı FK var
+        // (müraciətçi, rəhbər, çıxışı qeyd edən, qayıdışı qeyd edən). Defaultda
+        // hamısı Cascade olardı və SQL Server «multiple cascade paths» ilə
+        // migration-u RƏDD EDƏRDİ. Ona görə hamısı `Restrict`-dir — üstəlik
+        // layihədə silinmə onsuz da YUMŞAQdır (`Silinib`), fiziki silinmə yoxdur.
+        builder.Entity<Masin>(e =>
+        {
+            e.Property(x => x.DovletNomresi).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Marka).HasMaxLength(50);
+            e.Property(x => x.Model).HasMaxLength(50);
+            e.Property(x => x.Reng).HasMaxLength(30);
+            e.Property(x => x.Ban).HasMaxLength(50);
+            e.Property(x => x.Vin).HasMaxLength(50);
+            e.Property(x => x.Novu).HasMaxLength(50);
+            e.Property(x => x.Qeyd).HasMaxLength(500);
+
+            // Unikal DEYİL (filtered index yerinə servisdə yoxlanılır): yumşaq
+            // silinmiş maşının nömrəsi yenidən istifadə oluna bilməlidir.
+            e.HasIndex(x => x.DovletNomresi);
+
+            e.HasOne(x => x.Departament).WithMany()
+                .HasForeignKey(x => x.DepartamentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.TehkimSurucu).WithMany()
+                .HasForeignKey(x => x.TehkimSurucuId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<MasinMuraciet>(e =>
+        {
+            e.Property(x => x.Meqsed).HasMaxLength(300).IsRequired();
+            e.Property(x => x.Marsrut).HasMaxLength(300);
+            e.Property(x => x.ImtinaSebebi).HasMaxLength(500);
+
+            // Üst-üstə düşmə yoxlaması «bu maşın, bu status, bu tarix aralığı»
+            // şəklindədir — indeks həmin sıra ilə.
+            e.HasIndex(x => new { x.MasinId, x.Status, x.PlanBaslama });
+            e.HasIndex(x => new { x.IsciId, x.Status });
+
+            e.HasOne(x => x.Masin).WithMany(m => m.Muracietler)
+                .HasForeignKey(x => x.MasinId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Isci).WithMany()
+                .HasForeignKey(x => x.IsciId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Rehber).WithMany()
+                .HasForeignKey(x => x.RehberId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.CixisQeydEden).WithMany()
+                .HasForeignKey(x => x.CixisQeydEdenId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.QayidisQeydEden).WithMany()
+                .HasForeignKey(x => x.QayidisQeydEdenId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<MasinMuddetNovu>(e =>
+        {
+            e.Property(x => x.Ad).HasMaxLength(80).IsRequired();
+            e.HasIndex(x => x.Ad);
+        });
+
+        builder.Entity<MasinMuddet>(e =>
+        {
+            e.Property(x => x.Mebleg).HasPrecision(18, 2);
+            e.Property(x => x.SenedFaylYolu).HasMaxLength(300);
+            e.Property(x => x.SenedFaylAdi).HasMaxLength(200);
+            e.Property(x => x.Qeyd).HasMaxLength(500);
+
+            // Fon xidmətinin sorğusu: «aktiv, xəbərdarlığı getməmiş, son tarixi
+            // yaxınlaşan» — indeks həmin üç sütun üzrə.
+            e.HasIndex(x => new { x.Aktivdir, x.XeberdarliqGonderilib, x.SonTarix });
+
+            e.HasOne(x => x.Masin).WithMany(m => m.Muddetler)
+                .HasForeignKey(x => x.MasinId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Nov).WithMany()
+                .HasForeignKey(x => x.NovId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<AvtoparkXeberdarliqAlicisi>(e =>
+        {
+            e.HasIndex(x => x.IsciId);
+            e.HasOne(x => x.Isci).WithMany()
+                .HasForeignKey(x => x.IsciId).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<GedenHevale>(e =>

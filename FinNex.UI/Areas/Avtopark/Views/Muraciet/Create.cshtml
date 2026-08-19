@@ -1,0 +1,85 @@
+@model MasinMuracietCreateDto
+@{
+    ViewData["Title"] = "Yeni maşın müraciəti";
+    var masinlar = ViewBag.Masinlar as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                   ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+}
+
+<h4 class="mb-3">Yeni maşın müraciəti</h4>
+
+@* Validasiya xülasəsi QALICI sinifdədir — `fn-alert` yazılsaydı `user-area.js`
+   onu 4 saniyəyə silərdi və «düyməni basıram heç nə olmur» şikayəti yaranardı. *@
+@* Şərtsiz render olunsa, xəta olmayan hallarda BOŞ qırmızı qutu görünərdi —
+   layihədə `validation-summary-valid { display:none }` CSS qaydası yoxdur.
+   Sinif QƏSDƏN `fn-alert` DEYİL: `user-area.js` onu 4 saniyəyə silir və
+   istifadəçi xətanı oxumağa macal tapmır (CLAUDE.md). *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger avtopark-val-summary" role="alert"></div>
+}
+
+@if (!masinlar.Any())
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Aktiv maşın yoxdur — müraciət yazıla bilməz. Admin ilə əlaqə saxlayın.
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="MasinId" class="form-label">Maşın</label>
+                    <select asp-for="MasinId" asp-items="masinlar" class="form-select">
+                        <option value="">— seçin —</option>
+                    </select>
+                    <span asp-validation-for="MasinId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="PlanBaslama" class="form-label">Başlama</label>
+                    <input asp-for="PlanBaslama" type="datetime-local" class="form-control" />
+                    <span asp-validation-for="PlanBaslama" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="PlanBitme" class="form-label">Bitmə</label>
+                    <input asp-for="PlanBitme" type="datetime-local" class="form-control" />
+                    <span asp-validation-for="PlanBitme" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Meqsed" class="form-label">Məqsəd</label>
+                    <input asp-for="Meqsed" class="form-control" placeholder="Məs. Mərkəzi Banka sənəd aparılması" />
+                    <span asp-validation-for="Meqsed" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Marsrut" class="form-label">Marşrut <span class="text-muted small">(istəyə bağlı)</span></label>
+                    <input asp-for="Marsrut" class="form-control" placeholder="Məs. İdarə → MB → İdarə" />
+                </div>
+            </div>
+
+            <div class="alert alert-secondary mt-3 mb-0 small">
+                <i class="bi bi-info-circle me-1"></i>
+                Maşın həmin vaxt üçün başqasına ayrılıbsa, müraciət qəbul edilmir —
+                ekranda kimin götürdüyü və hansı saatlar olduğu yazılır.
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary" @(masinlar.Any() ? "" : "disabled")>
+                    <i class="bi bi-send"></i> Göndər
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

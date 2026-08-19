@@ -1,0 +1,74 @@
+@model IList<MasinMuracietListDto>
+@{
+    ViewData["Title"] = "Çöldə olan maşınlar";
+    var indi = DateTime.Now;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-1">Çöldə olan maşınlar</h4>
+        <div class="text-muted small">Açarı verilib, hələ qaytarılmayıb — kimin üstündə maşın qalıb.</div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">
+            <i class="bi bi-check2-all fs-1 d-block mb-2"></i>
+            Bütün maşınlar yerindədir.
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Maşın</th>
+                        <th>Kimdədir</th>
+                        <th>Çıxış</th>
+                        <th>Nə qədərdir</th>
+                        <th>Planlaşdırılan bitmə</th>
+                        <th>Məqsəd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var m in Model)
+                {
+                    @* Gecikmə şərti markup içində yox, ƏVVƏLCƏDƏN hesablanır. *@
+                    var gecikib = m.PlanBitme < indi;
+                    var muddet = m.CixisTarixi.HasValue ? indi - m.CixisTarixi.Value : TimeSpan.Zero;
+                    var muddetMetni = m.CixisTarixi.HasValue
+                        ? $"{(int)muddet.TotalHours} saat {muddet.Minutes} dəq"
+                        : "—";
+
+                    <tr class="@(gecikib ? "table-warning" : "")">
+                        <td>
+                            <div class="fw-semibold">@m.MasinAdi</div>
+                            <div class="text-muted small">@m.MasinNomresi</div>
+                        </td>
+                        <td>
+                            <div>@m.IsciAdSoyad</div>
+                            <div class="text-muted small">@m.SobeAdi</div>
+                        </td>
+                        <td class="small">@m.CixisTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td class="small">@muddetMetni</td>
+                        <td class="small">
+                            @m.PlanBitme.ToString("dd.MM.yyyy HH:mm")
+                            @if (gecikib)
+                            {
+                                <span class="badge bg-warning text-dark ms-1">gecikib</span>
+                            }
+                        </td>
+                        <td class="small">@m.Meqsed</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -15,4 +15,10 @@ public static class RoleNames
     // baxa və ya komitə üzvü olduğunu idarə edir. Əsas Admin rolu da avtomatik
     // bu səlahiyyətə malikdir.
     public const string KreditAdmin = "KreditAdmin";
+
+    // Avtopark — açar jurnalı. Bu rol «Çıxdı / Gəldi» düymələrini görür və basa
+    // bilir; açarlar fiziki olaraq kassada saxlanılır, düymə açarın əldən-ələ
+    // keçdiyi anı qeyd edir. Rəhbər və Admin də eyni düymələri görür
+    // (19.08.2026 qərarı) — kassa işçisi olmayanda axın dayanmasın.
+    public const string Kassa = "Kassa";
 }

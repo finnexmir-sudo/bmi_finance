@@ -1,0 +1,107 @@
+@model IList<MasinMuddetNovuDto>
+@{
+    ViewData["Title"] = "Müddət növləri";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-1">Müddət növləri</h4>
+        <div class="text-muted small">
+            Sığorta, texniki baxış, yağ dəyişmə… Siyahı burada idarə olunur —
+            yeni növ üçün kod dəyişikliyi lazım deyil.
+        </div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header bg-white fw-semibold">Yeni növ</div>
+    <div class="card-body">
+        <form asp-action="NovYarat" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-4">
+                <label class="form-label small mb-1">Növün adı</label>
+                <input name="Ad" class="form-control form-control-sm" required maxlength="80" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Xəbərdarlıq (gün)</label>
+                <input name="XeberdarliqGun" type="number" value="30" min="0" max="365"
+                       class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Sıra</label>
+                <input name="Sira" type="number" value="0" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                @* Checkbox-un yanında gizli `false` — işarəsiz hal da AÇIQ göndərilsin
+                   (CLAUDE.md — göndərilməyən bool səssizcə false sayılır). *@
+                <input type="hidden" name="Aktivdir" value="false" />
+                <div class="form-check">
+                    <input type="checkbox" name="Aktivdir" value="true" checked class="form-check-input" id="yeniAktiv" />
+                    <label class="form-check-label small" for="yeniAktiv">Aktivdir</label>
+                </div>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Əlavə</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:35%">Ad</th>
+                    <th>Xəbərdarlıq (gün)</th>
+                    <th>Sıra</th>
+                    <th>Aktivdir</th>
+                    <th class="text-end">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var n in Model)
+            {
+                <tr>
+                    <td colspan="5" class="p-0">
+                        <form asp-action="NovYenile" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@n.Id" />
+                            <div class="row g-2 align-items-center px-3 py-2 m-0">
+                                <div class="col-md-4">
+                                    <input name="Ad" value="@n.Ad" class="form-control form-control-sm" maxlength="80" />
+                                </div>
+                                <div class="col-md-2">
+                                    <input name="XeberdarliqGun" type="number" value="@n.XeberdarliqGun"
+                                           min="0" max="365" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <input name="Sira" type="number" value="@n.Sira" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="hidden" name="Aktivdir" value="false" />
+                                    <div class="form-check">
+                                        <input type="checkbox" name="Aktivdir" value="true" class="form-check-input"
+                                               id="aktiv-@n.Id" checked="@n.Aktivdir" />
+                                        <label class="form-check-label small" for="aktiv-@n.Id">Aktivdir</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Saxla</button>
+                                </div>
+                            </div>
+                        </form>
+                        <form asp-action="NovSil" method="post" class="px-3 pb-2 text-end"
+                              onsubmit="return confirm('@n.Ad silinsin?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@n.Id" />
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

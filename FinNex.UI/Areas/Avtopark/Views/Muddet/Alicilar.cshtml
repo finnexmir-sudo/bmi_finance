@@ -1,0 +1,117 @@
+@model IList<AvtoparkAliciDto>
+@{
+    ViewData["Title"] = "Xəbərdarlıq alıcıları";
+    var isciler = ViewBag.Isciler as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                  ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var aktivSayi = Model.Count(x => x.Aktivdir);
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-1">Müddət xəbərdarlığı — alıcılar</h4>
+        <div class="text-muted small">
+            Sığorta, texniki baxış və yağ dəyişmə xəbərdarlığı yalnız bu işçilərə gedir.
+        </div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+</div>
+
+@if (aktivSayi == 0)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Siyahı boşdur — xəbərdarlıq HEÇ KİMƏ getmir.</strong>
+        Sistem rola görə avtomatik alıcı seçmir: gizli alıcı «kim xəbər aldı?»
+        sualını cavabsız qoyardı. Ən azı bir işçi əlavə edin.
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="bi bi-bell me-2"></i>
+        Xəbərdarlıq <strong>@aktivSayi</strong> işçiyə göndərilir.
+        Hər müddət üçün bir dəfə; vaxtı keçmişlərdə həftədə bir təkrarlanır.
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form asp-action="AliciElaveEt" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-5">
+                <label class="form-label small mb-1">İşçi</label>
+                <select name="isciId" class="form-select form-select-sm" required>
+                    <option value="">— seçin —</option>
+                    @foreach (var i in isciler)
+                    {
+                        <option value="@i.Value">@i.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i> Əlavə et
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">Alıcı əlavə edilməyib.</div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Şöbə</th>
+                        <th>Vəziyyət</th>
+                        <th class="text-end">Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr class="@(a.Aktivdir ? "" : "text-muted")">
+                        <td class="fw-semibold">@a.IsciAdSoyad</td>
+                        <td class="small">@(a.SobeAdi ?? "—")</td>
+                        <td>
+                            @if (a.Aktivdir)
+                            {
+                                <span class="badge bg-success">Aktiv</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Deaktiv</span>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <form asp-action="AliciAktivlik" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <input type="hidden" name="aktivdir" value="@((!a.Aktivdir).ToString().ToLowerInvariant())" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                    @(a.Aktivdir ? "Deaktiv et" : "Aktivləşdir")
+                                </button>
+                            </form>
+                            <form asp-action="AliciSil" method="post" class="d-inline"
+                                  onsubmit="return confirm('@a.IsciAdSoyad siyahıdan çıxarılsın?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Çıxar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

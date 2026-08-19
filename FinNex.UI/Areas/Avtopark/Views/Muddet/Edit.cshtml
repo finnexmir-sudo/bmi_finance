@@ -1,0 +1,121 @@
+@model MasinMuddetCreateDto
+@{
+    ViewData["Title"] = "Müddət qeydinin redaktəsi";
+    var basliq = "Müddət qeydinin redaktəsi";
+    var action = "Edit";
+}
+@{
+    var masinlar = ViewBag.Masinlar as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                   ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var novler = ViewBag.Novler as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                 ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var novGun = ViewBag.NovXeberdarliqGun as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var movcudFaylAdi = ViewBag.MovcudFaylAdi as string;
+    var movcudFaylYolu = ViewBag.MovcudFaylYolu as string;
+}
+
+<h4 class="mb-3">@basliq</h4>
+
+@* Şərtsiz render olunsa, xəta olmayan hallarda BOŞ qırmızı qutu görünərdi —
+   layihədə `validation-summary-valid { display:none }` CSS qaydası yoxdur.
+   Sinif QƏSDƏN `fn-alert` DEYİL: `user-area.js` onu 4 saniyəyə silir və
+   istifadəçi xətanı oxumağa macal tapmır (CLAUDE.md). *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger avtopark-val-summary" role="alert"></div>
+}
+
+<div class="card">
+    <div class="card-body">
+        @* enctype MƏCBURİDİR — olmasa fayl serverə ÜMUMİYYƏTLƏ göndərilmir və
+           heç bir xəta çıxmır, sənəd sadəcə itir. *@
+        <form asp-action="@action" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label asp-for="MasinId" class="form-label"></label>
+                    <select asp-for="MasinId" asp-items="masinlar" class="form-select">
+                        <option value="">— seçin —</option>
+                    </select>
+                    <span asp-validation-for="MasinId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="NovId" class="form-label"></label>
+                    <select asp-for="NovId" asp-items="novler" class="form-select" id="novSelect">
+                        <option value="">— seçin —</option>
+                    </select>
+                    <span asp-validation-for="NovId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="SonTarix" class="form-label"></label>
+                    <input asp-for="SonTarix" type="date" class="form-control" />
+                    <span asp-validation-for="SonTarix" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="XeberdarliqGun" class="form-label"></label>
+                    <input asp-for="XeberdarliqGun" type="number" class="form-control" id="xebGun" />
+                    <span asp-validation-for="XeberdarliqGun" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="Mebleg" class="form-label"></label>
+                    <input asp-for="Mebleg" type="number" step="0.01" class="form-control" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Sənəd (polis / qəbz)</label>
+                    <input type="file" name="sened" class="form-control"
+                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
+                    @if (!string.IsNullOrWhiteSpace(movcudFaylYolu))
+                    {
+                        <div class="form-text">
+                            Mövcud sənəd:
+                            <a href="/dms/@movcudFaylYolu" target="_blank">@movcudFaylAdi</a>
+                            — yeni fayl seçməsəniz olduğu kimi qalır.
+                        </div>
+                    }
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Qeyd" class="form-label"></label>
+                    <textarea asp-for="Qeyd" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="alert alert-secondary mt-3 mb-0 small">
+                <i class="bi bi-info-circle me-1"></i>
+                Eyni maşın + eyni növ üçün artıq qeyd varsa, köhnəsi avtomatik
+                <strong>tarixçəyə</strong> keçir — silinmir.
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Yadda saxla</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Növ seçiləndə xəbərdarlıq günü növün defaultu ilə dolur.
+        // Xəritə JSON kimi ötürülür — Razor-dan birbaşa rəqəm interpolasiya
+        // etsək az-AZ mədəniyyəti vergül yaza bilər (CLAUDE.md).
+        (function () {
+            var xerite = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(novGun));
+            var sel = document.getElementById('novSelect');
+            var gun = document.getElementById('xebGun');
+            if (!sel || !gun) return;
+            sel.addEventListener('change', function () {
+                var v = xerite[this.value];
+                if (v !== undefined && v !== null) gun.value = v;
+            });
+        })();
+    </script>
+}

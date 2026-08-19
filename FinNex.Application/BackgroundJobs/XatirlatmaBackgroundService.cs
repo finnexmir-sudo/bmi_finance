@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Avtopark;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Identity;
@@ -70,6 +71,9 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 .GetRequiredService<AppDbContext>();
             var userManager = scope.ServiceProvider
                 .GetRequiredService<UserManager<AppUser>>();
+            // Avtopark müddət xəbərdarlığı — zəng ikonuna düşən bildiriş.
+            var bildirisRouter = scope.ServiceProvider
+                .GetRequiredService<IBildirisRouter>();
 
             var bugun = DateTime.Today;
             var sabahinTarixi = bugun.AddDays(1);
@@ -219,6 +223,97 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 _logger.LogError(ex, "Məzuniyyət yeniləmə xatırlatması xətası.");
             }
 
+            // ── 7) Avtopark: sığorta / texniki baxış / yağ dəyişmə müddəti ──
+            // ALICILAR ROLA GÖRƏ HESABLANMIR — Admin `AvtoparkXeberdarliqAlicilari`
+            // cədvəlində işçiləri bir-bir seçir (19.08.2026 qərarı). Siyahı boşdursa
+            // xəbərdarlıq heç kimə getmir; bu, səssiz qalmasın deyə loga yazılır.
+            int avtoparkSayi = 0;
+            try
+            {
+                var alicilar = await db.Set<AvtoparkXeberdarliqAlicisi>()
+                    .Include(a => a.Isci)
+                    .Where(a => !a.Silinib && a.Aktivdir
+                             && a.Isci.Status == IsciStatus.Aktiv && !a.Isci.Silinib)
+                    .Select(a => a.IsciId)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Xəbərdarlıq pəncərəsi hər sətrin ÖZ `XeberdarliqGun`-una görədir,
+                // ona görə sabit tarixlə filtrləyə bilmirik: ən böyük mümkün
+                // pəncərə (365 gün) qədər gətirib şərti yaddaşda tətbiq edirik.
+                // Sətir sayı azdır (maşın × növ), bu, real yük yaratmır.
+                var namizedler = await db.Set<MasinMuddet>()
+                    .Include(m => m.Masin)
+                    .Include(m => m.Nov)
+                    .Where(m => !m.Silinib && m.Aktivdir
+                             && m.SonTarix <= bugun.AddDays(365))
+                    .ToListAsync();
+
+                if (namizedler.Count > 0 && alicilar.Count == 0)
+                    _logger.LogWarning(
+                        "Avtopark: {Say} müddət qeydi xəbərdarlıq tələb edir, amma ALICI SİYAHISI BOŞDUR — " +
+                        "Avtopark → Müddətlər → Xəbərdarlıq alıcıları ekranından işçi əlavə edin.",
+                        namizedler.Count);
+
+                foreach (var m in namizedler)
+                {
+                    var qalan = (m.SonTarix.Date - bugun).Days;
+                    if (qalan > m.XeberdarliqGun) continue;   // hələ pəncərəyə düşməyib
+
+                    // Bir dəfə göndərilib. Vaxtı KEÇMİŞSƏ həftədə bir təkrarlanır —
+                    // yoxsa uzadılmayan sığorta bir bildirişdən sonra unudulardı.
+                    if (m.XeberdarliqGonderilib)
+                    {
+                        var kecib = qalan < 0;
+                        var sonGonderis = m.XeberdarliqTarixi ?? DateTime.MinValue;
+                        if (!kecib || sonGonderis > DateTime.Now.AddDays(-7)) continue;
+                    }
+
+                    var veziyyet = qalan < 0
+                        ? $"{-qalan} gün ƏVVƏL bitib"
+                        : qalan == 0 ? "BU GÜN bitir" : $"{qalan} gün qalıb";
+
+                    var metn = $"{m.Masin?.DovletNomresi} — {m.Nov?.Ad}: " +
+                               $"son tarix {m.SonTarix:dd.MM.yyyy} ({veziyyet}).";
+
+                    // Bildirişlər ARDICIL yazılır (`Task.WhenAll` YOX) —
+                    // `DbContext` thread-safe deyil (CLAUDE.md).
+                    foreach (var isciId in alicilar)
+                    {
+                        try
+                        {
+                            await bildirisRouter.NotifyIsciAsync(
+                                isciId,
+                                BildirisNovu.MasinMuddetXeberdarliq,
+                                qalan < 0 ? "Maşın müddəti BİTİB" : "Maşın müddəti yaxınlaşır",
+                                metn,
+                                "/Avtopark/Muddet/Yaxinlasanlar");
+                        }
+                        catch (Exception bex)
+                        {
+                            _logger.LogWarning(bex,
+                                "Avtopark xəbərdarlığı göndərilmədi — isciId={IsciId}, muddetId={MuddetId}",
+                                isciId, m.Id);
+                        }
+                    }
+
+                    // Bayraq ALICI OLMASA DA yazılır? XEYR — yazılsaydı alıcı
+                    // sonradan əlavə ediləndə xəbərdarlıq heç vaxt getməzdi.
+                    if (alicilar.Count > 0)
+                    {
+                        m.XeberdarliqGonderilib = true;
+                        m.XeberdarliqTarixi = DateTime.Now;
+                        avtoparkSayi++;
+                    }
+                }
+
+                if (avtoparkSayi > 0) await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Avtopark müddət xəbərdarlığı xətası.");
+            }
+
             // ── 5) Göndərilməmiş keçmiş xatırlatmaları işarələ ──
             var gonderilemeyenler = await xatirlatmaService.GetGonderilemeyenlerAsync();
             if (gonderilemeyenler.Success && gonderilemeyenler.Data != null)
@@ -230,12 +325,13 @@ namespace FinNex.Infrastructure.BackgroundJobs
             }
 
             _logger.LogInformation(
-                "Xatırlatma dövrü tamamlandı. Tapşırıq: {t}, Görüş: {g}, Məzuniyyət: {m}, Təyinat: {te}, Yeniləmə: {y}",
+                "Xatırlatma dövrü tamamlandı. Tapşırıq: {t}, Görüş: {g}, Məzuniyyət: {m}, Təyinat: {te}, Yeniləmə: {y}, Avtopark: {a}",
                 tapshiriqlar.Data?.Count ?? 0,
                 gorushler.Data?.Count ?? 0,
                 mezSayi,
                 teyinatSayi,
-                yenilenSayi);
+                yenilenSayi,
+                avtoparkSayi);
         }
 
         private static DateTime NextRenewDate(DateTime hireDate, DateTime today)

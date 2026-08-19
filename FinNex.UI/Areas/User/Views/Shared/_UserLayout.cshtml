@@ -89,6 +89,7 @@
         if (currentArea == "SenedDovriyyesi") return "umumi";
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentArea == "Emeliyyat") return "emeliyyat";
+        if (currentArea == "Avtopark") return "avtopark";
         if (currentArea == "Risk") return "risk";
         if (currentArea == "Muhasibat") return "muhasibat";
         if (currentController == "Tesdiq") return "tesdiq";
@@ -277,6 +278,14 @@
                burada da icazə şərti YOXDUR — bütün istifadəçilər görür. *@
             <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index" class="@TabCls("umumi")">
                 <i class="bi bi-folder2"></i><span>Ümumi xidmətlər</span>
+            </a>
+
+            @* Avtopark — xidməti maşınlar. «Ümumi xidmətlər» kimi DEPARTAMENT DEYİL:
+               maşından bütün şöbələr istifadə edir, ona görə «Departamentlər»
+               dropdown-una qoyulmur. İcazə şərti yoxdur — müraciəti hər işçi yaza
+               bilir; kassa/təsdiq ekranlarını controller-lərin öz rolları qoruyur. *@
+            <a asp-area="Avtopark" asp-controller="Muraciet" asp-action="Index" class="@TabCls("avtopark")">
+                <i class="bi bi-car-front"></i><span>Avtopark</span>
             </a>
 
             @if (isMuhasib || isRehberRol)
@@ -1221,6 +1230,61 @@
                        class="fn-nav-item @(currentController == "TelebeKocurme" ? "active" : "")">
                         <i class="bi bi-mortarboard"></i> Tələbə köçürməsi
                     </a>
+                }
+                break;
+
+            case "avtopark":
+                {
+                    <div class="fn-nav-label">Avtopark</div>
+                    <a asp-area="Avtopark" asp-controller="Muraciet" asp-action="Index"
+                       class="fn-nav-item @(currentController == "Muraciet" && currentArea == "Avtopark" ? "active" : "")">
+                        <i class="bi bi-card-checklist"></i> Müraciətlərim
+                    </a>
+
+                    @* Təsdiq paneli — Rəhbər və Admin. Şərt controller-dəki
+                       [Authorize] ilə EYNİ olmalıdır: linki görüb 403 almaq
+                       istifadəçini çaşdırır. *@
+                    @if (User.IsInRole(RoleNames.Rehber) || isAdmin)
+                    {
+                        <a asp-area="Avtopark" asp-controller="Tesdiq" asp-action="Index"
+                           class="fn-nav-item @(currentController == "Tesdiq" && currentArea == "Avtopark" ? "active" : "")">
+                            <i class="bi bi-check2-square"></i> Təsdiq paneli
+                        </a>
+                    }
+
+                    @* Açar jurnalı — Kassa rolu + Rəhbər (19.08.2026 qərarı) + Admin. *@
+                    @if (User.IsInRole(RoleNames.Kassa) || User.IsInRole(RoleNames.Rehber) || isAdmin)
+                    {
+                        <a asp-area="Avtopark" asp-controller="Kassa" asp-action="Index"
+                           class="fn-nav-item @(currentController == "Kassa" && currentAction == "Index" ? "active" : "")">
+                            <i class="bi bi-key"></i> Açar jurnalı
+                        </a>
+                        <a asp-area="Avtopark" asp-controller="Kassa" asp-action="Jurnal"
+                           class="fn-nav-item @(currentController == "Kassa" && currentAction == "Jurnal" ? "active" : "")">
+                            <i class="bi bi-journal-text"></i> Jurnal tarixçəsi
+                        </a>
+                    }
+
+                    @if (isAdmin)
+                    {
+                        <div class="fn-nav-label">İdarəetmə</div>
+                        <a asp-area="Avtopark" asp-controller="Masin" asp-action="Index"
+                           class="fn-nav-item @(currentController == "Masin" ? "active" : "")">
+                            <i class="bi bi-car-front"></i> Maşınlar
+                        </a>
+                        <a asp-area="Avtopark" asp-controller="Muddet" asp-action="Index"
+                           class="fn-nav-item @(currentController == "Muddet" && currentAction == "Index" ? "active" : "")">
+                            <i class="bi bi-calendar-check"></i> Müddətlər
+                        </a>
+                        <a asp-area="Avtopark" asp-controller="Muddet" asp-action="Yaxinlasanlar"
+                           class="fn-nav-item @(currentController == "Muddet" && currentAction == "Yaxinlasanlar" ? "active" : "")">
+                            <i class="bi bi-alarm"></i> Yaxınlaşanlar
+                        </a>
+                        <a asp-area="Avtopark" asp-controller="Muddet" asp-action="Alicilar"
+                           class="fn-nav-item @(currentController == "Muddet" && currentAction == "Alicilar" ? "active" : "")">
+                            <i class="bi bi-bell"></i> Xəbərdarlıq alıcıları
+                        </a>
+                    }
                 }
                 break;
 

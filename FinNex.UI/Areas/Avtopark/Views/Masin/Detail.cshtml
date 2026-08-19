@@ -1,0 +1,124 @@
+@model MasinDto
+@{
+    ViewData["Title"] = $"Maşın — {Model.DovletNomresi}";
+    var muddetler = ViewBag.Muddetler as IList<MasinMuddetDto> ?? new List<MasinMuddetDto>();
+    var aktivMuddetler = muddetler.Where(x => x.Aktivdir).ToList();
+    var tarixce = muddetler.Where(x => !x.Aktivdir).ToList();
+
+    var statusRengi = Model.Status == MasinStatus.Aktiv ? "success"
+        : Model.Status == MasinStatus.Temirde ? "warning" : "secondary";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-1">@Model.TamAd</h4>
+        <span class="badge bg-@statusRengi">@Model.StatusMetni</span>
+        @if (Model.IndiColdedir)
+        {
+            <span class="badge bg-primary ms-1">
+                <i class="bi bi-box-arrow-right"></i> @Model.IndiKimde
+            </span>
+        }
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Muddet" asp-action="Create" asp-route-masinId="@Model.Id" class="btn btn-outline-primary">
+            <i class="bi bi-plus-lg"></i> Müddət əlavə et
+        </a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Redaktə</a>
+        <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-white fw-semibold">Kart</div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-5">Dövlət nömrəsi</dt><dd class="col-7">@Model.DovletNomresi</dd>
+                    <dt class="col-5">Marka / model</dt><dd class="col-7">@($"{Model.Marka} {Model.Model}".Trim())</dd>
+                    <dt class="col-5">Buraxılış ili</dt><dd class="col-7">@(Model.BuraxilisIli?.ToString() ?? "—")</dd>
+                    <dt class="col-5">Rəng</dt><dd class="col-7">@(Model.Reng ?? "—")</dd>
+                    <dt class="col-5">Növü</dt><dd class="col-7">@(Model.Novu ?? "—")</dd>
+                    <dt class="col-5">Ban / şassi</dt><dd class="col-7">@(Model.Ban ?? "—")</dd>
+                    <dt class="col-5">VIN</dt><dd class="col-7">@(Model.Vin ?? "—")</dd>
+                    <dt class="col-5">Departament</dt><dd class="col-7">@(Model.DepartamentAdi ?? "Ümumi istifadə")</dd>
+                    <dt class="col-5">Təhkim sürücü</dt><dd class="col-7">@(Model.TehkimSurucuAdi ?? "—")</dd>
+                </dl>
+                @if (!string.IsNullOrWhiteSpace(Model.Qeyd))
+                {
+                    <hr />
+                    <div class="small text-muted">@Model.Qeyd</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header bg-white fw-semibold">Cari müddətlər</div>
+            @if (!aktivMuddetler.Any())
+            {
+                <div class="card-body text-center text-muted py-4">
+                    Müddət qeydi yoxdur — sığorta və texniki baxış izlənmir.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr><th>Növ</th><th>Son tarix</th><th>Vəziyyət</th><th>Məbləğ</th><th>Sənəd</th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var d in aktivMuddetler)
+                        {
+                            <tr>
+                                <td>@d.NovAdi</td>
+                                <td>@d.SonTarix.ToString("dd.MM.yyyy")</td>
+                                <td><span class="badge bg-@d.VeziyyetRengi">@d.VeziyyetMetni</span></td>
+                                <td>@(d.Mebleg.HasValue ? d.Mebleg.Value.ToString("N2") + " ₼" : "—")</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(d.SenedFaylYolu))
+                                    {
+                                        <a href="/dms/@d.SenedFaylYolu" target="_blank" class="small">
+                                            <i class="bi bi-paperclip"></i> @d.SenedFaylAdi
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (tarixce.Any())
+        {
+            <div class="card mt-3">
+                <div class="card-header bg-white fw-semibold text-muted small">
+                    Tarixçə (uzadılmış köhnə qeydlər)
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                        @foreach (var d in tarixce.OrderByDescending(x => x.SonTarix))
+                        {
+                            <tr class="text-muted small">
+                                <td>@d.NovAdi</td>
+                                <td>@d.SonTarix.ToString("dd.MM.yyyy")</td>
+                                <td>@(d.Mebleg.HasValue ? d.Mebleg.Value.ToString("N2") + " ₼" : "")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>

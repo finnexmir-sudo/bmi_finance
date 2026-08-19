@@ -77,5 +77,13 @@ namespace FinNex.Domain.Entities.Communication
 
         // İşçi tapşırıqdan imtina etdi (yaradan xəbərdar edilir)
         TapshiriqImtina   = 48,
+
+        // Avtopark — maşın müraciəti iş axını
+        MasinMuraciet          = 49,
+        MasinTesdiq            = 50,
+        MasinImtina            = 51,
+        MasinCixis             = 52,   // açar verildi — işçi + rəhbər
+        MasinQayidis           = 53,   // açar geri alındı — işçi + rəhbər
+        MasinMuddetXeberdarliq = 54,   // sığorta/baxış/yağ bitməyə yaxınlaşır
     }
 }

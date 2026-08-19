@@ -1,0 +1,106 @@
+@model IList<MasinMuracietListDto>
+@{
+    ViewData["Title"] = "Açar jurnalı — tarixçə";
+    var bas = ViewBag.Bas as string ?? "";
+    var son = ViewBag.Son as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-1">Açar jurnalı — tarixçə</h4>
+        <div class="text-muted small">Seçilmiş dövrə düşən bütün müraciətlər.</div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">Başlanğıc</label>
+                <input type="date" name="bas" value="@bas" class="form-control form-control-sm" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Son</label>
+                <input type="date" name="son" value="@son" class="form-control form-control-sm" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-search"></i> Göstər
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">Bu dövr üçün qeyd yoxdur.</div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Maşın</th>
+                        <th>İşçi</th>
+                        <th>Plan</th>
+                        <th>Çıxış</th>
+                        <th>Qayıdış</th>
+                        <th>Müddət</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var m in Model)
+                {
+                    var faktiki = (m.CixisTarixi.HasValue && m.QayidisTarixi.HasValue)
+                        ? m.QayidisTarixi.Value - m.CixisTarixi.Value
+                        : (TimeSpan?)null;
+
+                    <tr>
+                        <td>
+                            <div>@m.MasinAdi</div>
+                            <div class="text-muted small">@m.MasinNomresi</div>
+                        </td>
+                        <td>@m.IsciAdSoyad</td>
+                        <td class="small">
+                            @m.PlanBaslama.ToString("dd.MM.yy HH:mm")<br />
+                            <span class="text-muted">→ @m.PlanBitme.ToString("dd.MM.yy HH:mm")</span>
+                        </td>
+                        <td class="small">
+                            @m.CixisTarixi?.ToString("dd.MM.yy HH:mm")
+                            @if (!string.IsNullOrWhiteSpace(m.CixisQeydEdenAdi))
+                            {
+                                <div class="text-muted">@m.CixisQeydEdenAdi</div>
+                            }
+                        </td>
+                        <td class="small">
+                            @m.QayidisTarixi?.ToString("dd.MM.yy HH:mm")
+                            @if (!string.IsNullOrWhiteSpace(m.QayidisQeydEdenAdi))
+                            {
+                                <div class="text-muted">@m.QayidisQeydEdenAdi</div>
+                            }
+                        </td>
+                        <td class="small">
+                            @if (faktiki.HasValue)
+                            {
+                                <text>@((int)faktiki.Value.TotalHours) saat @faktiki.Value.Minutes dəq</text>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td><span class="badge bg-@m.StatusRengi">@m.StatusMetni</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

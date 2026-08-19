@@ -1,0 +1,98 @@
+@model IList<MasinMuracietListDto>
+@{
+    ViewData["Title"] = "Maşın müraciətləri — təsdiq";
+    var acigSayi = ViewBag.AcigCixisSayi as int? ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-1">Maşın müraciətləri — təsdiq</h4>
+        <div class="text-muted small">Təsdiqdən sonra açarı kassa verir.</div>
+    </div>
+    <a asp-action="AcigCixislar" class="btn btn-outline-primary">
+        <i class="bi bi-car-front"></i> Çöldə olanlar
+        @if (acigSayi > 0)
+        {
+            <span class="badge bg-primary ms-1">@acigSayi</span>
+        }
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">
+            <i class="bi bi-check2-circle fs-1 d-block mb-2"></i>
+            Təsdiq gözləyən müraciət yoxdur.
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Maşın</th>
+                        <th>Vaxt</th>
+                        <th>Məqsəd</th>
+                        <th class="text-end">Qərar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var m in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@m.IsciAdSoyad</div>
+                            <div class="text-muted small">@m.SobeAdi</div>
+                        </td>
+                        <td>
+                            <div>@m.MasinAdi</div>
+                            <div class="text-muted small">@m.MasinNomresi</div>
+                        </td>
+                        <td class="small">
+                            @m.PlanBaslama.ToString("dd.MM.yyyy HH:mm")<br />
+                            <span class="text-muted">→ @m.PlanBitme.ToString("dd.MM.yyyy HH:mm")</span>
+                        </td>
+                        <td>
+                            @m.Meqsed
+                            @if (!string.IsNullOrWhiteSpace(m.Marsrut))
+                            {
+                                <div class="text-muted small"><i class="bi bi-signpost"></i> @m.Marsrut</div>
+                            }
+                        </td>
+                        <td class="text-end" style="min-width:230px">
+                            <form asp-action="Tesdiq" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@m.Id" />
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-lg"></i> Təsdiq
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="collapse" data-bs-target="#imtina-@m.Id">
+                                <i class="bi bi-x-lg"></i> İmtina
+                            </button>
+
+                            <div class="collapse mt-2 text-start" id="imtina-@m.Id">
+                                <form asp-action="Imtina" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@m.Id" />
+                                    @* Səbəb MƏCBURİDİR — servis boş səbəbi rədd edir;
+                                       `required` yalnız istifadəçini əvvəlcədən xəbərdar edir. *@
+                                    <textarea name="sebeb" class="form-control form-control-sm mb-2"
+                                              rows="2" required placeholder="İmtina səbəbi (məcburi)"></textarea>
+                                    <button type="submit" class="btn btn-sm btn-danger w-100">İmtinanı təsdiqlə</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
