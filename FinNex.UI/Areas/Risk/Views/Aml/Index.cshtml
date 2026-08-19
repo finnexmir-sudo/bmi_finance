@@ -45,22 +45,59 @@
             background: #fef0f0; border: 1px solid #f5c2c2; border-radius: 8px;
             padding: 12px 14px; font-size: 12.5px; color: #a32d2d;
         }
-        /* Cədvəl 47 sütundur — üfüqi sürüşmə məcburidir. */
-        .aml-twrap { overflow-x: auto; max-height: 62vh; overflow-y: auto; margin: -18px -20px; }
+        /* ── Cədvəl ───────────────────────────────────────────────────────
+           47 sütundur — üfüqi sürüşmə məcburidir. Hündürlük `calc` ilədir ki,
+           konteynerin ALT KƏNARI (üfüqi sürüşdürmə zolağı orada olur) ekranda
+           qalsın. Sabit `62vh` verəndə yuxarıdakı forma+xülasə kartları onu
+           aşağı itələyirdi və zolağı görmək üçün səhifəni sürüşdürmək lazım
+           gəlirdi. */
+        .aml-twrap {
+            overflow: auto;
+            max-height: calc(100vh - 400px);
+            min-height: 280px;
+            margin: -18px -20px;
+            scrollbar-width: thin;
+            scrollbar-color: #b9c2d4 #eef1f6;
+        }
+        .aml-twrap::-webkit-scrollbar { width: 12px; height: 12px; }
+        .aml-twrap::-webkit-scrollbar-track { background: #eef1f6; }
+        .aml-twrap::-webkit-scrollbar-thumb {
+            background: #b9c2d4; border-radius: 6px; border: 3px solid #eef1f6;
+        }
+        .aml-twrap::-webkit-scrollbar-thumb:hover { background: #94a0b8; }
+
         .aml-table { border-collapse: separate; border-spacing: 0; font-size: 11.5px; white-space: nowrap; }
         .aml-table thead th {
-            position: sticky; top: 0; z-index: 2;
+            position: sticky; z-index: 2;
             background: #f7f9fc; color: #55607a; font-size: 10.5px; font-weight: 600;
             text-align: left; padding: 8px 10px; border-bottom: 1px solid #e4e8f0;
         }
+        /* Qrup sətrinin hündürlüyü SABİTDİR (26px) — sütun sətrinin `top`
+           dəyəri ona bərabər olmalıdır, yoxsa ya boşluq qalır, ya da ilk
+           data sətri başlığın altında gizlənir. */
         .aml-table thead tr.aml-grp th {
-            top: 0; z-index: 3; background: #eef2f8; color: #1a2332;
-            text-align: center; font-size: 11px; border-bottom: 1px solid #dde3ee;
+            top: 0; height: 26px; z-index: 3;
+            background: #eef2f8; color: #1a2332;
+            text-align: left; font-size: 11px; letter-spacing: .3px;
+            border-bottom: 1px solid #dde3ee; padding: 4px 10px;
         }
-        .aml-table thead tr.aml-cols th { top: 27px; }
+        /* Qrup adı üfüqi sürüşdürəndə də görünsün — yoxsa geniş qrupun
+           ortasında adam hansı blokda olduğunu itirir. */
+        .aml-grp-lbl { position: sticky; left: 10px; display: inline-block; }
+        .aml-table thead tr.aml-cols th { top: 26px; }
+
         .aml-table tbody td { padding: 7px 10px; border-bottom: 1px solid #f1f4f9; color: #3a4560; }
         .aml-table tbody tr:hover td { background: #fbfcff; }
         .aml-table td.aml-r { text-align: right; font-variant-numeric: tabular-nums; }
+
+        /* Birinci sütun (tarix) sola bərkidilir — 47 sütunda sağa gedəndə
+           sətrin hansı əməliyyat olduğu itməsin. */
+        .aml-table tr.aml-cols th:first-child { left: 0; z-index: 4; }
+        .aml-table tbody td:first-child {
+            position: sticky; left: 0; z-index: 1;
+            background: #fff; border-right: 1px solid #eef1f6;
+        }
+        .aml-table tbody tr:hover td:first-child { background: #fbfcff; }
         .aml-head { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
         .aml-head .k { font-size: 11px; color: #8a93a8; }
         .aml-head .v { font-size: 13.5px; font-weight: 600; color: #1a2332; }
@@ -190,10 +227,10 @@
                             @if (tamBasliq)
                             {
                                 <tr class="aml-grp">
-                                    <th colspan="8">ƏMƏLİYYAT</th>
-                                    <th colspan="14">GÖNDƏRƏN TƏRƏF</th>
-                                    <th colspan="14">ALAN TƏRƏF</th>
-                                    <th colspan="11">MƏBLƏĞ VƏ BANK</th>
+                                    <th colspan="8"><span class="aml-grp-lbl">ƏMƏLİYYAT</span></th>
+                                    <th colspan="14"><span class="aml-grp-lbl">GÖNDƏRƏN TƏRƏF</span></th>
+                                    <th colspan="14"><span class="aml-grp-lbl">ALAN TƏRƏF</span></th>
+                                    <th colspan="11"><span class="aml-grp-lbl">MƏBLƏĞ VƏ BANK</span></th>
                                 </tr>
                             }
                             <tr class="aml-cols">
