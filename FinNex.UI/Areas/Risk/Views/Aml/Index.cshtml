@@ -1,0 +1,233 @@
+@model AmlHesabSorguDto
+@{
+    ViewData["Title"] = "AML — Hesab üzrə sorğu";
+    var m = ViewBag.Netice as AmlHesabNeticeDto;
+
+    // Şablonun 47 sütunu — SQL-in qaytardığı SIRA ilə eynidir.
+    // Sütun sayı uyğun gəlməsə SQL-in öz adları göstərilir (səssiz sürüşmə olmasın).
+    string[] basliqlar =
+    {
+        "İcraya qəbul", "Faktiki icra", "Daxili istinad", "Xarici istinad",
+        "Əməliyyatın növü", "Çatdırılma kanalı", "Ödəniş sisteminin növü", "Alt növü",
+        // GÖNDƏRƏN
+        "Ad", "VÖEN", "FİN", "Hesabın növü", "Hesab nömrəsi", "Bankın adı",
+        "Bank filialının adı", "Bankın VÖEN-i", "Bankın BİC kodu",
+        "Müxbir bankın BİC kodu", "Ölkə", "Hesabın valyuta kodu",
+        "Hesabın bağlı olduğu PAN və ya FİN", "MCC kod",
+        // ALAN
+        "Ad", "VÖEN", "FİN", "Hesabın növü", "Hesab nömrəsi", "Bankın adı",
+        "Bank filialının adı", "Bankın VÖEN-i", "Bankın BİC kodu",
+        "Müxbir bankın BİC kodu", "Ölkə", "Hesabın valyuta kodu",
+        "Hesabın bağlı olduğu PAN və ya FİN", "MCC kod",
+        // ƏMƏLİYYAT
+        "Mədaxil", "Məxaric", "Valyuta kodu", "Mədaxil (AZN)", "Məxaric (AZN)",
+        "Əməliyyat (təyinat)", "Xeyrinə ödənilən şəxs/müəssisə", "FİN/VÖEN",
+        "Kommunal ödəniş kodu, mobil nömrə və s.", "DT", "KT"
+    };
+
+    var sutunlar = (m != null && m.Sutunlar.Count == basliqlar.Length)
+        ? basliqlar
+        : (m?.Sutunlar.ToArray() ?? Array.Empty<string>());
+
+    string Tar(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+}
+
+@section Styles {
+    <style>
+        /* Süzgəc paneli */
+        .aml-filter { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+        .aml-field { display: flex; flex-direction: column; }
+        .aml-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3a4560; }
+        .aml-mono { font-variant-numeric: tabular-nums; }
+        /* Validasiya/xəta xülasəsi — sinif QƏSDƏN `fn-alert` DEYİL:
+           user-area.js bütün .fn-alert elementlərini 4 saniyəyə silir. */
+        .aml-msg {
+            background: #fef0f0; border: 1px solid #f5c2c2; border-radius: 8px;
+            padding: 12px 14px; font-size: 12.5px; color: #a32d2d;
+        }
+        /* Cədvəl 47 sütundur — üfüqi sürüşmə məcburidir. */
+        .aml-twrap { overflow-x: auto; max-height: 62vh; overflow-y: auto; margin: -18px -20px; }
+        .aml-table { border-collapse: separate; border-spacing: 0; font-size: 11.5px; white-space: nowrap; }
+        .aml-table thead th {
+            position: sticky; top: 0; z-index: 2;
+            background: #f7f9fc; color: #55607a; font-size: 10.5px; font-weight: 600;
+            text-align: left; padding: 8px 10px; border-bottom: 1px solid #e4e8f0;
+        }
+        .aml-table thead tr.aml-grp th {
+            top: 0; z-index: 3; background: #eef2f8; color: #1a2332;
+            text-align: center; font-size: 11px; border-bottom: 1px solid #dde3ee;
+        }
+        .aml-table thead tr.aml-cols th { top: 27px; }
+        .aml-table tbody td { padding: 7px 10px; border-bottom: 1px solid #f1f4f9; color: #3a4560; }
+        .aml-table tbody tr:hover td { background: #fbfcff; }
+        .aml-table td.aml-r { text-align: right; font-variant-numeric: tabular-nums; }
+        .aml-head { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+        .aml-head .k { font-size: 11px; color: #8a93a8; }
+        .aml-head .v { font-size: 13.5px; font-weight: 600; color: #1a2332; }
+    </style>
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Hesab üzrə sorğu</div>
+            <div class="fn-page-sub">
+                AML çıxarışı — hesabın seçilmiş dövr üzrə bütün mədaxil və məxaric əməliyyatları.
+            </div>
+        </div>
+        <a asp-controller="Dashboard" asp-action="Index" class="fn-btn fn-btn--outline">← Risk paneli</a>
+    </div>
+
+    <div class="fn-card fn-card--form">
+        <form asp-action="Index" method="post" class="aml-filter">
+            @Html.AntiForgeryToken()
+
+            <div class="aml-field" style="flex:1;min-width:230px">
+                <label class="fn-label">Hesab № <span class="fn-required">*</span></label>
+                <input name="hesab" value="@Model?.Hesab" class="fn-input" maxlength="20" required
+                       inputmode="numeric" pattern="[0-9]{1,20}"
+                       placeholder="20 rəqəmli hesab nömrəsi" />
+            </div>
+
+            <div class="aml-field">
+                <label class="fn-label">Başlama tarixi <span class="fn-required">*</span></label>
+                <input type="date" name="bt" value="@Tar(Model?.BasTarix)" class="fn-input" required />
+            </div>
+
+            <div class="aml-field">
+                <label class="fn-label">Bitmə tarixi <span class="fn-required">*</span></label>
+                <input type="date" name="st" value="@Tar(Model?.SonTarix)" class="fn-input" required />
+            </div>
+
+            @* Sorğu növü — BMI-dəki iki radio düymənin eynisi. İKİ AYRI SQL işə düşür. *@
+            <div class="aml-field" style="min-width:230px">
+                <label class="fn-label">Sorğu növü</label>
+                <label class="aml-check">
+                    <input type="radio" name="huquqi" value="false" checked="@(!(Model?.Huquqi ?? false))" />
+                    Fiziki şəxs
+                </label>
+                <label class="aml-check">
+                    <input type="radio" name="huquqi" value="true" checked="@(Model?.Huquqi ?? false)" />
+                    Sahibkar / hüquqi şəxs VÖEN
+                </label>
+            </div>
+
+            <button type="submit" class="fn-btn fn-btn--primary">
+                <i class="bi bi-search"></i> Sorğu
+            </button>
+
+            @if (m is { Ugurlu: true, SetirSayi: > 0 })
+            {
+                <a class="fn-btn fn-btn--outline"
+                   asp-action="Excel"
+                   asp-route-hesab="@m.Hesab"
+                   asp-route-bt="@m.BasTarix.ToString("yyyy-MM-dd")"
+                   asp-route-st="@m.SonTarix.ToString("yyyy-MM-dd")"
+                   asp-route-huquqi="@m.Huquqi.ToString().ToLowerInvariant()">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </a>
+            }
+        </form>
+    </div>
+
+    @if (m != null)
+    {
+        @if (!string.IsNullOrWhiteSpace(m.Xeta))
+        {
+            @* Sinif QƏSDƏN `fn-alert` DEYİL — user-area.js bütün .fn-alert-ləri
+               4 saniyəyə silir və istifadəçi xətanı oxumağa macal tapmır. *@
+            <div class="aml-msg">@m.Xeta</div>
+        }
+
+        @if (m.Ugurlu)
+        {
+            <div class="fn-card">
+                <div class="aml-head">
+                    <div>
+                        <div class="k">Hesab</div>
+                        <div class="v aml-mono">@m.Hesab</div>
+                    </div>
+                    <div>
+                        <div class="k">Hesabın adı</div>
+                        <div class="v">@(string.IsNullOrWhiteSpace(m.HesabAdi) ? "—" : m.HesabAdi)</div>
+                    </div>
+                    <div>
+                        <div class="k">Valyuta</div>
+                        <div class="v">@(m.Valyuta ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="k">Dövr</div>
+                        <div class="v">@m.BasTarix.ToString("dd.MM.yyyy") – @m.SonTarix.ToString("dd.MM.yyyy")</div>
+                    </div>
+                    <div>
+                        <div class="k">Giriş qalığı</div>
+                        <div class="v aml-mono">@(m.GirisQaliq?.ToString("#,##0.00") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="k">Son qalıq</div>
+                        <div class="v aml-mono">@(m.SonQaliq?.ToString("#,##0.00") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="k">Sətir sayı</div>
+                        <div class="v">@m.SetirSayi</div>
+                    </div>
+                    <div>
+                        <div class="k">Sorğu növü</div>
+                        <div class="v">@(m.Huquqi ? "Hüquqi / sahibkar" : "Fiziki şəxs")</div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (m.SetirSayi > 0)
+        {
+            var tamBasliq = sutunlar.Length == basliqlar.Length;
+            <div class="fn-card">
+                <div class="aml-twrap">
+                    <table class="aml-table">
+                        <thead>
+                            @if (tamBasliq)
+                            {
+                                <tr class="aml-grp">
+                                    <th colspan="8">ƏMƏLİYYAT</th>
+                                    <th colspan="14">GÖNDƏRƏN TƏRƏF</th>
+                                    <th colspan="14">ALAN TƏRƏF</th>
+                                    <th colspan="11">MƏBLƏĞ VƏ BANK</th>
+                                </tr>
+                            }
+                            <tr class="aml-cols">
+                                @foreach (var s in sutunlar)
+                                {
+                                    <th>@s</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var setir in m.Setirler)
+                        {
+                            <tr>
+                                @for (var c = 0; c < setir.Length; c++)
+                                {
+                                    var v = setir[c];
+                                    var reqem = v is decimal or double or long or int or short;
+                                    <td class="@(reqem ? "aml-r" : "")">
+                                        @(v switch
+                                        {
+                                            null => "",
+                                            DateTime dt => dt.ToString("yyyy-MM-dd"),
+                                            decimal dec => dec.ToString("#,##0.##"),
+                                            double db => db.ToString("#,##0.##"),
+                                            _ => v.ToString()
+                                        })
+                                    </td>
+                                }
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>

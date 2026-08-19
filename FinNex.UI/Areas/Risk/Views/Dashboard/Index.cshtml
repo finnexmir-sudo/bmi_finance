@@ -103,6 +103,19 @@
         </div>
     }
 
+    @* ---- AML hesabatları — OracleSorgular-dan gəlməyən, öz ekranı olan hesabatlar ---- *@
+    <div class="rk-sec"><span class="rk-sec-bar"></span> AML</div>
+    <div class="rk-grid">
+        <a asp-controller="Aml" asp-action="Index" class="rk-card">
+            <div class="rk-ic"><i class="bi bi-file-earmark-text"></i></div>
+            <div class="rk-body">
+                <div class="rk-title">Hesab üzrə sorğu</div>
+                <div class="rk-sub">Hesabın dövr üzrə çıxarışı — 47 sütunlu AML formatı, Excel ixracı</div>
+            </div>
+            <i class="bi bi-chevron-right rk-arrow"></i>
+        </a>
+    </div>
+
     @* ---- Adi hesabat kartları (tag-siz) ---- *@
     @if (Model.Hesabatlar.Any())
     {
