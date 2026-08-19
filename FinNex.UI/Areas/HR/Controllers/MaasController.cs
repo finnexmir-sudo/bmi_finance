@@ -4,6 +4,7 @@ using FinNex.Application.DTOs.HR.Maas;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.Kredit;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.Structure;
@@ -37,6 +38,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMuhasibatHesabService _muhasibatHesabService;
         private readonly IDigerTutulmaService _digerTutulmaService;
         private readonly IWebHostEnvironment _env;
+        // VM 98.2.1 — işçi kreditləri üzrə hesabi gəlir (Toplu Hesablama sahəsini doldurur)
+        private readonly IIsciKreditFaydaService _isciKreditFayda;
 
         public MaasController(
             IMaasService maasService,
@@ -48,6 +51,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             IAyliqElaveService ayliqElaveService,
             IMuhasibatHesabService muhasibatHesabService,
             IDigerTutulmaService digerTutulmaService,
+            IIsciKreditFaydaService isciKreditFayda,
             IWebHostEnvironment env)
         {
             _maasService = maasService;
@@ -59,6 +63,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _ayliqElaveService = ayliqElaveService;
             _muhasibatHesabService = muhasibatHesabService;
             _digerTutulmaService = digerTutulmaService;
+            _isciKreditFayda = isciKreditFayda;
             _env = env;
         }
 
@@ -1370,6 +1375,42 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IsciOzHesabinaMap = isciOzHesabinaMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
+
+            // ── VM 98.2.1: işçi kreditləri üzrə hesabi gəlir ──────────────────
+            // Sahə əvvəl əl ilə doldurulurdu (mühasib Excel-də hesablayırdı).
+            // İndi Oracle-dan hesablanıb HAZIR DOLU gəlir; mühasib istəsə üstələyir.
+            //
+            // ⚠️ Bu, YALNIZ formanın başlanğıc dəyəridir. Hesablamanın özü POST-dan
+            // gələn `ferdiElaveler[i].VM9821Meblegi` ilə işləyir — yəni mühasibin
+            // ekranda gördüyü rəqəm hesaba düşən rəqəmdir.
+            //
+            // Xəta halında (Oracle əlçatmaz, dərəcə yoxdur) səhifə AÇILMAQDAN
+            // QALMIR: xəbərdarlıq göstərilir, sahələr boş qalır və mühasib əl ilə
+            // yaza bilir — yəni köhnə davranışa qayıdır.
+            try
+            {
+                var (fBas, fSon) = await _isciKreditFayda.DovrTeklifAsync();
+                if (fBas.HasValue)
+                {
+                    var fayda = await _isciKreditFayda.HesablaAsync(fBas.Value, fSon);
+                    ViewBag.Vm9821Map      = fayda.IsciUzre;
+                    ViewBag.Vm9821Dovr     = $"{fayda.Bas:dd.MM.yyyy} – {fayda.Son:dd.MM.yyyy}";
+                    ViewBag.Vm9821Xeta     = fayda.Xeta;
+                    ViewBag.Vm9821Problemli = fayda.Problemliler
+                        .Select(x => $"{x.BmiAdi ?? x.MusteriKodu}: {x.Problem}")
+                        .ToList();
+                }
+                else
+                {
+                    ViewBag.Vm9821Xeta = "Ödənilmiş maaş tapılmadı — VM 98.2.1 dövrünün " +
+                                         "başlanğıcı təyin edilə bilmədi.";
+                }
+            }
+            catch (Exception ex)
+            {
+                // Maaş səhifəsi bu modula görə DAYANMAMALIDIR.
+                ViewBag.Vm9821Xeta = $"VM 98.2.1 hesablanmadı: {ex.Message}";
+            }
 
             // Konfiqurasiyalı manual gəlir növləri — toplu hesablamada hər işçi üçün dinamik textbox
             ViewBag.ManualGelirNovleri = await _unitOfWork.Repository<MaasNovu>()

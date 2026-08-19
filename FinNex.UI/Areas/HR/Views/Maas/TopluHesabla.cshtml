@@ -57,6 +57,43 @@
     @* ── Alerts ──────────────────────────────────────────────── *@
     @* Success/Error _UserLayout.cshtml-də render olunur — burada təkrar etmirik. *@
 
+    @* ── VM 98.2.1 (işçi kredit faizi) vəziyyəti ──────────────── *@
+    @{
+        var vmXeta       = ViewBag.Vm9821Xeta as string;
+        var vmDovr       = ViewBag.Vm9821Dovr as string;
+        var vmProblemli  = ViewBag.Vm9821Problemli as List<string> ?? new List<string>();
+        var vmMapUmumi   = ViewBag.Vm9821Map as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    }
+    @if (!string.IsNullOrEmpty(vmXeta))
+    {
+        @* Səhifə DAYANMIR — sahələr boş qalır, mühasib əl ilə yaza bilir. *@
+        <div class="alert alert-warning" style="border-left:4px solid #c9900a">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>VM 98.2.1 avtomatik hesablanmadı</strong> — sahələr boş gəldi, əl ilə yaza bilərsiniz.
+            <div style="font-size:13px;margin-top:4px">@vmXeta</div>
+        </div>
+    }
+    else if (vmMapUmumi.Count > 0 || vmProblemli.Any())
+    {
+        <div class="alert alert-info" style="border-left:4px solid #7c3aed">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>VM 98.2.1 — işçi kredit faizi</strong>
+            <text>: @vmDovr dövrü üzrə <strong>@vmMapUmumi.Count</strong> işçinin sahəsi avtomatik dolduruldu.</text>
+            @if (vmProblemli.Any())
+            {
+                <div style="margin-top:8px;font-size:13px">
+                    <strong>@vmProblemli.Count sətir hesaba DÜŞMƏDİ</strong> — yoxlayın:
+                    <ul style="margin:4px 0 0 18px">
+                        @foreach (var p in vmProblemli)
+                        {
+                            <li>@p</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    }
+
     @* ── Header ──────────────────────────────────────────────── *@
     <div class="mth-header">
         <div>
@@ -318,6 +355,12 @@
                                 var hasIban = !string.IsNullOrEmpty(GetIban(isci.Id));
 
                                 // Aylıq Əlavə qeydindən bonus/overtime (oxunaqlı — yalnız Bonus/Overtime səhifəsindən redaktə)
+                                // VM 98.2.1 — işçi kreditləri üzrə hesabi gəlir (Oracle-dan hesablanıb).
+                                // Sahə hazır dolu gəlir; mühasib istəsə üstələyir — POST-dan gələn
+                                // dəyər hesablamaya düşür, yəni ekranda görünən rəqəm hesaba düşəndir.
+                                var _vmMap = ViewBag.Vm9821Map as Dictionary<int, decimal>;
+                                decimal vm9821 = (_vmMap != null && _vmMap.ContainsKey(isci.Id)) ? _vmMap[isci.Id] : 0m;
+
                                 var _aeBonusMap    = ViewBag.AyliqElaveBonusMap    as Dictionary<int, decimal>;
                                 var _aeOvertimeMap = ViewBag.AyliqElaveOvertimeMap as Dictionary<int, decimal>;
                                 decimal aeBonus    = (_aeBonusMap    != null && _aeBonusMap.ContainsKey(isci.Id))    ? _aeBonusMap[isci.Id]    : 0m;
@@ -739,9 +782,20 @@
                                                             <input type="number" class="mth-inp mth-inp--fg"
                                                                    name="ferdiElaveler[@i].VM9821Meblegi"
                                                                    min="0" step="0.01" placeholder="0.00"
+                                                                   value="@(vm9821 > 0 ? vm9821.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")"
                                                                    @(isDone?"readonly":"")/>
                                                         </div>
-                                                        <div class="mth-ferqli-hint">VM-nin 98.2.1-ci maddəsi üzrə gəlir</div>
+                                                        <div class="mth-ferqli-hint">
+                                                            @if (vm9821 > 0)
+                                                            {
+                                                                <span style="color:#7c3aed;font-weight:600">Kredit faizinə görə avtomatik hesablandı</span>
+                                                                <text> — lazım gəlsə dəyişin</text>
+                                                            }
+                                                            else
+                                                            {
+                                                                <text>VM-nin 98.2.1-ci maddəsi üzrə gəlir</text>
+                                                            }
+                                                        </div>
                                                     </div>
                                                 </div>
 
