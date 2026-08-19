@@ -4,95 +4,105 @@
     var acigSayi = ViewBag.AcigCixisSayi as int? ?? 0;
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Maşın müraciətləri — təsdiq</h4>
-        <div class="text-muted small">Təsdiqdən sonra açarı kassa verir.</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Maşın müraciətləri — təsdiq</div>
+            <div class="fn-page-sub">Təsdiqdən sonra açarı kassa verir.</div>
+        </div>
+        <a asp-action="AcigCixislar" class="fn-btn fn-btn--outline">
+            <i class="bi bi-car-front"></i> Çöldə olanlar
+            @if (acigSayi > 0)
+            {
+                <span class="av-count">@acigSayi</span>
+            }
+        </a>
     </div>
-    <a asp-action="AcigCixislar" class="btn btn-outline-primary">
-        <i class="bi bi-car-front"></i> Çöldə olanlar
-        @if (acigSayi > 0)
-        {
-            <span class="badge bg-primary ms-1">@acigSayi</span>
-        }
-    </a>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <i class="bi bi-check2-circle" style="font-size:26px;color:#c3cad8"></i>
+            <div class="fn-empty-title">Təsdiq gözləyən müraciət yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card">
+            <div class="av-twrap">
+                <table class="av-table">
+                    <thead>
+                        <tr>
+                            <th>İşçi</th>
+                            <th>Maşın</th>
+                            <th>Vaxt</th>
+                            <th>Məqsəd</th>
+                            <th class="av-r">Qərar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var m in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="av-strong">@m.IsciAdSoyad</div>
+                                <div class="av-sub">@m.SobeAdi</div>
+                            </td>
+                            <td>
+                                <div>@m.MasinAdi</div>
+                                <div class="av-sub"><span class="av-plate">@m.MasinNomresi</span></div>
+                            </td>
+                            <td class="av-nowrap av-mono">
+                                @m.PlanBaslama.ToString("dd.MM.yyyy HH:mm")
+                                <div class="av-sub">→ @m.PlanBitme.ToString("dd.MM.yyyy HH:mm")</div>
+                            </td>
+                            <td>
+                                @m.Meqsed
+                                @if (!string.IsNullOrWhiteSpace(m.Marsrut))
+                                {
+                                    <div class="av-sub"><i class="bi bi-signpost"></i> @m.Marsrut</div>
+                                }
+                            </td>
+                            <td class="av-r" style="min-width:210px">
+                                <div class="av-actions">
+                                    <form asp-action="Tesdiq" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@m.Id" />
+                                        <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm">
+                                            <i class="bi bi-check-lg"></i> Təsdiq
+                                        </button>
+                                    </form>
+                                    <button type="button" class="fn-btn fn-btn--outline fn-btn--sm"
+                                            data-bs-toggle="collapse" data-bs-target="#imtina-@m.Id">
+                                        İmtina
+                                    </button>
+                                </div>
+
+                                <div class="collapse" id="imtina-@m.Id" style="text-align:left">
+                                    <form asp-action="Imtina" method="post" style="margin-top:10px">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@m.Id" />
+                                        @* Səbəb MƏCBURİDİR — servis boş səbəbi rədd edir;
+                                           `required` yalnız istifadəçini əvvəlcədən xəbərdar edir. *@
+                                        <textarea name="sebeb" class="fn-textarea" rows="2" required
+                                                  placeholder="İmtina səbəbi (məcburi)"></textarea>
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm"
+                                                style="width:100%;margin-top:8px;justify-content:center">
+                                            İmtinanı təsdiqlə
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 </div>
-
-@if (!Model.Any())
-{
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            <i class="bi bi-check2-circle fs-1 d-block mb-2"></i>
-            Təsdiq gözləyən müraciət yoxdur.
-        </div>
-    </div>
-}
-else
-{
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>İşçi</th>
-                        <th>Maşın</th>
-                        <th>Vaxt</th>
-                        <th>Məqsəd</th>
-                        <th class="text-end">Qərar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var m in Model)
-                {
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">@m.IsciAdSoyad</div>
-                            <div class="text-muted small">@m.SobeAdi</div>
-                        </td>
-                        <td>
-                            <div>@m.MasinAdi</div>
-                            <div class="text-muted small">@m.MasinNomresi</div>
-                        </td>
-                        <td class="small">
-                            @m.PlanBaslama.ToString("dd.MM.yyyy HH:mm")<br />
-                            <span class="text-muted">→ @m.PlanBitme.ToString("dd.MM.yyyy HH:mm")</span>
-                        </td>
-                        <td>
-                            @m.Meqsed
-                            @if (!string.IsNullOrWhiteSpace(m.Marsrut))
-                            {
-                                <div class="text-muted small"><i class="bi bi-signpost"></i> @m.Marsrut</div>
-                            }
-                        </td>
-                        <td class="text-end" style="min-width:230px">
-                            <form asp-action="Tesdiq" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@m.Id" />
-                                <button type="submit" class="btn btn-sm btn-success">
-                                    <i class="bi bi-check-lg"></i> Təsdiq
-                                </button>
-                            </form>
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                    data-bs-toggle="collapse" data-bs-target="#imtina-@m.Id">
-                                <i class="bi bi-x-lg"></i> İmtina
-                            </button>
-
-                            <div class="collapse mt-2 text-start" id="imtina-@m.Id">
-                                <form asp-action="Imtina" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@m.Id" />
-                                    @* Səbəb MƏCBURİDİR — servis boş səbəbi rədd edir;
-                                       `required` yalnız istifadəçini əvvəlcədən xəbərdar edir. *@
-                                    <textarea name="sebeb" class="form-control form-control-sm mb-2"
-                                              rows="2" required placeholder="İmtina səbəbi (məcburi)"></textarea>
-                                    <button type="submit" class="btn btn-sm btn-danger w-100">İmtinanı təsdiqlə</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
-}

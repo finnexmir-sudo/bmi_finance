@@ -3,104 +3,118 @@
     ViewData["Title"] = "Açar jurnalı — tarixçə";
     var bas = ViewBag.Bas as string ?? "";
     var son = ViewBag.Son as string ?? "";
+
+    string Nisan(MasinMuracietStatus s) => s switch
+    {
+        MasinMuracietStatus.Gozlemede    => "fn-badge--wait",
+        MasinMuracietStatus.Tesdiqlenib  => "fn-badge--review",
+        MasinMuracietStatus.Cixib        => "fn-badge--review",
+        MasinMuracietStatus.Qayidib      => "fn-badge--approved",
+        MasinMuracietStatus.ImtinaEdildi => "fn-badge--rejected",
+        _                                 => "fn-badge--done"
+    };
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Açar jurnalı — tarixçə</h4>
-        <div class="text-muted small">Seçilmiş dövrə düşən bütün müraciətlər.</div>
-    </div>
-    <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
 
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-auto">
-                <label class="form-label small mb-1">Başlanğıc</label>
-                <input type="date" name="bas" value="@bas" class="form-control form-control-sm" />
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Açar jurnalı — tarixçə</div>
+            <div class="fn-page-sub">Seçilmiş dövrə düşən bütün müraciətlər.</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    <div class="fn-card">
+        <form method="get" class="av-filter">
+            <div class="av-filter-field">
+                <label class="fn-label">Başlanğıc</label>
+                <input type="date" name="bas" value="@bas" class="fn-input" />
             </div>
-            <div class="col-auto">
-                <label class="form-label small mb-1">Son</label>
-                <input type="date" name="son" value="@son" class="form-control form-control-sm" />
+            <div class="av-filter-field">
+                <label class="fn-label">Son</label>
+                <input type="date" name="son" value="@son" class="fn-input" />
             </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-sm btn-primary">
-                    <i class="bi bi-search"></i> Göstər
-                </button>
-            </div>
+            <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm">
+                <i class="bi bi-search"></i> Göstər
+            </button>
         </form>
     </div>
-</div>
 
-@if (!Model.Any())
-{
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">Bu dövr üçün qeyd yoxdur.</div>
-    </div>
-}
-else
-{
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Maşın</th>
-                        <th>İşçi</th>
-                        <th>Plan</th>
-                        <th>Çıxış</th>
-                        <th>Qayıdış</th>
-                        <th>Müddət</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var m in Model)
-                {
-                    var faktiki = (m.CixisTarixi.HasValue && m.QayidisTarixi.HasValue)
-                        ? m.QayidisTarixi.Value - m.CixisTarixi.Value
-                        : (TimeSpan?)null;
-
-                    <tr>
-                        <td>
-                            <div>@m.MasinAdi</div>
-                            <div class="text-muted small">@m.MasinNomresi</div>
-                        </td>
-                        <td>@m.IsciAdSoyad</td>
-                        <td class="small">
-                            @m.PlanBaslama.ToString("dd.MM.yy HH:mm")<br />
-                            <span class="text-muted">→ @m.PlanBitme.ToString("dd.MM.yy HH:mm")</span>
-                        </td>
-                        <td class="small">
-                            @m.CixisTarixi?.ToString("dd.MM.yy HH:mm")
-                            @if (!string.IsNullOrWhiteSpace(m.CixisQeydEdenAdi))
-                            {
-                                <div class="text-muted">@m.CixisQeydEdenAdi</div>
-                            }
-                        </td>
-                        <td class="small">
-                            @m.QayidisTarixi?.ToString("dd.MM.yy HH:mm")
-                            @if (!string.IsNullOrWhiteSpace(m.QayidisQeydEdenAdi))
-                            {
-                                <div class="text-muted">@m.QayidisQeydEdenAdi</div>
-                            }
-                        </td>
-                        <td class="small">
-                            @if (faktiki.HasValue)
-                            {
-                                <text>@((int)faktiki.Value.TotalHours) saat @faktiki.Value.Minutes dəq</text>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td><span class="badge bg-@m.StatusRengi">@m.StatusMetni</span></td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <i class="bi bi-inbox" style="font-size:26px;color:#c3cad8"></i>
+            <div class="fn-empty-title">Bu dövr üçün qeyd yoxdur</div>
         </div>
-    </div>
-}
+    }
+    else
+    {
+        <div class="fn-card">
+            <div class="av-twrap">
+                <table class="av-table">
+                    <thead>
+                        <tr>
+                            <th>Maşın</th>
+                            <th>İşçi</th>
+                            <th>Plan</th>
+                            <th>Çıxış</th>
+                            <th>Qayıdış</th>
+                            <th>Müddət</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var m in Model)
+                    {
+                        var faktiki = (m.CixisTarixi.HasValue && m.QayidisTarixi.HasValue)
+                            ? m.QayidisTarixi.Value - m.CixisTarixi.Value
+                            : (TimeSpan?)null;
+
+                        <tr>
+                            <td>
+                                <div>@m.MasinAdi</div>
+                                <div class="av-sub"><span class="av-plate">@m.MasinNomresi</span></div>
+                            </td>
+                            <td>@m.IsciAdSoyad</td>
+                            <td class="av-nowrap av-mono">
+                                @m.PlanBaslama.ToString("dd.MM.yy HH:mm")
+                                <div class="av-sub">→ @m.PlanBitme.ToString("dd.MM.yy HH:mm")</div>
+                            </td>
+                            <td class="av-nowrap av-mono">
+                                @m.CixisTarixi?.ToString("dd.MM.yy HH:mm")
+                                @if (!string.IsNullOrWhiteSpace(m.CixisQeydEdenAdi))
+                                {
+                                    <div class="av-sub">@m.CixisQeydEdenAdi</div>
+                                }
+                            </td>
+                            <td class="av-nowrap av-mono">
+                                @m.QayidisTarixi?.ToString("dd.MM.yy HH:mm")
+                                @if (!string.IsNullOrWhiteSpace(m.QayidisQeydEdenAdi))
+                                {
+                                    <div class="av-sub">@m.QayidisQeydEdenAdi</div>
+                                }
+                            </td>
+                            <td class="av-nowrap av-mono">
+                                @if (faktiki.HasValue)
+                                {
+                                    <text>@((int)faktiki.Value.TotalHours) saat @faktiki.Value.Minutes dəq</text>
+                                }
+                                else
+                                {
+                                    <span class="av-sub">—</span>
+                                }
+                            </td>
+                            <td><span class="fn-badge @Nisan(m.Status)">@m.StatusMetni</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

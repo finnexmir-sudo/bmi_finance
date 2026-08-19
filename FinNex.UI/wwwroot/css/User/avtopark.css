@@ -1,0 +1,130 @@
+/* ══════════════════════════════════════════════════════════════════
+   Avtopark modulu — cədvəl və siyahı stilləri
+   19.08.2026
+
+   ƏSAS QAYDA: burada YALNIZ `user-area.css`-də olmayan hissələr var.
+   Səhifə çərçivəsi, kart, düymə, nişan, forma sahələri — hamısı hazır
+   `fn-*` siniflərindən gəlir. Bootstrap-ın öz sinifləri (`card`, `btn`,
+   `table`, `badge`) İŞLƏDİLMİR — onlar layihənin qalanından fərqli
+   görünür (19.08.2026: «avtopark səhifəsi bizim UI-dan seçilir axı»).
+
+   Palitra `user-area.css`-dən götürülüb:
+     tünd    #1a2332      haşiyə  #e4e8f0
+     mətn    #3a4560      solğun  #8a93a8
+     fon     #fbfcff      ayırıcı #eef1f6
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Cədvəl ──────────────────────────────────────────────────────── */
+.av-twrap { overflow-x: auto; margin: -18px -20px -18px; }
+.av-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+.av-table thead th {
+    background: #f7f9fc;
+    color: #6b7590;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e4e8f0;
+    white-space: nowrap;
+}
+
+.av-table tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #eef1f6;
+    color: #3a4560;
+    vertical-align: middle;
+}
+
+.av-table tbody tr:last-child td { border-bottom: none; }
+.av-table tbody tr:hover { background: #fbfcff; }
+
+.av-table .av-r { text-align: right; }
+.av-table .av-nowrap { white-space: nowrap; }
+
+/* Sətir vurğusu — gecikmiş / vaxtı keçmiş */
+.av-table tr.av-warn  { background: #fffdf6; }
+.av-table tr.av-warn:hover { background: #fffbef; }
+.av-table tr.av-danger { background: #fff8f8; }
+.av-table tr.av-danger:hover { background: #fff3f3; }
+.av-table tr.av-past td { color: #98a1b5; }
+
+/* ── Kiçik mətn parçaları ────────────────────────────────────────── */
+.av-strong { font-weight: 600; color: #1a2332; }
+.av-sub    { font-size: 11px; color: #8a93a8; margin-top: 2px; }
+.av-mono   { font-variant-numeric: tabular-nums; }
+
+/* Dövlət nömrəsi — nömrə lövhəsi kimi */
+.av-plate {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: #1a2332;
+    color: #e8b84b;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .4px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Süzgəc paneli ───────────────────────────────────────────────── */
+.av-filter { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.av-filter .fn-label { margin-bottom: 5px; }
+.av-filter-field { display: flex; flex-direction: column; }
+.av-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #3a4560; padding-bottom: 9px; }
+
+/* ── İki sütunlu kassa ekranı ────────────────────────────────────── */
+.av-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1100px) { .av-split { grid-template-columns: 1fr; } }
+
+.av-col-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: #1a2332;
+    padding-bottom: 12px; margin-bottom: 4px;
+    border-bottom: 1px solid #eef1f6;
+}
+.av-count {
+    margin-left: auto;
+    background: #eef2f8; color: #4a5570;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 20px;
+}
+
+.av-item {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; padding: 12px 0; border-bottom: 1px solid #eef1f6;
+}
+.av-item:last-child { border-bottom: none; }
+.av-item--warn { background: #fffdf6; margin: 0 -20px; padding-left: 20px; padding-right: 20px; }
+
+/* ── Açılan bölmə düyməsi (maşın formasında «Əlavə məlumat») ─────── */
+.av-toggle {
+    background: none; border: none; padding: 0;
+    color: #4a5570; font-size: 12px; font-weight: 500;
+    font-family: inherit; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.av-toggle:hover { color: #1a2332; }
+.av-toggle i { transition: transform .15s; }
+.av-toggle[aria-expanded="true"] i { transform: rotate(180deg); }
+
+.av-extra { border-top: 1px solid #eef1f6; padding-top: 16px; margin-top: 4px; }
+
+/* ── Detal kartındakı sahə siyahısı ──────────────────────────────── */
+.av-dl { display: grid; grid-template-columns: 130px 1fr; gap: 8px 14px; font-size: 12.5px; }
+.av-dl dt { color: #8a93a8; font-weight: 400; }
+.av-dl dd { margin: 0; color: #3a4560; }
+
+/* ── Sətir içi əməliyyat düymələri ───────────────────────────────── */
+.av-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+.av-actions form { display: inline; }
+
+/* ── Validasiya xülasəsi ─────────────────────────────────────────── */
+/* Sinif QƏSDƏN `fn-alert` DEYİL — `user-area.js` bütün `.fn-alert`
+   elementlərini 4 saniyəyə silir və istifadəçi xətanı oxuya bilmir
+   (CLAUDE.md — ViewModel Required tələsi). */
+.av-val-summary {
+    background: #fef0f0; border: 1px solid #f5c2c2; border-radius: 8px;
+    padding: 12px 14px; font-size: 12.5px; color: #a32d2d;
+}
+.av-val-summary ul { margin: 0; padding-left: 18px; }

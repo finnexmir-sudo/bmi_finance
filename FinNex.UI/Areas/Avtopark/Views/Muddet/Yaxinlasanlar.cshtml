@@ -6,84 +6,97 @@
     var yaxin = Model.Where(x => !x.Kecib).ToList();
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Yaxınlaşan müddətlər</h4>
-        <div class="text-muted small">Vaxtı keçmişlər də bu siyahıdadır — ən təcili onlardır.</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yaxınlaşan müddətlər</div>
+            <div class="fn-page-sub">Vaxtı keçmişlər də bu siyahıdadır — ən təcili onlardır.</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">Bütün müddətlər</a>
     </div>
-    <div class="d-flex gap-2">
-        <form method="get" class="d-flex gap-2 align-items-center">
-            <label class="small text-muted mb-0">Neçə gün irəli:</label>
-            <input type="number" name="gun" value="@gun" min="1" max="365"
-                   class="form-control form-control-sm" style="width:90px" />
-            <button type="submit" class="btn btn-sm btn-primary">Göstər</button>
+
+    <div class="fn-card">
+        <form method="get" class="av-filter">
+            <div class="av-filter-field">
+                <label class="fn-label">Neçə gün irəli</label>
+                <input type="number" name="gun" value="@gun" min="1" max="365"
+                       class="fn-input" style="width:110px" />
+            </div>
+            <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm">
+                <i class="bi bi-search"></i> Göstər
+            </button>
         </form>
-        <a asp-action="Index" class="btn btn-outline-secondary">Bütün müddətlər</a>
     </div>
+
+    @if (kecmis.Any())
+    {
+        <div class="av-val-summary">
+            <i class="bi bi-exclamation-octagon"></i>
+            <strong>@kecmis.Count</strong> müddətin vaxtı keçib.
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <i class="bi bi-check2-all" style="font-size:26px;color:#c3cad8"></i>
+            <div class="fn-empty-title">Növbəti @gun gün ərzində bitən müddət yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card">
+            <div class="av-twrap">
+                <table class="av-table">
+                    <thead>
+                        <tr>
+                            <th>Maşın</th>
+                            <th>Növ</th>
+                            <th>Son tarix</th>
+                            <th>Vəziyyət</th>
+                            <th>Xəbərdarlıq</th>
+                            <th class="av-r"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var d in kecmis.Concat(yaxin))
+                    {
+                        var setirSinfi = d.Kecib ? "av-danger" : d.Yaxinlasir ? "av-warn" : "";
+                        var nisan = d.Kecib ? "fn-badge--rejected"
+                                  : d.Yaxinlasir ? "fn-badge--wait" : "fn-badge--approved";
+
+                        <tr class="@setirSinfi">
+                            <td>
+                                <div class="av-strong">@d.MasinAdi</div>
+                                <div class="av-sub"><span class="av-plate">@d.MasinNomresi</span></div>
+                            </td>
+                            <td>@d.NovAdi</td>
+                            <td class="av-mono av-nowrap">@d.SonTarix.ToString("dd.MM.yyyy")</td>
+                            <td><span class="fn-badge @nisan">@d.VeziyyetMetni</span></td>
+                            <td>
+                                @if (d.XeberdarliqGonderilib)
+                                {
+                                    <span class="av-sub"><i class="bi bi-check-lg"></i> göndərilib</span>
+                                }
+                                else
+                                {
+                                    <span class="av-sub">hələ yox</span>
+                                }
+                            </td>
+                            <td class="av-r">
+                                <a asp-action="Index" asp-route-masinId="@d.MasinId"
+                                   class="fn-btn fn-btn--outline fn-btn--sm">Uzat</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 </div>
-
-@if (kecmis.Any())
-{
-    <div class="alert alert-danger">
-        <i class="bi bi-exclamation-octagon me-2"></i>
-        <strong>@kecmis.Count</strong> müddətin vaxtı keçib.
-    </div>
-}
-
-@if (!Model.Any())
-{
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            <i class="bi bi-check2-all fs-1 d-block mb-2"></i>
-            Növbəti @gun gün ərzində bitən müddət yoxdur.
-        </div>
-    </div>
-}
-else
-{
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Maşın</th>
-                        <th>Növ</th>
-                        <th>Son tarix</th>
-                        <th>Vəziyyət</th>
-                        <th>Xəbərdarlıq</th>
-                        <th class="text-end">Əməliyyat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var d in kecmis.Concat(yaxin))
-                {
-                    <tr class="@(d.Kecib ? "table-danger" : d.Yaxinlasir ? "table-warning" : "")">
-                        <td>
-                            <div class="fw-semibold">@d.MasinAdi</div>
-                            <div class="text-muted small">@d.MasinNomresi</div>
-                        </td>
-                        <td>@d.NovAdi</td>
-                        <td>@d.SonTarix.ToString("dd.MM.yyyy")</td>
-                        <td><span class="badge bg-@d.VeziyyetRengi">@d.VeziyyetMetni</span></td>
-                        <td class="small">
-                            @if (d.XeberdarliqGonderilib)
-                            {
-                                <span class="text-success"><i class="bi bi-check-lg"></i> göndərilib</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">hələ yox</span>
-                            }
-                        </td>
-                        <td class="text-end">
-                            <a asp-action="Index" asp-route-masinId="@d.MasinId" class="btn btn-sm btn-outline-primary">
-                                Uzat
-                            </a>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
-}

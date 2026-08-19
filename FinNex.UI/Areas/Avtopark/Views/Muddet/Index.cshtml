@@ -5,31 +5,41 @@
                    ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
     var seciliMasin = ViewBag.MasinId as int?;
     var tarixce = ViewBag.Tarixce as bool? ?? false;
+
+    string VeziyyetNisan(MasinMuddetDto d) =>
+        d.Kecib ? "fn-badge--rejected" : d.Yaxinlasir ? "fn-badge--wait" : "fn-badge--approved";
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Maşın müddətləri</h4>
-        <div class="text-muted small">
-            Sığorta, texniki baxış, yağ dəyişmə — izləmə <strong>tarixə</strong> görədir.
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Maşın müddətləri</div>
+            <div class="fn-page-sub">
+                Sığorta, texniki baxış, yağ dəyişmə — izləmə <strong>tarixə</strong> görədir.
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a asp-action="Yaxinlasanlar" class="fn-btn fn-btn--outline">
+                <i class="bi bi-alarm"></i> Yaxınlaşanlar
+            </a>
+            <a asp-action="Novler" class="fn-btn fn-btn--outline">Növlər</a>
+            <a asp-action="Alicilar" class="fn-btn fn-btn--outline">
+                <i class="bi bi-bell"></i> Xəbərdarlıq alıcıları
+            </a>
+            <a asp-action="Create" class="fn-btn fn-btn--primary"><i class="bi bi-plus-lg"></i> Yeni</a>
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-action="Yaxinlasanlar" class="btn btn-outline-warning">
-            <i class="bi bi-alarm"></i> Yaxınlaşanlar
-        </a>
-        <a asp-action="Novler" class="btn btn-outline-secondary">Növlər</a>
-        <a asp-action="Alicilar" class="btn btn-outline-secondary">Xəbərdarlıq alıcıları</a>
-        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Yeni</a>
-    </div>
-</div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-auto">
-                <label class="form-label small mb-1">Maşın</label>
-                <select name="masinId" class="form-select form-select-sm">
+    <div class="fn-card">
+        <form method="get" class="av-filter">
+            <div class="av-filter-field">
+                <label class="fn-label">Maşın</label>
+                <select name="masinId" class="fn-input">
                     <option value="">— hamısı —</option>
                     @foreach (var m in masinlar)
                     {
@@ -37,131 +47,125 @@
                     }
                 </select>
             </div>
-            <div class="col-auto">
-                <div class="form-check">
-                    <input type="checkbox" name="tarixce" value="true" class="form-check-input"
-                           id="tarixceChk" checked="@tarixce" />
-                    <label class="form-check-label small" for="tarixceChk">Tarixçəni də göstər</label>
-                </div>
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> Göstər</button>
-            </div>
+            <label class="av-check">
+                <input type="checkbox" name="tarixce" value="true" checked="@tarixce" />
+                Tarixçəni də göstər
+            </label>
+            <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm">
+                <i class="bi bi-search"></i> Göstər
+            </button>
         </form>
     </div>
-</div>
 
-@if (!Model.Any())
-{
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-            Müddət qeydi yoxdur.
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <i class="bi bi-calendar-x" style="font-size:26px;color:#c3cad8"></i>
+            <div class="fn-empty-title">Müddət qeydi yoxdur</div>
+            <div class="fn-empty-sub">Hər maşın üçün sığorta və texniki baxış tarixini yazın.</div>
         </div>
-    </div>
-}
-else
-{
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Maşın</th>
-                        <th>Növ</th>
-                        <th>Son tarix</th>
-                        <th>Vəziyyət</th>
-                        <th>Xəbərdarlıq</th>
-                        <th>Məbləğ</th>
-                        <th>Sənəd</th>
-                        <th class="text-end">Əməliyyat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var d in Model)
-                {
-                    <tr class="@(d.Aktivdir ? "" : "text-muted")">
-                        <td>
-                            <div>@d.MasinAdi</div>
-                            <div class="text-muted small">@d.MasinNomresi</div>
-                        </td>
-                        <td>@d.NovAdi</td>
-                        <td>@d.SonTarix.ToString("dd.MM.yyyy")</td>
-                        <td>
-                            @if (d.Aktivdir)
-                            {
-                                <span class="badge bg-@d.VeziyyetRengi">@d.VeziyyetMetni</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-light text-muted border">tarixçə</span>
-                            }
-                        </td>
-                        <td class="small">@d.XeberdarliqGun gün əvvəl</td>
-                        <td class="small">@(d.Mebleg.HasValue ? d.Mebleg.Value.ToString("N2") + " ₼" : "—")</td>
-                        <td>
-                            @if (!string.IsNullOrWhiteSpace(d.SenedFaylYolu))
-                            {
-                                <a href="/dms/@d.SenedFaylYolu" target="_blank" class="small">
-                                    <i class="bi bi-paperclip"></i> @d.SenedFaylAdi
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td class="text-end text-nowrap">
-                            @if (d.Aktivdir)
-                            {
-                                <button type="button" class="btn btn-sm btn-outline-success"
-                                        data-bs-toggle="collapse" data-bs-target="#uzat-@d.Id">Uzat</button>
-                                <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-sm btn-outline-primary">Redaktə</a>
-                            }
-                            <form asp-action="Delete" method="post" class="d-inline"
-                                  onsubmit="return confirm('Qeyd silinsin?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@d.Id" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                            </form>
-                        </td>
-                    </tr>
-
-                    @if (d.Aktivdir)
+    }
+    else
+    {
+        <div class="fn-card">
+            <div class="av-twrap">
+                <table class="av-table">
+                    <thead>
+                        <tr>
+                            <th>Maşın</th>
+                            <th>Növ</th>
+                            <th>Son tarix</th>
+                            <th>Vəziyyət</th>
+                            <th>Xəbərdarlıq</th>
+                            <th>Məbləğ</th>
+                            <th>Sənəd</th>
+                            <th class="av-r"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var d in Model)
                     {
-                        <tr class="collapse" id="uzat-@d.Id">
-                            <td colspan="8" class="bg-light">
-                                <form asp-action="Uzat" method="post" class="row g-2 align-items-end">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@d.Id" />
-                                    <div class="col-auto">
-                                        <label class="form-label small mb-1">Yeni son tarix</label>
-                                        <input type="date" name="yeniSonTarix" class="form-control form-control-sm"
-                                               value="@d.SonTarix.AddYears(1).ToString("yyyy-MM-dd")" required />
-                                    </div>
-                                    <div class="col-auto">
-                                        <label class="form-label small mb-1">Məbləğ</label>
-                                        <input type="number" step="0.01" name="mebleg" class="form-control form-control-sm" />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small mb-1">Qeyd</label>
-                                        <input type="text" name="qeyd" class="form-control form-control-sm" />
-                                    </div>
-                                    <div class="col-auto">
-                                        <button type="submit" class="btn btn-sm btn-success">Uzat</button>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="text-muted small mt-1">
-                                            Köhnə qeyd silinmir — tarixçəyə keçir və yeni sətir yaranır.
-                                        </div>
-                                    </div>
-                                </form>
+                        <tr class="@(d.Aktivdir ? "" : "av-past")">
+                            <td>
+                                <div>@d.MasinAdi</div>
+                                <div class="av-sub"><span class="av-plate">@d.MasinNomresi</span></div>
+                            </td>
+                            <td>@d.NovAdi</td>
+                            <td class="av-mono av-nowrap">@d.SonTarix.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                @if (d.Aktivdir)
+                                {
+                                    <span class="fn-badge @VeziyyetNisan(d)">@d.VeziyyetMetni</span>
+                                }
+                                else
+                                {
+                                    <span class="fn-badge fn-badge--done">tarixçə</span>
+                                }
+                            </td>
+                            <td class="av-nowrap">@d.XeberdarliqGun gün əvvəl</td>
+                            <td class="av-mono av-nowrap">@(d.Mebleg.HasValue ? d.Mebleg.Value.ToString("N2") + " ₼" : "—")</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(d.SenedFaylYolu))
+                                {
+                                    <a href="/dms/@d.SenedFaylYolu" target="_blank">
+                                        <i class="bi bi-paperclip"></i> @d.SenedFaylAdi
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="av-sub">—</span>
+                                }
+                            </td>
+                            <td class="av-r">
+                                <div class="av-actions">
+                                    @if (d.Aktivdir)
+                                    {
+                                        <button type="button" class="fn-btn fn-btn--outline fn-btn--sm"
+                                                data-bs-toggle="collapse" data-bs-target="#uzat-@d.Id">Uzat</button>
+                                        <a asp-action="Edit" asp-route-id="@d.Id" class="fn-btn fn-btn--outline fn-btn--sm">Redaktə</a>
+                                    }
+                                    <form asp-action="Delete" method="post"
+                                          onsubmit="return confirm('Qeyd silinsin?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@d.Id" />
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Sil</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
+
+                        @if (d.Aktivdir)
+                        {
+                            <tr class="collapse" id="uzat-@d.Id">
+                                <td colspan="8" style="background:#fbfcff">
+                                    <form asp-action="Uzat" method="post" class="av-filter">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@d.Id" />
+                                        <div class="av-filter-field">
+                                            <label class="fn-label">Yeni son tarix</label>
+                                            <input type="date" name="yeniSonTarix" class="fn-input"
+                                                   value="@d.SonTarix.AddYears(1).ToString("yyyy-MM-dd")" required />
+                                        </div>
+                                        <div class="av-filter-field">
+                                            <label class="fn-label">Məbləğ</label>
+                                            <input type="number" step="0.01" name="mebleg" class="fn-input" />
+                                        </div>
+                                        <div class="av-filter-field" style="flex:1;min-width:200px">
+                                            <label class="fn-label">Qeyd</label>
+                                            <input type="text" name="qeyd" class="fn-input" />
+                                        </div>
+                                        <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm">Uzat</button>
+                                        <div style="flex-basis:100%" class="av-sub">
+                                            Köhnə qeyd silinmir — tarixçəyə keçir və yeni sətir yaranır.
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
                     }
-                }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-}
+    }
+</div>

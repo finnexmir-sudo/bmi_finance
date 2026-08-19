@@ -454,3 +454,39 @@ qalmazdı və istifadəçi «hardayam?» sualı ilə üzləşərdi.
 Bu, mövcud icazə müraciətindən azdır.
 
 Gündəlik yük: işçi 1 forma → rəhbər 1 klik → kassa 2 klik (çıxdı/gəldi).
+
+### 11.4 UI layihənin dizayn sisteminə köçürüldü (19.08.2026)
+
+İstifadəçi: **«avtopark səhifəsi bizim UI-dan seçilir axı»** — haqlı idi.
+İlk versiyada Bootstrap-ın öz sinifləri işlədilmişdi (`card`, `btn btn-primary`,
+`table`, `badge bg-*`, `alert`, `form-control`), layihənin qalanı isə `fn-*`
+sistemindən istifadə edir.
+
+**Bütün 16 view köçürüldü.** İşlədilən hazır siniflər (`user-area.css`):
+
+| Təyinat | Sinif |
+|---|---|
+| Səhifə çərçivəsi | `fn-page`, `fn-page-head`, `fn-page-title`, `fn-page-sub` |
+| Kart | `fn-card`, `fn-card--form` |
+| Düymə | `fn-btn`, `fn-btn--primary`, `fn-btn--outline`, `fn-btn--sm`, `fn-btn--danger-sm` |
+| Nişan | `fn-badge` + `--approved` / `--wait` / `--rejected` / `--review` / `--done` |
+| Forma | `fn-form-wrap`, `fn-form-row`, `fn-form-group`, `fn-label`, `fn-label-hint`, `fn-input`, `fn-textarea`, `fn-required`, `fn-val-msg`, `fn-form-actions` |
+| Boş vəziyyət | `fn-empty-state`, `fn-empty-title`, `fn-empty-sub` |
+| Məlumat qutusu | `fn-info-box` |
+
+Yalnız cədvəl/siyahı stilləri modul faylındadır:
+`wwwroot/css/User/avtopark.css` (`av-*` prefiksi). Palitra `user-area.css`-dən
+götürülüb — tünd `#1a2332`, qızılı `#e8b84b`, haşiyə `#e4e8f0`.
+
+**Qaydalar:**
+- Avtopark view-larında Bootstrap sinfi (`card`, `btn`, `table`, `badge bg-*`,
+  `alert`, `form-control`, `col-md-*`) **İŞLƏDİLMİR**. Yoxlama:
+  ```bash
+  grep -rn 'class="card\|btn-primary\|table table\|badge bg-\|form-control' \
+       FinNex.UI/Areas/Avtopark/Views/ | grep -v "fn-\|av-"
+  ```
+  Nəticə boş olmalıdır.
+- Yeni sinif lazım olsa əvvəlcə `user-area.css`-də axtar; yoxdursa `avtopark.css`-ə
+  `av-` prefiksi ilə əlavə et.
+- Validasiya xülasəsi `av-val-summary` sinfindədir — `fn-alert` YOX, çünki
+  `user-area.js` bütün `.fn-alert` elementlərini 4 saniyəyə silir.

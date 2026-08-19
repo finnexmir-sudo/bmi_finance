@@ -3,114 +3,138 @@
     ViewData["Title"] = "Yeni maşın";
     var basliq = "Yeni maşın";
     var action = "Create";
-}
-@{
+
+    // Yeni maşında əlavə bölmə BAĞLI açılır — forma qısa görünsün.
+    var elaveAcilsin = false;
+
     var departamentler = ViewBag.Departamentler as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
                          ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
     var surucular = ViewBag.Surucular as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
                     ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
 }
 
-<h4 class="mb-3">@basliq</h4>
-
-@* Şərtsiz render olunsa, xəta olmayan hallarda BOŞ qırmızı qutu görünərdi —
-   layihədə `validation-summary-valid { display:none }` CSS qaydası yoxdur.
-   Sinif QƏSDƏN `fn-alert` DEYİL: `user-area.js` onu 4 saniyəyə silir və
-   istifadəçi xətanı oxumağa macal tapmır (CLAUDE.md). *@
-@if (!ViewData.ModelState.IsValid)
-{
-    <div asp-validation-summary="All" class="alert alert-danger avtopark-val-summary" role="alert"></div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
 }
 
-<div class="card">
-    <div class="card-body">
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@basliq</div>
+            <div class="fn-page-sub">Yalnız dövlət nömrəsi məcburidir.</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="All" class="av-val-summary" role="alert"></div>
+    }
+
+    <div class="fn-form-wrap">
         <form asp-action="@action" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
-            @* SAHƏLƏR İKİ QRUPA BÖLÜNÜB (19.08.2026 — «sadələşdirək» qərarı).
-               HEÇ BİRİ SİLİNMƏYİB: gündəlik lazım olmayanlar «Əlavə məlumat»
-               bölməsinin altındadır və istənilən an açılır. 4-5 maşınlıq parkda
-               VIN/ban/rəng nadir hallarda yazılır — forma onlarla açılmasın. *@
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label asp-for="DovletNomresi" class="form-label"></label>
-                    <input asp-for="DovletNomresi" class="form-control" placeholder="10-AA-123" />
-                    <span asp-validation-for="DovletNomresi" class="text-danger small"></span>
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Marka" class="form-label"></label>
-                    <input asp-for="Marka" class="form-control" placeholder="Toyota" />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Model" class="form-label"></label>
-                    <input asp-for="Model" class="form-control" placeholder="Camry" />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Status" class="form-label"></label>
-                    @* value RƏQƏM YOX, ENUM ADIDIR: `asp-for` model dəyərini
-                       enum ADI kimi ("Aktiv") render edir və `selected`-i həmin
-                       mətnə görə qoyur. Rəqəm yazsaydıq redaktədə cari status
-                       seçilməmiş görünərdi — səssiz səhv. *@
-                    <select asp-for="Status" class="form-select">
-                        <option value="@MasinStatus.Aktiv">Aktiv</option>
-                        <option value="@MasinStatus.Temirde">Təmirdə</option>
-                        <option value="@MasinStatus.IstifadedenCixib">İstifadədən çıxıb</option>
-                    </select>
-                    <div class="form-text">Yalnız «Aktiv» maşına müraciət yazıla bilər.</div>
-                </div>
-            </div>
+            <div class="fn-card fn-card--form">
 
-            <button type="button" class="btn btn-sm btn-link px-0 mt-3"
-                    data-bs-toggle="collapse" data-bs-target="#elaveMelumat">
-                <i class="bi bi-chevron-down"></i> Əlavə məlumat (istəyə bağlı)
-            </button>
+                @* SAHƏLƏR İKİ QRUPA BÖLÜNÜB (19.08.2026 — «sadələşdirək» qərarı).
+                   HEÇ BİRİ SİLİNMƏYİB: gündəlik lazım olmayanlar «Əlavə məlumat»
+                   bölməsinin altındadır. 4-5 maşınlıq parkda VIN/ban/rəng nadir
+                   hallarda yazılır — forma onlarla açılmasın. *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label asp-for="DovletNomresi" class="fn-label">
+                            Dövlət nömrəsi <span class="fn-required">*</span>
+                        </label>
+                        <input asp-for="DovletNomresi" class="fn-input" placeholder="10-AA-123" />
+                        <span asp-validation-for="DovletNomresi" class="fn-val-msg"></span>
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="Marka" class="fn-label">Marka</label>
+                        <input asp-for="Marka" class="fn-input" placeholder="Toyota" />
+                    </div>
+                </div>
 
-            <div class="collapse" id="elaveMelumat">
-                <div class="row g-3 pt-2 border-top">
-                    <div class="col-md-3">
-                        <label asp-for="BuraxilisIli" class="form-label"></label>
-                        <input asp-for="BuraxilisIli" type="number" class="form-control" />
-                        <span asp-validation-for="BuraxilisIli" class="text-danger small"></span>
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label asp-for="Model" class="fn-label">Model</label>
+                        <input asp-for="Model" class="fn-input" placeholder="Camry" />
                     </div>
-                    <div class="col-md-3">
-                        <label asp-for="Reng" class="form-label"></label>
-                        <input asp-for="Reng" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                        <label asp-for="Novu" class="form-label"></label>
-                        <input asp-for="Novu" class="form-control" placeholder="minik / mikroavtobus / yük" />
-                    </div>
-                    <div class="col-md-3">
-                        <label asp-for="Ban" class="form-label"></label>
-                        <input asp-for="Ban" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                        <label asp-for="Vin" class="form-label"></label>
-                        <input asp-for="Vin" class="form-control" />
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="DepartamentId" class="form-label"></label>
-                        <select asp-for="DepartamentId" asp-items="departamentler" class="form-select">
-                            <option value="">— ümumi istifadə —</option>
+                    <div class="fn-form-group">
+                        <label asp-for="Status" class="fn-label">Status</label>
+                        @* value RƏQƏM YOX, ENUM ADIDIR: `asp-for` model dəyərini enum
+                           ADI kimi render edir və `selected`-i həmin mətnə görə qoyur.
+                           Rəqəm yazsaydıq redaktədə cari status seçilməmiş görünərdi. *@
+                        <select asp-for="Status" class="fn-input">
+                            <option value="@MasinStatus.Aktiv">Aktiv</option>
+                            <option value="@MasinStatus.Temirde">Təmirdə</option>
+                            <option value="@MasinStatus.IstifadedenCixib">İstifadədən çıxıb</option>
                         </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label asp-for="TehkimSurucuId" class="form-label"></label>
-                        <select asp-for="TehkimSurucuId" asp-items="surucular" class="form-select">
-                            <option value="">— təhkim olunmayıb —</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label asp-for="Qeyd" class="form-label"></label>
-                        <textarea asp-for="Qeyd" class="form-control" rows="2"></textarea>
+                        <span class="fn-label-hint">Yalnız «Aktiv» maşına müraciət yazıla bilər.</span>
                     </div>
                 </div>
-            </div>
 
-            <div class="mt-3">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Yadda saxla</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+                <button type="button" class="av-toggle" data-bs-toggle="collapse"
+                        data-bs-target="#elaveMelumat" aria-expanded="@elaveAcilsin">
+                    <i class="bi bi-chevron-down"></i> Əlavə məlumat (istəyə bağlı)
+                </button>
+
+                <div class="collapse @(elaveAcilsin ? "show" : "")" id="elaveMelumat">
+                    <div class="av-extra">
+                        <div class="fn-form-row">
+                            <div class="fn-form-group">
+                                <label asp-for="BuraxilisIli" class="fn-label">Buraxılış ili</label>
+                                <input asp-for="BuraxilisIli" type="number" class="fn-input" />
+                                <span asp-validation-for="BuraxilisIli" class="fn-val-msg"></span>
+                            </div>
+                            <div class="fn-form-group">
+                                <label asp-for="Reng" class="fn-label">Rəng</label>
+                                <input asp-for="Reng" class="fn-input" />
+                            </div>
+                        </div>
+                        <div class="fn-form-row">
+                            <div class="fn-form-group">
+                                <label asp-for="Novu" class="fn-label">Növü</label>
+                                <input asp-for="Novu" class="fn-input" placeholder="minik / mikroavtobus / yük" />
+                            </div>
+                            <div class="fn-form-group">
+                                <label asp-for="Ban" class="fn-label">Ban / şassi</label>
+                                <input asp-for="Ban" class="fn-input" />
+                            </div>
+                        </div>
+                        <div class="fn-form-row">
+                            <div class="fn-form-group">
+                                <label asp-for="Vin" class="fn-label">VIN</label>
+                                <input asp-for="Vin" class="fn-input" />
+                            </div>
+                            <div class="fn-form-group">
+                                <label asp-for="DepartamentId" class="fn-label">Departament</label>
+                                <select asp-for="DepartamentId" asp-items="departamentler" class="fn-input">
+                                    <option value="">— ümumi istifadə —</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="fn-form-group">
+                            <label asp-for="TehkimSurucuId" class="fn-label">Təhkim olunmuş sürücü</label>
+                            <select asp-for="TehkimSurucuId" asp-items="surucular" class="fn-input">
+                                <option value="">— təhkim olunmayıb —</option>
+                            </select>
+                        </div>
+                        <div class="fn-form-group">
+                            <label asp-for="Qeyd" class="fn-label">Qeyd</label>
+                            <textarea asp-for="Qeyd" class="fn-textarea" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fn-form-actions">
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <i class="bi bi-save"></i> Yadda saxla
+                    </button>
+                    <a asp-action="Index" class="fn-btn fn-btn--outline">Geri</a>
+                </div>
             </div>
         </form>
     </div>

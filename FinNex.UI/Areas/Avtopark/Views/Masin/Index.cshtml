@@ -2,107 +2,120 @@
 @{
     ViewData["Title"] = "Maşınlar";
     var bugun = DateTime.Today;
+
+    string StatusNisan(MasinStatus s) => s switch
+    {
+        MasinStatus.Aktiv   => "fn-badge--approved",
+        MasinStatus.Temirde => "fn-badge--wait",
+        _                   => "fn-badge--done"
+    };
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Maşınlar</h4>
-        <div class="text-muted small">Xidməti maşınların kartı, cari vəziyyəti və ən yaxın bitən müddəti.</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Maşınlar</div>
+            <div class="fn-page-sub">Xidməti maşınların kartı, cari vəziyyəti və ən yaxın bitən müddəti.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <a asp-controller="Muddet" asp-action="Yaxinlasanlar" class="fn-btn fn-btn--outline">
+                <i class="bi bi-alarm"></i> Yaxınlaşan müddətlər
+            </a>
+            <a asp-action="Create" class="fn-btn fn-btn--primary">
+                <i class="bi bi-plus-lg"></i> Yeni maşın
+            </a>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-controller="Muddet" asp-action="Yaxinlasanlar" class="btn btn-outline-warning">
-            <i class="bi bi-alarm"></i> Yaxınlaşan müddətlər
-        </a>
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Yeni maşın
-        </a>
-    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <i class="bi bi-car-front" style="font-size:26px;color:#c3cad8"></i>
+            <div class="fn-empty-title">Hələ maşın əlavə edilməyib</div>
+            <div class="fn-empty-sub">«Yeni maşın» ilə başlayın — yalnız dövlət nömrəsi məcburidir.</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card">
+            <div class="av-twrap">
+                <table class="av-table">
+                    <thead>
+                        <tr>
+                            <th>Maşın</th>
+                            <th>Nömrə</th>
+                            <th>Departament</th>
+                            <th>Sürücü</th>
+                            <th>Status</th>
+                            <th>Cari vəziyyət</th>
+                            <th>Ən yaxın müddət</th>
+                            <th class="av-r"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var m in Model)
+                    {
+                        var qalanGun = m.EnYaxinMuddetTarixi.HasValue
+                            ? (int?)(m.EnYaxinMuddetTarixi.Value.Date - bugun).Days
+                            : null;
+
+                        <tr>
+                            <td>
+                                <div class="av-strong">@($"{m.Marka} {m.Model}".Trim())</div>
+                                @if (m.BuraxilisIli.HasValue || !string.IsNullOrWhiteSpace(m.Reng))
+                                {
+                                    <div class="av-sub">@m.BuraxilisIli @m.Reng</div>
+                                }
+                            </td>
+                            <td><span class="av-plate">@m.DovletNomresi</span></td>
+                            <td>@(m.DepartamentAdi ?? "—")</td>
+                            <td>@(m.TehkimSurucuAdi ?? "—")</td>
+                            <td><span class="fn-badge @StatusNisan(m.Status)">@m.StatusMetni</span></td>
+                            <td>
+                                @if (m.IndiColdedir)
+                                {
+                                    <i class="bi bi-box-arrow-right"></i> @m.IndiKimde
+                                }
+                                else
+                                {
+                                    <span class="av-sub">Yerindədir</span>
+                                }
+                            </td>
+                            <td>
+                                @if (qalanGun.HasValue)
+                                {
+                                    var nisan = qalanGun < 0 ? "fn-badge--rejected"
+                                              : qalanGun <= 30 ? "fn-badge--wait" : "fn-badge--done";
+                                    <span class="fn-badge @nisan">@m.EnYaxinMuddetAdi</span>
+                                    <div class="av-sub av-mono">@m.EnYaxinMuddetTarixi?.ToString("dd.MM.yyyy")</div>
+                                }
+                                else
+                                {
+                                    <span class="av-sub">—</span>
+                                }
+                            </td>
+                            <td class="av-r">
+                                <div class="av-actions">
+                                    <a asp-action="Detail" asp-route-id="@m.Id" class="fn-btn fn-btn--outline fn-btn--sm">Kart</a>
+                                    <a asp-action="Edit" asp-route-id="@m.Id" class="fn-btn fn-btn--outline fn-btn--sm">Redaktə</a>
+                                    <form asp-action="Delete" method="post"
+                                          onsubmit="return confirm('@m.DovletNomresi silinsin?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@m.Id" />
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Sil</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 </div>
-
-@if (!Model.Any())
-{
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            <i class="bi bi-car-front fs-1 d-block mb-2"></i>
-            Hələ maşın əlavə edilməyib.
-        </div>
-    </div>
-}
-else
-{
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Maşın</th>
-                        <th>Nömrə</th>
-                        <th>Departament</th>
-                        <th>Sürücü</th>
-                        <th>Status</th>
-                        <th>Cari vəziyyət</th>
-                        <th>Ən yaxın müddət</th>
-                        <th class="text-end">Əməliyyat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var m in Model)
-                {
-                    var statusRengi = m.Status == MasinStatus.Aktiv ? "success"
-                        : m.Status == MasinStatus.Temirde ? "warning" : "secondary";
-
-                    var qalanGun = m.EnYaxinMuddetTarixi.HasValue
-                        ? (int?)(m.EnYaxinMuddetTarixi.Value.Date - bugun).Days
-                        : null;
-
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">@($"{m.Marka} {m.Model}".Trim())</div>
-                            @if (m.BuraxilisIli.HasValue)
-                            {
-                                <div class="text-muted small">@m.BuraxilisIli · @m.Reng</div>
-                            }
-                        </td>
-                        <td><span class="badge bg-dark">@m.DovletNomresi</span></td>
-                        <td class="small">@(m.DepartamentAdi ?? "—")</td>
-                        <td class="small">@(m.TehkimSurucuAdi ?? "—")</td>
-                        <td><span class="badge bg-@statusRengi">@m.StatusMetni</span></td>
-                        <td class="small">
-                            @if (m.IndiColdedir)
-                            {
-                                <span class="text-primary"><i class="bi bi-box-arrow-right"></i> @m.IndiKimde</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">Yerindədir</span>
-                            }
-                        </td>
-                        <td class="small">
-                            @if (qalanGun.HasValue)
-                            {
-                                var reng = qalanGun < 0 ? "danger" : qalanGun <= 30 ? "warning" : "secondary";
-                                <span class="badge bg-@reng">@m.EnYaxinMuddetAdi</span>
-                                <div class="text-muted">@m.EnYaxinMuddetTarixi?.ToString("dd.MM.yyyy")</div>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td class="text-end text-nowrap">
-                            <a asp-action="Detail" asp-route-id="@m.Id" class="btn btn-sm btn-outline-secondary">Kart</a>
-                            <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-primary">Redaktə</a>
-                            <form asp-action="Delete" method="post" class="d-inline"
-                                  onsubmit="return confirm('@m.DovletNomresi silinsin?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@m.Id" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
-}

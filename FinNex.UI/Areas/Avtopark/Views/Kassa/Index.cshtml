@@ -1,111 +1,110 @@
 @model IList<MasinMuracietListDto>
 @{
-    ViewData["Title"] = "Açar jurnalı — kassa";
+    ViewData["Title"] = "Açar jurnalı";
 
-    var acar = Model.Where(x => x.Status == MasinMuracietStatus.Tesdiqlenib).ToList();
+    var acar  = Model.Where(x => x.Status == MasinMuracietStatus.Tesdiqlenib).ToList();
     var colde = Model.Where(x => x.Status == MasinMuracietStatus.Cixib).ToList();
-    var indi = DateTime.Now;
+    var indi  = DateTime.Now;
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Açar jurnalı</h4>
-        <div class="text-muted small">
-            Düyməni açar əldən-ələ keçən an basın — vaxt avtomatik yazılır.
-        </div>
-    </div>
-    <a asp-action="Jurnal" class="btn btn-outline-secondary">
-        <i class="bi bi-journal-text"></i> Tarixçə
-    </a>
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
 
-<div class="row g-3">
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-key text-info"></i> Açar gözləyənlər
-                <span class="badge bg-info ms-1">@acar.Count</span>
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Açar jurnalı</div>
+            <div class="fn-page-sub">
+                Düyməni açar əldən-ələ keçən an basın — vaxt avtomatik yazılır.
             </div>
+        </div>
+        <a asp-action="Jurnal" class="fn-btn fn-btn--outline">
+            <i class="bi bi-journal-text"></i> Tarixçə
+        </a>
+    </div>
+
+    <div class="av-split">
+
+        <div class="fn-card">
+            <div class="av-col-head">
+                <i class="bi bi-key"></i> Açar gözləyənlər
+                <span class="av-count">@acar.Count</span>
+            </div>
+
             @if (!acar.Any())
             {
-                <div class="card-body text-center text-muted py-4">Açar gözləyən yoxdur.</div>
+                <div class="av-sub" style="text-align:center;padding:24px 0">Açar gözləyən yoxdur.</div>
             }
             else
             {
-                <ul class="list-group list-group-flush">
-                    @foreach (var m in acar)
-                    {
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div>
-                                    <div class="fw-semibold">@m.IsciAdSoyad</div>
-                                    <div class="small">@m.MasinAdi · <span class="text-muted">@m.MasinNomresi</span></div>
-                                    <div class="text-muted small">
-                                        @m.PlanBaslama.ToString("dd.MM HH:mm") – @m.PlanBitme.ToString("dd.MM HH:mm") · @m.Meqsed
-                                    </div>
-                                </div>
-                                <form asp-action="Cixdi" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@m.Id" />
-                                    <button type="submit" class="btn btn-sm btn-primary text-nowrap">
-                                        <i class="bi bi-box-arrow-right"></i> Çıxdı
-                                    </button>
-                                </form>
+                @foreach (var m in acar)
+                {
+                    <div class="av-item">
+                        <div>
+                            <div class="av-strong">@m.IsciAdSoyad</div>
+                            <div>@m.MasinAdi <span class="av-plate">@m.MasinNomresi</span></div>
+                            <div class="av-sub">
+                                @m.PlanBaslama.ToString("dd.MM HH:mm") – @m.PlanBitme.ToString("dd.MM HH:mm") · @m.Meqsed
                             </div>
-                        </li>
-                    }
-                </ul>
+                        </div>
+                        <form asp-action="Cixdi" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@m.Id" />
+                            <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm av-nowrap">
+                                <i class="bi bi-box-arrow-right"></i> Çıxdı
+                            </button>
+                        </form>
+                    </div>
+                }
             }
         </div>
-    </div>
 
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-car-front text-primary"></i> Çöldə olanlar
-                <span class="badge bg-primary ms-1">@colde.Count</span>
+        <div class="fn-card">
+            <div class="av-col-head">
+                <i class="bi bi-car-front"></i> Çöldə olanlar
+                <span class="av-count">@colde.Count</span>
             </div>
+
             @if (!colde.Any())
             {
-                <div class="card-body text-center text-muted py-4">Bütün maşınlar yerindədir.</div>
+                <div class="av-sub" style="text-align:center;padding:24px 0">Bütün maşınlar yerindədir.</div>
             }
             else
             {
-                <ul class="list-group list-group-flush">
-                    @foreach (var m in colde)
-                    {
-                        var gecikib = m.PlanBitme < indi;
-                        var muddet = m.CixisTarixi.HasValue ? indi - m.CixisTarixi.Value : TimeSpan.Zero;
+                @foreach (var m in colde)
+                {
+                    var gecikib = m.PlanBitme < indi;
+                    var muddet = m.CixisTarixi.HasValue ? indi - m.CixisTarixi.Value : TimeSpan.Zero;
 
-                        <li class="list-group-item @(gecikib ? "list-group-item-warning" : "")">
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div>
-                                    <div class="fw-semibold">@m.IsciAdSoyad</div>
-                                    <div class="small">@m.MasinAdi · <span class="text-muted">@m.MasinNomresi</span></div>
-                                    <div class="text-muted small">
-                                        Çıxış: @m.CixisTarixi?.ToString("dd.MM HH:mm")
-                                        @if (m.CixisTarixi.HasValue)
-                                        {
-                                            <span>· @((int)muddet.TotalHours) saat @muddet.Minutes dəq</span>
-                                        }
-                                        @if (gecikib)
-                                        {
-                                            <span class="badge bg-warning text-dark ms-1">gecikib</span>
-                                        }
-                                    </div>
-                                </div>
-                                <form asp-action="Geldi" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@m.Id" />
-                                    <button type="submit" class="btn btn-sm btn-success text-nowrap">
-                                        <i class="bi bi-box-arrow-in-left"></i> Gəldi
-                                    </button>
-                                </form>
+                    <div class="av-item @(gecikib ? "av-item--warn" : "")">
+                        <div>
+                            <div class="av-strong">@m.IsciAdSoyad</div>
+                            <div>@m.MasinAdi <span class="av-plate">@m.MasinNomresi</span></div>
+                            <div class="av-sub">
+                                Çıxış: @m.CixisTarixi?.ToString("dd.MM HH:mm")
+                                @if (m.CixisTarixi.HasValue)
+                                {
+                                    <span>· @((int)muddet.TotalHours) saat @muddet.Minutes dəq</span>
+                                }
+                                @if (gecikib)
+                                {
+                                    <span class="fn-badge fn-badge--wait">gecikib</span>
+                                }
                             </div>
-                        </li>
-                    }
-                </ul>
+                        </div>
+                        <form asp-action="Geldi" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@m.Id" />
+                            <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm av-nowrap">
+                                <i class="bi bi-box-arrow-in-left"></i> Gəldi
+                            </button>
+                        </form>
+                    </div>
+                }
             }
         </div>
+
     </div>
 </div>
