@@ -717,6 +717,58 @@ JavaScript olmayan sahəni `undefined` edir, səssizcə.
 - JS-də endpoint həmişə **default URL** ilə oxunsun (`endpoint(ad, '/default')`),
   `|| ''` YAZMA — boş ünvana POST səssizcə uğursuz olur və heç bir iz qalmır.
 
+## Əl ilə Yazılan Migration — `InsertData` İŞLƏMİR (KRİTİK)
+
+Bu layihədə migration-lar **əl ilə** yazılır və `.Designer.cs` faylı olmur.
+Belə migration-da **`migrationBuilder.InsertData` / `UpdateData` / `DeleteData`
+İSTİFADƏ EDİLƏ BİLMƏZ.**
+
+Səbəb: bu üç metod sütun **tiplərini** bilmək üçün migration-un `TargetModel`-inə
+baxır. `TargetModel` isə `.Designer.cs`-dəki `BuildTargetModel` metodundan gəlir.
+Designer yoxdursa model **BOŞ** olur və EF atır:
+
+```
+System.InvalidOperationException: There is no entity type mapped to the table
+'<Cədvəl>' which is used in a data operation. Either add the corresponding
+entity type to the model, or specify the column types in the data operation.
+```
+
+**ƏN TƏHLÜKƏLİ HİSSƏ:** xəta SQL icra olunanda YOX, **SQL yaradılan mərhələdə**
+(`GenerateUpSql`) baş verir. Yəni migration **bütöv** sınır — `CreateTable`
+əmrləri də icra olunmur. Görünən nəticə isə tamamilə başqa yerə yönəldir:
+səhifələr «Invalid object name '<Cədvəl>'» verir və adam cədvəl adında,
+FK-larda, cascade yollarında səhv axtarır.
+
+Real hadisə (19.08.2026, Avtopark): migration 5 cədvəl yaradırdı və sonda
+`InsertData` ilə 5 sətir standart müddət növü yazırdı. `InsertData` səbəbindən
+**5 cədvəlin heç biri yaranmadı**. Diaqnoz saatlarla uzandı, çünki
+`Program.cs`-dəki `catch` xətanı yalnız `Console.WriteLine` ilə yazırdı və
+IIS Express altında o, **heç yerə düşmür** (Serilog `Console.WriteLine`-ı tutmur).
+
+**Qaydalar:**
+- Əl ilə yazılan migration-da data əlavəsi **həmişə `migrationBuilder.Sql(@"INSERT …")`**
+  ilə olsun — raw SQL model-ə ümumiyyətlə baxmır. Azərbaycan hərfləri üçün `N'…'`.
+- Yoxlama: `InsertData`/`UpdateData`/`DeleteData` işlədən hər migration üçün
+  yanında `.Designer.cs` **olmalıdır**:
+  ```bash
+  cd DataAccess/Migrations
+  for f in $(grep -ln "InsertData\|UpdateData\|DeleteData" *.cs | grep -v Designer); do
+      [ -f "${f%.cs}.Designer.cs" ] || echo "RİSK: $f"
+  done
+  ```
+- Migration xətası **görünən yerdə** olmalıdır. `Program.cs`-dəki catch artıq
+  `Log.Error(ex, …)` işlədir → `FinNex.UI\Logs\log-yyyyMMdd.txt`. `ex` bütöv
+  ötürülür ki, `InnerException` (SQL Server-in əsl mətni) itməsin.
+- «Invalid object name» xətasında **əvvəlcə həmin log faylına bax** — cədvəl
+  adında/FK-da səbəb axtarmaq vaxt itkisidir; migration ümumiyyətlə işə düşməyə
+  bilər.
+
+**Sürətli diaqnostika sırası:**
+1. `SELECT TOP 6 MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId DESC`
+   — migration tarixçəyə düşübmü?
+2. `Logs\log-<tarix>.txt` → `[Migration XƏTA]` sətri — əsl səbəb.
+3. Yalnız bundan sonra kodda axtar.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

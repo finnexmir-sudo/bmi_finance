@@ -288,19 +288,36 @@ namespace FinNex.DataAccess.Migrations
 
             // ── Standart müddət növləri ─────────────────────────────────────
             // Admin bunları dəyişə/silə/əlavə edə bilir — cədvəl boş qalmasın deyə
-            // ilkin doldurulur. Yağ dəyişmə TARİXƏ görədir (ildə bir dəfə, 365 gün);
+            // ilkin doldurulur. Yağ dəyişmə TARİXƏ görədir (ildə bir dəfə);
             // 19.08.2026 qərarı ilə kilometrə görə izləmə YOXDUR.
-            migrationBuilder.InsertData(
-                table: "MasinMuddetNovleri",
-                columns: new[] { "Ad", "XeberdarliqGun", "Aktivdir", "Sira", "YaradilmaTarixi", "Silinib" },
-                values: new object[,]
-                {
-                    { "İcbari sığorta",  30, true, 1, new DateTime(2026, 8, 19), false },
-                    { "Kasko",           30, true, 2, new DateTime(2026, 8, 19), false },
-                    { "Texniki baxış",   30, true, 3, new DateTime(2026, 8, 19), false },
-                    { "Yağ dəyişmə",     14, true, 4, new DateTime(2026, 8, 19), false },
-                    { "Yanğınsöndürən",  30, true, 5, new DateTime(2026, 8, 19), false }
-                });
+            //
+            // ⚠️ `migrationBuilder.InsertData(...)` İSTİFADƏ EDİLMİR — səbəbi budur:
+            //
+            // `InsertData` sütun tiplərini bilmək üçün migration-un TargetModel-inə
+            // baxır. TargetModel isə migration-un `.Designer.cs` faylındakı
+            // `BuildTargetModel` metodundan gəlir. Bu layihədə migration-lar ƏL İLƏ
+            // yazılır və `.Designer.cs` YOXDUR → TargetModel BOŞDUR → EF xəta atır:
+            //
+            //   «There is no entity type mapped to the table 'MasinMuddetNovleri'
+            //    which is used in a data operation.»
+            //
+            // Xəta SQL icra olunmazdan ƏVVƏL, SQL YARADILAN mərhələdə baş verir —
+            // ona görə migration BÜTÖV sınır və HEÇ BİR cədvəl yaranmır (yalnız
+            // sonuncu addım deyil). 19.08.2026-da tam olaraq bu baş verdi: 5 cədvəlin
+            // heç biri yaranmadı, səhifələr «Invalid object name 'Masinlar'» verdi.
+            //
+            // `migrationBuilder.Sql(...)` model-ə ÜMUMİYYƏTLƏ baxmır — buna görə
+            // əl ilə yazılan migration-larda data əlavəsi HƏMİŞƏ belə olmalıdır.
+            migrationBuilder.Sql(@"
+INSERT INTO [MasinMuddetNovleri]
+    ([Ad], [XeberdarliqGun], [Aktivdir], [Sira], [YaradilmaTarixi], [Silinib])
+VALUES
+    (N'İcbari sığorta', 30, 1, 1, '2026-08-19', 0),
+    (N'Kasko',          30, 1, 2, '2026-08-19', 0),
+    (N'Texniki baxış',  30, 1, 3, '2026-08-19', 0),
+    (N'Yağ dəyişmə',    14, 1, 4, '2026-08-19', 0),
+    (N'Yanğınsöndürən', 30, 1, 5, '2026-08-19', 0);
+");
         }
 
         /// <inheritdoc />
