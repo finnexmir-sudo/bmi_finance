@@ -130,6 +130,83 @@ Yeni şablonun **12-ci sətrində** analitikin qeydləri var — mənbə birbaş
 | 4 | `AQ` / `AR` ödəmə tərəfi | **Olduğu kimi** — yalnız şablondakı qeyddə göstərilən hallar doldurulur, qalanı boş. |
 | 5 | Şapka `D2` / `G2` (bank adı + VÖEN) | **Kod yazacaq** (şablonda sabit deyil). |
 | 6 | Vərəq adı | **`Hesab çıxarışı`** — köhnə qayda saxlanılır. |
+| 7 | `C` Daxili istinad | **`arh_dd.RECNUM`.** ⚠️ BMI-nin `axtar()` sorğusu **onsuz da** `t.recnum san_nom` seçir — dəyişiklik lazım deyil. (Köhnə `gonder()` metodu `nomer_docum` işlədirdi, amma o metod çağırılmır.) |
+| 8 | `D` Xarici istinad | `doc_vnesh_*.ID` — `vd` alt sorğusuna `v.id` əlavə edildi. **`arh_dd.ID_VD` İŞLƏDİLMİR** (18.08.2026 sorğusunda 20 sətrin hamısında boş idi); bağlantı BMI-nin mövcud kompozit açarı ilə qalır: `date_oper + debet/kredit + summa_v_nacval`. |
+| 9 | Bankın VÖEN-i / BİC-i — daxili sətir | Daxili əməliyyatda (`id_vd is null`) bank onsuz da **bizik**, ona görə sabit yazılır: VÖEN **`1300036291`**, BİC **`MELIAZ22`** (şapkadakı `D2`/`G2` ilə eyni mənbə). Xarici sətirdə `muxbir_hesab`-dan tapılır. |
+
+### 4.2 Nağd / qeyri-nağd (E sütunu) — kassa hesabları
+
+«Kassa» = BMI → Hesablar ekranındakı **ilk 6 hesab**:
+
+| Hesab | Valyuta |
+|---|---|
+| `10010000000000100000` | AZN |
+| `10020010000000100000` | USD |
+| `10020020000000100000` | EUR |
+| `10020030000000100000` | RUB |
+| `10020040000000100000` | İRR |
+| `10020050000000100000` | AED |
+
+Qayda: DT **və ya** KT tərəfi bu 6 hesabdan biridirsə, yaxud `25019…` ilə başlayırsa
+→ **Nağd**; əks halda → **Qeyri-nağd**.
+
+> Şərt `substr(...,1,5) in ('10010','10020')` kimi **yazılmadı** — o, kassadan başqa
+> `100xx`/`10020xx` hesablarını da tutardı. İstifadəçi «ilk 6 hesab» dedi, ona görə
+> tam bərabərlik siyahısı işlədilir.
+
+---
+
+## 7. Hazır sorğular — İKİ VARİANT (formadakı radio düymə)
+
+BMI formasında «Sorğu:» seçimi var və **iki tam ayrı SQL** işə salır. FinNex-də
+də iki sorğu saxlanmalıdır — birləşdirmək olmaz, nəticələr fərqlidir:
+
+| Radio | BMI metodu | Fayl |
+|---|---|---|
+| **Fiziki şəxs** | `axtar()` | `docs/sql/aml/Hesab_Uzre_Sorgu_Yeni.sql` |
+| **Sahibkar / hüquqi şəxs VÖEN** | `axtarhuquqi()` | `docs/sql/aml/Hesab_Uzre_Sorgu_Yeni_Huquqi.sql` |
+
+Hər ikisi BMI sorğusunun üzərinə **eyni 10 yeni sütunu** əlavə edir; yalnız
+başdakı `prm` bloku dəyişdirilir (hesab № + iki tarix).
+
+### 7.1 İki variantın fərqləri (QƏSDƏN saxlanılıb)
+
+| # | Fiziki (`axtar`) | Hüquqi (`axtarhuquqi`) |
+|---|---|---|
+| 1 | Göndərənin VÖEN-i (J) **boş** `'   '` | `f.inn_regnom` |
+| 2 | Alanın VÖEN-i (X) boş / `h.inn_regnom` | `f.inn_regnom` / `h.inn_regnom` |
+| 3 | Qarşı tərəf şərti **KREDİT**-ə baxır (`substr(t.kredit,1,1)<>'4'`) | **DEBET**-ə baxır (`substr(t.debet,1,3) in (100,150)`) |
+| 4 | Mədaxil qolunda `(100,150,350)` | `(100,150)` — **350 yoxdur** |
+| 5 | Alan bankı `vd.ben_bank` / `'diger'` | `vd.filial_name` |
+| 6 | Mədaxildə göndərənin adı `vd.ben_ad` | `vd.emit_name` |
+| 7 | `postupl` (mədaxil qolu): `substr(v.kredit,9,20)` + `lpad(...,28)` | `odb.right(v.kredit,20)` + **lpad YOXDUR** |
+| 8 | `swift` (mədaxil qolu): `regnom` **6** simvol | `regnom` **5** simvol |
+| 9 | `nacval` (mədaxil qolu): `odb.mfo` join yoxdur | eyni — yoxdur |
+| 10 | `icra_tarix` = `to_char(...)` mətn | `t.date_oper` tarix |
+
+Bunlar BMI-də illərdir belədir; «eyniləşdirmək» nəticəni dəyişər. Toxunmadan
+köçürülüb.
+
+**HƏLƏ İCRA EDİLMƏYİB.** Aşağıdakı sütun adları istifadəçinin qeydi/ekran
+görüntüsü əsasında qəbul edilib və bazada yoxlanmalıdır — biri yoxdursa
+ORA-00904 verəcək:
+
+| Cədvəl | Gözlənilən sütun |
+|---|---|
+| `doc_vnesh_inval` | `ID`, `PLAT_SYSTEM` |
+| `doc_vnesh_nacval` | `ID`, `PLAT_SYSTEM` |
+| `doc_vnesh_postupl` | `ID`, `PLAT_SYSTEM`, `KREDIT_INN` |
+| `doc_vnesh_swift` | `ID`, `PLAT_SYSTEM` |
+| `muxbir_hesab` | `VOEN`, `SWIFT_KODU`, `KOD` |
+
+`muxbir_hesab` **join ilə yox, skalyar alt sorğu ilə** oxunur
+(`(select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = …)`) —
+belədə §-dəki «üçə qatlama» tələsi ümumiyyətlə yarana bilmir, `distinct`
+düzgün işləyib-işləmədiyini yoxlamağa ehtiyac qalmır.
+
+Sütun sayı: hər iki UNION qolunda **50** (47 Excel sütunu + 3 köməkçi:
+`dbtam`, `krtam`, `id_vd` — bunlar Excel-ə yazılmır, C#-da çatdırılma kanalı
+üçün lazımdır).
 
 ### 4.1 `odb.muxbir_hesab` — bank məlumatının mənbəyi
 
