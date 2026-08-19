@@ -1,6 +1,6 @@
 # İşçi Kreditləri üzrə VM 98.2.1 Hesabi Gəliri — Razılaşdırılmış Layihə
 
-**Status:** düstur TƏSDİQLƏNDİ (18.08.2026) · qurulma gözləyir · **Tarix:** 18.08.2026
+**Status:** ✅ QURULDU və REAL DATA İLƏ DOĞRULANDI (19.08.2026) · **Tarix:** 18–19.08.2026
 **Mənbə:** mühasibin `202607_isciler_kredit_uzre_gelir_vergisi.xlsx` faylı + BMI Oracle
 
 ---
@@ -164,16 +164,29 @@ Bugünkü portfeldə hamısı 8% / vk 13%-dir, yəni vk hissəsi həmişə 0 ç�
 ## 7. Qurulacaq struktur
 
 ```
-KreditFaizDerecesi      (Id, Tarix, ValyutaKodu, Derece, Qeyd)   ✅ QURULDU
-KreditFaydaDovru        (Id, Bas, Son, Hesablanma)      ← dövr yaddaşı
-OracleSorgular          → «Isci Kredit Faizi» ({BAS}/{SON})      ✅ SQL HAZIR
+KreditFaizDerecesi   (Tarix, ValyutaKodu, Derece, Qeyd)     ✅ entity + ekran
+OracleSorgular       → «Isci Kredit Faizi» + «Isci Kredit FIN» ✅ seed SQL
         ↓
-IsciKreditFaydaService.HesablaAsync(bas, son)
+IsciKreditFaydaService.HesablaAsync(bas, son)               ✅
         ↓  FIN ilə işçiyə bağlanır (əl ilə cədvəl YOXDUR)
-TopluHesabla → VM9821Meblegi sahəsi HAZIR DOLU gəlir  ← MÖVCUD sahə
+TopluHesabla → VM9821Meblegi sahəsi HAZIR DOLU gəlir        ✅
 ```
 
-Sıra: dərəcə ✅ → sorğu ✅ → servis → dövr yaddaşı → TopluHesabla inteqrasiyası.
+**`KreditFaydaDovru` (dövr yaddaşı) cədvəli LƏĞV EDİLDİ — lazım deyil.**
+Dövrün başlanğıcı onsuz da yaddaşdadır: `Maas.OdenisTarixi` (sonuncu «Ödənildi»
+statuslu maaş). Ayrıca cədvəl saxlasaydıq iki mənbə yaranardı və biri gec-tez
+köhnə qalardı. Mühasib istəsə dövrü səhifədən əl ilə verir (§7.3).
+
+### 7.3 Dövrü kim verir
+
+1. **Sistem təklif edir:** `DovrTeklifAsync` → BAS = sonuncu ödənilmiş maaşın
+   tarixi, SON = cari gün − 1.
+2. **Mühasib üstələyə bilər:** `TopluHesabla` səhifəsinin yuxarısında
+   BAŞLAMA / BİTMƏ sahələri + «Yenidən hesabla» (GET, `?vmBas=…&vmSon=…`).
+   Maaş POST formasından AYRIDIR — iç-içə form maaş göndərməsini sındırardı.
+3. **92 GÜNLÜK HƏDD:** dövr uzun olsa hesablanmır. Bir maaş dövrü ~1 aydır;
+   uzun aralıqda Oracle bir neçə ayın faizini toplayır və rəqəm səssizcə şişir.
+   Klamp QOYULMADI — səssiz düzəltmə səhvi gizlədərdi.
 
 ### 7.2 İŞÇİ BAĞI — FIN üzrə AVTOMATİK (18.08.2026 ölçüldü)
 
@@ -276,3 +289,40 @@ ondan **sonra** maaş hesablamasında tutulur.
 boş qaytardı → keçmiş aylarda düzəliş lazım deyil.
 
 **Nəticə: düstur real data ilə sübut olunub.**
+
+
+---
+
+## 11. QURULMA VƏ DOĞRULAMA İZİ (19.08.2026)
+
+Modul quruldu və **real data ilə yoxlanıldı**. Test dövrü mühasibin iyul
+hesabatının eynisi: **24.06.2026 – 24.07.2026**.
+
+| Yoxlama | Nəticə |
+|---|---|
+| Oracle sorğusu (dövrlə) | 15 sətir, `faiz_adi` §10-dakı 15 rəqəmlə eyni |
+| FIN bağı | 15/15 işçiyə bağlandı, problemli sətir yoxdur |
+| Elxan Axundov — dövr faizi | **120,58 ₼** (Excel `M` ilə eyni) |
+| Elxan Axundov — hesabi gəlir | **18,84** (Excel `Netice` ilə eyni) |
+
+### Yol boyu tapılan iki səhv
+
+**1. Dövr həddindən uzun idi.** İlk açılışda Axundovun sahəsində **3 167,34**
+göründü. Tərsinə: 3167,34 / 0,15625 = 20 271 ₼ faiz ≈ 168 aylıq. Səbəb — dövrün
+başlanğıcı çox köhnə bir «Ödənildi» maaşdan götürülmüşdü. → 92 günlük hədd
+əlavə edildi (§7.3).
+
+**2. Rəqəm 100× şişirdi.** Dövr düzələndən sonra faiz **12 058,00 ₼** göründü
+(doğrusu 120,58). Səbəb `Reqem()`-də idi: Oracle-ın `decimal` dəyəri
+`.ToString()` ilə az-AZ-a çevrilib («120,58»), sonra `NumberStyles.Any` +
+InvariantCulture ilə parse edilirdi — orada vergül **min ayırıcısıdır**.
+Tam ədədlər (`isci_faizi`=8) ayırıcı daşımadığı üçün düz oxunurdu, yəni səhv
+yalnız onluqlu sütunlarda idi. → rəqəm tipi artıq **birbaşa** götürülür.
+Bax: CLAUDE.md — «Oracle Rəqəmi — `ToString()` + `Parse` = 100× SƏHV».
+
+### Qalan iş
+
+- Mühasib gələndə **bütün 15 sətri** Excel ilə tutuşdursun (indiyə qədər
+  Axundov yoxlanılıb, qalanı gözlənilir).
+- Dərəcə sətrinin tarixi (`01.07.2026`) real qüvvəyəminmə tarixi ilə
+  dəqiqləşdirilsin — 24.06–30.06 aralığı da həmin dərəcə ilə hesablanır.
