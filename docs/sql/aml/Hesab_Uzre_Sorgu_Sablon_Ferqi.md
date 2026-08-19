@@ -199,6 +199,23 @@ ORA-00904 verəcək:
 | `doc_vnesh_swift` | `ID`, `PLAT_SYSTEM` |
 | `muxbir_hesab` | `VOEN`, `SWIFT_KODU`, `KOD` |
 
+### ⚠️ ORA-00932 — UNION-da NUMBER/CHAR toqquşması (19.08.2026, ilk icrada çıxdı)
+
+`muxbir_hesab.VOEN` (və `doc_vnesh_*.ID`) **NUMBER**-dır. Yeni sütunların bir
+qolunda sabit mətn (`'1300036291'`), o biri qolunda NUMBER sütunu yazılmışdı →
+`UNION ALL` tipi birinci qoldan götürür və ikincidə
+**`ORA-00932: inconsistent datatypes: expected NUMBER got CHAR`** verir.
+
+Xəta **sətir nömrəsi göstərmir** və sorğunun harasında olduğunu demir — 4 qollu
+`vd` alt sorğusunda hansı sütun olduğunu tapmaq üçün qolları bir-bir tutuşdurmaq
+lazım gəlir.
+
+**Qayda:** UNION-un hər qolunda eyni sütun **eyni tipdə** olmalıdır. Yeni sütun
+əlavə edəndə, bir qolda sabit mətn yazırsansa, o biri qollarda da `to_char(...)`
+ilə mətnə çevir. Bu sorğuda `vd_id`, `plat_system`, `gon_bank_voen`,
+`alan_bank_voen`, `gon_bank_bic2`, `alan_bank_bic2`, `xeyrine_fin` — hamısı
+`to_char` ilə mətnə salınıb (Excel-ə onsuz da mətn kimi düşür).
+
 `muxbir_hesab` **join ilə yox, skalyar alt sorğu ilə** oxunur
 (`(select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = …)`) —
 belədə §-dəki «üçə qatlama» tələsi ümumiyyətlə yarana bilmir, `distinct`

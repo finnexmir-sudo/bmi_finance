@@ -138,11 +138,11 @@ select x.*
                      odb.func_utf8_to_latin(v.comments) cmnt,
                      v.currency valuta, '  ' inn_kred, '  ' fin_kredit,
                      v.sender_bic, v.receiver_bic,
-                     v.id                                                        vd_id,
-                     v.plat_system                                               plat_system,
+                     to_char(v.id)                                               vd_id,
+                     to_char(v.plat_system)                                      plat_system,
                      '1300036291'                                                gon_bank_voen,
-                     (select max(m.voen) from odb.muxbir_hesab m
-                       where m.swift_kodu = v.receiver_bic)                      alan_bank_voen,
+                     to_char((select max(m.voen) from odb.muxbir_hesab m
+                               where m.swift_kodu = v.receiver_bic))            alan_bank_voen,
                      'MELIAZ22'                                                  gon_bank_bic2,
                      v.receiver_bic                                              alan_bank_bic2,
                      cast(null as varchar2(300))                                 xeyrine_ad,
@@ -159,12 +159,12 @@ select x.*
                      v.summa_v_nacval amount, 'Odemeler ' cmnt,
                      '944' valuta, v.inn_credit, '  ' fin_kredit,
                      ' ' sender_bic, ' ' receiver_bic,
-                     v.id,
-                     v.plat_system,
+                     to_char(v.id),
+                     to_char(v.plat_system),
                      '1300036291',
-                     (select max(m.voen)       from odb.muxbir_hesab m where m.kod = v.mfo_credit),
+                     to_char((select max(m.voen) from odb.muxbir_hesab m where m.kod = v.mfo_credit)),
                      'MELIAZ22',
-                     (select max(m.swift_kodu) from odb.muxbir_hesab m where m.kod = v.mfo_credit),
+                     to_char((select max(m.swift_kodu) from odb.muxbir_hesab m where m.kod = v.mfo_credit)),
                      cast(null as varchar2(300)),
                      cast(null as varchar2(50))
                 from odb.doc_vnesh_nacval v, odb.regnom r, odb.mfo mf, prm
@@ -180,15 +180,15 @@ select x.*
                      v.sum1 amount, 'Daxilolma' cmnt,
                      '944' valuta, r.inn_regnom, r.pincode fin_kred,
                      v.bic_debet, v.bic_kredit,
-                     v.id,
-                     v.plat_system,
-                     nvl((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.bic_debet),
-                         (select max(m.voen) from odb.muxbir_hesab m where m.kod       = v.mfo_debet)),
+                     to_char(v.id),
+                     to_char(v.plat_system),
+                     to_char(nvl((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.bic_debet),
+                                 (select max(m.voen) from odb.muxbir_hesab m where m.kod       = v.mfo_debet))),
                      '1300036291',
                      v.bic_debet,
                      'MELIAZ22',
                      odb.func_utf8_to_latin(v.kredit_name),
-                     v.kredit_inn
+                     to_char(v.kredit_inn)
                 from odb.doc_vnesh_postupl v, odb.regnom r, odb.mfo mf, prm
                where v.date_oper between prm.d1 and prm.d2
                  and odb.left(odb.right(lpad(v.kredit,28,'0'),11),6) = r.regnom
@@ -202,9 +202,9 @@ select x.*
                      v.beneficiary_name, v.amount, 'Daxilolma' cmnt,
                      v.currency valuta, r.inn_regnom, r.pincode fin_kred,
                      v.sender_bank_bic, v.beneficiary_bank_bic,
-                     v.id,
-                     v.plat_system,
-                     (select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.sender_bank_bic),
+                     to_char(v.id),
+                     to_char(v.plat_system),
+                     to_char((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.sender_bank_bic)),
                      '1300036291',
                      v.sender_bank_bic,
                      'MELIAZ22',
@@ -332,11 +332,11 @@ select x.*
                      odb.func_utf8_to_latin(v.comments) cmnt,
                      v.currency valuta, '  ' inn_kred, '  ' fin_kredit,
                      v.sender_bic, v.receiver_bic,
-                     v.id                                                        vd_id,
-                     v.plat_system                                               plat_system,
+                     to_char(v.id)                                               vd_id,
+                     to_char(v.plat_system)                                      plat_system,
                      '1300036291'                                                gon_bank_voen,
-                     (select max(m.voen) from odb.muxbir_hesab m
-                       where m.swift_kodu = v.receiver_bic)                      alan_bank_voen,
+                     to_char((select max(m.voen) from odb.muxbir_hesab m
+                               where m.swift_kodu = v.receiver_bic))            alan_bank_voen,
                      'MELIAZ22'                                                  gon_bank_bic2,
                      v.receiver_bic                                              alan_bank_bic2,
                      cast(null as varchar2(300))                                 xeyrine_ad,
@@ -353,12 +353,12 @@ select x.*
                      v.summa_v_nacval amount, 'Odemeler ' cmnt,
                      '944' valuta, v.inn_credit, '  ' fin_kredit,
                      ' ' sender_bic, ' ' receiver_bic,
-                     v.id,
-                     v.plat_system,
+                     to_char(v.id),
+                     to_char(v.plat_system),
                      '1300036291',
-                     (select max(m.voen)       from odb.muxbir_hesab m where m.kod = v.mfo_credit),
+                     to_char((select max(m.voen) from odb.muxbir_hesab m where m.kod = v.mfo_credit)),
                      'MELIAZ22',
-                     (select max(m.swift_kodu) from odb.muxbir_hesab m where m.kod = v.mfo_credit),
+                     to_char((select max(m.swift_kodu) from odb.muxbir_hesab m where m.kod = v.mfo_credit)),
                      cast(null as varchar2(300)),
                      cast(null as varchar2(50))
                 from odb.doc_vnesh_nacval v, odb.regnom r, prm
@@ -374,15 +374,15 @@ select x.*
                      v.kredit_name, v.sum1 amount, 'Daxilolma' cmnt,
                      '944' valuta, r.inn_regnom, r.pincode fin_kred,
                      v.bic_debet, v.bic_kredit,
-                     v.id,
-                     v.plat_system,
-                     nvl((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.bic_debet),
-                         (select max(m.voen) from odb.muxbir_hesab m where m.kod       = v.mfo_debet)),
+                     to_char(v.id),
+                     to_char(v.plat_system),
+                     to_char(nvl((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.bic_debet),
+                                 (select max(m.voen) from odb.muxbir_hesab m where m.kod       = v.mfo_debet))),
                      '1300036291',
                      v.bic_debet,
                      'MELIAZ22',
                      odb.func_utf8_to_latin(v.kredit_name),
-                     v.kredit_inn
+                     to_char(v.kredit_inn)
                 from odb.doc_vnesh_postupl v, odb.regnom r, odb.mfo mf, prm
                where v.date_oper between prm.d1 and prm.d2
                  and odb.left(odb.right(v.kredit,11),6) = r.regnom
@@ -397,9 +397,9 @@ select x.*
                      v.beneficiary_name, v.amount, 'Daxilolma' cmnt,
                      v.currency valuta, r.inn_regnom, r.pincode fin_kred,
                      v.sender_bank_bic, v.beneficiary_bank_bic,
-                     v.id,
-                     v.plat_system,
-                     (select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.sender_bank_bic),
+                     to_char(v.id),
+                     to_char(v.plat_system),
+                     to_char((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.sender_bank_bic)),
                      '1300036291',
                      v.sender_bank_bic,
                      'MELIAZ22',
