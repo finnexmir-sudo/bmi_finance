@@ -1,24 +1,23 @@
 -- ═══════════════════════════════════════════════════════════════════
 -- AVTOPARK — 5 cədvəlin əl ilə yaradılması
--- 19.08.2026
+-- 19.08.2026 · v2 (hər blok ayrı batch)
 --
 -- NƏ VAXT İŞLƏDİLİR: startup migration-u tətbiq olunmayıbsa
--- («Invalid object name 'Masinlar'» xətası).
+-- («Invalid object name 'Masinlar'» / «'MasinMuracietler'» xətası).
 --
--- NƏ DƏYİŞİR:
---   • 5 YENİ cədvəl yaranır (hamısı `IF NOT EXISTS` ilə qorunur)
---   • `MasinMuddetNovleri`-yə 5 sətir yazılır (cədvəl boş olduqda)
---   • `__EFMigrationsHistory`-yə 1 sətir yazılır ki, EF bu migration-u
---     TƏKRAR tətbiq etməyə çalışmasın
+-- ⚠️ v1-DƏN FƏRQ: əvvəlki nüsxə hamısını TƏK tranzaksiyaya salırdı və `GO`
+-- ayırıcısı yox idi. Bir blok sınanda SSMS-də hansı blokda dayandığı aydın
+-- görünmürdü. İndi hər cədvəl AYRI batch-dədir:
+--   • uğurlu bloklar yerində qalır,
+--   • sınan blokun xətası «Messages» tabında ÖZ adı ilə görünür,
+--   • skript təkrar işlədilə bilər (hamısı `IF NOT EXISTS` altındadır).
 --
--- NƏYƏ TOXUNMUR: mövcud heç bir cədvəl, sətir və ya sütun.
---   Nə UPDATE, nə DELETE, nə ALTER var — yalnız CREATE + INSERT.
+-- NƏ DƏYİŞİR: yalnız CREATE TABLE / CREATE INDEX + boş cədvələ INSERT.
+-- NƏYƏ TOXUNMUR: mövcud heç bir cədvəl, sətir, sütun.
 --
--- TƏKRAR İŞLƏDİLƏ BİLƏR — hamısı `IF NOT EXISTS` qoruması altındadır.
+-- İŞLƏTMƏ QAYDASI: faylı bütöv aç, F5 (Execute). Sonda «Messages» tabına
+-- BAX — hər blok üçün bir sətir yazılır. Xəta varsa mətnini göndər.
 -- ═══════════════════════════════════════════════════════════════════
-
-SET XACT_ABORT ON;
-BEGIN TRANSACTION;
 
 -- ── 1) Masinlar ────────────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Masinlar')
@@ -56,13 +55,16 @@ BEGIN
     CREATE INDEX [IX_Masinlar_DovletNomresi]  ON [Masinlar]([DovletNomresi]);
     CREATE INDEX [IX_Masinlar_DepartamentId]  ON [Masinlar]([DepartamentId]);
     CREATE INDEX [IX_Masinlar_TehkimSurucuId] ON [Masinlar]([TehkimSurucuId]);
+    PRINT '1/6  Masinlar — YARADILDI';
 END
+ELSE PRINT '1/6  Masinlar — artiq var, toxunulmadi';
+GO
 
 -- ── 2) MasinMuracietler ────────────────────────────────────────────
 -- DİQQƏT: İşçiyə DÖRD ayrı FK var (müraciətçi, rəhbər, çıxışı qeyd edən,
--- qayıdışı qeyd edən). ON DELETE CASCADE qoyulsa SQL Server «multiple
--- cascade paths» ilə cədvəli yaratmır. Layihədə silinmə onsuz da
--- yumşaqdır (`Silinib`), ona görə hamısı NO ACTION-dır.
+-- qayıdışı qeyd edən). Heç birində ON DELETE CASCADE YOXDUR — olsaydı
+-- SQL Server «may cause cycles or multiple cascade paths» (xəta 1785) ilə
+-- cədvəli yaratmazdı. Layihədə silinmə onsuz da yumşaqdır (`Silinib`).
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MasinMuracietler')
 BEGIN
     CREATE TABLE [MasinMuracietler] (
@@ -106,10 +108,13 @@ BEGIN
         ON [MasinMuracietler]([MasinId], [Status], [PlanBaslama]);
     CREATE INDEX [IX_MasinMuracietler_IsciId_Status]
         ON [MasinMuracietler]([IsciId], [Status]);
-    CREATE INDEX [IX_MasinMuracietler_RehberId]           ON [MasinMuracietler]([RehberId]);
-    CREATE INDEX [IX_MasinMuracietler_CixisQeydEdenId]    ON [MasinMuracietler]([CixisQeydEdenId]);
-    CREATE INDEX [IX_MasinMuracietler_QayidisQeydEdenId]  ON [MasinMuracietler]([QayidisQeydEdenId]);
+    CREATE INDEX [IX_MasinMuracietler_RehberId]          ON [MasinMuracietler]([RehberId]);
+    CREATE INDEX [IX_MasinMuracietler_CixisQeydEdenId]   ON [MasinMuracietler]([CixisQeydEdenId]);
+    CREATE INDEX [IX_MasinMuracietler_QayidisQeydEdenId] ON [MasinMuracietler]([QayidisQeydEdenId]);
+    PRINT '2/6  MasinMuracietler — YARADILDI';
 END
+ELSE PRINT '2/6  MasinMuracietler — artiq var, toxunulmadi';
+GO
 
 -- ── 3) MasinMuddetNovleri ──────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MasinMuddetNovleri')
@@ -130,7 +135,10 @@ BEGIN
         CONSTRAINT [PK_MasinMuddetNovleri] PRIMARY KEY ([Id])
     );
     CREATE INDEX [IX_MasinMuddetNovleri_Ad] ON [MasinMuddetNovleri]([Ad]);
+    PRINT '3/6  MasinMuddetNovleri — YARADILDI';
 END
+ELSE PRINT '3/6  MasinMuddetNovleri — artiq var, toxunulmadi';
+GO
 
 -- ── 4) MasinMuddetler ──────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MasinMuddetler')
@@ -166,7 +174,10 @@ BEGIN
         ON [MasinMuddetler]([Aktivdir], [XeberdarliqGonderilib], [SonTarix]);
     CREATE INDEX [IX_MasinMuddetler_MasinId] ON [MasinMuddetler]([MasinId]);
     CREATE INDEX [IX_MasinMuddetler_NovId]   ON [MasinMuddetler]([NovId]);
+    PRINT '4/6  MasinMuddetler — YARADILDI';
 END
+ELSE PRINT '4/6  MasinMuddetler — artiq var, toxunulmadi';
+GO
 
 -- ── 5) AvtoparkXeberdarliqAlicilari ────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'AvtoparkXeberdarliqAlicilari')
@@ -188,9 +199,12 @@ BEGIN
     );
     CREATE INDEX [IX_AvtoparkXeberdarliqAlicilari_IsciId]
         ON [AvtoparkXeberdarliqAlicilari]([IsciId]);
+    PRINT '5/6  AvtoparkXeberdarliqAlicilari — YARADILDI';
 END
+ELSE PRINT '5/6  AvtoparkXeberdarliqAlicilari — artiq var, toxunulmadi';
+GO
 
--- ── 6) Standart müddət növləri (yalnız cədvəl BOŞ olduqda) ─────────
+-- ── 6) Standart müddət növləri + migration qeydi ───────────────────
 IF NOT EXISTS (SELECT 1 FROM [MasinMuddetNovleri])
 BEGIN
     INSERT INTO [MasinMuddetNovleri]
@@ -201,21 +215,33 @@ BEGIN
         (N'Texniki baxış',  30, 1, 3, '2026-08-19', 0),
         (N'Yağ dəyişmə',    14, 1, 4, '2026-08-19', 0),
         (N'Yanğınsöndürən', 30, 1, 5, '2026-08-19', 0);
+    PRINT '6/6  Standart novler yazildi (5 setir)';
 END
+ELSE PRINT '6/6  Novler onsuz da var, toxunulmadi';
 
--- ── 7) EF-ə «bu migration artıq tətbiq olunub» de ──────────────────
--- Bu sətir olmasa növbəti startup-da `Migrate()` cədvəlləri TƏKRAR
--- yaratmağa çalışar və «There is already an object named 'Masinlar'»
--- xətası verər.
-IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory]
-               WHERE [MigrationId] = '20260819000000_Avtopark')
+-- EF-ə «bu migration artıq tətbiq olunub» de. Bu sətir olmasa növbəti
+-- startup-da `Migrate()` cədvəlləri TƏKRAR yaratmağa çalışar və
+-- «There is already an object named 'Masinlar'» xətası verər.
+--
+-- ⚠️ YALNIZ BÜTÜN 5 CƏDVƏL YARANDIQDA yazılır — natamam vəziyyətdə
+-- yazsaq, migration «tətbiq olunub» sayılar və qalan cədvəllər HEÇ VAXT
+-- yaranmaz.
+IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260819000000_Avtopark')
+   AND (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_NAME IN ('Masinlar','MasinMuracietler','MasinMuddetNovleri',
+                             'MasinMuddetler','AvtoparkXeberdarliqAlicilari')) = 5
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES ('20260819000000_Avtopark', '8.0.23');
+    PRINT 'Migration tarixcesine yazildi.';
 END
+GO
 
-COMMIT TRANSACTION;
+-- ── YEKUN YOXLAMA ──────────────────────────────────────────────────
+SELECT TABLE_NAME AS YaradilmisCedvel
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_NAME IN ('Masinlar','MasinMuracietler','MasinMuddetNovleri',
+                     'MasinMuddetler','AvtoparkXeberdarliqAlicilari')
+ORDER BY TABLE_NAME;   -- 5 sətir gözlənilir
 
--- ── YOXLAMA ────────────────────────────────────────────────────────
 SELECT COUNT(*) AS NovSayi FROM [MasinMuddetNovleri];   -- 5 gözlənilir
-SELECT COUNT(*) AS MasinSayi FROM [Masinlar];            -- 0 gözlənilir
