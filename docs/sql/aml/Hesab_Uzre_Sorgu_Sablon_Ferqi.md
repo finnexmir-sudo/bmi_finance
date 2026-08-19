@@ -1,6 +1,6 @@
 # AML → Hesab üzrə sorğu — köhnə/yeni Excel şablonu fərqi
 
-**Tarix:** 19.08.2026 · **Status:** analiz hazırdır, SQL gözlənilir
+**Tarix:** 19.08.2026 · **Status:** analiz + qərarlar hazırdır, SQL gözlənilir
 
 | | Fayl | Vərəq | Ölçü |
 |---|---|---|---|
@@ -120,21 +120,73 @@ Yeni şablonun **12-ci sətrində** analitikin qeydləri var — mənbə birbaş
 
 ---
 
-## 4. Cavab gözləyən suallar
+## 4. QƏRARLAR (19.08.2026 — istifadəçi cavabladı)
 
-1. **Data hansı sətirdən başlayır?** Köhnədə `startRow = 12`. Yenidə 12-ci sətir
-   **analitik qeydləri** ilə doludur. Data 13-dən başlayır, yoxsa 12-ci sətir
-   silinməlidir?
-2. **`H` — «Alt növü»** nədir? Hansı sahədən gəlir, hansı dəyərləri alır?
-3. **Bankın VÖEN-i / BİC kodu** (P, Q, AD, AE) hansı cədvəldən? BMI-də bank
-   məlumatı `odb.mfo`-dadırmı?
-4. **`AQ` / `AR` ödəmə (məxaric) tərəfi** qəsdən boşdur, yoxsa doldurulmalıdır?
-5. **Şapka `D2` / `G2`** (bank adı + VÖEN) artıq şablonda sabit deyil — kod
-   yazmalıdır, yoxsa yenə şablona yazılacaq?
-6. **Vərəq adı:** köhnə kod `worksheet.Name = "Hesab çıxarışı"` qoyurdu.
-   Yenidə vərəq `Sheet2` adlanır — eyni qayda saxlanılsınmı?
+| # | Sual | Cavab |
+|---|---|---|
+| 1 | Data hansı sətirdən? | **12-ci sətirdən.** Yenidəki 12-ci sətir qeydləri yalnız «necə yanaşacağıq» izahıdır — testdir, şablondan silinəcək. `startRow = 12` **dəyişmir**. |
+| 2 | `H` «Alt növü» | **Boş qalacaq.** |
+| 3 | Bankın VÖEN-i / BİC kodu | **`odb.muxbir_hesab`** cədvəlindən — aşağıda §4.1. |
+| 4 | `AQ` / `AR` ödəmə tərəfi | **Olduğu kimi** — yalnız şablondakı qeyddə göstərilən hallar doldurulur, qalanı boş. |
+| 5 | Şapka `D2` / `G2` (bank adı + VÖEN) | **Kod yazacaq** (şablonda sabit deyil). |
+| 6 | Vərəq adı | **`Hesab çıxarışı`** — köhnə qayda saxlanılır. |
+
+### 4.1 `odb.muxbir_hesab` — bank məlumatının mənbəyi
+
+Bazadan təsdiqləndi (19.08.2026):
+
+```sql
+select * from muxbir_hesab r where r.swift_kodu = 'BRESAZ22';
+```
+
+| TESHKILATIN_ADI | KOD | MUXBIR_HESAB | VALYUTA_KODU | SWIFT_KODU | VOEN |
+|---|---|---|---|---|---|
+| Bank Respublika ASC | 505668 | AZ80NABZ0135010000000014944 | AZN | BRESAZ22 | 9900001901 |
+| Bank Respublika ASC | 505668 | AZ02NABZ0135020000000014840 | USD | BRESAZ22 | 9900001901 |
+| Bank Respublika ASC | 505668 | AZ28NABZ0135020000000014954 | EUR | BRESAZ22 | 9900001901 |
+
+**Bağlantı iki cür mümkündür** — `doc_vnesh_postupl`-dakı sahələrlə:
+
+| Şablon sütunu | Mənbə |
+|---|---|
+| Bankın adı | `muxbir_hesab.teshkilatin_adi` |
+| **Bankın VÖEN-i** (P / AD) | `muxbir_hesab.voen` |
+| **Bankın BİC kodu** (Q / AE) | `doc_vnesh_postupl.bic_debet` / `bic_kredit` (= `muxbir_hesab.swift_kodu`) |
+| bağlantı açarı | `muxbir_hesab.kod = mfo_debet` **və ya** `muxbir_hesab.swift_kodu = bic_debet` |
+
+Nümunə sətir (`doc_vnesh_postupl`, 18-08-2026):
+`MFO_DEBET = 505668`, `BIC_DEBET = 'BRESAZ22'` → hər ikisi eyni banka aparır.
 
 ---
+
+> ## ⚠️ TƏLƏ — `muxbir_hesab` SƏTİRLƏRİ ÜÇƏ QATLAYIR
+>
+> `muxbir_hesab`-da **hər valyuta üçün ayrıca sətir** var (yuxarıdakı nümunədə
+> AZN/USD/EUR — 3 sətir). Adi `join` ilə bağlasaq **hər əməliyyat sətri 3 dəfə**
+> təkrarlanar: 100 əməliyyatlıq çıxarış 300 sətir olar.
+>
+> Bank **adı və VÖEN-i valyutadan asılı deyil** — üç sətirdə də eynidir.
+> Ona görə bağlantı **təkrarsız** olmalıdır:
+>
+> ```sql
+> -- ✅ DÜZGÜN — valyutaya görə təkrarı əvvəlcədən yığ
+> left join (select distinct kod, swift_kodu, teshkilatin_adi, voen
+>              from odb.muxbir_hesab) mh
+>        on mh.swift_kodu = t.bic_debet
+> ```
+>
+> ```sql
+> -- ❌ SƏHV — hər sətir 3 dəfə çıxar
+> left join odb.muxbir_hesab mh on mh.swift_kodu = t.bic_debet
+> ```
+>
+> Yoxlama: sorğunu yazandan sonra `count(*)`-ı `muxbir_hesab` join-suz nəticə
+> ilə tutuşdur — bərabər olmalıdır. Bərabər deyilsə `distinct` işləmir və ya
+> açar unikal deyil.
+>
+> **NİYƏ BU QEYD BURADADIR:** eyni tip səhv layihədə artıq yaşanıb — say və
+> siyahı bir-birindən ayrı düşəndə heç bir xəta çıxmır, sadəcə rəqəm yalan olur
+> (CLAUDE.md — «Kredit Hesabatları» və «Davamiyyət KPI» bölmələri).
 
 ## 5. Koddakı çevirmələr — SQL-dən GƏLMİR, C#-da hesablanır
 
