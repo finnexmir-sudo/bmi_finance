@@ -22,8 +22,120 @@ with prm as (
            to_date('19/08/2026','dd/mm/yyyy')        d2       -- ← bitmə tarixi
       from dual
 )
-select x.*
+select
+    -- ══════════════════════════════════════════════════════════════════════
+    -- ÜST QAT — BMI-də bunlar Excel-ə yazılmazdan ƏVVƏL C#-da (exceleat2)
+    -- dataGridView xanalarının üzərinə yazılırdı. İndi SQL-in içindədir ki,
+    -- FinNex tərəfdə heç bir «grid düzəlişi» lazım olmasın.
+    -- ══════════════════════════════════════════════════════════════════════
+    x.qeb_tarix,                                                        -- A
+    x.icra_tarix,                                                       -- B
+    x.dax_istinad,                                                      -- C
+    x.xar_istinad,                                                      -- D
+    x.emel_novu,                                                        -- E
+    -- F  Çatdırılma kanalı (C#: Cells[3]). C#-da hər `if` bir öncəkini
+    --    ÜSTƏLƏYİRDİ → burada sıra QƏSDƏN TƏRSİNƏDİR (CASE ilk uyğunu götürür).
+    case when x.dbtam = '25010000000000300000'
+              or x.krtam in ('25020010000000300002','25020020000000300002')
+              then 'POS terminal'
+         when substr(x.dbtam,1,5) = '25019'
+              then 'Ödəniş terminalı'
+         when substr(x.dbtam,1,5) in ('10010','10020')
+              or substr(x.krtam,1,5) in ('10010','10020')
+              then 'CAS'
+         when substr(x.dbtam,1,5) in ('35025','35020','15025','15020')
+              or substr(x.krtam,1,5) in ('35025','35020','15025','15020')
+              then 'Digər maliyyə institutu vasitəsi'
+         when x.dbtam in ('11010000020000200000','11010000030000200000','11010000050000200000')
+              or x.krtam in ('11010000020000200000','11010000030000200000','11010000050000200000')
+              then 'Digər maliyyə institutu vasitəsi'
+         when x.krtam = '25010000000000300000'
+              then 'ATM'
+    end                                                                 cat_kan,      -- F
+    x.odeme_sistemi,                                                    -- G
+    x.alt_nov,                                                          -- H
+
+    -- I  Göndərənin adı (C#: Cells[4]) — hesabın `licsch` adı üstələyir.
+    --    İki xüsusi hesabın adı sabitdir və lookup-dan SONRA tətbiq olunur
+    --    (C#-da `j` dövrü 37 dəfə işlədiyi üçün sabit ad axırda qalırdı).
+    case when x.gon_hes = '25052000040000300000' then 'İŞÇİLƏRƏ AVANS MÜKAFAT'
+         when x.gon_hes = '25019000000000300006' then 'Ödəniş terminalı'
+         else nvl(x.gon_lics_ad, x.gon_ad) end                          gon_ad,       -- I
+    x.gon_voen,                                                         -- J
+    x.gon_fin,                                                          -- K
+    x.gon_hesnov,                                                       -- L
+    x.gon_hes,                                                          -- M
+    x.gon_bank,                                                         -- N
+    x.gon_fil,                                                          -- O
+    x.gon_bank_voen,                                                    -- P
+    x.gon_bank_bic,                                                     -- Q
+    x.gon_mux_bic,                                                      -- R
+    -- S  Ödəniş terminalı hesabında ölkə sabit AZE (C#: Cells[11])
+    case when x.gon_hes = '25019000000000300006' then 'AZE'
+         else x.gon_olke end                                            gon_olke,     -- S
+    x.gon_valuta,                                                       -- T
+    x.gon_pan,                                                          -- U
+    x.gon_mcc,                                                          -- V
+
+    -- W/X/Y  Alan tərəf — `licsch` + `regnom` axtarışı üstələyir
+    --        (C#: Cells[16]/[17]/[18]). Üçü də YALNIZ ad tapılanda yazılır.
+    nvl(x.alan_lics_ad, x.alan_ad)                                      alan_ad,      -- W
+    case when x.alan_lics_ad is not null then x.alan_lics_voen
+         else x.alan_voen end                                           alan_voen,    -- X
+    case when x.alan_lics_ad is not null then x.alan_lics_fin
+         else x.alan_fin end                                            alan_fin,     -- Y
+    -- Z  Hesab növü (C#: Cells[19]). DİQQƏT — BMI burada həm alanın, həm
+    --    GÖNDƏRƏNİN hesabına baxır və nəticəni ALAN sütununa yazır.
+    --    Səhv görünür, amma olduğu kimi saxlanılıb (BMI ilə üzləşdirmə üçün).
+    case when substr(x.alan_hes,1,2) in ('40','41','38','39')
+              or substr(x.gon_hes ,1,2) in ('40','41','38','39') then 'Cari'
+         else x.alan_hesnov end                                         alan_hesnov,  -- Z
+    x.alan_hes,                                                         -- AA
+    x.alan_bank,                                                        -- AB
+    x.alan_fil,                                                         -- AC
+    x.alan_bank_voen,                                                   -- AD
+    x.alan_bank_bic,                                                    -- AE
+    x.alan_mux_bic,                                                     -- AF
+    x.alan_olke,                                                        -- AG
+    x.alan_valuta,                                                      -- AH
+    x.alan_pan,                                                         -- AI
+    x.alan_mcc,                                                         -- AJ
+    x.med_val,                                                          -- AK
+    x.max_val,                                                          -- AL
+    -- AM Valyuta kodu — BMI `kod_valuti`-ni yazıb sonra ÜSTÜNDƏN alan tərəfin
+    --    valyuta mətnini yazırdı (exceleat2 sonu: Cells[24] → 31-ci sütun).
+    x.alan_valuta                                                       val_kod,      -- AM
+    x.med_azn,                                                          -- AN
+    x.max_azn,                                                          -- AO
+    x.emel,                                                             -- AP
+    x.xeyrine_ad,                                                       -- AQ
+    x.xeyrine_fin,                                                      -- AR
+    x.kommun,                                                           -- AS
+    x.dt,                                                               -- AT
+    x.kt                                                                -- AU
   from (
+    select k.*,
+           -- BMI-dəki `Hes_adlari` sorğusunun eynisi, sətir-sətir axtarış əvəzinə
+           -- skalyar alt sorğu ilə. `substr(r.regnom, 2.5)` BMI-də yazı səhvidir —
+           -- Oracle 2.5-i 2-yə kəsir, yəni `substr(regnom,2)`.
+           (select max(l.name_licsch) from odb.licsch l
+             where l.licsch = k.gon_hes
+               and l.date_close_licsch is null)                         gon_lics_ad,
+           (select max(l.name_licsch) from odb.licsch l
+             where l.licsch = k.alan_hes
+               and l.date_close_licsch is null)                         alan_lics_ad,
+           (select max(case when r.fizik = 1 then null
+                            else to_char(l.inn_licsch) end)
+              from odb.licsch l, odb.regnom r
+             where l.licsch = k.alan_hes
+               and l.date_close_licsch is null
+               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_voen,
+           (select max(r.pincode)
+              from odb.licsch l, odb.regnom r
+             where l.licsch = k.alan_hes
+               and l.date_close_licsch is null
+               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin
+      from (
 
   -- ══════════════════════════════════════════════════════════════════════
   -- 1) MƏXARİC — hesab DEBET tərəfdədir (bizim müştəri göndərəndir)
@@ -149,7 +261,9 @@ select x.*
               -- milli valyutada ödəmə
               select v.date_oper tarix, v.date_oper val_tar, r.inn_regnom, r.pincode fin,
                      odb.func_utf8_to_latin(v.name_debet) emit_name, v.debet,
-                     mf.bank_large_name filial_name, v.nomer_docum, v.mfo_credit,
+                     mf.bank_large_name filial_name, v.nomer_docum,
+                     nvl((select max(m2.bank_large_name) from odb.mfo m2
+                           where m2.mfo = v.mfo_credit), to_char(v.mfo_credit)) ben_bank,
                      odb.func_utf8_to_latin(v.name_credit) ben_name, v.kredit, v.name_credit,
                      v.summa_v_nacval amount, 'Odemeler ' cmnt,
                      '944' valuta, v.inn_credit, '  ' fin_kredit,
@@ -172,7 +286,9 @@ select x.*
               -- milli valyutada mədaxil
               select v.date_oper tarix, v.date_oper val_tar, v.inn_debet, '     ' fin_debet,
                      odb.func_utf8_to_latin(v.name_debet) emit_name, v.debet,
-                     mf.bank_large_name filial_name, v.nomer_docum, v.mfo_kredit,
+                     mf.bank_large_name filial_name, v.nomer_docum,
+                     nvl((select max(m2.bank_large_name) from odb.mfo m2
+                           where m2.mfo = v.mfo_kredit), to_char(v.mfo_kredit)) ben_bank,
                      odb.func_utf8_to_latin(v.kredit_name) ben_name, v.kredit, v.kredit_name,
                      v.sum1 amount, 'Daxilolma' cmnt,
                      '944' valuta, r.inn_regnom, r.pincode fin_kred,
@@ -348,7 +464,9 @@ select x.*
               union all
               select v.date_oper tarix, v.date_oper val_tar, r.inn_regnom, r.pincode fin,
                      odb.func_utf8_to_latin(v.name_debet) emit_name, v.debet,
-                     v.mfo_debet filial_name, v.nomer_docum, v.mfo_credit,
+                     v.mfo_debet filial_name, v.nomer_docum,
+                     nvl((select max(m2.bank_large_name) from odb.mfo m2
+                           where m2.mfo = v.mfo_credit), to_char(v.mfo_credit)) ben_bank,
                      odb.func_utf8_to_latin(v.name_credit) ben_name, v.kredit, v.name_credit,
                      v.summa_v_nacval amount, 'Odemeler ' cmnt,
                      '944' valuta, v.inn_credit, '  ' fin_kredit,
@@ -368,7 +486,9 @@ select x.*
               union all
               select v.date_oper tarix, v.date_oper val_tar, v.inn_debet, '     ' fin_debet,
                      odb.func_utf8_to_latin(v.name_debet) emit_name, v.debet,
-                     mf.bank_large_name filial_name, v.nomer_docum, v.mfo_kredit,
+                     mf.bank_large_name filial_name, v.nomer_docum,
+                     nvl((select max(m2.bank_large_name) from odb.mfo m2
+                           where m2.mfo = v.mfo_kredit), to_char(v.mfo_kredit)) ben_bank,
                      odb.func_utf8_to_latin(v.kredit_name) ben_name, substr(v.kredit,9,20) kredit,
                      v.kredit_name, v.sum1 amount, 'Daxilolma' cmnt,
                      '944' valuta, r.inn_regnom, r.pincode fin_kred,
@@ -423,5 +543,6 @@ select x.*
     and t.summa_v_nacval  = vd.amount(+)
     and (t.vid_operacii <> 97 or t.vid_operacii is null)
 
+      ) k
   ) x
  order by x.qeb_tarix asc
