@@ -57,4 +57,13 @@ public class IsciKreditFaydaNeticeDto
     public Dictionary<int, decimal> IsciUzre =>
         Etibarlilar.GroupBy(x => x.IsciId!.Value)
                    .ToDictionary(g => g.Key, g => Math.Round(g.Sum(x => x.HesabiGelir), 2));
+
+    /// <summary>
+    /// IsciId → dövrdə hesablanmış XAM faiz (adi + vaxtı keçmiş).
+    /// Ekranda göstərilir ki, hesabi gəlirin haradan gəldiyi yoxlana bilsin:
+    /// gözlənilməz böyük rəqəm adətən DÖVRÜN uzun olmasından yaranır, düsturdan yox.
+    /// </summary>
+    public Dictionary<int, decimal> IsciUzreFaiz =>
+        Etibarlilar.GroupBy(x => x.IsciId!.Value)
+                   .ToDictionary(g => g.Key, g => Math.Round(g.Sum(x => x.FaizAdi + x.FaizVk), 2));
 }

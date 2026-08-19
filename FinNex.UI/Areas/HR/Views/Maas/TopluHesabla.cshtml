@@ -360,6 +360,8 @@
                                 // dəyər hesablamaya düşür, yəni ekranda görünən rəqəm hesaba düşəndir.
                                 var _vmMap = ViewBag.Vm9821Map as Dictionary<int, decimal>;
                                 decimal vm9821 = (_vmMap != null && _vmMap.ContainsKey(isci.Id)) ? _vmMap[isci.Id] : 0m;
+                                var _vmFaizMap = ViewBag.Vm9821FaizMap as Dictionary<int, decimal>;
+                                decimal vm9821Faiz = (_vmFaizMap != null && _vmFaizMap.ContainsKey(isci.Id)) ? _vmFaizMap[isci.Id] : 0m;
 
                                 var _aeBonusMap    = ViewBag.AyliqElaveBonusMap    as Dictionary<int, decimal>;
                                 var _aeOvertimeMap = ViewBag.AyliqElaveOvertimeMap as Dictionary<int, decimal>;
@@ -788,8 +790,10 @@
                                                         <div class="mth-ferqli-hint">
                                                             @if (vm9821 > 0)
                                                             {
-                                                                <span style="color:#7c3aed;font-weight:600">Kredit faizinə görə avtomatik hesablandı</span>
-                                                                <text> — lazım gəlsə dəyişin</text>
+                                                                @* XAM faiz göstərilir: hesabi gəlirin haradan gəldiyi yoxlana bilsin.
+                                                                   Gözlənilməz böyük rəqəm adətən DÖVRÜN uzunluğundan yaranır. *@
+                                                                <span style="color:#7c3aed;font-weight:600">Dövrdə hesablanmış faiz: @vm9821Faiz.ToString("N2") ₼</span>
+                                                                <text> → hesabi gəlir. Lazım gəlsə dəyişin.</text>
                                                             }
                                                             else
                                                             {

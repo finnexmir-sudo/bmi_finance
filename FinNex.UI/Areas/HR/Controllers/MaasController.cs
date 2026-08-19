@@ -1394,6 +1394,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 {
                     var fayda = await _isciKreditFayda.HesablaAsync(fBas.Value, fSon);
                     ViewBag.Vm9821Map      = fayda.IsciUzre;
+                    ViewBag.Vm9821FaizMap  = fayda.IsciUzreFaiz;
                     ViewBag.Vm9821Dovr     = $"{fayda.Bas:dd.MM.yyyy} – {fayda.Son:dd.MM.yyyy}";
                     ViewBag.Vm9821Xeta     = fayda.Xeta;
                     ViewBag.Vm9821Problemli = fayda.Problemliler

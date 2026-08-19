@@ -119,6 +119,30 @@ public class IsciKreditFaydaService : IIsciKreditFaydaService
             return netice;
         }
 
+        // ── DÖVR HƏDDİ (19.08.2026 — REAL HADİSƏ) ─────────────────────────────
+        // Bir maaş dövrü ~1 aydır. Dövr uzun olsa Oracle AYLARIN faizini toplayır
+        // və rəqəm səssizcə şişir: Axundovda 120,58 ₼ əvəzinə 20 271 ₼ faiz →
+        // hesabi gəlir 18,84 əvəzinə 3 167,34 çıxdı. Heç bir xəta yox idi.
+        //
+        // Səbəb `DovrTeklifAsync`-in BAS-ıdır: ödənilmiş maaş yoxdursa/çox
+        // köhnədirsə dövr illərlə geriyə gedir. HESABLAMIRIQ — dayanırıq və
+        // dövrü göstəririk ki, mühasib səhv rəqəmi maaşa yazmasın.
+        //
+        // 92 gün ≈ 3 ay: qanuni gecikmə (maaş bir-iki ay gec verilə bilər) keçir,
+        // illik yığılma keçmir.
+        const int MaxDovrGun = 92;
+        var dovrGun = (netice.Son - netice.Bas).Days + 1;
+        if (dovrGun > MaxDovrGun)
+        {
+            netice.Xeta =
+                $"Dövr həddindən uzundur: {netice.Bas:dd.MM.yyyy} – {netice.Son:dd.MM.yyyy} " +
+                $"({dovrGun} gün). Bir maaş dövrü ~1 ay olmalıdır — bu qədər uzun aralıqda " +
+                "Oracle bir neçə ayın faizini toplayır və hesabi gəlir şişər. " +
+                "Səbəb adətən budur: sistemdə «Ödənildi» statuslu son maaş çox köhnədir " +
+                "və ya heç yoxdur. Maaş ödənişlərini qeyd edin, sonra yenidən açın.";
+            return netice;
+        }
+
         var faizSorgu = await SorguMetniAsync(SorguFaiz);
         if (faizSorgu == null)
         {
