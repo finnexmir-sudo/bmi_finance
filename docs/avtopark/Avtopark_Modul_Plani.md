@@ -1,6 +1,6 @@
 # Avtopark Modulu — Layihə Planı
 
-**Status:** təqdimat üçün layihə · cavab gözlənilən 5 sual var
+**Status:** 3 sual CAVABLANDI (rəhbərlə ilk danışıq) · 2 sual açıqdır
 **Tarix:** 19.08.2026
 
 ---
@@ -17,10 +17,15 @@
 ## 2. İş axını (istifadəçi ilə razılaşdırılıb)
 
 ```
-1. İŞÇİ     → maşını seçir, müraciət göndərir (tarix, saat, məqsəd)
-2. RƏHBƏR   → təsdiq / imtina
-3. KASSA    → açarı verir  →  «ÇIXDI»  düyməsi   →  bildiriş: işçi + rəhbər
-4. KASSA    → açarı alır   →  «GƏLDİ»  düyməsi   →  bildiriş: işçi + rəhbər
+ADİ İŞÇİ:
+  1. İŞÇİ    → maşını seçir, müraciət göndərir (tarix, saat, məqsəd)
+  2. RƏHBƏR  → təsdiq / imtina
+  3. KASSA   → açarı verir  →  «ÇIXDI»  →  bildiriş: işçi + rəhbər
+  4. KASSA   → açarı alır   →  «GƏLDİ»  →  bildiriş: işçi + rəhbər
+
+MÜRACİƏTÇİ ÖZÜ RƏHBƏRDİRSƏ:
+  1. RƏHBƏR  → müraciət göndərir  →  2-ci addım ATLANIR
+  2. KASSA   → «ÇIXDI» / «GƏLDİ»  →  bildiriş: işçi (= rəhbər)
 ```
 
 Açarlar fiziki olaraq kassada saxlanılır — sistem yalnız həmin anı qeyd edir.
@@ -32,7 +37,7 @@ jurnalın həqiqətə uyğunluğunu təmin edir.
 | Status | Mənası | Kim dəyişir |
 |---|---|---|
 | `Gozlemede` | rəhbər təsdiqini gözləyir | işçi (yaradır) |
-| `Tesdiqlenib` | təsdiq olunub, açar gözləyir | rəhbər |
+| `Tesdiqlenib` | təsdiq olunub, açar gözləyir | rəhbər — **və ya müraciətçi özü rəhbərdirsə sistem** |
 | `Cixib` | **maşın çöldədir** | kassa |
 | `Qayidib` | bağlandı | kassa |
 | `ImtinaEdildi` | rəhbər imtina etdi | rəhbər |
@@ -128,28 +133,27 @@ ekran səhv addım göstərirdi). Qayda **əvvəlcədən** yazılmalıdır — *
 
 ## 5. CAVAB GÖZLƏYƏN SUALLAR
 
-### 5.1 «Kassa» rolu
+### 5.1 «Kassa» rolu — ✅ CAVABLANDI
 
-«Çıxdı/Gəldi» düymələrini kim basacaq?
+**Yeni `Kassa` rolu əlavə edilir.** Yalnız bu rol «Çıxdı/Gəldi» düymələrini
+görür və basa bilir. Jurnalda «açarı kim verdi» dəqiq qalır.
 
-- (a) Yeni **`Kassa`** rolu yaradılsın — yalnız açar verən şəxs
-- (b) Mövcud rollardan biri (Admin / Təsərrüfat)
+### 5.2 Spidometr — ⏸ İLK DANIŞIQDA YOX İDİ
 
-*Təklifim: (a).* Ayrıca rol olsa jurnalda «kim verdi» dəqiq qalır və səlahiyyət
-lazımsız genişlənmir.
+Rəhbərlə ilk danışıqda spidometr **tələb olunmayıb**. Rədd edilməyib — sadəcə
+müzakirə mövzusu olmayıb.
 
-### 5.2 Spidometr (kilometr) yazılacaqmı?
+**Qərar:** forma və ekranda spidometr **OLMAYACAQ**, amma `CixisKm` / `QayidisKm`
+sahələri cədvəldə **boş qalacaq şəkildə saxlanılır**. Sonradan lazım olsa yalnız
+formaya bir input əlavə olunur — cədvəl dəyişikliyi və deploy riski olmur.
 
-Çıxış və qayıdışda spidometr göstəricisi yazılsın?
-
-- **Yazılsa:** yağ dəyişmə avtomatik izlənir («yağa 850 km qalıb»), yürüş
-  hesabatı çıxır, sürücü üzrə istifadə görünür.
-- **Yazılmasa:** yağ dəyişməni yalnız tarixlə izləyəcəyik (zəif), km-ə bağlı
-  müddətlər əl ilə yenilənəcək.
-
-*Təklifim:* qərar gec verilsə də **sahələr indidən qoyulsun** (boş qala bilər).
-Sonradan qərar gələndə yalnız formaya bir input əlavə olunur — cədvəl
-dəyişikliyi lazım gəlmir.
+> ⚠️ **NƏTİCƏSİNİ BİLMƏK VACİBDİR:** ilkin tələbdə «**yağ dəyişmə**» vardı.
+> Spidometr olmadan yağ dəyişməni **yalnız tarixlə** izləyə bilərik («hər 6 ayda
+> bir»), faktiki yürüşlə yox. Real qayda «hər 10 000 km» olduğu üçün bu, zəif
+> izləmədir — maşın az işlədilibsə vaxtından əvvəl, çox işlədilibsə gec xəbər verər.
+>
+> Rəhbər bunu bilərək qərar versin: **km-ə görə izləmə istənilirsə spidometr
+> lazımdır**, başqa yolu yoxdur.
 
 ### 5.3 Xatırlatma kimə və nə vaxt?
 
@@ -168,12 +172,18 @@ Ora `MasinId` sahəsi əlavə etmək kifayətdir — yenidən qurmağa ehtiyac y
 
 *Bu, 4-cü mərhələdir; ilk üç mərhələni bloklamır.*
 
-### 5.5 Müraciət edən özü rəhbərdirsə?
+### 5.5 Müraciət edən özü rəhbərdirsə — ✅ CAVABLANDI
 
-- (a) Onun müraciəti təsdiq tələb etmir — birbaşa təsdiqlənir
-- (b) Başqa bir rəhbər/admin təsdiqləyir
+**Birbaşa kassaya gedir.** Rəhbər addımı atlanır, müraciət yaradılan anda
+`Tesdiqlenib` statusunda olur və kassanın siyahısında görünür.
 
-*Təklifim: (a)* — icazə modulunda eyni qayda işləyir.
+> ⚠️ **BU, TƏLƏLİ YERDİR.** Bu gün (19.08.2026) FinNex-də məhz belə bir səhv
+> tapıldı: işçidə iki rol birlikdə idi, servis bir addımı atlayırdı, ekran isə
+> başqa addımı gizlədirdi — nəticədə işçi öz müraciətinin harada olduğunu səhv
+> görürdü.
+>
+> Ona görə burada qayda **bir yerdə** yazılacaq (servisdə) və ekran həmin
+> mənbədən oxuyacaq — şərt markup içində təkrar qurulmayacaq.
 
 ---
 
@@ -195,12 +205,15 @@ məzuniyyət/icazə ilə eyni yerdən maşın da istəyər.
 
 ## 7. Mərhələlər
 
-| # | Nə qurulur | Nəticə |
-|---|---|---|
-| **1** | `Masin` kartı + CRUD ekranı + `Kassa` rolu | maşınlar sistemdədir |
-| **2** | Müraciət → təsdiq → çıxış/qayıdış + 4 bildiriş | **əsas tələb işləyir** |
-| **3** | `MasinMuddet` + xatırlatma | sığorta/baxış unudulmur |
-| **4** | Xərc bağı + hesabatlar | maşın üzrə maya dəyəri |
+| # | Nə qurulur | Nəticə | Açıq suala bağlıdırmı |
+|---|---|---|---|
+| **1** | `Masin` kartı + CRUD ekranı + `Kassa` rolu | maşınlar sistemdədir | **YOX — başlana bilər** |
+| **2** | Müraciət → təsdiq → çıxış/qayıdış + 4 bildiriş | **əsas tələb işləyir** | **YOX — başlana bilər** |
+| **3** | `MasinMuddet` + xatırlatma | sığorta/baxış unudulmur | bəli — §5.3 (kimə xəbər) |
+| **4** | Xərc bağı + hesabatlar | maşın üzrə maya dəyəri | bəli — §5.4 |
+
+**1-ci və 2-ci mərhələ açıq sualların heç birinə bağlı deyil** — cavablanmış üç
+qərar (Kassa rolu, rəhbər axını, spidometrsiz) onları tam təyin edir.
 
 Hər mərhələ ayrıca işlək olur — 2-ci mərhələdən sonra sistem real istifadəyə
 verilə bilər, 3-cü gözlənilmədən.
