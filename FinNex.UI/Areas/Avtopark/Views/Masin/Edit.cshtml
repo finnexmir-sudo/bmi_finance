@@ -5,6 +5,18 @@
     var action = "Edit";
 }
 @{
+    // REDAKTƏDƏ bölmə AVTOMATİK AÇILIR — əgər əlavə sahələrdən biri doludursa.
+    // Yoxsa mövcud VIN/rəng/sürücü gizli qalar və istifadəçi «yazmamışam» sanıb
+    // yenidən doldurar (və ya doldurulmuş dəyəri görmədən saxlayar).
+    var elaveDolu = Model.BuraxilisIli.HasValue
+                    || !string.IsNullOrWhiteSpace(Model.Reng)
+                    || !string.IsNullOrWhiteSpace(Model.Novu)
+                    || !string.IsNullOrWhiteSpace(Model.Ban)
+                    || !string.IsNullOrWhiteSpace(Model.Vin)
+                    || Model.DepartamentId.HasValue
+                    || Model.TehkimSurucuId.HasValue
+                    || !string.IsNullOrWhiteSpace(Model.Qeyd);
+
     var departamentler = ViewBag.Departamentler as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
                          ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
     var surucular = ViewBag.Surucular as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
@@ -28,38 +40,26 @@
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
+            @* SAHƏLƏR İKİ QRUPA BÖLÜNÜB (19.08.2026 — «sadələşdirək» qərarı).
+               HEÇ BİRİ SİLİNMƏYİB: gündəlik lazım olmayanlar «Əlavə məlumat»
+               bölməsinin altındadır və istənilən an açılır. 4-5 maşınlıq parkda
+               VIN/ban/rəng nadir hallarda yazılır — forma onlarla açılmasın. *@
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label asp-for="DovletNomresi" class="form-label"></label>
                     <input asp-for="DovletNomresi" class="form-control" placeholder="10-AA-123" />
                     <span asp-validation-for="DovletNomresi" class="text-danger small"></span>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label asp-for="Marka" class="form-label"></label>
-                    <input asp-for="Marka" class="form-control" />
+                    <input asp-for="Marka" class="form-control" placeholder="Toyota" />
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label asp-for="Model" class="form-label"></label>
-                    <input asp-for="Model" class="form-control" />
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="BuraxilisIli" class="form-label"></label>
-                    <input asp-for="BuraxilisIli" type="number" class="form-control" />
-                    <span asp-validation-for="BuraxilisIli" class="text-danger small"></span>
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Reng" class="form-label"></label>
-                    <input asp-for="Reng" class="form-control" />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Novu" class="form-label"></label>
-                    <input asp-for="Novu" class="form-control" placeholder="minik / mikroavtobus / yük" />
+                    <input asp-for="Model" class="form-control" placeholder="Camry" />
                 </div>
                 <div class="col-md-3">
                     <label asp-for="Status" class="form-label"></label>
-                    @* Enum adları koddadır («IstifadedenCixib») — istifadəçiyə
-                       Azərbaycan dilində göstərilir, ona görə siyahı əl ilə qurulur. *@
                     @* value RƏQƏM YOX, ENUM ADIDIR: `asp-for` model dəyərini
                        enum ADI kimi ("Aktiv") render edir və `selected`-i həmin
                        mətnə görə qoyur. Rəqəm yazsaydıq redaktədə cari status
@@ -69,33 +69,54 @@
                         <option value="@MasinStatus.Temirde">Təmirdə</option>
                         <option value="@MasinStatus.IstifadedenCixib">İstifadədən çıxıb</option>
                     </select>
+                    <div class="form-text">Yalnız «Aktiv» maşına müraciət yazıla bilər.</div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
-                    <label asp-for="Ban" class="form-label"></label>
-                    <input asp-for="Ban" class="form-control" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="Vin" class="form-label"></label>
-                    <input asp-for="Vin" class="form-control" />
-                </div>
+            <button type="button" class="btn btn-sm btn-link px-0 mt-3"
+                    data-bs-toggle="collapse" data-bs-target="#elaveMelumat">
+                <i class="bi bi-chevron-down"></i> Əlavə məlumat (istəyə bağlı)
+            </button>
 
-                <div class="col-md-4">
-                    <label asp-for="DepartamentId" class="form-label"></label>
-                    <select asp-for="DepartamentId" asp-items="departamentler" class="form-select">
-                        <option value="">— ümumi istifadə —</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="TehkimSurucuId" class="form-label"></label>
-                    <select asp-for="TehkimSurucuId" asp-items="surucular" class="form-select">
-                        <option value="">— təhkim olunmayıb —</option>
-                    </select>
-                </div>
-
-                <div class="col-12">
-                    <label asp-for="Qeyd" class="form-label"></label>
-                    <textarea asp-for="Qeyd" class="form-control" rows="2"></textarea>
+            <div class="collapse @(elaveDolu ? "show" : "")" id="elaveMelumat">
+                <div class="row g-3 pt-2 border-top">
+                    <div class="col-md-3">
+                        <label asp-for="BuraxilisIli" class="form-label"></label>
+                        <input asp-for="BuraxilisIli" type="number" class="form-control" />
+                        <span asp-validation-for="BuraxilisIli" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Reng" class="form-label"></label>
+                        <input asp-for="Reng" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Novu" class="form-label"></label>
+                        <input asp-for="Novu" class="form-control" placeholder="minik / mikroavtobus / yük" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Ban" class="form-label"></label>
+                        <input asp-for="Ban" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Vin" class="form-label"></label>
+                        <input asp-for="Vin" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="DepartamentId" class="form-label"></label>
+                        <select asp-for="DepartamentId" asp-items="departamentler" class="form-select">
+                            <option value="">— ümumi istifadə —</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="TehkimSurucuId" class="form-label"></label>
+                        <select asp-for="TehkimSurucuId" asp-items="surucular" class="form-select">
+                            <option value="">— təhkim olunmayıb —</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Qeyd" class="form-label"></label>
+                        <textarea asp-for="Qeyd" class="form-control" rows="2"></textarea>
+                    </div>
                 </div>
             </div>
 

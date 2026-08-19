@@ -1235,33 +1235,40 @@
 
             case "avtopark":
                 {
+                    @* MENYU QƏSDƏN QISADIR (19.08.2026 — «sadələşdirək» qərarı).
+                       Aşağıdakılar buradan ÇIXARILDI, amma SİLİNMƏDİ — hər biri
+                       öz səhifəsinin içində düymə kimi qalır:
+                         Çöldə olanlar     → Təsdiq panelində
+                         Jurnal tarixçəsi  → Açar jurnalında («Tarixçə»)
+                         Yaxınlaşanlar     → Müddətlərdə (+ Maşınlar səhifəsində)
+                         Növlər            → Müddətlərdə
+                         Xəbərdarlıq alıcıları → Müddətlərdə
+                       Yeni link əlavə etməzdən əvvəl düşün: gündəlik işlənmirsə
+                       menyuda yeri yoxdur. *@
                     <div class="fn-nav-label">Avtopark</div>
                     <a asp-area="Avtopark" asp-controller="Muraciet" asp-action="Index"
                        class="fn-nav-item @(currentController == "Muraciet" && currentArea == "Avtopark" ? "active" : "")">
                         <i class="bi bi-card-checklist"></i> Müraciətlərim
                     </a>
 
-                    @* Təsdiq paneli — Rəhbər və Admin. Şərt controller-dəki
-                       [Authorize] ilə EYNİ olmalıdır: linki görüb 403 almaq
-                       istifadəçini çaşdırır. *@
+                    @* Şərtlər controller-dəki [Authorize] ilə EYNİ olmalıdır —
+                       linki görüb 403 almaq istifadəçini çaşdırır. *@
                     @if (User.IsInRole(RoleNames.Rehber) || isAdmin)
                     {
+                        @* Aktivlik ACTION-a görə yox, CONTROLLER-ə görədir:
+                           «Çöldə olanlar» ayrıca link olmadığı üçün ora keçəndə
+                           menyuda heç nə seçili qalmazdı. *@
                         <a asp-area="Avtopark" asp-controller="Tesdiq" asp-action="Index"
                            class="fn-nav-item @(currentController == "Tesdiq" && currentArea == "Avtopark" ? "active" : "")">
                             <i class="bi bi-check2-square"></i> Təsdiq paneli
                         </a>
                     }
 
-                    @* Açar jurnalı — Kassa rolu + Rəhbər (19.08.2026 qərarı) + Admin. *@
                     @if (User.IsInRole(RoleNames.Kassa) || User.IsInRole(RoleNames.Rehber) || isAdmin)
                     {
                         <a asp-area="Avtopark" asp-controller="Kassa" asp-action="Index"
-                           class="fn-nav-item @(currentController == "Kassa" && currentAction == "Index" ? "active" : "")">
+                           class="fn-nav-item @(currentController == "Kassa" ? "active" : "")">
                             <i class="bi bi-key"></i> Açar jurnalı
-                        </a>
-                        <a asp-area="Avtopark" asp-controller="Kassa" asp-action="Jurnal"
-                           class="fn-nav-item @(currentController == "Kassa" && currentAction == "Jurnal" ? "active" : "")">
-                            <i class="bi bi-journal-text"></i> Jurnal tarixçəsi
                         </a>
                     }
 
@@ -1273,16 +1280,8 @@
                             <i class="bi bi-car-front"></i> Maşınlar
                         </a>
                         <a asp-area="Avtopark" asp-controller="Muddet" asp-action="Index"
-                           class="fn-nav-item @(currentController == "Muddet" && currentAction == "Index" ? "active" : "")">
+                           class="fn-nav-item @(currentController == "Muddet" ? "active" : "")">
                             <i class="bi bi-calendar-check"></i> Müddətlər
-                        </a>
-                        <a asp-area="Avtopark" asp-controller="Muddet" asp-action="Yaxinlasanlar"
-                           class="fn-nav-item @(currentController == "Muddet" && currentAction == "Yaxinlasanlar" ? "active" : "")">
-                            <i class="bi bi-alarm"></i> Yaxınlaşanlar
-                        </a>
-                        <a asp-area="Avtopark" asp-controller="Muddet" asp-action="Alicilar"
-                           class="fn-nav-item @(currentController == "Muddet" && currentAction == "Alicilar" ? "active" : "")">
-                            <i class="bi bi-bell"></i> Xəbərdarlıq alıcıları
                         </a>
                     }
                 }

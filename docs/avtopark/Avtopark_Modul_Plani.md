@@ -408,3 +408,49 @@ CLAUDE.md — bazaya yazma və workflow statusları istifadəçi yoxlaması təl
 8. **Müddət** — sığorta qeydi + uzatma (köhnəsi tarixçəyə keçirmi).
 9. **Xəbərdarlıq** — alıcı əlavə edilib, son tarixi yaxın qeyd yaradılsın;
    bir saat sonra zəng ikonunda bildiriş görünməlidir.
+
+---
+
+## 11. SADƏLƏŞDİRMƏ (19.08.2026, istifadəçi qərarı)
+
+İstifadəçi: **«bu çox mürəkkəb, bizdə 4-5 maşın var, işçiyə qəliz gəlməz?»**
+Qərar: **«sadələşdirək, bizə lazım olan prinsip qalsın»**.
+
+⚠️ **HEÇ BİR FUNKSİYA SİLİNMƏDİ** (CLAUDE.md qaydası). Yalnız gündəlik
+işlənməyənlər gözdən yığışdırıldı və öz səhifələrinin içindən açılır.
+
+### 11.1 Sidebar: 8 → 5 sətir
+
+Çıxarılan linklər və indi haradan açılır:
+
+| Çıxarılan link | İndi haradadır |
+|---|---|
+| Çöldə olanlar | Təsdiq panelində düymə |
+| Jurnal tarixçəsi | Açar jurnalında «Tarixçə» düyməsi |
+| Yaxınlaşanlar | Müddətlərdə düymə (+ Maşınlar səhifəsində) |
+| Növlər | Müddətlərdə düymə |
+| Xəbərdarlıq alıcıları | Müddətlərdə düymə |
+
+Aktivlik indi **ACTION-a görə yox, CONTROLLER-ə görədir** — «Çöldə olanlar»a
+keçəndə menyuda «Təsdiq paneli» seçili qalır. Əvvəlki variantda heç nə seçili
+qalmazdı və istifadəçi «hardayam?» sualı ilə üzləşərdi.
+
+**Yeni link əlavə etməzdən əvvəl:** gündəlik işlənmirsə menyuda yeri yoxdur.
+
+### 11.2 Maşın forması: 12 sahə → 4 görünən + açılan bölmə
+
+| Görünən | Əlavə məlumat (açılan) |
+|---|---|
+| Dövlət nömrəsi, Marka, Model, Status | Buraxılış ili, Rəng, Növü, Ban, VIN, Departament, Təhkim sürücü, Qeyd |
+
+**Redaktədə bölmə AVTOMATİK açılır** əgər əlavə sahələrdən biri doludursa
+(`elaveDolu`). Bu olmasa mövcud VIN/rəng/sürücü gizli qalar və istifadəçi
+«yazmamışam» sanıb yenidən doldurar — yaxud doldurulmuş dəyəri görmədən saxlayar.
+
+### 11.3 İşçinin gördüyü — dəyişmədi, onsuz da minimal idi
+
+İşçidə sidebar-da **tək sətir** var («Müraciətlərim»). Müraciət formasında
+4 sahə, ikisi hazır dolu gəlir (növbəti saat + 2 saat), «Marşrut» istəyə bağlı.
+Bu, mövcud icazə müraciətindən azdır.
+
+Gündəlik yük: işçi 1 forma → rəhbər 1 klik → kassa 2 klik (çıxdı/gəldi).
