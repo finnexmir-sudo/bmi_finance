@@ -1191,9 +1191,27 @@ END
                 }
                 catch (Exception ex)
                 {
-                    // Migration xətası app-ı crash etməsin — amma logla
+                    // Migration xətası app-ı crash etməsin — amma İZSİZ də qalmasın.
+                    //
+                    // ⚠️ 19.08.2026: burada yalnız `Console.WriteLine` var idi. IIS Express
+                    // altında konsol pəncərəsi yoxdur və Serilog `Console.WriteLine`-ı
+                    // TUTMUR — nəticədə Avtopark migration-u xəta verdi, cədvəllər
+                    // yaranmadı, ekranda isə yalnız «Invalid object name 'Masinlar'»
+                    // göründü. Səbəb heç bir log faylında yox idi.
+                    //
+                    // İndi Serilog-a yazılır → `FinNex.UI\Logs\log-yyyyMMdd.txt`.
+                    // `ex` bütöv ötürülür ki, SQL Server-in ƏSL mətni (InnerException)
+                    // itməsin — `ex.Message` çox vaxt yalnız «An error occurred while
+                    // saving...» kimi ümumi cümlə olur.
+                    Log.Error(ex,
+                        "[Migration XƏTA] Migration tətbiq olunmadı. Gözlənilən cədvəllər " +
+                        "yaranmayacaq və səhifələr «Invalid object name» verəcək. " +
+                        "Aşağıdakı SQL xətasına baxın.");
+
                     Console.WriteLine($"[Migration XƏTA] {ex.Message}");
-                    Console.WriteLine($"[Migration XƏTA] Əl ilə 'Update-Database' və ya SQL script işlədin.");
+                    if (ex.InnerException != null)
+                        Console.WriteLine($"[Migration XƏTA — daxili] {ex.InnerException.Message}");
+                    Console.WriteLine("[Migration XƏTA] Tam mətn: Logs\\log-<tarix>.txt");
                 }
             }
 
