@@ -1040,7 +1040,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ── GET /HR/Maas/TopluHesabla ────────────────────────────
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Muhasib + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
-        public async Task<IActionResult> TopluHesabla(int? il, int? ay)
+        public async Task<IActionResult> TopluHesabla(int? il, int? ay,
+                                                     DateTime? vmBas, DateTime? vmSon)
         {
             var cIl = il ?? DateTime.Now.Year;
             var cAy = ay ?? DateTime.Now.Month;
@@ -1389,10 +1390,21 @@ namespace FinNex.UI.Areas.HR.Controllers
             // yaza bilir — yəni köhnə davranışa qayıdır.
             try
             {
-                var (fBas, fSon) = await _isciKreditFayda.DovrTeklifAsync();
-                if (fBas.HasValue)
+                // Dövr: mühasib əl ilə verə bilər (sənəd §4 — «mühasib istəsə dəyişə
+                // bilər»). Verməyibsə sistem təklif edir: sonuncu ödənilmiş maaş → dünən.
+                var (tBas, tSon) = await _isciKreditFayda.DovrTeklifAsync();
+
+                var eBas = vmBas?.Date ?? tBas;
+                var eSon = vmSon?.Date ?? tSon;
+                bool elIle = vmBas.HasValue || vmSon.HasValue;
+
+                ViewBag.Vm9821BasInput = eBas?.ToString("yyyy-MM-dd");
+                ViewBag.Vm9821SonInput = eSon.ToString("yyyy-MM-dd");
+                ViewBag.Vm9821ElIle    = elIle;
+
+                if (eBas.HasValue)
                 {
-                    var fayda = await _isciKreditFayda.HesablaAsync(fBas.Value, fSon);
+                    var fayda = await _isciKreditFayda.HesablaAsync(eBas.Value, eSon);
                     ViewBag.Vm9821Map      = fayda.IsciUzre;
                     ViewBag.Vm9821FaizMap  = fayda.IsciUzreFaiz;
                     ViewBag.Vm9821Dovr     = $"{fayda.Bas:dd.MM.yyyy} – {fayda.Son:dd.MM.yyyy}";
@@ -1403,8 +1415,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 else
                 {
-                    ViewBag.Vm9821Xeta = "Ödənilmiş maaş tapılmadı — VM 98.2.1 dövrünün " +
-                                         "başlanğıcı təyin edilə bilmədi.";
+                    // Ödənilmiş maaş yoxdur (yeni qurulmuş baza / test mühiti).
+                    // Uydurma dövr SEÇMİRİK — mühasib özü versin.
+                    ViewBag.Vm9821Xeta = "Sistemdə «Ödənildi» statuslu maaş tapılmadı — " +
+                                         "dövrün başlanğıcı avtomatik təyin edilə bilmədi. " +
+                                         "Aşağıdakı sahələrdən dövrü özünüz seçin.";
                 }
             }
             catch (Exception ex)

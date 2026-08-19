@@ -63,7 +63,11 @@
         var vmDovr       = ViewBag.Vm9821Dovr as string;
         var vmProblemli  = ViewBag.Vm9821Problemli as List<string> ?? new List<string>();
         var vmMapUmumi   = ViewBag.Vm9821Map as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+        var vmBasInput   = ViewBag.Vm9821BasInput as string ?? "";
+        var vmSonInput   = ViewBag.Vm9821SonInput as string ?? "";
+        var vmElIle      = ViewBag.Vm9821ElIle is true;
     }
+
     @if (!string.IsNullOrEmpty(vmXeta))
     {
         @* Səhifə DAYANMIR — sahələr boş qalır, mühasib əl ilə yaza bilir. *@
@@ -93,6 +97,46 @@
             }
         </div>
     }
+
+    @* Dövr seçimi — sənəd §4: sistem təklif edir, mühasib istəsə dəyişir.
+       GET ilə göndərilir ki, səhifə yenidən hesablansın; forma dəyəri POST-a
+       QARIŞMIR (maaş POST-u ayrı formadır). *@
+    <form method="get" class="mth-vm-dovr"
+          style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
+                 background:#faf7ff;border:1px solid #e3d9f7;border-radius:8px;
+                 padding:10px 14px;margin-bottom:10px">
+        <input type="hidden" name="il" value="@il" />
+        <input type="hidden" name="ay" value="@ay" />
+        <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#6b5b8a;letter-spacing:.03em">
+                VM 98.2.1 DÖVRÜ — BAŞLAMA
+            </label>
+            <input type="date" name="vmBas" value="@vmBasInput"
+                   style="padding:6px 8px;border:1px solid #d5cbe8;border-radius:6px" />
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#6b5b8a;letter-spacing:.03em">
+                BİTMƏ
+            </label>
+            <input type="date" name="vmSon" value="@vmSonInput"
+                   style="padding:6px 8px;border:1px solid #d5cbe8;border-radius:6px" />
+        </div>
+        <button type="submit"
+                style="padding:7px 14px;border:0;border-radius:6px;background:#7c3aed;color:#fff;font-weight:600">
+            Yenidən hesabla
+        </button>
+        <div style="font-size:12px;color:#6b5b8a;max-width:520px">
+            @if (vmElIle)
+            {
+                <strong>Dövr əl ilə seçilib.</strong>
+                <text> Boşaldıb yeniləsəniz sistem yenidən özü təklif edəcək (sonuncu ödənilmiş maaş → dünən).</text>
+            }
+            else
+            {
+                <text>Sistem təklifi: sonuncu ödənilmiş maaşdan dünənə qədər. Lazım gəlsə dəyişin.</text>
+            }
+        </div>
+    </form>
 
     @* ── Header ──────────────────────────────────────────────── *@
     <div class="mth-header">
