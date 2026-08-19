@@ -328,3 +328,40 @@ Nəticə C#-da sətir-sətir uyğunlaşdırılıb 17/19-cu sütunlara yazılır.
 | Sorğu növü | `radioButton1` = **Fiziki şəxs**, `radioButton2` = **Sahibkar/hüquqi şəxs VÖEN** |
 
 İki radio düymə **iki fərqli SQL variantı** işə salır (`frmhesabsorgu.cs:335` və `:351`).
+
+---
+
+## 8. `PLAT_SYSTEM` (G sütunu) — lüğət axtarışı, 19.08.2026
+
+Sorğu **KOD** qaytarır, şablona **AD** lazımdır. BMI-nin bütün C# mənbəyində
+`PLAT_SYSTEM` **heç yerdə işlənmir** — köhnə proqram bu sütunu heç vaxt
+göstərməyib, ona görə lüğət cədvəlinin adı koddan bilinmir.
+
+**Real dəyər sahəsi** (`04_...`/`02_...` diaqnostikası):
+
+| Mənbə | Kodlar |
+|---|---|
+| `doc_vnesh_swift` (xarici mədaxil) | yalnız **0** |
+| `doc_vnesh_inval` (xarici ödəmə) | yalnız **0** |
+| `doc_vnesh_nacval` (milli ödəmə) | 0 · 3 · 4 · 5 · 6 |
+| `doc_vnesh_postupl` (milli mədaxil) | 0 · 4 · 6 |
+
+Xarici əməliyyatlar həmişə **0** verir → **0 = «təyin edilməyib»** ehtimalı
+yüksəkdir; real kodlar yalnız daxili (manat) ödənişlərdədir.
+
+**Yoxlanıb və DÜŞÜB:**
+
+| Namizəd | Niyə düşdü |
+|---|---|
+| Xarici açar (FK) | `PLAT_SYSTEM` üzərində FK yoxdur |
+| `AML_SETUP_BANK_PLATFORMS` | yalnız 0–3 (Web Site / Pos Terminal / ATM / Mobile Banking); 4,5,6 yoxdur. Üstəlik bu, **çatdırılma kanalı** məfhumudur |
+| `XONKS_PLAT_KOD` | kommunal ödəniş kodlarıdır (Elektroenerji / Su / Qaz / Telefon × şəhər) |
+| `MFO.PLAT_SYSTEM` | yalnız **99** və NULL — sənəddəki 0/3/4/5/6-ya uyğun gəlmir |
+
+> ⚠️ **FAYDALI TAPINTI:** `XONKS_PLAT_KOD` bizə G üçün yaramır, amma şablonun
+> **AS sütununun** («Kommunal ödəniş kodu, mobil nömrə və s.») lüğətidir.
+> Həmin sütun hazırda boşdur — dolduranda bu cədvəl işlənəcək.
+
+**Növbəti addım:** `docs/sql/aml/03_PlatSystem_Kod_Axtarisi.sql` — sütun şərhi,
+`all_source` (PL/SQL mənbəyi) və view mətnlərində axtarış, plus hər kod üçün
+3 nümunə sətir (əməliyyatçı kodu tanıya bilsin).
