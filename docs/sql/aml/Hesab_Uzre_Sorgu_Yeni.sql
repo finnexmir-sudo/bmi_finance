@@ -58,9 +58,9 @@ select x.*
       'MELIAZ22'                                                     gon_bank_bic,  -- Q  Bankın BİC-i  🆕 (bizik)
       vd.sender_bic                                                  gon_mux_bic,   -- R  Müxbir bankın BİC-i
       p.countrycode                                                  gon_olke,      -- S
-      case t.kod_valuti when '00' then 'AZN' when '01' then 'USD'
-                        when '02' then 'EUR' when '03' then 'RUB'
-                        when '04' then 'IRR' when '05' then 'AED' end gon_valuta,   -- T
+      case substr(t.debet,6,2) when '00' then 'AZN' when '01' then 'USD'
+                             when '02' then 'EUR' when '03' then 'RUB'
+                             when '04' then 'IRR' when '05' then 'AED' end gon_valuta,   -- T  (hesabın 6-7-ci simvolu)
       '   '                                                          gon_pan,       -- U
       '   '                                                          gon_mcc,       -- V
 
@@ -93,9 +93,9 @@ select x.*
                 then s.countrycode
            else case when t.id_vd is null and (substr(t.debet,10,6)=substr(t.kredit,10,6) or substr(t.kredit,1,1)='4')
                      then s.countrycode else '   ' end end           alan_olke,     -- AG
-      case t.kod_valuti when '00' then 'AZN' when '01' then 'USD'
-                        when '02' then 'EUR' when '03' then 'RUB'
-                        when '04' then 'IRR' when '05' then 'AED' end alan_valuta,  -- AH
+      case t.kod_valuti when 0 then 'AZN' when 1 then 'USD'
+                        when 2 then 'EUR' when 3 then 'RUB'
+                        when 4 then 'IRR' when 5 then 'AED' end alan_valuta,  -- AH (əməliyyatın valyutası)
       '   '                                                          alan_pan,      -- AI
       '   '                                                          alan_mcc,      -- AJ
 
@@ -279,9 +279,9 @@ select x.*
                 then p.countrycode
            else case when t.id_vd is null and (substr(t.debet,10,6)=substr(t.kredit,10,6) or substr(t.debet,1,1) in (4,6,7,8,9))
                      then s.countrycode else '   ' end end           gon_olke,      -- S
-      case t.kod_valuti when '00' then 'AZN' when '01' then 'USD'
-                        when '02' then 'EUR' when '03' then 'RUB'
-                        when '04' then 'IRR' when '05' then 'AED' end gon_valuta,   -- T
+      case t.kod_valuti when 0 then 'AZN' when 1 then 'USD'
+                        when 2 then 'EUR' when 3 then 'RUB'
+                        when 4 then 'IRR' when 5 then 'AED' end gon_valuta,   -- T  (əməliyyatın valyutası)
       '   '                                                          gon_pan,       -- U
       '   '                                                          gon_mcc,       -- V
 
@@ -297,9 +297,9 @@ select x.*
       'MELIAZ22'                                                     alan_bank_bic, -- AE 🆕 (bizik)
       vd.receiver_bic                                                alan_mux_bic,  -- AF
       p.countrycode                                                  alan_olke,     -- AG
-      case t.kod_valuti when '00' then 'AZN' when '01' then 'USD'
-                        when '02' then 'EUR' when '03' then 'RUB'
-                        when '04' then 'IRR' when '05' then 'AED' end alan_valuta,  -- AH
+      case substr(t.kredit,6,2) when '00' then 'AZN' when '01' then 'USD'
+                             when '02' then 'EUR' when '03' then 'RUB'
+                             when '04' then 'IRR' when '05' then 'AED' end alan_valuta,  -- AH (hesabın 6-7-ci simvolu)
       '   '                                                          alan_pan,      -- AI
       '   '                                                          alan_mcc,      -- AJ
 

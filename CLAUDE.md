@@ -840,6 +840,33 @@ Xəta yenə də təkrarlanırsa problem koddadır deyil: bağlantı sətrinə
 `Validate Connection=true` əlavə edin (ölü hovuz bağlantısı istifadədən əvvəl
 yoxlanır) və ya şəbəkə/firewall boşdayanma müddətinə baxın.
 
+### Oracle `CASE` — Sadə (simple) vs Şərtli (searched) — ORA-00932 (KRİTİK)
+
+Oracle-da iki `CASE` forması var və **avtomatik tip çevirmə qaydası fərqlidir**:
+
+| Forma | Yazılış | Tip çevirmə |
+|---|---|---|
+| **Searched** | `case when t.kod_valuti = '00' then …` | **VAR** — `'00'` avtomatik `0`-a çevrilir, işləyir |
+| **Simple** | `case t.kod_valuti when '00' then …` | **YOXDUR** — `ORA-00932: inconsistent datatypes: expected NUMBER got CHAR` |
+
+Real hadisə (19.08.2026, AML Hesab üzrə sorğu): BMI-nin sorğusu `case when
+t.kod_valuti='00' then 'AZN' else case when … end end` yazırdı (6 qat iç-içə).
+Qısaltmaq üçün `case t.kod_valuti when '00' then 'AZN' when '01' …` formasına
+keçirildi — **`arh_dd.kod_valuti` INTEGER-dir**, sorğu bütöv sındı. Xəta mətni
+sütunun adını demir, yalnız kursorun mövqeyini (96:30) göstərir; 400 sətrlik
+sorğuda tapmaq çətindir.
+
+**Qaydalar:**
+- Bir sütunun tipini bilmədən `case <sütun> when '<mətn>'` yazma. Ya searched
+  formanı işlət, ya da operandı sütunun tipində yaz (`when 0`, `when 1`).
+- `ORA-00932` **UNION xətası DEYİL** — UNION-da tip uyğunsuzluğu `ORA-01790`
+  verir. `ORA-00932` görəndə `CASE` / `NVL` / `DECODE` / `||` / funksiya
+  arqumentinə bax, UNION qollarını yoxlamaqla vaxt itirmə.
+- Tipi bir sorğu ilə öyrən (`docs/sql/aml/00_Tip_Diaqnostikasi.sql` nümunədir):
+  `select column_name, data_type from all_tab_columns where owner='ODB' and table_name='…'`.
+- Hesabın valyutası üçün `substr(hesab,6,2)` (CHAR) daha təhlükəsizdir —
+  `kod_valuti` (INTEGER) ilə mətn müqayisəsi tələyə düşür.
+
 ### İSTİSNA YOXDUR — Oracle 100% oxunur (12.08.2026-dan)
 
 Əvvəl kredit müqaviləsi modulu üçün **iki** Oracle cədvəlinə yazı icazəli idi.
