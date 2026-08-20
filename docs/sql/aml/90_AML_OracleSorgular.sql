@@ -99,11 +99,12 @@ select
     --    Bazada LÜĞƏT CƏDVƏLİ YOXDUR — xəritə yalnız PL/SQL mənbəyində var,
     --    ona görə burada saxlanılır. Yeni sistem əlavə olunsa bu CASE yenilənir.
     --
-    --    ⚠️ DİQQƏT: `doc_vnesh_inval` və `doc_vnesh_swift` sətirlərinin
-    --    HAMISINDA dəyər 0-dır (yəni «XÖHKS» kimi oxunur), halbuki onlar
-    --    xarici əməliyyatlardır. Ehtimal ki, o iki cədvəldə sahə doldurulmur
-    --    və 0 sadəcə default-dur. Lüğət OLDUĞU KİMİ tətbiq olunub — uydurma
-    --    düzəliş edilməyib.
+    --    ⚠️ XARİCİ SƏNƏDLƏR BURAYA 0 GÖNDƏRMİR — `vd` alt sorğusunda
+    --    `doc_vnesh_inval` və `doc_vnesh_swift` qolları sabit `''1''` (SWIFT)
+    --    verir, çünki o iki cədvəldə `PLAT_SYSTEM` heç vaxt doldurulmayıb
+    --    (404/404 və 82/82 sətir 0). Ətraflı izah həmin qolların yanındadır.
+    --    Yəni buradakı `when ''0'' then ''XÖHKS''` yalnız DAXİLİ sənədlərə
+    --    (nacval / postupl) aiddir — orada 0 real XÖHKS deməkdir.
     case x.odeme_sistemi
          when ''0'' then ''XÖHKS''
          when ''1'' then ''SWIFT''
@@ -705,11 +706,12 @@ select
     --    Bazada LÜĞƏT CƏDVƏLİ YOXDUR — xəritə yalnız PL/SQL mənbəyində var,
     --    ona görə burada saxlanılır. Yeni sistem əlavə olunsa bu CASE yenilənir.
     --
-    --    ⚠️ DİQQƏT: `doc_vnesh_inval` və `doc_vnesh_swift` sətirlərinin
-    --    HAMISINDA dəyər 0-dır (yəni «XÖHKS» kimi oxunur), halbuki onlar
-    --    xarici əməliyyatlardır. Ehtimal ki, o iki cədvəldə sahə doldurulmur
-    --    və 0 sadəcə default-dur. Lüğət OLDUĞU KİMİ tətbiq olunub — uydurma
-    --    düzəliş edilməyib.
+    --    ⚠️ XARİCİ SƏNƏDLƏR BURAYA 0 GÖNDƏRMİR — `vd` alt sorğusunda
+    --    `doc_vnesh_inval` və `doc_vnesh_swift` qolları sabit `''1''` (SWIFT)
+    --    verir, çünki o iki cədvəldə `PLAT_SYSTEM` heç vaxt doldurulmayıb
+    --    (404/404 və 82/82 sətir 0). Ətraflı izah həmin qolların yanındadır.
+    --    Yəni buradakı `when ''0'' then ''XÖHKS''` yalnız DAXİLİ sənədlərə
+    --    (nacval / postupl) aiddir — orada 0 real XÖHKS deməkdir.
     case x.odeme_sistemi
          when ''0'' then ''XÖHKS''
          when ''1'' then ''SWIFT''
