@@ -170,14 +170,8 @@ select
     x.med_azn,                                                          -- AN
     x.max_azn,                                                          -- AO
     x.emel,                                                             -- AP
-    -- AQ/AR — struktur mənbə (doc_vnesh_*) ÜSTÜNDÜR; yalnız HƏR İKİSİ boş
-    -- olanda təyinat mətnindən oxunur. «Hər ikisi» şərti QƏSDƏNDİR: SWIFT
-    -- sətrində ad var (BIC), VÖEN yoxdur — orada adı bir mənbədən, VÖEN-i
-    -- başqasından götürsək sətir uydurma cütlük olardı.
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.teyinat_ad  else x.xeyrine_ad  end                      xeyrine_ad,   -- AQ
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.teyinat_voen else x.xeyrine_fin end                     xeyrine_fin,  -- AR
+    x.xeyrine_ad,                                                       -- AQ
+    x.xeyrine_fin,                                                      -- AR
     x.kommun,                                                           -- AS
     x.dt,                                                               -- AT
     x.kt                                                                -- AU
@@ -202,28 +196,7 @@ select
               from odb.licsch l, odb.regnom r
              where l.licsch = k.alan_hes
                and l.date_close_licsch is null
-               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin,
-           -- ── «Öz xeyrinə» ehtiyat mənbəyi — TƏYİNAT MƏTNİ ─────────────────
-           -- Struktur sahə (`doc_vnesh_*`) yalnız MƏDAXİL sətirlərində dolur.
-           -- Daxili/ödəmə sətirlərində benefisiar heç bir sütunda YOXDUR —
-           -- amma operator onu təyinata yazır:
-           --   «VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVIAN ...)»
-           -- Buradan VÖEN-i və adı çıxarırıq. Tapılmasa NULL qayıdır — yəni
-           -- sətir bu gün necə görünürsə, elə də qalır (heç nə pozulmur).
-           --
-           -- Şablon: V + ≤3 hərf (Ö/O) + EN + ≤20 rəqəmsiz simvol + 10 rəqəm.
-           -- «VÖEN» sözünə BAĞLIDIR — mətndəki başqa 10 rəqəmli nömrə
-           -- (müqavilə №, faktura №) səhvən VÖEN sayılmır.
-           regexp_substr(k.emel,
-                ''V[^0-9]{0,3}EN[^0-9]{0,20}([0-9]{10})'', 1, 1, null, 1)  teyinat_voen,
-           -- Ad: VÖEN-dən sonrakı mətn, mötərizəyə qədər.
-           -- Əvvəldəki ayırıcılar (« - », «: », «, ») kəsilir.
-           trim(regexp_substr(
-                regexp_replace(
-                    regexp_substr(k.emel,
-                        ''V[^0-9]{0,3}EN[^0-9]{0,20}[0-9]{10}(.*)'', 1, 1, null, 1),
-                    ''^[ .,:;-]+'', ''''),
-                ''^[^(]*''))                                               teyinat_ad
+               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin
       from (
 
   -- ══════════════════════════════════════════════════════════════════════
@@ -804,14 +777,8 @@ select
     x.med_azn,                                                          -- AN
     x.max_azn,                                                          -- AO
     x.emel,                                                             -- AP
-    -- AQ/AR — struktur mənbə (doc_vnesh_*) ÜSTÜNDÜR; yalnız HƏR İKİSİ boş
-    -- olanda təyinat mətnindən oxunur. «Hər ikisi» şərti QƏSDƏNDİR: SWIFT
-    -- sətrində ad var (BIC), VÖEN yoxdur — orada adı bir mənbədən, VÖEN-i
-    -- başqasından götürsək sətir uydurma cütlük olardı.
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.teyinat_ad  else x.xeyrine_ad  end                      xeyrine_ad,   -- AQ
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.teyinat_voen else x.xeyrine_fin end                     xeyrine_fin,  -- AR
+    x.xeyrine_ad,                                                       -- AQ
+    x.xeyrine_fin,                                                      -- AR
     x.kommun,                                                           -- AS
     x.dt,                                                               -- AT
     x.kt                                                                -- AU
@@ -836,28 +803,7 @@ select
               from odb.licsch l, odb.regnom r
              where l.licsch = k.alan_hes
                and l.date_close_licsch is null
-               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin,
-           -- ── «Öz xeyrinə» ehtiyat mənbəyi — TƏYİNAT MƏTNİ ─────────────────
-           -- Struktur sahə (`doc_vnesh_*`) yalnız MƏDAXİL sətirlərində dolur.
-           -- Daxili/ödəmə sətirlərində benefisiar heç bir sütunda YOXDUR —
-           -- amma operator onu təyinata yazır:
-           --   «VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVIAN ...)»
-           -- Buradan VÖEN-i və adı çıxarırıq. Tapılmasa NULL qayıdır — yəni
-           -- sətir bu gün necə görünürsə, elə də qalır (heç nə pozulmur).
-           --
-           -- Şablon: V + ≤3 hərf (Ö/O) + EN + ≤20 rəqəmsiz simvol + 10 rəqəm.
-           -- «VÖEN» sözünə BAĞLIDIR — mətndəki başqa 10 rəqəmli nömrə
-           -- (müqavilə №, faktura №) səhvən VÖEN sayılmır.
-           regexp_substr(k.emel,
-                ''V[^0-9]{0,3}EN[^0-9]{0,20}([0-9]{10})'', 1, 1, null, 1)  teyinat_voen,
-           -- Ad: VÖEN-dən sonrakı mətn, mötərizəyə qədər.
-           -- Əvvəldəki ayırıcılar (« - », «: », «, ») kəsilir.
-           trim(regexp_substr(
-                regexp_replace(
-                    regexp_substr(k.emel,
-                        ''V[^0-9]{0,3}EN[^0-9]{0,20}[0-9]{10}(.*)'', 1, 1, null, 1),
-                    ''^[ .,:;-]+'', ''''),
-                ''^[^(]*''))                                               teyinat_ad
+               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin
       from (
 
   -- ══════════════════════════════════════════════════════════════════════
