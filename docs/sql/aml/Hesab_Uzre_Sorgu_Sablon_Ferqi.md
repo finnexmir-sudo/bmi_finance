@@ -483,3 +483,64 @@ Nəticənin üç mümkün oxunuşu:
 | 4-cü sorğu doludur, 6/7 boş | VÖEN sadəcə **alan tərəfdir** | AQ/AR-a əlavə lazım deyil |
 | 6 və ya 7 doludur | mətn həmin sütundadır | mötərizə şablonu ilə ayrıştır |
 | hamısı boş | mətn Oracle-da saxlanmır | AQ/AR boş qalmalıdır |
+
+### 9.1 HƏLL — HÖP əməliyyatı (20.08.2026, istifadəçi qaydası)
+
+**Qayda (istifadəçi sözü):** «öz hesabından `45013000000000400009` bu hesaba
+keçənlərdə o iki sütun dolacaq — hesabın adı və VÖEN/FİN. Bizim öz yanaşmamız
+lazım deyil. Yalnız bu əməliyyatda dolacaq: debet müştəri hesabı,
+kredit `45013000000000400009`.»
+
+Mənbə **`arh_dd.primechanie`**-dir və mətn **olduğu kimi** götürülür:
+
+```
+VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVİAN KOUHASAREH SEYED SAEİD)
+            └── AR ──┘   └────────── AQ ────────┘
+```
+
+Mötərizədəki şəxs **AQ-ya düşmür** — o, Təyinat (AP) sütununda onsuz da görünür.
+
+#### Kod
+
+`x` səviyyəsində iki köməkçi sütun, **şərt kredit hesabına bağlıdır**:
+
+```sql
+case when k.krtam = '45013000000000400009'
+     then regexp_substr(k.emel, 'V[^0-9]{0,3}EN[^0-9]{0,20}([0-9]{10})', 1,1,null,1)
+end  hop_voen
+```
+
+Üst qatda yalnız ehtiyat kimi (mövcud `doc_vnesh_*` dəyəri üstələnmir):
+
+```sql
+case when x.xeyrine_ad is null and x.xeyrine_fin is null
+     then x.hop_ad   else x.xeyrine_ad  end   -- AQ
+```
+
+#### Diaqnoz tarixçəsi — nə səhv getdi
+
+| Addım | Nəticə | Səbəb |
+|---|---|---|
+| İlk şablon, **iyul 2026** | 0 sətir | dövr səhv — əməliyyat **aprel**dədir |
+| «Mətn bu sütunda yoxdur» | **SƏHV NƏTİCƏ** | tək aydan bütün cədvələ ümumiləşdirmə |
+| `doc_vnesh_nacval` axtarışı | yan yol | mənbə əvvəldən düz idi |
+| İstifadəçi real sətri göndərdi | həll | 06.04.2026, `primechanie` |
+
+**Dərs:** «şablon tutmadı» ≠ «data yoxdur». Ölçmə pəncərəsi istinad sətrini
+əhatə etmirsə, sıfır nəticə heç nəyi sübut etmir. İstinad sətrin **tarixini**
+əvvəlcə tap, ölçməni onun üstündə qur.
+
+#### Quraşdırma
+
+| Fayl | Harada |
+|---|---|
+| `91_AML_Xeyrine_HOP.sql` | SSMS — mövcud iki sətri UPDATE edir |
+| `90_AML_OracleSorgular.sql` | yalnız sıfırdan quraşdırma üçün (idempotent INSERT) |
+
+**Yoxlama sətri:** 06.04.2026, debet `40060000001979100000`,
+kredit `45013000000000400009` — üç sətir (37024 / 210,4 / 38,2).
+Hər üçündə AQ = «Dövlət Gömrük Komitəsi», AR = «1604964601» olmalıdır.
+
+⚠️ **`&voen` şablonu genişləndirilməyib.** İndilik yalnız «VÖEN…» + 10 rəqəm
+formasını tutur. Başqa yazılış (məs. FİN — 7 simvol) çıxarsa şablona ayrıca
+qol əlavə edilməlidir; hazırda belə sətir boş qalır.

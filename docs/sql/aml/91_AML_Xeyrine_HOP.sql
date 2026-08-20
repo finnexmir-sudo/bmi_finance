@@ -1,60 +1,48 @@
-﻿/* ============================================================================
-   AML → «Hesab üzrə sorğu» — Oracle sorğuları (BMI → FinNex köçürməsi)
+/* ============================================================================
+   AML — «Öz xeyrinə» (AQ/AR) HÖP əməliyyatında doldurulur
    ----------------------------------------------------------------------------
-   Üç sorğu əlavə edir (idempotent — varsa təkrar yaratmır):
+   NƏ EDİR: `OracleSorgular`-dakı İKİ mövcud sətrin `SorguMetni`-ni YENİLƏYİR
+   (`AML_HESAB_SORGU_FIZIKI`, `AML_HESAB_SORGU_HUQUQI`).
 
-     AML_HESAB_SORGU_FIZIKI   — «Fiziki şəxs» radio düyməsi
-     AML_HESAB_SORGU_HUQUQI   — «Sahibkar / hüquqi şəxs VÖEN» radio düyməsi
-     AML_HESAB_SORGU_QALIQ    — şapka: hesabın adı + giriş/son qalıq
+   ⚠️ `90_AML_OracleSorgular.sql` idempotent INSERT-dir — sətir varsa HEÇ NƏ
+   ETMİR. Ona görə artıq quraşdırılmış bazada YALNIZ BU skript işləyir.
+   (Sıfırdan quran üçün 90-cı skript də yenilənib — mətnlər eynidir.)
 
-   ── TOKENLƏR ────────────────────────────────────────────────────────────
-   Üç sorğuda da {HESAB}, {TARIX1}, {TARIX2} tokenləri var. Onları
-   `AmlHesabatService` icradan əvvəl əvəz edir. Tokeni SİLMƏ və adını
-   dəyişmə — yoxsa sorğu bütün hesabları/dövrü gətirməyə çalışar.
+   QAYDA (istifadəçi, 20.08.2026): AQ («Xeyrinə ödənilən şəxs/müəssisə») və
+   AR («FİN/VÖEN») YALNIZ müştəri hesabından **45013000000000400009**
+   hesabına keçən əməliyyatda dolur — HÖP. Mənbə `arh_dd.primechanie`:
 
-   Tarix formatı: dd/MM/yyyy (servis belə göndərir).
-   Hesab nömrəsi servisdə YALNIZ RƏQƏM olduğu yoxlanılır — mətn kimi
-   yerləşdirildiyi üçün apostrof/boşluq keçə bilməz.
+       VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVİAN ...)
+                   |__ AR __|   |________ AQ _________|
 
-   ── SÜTUN SIRASI ─────────────────────────────────────────────────────────
-   Əsas iki sorğu DƏQİQ 47 sütun qaytarır və sıra Excel şablonunun A…AU
-   sütunları ilə birbaşa uyğundur. Sütun əlavə etsən/silsən, həm ekran
-   başlıqları, həm Excel sürüşər. Sıranı dəyişmə.
+   Mətn OLDUĞU KİMİ götürülür, şərh edilmir. Mötərizədəki şəxs AQ-ya DÜŞMÜR —
+   o, Təyinat (AP) sütununda onsuz da görünür.
 
-   ── ADLAR NİYƏ ASCII-DİR ─────────────────────────────────────────────────
-   SSMS-də Azərbaycan hərfləri bəzən pozulur və `=` müqayisəsi sükutla sınır.
+   NƏ DƏYİŞMİR: `doc_vnesh_postupl` / `doc_vnesh_swift`-dən gələn mövcud
+   dəyərlər HEÇ VAXT üstələnmir; kredit hesabı uyğun gəlmirsə və ya şablon
+   tapılmırsa sütun bu günkü kimi boş qalır. Dəyişiklik yalnız ƏLAVƏ EDİR.
 
-   Oracle YALNIZ SELECT (CLAUDE.md).
+   İSTİNAD SƏTİR (yoxlama üçün): 06.04.2026, debet 40060000001979100000,
+   kredit 45013000000000400009, üç sətir — 37024 / 210,4 / 38,2.
+
+   Oracle YALNIZ SELECT (CLAUDE.md) — bu skript SQL Server-dədir.
    ============================================================================ */
 SET NOCOUNT ON;
 BEGIN TRY
 BEGIN TRAN;
 
-DECLARE @DepId INT;
+/* -- Ne deyisecek — EVVELCE BUNA BAX ------------------------------------- */
+SELECT SorguAdi,
+       LEN(SorguMetni)                                        AS KohneUzunluq,
+       CASE WHEN SorguMetni LIKE N'%hop_voen%'
+            THEN N'artiq yenilenib' ELSE N'yenilenecek' END   AS Veziyyet
+  FROM OracleSorgular
+ WHERE SorguAdi IN (N'AML_HESAB_SORGU_FIZIKI', N'AML_HESAB_SORGU_HUQUQI')
+   AND ISNULL(Silinib,0) = 0;
 
-/* Risk/AML sorğuları hansı departamentdədirsə oradan; yoxsa ilk aktiv */
-SELECT TOP 1 @DepId = DepartamentId FROM OracleSorgular
-WHERE  SorguAdi LIKE N'RISK%' AND ISNULL(Silinib, 0) = 0
-ORDER BY Id;
-
-IF @DepId IS NULL
-    SELECT TOP 1 @DepId = Id FROM Departamentler WHERE ISNULL(Silinib, 0) = 0 ORDER BY Id;
-
-IF @DepId IS NULL
-BEGIN
-    RAISERROR (N'Departament tapılmadı — sorğular əlavə edilmədi.', 16, 1);
-    ROLLBACK TRAN;
-    RETURN;
-END
-
-/* ── 1) Fiziki şəxs variantı ─────────────────────────────── */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular
-               WHERE SorguAdi = N'AML_HESAB_SORGU_FIZIKI' AND ISNULL(Silinib,0) = 0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (
-    N'AML_HESAB_SORGU_FIZIKI',
-    N'AML — Hesab üzrə sorğu, «Fiziki şəxs» radio düyməsi (BMI: frmhesabsorgu.axtar()). Tokenlər: {HESAB}, {TARIX1}, {TARIX2}. 47 sütun qaytarır — Excel şablonunun A…AU sırası ilə.',
-    N'with prm as (
+/* -- AML_HESAB_SORGU_FIZIKI -------------------------------------- */
+UPDATE OracleSorgular
+   SET SorguMetni = N'with prm as (
     select ''{HESAB}''                                  hesab,
            to_date(''{TARIX1}'',''dd/mm/yyyy'')           d1,
            to_date(''{TARIX2}'',''dd/mm/yyyy'')           d2
@@ -688,17 +676,15 @@ select
 
       ) k
   ) x
- order by x.qeb_tarix asc',
-    1, 0, @DepId, SYSDATETIME(), 0);
+ order by x.qeb_tarix asc'
+ WHERE SorguAdi = N'AML_HESAB_SORGU_FIZIKI' AND ISNULL(Silinib,0) = 0;
 
-/* ── 2) Sahibkar / hüquqi şəxs VÖEN variantı ─────────────────────────────── */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular
-               WHERE SorguAdi = N'AML_HESAB_SORGU_HUQUQI' AND ISNULL(Silinib,0) = 0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (
-    N'AML_HESAB_SORGU_HUQUQI',
-    N'AML — Hesab üzrə sorğu, «Sahibkar/hüquqi şəxs VÖEN» radio düyməsi (BMI: frmhesabsorgu.axtarhuquqi()). Fizikidən 10 yerdə fərqlidir — birləşdirmə. Tokenlər: {HESAB}, {TARIX1}, {TARIX2}.',
-    N'with prm as (
+IF @@ROWCOUNT = 0
+    PRINT N'XEBERDARLIQ: AML_HESAB_SORGU_FIZIKI tapilmadi — evvelce 90_AML_OracleSorgular.sql islet.';
+
+/* -- AML_HESAB_SORGU_HUQUQI -------------------------------------- */
+UPDATE OracleSorgular
+   SET SorguMetni = N'with prm as (
     select ''{HESAB}''                                  hesab,
            to_date(''{TARIX1}'',''dd/mm/yyyy'')           d1,
            to_date(''{TARIX2}'',''dd/mm/yyyy'')           d2
@@ -1324,46 +1310,26 @@ select
 
       ) k
   ) x
- order by x.qeb_tarix asc',
-    1, 0, @DepId, SYSDATETIME(), 0);
+ order by x.qeb_tarix asc'
+ WHERE SorguAdi = N'AML_HESAB_SORGU_HUQUQI' AND ISNULL(Silinib,0) = 0;
 
-/* ── 3) Şapka — hesabın adı və giriş/son qalıq ─────────────────────────────── */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular
-               WHERE SorguAdi = N'AML_HESAB_SORGU_QALIQ' AND ISNULL(Silinib,0) = 0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (
-    N'AML_HESAB_SORGU_QALIQ',
-    N'AML — Hesab üzrə sorğu şapkası: hesabın adı (accounts.name_latin) + giriş/son qalıq (BMI: frmhesabsorgu.hesabad_qaliq()). Tokenlər: {HESAB}, {TARIX1}, {TARIX2}. Sütunlar: NAME_LATIN, GIR_QALIQ, SON_QALIQ.',
-    N'select ac.name_latin, p.gir_qaliq, k.son_qaliq
-  from (select t.licsch,
-               case when substr(t.licsch,6,2) = ''00'' then abs(t.saldo_ish_nacval)
-                    else abs(t.saldo_ish_inval) end gir_qaliq
-          from odb.arh_saldo_ls t
-         where t.licsch = ''{HESAB}''
-           and t.date_oper = to_date(''{TARIX1}'',''dd/mm/yyyy'')) p,
-       (select t.licsch,
-               case when substr(t.licsch,6,2) = ''00'' then abs(t.saldo_ish_nacval)
-                    else abs(t.saldo_ish_inval) end son_qaliq
-          from odb.arh_saldo_ls t
-         where t.licsch = ''{HESAB}''
-           and t.date_oper = odb.ish_gun_cari1(to_date(''{TARIX2}'',''dd/mm/yyyy''))) k,
-       odb.accounts ac
- where p.licsch = k.licsch
-   and p.licsch = ac.licsch',
-    1, 0, @DepId, SYSDATETIME(), 0);
+IF @@ROWCOUNT = 0
+    PRINT N'XEBERDARLIQ: AML_HESAB_SORGU_HUQUQI tapilmadi — evvelce 90_AML_OracleSorgular.sql islet.';
 
 COMMIT TRAN;
-PRINT N'AML sorğuları hazırdır.';
 
-/* ── YOXLAMA — nə əlavə olundu ─────────────────────────────────────────── */
-SELECT Id, SorguAdi, Aktiv, DepartamentId, LEN(SorguMetni) AS SorguUzunlugu
+/* -- YOXLAMA — her ikisinde «hop_voen» olmalidir -------------------------- */
+SELECT SorguAdi,
+       LEN(SorguMetni)                                        AS YeniUzunluq,
+       CASE WHEN SorguMetni LIKE N'%hop_voen%'
+            THEN N'OK' ELSE N'XETA — yenilenmeyib' END        AS Veziyyet
   FROM OracleSorgular
- WHERE SorguAdi LIKE N'AML_HESAB_SORGU%' AND ISNULL(Silinib,0) = 0
- ORDER BY SorguAdi;
+ WHERE SorguAdi IN (N'AML_HESAB_SORGU_FIZIKI', N'AML_HESAB_SORGU_HUQUQI')
+   AND ISNULL(Silinib,0) = 0;
 
 END TRY
 BEGIN CATCH
     IF @@TRANCOUNT > 0 ROLLBACK TRAN;
-    PRINT N'XƏTA: ' + ERROR_MESSAGE();
+    PRINT N'XETA: ' + ERROR_MESSAGE();
     THROW;
 END CATCH

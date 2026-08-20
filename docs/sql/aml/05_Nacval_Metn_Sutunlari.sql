@@ -1,3 +1,18 @@
+/* ############################################################################
+   ⚠️ BU FAYLIN NƏTİCƏSİ KÖHNƏLİB — 20.08.2026, HƏLL TAPILDI
+   ----------------------------------------------------------------------------
+   Buradakı «mətn `arh_dd.primechanie`-də YOXDUR» nəticəsi SƏHVDİR.
+   Səbəb: ölçmə YALNIZ İYUL 2026 üzrə aparılmışdı, istinad əməliyyat isə
+   **06.04.2026** tarixlidir. Dövr səhv seçilmişdi — data səhv deyildi.
+
+   DOĞRU VƏZİYYƏT: mətn məhz `arh_dd.primechanie`-dədir:
+       VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVİAN ...)
+   Xam halda Azərbaycan hərfləri düzgün oxunur — `func_utf8_to_latin` lazım deyil.
+
+   Fayl ARXİV kimi saxlanılır (sütun siyahıları hələ də faydalıdır).
+   İşlək həll: `91_AML_Xeyrine_HOP.sql` + `Hesab_Uzre_Sorgu_Sablon_Ferqi.md` §9.
+   ############################################################################ */
+
 /* ============================================================================
    AML — «Öz xeyrinə» (AQ/AR): mətn SƏNƏD cədvəlindədir, `arh_dd`-də YOX
    ----------------------------------------------------------------------------
