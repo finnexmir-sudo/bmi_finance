@@ -1,54 +1,34 @@
-using System.Security.Claims;
-using FinNex.Application.Interfaces;
-using FinNex.Domain;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
+using FinNex.UI.Filters;
 
 namespace FinNex.UI.Areas.Avtopark;
 
 /// <summary>
 /// Avtopark idarəetmə səhifələri (Maşınlar, Müddətlər) üçün giriş yoxlaması.
 ///
-/// **Admin həmişə girir.** Ondan başqa — Admin panel → Permissions /
-/// UserPermissions bölməsindən <see cref="Kod"/> icazəsi verilmiş istifadəçi.
+/// **Admin həmişə girir.** Ondan başqa — Admin panel → Sistem İcazələri
+/// bölməsindən <see cref="IcazeKodu"/> icazəsi verilmiş istifadəçi.
 ///
 /// NİYƏ ROL DEYİL: əvvəl bu iki səhifə `[Authorize(Roles = Admin)]` idi. Yəni
 /// təsərrüfat işçisinə maşın kartını açmaq üçün TAM ADMİN vermək lazım gəlirdi —
 /// o isə maaşdan tutmuş sistem ayarlarına qədər hər şeyi açır. İndi ayrıca
 /// icazə var: yalnız Avtopark idarəetməsi açılır, qalan səlahiyyətlər dəyişmir.
 ///
-/// Eyni yanaşma layihədə artıq işlənir: Mühasibat paneli
-/// `muhasibat_dashboard_bax` icazəsi ilə paylaşılır.
+/// BÜTÜN MƏNTİQ <see cref="IcazeAttribute"/>-dədir — bu sinif yalnız kodu
+/// bir yerdə saxlayan «adlandırılmış qısaltmadır». Yeni səhifə üçün ayrıca
+/// belə sinif yazmaq MƏCBURİ DEYİL, birbaşa `[Icaze("kod")]` yazmaq kifayətdir.
 ///
 /// ⚠️ Sidebar-dakı şərt (`_UserLayout.cshtml` → `hasAvtoparkIdare`) BUNUNLA
 /// EYNİ olmalıdır — linki görüb sonra 403 almaq istifadəçini çaşdırır.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AvtoparkIdareIcazesiAttribute : Attribute, IAsyncAuthorizationFilter
+public sealed class AvtoparkIdareIcazesiAttribute : IcazeAttribute
 {
-    /// <summary>İcazə kodu — `Permissions` cədvəlindəki `Kod` sütunu ilə eynidir.</summary>
-    public const string Kod = "avtopark_idare";
+    /// <summary>
+    /// İcazə kodu — `Permissions` cədvəlindəki `Kod` sütunu ilə HƏRFƏN eynidir.
+    /// Adı `Kod` DEYİL, çünki bazada `IcazeAttribute.Kod` xassəsi var və eyni
+    /// adlı sabit onu kölgələyərdi (`new` tələb edərdi) — oxuyan çaşardı.
+    /// </summary>
+    public const string IcazeKodu = "avtopark_idare";
 
-    public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
-    {
-        var user = context.HttpContext.User;
-
-        if (user?.Identity?.IsAuthenticated != true)
-        {
-            context.Result = new ChallengeResult();
-            return;
-        }
-
-        if (user.IsInRole(RoleNames.Admin)) return;
-
-        var uidStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (int.TryParse(uidStr, out var uid))
-        {
-            var perm = context.HttpContext.RequestServices.GetRequiredService<IUserPermissionService>();
-            var netice = await perm.HasPermissionAsync(uid, Kod);
-            if (netice.Success && netice.Data) return;
-        }
-
-        context.Result = new ForbidResult();
-    }
+    public AvtoparkIdareIcazesiAttribute() : base(IcazeKodu) { }
 }

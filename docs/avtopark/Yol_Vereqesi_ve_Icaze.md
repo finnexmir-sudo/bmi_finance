@@ -27,13 +27,34 @@ icazəsi ilə paylaşılır.
 
 | Fayl | Nə |
 |---|---|
-| `FinNex.UI/Areas/Avtopark/AvtoparkIdareIcazesiAttribute.cs` | filtr — Admin **və ya** icazə |
+| `FinNex.UI/Filters/IcazeAttribute.cs` | **universal** filtr — `[Icaze("kod")]` |
+| `FinNex.UI/Areas/Avtopark/AvtoparkIdareIcazesiAttribute.cs` | yuxarıdakının adlandırılmış qısaltması |
 | `MasinController.cs`, `MuddetController.cs` | `[Authorize] [AvtoparkIdareIcazesi]` |
 | `_UserLayout.cshtml` → `hasAvtoparkIdare` | sidebar şərti — filtrlə **eyni** |
 | `docs/sql/avtopark/03_Avtopark_Idare_Icazesi.sql` | `Permissions` sətri |
 
 > ⚠️ Sidebar şərti ilə filtr şərti **eyni qalmalıdır**. Biri dəyişsə istifadəçi
 > ya linki görüb 403 alacaq, ya da icazəsi olduğu halda linki görməyəcək.
+
+### Yeni səhifəni icazəyə bağlamaq (20.08.2026-dan)
+
+Ayrıca atribut sinfi yazmaq **lazım deyil**:
+
+```csharp
+[Authorize]
+[Icaze("modul_ehval_bax")]     // Admin panel → Sistem İcazələri-dəki KOD
+public class EhvalController : Controller
+```
+
+Üç addım — eyni izah Admin panel → **Sistem İcazələri** səhifəsində də yazılıb
+(orada həmişə göz önündədir):
+
+1. İcazəni yarat (admin panel forması)
+2. İşçilərə ver («İdarə et»)
+3. Səhifəyə bağla (**kodda**, yuxarıdakı bir sətir)
+
+3-cü addım olmasa icazə **heç nəyi qorumur** — sistem bilmir ki, kod hansı
+səhifəyə aiddir.
 
 ### Quraşdırma
 

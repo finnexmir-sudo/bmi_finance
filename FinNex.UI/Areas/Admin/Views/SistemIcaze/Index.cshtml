@@ -60,9 +60,44 @@
                 <textarea name="aciqlama" maxlength="500" rows="2" placeholder="Bu icazə nəyə giriş verir"></textarea>
                 <button type="submit" class="si-btn si-primary"><i class="bi bi-plus-lg"></i> Əlavə et</button>
             </form>
+            @* Bu qeyd QƏSDƏN uzundur: icazə yaratmaq TƏK BAŞINA heç nəyi
+               qorumur və bunu unutmaq asandır — sonra «icazə verdim, işləmir»
+               deyə vaxt itir. Üç addım da burada yazılıb ki, aylar sonra
+               yenidən oxumaq kifayət etsin. *@
             <div class="si-note">
-                <i class="bi bi-info-circle"></i> İcazəni yaratdıqdan sonra <b>İdarə et</b> ilə işçilərə ver.
-                Controller-də <code>[Authorize]</code> yerinə həmin kodu yoxlamaqla istənilən yeni sahəni buradan idarə edə bilərsən.
+                <div class="si-note-bas">
+                    <i class="bi bi-info-circle"></i> İcazə necə işləyir — 3 addım
+                </div>
+
+                <ol class="si-steps">
+                    <li>
+                        <b>İcazəni yarat</b> — yuxarıdakı forma.
+                        <span class="si-dim">Kod dəyişməz açardır (məs. <code>modul_ehval_bax</code>);
+                        sonradan dəyişdirsən kodla əlaqə qırılar.</span>
+                    </li>
+                    <li>
+                        <b>İşçilərə ver</b> — soldakı siyahıdan <b>İdarə et</b>.
+                    </li>
+                    <li>
+                        <b>Səhifəyə bağla</b> — bu addım <u>kodda</u> edilir.
+                        Yeni icazə yaratmaq tək başına <b>heç bir səhifəni qorumur</b>:
+                        sistem bilmir ki, o kod hansı səhifəyə aiddir.
+                        Proqramçı həmin controller-in üstünə bir sətir yazır:
+<pre class="si-code">[Authorize]
+[Icaze("modul_ehval_bax")]   // ← buradakı KOD
+public class EhvalController : Controller</pre>
+                    </li>
+                </ol>
+
+                <div class="si-note-alt">
+                    <b>Qayda:</b> <b>Admin həmişə girir</b> — ona icazə vermək lazım deyil.
+                    İcazəsi olmayan <code>403</code> alır.<br />
+                    <b>Diqqət:</b> koddakı mətn buradakı <b>Kod</b> sütunu ilə hərfən eyni
+                    olmalıdır. Bir hərf fərq olsa icazə heç kimə işləməz və
+                    <b>heç bir xəta çıxmaz</b> — hamı səssizcə 403 alar.<br />
+                    Menyuda linkin görünməsi ayrıca şərtdir (<code>_UserLayout.cshtml</code>) —
+                    o da eyni icazəyə baxmalıdır, yoxsa link görünər, səhifə açılmaz.
+                </div>
             </div>
         </div>
     </div>
@@ -78,6 +113,19 @@
     .si-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items: start; }
     .si-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(2,6,23,.05); }
     .si-card-h { font-weight: 700; font-size: 14px; padding: 14px 18px; border-bottom: 1px solid #eef2f7; }
+    .si-note-bas { font-weight: 700; margin-bottom: 8px; }
+    .si-steps { margin: 0 0 10px; padding-left: 18px; }
+    .si-steps li { margin-bottom: 7px; line-height: 1.5; }
+    .si-dim { color: #64748b; }
+    .si-code {
+        margin: 6px 0 0; padding: 9px 11px; border-radius: 8px;
+        background: #0f172a; color: #e2e8f0; font-size: 12px; line-height: 1.5;
+        white-space: pre; overflow-x: auto;
+    }
+    .si-note-alt {
+        margin-top: 10px; padding-top: 10px; border-top: 1px solid #cbd5e1;
+        line-height: 1.55;
+    }
     .si-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
     .si-table th { text-align: left; padding: 10px 14px; background: #f8fafc; color: #64748b; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
     .si-table td { padding: 11px 14px; border-top: 1px solid #eef2f7; vertical-align: top; }
