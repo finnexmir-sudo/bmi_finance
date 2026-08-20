@@ -34,7 +34,7 @@ INSERT INTO Permissions (Kod, Ad, Aciqlama, YaradilmaTarixi, Silinib)
 VALUES (
     N'avtopark_idare',
     N'Avtopark idarəetməsi',
-    N'Avtopark → Maşınlar və Müddətlər səhifələrini açır (maşın kartı, sığorta/texniki baxış müddətləri, xəbərdarlıq alıcıları). Admin bu icazə olmadan da girir.',
+    N'Maşınlar və Müddətlər səhifələri (Admin onsuz da girir)',
     SYSDATETIME(), 0);
 
 COMMIT TRAN;
