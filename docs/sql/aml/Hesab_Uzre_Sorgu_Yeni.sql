@@ -268,7 +268,18 @@ select
                      v.sender_bic, v.receiver_bic,
                      -- 🆕
                      to_char(v.id)                                               vd_id,
-                     to_char(v.plat_system)                                      plat_system,
+                     -- ⚠️ XARİCİ SƏNƏD — PLAT_SYSTEM burada DOLDURULMUR.
+                     --    `doc_vnesh_inval` (404/404) və `doc_vnesh_swift` (82/82)
+                     --    sətirlərinin HAMISINDA dəyər 0-dır. Lüğətdə 0 «XÖHKS»
+                     --    deməkdir, XÖHKS isə MANAT sistemidir — valyuta ödənişi
+                     --    oradan keçə bilməz, yəni 0 burada «XÖHKS» yox, «BOŞ» deməkdir.
+                     --    (BMI-nin öz `TRG_CHECK_I_DOC_VNESH_INVAL` triggeri məhz
+                     --     `plat_system = 1` halını yoxlayır — deməli 1 gözlənilib,
+                     --     amma real datada bir dənə də 1 yoxdur.)
+                     --    Bu iki cədvəlin ÖZÜ SWIFT axınıdır, ona görə sahəyə
+                     --    baxmırıq: sabit SWIFT kodu (1) veririk — üst qatdakı CASE
+                     --    onu «SWIFT» kimi yazacaq. (İstifadəçi qərarı: variant B.)
+                     '1'                                                          plat_system,
                      '1300036291'                                                gon_bank_voen,
                      to_char((select max(m.voen) from odb.muxbir_hesab m
                                where m.swift_kodu = v.receiver_bic))            alan_bank_voen,
@@ -342,7 +353,18 @@ select
                      v.sender_bank_bic, v.beneficiary_bank_bic,
                      -- 🆕
                      to_char(v.id),
-                     to_char(v.plat_system),
+                     -- ⚠️ XARİCİ SƏNƏD — PLAT_SYSTEM burada DOLDURULMUR.
+                     --    `doc_vnesh_inval` (404/404) və `doc_vnesh_swift` (82/82)
+                     --    sətirlərinin HAMISINDA dəyər 0-dır. Lüğətdə 0 «XÖHKS»
+                     --    deməkdir, XÖHKS isə MANAT sistemidir — valyuta ödənişi
+                     --    oradan keçə bilməz, yəni 0 burada «XÖHKS» yox, «BOŞ» deməkdir.
+                     --    (BMI-nin öz `TRG_CHECK_I_DOC_VNESH_INVAL` triggeri məhz
+                     --     `plat_system = 1` halını yoxlayır — deməli 1 gözlənilib,
+                     --     amma real datada bir dənə də 1 yoxdur.)
+                     --    Bu iki cədvəlin ÖZÜ SWIFT axınıdır, ona görə sahəyə
+                     --    baxmırıq: sabit SWIFT kodu (1) veririk — üst qatdakı CASE
+                     --    onu «SWIFT» kimi yazacaq. (İstifadəçi qərarı: variant B.)
+                     '1',
                      to_char((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.sender_bank_bic)),
                      '1300036291',
                      v.sender_bank_bic,
@@ -472,7 +494,18 @@ select
                      v.currency valuta, '  ' inn_kred, '  ' fin_kredit,
                      v.sender_bic, v.receiver_bic,
                      to_char(v.id)                                               vd_id,
-                     to_char(v.plat_system)                                      plat_system,
+                     -- ⚠️ XARİCİ SƏNƏD — PLAT_SYSTEM burada DOLDURULMUR.
+                     --    `doc_vnesh_inval` (404/404) və `doc_vnesh_swift` (82/82)
+                     --    sətirlərinin HAMISINDA dəyər 0-dır. Lüğətdə 0 «XÖHKS»
+                     --    deməkdir, XÖHKS isə MANAT sistemidir — valyuta ödənişi
+                     --    oradan keçə bilməz, yəni 0 burada «XÖHKS» yox, «BOŞ» deməkdir.
+                     --    (BMI-nin öz `TRG_CHECK_I_DOC_VNESH_INVAL` triggeri məhz
+                     --     `plat_system = 1` halını yoxlayır — deməli 1 gözlənilib,
+                     --     amma real datada bir dənə də 1 yoxdur.)
+                     --    Bu iki cədvəlin ÖZÜ SWIFT axınıdır, ona görə sahəyə
+                     --    baxmırıq: sabit SWIFT kodu (1) veririk — üst qatdakı CASE
+                     --    onu «SWIFT» kimi yazacaq. (İstifadəçi qərarı: variant B.)
+                     '1'                                                          plat_system,
                      '1300036291'                                                gon_bank_voen,
                      to_char((select max(m.voen) from odb.muxbir_hesab m
                                where m.swift_kodu = v.receiver_bic))            alan_bank_voen,
@@ -539,7 +572,18 @@ select
                      v.currency valuta, r.inn_regnom, r.pincode fin_kred,
                      v.sender_bank_bic, v.beneficiary_bank_bic,
                      to_char(v.id),
-                     to_char(v.plat_system),
+                     -- ⚠️ XARİCİ SƏNƏD — PLAT_SYSTEM burada DOLDURULMUR.
+                     --    `doc_vnesh_inval` (404/404) və `doc_vnesh_swift` (82/82)
+                     --    sətirlərinin HAMISINDA dəyər 0-dır. Lüğətdə 0 «XÖHKS»
+                     --    deməkdir, XÖHKS isə MANAT sistemidir — valyuta ödənişi
+                     --    oradan keçə bilməz, yəni 0 burada «XÖHKS» yox, «BOŞ» deməkdir.
+                     --    (BMI-nin öz `TRG_CHECK_I_DOC_VNESH_INVAL` triggeri məhz
+                     --     `plat_system = 1` halını yoxlayır — deməli 1 gözlənilib,
+                     --     amma real datada bir dənə də 1 yoxdur.)
+                     --    Bu iki cədvəlin ÖZÜ SWIFT axınıdır, ona görə sahəyə
+                     --    baxmırıq: sabit SWIFT kodu (1) veririk — üst qatdakı CASE
+                     --    onu «SWIFT» kimi yazacaq. (İstifadəçi qərarı: variant B.)
+                     '1',
                      to_char((select max(m.voen) from odb.muxbir_hesab m where m.swift_kodu = v.sender_bank_bic)),
                      '1300036291',
                      v.sender_bank_bic,

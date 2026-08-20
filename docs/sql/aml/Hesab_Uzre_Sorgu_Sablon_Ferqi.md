@@ -398,11 +398,31 @@ Xəritə `CASE` şəklində **sorğunun içindədir** (bazada lüğət cədvəli
 Sorğu `OracleSorgular`-da saxlandığı üçün yeni ödəniş sistemi əlavə olunanda
 admin kod dəyişmədən oradan yeniləyə bilər.
 
-> ⚠️ **AÇIQ QALAN:** `doc_vnesh_inval` (404 sətir) və `doc_vnesh_swift`
-> (82 sətir) sətirlərinin **hamısında dəyər 0-dır**, yəni hesabatda «XÖHKS»
-> yazılacaq — halbuki onlar xarici əməliyyatlardır. Ehtimal ki, həmin iki
-> cədvəldə bu sahə ümumiyyətlə doldurulmur və 0 sadəcə default-dur
-> (`TRG_CHECK_I_DOC_VNESH_INVAL` `plat_system = 1` halını yoxlayır, deməli
-> 1 = SWIFT gözlənilir, amma yazılmır). Lüğət **olduğu kimi** tətbiq edilib —
-> uydurma düzəliş edilməyib. Xarici sətirlərdə «SWIFT» yazılması lazımdırsa,
-> dəyişiklik tək yerdədir: həmin `CASE`.
+### 8.2 Xarici sənədlərdə `PLAT_SYSTEM` doldurulmur — qərar: variant B (20.08.2026)
+
+`doc_vnesh_inval` (**404/404** sətir) və `doc_vnesh_swift` (**82/82** sətir)
+sətirlərinin hamısında dəyər **0**-dır. Lüğətə görə 0 = XÖHKS, amma XÖHKS
+**manat** sistemidir — valyuta ödənişi oradan keçə bilməz. Yəni 0 orada
+«XÖHKS» yox, **«boş»** deməkdir: sahə heç vaxt doldurulmayıb.
+
+Sübut: BMI-nin öz `TRG_CHECK_I_DOC_VNESH_INVAL` triggeri məhz
+`plat_system = 1` (SWIFT) halını yoxlayır — deməli 1 gözlənilib, amma real
+datada bir dənə də 1 yoxdur. Daxili cədvəllərdə isə dəyərlər canlıdır
+(nacval: 0/3/4/5/6, postupl: 0/4/6) — orada sahə işlənir.
+
+**Qərar (istifadəçi, 20.08.2026): variant B.** `vd` alt sorğusunun
+`inval` və `swift` qollarında sahəyə ümumiyyətlə baxılmır — sabit **`'1'`**
+(SWIFT kodu) verilir, üst qatdakı `CASE` onu «SWIFT» kimi yazır.
+
+| Seçim | Xarici sətirdə nə yazılırdı | Nəticə |
+|---|---|---|
+| A — toxunmamaq | «XÖHKS» | səhv oxunur |
+| **B — sabit SWIFT** ✅ | «SWIFT» | cədvəlin özü kanalı təyin edir |
+| C — boş | (boş) | yalan yoxdur, amma sütun boş |
+
+B seçildi, çünki o iki cədvəl **öz-özlüyündə** SWIFT axınıdır (biri xaricə
+ödəmə, biri xaricdən mədaxil) və «SWIFT» lüğətdə onsuz da var (kod 1) —
+uydurma dəyər yazılmır.
+
+Daxili cədvəllərə (**nacval / postupl**) TOXUNULMADI — orada `PLAT_SYSTEM`
+real dəyər daşıyır və olduğu kimi oxunur.
