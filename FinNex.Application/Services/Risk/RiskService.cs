@@ -20,6 +20,35 @@ public class RiskService : IRiskService
 
     private static string Norm(string? s) => (s ?? "").Replace(" ", "").ToLowerInvariant();
 
+    // Risk ekranının doldura bildiyi tokenlər — `SqlHazirla` yalnız bunları əvəz edir.
+    private static readonly string[] DesteklenenTokenler =
+        { "{BASTARIX}", "{SONTARIX}", "{TARIX}", "{HEDD}", "{IL}" };
+
+    // Sorğuda Risk ekranının BİLMƏDİYİ token varsa, o sorğu buraya aid deyil:
+    // klikləsən token olduğu kimi Oracle-a gedər və anlaşılmaz xəta verər.
+    //
+    // Real nümunə (20.08.2026): AML «Hesab üzrə sorğu» üçün `OracleSorgular`-a
+    // əlavə edilən üç sətir ({HESAB}, {TARIX1}, {TARIX2} tokenli) Risk
+    // panelində adi hesabat kartı kimi göründü. Onların öz səhifəsi var
+    // (Risk → AML → Hesab üzrə sorğu) — siyahıda yeri yoxdur.
+    //
+    // Şərt QƏSDƏN ada görə deyil, TOKENƏ görədir: gələcəkdə başqa modul öz
+    // tokenli sorğusunu əlavə etsə, siyahı avtomatik təmiz qalır.
+    private static bool RiskDoldurabilmir(string? sql)
+    {
+        if (string.IsNullOrEmpty(sql)) return false;
+        for (var i = 0; i < sql.Length; i++)
+        {
+            if (sql[i] != '{') continue;
+            var son = sql.IndexOf('}', i + 1);
+            if (son < 0) break;
+            var token = sql.Substring(i, son - i + 1).ToUpperInvariant();
+            if (!DesteklenenTokenler.Contains(token)) return true;
+            i = son;
+        }
+        return false;
+    }
+
     // "Risk" departamentinə aid aktiv sorğular
     public async Task<IList<RiskHesabatDto>> HesabatlarAsync()
     {
@@ -27,7 +56,8 @@ public class RiskService : IRiskService
         if (res?.Data == null) return new List<RiskHesabatDto>();
 
         return res.Data
-            .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk"))
+            .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk")
+                     && !RiskDoldurabilmir(x.SorguMetni))
             .OrderBy(x => x.SorguAdi)
             .Select(x => new RiskHesabatDto { Id = x.Id, Ad = x.SorguAdi, Mahiyyet = DrillStrip(x.Mahiyyet) })
             .ToList();
@@ -142,7 +172,8 @@ public class RiskService : IRiskService
         var panel = new RiskPanelDto();
         var res = await _sorguService.HamisiniGetirAsync();
         var list = res?.Data?
-            .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk"))
+            .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk")
+                     && !RiskDoldurabilmir(x.SorguMetni))
             .OrderBy(x => x.SorguAdi)
             .ToList() ?? new();
 
