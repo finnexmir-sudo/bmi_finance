@@ -426,3 +426,90 @@ uydurma dəyər yazılmır.
 
 Daxili cədvəllərə (**nacval / postupl**) TOXUNULMADI — orada `PLAT_SYSTEM`
 real dəyər daşıyır və olduğu kimi oxunur.
+
+---
+
+## 9. «Öz xeyrinə» (AQ/AR) — təyinat mətnindən tutmaq (20.08.2026)
+
+### Problem
+
+AQ («Xeyrinə ödənilən şəxs/müəssisə») və AR («FİN/VÖEN») **struktur sahədən**
+doldurulurdu və o sahə yalnız iki cədvəldə var:
+
+| Qol | AQ mənbəyi | AR mənbəyi |
+|---|---|---|
+| `doc_vnesh_postupl` (milli mədaxil) | `func_utf8_to_latin(kredit_name)` | `to_char(kredit_inn)` |
+| `doc_vnesh_swift` (xarici mədaxil) | `beneficiary_bank_bic` | — |
+| `doc_vnesh_inval` (xarici ödəmə) | — | — |
+| `doc_vnesh_nacval` (milli ödəmə) | — | — |
+| **daxili köçürmə** (`arh_dd`-də `id_vd` yoxdur) | — | — |
+
+Yəni **məxaric və daxili sətirlərdə sütun həmişə boş qalırdı** — halbuki
+benefisiar məlumdur, sadəcə struktur sütunda deyil, **təyinat mətnindədir**:
+
+```
+VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVIAN KOUHASAREH SEYED SAEİD)
+            └── AR ──┘   └──────────── AQ ────────────┘
+```
+
+Bu mətn `arh_dd.primechanie`-dədir və sorğu onu **onsuz da çəkir** — AP
+(«Təyinat») sütunu məhz odur. Yəni yeni cədvələ, yeni join-a ehtiyac yoxdur;
+mövcud sütunu **ayrıştırmaq** kifayətdir.
+
+### Həll
+
+`x` səviyyəsində iki köməkçi sütun hesablanır:
+
+```sql
+regexp_substr(k.emel, 'V[^0-9]{0,3}EN[^0-9]{0,20}([0-9]{10})', 1, 1, null, 1)  teyinat_voen
+trim(regexp_substr(regexp_replace(
+     regexp_substr(k.emel, 'V[^0-9]{0,3}EN[^0-9]{0,20}[0-9]{10}(.*)', 1, 1, null, 1),
+     '^[ .,:;-]+', ''), '^[^(]*'))                                             teyinat_ad
+```
+
+Üst qatda isə **yalnız ehtiyat kimi** işlədilir:
+
+```sql
+case when x.xeyrine_ad is null and x.xeyrine_fin is null
+     then x.teyinat_ad  else x.xeyrine_ad  end   xeyrine_ad   -- AQ
+case when x.xeyrine_ad is null and x.xeyrine_fin is null
+     then x.teyinat_voen else x.xeyrine_fin end  xeyrine_fin  -- AR
+```
+
+### Niyə məhz belə — üç qərar
+
+1. **Şablon «VÖEN» sözünə bağlıdır**, sərbəst «10 rəqəm» axtarışı DEYİL.
+   Təyinatda müqavilə №, faktura №, telefon nömrəsi də 10 rəqəmli ola bilər —
+   etiketsiz axtarış onları VÖEN kimi yazardı və **heç bir xəta verməzdi**.
+   `V[^0-9]{0,3}EN` həm «VÖEN», həm «VOEN» yazılışını tutur; «VERGİDƏN»,
+   «MOUSAVIAN» kimi sözlər tutulmur (yoxlanılıb — `EN` hissəsi uyğun gəlmir).
+
+2. **Şərt `is null` üzərindədir — struktur mənbə HEÇ VAXT üstələnmir.**
+   Mətn ayrıştırması təxminidir, struktur sahə isə dəqiqdir; tərsi olsaydı
+   dəqiq dəyər təxmini ilə əvəzlənərdi.
+
+3. **«HƏR İKİSİ boş» şərti QƏSDƏNDİR.** SWIFT qolunda AQ dolu (BIC), AR boşdur.
+   Şərt ayrı-ayrı olsaydı, adı BIC-dən, VÖEN-i mətndən götürərdik — **iki
+   fərqli tərəfin məlumatı bir sətirdə** cütləşərdi. Bu, AML hesabatında
+   boş xanadan qat-qat pisdir.
+
+### ⚠️ Nə tutmur
+
+- Təyinatda «VÖEN» sözü yazılmayıbsa — sətir bu günkü kimi boş qalır.
+- Ad hissəsi mötərizəyə qədər kəsilir; nümunədəki mötərizədəki ad
+  (`MOUSAVIAN ...`) **AQ-ya düşmür** — o, ödəyən fiziki şəxsdir, benefisiar
+  deyil. Lazım olsa qayda dəyişdirilə bilər, amma bu ayrıca qərardır.
+- FİN (7 simvol) tutulmur — yalnız **10 rəqəmli VÖEN**. Təyinatda FİN
+  yazılışı görülməyib; görünsə şablona ayrıca qol əlavə edilməlidir.
+
+### Quraşdırma sırası
+
+| Addım | Fayl | Harada |
+|---|---|---|
+| 1 — ÖLÇ | `04_Teyinat_Voen_Diaqnostikasi.sql` | PL/SQL Developer (Oracle) |
+| 2 — TƏTBİQ ET | `91_AML_Xeyrine_Teyinatdan.sql` | SSMS (SQL Server) |
+
+`90_AML_OracleSorgular.sql` **idempotent INSERT**-dir — sətir varsa heç nə
+etmir. Ona görə mövcud quraşdırmada 90-cı skripti təkrar işlətmək **kifayət
+deyil**; yeniləmə yalnız 91-ci skriptlə gedir. (90-cı skript də yenilənib —
+sıfırdan quran eyni mətni alır.)
