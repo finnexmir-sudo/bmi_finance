@@ -46,15 +46,20 @@
             padding: 12px 14px; font-size: 12.5px; color: #a32d2d;
         }
         /* ── Cədvəl ───────────────────────────────────────────────────────
-           47 sütundur — üfüqi sürüşmə məcburidir. Hündürlük `calc` ilədir ki,
-           konteynerin ALT KƏNARI (üfüqi sürüşdürmə zolağı orada olur) ekranda
-           qalsın. Sabit `62vh` verəndə yuxarıdakı forma+xülasə kartları onu
-           aşağı itələyirdi və zolağı görmək üçün səhifəni sürüşdürmək lazım
-           gəlirdi. */
+           47 sütundur — üfüqi sürüşmə məcburidir. Konteynerin ALT KƏNARI
+           (üfüqi sürüşdürmə zolağı orada olur) HƏMİŞƏ ekranda qalmalıdır.
+
+           Hündürlük CSS-də TƏXMİN edilə bilmir: yuxarıdakı hissənin
+           hündürlüyü dəyişkəndir (səhifə başlığı, forma bir və ya iki sətrə
+           düşür, xülasə kartı var/yox). `calc(100vh - 400px)` sınandı —
+           bəzi hallarda hələ də aşağı düşürdü. İndi ölçü səhifə açılanda və
+           pəncərə ölçüsü dəyişəndə JS ilə DƏQİQ hesablanır (aşağıdakı
+           `Scripts` bölməsi). Buradakı `max-height` yalnız JS işləmədiyi
+           hal üçün ehtiyatdır. */
         .aml-twrap {
             overflow: auto;
-            max-height: calc(100vh - 400px);
-            min-height: 280px;
+            max-height: calc(100vh - 420px);
+            min-height: 220px;
             margin: -18px -20px;
             scrollbar-width: thin;
             scrollbar-color: #b9c2d4 #eef1f6;
@@ -221,7 +226,7 @@
         {
             var tamBasliq = sutunlar.Length == basliqlar.Length;
             <div class="fn-card">
-                <div class="aml-twrap">
+                <div class="aml-twrap" id="amlTwrap">
                     <table class="aml-table">
                         <thead>
                             @if (tamBasliq)
@@ -268,3 +273,27 @@
         }
     }
 </div>
+
+@section Scripts {
+    <script>
+        // Cədvəl konteynerinin hündürlüyünü DƏQİQ hesablayır ki, üfüqi
+        // sürüşdürmə zolağı (konteynerin alt kənarında olur) həmişə ekranda
+        // qalsın və istifadəçi onu görmək üçün səhifəni aşağı sürüşdürməsin.
+        // CSS `calc()` ilə edilə bilmir — yuxarıdakı blokların hündürlüyü
+        // sabit deyil (forma bir/iki sətrə düşür, xülasə kartı var/yox).
+        (function () {
+            var wrap = document.getElementById('amlTwrap');
+            if (!wrap) return;
+
+            function olc() {
+                var ust = wrap.getBoundingClientRect().top;
+                // 26px — kartın alt daxili boşluğu + səhifə kənarı
+                var h = window.innerHeight - ust - 26;
+                wrap.style.maxHeight = Math.max(220, h) + 'px';
+            }
+
+            olc();
+            window.addEventListener('resize', olc);
+        })();
+    </script>
+}
