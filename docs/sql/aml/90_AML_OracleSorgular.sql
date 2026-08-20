@@ -170,14 +170,8 @@ select
     x.med_azn,                                                          -- AN
     x.max_azn,                                                          -- AO
     x.emel,                                                             -- AP
-    -- AQ/AR — mövcud struktur mənbə (doc_vnesh_*) ÜSTÜNDÜR; HÖP mətnindən
-    -- oxuma yalnız HƏR İKİSİ boş olanda işə düşür. «Hər ikisi» şərti
-    -- QƏSDƏNDİR: SWIFT sətrində ad var (BIC), VÖEN yoxdur — adı bir
-    -- mənbədən, VÖEN-i başqasından götürsək sətir uydurma cütlük olardı.
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.hop_ad   else x.xeyrine_ad  end                         xeyrine_ad,   -- AQ
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.hop_voen else x.xeyrine_fin end                         xeyrine_fin,  -- AR
+    x.xeyrine_ad,                                                       -- AQ
+    x.xeyrine_fin,                                                      -- AR
     x.kommun,                                                           -- AS
     x.dt,                                                               -- AT
     x.kt                                                                -- AU
@@ -202,38 +196,7 @@ select
               from odb.licsch l, odb.regnom r
              where l.licsch = k.alan_hes
                and l.date_close_licsch is null
-               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin,
-           -- ── «Öz xeyrinə» (AQ/AR) — YALNIZ HÖP ƏMƏLİYYATINDA ─────────────
-           -- İstifadəçi qaydası (20.08.2026): sütunlar yalnız müştəri
-           -- hesabından **45013000000000400009** hesabına keçən əməliyyatda
-           -- dolur (debet = müştəri hesabı, kredit = həmin hesab). Başqa
-           -- sətirlərdə toxunulmur.
-           --
-           -- Mətn `arh_dd.primechanie`-dədir və OLDUĞU KİMİ götürülür —
-           -- şərh edilmir («bizim öz yanaşmamız lazım deyil»):
-           --   VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVİAN ...)
-           --               └── AR ──┘   └────────── AQ ────────┘
-           -- Mötərizədəki şəxs AQ-ya DÜŞMÜR — o, Təyinat (AP) sütununda
-           -- onsuz da görünür.
-           --
-           -- Şablon «VÖEN» sözünə bağlıdır, sərbəst «10 rəqəm» axtarışı DEYİL:
-           -- təyinatda müqavilə/faktura nömrəsi də 10 rəqəmli ola bilər və
-           -- etiketsiz axtarış onu səhvən VÖEN kimi yazardı.
-           -- `V[^0-9]{0,3}EN` həm «VÖEN», həm «VOEN» yazılışını tutur.
-           -- Xam mətndə Azərbaycan hərfləri düzgün oxunur (06.04.2026 sətri
-           -- ilə yoxlanılıb) — `func_utf8_to_latin` burada LAZIM DEYİL.
-           case when k.krtam = ''45013000000000400009''
-                then regexp_substr(k.emel,
-                       ''V[^0-9]{0,3}EN[^0-9]{0,20}([0-9]{10})'', 1, 1, null, 1)
-           end                                                          hop_voen,
-           case when k.krtam = ''45013000000000400009''
-                then trim(regexp_substr(
-                       regexp_replace(
-                           regexp_substr(k.emel,
-                             ''V[^0-9]{0,3}EN[^0-9]{0,20}[0-9]{10}(.*)'', 1, 1, null, 1),
-                           ''^[ .,:;-]+'', ''''),
-                       ''^[^(]*''))
-           end                                                          hop_ad
+               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin
       from (
 
   -- ══════════════════════════════════════════════════════════════════════
@@ -814,14 +777,8 @@ select
     x.med_azn,                                                          -- AN
     x.max_azn,                                                          -- AO
     x.emel,                                                             -- AP
-    -- AQ/AR — mövcud struktur mənbə (doc_vnesh_*) ÜSTÜNDÜR; HÖP mətnindən
-    -- oxuma yalnız HƏR İKİSİ boş olanda işə düşür. «Hər ikisi» şərti
-    -- QƏSDƏNDİR: SWIFT sətrində ad var (BIC), VÖEN yoxdur — adı bir
-    -- mənbədən, VÖEN-i başqasından götürsək sətir uydurma cütlük olardı.
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.hop_ad   else x.xeyrine_ad  end                         xeyrine_ad,   -- AQ
-    case when x.xeyrine_ad is null and x.xeyrine_fin is null
-         then x.hop_voen else x.xeyrine_fin end                         xeyrine_fin,  -- AR
+    x.xeyrine_ad,                                                       -- AQ
+    x.xeyrine_fin,                                                      -- AR
     x.kommun,                                                           -- AS
     x.dt,                                                               -- AT
     x.kt                                                                -- AU
@@ -846,38 +803,7 @@ select
               from odb.licsch l, odb.regnom r
              where l.licsch = k.alan_hes
                and l.date_close_licsch is null
-               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin,
-           -- ── «Öz xeyrinə» (AQ/AR) — YALNIZ HÖP ƏMƏLİYYATINDA ─────────────
-           -- İstifadəçi qaydası (20.08.2026): sütunlar yalnız müştəri
-           -- hesabından **45013000000000400009** hesabına keçən əməliyyatda
-           -- dolur (debet = müştəri hesabı, kredit = həmin hesab). Başqa
-           -- sətirlərdə toxunulmur.
-           --
-           -- Mətn `arh_dd.primechanie`-dədir və OLDUĞU KİMİ götürülür —
-           -- şərh edilmir («bizim öz yanaşmamız lazım deyil»):
-           --   VÖEN-AVANS: 1604964601 - Dövlət Gömrük Komitəsi (MOUSAVİAN ...)
-           --               └── AR ──┘   └────────── AQ ────────┘
-           -- Mötərizədəki şəxs AQ-ya DÜŞMÜR — o, Təyinat (AP) sütununda
-           -- onsuz da görünür.
-           --
-           -- Şablon «VÖEN» sözünə bağlıdır, sərbəst «10 rəqəm» axtarışı DEYİL:
-           -- təyinatda müqavilə/faktura nömrəsi də 10 rəqəmli ola bilər və
-           -- etiketsiz axtarış onu səhvən VÖEN kimi yazardı.
-           -- `V[^0-9]{0,3}EN` həm «VÖEN», həm «VOEN» yazılışını tutur.
-           -- Xam mətndə Azərbaycan hərfləri düzgün oxunur (06.04.2026 sətri
-           -- ilə yoxlanılıb) — `func_utf8_to_latin` burada LAZIM DEYİL.
-           case when k.krtam = ''45013000000000400009''
-                then regexp_substr(k.emel,
-                       ''V[^0-9]{0,3}EN[^0-9]{0,20}([0-9]{10})'', 1, 1, null, 1)
-           end                                                          hop_voen,
-           case when k.krtam = ''45013000000000400009''
-                then trim(regexp_substr(
-                       regexp_replace(
-                           regexp_substr(k.emel,
-                             ''V[^0-9]{0,3}EN[^0-9]{0,20}[0-9]{10}(.*)'', 1, 1, null, 1),
-                           ''^[ .,:;-]+'', ''''),
-                       ''^[^(]*''))
-           end                                                          hop_ad
+               and substr(l.licsch,11,5) = substr(r.regnom,2))          alan_lics_fin
       from (
 
   -- ══════════════════════════════════════════════════════════════════════
