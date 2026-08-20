@@ -14,7 +14,11 @@ namespace FinNex.UI.Areas.Avtopark.Controllers
     /// Maşın kartı (CRUD) — Admin / təsərrüfat.
     /// </summary>
     [Area("Avtopark")]
-    [Authorize(Roles = RoleNames.Admin)]
+    // Admin + `avtopark_idare` icazəsi verilmiş istifadəçi.
+    // Əvvəl yalnız `Roles = Admin` idi — təsərrüfat işçisinə bu səhifəni
+    // açmaq üçün TAM ADMİN vermək lazım gəlirdi (20.08.2026 qərarı).
+    [Authorize]
+    [AvtoparkIdareIcazesi]
     public class MasinController : AvtoparkControllerBase
     {
         private readonly IMasinService _masin;

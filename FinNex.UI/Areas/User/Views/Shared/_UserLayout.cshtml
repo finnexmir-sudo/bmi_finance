@@ -32,6 +32,20 @@
         }
     }
     var canPanel = isTamMaliyye || isRehberRol || hasPanelPerm;   // paneli görə bilər
+
+    // Avtopark idarəetməsi (Maşınlar, Müddətlər) — Admin + `avtopark_idare`
+    // icazəsi. Şərt `AvtoparkIdareIcazesiAttribute` ilə EYNİ olmalıdır, yoxsa
+    // istifadəçi linki görüb 403 alar (və ya əksinə — icazəsi var, link yoxdur).
+    var hasAvtoparkIdare = isAdmin;
+    if (!hasAvtoparkIdare && User.Identity?.IsAuthenticated == true)
+    {
+        var _aid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(_aid, out var _auid))
+        {
+            var _ar = await _permSvc.HasPermissionAsync(_auid, "avtopark_idare");
+            hasAvtoparkIdare = _ar.Success && _ar.Data;
+        }
+    }
     // YALNIZ panel = rəhbər + qıraqdan icazə verilən (tam maliyyə işçisi deyil).
     // Maaş təsdiqi rəhbərə BİLDİRİŞ linki (redirectUrl → /HR/Maas) ilə gedir və
     // controller icazəsi qalır — yəni menyudan asılı deyil. Ona görə rəhbəri
@@ -1251,6 +1265,14 @@
                         <i class="bi bi-card-checklist"></i> Müraciətlərim
                     </a>
 
+                    @* Yol vərəqəsi — HƏR İŞÇİ görür (20.08.2026 qərarı).
+                       Sənəd sürücünün özündə olmalıdır, ona görə rol şərti yoxdur;
+                       controller-də də sadəcə `[Authorize]` var. *@
+                    <a asp-area="Avtopark" asp-controller="YolVereqesi" asp-action="Index"
+                       class="fn-nav-item @(currentController == "YolVereqesi" ? "active" : "")">
+                        <i class="bi bi-file-earmark-text"></i> Yol vərəqəsi
+                    </a>
+
                     @* Şərtlər controller-dəki [Authorize] ilə EYNİ olmalıdır —
                        linki görüb 403 almaq istifadəçini çaşdırır. *@
                     @if (User.IsInRole(RoleNames.Rehber) || isAdmin)
@@ -1272,7 +1294,7 @@
                         </a>
                     }
 
-                    @if (isAdmin)
+                    @if (hasAvtoparkIdare)
                     {
                         <div class="fn-nav-label">İdarəetmə</div>
                         <a asp-area="Avtopark" asp-controller="Masin" asp-action="Index"

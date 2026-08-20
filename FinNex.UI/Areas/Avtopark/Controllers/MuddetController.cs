@@ -18,7 +18,11 @@ namespace FinNex.UI.Areas.Avtopark.Controllers
     /// zamanı silinir (CLAUDE.md — sənəd saxlama qaydası).
     /// </summary>
     [Area("Avtopark")]
-    [Authorize(Roles = RoleNames.Admin)]
+    // Admin + `avtopark_idare` icazəsi verilmiş istifadəçi.
+    // Əvvəl yalnız `Roles = Admin` idi — təsərrüfat işçisinə bu səhifəni
+    // açmaq üçün TAM ADMİN vermək lazım gəlirdi (20.08.2026 qərarı).
+    [Authorize]
+    [AvtoparkIdareIcazesi]
     public class MuddetController : AvtoparkControllerBase
     {
         private readonly IMasinMuddetService _muddet;

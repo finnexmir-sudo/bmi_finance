@@ -1,0 +1,106 @@
+@{
+    ViewData["Title"] = "Yol vərəqəsi";
+    var masinlar = ViewBag.Masinlar as IList<MasinDto> ?? new List<MasinDto>();
+    var bt = ViewBag.BasTarix as string ?? "";
+    var st = ViewBag.SonTarix as string ?? "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avtopark.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yol vərəqəsi</div>
+            <div class="fn-page-sub">
+                Minik avtomobillərin yol vərəqəsi — Word sənədi kimi yüklənir.
+            </div>
+        </div>
+        <a asp-controller="Muraciet" asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    @if (!masinlar.Any())
+    {
+        <div class="fn-empty-state">
+            <i class="bi bi-car-front" style="font-size:26px;color:#c3cad8"></i>
+            <div class="fn-empty-title">Aktiv maşın yoxdur</div>
+            <div class="fn-empty-sub">
+                Yol vərəqəsi yalnız «Aktiv» statuslu maşın üçün hazırlanır.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card fn-card--form">
+            <form asp-action="Yarat" method="post" class="av-filter">
+                @Html.AntiForgeryToken()
+
+                <div class="av-filter-field" style="flex:1;min-width:260px">
+                    <label class="fn-label">Maşın <span class="fn-required">*</span></label>
+                    @* `data-surucu` — maşın seçiləndə sürücü xanası avtomatik dolsun.
+                       Server tərəfdə də eyni qayda var (sürücü boşdursa təhkim
+                       olunan sürücü yazılır) — JS söndürülsə də nəticə düzgün olur. *@
+                    <select name="masinId" id="masinSecim" class="fn-input" required>
+                        <option value="">— seçin —</option>
+                        @foreach (var m in masinlar)
+                        {
+                            <option value="@m.Id" data-surucu="@(m.TehkimSurucuAdi ?? "")">
+                                @m.DovletNomresi — @($"{m.Marka} {m.Model}".Trim())
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="av-filter-field" style="flex:1;min-width:240px">
+                    <label class="fn-label">Sürücü</label>
+                    <input name="surucu" id="surucuAd" class="fn-input" maxlength="120"
+                           placeholder="Maşının təhkim olunmuş sürücüsü" />
+                    <span class="fn-label-hint">Boş qalsa maşının sürücüsü yazılır.</span>
+                </div>
+
+                <div class="av-filter-field">
+                    <label class="fn-label">Dövrün başlanğıcı <span class="fn-required">*</span></label>
+                    <input type="date" name="bt" value="@bt" class="fn-input" required />
+                </div>
+
+                <div class="av-filter-field">
+                    <label class="fn-label">Dövrün sonu <span class="fn-required">*</span></label>
+                    <input type="date" name="st" value="@st" class="fn-input" required />
+                </div>
+
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-file-earmark-word"></i> Yol vərəqəsi hazırla
+                </button>
+            </form>
+        </div>
+
+        <div class="fn-info-box">
+            <i class="bi bi-info-circle"></i>
+            <div>
+                «Qaracdan çıxış vaxtı» (00:01) və «Qaraca qayıdan vaxt» (24:00)
+                sənəddə <strong>sabitdir</strong> — Word şablonundan gəlir, formadan
+                dəyişdirilmir. Rəhbərin adı sistem ayarlarındakı ilə eynidir.
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Maşın seçiləndə sürücü xanasını doldur. İstifadəçi əl ilə yazıbsa
+        // ÜSTƏLƏMİR — yalnız boş xananı doldurur, yoxsa yazdığı ad itərdi.
+        (function () {
+            var sec = document.getElementById('masinSecim');
+            var sur = document.getElementById('surucuAd');
+            if (!sec || !sur) return;
+
+            sec.addEventListener('change', function () {
+                var opt = sec.options[sec.selectedIndex];
+                var ad = opt ? (opt.getAttribute('data-surucu') || '') : '';
+                if (!sur.value.trim()) sur.value = ad;
+            });
+        })();
+    </script>
+}
