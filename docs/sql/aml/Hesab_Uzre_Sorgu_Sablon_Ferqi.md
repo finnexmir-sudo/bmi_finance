@@ -429,12 +429,17 @@ real dəyər daşıyır və olduğu kimi oxunur.
 
 ---
 
-## 9. «Öz xeyrinə» (AQ/AR) — açıq sual, HƏLL EDİLMƏYİB (20.08.2026)
+## 9. «Öz xeyrinə» (AQ/AR) — SÜTUNLAR BOŞ QALIR (qərar, 20.08.2026)
 
-### Vəziyyət
+**İstifadəçi qərarı:** «hesabatda o iki sütuna biz heç nə yazmırıq — öz xeyrinə
+ad və VÖEN. Boş qoyuruq.»
 
-AQ («Xeyrinə ödənilən şəxs/müəssisə») və AR («FİN/VÖEN») **struktur sahədən**
-doldurulur və o sahə yalnız mədaxil qollarında var:
+Sorğuda hər iki sütun `cast(null …)` ilə **açıq şəkildə boş** verilir. Sütun
+sayı (47), sıra və Excel şablonu ilə uyğunluq dəyişmir — yalnız iki xana boşdur.
+
+### Niyə tam boş, «var olanı yazaq» yox
+
+Əvvəl AQ/AR **yalnız mədaxil** sətirlərində dolurdu:
 
 | Qol | AQ | AR |
 |---|---|---|
@@ -442,44 +447,37 @@ doldurulur və o sahə yalnız mədaxil qollarında var:
 | `doc_vnesh_swift` (xarici mədaxil) | `beneficiary_bank_bic` | — |
 | `inval` / `nacval` (ödəmə), daxili köçürmə | — | — |
 
-### Təkzib edilmiş fərziyyə
+Yəni sütun sətirlərin bir hissəsində dolu, qalanında boş idi. **AML hesabatında
+yarımçıq sütun yanıldıcıdır:** oxuyan boş xananı «bu əməliyyatda üçüncü tərəf
+yoxdur» kimi başa düşür, halbuki əslində sadəcə mənbə sahəsi yoxdur. Üstəlik
+SWIFT qolunda AQ-ya **BIC kodu** düşürdü — ad deyil.
 
-İlk fikir: «benefisiar `arh_dd.primechanie` (təyinat) mətnində yazılır,
-oradan `regexp_substr` ilə çıxaraq». Sorğuya salmadan **əvvəl ölçüldü**:
+### Araşdırmanın nəticəsi (arxiv)
 
-```
-iyul 2026 · arh_dd    →  9094 sətir,  «VÖEN» şablonu tutan: 0
-```
+Təyinat mətnindən çıxarma («VÖEN-AVANS: …») yoxlanıldı və işləyirdi, amma
+mənası dəqiqləşmədi:
 
-Yəni mətn həmin sütunda **yoxdur**. Fərziyyə düzgün olsaydı belə, sorğuya
-əvvəl salıb sonra yoxlamaq səhv olardı — ölçmə məhz bunun üçün edildi.
-**Sorğuya heç bir dəyişiklik edilmədi.**
-
-### Mənanın dəqiqləşməsi — «xeyrinə» ≠ «alan tərəf»
-
-Ekrandakı nümunə sətir:
-
-| Sahə | Dəyər |
+| Element | Kimdir? |
 |---|---|
-| Ödəyən | «AZƏR-BƏRƏKƏT» MMC |
-| Alan (VÖEN 1604964601) | Dövlət Gömrük Komitəsi |
-| Mötərizədə | (MOUSAVIAN KOUHASAREH SEYED SAEİD) |
+| 1604964601 | **ödəyənin** VÖEN-i (`doc_vnesh_nacval.inn_debet` = AZƏR-BƏRƏKƏT MMC) |
+| «Dövlət Gömrük Komitəsi» | pulun getdiyi təşkilat — onsuz da ALAN TƏRƏF sütunlarındadır |
+| «(MOUSAVİAN …)» | bəyannaməçi — «xeyrinə» olan namizəd |
 
-Buradakı **VÖEN alan tərəfindir** — və o, sorğuda **onsuz da var**
-(`doc_vnesh_nacval.inn_credit` → ALAN TƏRƏF sütunları). Yəni ilk baxışda
-«AQ üçün mənbə» sandığım şey əslində mövcud sütunun təkrarıdır.
+Mətnin öz cütlüyü (`VÖEN + ad`) sütun adları ilə uyğun gəlmirdi: AR-a
+«xeyrinə ödənilən şəxsin VÖEN-i» deyil, **ödəyənin** VÖEN-i düşərdi. Bu
+uyğunsuzluq həll edilmədiyi üçün sütunlar boş saxlanıldı.
 
-Həqiqi «öz xeyrinə» olan — **mötərizədəki şəxs**: gömrük rüsumu onun adına
-ödənilir, amma o, nə ödəyəndir, nə alan. Şablon (əgər qurulacaqsa) **mötərizəyə**
-görə olmalıdır (`\(([^)]+)\)`), «VÖEN» sözünə görə **yox**.
+**Diaqnoz dərsi:** ilk ölçmə yalnız **iyul 2026** üzrə aparılmışdı və 0 nəticə
+verdi; «mətn bu sütunda yoxdur» nəticəsi çıxarıldı — **səhv idi**, istinad
+əməliyyat **06.04.2026** tarixlidir. Ölçmə pəncərəsi istinad sətrini əhatə
+etmirsə, sıfır nəticə heç nəyi sübut etmir.
 
-### Növbəti addım — `04_Xeyrine_Menbe_Axtarisi.sql`
+### Bərpa
 
-Yeddi sorğu, mənbəni tapmaq üçün (PL/SQL Developer, `&voen` / `&ad` soruşacaq).
-Nəticənin üç mümkün oxunuşu:
+Alt qatdakı `vd.xeyrine_ad` / `vd.xeyrine_fin` sahələri **yerində qaldı**.
+Qayda dəqiqləşəndə üst select-dəki iki `cast(null …)` sətrini
+`x.xeyrine_ad,` / `x.xeyrine_fin,` ilə əvəz etmək kifayətdir.
 
-| Nəticə | Mənası | Nə etməli |
-|---|---|---|
-| 4-cü sorğu doludur, 6/7 boş | VÖEN sadəcə **alan tərəfdir** | AQ/AR-a əlavə lazım deyil |
-| 6 və ya 7 doludur | mətn həmin sütundadır | mötərizə şablonu ilə ayrıştır |
-| hamısı boş | mətn Oracle-da saxlanmır | AQ/AR boş qalmalıdır |
+Kənara qoyulmuş araşdırma sənədləri: `04_Xeyrine_Menbe_Axtarisi.sql`,
+`05_Nacval_Metn_Sutunlari.sql` (⚠️ hər ikisində iyul ölçməsinə əsaslanan
+köhnəlmiş nəticə var). Tətbiq skripti: `91_AML_Xeyrine_Bos.sql`.

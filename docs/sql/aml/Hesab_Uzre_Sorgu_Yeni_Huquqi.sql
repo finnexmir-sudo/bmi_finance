@@ -142,8 +142,22 @@ select
     x.med_azn,                                                          -- AN
     x.max_azn,                                                          -- AO
     x.emel,                                                             -- AP
-    x.xeyrine_ad,                                                       -- AQ
-    x.xeyrine_fin,                                                      -- AR
+    -- ── AQ / AR — QƏSDƏN BOŞ (istifadəçi qərarı, 20.08.2026) ─────────────
+    -- «Hesabatda o iki sütuna biz heç nə yazmırıq — öz xeyrinə ad və VÖEN.
+    --  Boş qoyuruq.»
+    --
+    -- Əvvəl bu sütunlar `doc_vnesh_postupl` (kredit_name / kredit_inn) və
+    -- `doc_vnesh_swift` (beneficiary_bank_bic) sahələrindən dolurdu — yəni
+    -- YALNIZ mədaxil sətirlərində, məxaric və daxili sətirlərdə isə boş idi.
+    -- Yarımçıq doldurulmuş sütun AML hesabatında yanıldıcıdır: oxuyan adam
+    -- boş xananı «bu əməliyyatda üçüncü tərəf yoxdur» kimi başa düşür,
+    -- halbuki əslində mənbə sahəsi yoxdur. Ona görə sütun tam boşaldıldı.
+    --
+    -- ALT QATA TOXUNULMADI: `vd` alt sorğusundakı `xeyrine_ad` / `xeyrine_fin`
+    -- sahələri yerindədir. Qayda dəqiqləşəndə bərpa etmək üçün aşağıdakı iki
+    -- sətri `x.xeyrine_ad,` / `x.xeyrine_fin,` ilə əvəz etmək KİFAYƏTDİR.
+    cast(null as varchar2(300))                                         xeyrine_ad,   -- AQ
+    cast(null as varchar2(50))                                          xeyrine_fin,  -- AR
     x.kommun,                                                           -- AS
     x.dt,                                                               -- AT
     x.kt                                                                -- AU
