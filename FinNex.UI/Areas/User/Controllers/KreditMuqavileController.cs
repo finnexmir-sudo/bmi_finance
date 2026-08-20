@@ -41,6 +41,24 @@ public class KreditMuqavileController : Controller
         "XARICI_VALYUTA sütunu yoxdur. Admin → Oracle Sorğular-da əlavə edin " +
         "(t.xarici_valyutada_kredit AS XARICI_VALYUTA).";
 
+    // ── BTİ MƏKTUBU MÜVƏQQƏTİ SÖNDÜRÜLÜB (20.08.2026) ────────────────────────
+    // İstifadəçi qərarı: «daşınmaz müqaviləsində məktub hazırlanırdı, onu HƏLƏLİK
+    // ixtisara salmalıyıq — nə hazırlansın, nə də nömrə götürsün».
+    //
+    // Ona görə kod SİLİNMƏDİ, konfiqurasiya açarına bağlandı. Söndürülü olduqda
+    // DAŞINMAZ axınında:
+    //   · BTİ məktubu .zip-ə DÜŞMÜR;
+    //   · `MektubQeydiyyatiAsync` ÇAĞIRILMIR → `XaricMektub` jurnalına sətir
+    //     yazılmır və məktub nömrəsi YEYİLMİR (nömrə geri qaytarılmır — CLAUDE.md);
+    //   · məktub şablonunun mövcudluğu və `{i_mno}` yoxlaması TƏTBİQ OLUNMUR
+    //     (olmayan sənədə görə müqavilə bloklanmamalıdır).
+    //
+    // AVTOMOBİL (DYP) axını TOXUNULMADI — orada məktub əvvəlki kimi hazırlanır.
+    //
+    // Geri qaytarmaq üçün: appsettings.json → "KreditMuqavile:BtiMektubu": true.
+    // Kod dəyişikliyi lazım deyil.
+    private readonly bool _btiMektubu;
+
     // Girova düşmə məktublarının jurnal (XaricMektub) sahələri.
     // Daşınmaz əmlakda BTİ (Əmlak Komitəsi), avtomobildə DYP — mətnlər BMI-dəki
     // jurnal qeydləri ilə eyni olmalıdır ki, köhnə və yeni sətirlər tutuşsun.
@@ -112,6 +130,9 @@ public class KreditMuqavileController : Controller
         _olkeService = olkeService;
         _config = config;
         _env = env;
+        // Default `false` — açar appsettings-də olmasa da BTİ məktubu hazırlanmır.
+        // «Hələlik ixtisar» qərarı budur; açar əlavə edilməsə də davranış eynidir.
+        _btiMektubu = config.GetValue("KreditMuqavile:BtiMektubu", false);
     }
 
     // Formanın ölkə sahələrini hazırlayır: siyahı + borcalanın ölkəsi + zaminlərinki.
@@ -254,7 +275,12 @@ public class KreditMuqavileController : Controller
         var ipotekaSablon = ferqli ? "Dasinmaz_emlak_ipoteka_muqavilesi.docx" : "Dasinmaz_emlak_ipoteka_muqavilesiTek.docx";
         var mektubSablon = ferqli ? "BTI_salinma.docx" : "BTI_salinma_Tek.docx";
 
-        var eksikSablon = new[] { "Kredit_muqavili_yeni.docx", ipotekaSablon, mektubSablon, "Zaminlik_muqavilesi.docx" }
+        // BTİ məktubu söndürülübsə şablonu da yoxlanmır — hazırlanmayan sənədin
+        // şablonu yoxdur deyə müqavilə bloklanmamalıdır.
+        var lazimSablonlar = new List<string> { "Kredit_muqavili_yeni.docx", ipotekaSablon, "Zaminlik_muqavilesi.docx" };
+        if (_btiMektubu) lazimSablonlar.Add(mektubSablon);
+
+        var eksikSablon = lazimSablonlar
             .FirstOrDefault(f => !System.IO.File.Exists(T(f)));
         if (eksikSablon != null)
         {
@@ -271,7 +297,11 @@ public class KreditMuqavileController : Controller
         // Komitəsinə gedən məktubda yanlış müqavilə nömrəsi deməkdir. Şablonlar
         // düzəldilir; bu yoxlama düzəlişin unudulmadığını təmin edir, çünki səhv
         // tamamilə səssizdir (heç bir xəta çıxmır, sadəcə başqa rəqəm yazılır).
-        var nomresizSablon = new[] { ipotekaSablon, mektubSablon }
+        // Məktub söndürülübsə yalnız ipoteka müqaviləsi yoxlanılır.
+        var imnoSablonlari = new List<string> { ipotekaSablon };
+        if (_btiMektubu) imnoSablonlari.Add(mektubSablon);
+
+        var nomresizSablon = imnoSablonlari
             .FirstOrDefault(f => !KreditWordService.TokenVarmi(T(f), "{i_mno}"));
         if (nomresizSablon != null)
         {
@@ -292,12 +322,22 @@ public class KreditMuqavileController : Controller
         // Qısa məzmunda müştərinin adı da gedir: "mənzil gir sal — Ad Soyad Ata".
         // Girov sahibi borcalandan fərqli olduqda məktub ONUN adına yazılır
         // ({i_saa}), ona görə jurnalda da həmin ad görünməlidir.
-        var mektubAdi = ferqli && !string.IsNullOrWhiteSpace(dto.SahibAd) ? dto.SahibAd : kredit.Adi;
-        var mekno = await _nomreService.MektubQeydiyyatiAsync(
-            dto.MuqavileTarixi,
-            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
-            BtiGonYer, QisaMezAdla(BtiQisaMez, mektubAdi),
-            ct);
+        //
+        // ⚠️ SÖNDÜRÜLÜ OLDUQDA BU BLOK ÇAĞIRILMIR — nömrə yeyilmir, jurnala
+        // sətir düşmür. Nömrə bir dəfə veriləndən sonra geri qaytarılmır
+        // (CLAUDE.md — «Jurnal Nömrəsi Geri Qaytarılmır»), ona görə söndürməyin
+        // yeri məhz burasıdır: sənədi yaratmayıb nömrəni götürmək jurnalda
+        // sənədsiz sətir qoyardı.
+        var mekno = "";
+        if (_btiMektubu)
+        {
+            var mektubAdi = ferqli && !string.IsNullOrWhiteSpace(dto.SahibAd) ? dto.SahibAd : kredit.Adi;
+            mekno = await _nomreService.MektubQeydiyyatiAsync(
+                dto.MuqavileTarixi,
+                int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                BtiGonYer, QisaMezAdla(BtiQisaMez, mektubAdi),
+                ct);
+        }
 
         // ── Ortaq token dəsti (kredit + ipoteka + məktub) ──
 
@@ -374,8 +414,11 @@ public class KreditMuqavileController : Controller
         {
             ($"Kredit müqaviləsi - {ad}.docx", KreditWordService.Doldur(T("Kredit_muqavili_yeni.docx"), ortak)),
             ($"İpoteka müqaviləsi - {ad}.docx", KreditWordService.Doldur(T(ipotekaSablon), ortak)),
-            ($"BTİ məktubu - {ad}.docx", KreditWordService.Doldur(T(mektubSablon), ortak)),
         };
+
+        // BTİ məktubu — söndürülübsə .zip-ə düşmür (20.08.2026 qərarı).
+        if (_btiMektubu)
+            senedler.Add(($"BTİ məktubu - {ad}.docx", KreditWordService.Doldur(T(mektubSablon), ortak)));
 
         // Hər zamin üçün ayrıca zaminlik müqaviləsi
         for (var i = 0; i < zaminler.Count; i++)
