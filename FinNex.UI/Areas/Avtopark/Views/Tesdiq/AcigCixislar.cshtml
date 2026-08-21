@@ -36,21 +36,18 @@
                             <th>Kimdədir</th>
                             <th>Çıxış</th>
                             <th>Nə qədərdir</th>
-                            <th>Planlaşdırılan bitmə</th>
                             <th>Məqsəd</th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach (var m in Model)
                     {
-                        @* Gecikmə şərti markup içində yox, ƏVVƏLCƏDƏN hesablanır. *@
-                        var gecikib = m.PlanBitme < indi;
                         var muddet = m.CixisTarixi.HasValue ? indi - m.CixisTarixi.Value : TimeSpan.Zero;
                         var muddetMetni = m.CixisTarixi.HasValue
                             ? $"{(int)muddet.TotalHours} saat {muddet.Minutes} dəq"
                             : "—";
 
-                        <tr class="@(gecikib ? "av-warn" : "")">
+                        <tr>
                             <td>
                                 <div class="av-strong">@m.MasinAdi</div>
                                 <div class="av-sub"><span class="av-plate">@m.MasinNomresi</span></div>
@@ -61,13 +58,6 @@
                             </td>
                             <td class="av-nowrap av-mono">@m.CixisTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
                             <td class="av-nowrap av-mono">@muddetMetni</td>
-                            <td class="av-nowrap av-mono">
-                                @m.PlanBitme.ToString("dd.MM.yyyy HH:mm")
-                                @if (gecikib)
-                                {
-                                    <div class="av-sub"><span class="fn-badge fn-badge--wait">gecikib</span></div>
-                                }
-                            </td>
                             <td>@m.Meqsed</td>
                         </tr>
                     }

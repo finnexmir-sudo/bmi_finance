@@ -60,13 +60,6 @@ public class MasinMuracietService : IMasinMuracietService
     public static bool RehberAddimiVar(bool muracietSahibiRehberdirmi)
         => IlkinStatus(muracietSahibiRehberdirmi) == MasinMuracietStatus.Gozlemede;
 
-    /// <summary>Maşını TUTAN statuslar — üst-üstə düşmə yoxlaması bunlara baxır.</summary>
-    private static readonly MasinMuracietStatus[] TutanStatuslar =
-    {
-        MasinMuracietStatus.Tesdiqlenib,
-        MasinMuracietStatus.Cixib
-    };
-
     // ── Ortaq sorğu (bütün siyahılar eyni Include-dan keçsin) ─────────────
     private IQueryable<MasinMuraciet> Baza() =>
         _uow.Repository<MasinMuraciet>().Query().AsNoTracking()
@@ -77,6 +70,24 @@ public class MasinMuracietService : IMasinMuracietService
             .Include(x => x.QayidisQeydEden);
 
     private static string Ad(Isci? i) => i == null ? "" : $"{i.Ad} {i.Soyad}".Trim();
+
+    /// <summary>
+    /// «SS:DD» mətnini gecə yarısından keçən dəqiqəyə çevirir; format səhvdirsə
+    /// `null`. İcazə modulundakı `parseTime` ilə eyni qayda — ora da rəqəm
+    /// yazılır, «:» JS ilə avtomatik qoyulur.
+    /// </summary>
+    private static int? SaatiDeqiqeyeCevir(string? saat)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(
+            (saat ?? "").Trim(), @"^(\d{1,2}):(\d{2})$");
+        if (!m.Success) return null;
+
+        var h = int.Parse(m.Groups[1].Value);
+        var d = int.Parse(m.Groups[2].Value);
+        if (h > 23 || d > 59) return null;
+
+        return h * 60 + d;
+    }
 
     private static MasinMuracietListDto Map(MasinMuraciet x, string? sobeAdi = null) => new()
     {
@@ -190,7 +201,11 @@ public class MasinMuracietService : IMasinMuracietService
         // qeydləri («24.08 10:00») kənarda qalardı.
         var sonTarix = (son ?? DateTime.Today).Date.AddDays(1);
 
-        var sorgu = Baza().Where(x => x.PlanBaslama < sonTarix && x.PlanBitme >= basTarix);
+        // PlanBitme 21.08.2026-dan yazılmır (nullable) — süzgəc TƏK NÖQTƏYƏ,
+        // yəni planlaşdırılan çıxış anına görədir. Əvvəlki interval şərti
+        // (`PlanBitme >= basTarix`) yeni qeydlərdə `null` olduğu üçün onları
+        // jurnaldan səssizcə atardı.
+        var sorgu = Baza().Where(x => x.PlanBaslama >= basTarix && x.PlanBaslama < sonTarix);
 
         if (masinId.HasValue && masinId.Value > 0)
             sorgu = sorgu.Where(x => x.MasinId == masinId.Value);
@@ -208,40 +223,26 @@ public class MasinMuracietService : IMasinMuracietService
         return Map(e, sobeler.TryGetValue(e.IsciId, out var s) ? s : null);
     }
 
-    // ══ ÜST-ÜSTƏ DÜŞMƏ ════════════════════════════════════════════════════
-    /// <summary>
-    /// Eyni maşın üçün kəsişən TƏSDİQLƏNMİŞ (və ya çıxmış) müraciət tapır.
-    ///
-    /// Klassik interval düsturu: <c>A1 &lt;= B2 &amp;&amp; A2 &gt;= B1</c>.
-    /// Tam bərabərliyə YOX, kəsişməyə baxır — 10:00–12:00 ilə 11:00–13:00
-    /// toqquşur.
-    ///
-    /// ⚠️ «Gözləmədə» olanlar QƏSDƏN bloklamır: eyni maşına iki nəfər müraciət
-    /// yaza bilər, seçim rəhbərindir. Blok yalnız artıq TƏSDİQLƏNMİŞ müraciətə
-    /// qarşıdır — yoxsa birinci müraciət ikincini heç kimin qərarı olmadan
-    /// susdurardı.
-    ///
-    /// <paramref name="xaricId"/> — redaktə/təsdiq yollarında qeydin ÖZÜ
-    /// nəzərə alınmasın deyə məcburidir.
-    /// </summary>
-    private async Task<MasinMuraciet?> TarixKonfliktiTapAsync(
-        int masinId, DateTime baslama, DateTime bitme, int? xaricId = null)
-    {
-        return await _uow.Repository<MasinMuraciet>().Query().AsNoTracking()
-            .Include(x => x.Isci)
-            .Where(x => x.MasinId == masinId
-                     && (xaricId == null || x.Id != xaricId)
-                     && TutanStatuslar.Contains(x.Status)
-                     && x.PlanBaslama <= bitme
-                     && x.PlanBitme >= baslama)
-            .OrderBy(x => x.PlanBaslama)
-            .FirstOrDefaultAsync();
-    }
-
-    private static string KonfliktMesaji(MasinMuraciet k) =>
-        $"Bu maşın həmin vaxt üçün artıq ayrılıb: {Ad(k.Isci)} — " +
-        $"{k.PlanBaslama:dd.MM.yyyy HH:mm} – {k.PlanBitme:dd.MM.yyyy HH:mm}. " +
-        "Başqa vaxt və ya başqa maşın seçin.";
+    // ══ ÜST-ÜSTƏ DÜŞMƏ — 21.08.2026-DAN YOXDUR ═══════════════════════════
+    //
+    // Əvvəl `TarixKonfliktiTapAsync` planlaşdırılan intervalları tutuşdururdu
+    // (klassik `A1 <= B2 && A2 >= B1`). O yoxlama PLANLAŞDIRILAN BİTMƏ vaxtına
+    // bağlı idi; bitmə sahəsi formadan çıxarıldığı üçün interval qalmadı və
+    // yoxlama da götürüldü.
+    //
+    // ⚠️ MAŞIN YENƏ DƏ İKİQAT GÖTÜRÜLƏ BİLMİR — qoruyucu sadəcə BAŞQA
+    // MƏRHƏLƏDƏDİR: `CixdiAsync` (Qoruyucu 4.1) bir maşının eyni anda iki açıq
+    // çıxışına icazə vermir. Yəni açar verilən an maşın tutulur, «Gəldi» qeyd
+    // edilənə qədər ikinci açar verilmir.
+    //
+    // NƏ DƏYİŞDİ: iki nəfər eyni maşına eyni günə müraciət edib hər ikisi
+    // təsdiqlənə bilər; ikinci adam bunu MÜRACİƏT ANINDA yox, KASSADA öyrənir.
+    // Bu, istifadəçinin açıq qərarıdır (21.08.2026).
+    //
+    // Bərpa lazım olsa: `TarixKonfliktiTapAsync`, `KonfliktMesaji` metodlarını
+    // və `TutanStatuslar` sahəsini qaytar, sonra `YaratAsync` ilə
+    // `RehberTesdiqAsync`-də çağırışları geri əlavə et — git: bu commitdən
+    // əvvəlki nüsxə.
 
     // ══ YARATMA ═══════════════════════════════════════════════════════════
 
@@ -252,9 +253,6 @@ public class MasinMuracietService : IMasinMuracietService
 
         if (dto.MasinId <= 0)
             return Result<int>.Fail("Maşın seçilməlidir.");
-
-        if (dto.PlanBitme <= dto.PlanBaslama)
-            return Result<int>.Fail("Bitmə vaxtı başlama vaxtından sonra olmalıdır.");
 
         if (string.IsNullOrWhiteSpace(dto.Meqsed))
             return Result<int>.Fail("Məqsəd yazılmalıdır.");
@@ -267,10 +265,14 @@ public class MasinMuracietService : IMasinMuracietService
             return Result<int>.Fail(
                 $"«{masin.DovletNomresi}» hazırda {(masin.Status == MasinStatus.Temirde ? "təmirdədir" : "istifadədən çıxıb")} — müraciət yazıla bilməz.");
 
-        // Yoxlama HƏR ŞEYDƏN ƏVVƏL — qeyd yarandıqdan sonra geri qaytarmaq əl işidir.
-        var konflikt = await TarixKonfliktiTapAsync(dto.MasinId, dto.PlanBaslama, dto.PlanBitme);
-        if (konflikt != null)
-            return Result<int>.Fail(KonfliktMesaji(konflikt));
+        // Tarix (təqvim) + Saat («HH:mm» mətn) → tək `PlanBaslama`.
+        // Saat formatı DTO-da `RegularExpression` ilə də yoxlanılır, amma
+        // forma birbaşa POST edilə bilər — ona görə burada TƏKRAR yoxlanılır.
+        var saatDeq = SaatiDeqiqeyeCevir(dto.Saat);
+        if (saatDeq == null)
+            return Result<int>.Fail("Saat «SS:DD» formatında olmalıdır (məs. 10:00).");
+
+        var planBaslama = dto.Tarix.Date.AddMinutes(saatDeq.Value);
 
         var ilkin = IlkinStatus(dto.MuracietSahibiRehberdirmi);
 
@@ -278,8 +280,8 @@ public class MasinMuracietService : IMasinMuracietService
         {
             MasinId = dto.MasinId,
             IsciId = dto.IsciId,
-            PlanBaslama = dto.PlanBaslama,
-            PlanBitme = dto.PlanBitme,
+            PlanBaslama = planBaslama,
+            // PlanBitme QƏSDƏN yazılmır — bax entity sənədi (21.08.2026).
             Meqsed = dto.Meqsed.Trim(),
             Marsrut = dto.Marsrut?.Trim(),
             Status = ilkin,
@@ -298,7 +300,7 @@ public class MasinMuracietService : IMasinMuracietService
         await _uow.YaddaSaxlaAsync();
 
         var isciAdi = await IsciAdiAsync(dto.IsciId);
-        var metn = $"{masin.DovletNomresi} · {e.PlanBaslama:dd.MM.yyyy HH:mm} – {e.PlanBitme:dd.MM.yyyy HH:mm} · {e.Meqsed}";
+        var metn = $"{masin.DovletNomresi} · {e.PlanBaslama:dd.MM.yyyy HH:mm} · {e.Meqsed}";
 
         if (ilkin == MasinMuracietStatus.Gozlemede)
         {
@@ -339,12 +341,6 @@ public class MasinMuracietService : IMasinMuracietService
         if (e.Masin != null && e.Masin.Status != MasinStatus.Aktiv)
             return Result.Fail("Maşın artıq aktiv deyil (təmirdə / istifadədən çıxıb) — təsdiq edilə bilməz.");
 
-        // Yoxlama TƏSDİQ ANINDA TƏKRARLANIR: müraciət yazılandan sonra başqa
-        // müraciət təsdiqlənmiş ola bilər. Yalnız yaratmada yoxlasaydıq iki
-        // müraciət eyni maşına təsdiqlənərdi və heç bir xəta çıxmazdı.
-        var konflikt = await TarixKonfliktiTapAsync(e.MasinId, e.PlanBaslama, e.PlanBitme, e.Id);
-        if (konflikt != null) return Result.Fail(KonfliktMesaji(konflikt));
-
         e.Status = MasinMuracietStatus.Tesdiqlenib;
         e.RehberId = rehberIsciId;
         e.RehberTesdiqTarixi = DateTime.Now;
@@ -355,7 +351,7 @@ public class MasinMuracietService : IMasinMuracietService
         await _uow.Repository<MasinMuraciet>().YenileAsync(e);
         await _uow.YaddaSaxlaAsync();
 
-        var metn = $"{e.Masin?.DovletNomresi} · {e.PlanBaslama:dd.MM.yyyy HH:mm} – {e.PlanBitme:dd.MM.yyyy HH:mm}";
+        var metn = $"{e.Masin?.DovletNomresi} · {e.PlanBaslama:dd.MM.yyyy HH:mm}";
         // Ad ƏVVƏLCƏDƏN alınır: `GuvenliBildirisAsync` sinxron lambda qəbul edir,
         // onun içində `await` yazmaq mümkün deyil.
         var isciAdi = await IsciAdiAsync(e.IsciId);

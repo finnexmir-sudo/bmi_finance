@@ -46,7 +46,7 @@
                             <div class="av-strong">@m.IsciAdSoyad</div>
                             <div>@m.MasinAdi <span class="av-plate">@m.MasinNomresi</span></div>
                             <div class="av-sub">
-                                @m.PlanBaslama.ToString("dd.MM HH:mm") – @m.PlanBitme.ToString("dd.MM HH:mm") · @m.Meqsed
+                                @m.PlanBaslama.ToString("dd.MM HH:mm") · @m.Meqsed
                             </div>
                         </div>
                         <form asp-action="Cixdi" method="post">
@@ -75,10 +75,9 @@
             {
                 @foreach (var m in colde)
                 {
-                    var gecikib = m.PlanBitme < indi;
                     var muddet = m.CixisTarixi.HasValue ? indi - m.CixisTarixi.Value : TimeSpan.Zero;
 
-                    <div class="av-item @(gecikib ? "av-item--warn" : "")">
+                    <div class="av-item">
                         <div>
                             <div class="av-strong">@m.IsciAdSoyad</div>
                             <div>@m.MasinAdi <span class="av-plate">@m.MasinNomresi</span></div>
@@ -87,10 +86,6 @@
                                 @if (m.CixisTarixi.HasValue)
                                 {
                                     <span>· @((int)muddet.TotalHours) saat @muddet.Minutes dəq</span>
-                                }
-                                @if (gecikib)
-                                {
-                                    <span class="fn-badge fn-badge--wait">gecikib</span>
                                 }
                             </div>
                         </div>

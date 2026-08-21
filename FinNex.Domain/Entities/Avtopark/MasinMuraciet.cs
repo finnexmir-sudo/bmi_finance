@@ -10,10 +10,18 @@ namespace FinNex.Domain.Entities.Avtopark
     /// faktiki çıxış eyni hadisənin iki mərhələsidir.
     ///
     /// PLAN vs FAKT — qəsdən ayrıdır:
-    ///   <see cref="PlanBaslama"/>/<see cref="PlanBitme"/> — işçinin İSTƏDİYİ vaxt
+    ///   <see cref="PlanBaslama"/> — işçinin İSTƏDİYİ çıxış vaxtı (tarix + saat)
     ///   <see cref="CixisTarixi"/>/<see cref="QayidisTarixi"/> — açarın FAKTİKİ
     ///   əldən-ələ keçdiyi an (kassa düyməni basanda `DateTime.Now` yazılır).
-    /// Üst-üstə düşmə yoxlaması PLANA görə gedir (çıxışdan əvvəl bilinməlidir).
+    ///
+    /// ⚠️ PLANLAŞDIRILAN BİTMƏ YOXDUR (21.08.2026 qərarı). İstifadəçi sözü:
+    /// «bitmə bilinmir axı — nə vaxt qayıtdı, kassada qayıtdı yazılacaq».
+    /// Doğrudur: qayıdışın yeganə mənbəyi <see cref="QayidisTarixi"/>-dir.
+    ///
+    /// Maşının ikiqat götürülməsinin qarşısını PLAN yox, VƏZİYYƏT alır —
+    /// `MasinMuracietService.CixdiAsync` (Qoruyucu 4.1): bir maşının eyni anda
+    /// iki açıq çıxışı ola bilməz. Yəni açar verilən an maşın tutulur, «Gəldi»
+    /// qeyd edilənə qədər ikinci açar verilmir.
     /// </summary>
     public class MasinMuraciet : BaseEntity
     {
@@ -25,7 +33,16 @@ namespace FinNex.Domain.Entities.Avtopark
         public Isci Isci { get; set; } = null!;
 
         public DateTime PlanBaslama { get; set; }
-        public DateTime PlanBitme { get; set; }
+
+        /// <summary>
+        /// KÖHNƏ sahə — 21.08.2026-dan YAZILMIR (həmişə `null`).
+        ///
+        /// Sütun QƏSDƏN silinmədi: 21.08.2026-dan əvvəlki qeydlərdə real
+        /// planlaşdırılan bitmə vaxtı var və jurnal tarixçəsi pozulmamalıdır.
+        /// Yeni müraciətlərdə `null` qalır; göstərmə qatı `null` olanda
+        /// sadəcə heç nə yazmır.
+        /// </summary>
+        public DateTime? PlanBitme { get; set; }
 
         public string Meqsed { get; set; } = null!;
         public string? Marsrut { get; set; }

@@ -50,20 +50,28 @@
                     <span asp-validation-for="MasinId" class="fn-val-msg"></span>
                 </div>
 
+                @* Tarix + saat AYRI (21.08.2026). Tarix bugünlə hazır gəlir;
+                   saat sahəsində istifadəçi yalnız rəqəm yazır, «:» avtomatik
+                   qoyulur — İcazə modulundakı «Başlama saatı» ilə eyni davranış.
+                   Planlaşdırılan BİTMƏ sahəsi YOXDUR: qayıdışı kassa qeyd edir. *@
                 <div class="fn-form-row">
                     <div class="fn-form-group">
-                        <label asp-for="PlanBaslama" class="fn-label">
-                            Başlama <span class="fn-required">*</span>
+                        <label asp-for="Tarix" class="fn-label">
+                            Tarix <span class="fn-required">*</span>
                         </label>
-                        <input asp-for="PlanBaslama" type="datetime-local" class="fn-input" />
-                        <span asp-validation-for="PlanBaslama" class="fn-val-msg"></span>
+                        <input asp-for="Tarix" type="date" class="fn-input" />
+                        <span asp-validation-for="Tarix" class="fn-val-msg"></span>
                     </div>
                     <div class="fn-form-group">
-                        <label asp-for="PlanBitme" class="fn-label">
-                            Bitmə <span class="fn-required">*</span>
+                        <label asp-for="Saat" class="fn-label">
+                            Saat <span class="fn-required">*</span>
                         </label>
-                        <input asp-for="PlanBitme" type="datetime-local" class="fn-input" />
-                        <span asp-validation-for="PlanBitme" class="fn-val-msg"></span>
+                        <input asp-for="Saat" type="text" id="saat"
+                               pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                               placeholder="10:00" maxlength="5"
+                               inputmode="numeric" class="fn-input" />
+                        <span class="fn-label-hint">Yalnız rəqəm yazın — «:» avtomatik qoyulur.</span>
+                        <span asp-validation-for="Saat" class="fn-val-msg"></span>
                     </div>
                 </div>
 
@@ -86,8 +94,9 @@
                 <div class="fn-info-box">
                     <i class="bi bi-info-circle"></i>
                     <div>
-                        Maşın həmin vaxt üçün başqasına ayrılıbsa, müraciət qəbul edilmir —
-                        ekranda kimin götürdüyü və hansı saatlar olduğu yazılır.
+                        Qayıdış vaxtı burada yazılmır — maşın qayıdanda
+                        <strong>kassa</strong> «Gəldi» qeyd edir və vaxt avtomatik düşür.
+                        Maşın həmin an çöldədirsə kassa ikinci açarı vermir.
                     </div>
                 </div>
 
@@ -104,4 +113,22 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Saat maskası — istifadəçi yalnız rəqəm yazır, «:» avtomatik qoyulur.
+        // Eyni məntiq `user_create_icaze.js`-dədir; ora İcazə formasının
+        // hesablamalarına bağlı olduğu üçün burada təkrarlanır (o faylı bura
+        // qoşsaq, olmayan elementlərə görə xəta verərdi).
+        (function () {
+            var el = document.getElementById('saat');
+            if (!el) return;
+
+            el.addEventListener('input', function () {
+                var raw = el.value.replace(/[^\d]/g, '');
+                if (raw.length > 4) raw = raw.substring(0, 4);
+                el.value = raw.length >= 3
+                    ? raw.substring(0, 2) + ':' + raw.substring(2)
+                    : raw;
+            });
+        })();
+    </script>
 }

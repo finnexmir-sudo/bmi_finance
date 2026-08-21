@@ -55,10 +55,12 @@ namespace FinNex.UI.Areas.Avtopark.Controllers
             var indi = DateTime.Now;
             return View(new MasinMuracietCreateDto
             {
-                // Növbəti tam saat — istifadəçi çox vaxt "indidən" istəyir,
+                // Tarix demək olar həmişə bugündür — hazır doldurulur ki,
+                // işçi yalnız saatı yazsın.
+                Tarix = indi.Date,
+                // Növbəti tam saat — istifadəçi çox vaxt «indidən» istəyir,
                 // dəqiqəli vaxt isə formada çirkin görünür.
-                PlanBaslama = indi.Date.AddHours(indi.Hour + 1),
-                PlanBitme = indi.Date.AddHours(indi.Hour + 3)
+                Saat = indi.AddHours(1).ToString("HH") + ":00"
             });
         }
 

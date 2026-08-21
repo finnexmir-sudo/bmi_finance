@@ -17,7 +17,8 @@ namespace FinNex.Application.DTOs.Avtopark
         public string? SobeAdi { get; set; }
 
         public DateTime PlanBaslama { get; set; }
-        public DateTime PlanBitme { get; set; }
+        /// <summary>Yalnız KÖHNƏ qeydlərdə dolu — bax `MasinMuraciet.PlanBitme`.</summary>
+        public DateTime? PlanBitme { get; set; }
         public string Meqsed { get; set; } = "";
         public string? Marsrut { get; set; }
 
@@ -80,13 +81,24 @@ namespace FinNex.Application.DTOs.Avtopark
         /// <summary>Servis doldurur (giriş etmiş istifadəçidən) — formadan GƏLMİR.</summary>
         public int IsciId { get; set; }
 
-        [Required(ErrorMessage = "Başlama tarixi və saatı seçilməlidir.")]
-        [Display(Name = "Başlama")]
-        public DateTime PlanBaslama { get; set; }
+        // ── ÇIXIŞ VAXTI — TARİX və SAAT AYRI SAHƏLƏRDƏ (21.08.2026) ──────
+        // Əvvəl tək `datetime-local` input idi. İki səbəbdən bölündü:
+        //   · tarix demək olar həmişə BUGÜNDÜR — default doldurulur;
+        //   · `datetime-local`-un saat hissəsi brauzerdən-brauzerə fərqli
+        //     davranır; layihədə İcazə modulunda artıq işlənən «HH:mm» mətn
+        //     maskası (rəqəm yazılır, «:» avtomatik qoyulur) daha rahatdır.
+        // Servis ikisini birləşdirib `MasinMuraciet.PlanBaslama` yazır.
 
-        [Required(ErrorMessage = "Bitmə tarixi və saatı seçilməlidir.")]
-        [Display(Name = "Bitmə")]
-        public DateTime PlanBitme { get; set; }
+        [Required(ErrorMessage = "Tarix seçilməlidir.")]
+        [DataType(DataType.Date)]
+        [Display(Name = "Tarix")]
+        public DateTime Tarix { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Saat yazılmalıdır (məs. 10:00).")]
+        [RegularExpression(@"^([01]?\d|2[0-3]):[0-5]\d$",
+            ErrorMessage = "Saat «SS:DD» formatında olmalıdır (məs. 10:00).")]
+        [Display(Name = "Saat")]
+        public string Saat { get; set; } = "";
 
         [Required(ErrorMessage = "Məqsəd yazılmalıdır.")]
         [StringLength(300)]
