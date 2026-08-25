@@ -142,6 +142,9 @@ namespace FinNex.UI.Areas.HR.Controllers
         /// <summary>
         /// İşə qəbul tarixinin il dönümünə 5 gün qalmış HR-a bildiriş yaradır.
         /// Hər işçi üçün ildə yalnız 1 dəfə bildiriş yaranır (dublikat qoruması).
+        /// İSTİSNA (25.08.2026): `MuqavileYenilemeleri`-də bitmə tarixi hələ
+        /// irəlidə olan yeniləmə qeydi varsa, işçiyə bildiriş GETMİR — müqaviləsi
+        /// onsuz da qüvvədədir. Qeydi olmayanlarda köhnə qayda (il dönümü) işləyir.
         /// </summary>
         private async Task MuqavileYenilenmeYoxlaAsync()
         {
@@ -155,6 +158,26 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Query()
                     .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
                     .ToListAsync();
+
+                // Müqaviləsi FinNex-də YENİLƏNİB və yeni bitmə tarixi hələ
+                // İRƏLİDƏ olan işçilər — onlara il dönümü xatırlatması GETMƏSİN.
+                //
+                // Bildirişin əsası QƏSDƏN işə qəbul il dönümüdür: sistem yenidir,
+                // bazada hər işçinin yeniləmə qeydi yoxdur — bildirişi
+                // BitmeTarixi-yə bağlasaq, qeydi olmayanlara heç nə getməzdi.
+                // Amma HR yeniləməni artıq QEYD EDİBSƏ, xatırlatma yanlışdır.
+                //
+                // Real hadisə (24.08.2026): Ülviyyə K. üçün «yenilənməsinə 5 gün
+                // qalıb» bildirişi getdi — halbuki müqaviləsi 01.07.2026-da
+                // 30.06.2028-ə qədər yenilənmişdi. İl dönümü (29.08) müqavilə
+                // tarixindən (30.06) fərqli olduğu üçün bu, hər il təkrarlanardı.
+                // BİR sorğu ilə yığılır — işçi başına ayrıca sorğu atmamaq üçün.
+                var quvvedeYenilenmisler = (await _unitOfWork.Repository<MuqavileYenileme>()
+                    .Query()
+                    .Where(y => y.YeniBitmeTarixi > bugun)
+                    .Select(y => y.IsciId)
+                    .Distinct()
+                    .ToListAsync()).ToHashSet();
 
                 // HR rollu işçiləri tap (bildirişi onlara göndərəcəyik)
                 var hrIsciler = await _unitOfWork.Repository<IsciStrukturRolu>()
@@ -185,6 +208,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     // işçinin işə qəbul tarixi 5 gün içindədirsə dərhal bildiriş gedirdi.
                     var staj = ilDonumu.Year - isci.IsheQebulTarixi.Year;
                     if (staj < 1) continue;
+
+                    // Yeniləməsi qüvvədədirsə xatırlatma mənasızdır — atla.
+                    if (quvvedeYenilenmisler.Contains(isci.Id)) continue;
 
                     // Bu il üçün artıq bildiriş yaradılıbmı?
                     var artiqVar = await _unitOfWork.Repository<Bildiris>()
