@@ -76,6 +76,88 @@ Real hadisə (2026-08 audit, mühasib Exceli ilə üzləşdirmə): 10 qeyd səhv
 - Addım 16 düsturuna toxunanda bu siyahını tutuşdur və mühasib Exceli ilə ən azı
   bir məzuniyyətli, bir xəstəlikli ayı yoxla.
 
+## Qabaqcadan Məzuniyyət — Vergi Bazası AYLARA BÖLÜNÜR (27.08.2026, KRİTİK)
+
+Mühasibin uçot modeli qəbul edildi: qabaqcadan ödənilən məzuniyyətin brütü
+**ödənilmə ayına toplu YOX**, məzuniyyətin düşdüyü **aylara bölünərək** vergi
+bazasına daxil edilir. Kəsim: `appsettings → Mezuniyyet:AvansAylaraBolunmeBaslama`
+(2026-08-01). **Geri qayıtmaq:** həmin açarı `2099-01-01` et — köhnə kod silinməyib,
+şərtin o biri qolunda durur.
+
+Real nümunə (Rüfət C., 31.08–11.09, brüt 365,37 / net 308,73, 27.08-də ödənilib):
+
+| | Avqust | Sentyabr |
+|---|---|---|
+| KÖHNƏ vergi bazası | 1 127,27 (761,90 + **365,37**) | 472,73 |
+| YENİ vergi bazası | **800,00** (761,90 + 38,10) | **800,00** (472,73 + 327,27) |
+| **NET (dəyişmir!)** | **466,80** | **422,47** |
+
+**İŞÇİYƏ ÖDƏNİLƏN MƏBLƏĞ HƏR İKİ MODELDƏ EYNİDİR.** Düstur (`FerdiHesabla` addım 11):
+`net = brutMaas − [vergilər(brutMaas + pay) + avans − (pay − payın neti)]`.
+«Payın neti» elə vergili və vergisiz bazanın fərqi kimi təyin olunub, ona görə iki
+model riyazi olaraq eyni nəticəyə gəlir. Dəyişən **yalnız bəyan olunan baza və
+tutulmalardır**. Model dəyişikliyini «maaş dəyişəcək» kimi təqdim etmə.
+
+### İKİ BÖLGÜ VAR — QARIŞDIRMA
+
+Eyni 365,37 iki cür bölünür və **hər ikisi cəmdə 365,37 verir**:
+
+| Bölgü | Avqust | Sentyabr | Harada |
+|---|---|---|---|
+| **Təqvim günü** (`slice.Secilen`) | 30,45 | 334,92 | «Aya düşən pay» sütunu |
+| **İş günü** (`slice.EH`) | 38,10 | 327,27 | vergi bazası, əvəzləşmə, qazanc tarixçəsi |
+
+Sentyabrda təqvim payı (334,92) iş günü payından (327,27) **BÖYÜKDÜR** — tərəzidir,
+avqustun qazandığını sentyabr itirir. «Biri səhvdir» demə.
+
+**`30,45` (brüt, təqvim) ilə `32,20` (net, iş günü) müqayisə olunan rəqəmlər DEYİL.**
+`30,45 − vergi` yazmaq **səhvdir** — real hadisə: mühasib `=200+30,45` yazdı, 468,55
+çıxdı, düzgünü 466,80 idi. Əvəzləşməyə **həmişə `EvezlesmeNet`** yazılır.
+
+### NORMALLAŞDIRICI `ΣEH`-dir, `CemiOdenis` DEYİL
+
+`pay = ödənilənBrüt × EH / ΣEH`. ÜSUL B qalib gələndə `ΣEH = CemiOdenis` olur və pay
+elə `EH`-in özüdür. **ÜSUL A qalibdirsə `ΣEH ≠ CemiOdenis`** — `CemiOdenis`-ə bölsən
+payların cəmi ödənilən brütdən **az** çıxar və vergi bazası, əvəzləşmə, qazanc
+tarixçəsi **səssizcə əskik** yazılar. Bu səhv yazılış anında edildi və düzəldildi.
+
+### BİR KƏMİYYƏTƏ ÜÇ YAZICI — HAMISINI BİRLİKDƏ DƏYİŞ
+
+Bu rəqəmin **üç** müstəqil hesablayıcısı var. Yalnız birini dəyişmək **kifayət etmir** —
+real hadisə: servis dəyişdirildi, ekran hələ `1 127,27` göstərirdi:
+
+1. `MaasHesablamaService.FerdiHesabla` — **əsl hesablama** (yazılan dəyər);
+2. `MaasController` (TopluHesabla önizləmə datası) — `data-mav-*` atributları;
+3. `wwwroot/js/maas-toplu.js` — serverin düsturunu **təkrarlayır**, amma məbləğləri
+   #2-dən oxuyur → **JS düsturuna toxunmaq lazım deyil**, #2-nin göndərdiyi rəqəmi düzəlt.
+
+Kəsim şərti `IMaasHesablamaService.AvansAylaraBolunurmu(il, ay)` ilə **tək yerdən**
+oxunur — controller öz nüsxəsini saxlamamalıdır.
+
+Ay-ay payların (brüt/vergi/net) **yeganə mənbəyi**:
+`MaasHesablamaService.MezuniyyetAvansAyPaylariAsync`. Həm maaş, həm Mühasib
+Detail səhifəsi onu çağırır. Netlərin cəmi **ödənilmiş NET-ə qəpiyinə** bağlanır
+(qalıq son aya yazılır) — yoxsa bank köçürməsi ilə 1–2 qəpik fərq qalar.
+
+### QƏSDƏN KÖHNƏ (KASSA) QALAN YERLƏR
+
+Bunlar **bilərəkdən** dəyişdirilməyib — pulun həqiqətən çıxdığı ayı yazırlar:
+
+- `MaasController.MezQabaqcadanBrutMapAsync` — **provodka** (xərc sətri);
+- `MaasController` Maas Detail başlığı — `ViewBag.TamGross` / `TamNet`.
+
+Yəni «ödənilmə ayı» filtri artıq önizləmə sorğusu ilə **eyni deyil**. Uçot tərəfi
+bunları da aylara bölmək istəyirsə — **mühasibin qərarıdır**, özbaşına dəyişmə.
+
+### Qazanc tarixçəsi də iş günü bölgüsündədir
+
+`IsciAyliqQazanc` (məzuniyyət ortalamasının **yeganə** mənbəyi) də `EH` bölgüsünə
+keçdi: avqust **800,00**, sentyabr **800,00** (əvvəl 792,35 / 807,65). Mühasib Exceli
+ilə tutuşdu (`2026 Əmək haqqı.xls`, 08-2026, sətir 22 — «Cəmi hesablanmış aylıq
+ödənişlər» 800,00). **Gələcək məzuniyyət hesablamaları buna görə dəyişir.**
+Kəsimdən əvvəlki aylar toxunulmayıb; keçmişi düzəltmək üçün ayrıca SQL lazımdır
+(hələ verilməyib).
+
 ## EF Core — Filtered Include + Tracking Tələsi (KRİTİK)
 
 Tracking ilə işləyən sorğuda `Include(x => x.Nav.Where(...))` (filtered include)

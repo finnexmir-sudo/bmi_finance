@@ -448,9 +448,19 @@ namespace FinNex.UI.Areas.HR.Controllers
             catch { return 0m; }
         }
 
-        // Bu ay ödənilmiş (qabaqcadan) məzuniyyət avanslarının BRÜT-ü — işçi üzrə.
+        // Bu ay ÖDƏNİLMİŞ (qabaqcadan) məzuniyyət avanslarının BRÜT-ü — işçi üzrə.
         // Provodkada məzuniyyət xərc sətrinə əlavə olunur (cari ay + avans brüt).
-        // Mənbə controller-dəki məzuniyyət-avans sorğusu ilə EYNİ filtrdir.
+        //
+        // ⚠️ 27.08.2026 — BU FİLTR QƏSDƏN KÖHNƏ (KASSA) ƏSASINDA QALDI.
+        // Vergi bazası və önizləmə artıq AYLARA BÖLÜNMÜŞ modeldədir (kəsim:
+        // Mezuniyyet:AvansAylaraBolunmeBaslama), yəni buradakı «ödənilmə ayı»
+        // filtri ONLARLA ARTIQ EYNİ DEYİL — əvvəlki şərh «eyni filtrdir»
+        // deyirdi, indi doğru deyil.
+        // Səbəb: provodka pulun HƏQİQƏTƏN çıxdığı ayı yazır (avqustda 365,37
+        // nağd ödənilib). Hesabat/uçot tərəfi bunu aylara bölmək istəyirsə,
+        // qərar mühasibindir — özbaşına dəyişilməyib.
+        // Toxunanda: bu metod + Maas Detail başlığındakı «Tam gross/net»
+        // (ViewBag.TamGross / TamNet) EYNİ kassa məntiqindədir, ikisini birlikdə dəyiş.
         private async Task<Dictionary<int, decimal>> MezQabaqcadanBrutMapAsync(int il, int ay)
         {
             var avanslar = await _unitOfWork.Repository<Mezuniyyet>()
