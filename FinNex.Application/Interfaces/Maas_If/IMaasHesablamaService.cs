@@ -45,6 +45,17 @@ namespace FinNex.Application.Interfaces.Maas_If
             int isciId, DateTime baslama, DateTime bitme);
 
         /// <summary>
+        /// Qabaqcadan ödənilmiş məzuniyyətin AY-AY paylarını (brüt / vergi / net)
+        /// qaytarır — mühasibin «aylara bölünmüş» uçot modeli üçün TƏK MƏNBƏ.
+        /// Həm maaş hesablaması (vergi bazası), həm Mühasib Detail səhifəsi
+        /// bunu çağırır; iki nüsxə saxlanılmır.
+        /// <paramref name="hedefNet"/> — faktiki ödənilmiş NET; verilsə netlərin
+        /// cəmi ona qəpiyinə bağlanır (qalıq son aya yazılır).
+        /// </summary>
+        Task<List<MezuniyyetAvansAyPayiDto>> MezuniyyetAvansAyPaylariAsync(
+            int isciId, DateTime baslama, DateTime bitme, decimal? hedefNet = null);
+
+        /// <summary>
         /// Verilmiş brüt məbləğ üçün bütün tutulmaları (gəlir vergisi, DSMF,
         /// İşsizlik, İTSS) və net məbləği hesablayır. FerdiHesablaAsync-ın
         /// istifadə etdiyi eyni VergiPille/MaasParametri mənbəyindən.

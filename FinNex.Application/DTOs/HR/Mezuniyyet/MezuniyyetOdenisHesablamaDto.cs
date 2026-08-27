@@ -94,6 +94,33 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
     }
 
     /// <summary>
+    /// Qabaqcadan ödənilmiş məzuniyyətin BİR AYA düşən payı (27.08.2026).
+    ///
+    /// NİYƏ VAR: mühasib aylıq cədvəlini «məzuniyyət ayları üzrə» qurur —
+    /// avqusta yalnız avqusta düşən hissə, sentyabra sentyabra düşəni yazır.
+    /// Əvvəl bu bölgü İKİ yerdə ayrıca hesablanırdı (Detail səhifəsi + heç yerdə)
+    /// və maaş servisi bütün brütü ödənilmə ayına salırdı. İndi tək mənbə var:
+    /// <c>MaasHesablamaService.MezuniyyetAvansAyPaylariAsync</c>.
+    ///
+    /// · <see cref="Brut"/> — payın brütü = slice.EH («cari maaş hesabı»);
+    ///   işlənmiş maaş + Brut = işçinin həmin ayki tam maaşı.
+    /// · <see cref="Net"/>   — payın MARJİNAL neti: tax(işlənmiş+Brut) − tax(işlənmiş).
+    ///   Ayın güzəştlərini işlənmiş hissə udur, ona görə düz faiz YAZILMIR.
+    /// · <see cref="Vergi"/> — Brut − Net.
+    ///
+    /// Netlərin cəmi ÖDƏNİLMİŞ NET-ə qəpiyinə bərabərdir (son ay qalığı udur) —
+    /// yoxsa bank köçürməsi ilə 1–2 qəpik fərq qalar.
+    /// </summary>
+    public class MezuniyyetAvansAyPayiDto
+    {
+        public int Il { get; set; }
+        public int Ay { get; set; }
+        public decimal Brut { get; set; }
+        public decimal Vergi { get; set; }
+        public decimal Net { get; set; }
+    }
+
+    /// <summary>
     /// Son 12 ayın qazancları üçün artım əmsalı (K) cədvəlinin bir sətri.
     /// K_i = CariStatMaas / StatMaas_i. Məzuniyyət pulunun MH hissəsi
     /// düzəlmiş cəm üzrə hesablanır.

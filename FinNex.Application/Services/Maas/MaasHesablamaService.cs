@@ -76,6 +76,113 @@ namespace FinNex.Application.Services.HR
             => mezuniyyetBaslama.Date >= YeniQaydaBaslamaTarixi();
 
         // ─────────────────────────────────────────────────────────
+        // QABAQCADAN ÖDƏNİLƏN MƏZUNİYYƏT — VERGİ BAZASININ AYLARA BÖLÜNMƏSİ
+        // (27.08.2026, mühasibin uçot modeli — istifadəçi qərarı)
+        //
+        // KÖHNƏ DAVRANIŞ: məzuniyyətin BÜTÜN brütü ÖDƏNİLMƏ ayının vergi bazasına
+        //   düşürdü (Rüfət C.: avqustda 761,90 + 365,37 = 1 127,27).
+        // YENİ DAVRANIŞ: hər ay yalnız ÖZ payını götürür
+        //   (avqust 761,90 + 38,10 = 800,00; sentyabr 472,73 + 327,27 = 800,00).
+        //
+        // ⚠️ İŞÇİYƏ ÖDƏNİLƏN MƏBLƏĞ DƏYİŞMİR. Düstur (bax addım 11):
+        //     net = brutMaas − [vergilər(brutMaas + pay) + avans − (pay − payın neti)]
+        //   İki model eyni nəticəni verir, çünki «payın neti» elə vergili və
+        //   vergisiz bazanın fərqi kimi təyin olunub. Yoxlanıb (Rüfət C., 2026):
+        //     köhnə  avqust 761,90 − 151,74 − 200 + 56,64 = 466,80
+        //     yeni   avqust 761,90 − 101,00 − 200 +  5,90 = 466,80
+        //     köhnə  sentyabr 472,73 − 50,26            = 422,47
+        //     yeni   sentyabr 472,73 − 101,00 + 50,74   = 422,47
+        //   Dəyişən YALNIZ bəyan olunan vergi bazası və tutulma məbləğləridir.
+        //
+        // KEÇMİŞ AYLAR TOXUNULMUR: kəsim tarixindən ƏVVƏLKİ maaş ayları köhnə
+        // modellə hesablanır — onlar artıq bəyan olunub.
+        // Konfiq: appsettings → Mezuniyyet:AvansAylaraBolunmeBaslama (yyyy-MM-dd).
+        // ─────────────────────────────────────────────────────────
+        private static readonly DateTime AvansBolgusuDefolt = new DateTime(2026, 8, 1);
+
+        private DateTime AvansBolgusuBaslamaTarixi()
+        {
+            var s = _config?["Mezuniyyet:AvansAylaraBolunmeBaslama"];
+            if (!string.IsNullOrWhiteSpace(s) &&
+                DateTime.TryParseExact(s.Trim(),
+                    new[] { "yyyy-MM-dd", "dd.MM.yyyy" },
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var d))
+                return d.Date;
+            return AvansBolgusuDefolt;
+        }
+
+        /// <summary>Maaş ayı (il, ay) kəsim tarixindən sonradırsa aylara bölünmüş model tətbiq olunur.</summary>
+        private bool AvansAylaraBolunurmu(int il, int ay)
+        {
+            var k = AvansBolgusuBaslamaTarixi();
+            return new DateTime(il, ay, 1) >= new DateTime(k.Year, k.Month, 1);
+        }
+
+        /// <summary>
+        /// Qabaqcadan ödənilmiş məzuniyyətin AY-AY paylarını qaytarır (brüt / vergi / net).
+        ///
+        /// TƏK MƏNBƏDİR — həm maaş hesablaması (vergi bazası), həm də Mühasib
+        /// Detail səhifəsi bunu çağırır. İki nüsxə saxlansaydı biri mütləq
+        /// köhnə qalardı (CLAUDE.md qaydası).
+        ///
+        /// Payın brütü = slice.EH («cari maaş hesabı»): işlənmiş maaş + EH = tam ay.
+        /// Neti MARJİNALDIR — tax(işlənmiş + EH) − tax(işlənmiş); ayın güzəştlərini
+        /// işlənmiş hissə udur, ona görə düz faiz (15,5%) YAZILMIR, real vergi
+        /// funksiyası çağırılır (aşağı maaşda güzəşt sərhədi tələsi var).
+        ///
+        /// <paramref name="hedefNet"/> verilibsə (faktiki ödənilmiş NET) netlərin
+        /// cəmi ona qəpiyinə bağlanır — qalıq SON aya yazılır. Verilməsə paylar
+        /// olduğu kimi qalır. Bank köçürməsi ilə 1–2 qəpik fərq qalmasın deyə
+        /// maaş tərəfi HƏMİŞƏ faktiki ödənilmiş neti ötürməlidir.
+        /// </summary>
+        public async Task<List<MezuniyyetAvansAyPayiDto>> MezuniyyetAvansAyPaylariAsync(
+            int isciId, DateTime baslama, DateTime bitme, decimal? hedefNet = null)
+        {
+            var paylar = new List<MezuniyyetAvansAyPayiDto>();
+
+            var hesab = await MezuniyyetOdenisiDetalliHesablaAsync(isciId, baslama, bitme);
+            if (hesab.AySliceleri.Count == 0 || hesab.CemiOdenis <= 0) return paylar;
+
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+            decimal cariMaas = maliye?.CariMaas ?? 0m;
+
+            foreach (var s in hesab.AySliceleri)
+            {
+                // İşlənmiş günlərin maaşı — həmin ayın vergi güzəştini bu hissə udur
+                int ig = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun);
+                decimal im = (cariMaas > 0 && s.AyIsGun > 0)
+                    ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0m;
+
+                var ayIlk = new DateTime(s.Il, s.Ay, 1);
+                var itax = await TutulmalariHesablaAsync(im, ayIlk, isciId);
+                var etax = await TutulmalariHesablaAsync(im + s.EH, ayIlk, isciId);
+
+                decimal net = Math.Round(etax.Net - itax.Net, 2);
+                paylar.Add(new MezuniyyetAvansAyPayiDto
+                {
+                    Il    = s.Il,
+                    Ay    = s.Ay,
+                    Brut  = s.EH,
+                    Net   = net,
+                    Vergi = Math.Round(s.EH - net, 2)
+                });
+            }
+
+            // Yuvarlaqlaşma qalığı SON aya — netlərin cəmi ödənilən NET-ə bərabər olsun
+            if (hedefNet.HasValue && hedefNet.Value > 0 && paylar.Count > 0)
+            {
+                decimal evvelkiler = paylar.Take(paylar.Count - 1).Sum(x => x.Net);
+                var son = paylar[^1];
+                son.Net   = Math.Round(hedefNet.Value - evvelkiler, 2);
+                son.Vergi = Math.Round(son.Brut - son.Net, 2);
+            }
+
+            return paylar;
+        }
+
+        // ─────────────────────────────────────────────────────────
         // TOPLU HESABLAMA
         // ─────────────────────────────────────────────────────────
 
@@ -426,14 +533,51 @@ namespace FinNex.Application.Services.HR
                     catch { /* pay hesablanmasa qazanc qeydi brutMaas ilə qalır — maaşı pozma */ }
                 }
 
-                // Qabaqcadan ödənilmiş avansın brütü — 2500 güzəşt yoxlaması üçün toplanır.
-                // VACIB: Çoxaylı QabaqcadanOdenis məzuniyyət üçün avans yalnız ÖDƏNİLMƏ ayında
-                // vergi bazasına daxil edilir; əks halda hər ay təkrar əlavə olunur və
-                // standart 200 AZN güzəşti yanlış olaraq itirilir.
+                // Qabaqcadan ödənilmiş avansın brütü — vergi bazası və güzəşt yoxlaması üçün.
+                //
+                // İKİ MODEL VAR (27.08.2026-dan) — aşağıdakı `if` onları ayırır:
+                //  · YENİ  — hər ay yalnız ÖZ payını götürür (mühasibin uçot modeli);
+                //  · KÖHNƏ — bütün brüt yalnız ÖDƏNİLMƏ ayına düşür. Bu, çoxaylı
+                //    məzuniyyətdə brütün hər ay TƏKRAR əlavə olunmasının qarşısını
+                //    alırdı (əks halda standart 200 AZN güzəşti yanlış itirdi).
+                //    Yeni modeldə həmin risk yoxdur: hər ay tam brütü yox, öz payını
+                //    alır və payların cəmi brütü dəqiq bir dəfə verir.
                 foreach (var advanceMez in advanceQeydler)
                 {
                     if (advanceMez.OdenisStatus == MezuniyyetOdenisStatus.Odenilib)
                     {
+                        // ── YENİ MODEL (27.08.2026-dan): vergi bazasına bu ayın PAYI ──
+                        // Mühasib uçotu məzuniyyəti aylara bölür. İşçiyə ödənilən
+                        // məbləğ DƏYİŞMİR (bax AvansAylaraBolunurmu şərhi) — yalnız
+                        // bəyan olunan baza və tutulmalar dəyişir.
+                        // Köhnə model aşağıda olduğu kimi qalır; geri qayıtmaq üçün
+                        // appsettings → Mezuniyyet:AvansAylaraBolunmeBaslama = "2099-01-01".
+                        if (AvansAylaraBolunurmu(input.Il, input.Ay))
+                        {
+                            var aypaylar = await MezuniyyetAvansAyPaylariAsync(
+                                advanceMez.IsciId, advanceMez.BaslamaTarixi, advanceMez.BitmeTarixi,
+                                advanceMez.OdenenMebleg);
+                            var buAy = aypaylar.FirstOrDefault(x => x.Il == input.Il && x.Ay == input.Ay);
+                            if (buAy != null && buAy.Brut > 0)
+                            {
+                                mezuniyyetAvansBrutu  += buAy.Brut;
+                                mezuniyyetAvansNetPaid += buAy.Net;
+                                izahatlar.Add(new HesablamaIzahiDto
+                                {
+                                    Addim = "Mezuniyyet (qabaqcadan — bu ayın payı)",
+                                    Izah = $"{advanceMez.BaslamaTarixi:dd.MM.yyyy}–{advanceMez.BitmeTarixi:dd.MM.yyyy} " +
+                                           $"məzuniyyətinin bu aya düşən payı: brüt {buAy.Brut:N2}, " +
+                                           $"vergi {buAy.Vergi:N2}, net {buAy.Net:N2} (qabaqcadan verilib). " +
+                                           "Vergi bazası aylara bölünür — ödənilmə ayına toplu salınmır.",
+                                    Mebleg = buAy.Brut,
+                                    Tip = "melumati"
+                                });
+                            }
+                            continue;
+                        }
+
+                        // ── KÖHNƏ MODEL (kəsim tarixindən əvvəlki aylar) ──
+                        // Bütün brüt yalnız ÖDƏNİLMƏ ayının bazasına düşür.
                         bool odenilmeBuAyda = advanceMez.OdenilmeTarixi.HasValue
                             && advanceMez.OdenilmeTarixi.Value.Year == input.Il
                             && advanceMez.OdenilmeTarixi.Value.Month == input.Ay;
