@@ -367,8 +367,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.ValTip).HasColumnName("VAL_TIP").HasMaxLength(10);
             e.Property(x => x.Tarix).HasColumnName("TARIX");
             e.Property(x => x.MenOlke).HasColumnName("MEN_OLKE").HasMaxLength(40);
-            e.Property(x => x.ContracNom).HasColumnName("CONTRAC_NOM").HasMaxLength(15);
-            e.Property(x => x.DeclarNom).HasColumnName("DECLAR_NOM").HasMaxLength(15);
+            // 27.08.2026: 15 → 50. BMI-nin köhnə ölçüsü (15) real müqavilə/bəyannamə
+            // nömrələri üçün az idi və uzun dəyər bütün INSERT-i sındırırdı.
+            // Bu limitlər GedenHevaleService.UzunluqXetasi və view-lardakı
+            // maxlength ilə EYNİ olmalıdır — birini dəyişəndə o birilərini də dəyiş.
+            e.Property(x => x.ContracNom).HasColumnName("CONTRAC_NOM").HasMaxLength(50);
+            e.Property(x => x.DeclarNom).HasColumnName("DECLAR_NOM").HasMaxLength(50);
             e.Property(x => x.Arayis).HasColumnName("ARAYIS");
             e.Property(x => x.Olke).HasColumnName("OLKE").HasMaxLength(40);
             e.Property(x => x.HevTip).HasColumnName("HEV_TIP").HasMaxLength(254);

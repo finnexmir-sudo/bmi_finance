@@ -125,7 +125,8 @@ public class GedenHevaleService : IGedenHevaleService
         };
     }
 
-    // GedenHevale sütunları BMI ölçülərindədir (AppDbContext: SAA 50, CONTRAC_NOM 15…).
+    // GedenHevale sütun ölçüləri AppDbContext-dədir (SAA 50, CONTRAC_NOM 50…).
+    // Əsasən BMI-dən gəlir; «Müqavilə №»/«Bəyannamə №» 27.08.2026-da 15 → 50 edildi.
     // Limitdən uzun dəyər SQL-in özündə «String or binary data would be truncated»
     // ilə BÜTÜN yazını sındırır və istifadəçi yalnız ümumi xəta səhifəsi görür —
     // real hadisə 27.08.2026 (VM): «Müqavilə №» xanasına 15-dən uzun mətn yazıldı,
@@ -157,8 +158,8 @@ public class GedenHevaleService : IGedenHevaleService
             (alBank,     40, "Alan bank"),
             (hevTip,    254, "Həvalə tipi"),
             (gonTip,     20, "Göndərən tipi"),
-            (contracNom, 15, "Müqavilə №"),
-            (declarNom,  15, "Bəyannamə №"),
+            (contracNom, 50, "Müqavilə №"),   // 27.08.2026: BMI-dəki 15-dən genişləndirildi
+            (declarNom,  50, "Bəyannamə №"),  // 27.08.2026: BMI-dəki 15-dən genişləndirildi
         };
         foreach (var (deyer, limit, ad) in limitler)
         {

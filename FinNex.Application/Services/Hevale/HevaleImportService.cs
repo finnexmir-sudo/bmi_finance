@@ -224,8 +224,11 @@ public class HevaleImportService : IHevaleImportService
                 ValTip     = Metn(s, "VAL_TIP", 10),
                 Tarix      = Tarix(s, "TARIX"),
                 MenOlke    = Metn(s, "MEN_OLKE", 40),
-                ContracNom = Metn(s, "CONTRAC_NOM", 15),
-                DeclarNom  = Metn(s, "DECLAR_NOM", 15),
+                // 27.08.2026: kəsmə həddi bizim sütun ölçüsüdür (15 → 50).
+                // BMI-nin öz sütunu daha dardırsa dəyər onsuz da qısa gəlir;
+                // burada məqsəd BİZİM sütuna sığmayan dəyərin idxalı sındırmamasıdır.
+                ContracNom = Metn(s, "CONTRAC_NOM", 50),
+                DeclarNom  = Metn(s, "DECLAR_NOM", 50),
                 Arayis     = Qisa(s, "ARAYIS"),
                 Olke       = Metn(s, "OLKE", 40),
                 HevTip     = Metn(s, "HEV_TIP", 254),
