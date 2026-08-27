@@ -56,6 +56,14 @@ namespace FinNex.Application.Interfaces.Maas_If
             int isciId, DateTime baslama, DateTime bitme, decimal? hedefNet = null);
 
         /// <summary>
+        /// Verilmiş MAAŞ AYI üçün qabaqcadan ödənilmiş məzuniyyət avansının
+        /// vergi bazası aylara bölünürmü (yeni model), yoxsa bütünlüklə ödənilmə
+        /// ayına düşür (köhnə model)? Kəsim: Mezuniyyet:AvansAylaraBolunmeBaslama.
+        /// Önizləmə (MaasController) və hesablama EYNİ şərtdən oxumalıdır.
+        /// </summary>
+        bool AvansAylaraBolunurmu(int il, int ay);
+
+        /// <summary>
         /// Verilmiş brüt məbləğ üçün bütün tutulmaları (gəlir vergisi, DSMF,
         /// İşsizlik, İTSS) və net məbləği hesablayır. FerdiHesablaAsync-ın
         /// istifadə etdiyi eyni VergiPille/MaasParametri mənbəyindən.

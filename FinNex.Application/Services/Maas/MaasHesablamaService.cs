@@ -112,8 +112,12 @@ namespace FinNex.Application.Services.HR
             return AvansBolgusuDefolt;
         }
 
-        /// <summary>Maaş ayı (il, ay) kəsim tarixindən sonradırsa aylara bölünmüş model tətbiq olunur.</summary>
-        private bool AvansAylaraBolunurmu(int il, int ay)
+        /// <summary>
+        /// Maaş ayı (il, ay) kəsim tarixindən sonradırsa aylara bölünmüş model tətbiq olunur.
+        /// PUBLIC-dir, çünki `MaasController` önizləmə datasını qurarkən eyni şərtə baxmalıdır —
+        /// öz nüsxəsini saxlasa, kəsim tarixi dəyişəndə ekran ilə hesablama ayrılardı.
+        /// </summary>
+        public bool AvansAylaraBolunurmu(int il, int ay)
         {
             var k = AvansBolgusuBaslamaTarixi();
             return new DateTime(il, ay, 1) >= new DateTime(k.Year, k.Month, 1);

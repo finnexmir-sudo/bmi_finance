@@ -1272,31 +1272,69 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IsciCixisMap = isciCixisMap;
 
             // Məzuniyyət avansı (QabaqcadanOdenis, ödənilmiş) — vergi dağılımı ilə birlikdə
-            var mezuniyyetAvanslar = await _unitOfWork.Repository<Mezuniyyet>()
+            //
+            // ⚠️ BU BLOK ÖNİZLƏMƏ DATASIDIR — `maas-toplu.js` serverin düsturunu
+            // təkrarlayır və məhz buradan gələn rəqəmlərlə işləyir. Yəni
+            // `MaasHesablamaService`-i dəyişib buranı unutsaq, EKRAN köhnə modeli
+            // göstərməyə davam edər və «Təsdiqlə»dən sonra rəqəm dəyişər
+            // (CLAUDE.md — bir kəmiyyətə iki yazıcı). Model dəyişəndə ikisi birlikdə.
+            //
+            // 27.08.2026 — iki model:
+            //  · YENİ  → ay ilə KƏSİŞƏN qeydlər; hər ay yalnız ÖZ payını götürür.
+            //  · KÖHNƏ → yalnız ÖDƏNİLMƏ ayının qeydləri; bütün brüt bir aya düşür.
+            bool avansAylaraBolunur = _hesablamaService.AvansAylaraBolunurmu(cIl, cAy);
+            var ayIlkGunu    = new DateTime(cIl, cAy, 1);
+            var novbetiAyIlk = ayIlkGunu.AddMonths(1);
+
+            var avansBazaSorgu = _unitOfWork.Repository<Mezuniyyet>()
                 .Query()
                 .Where(x =>
                     !x.Silinib &&
                     isciIdler.Contains(x.IsciId) &&
                     x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis &&
-                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib &&
-                    x.OdenilmeTarixi.HasValue &&
-                    x.OdenilmeTarixi.Value.Year == cIl &&
-                    x.OdenilmeTarixi.Value.Month == cAy)
-                .ToListAsync();
+                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib);
+
+            // Kəsişmə şərti `.Date`-siz yazılıb — EF tərəfdə sadə müqayisəyə düşsün
+            // və saat komponenti sərhəd gününü sürüşdürməsin.
+            var mezuniyyetAvanslar = avansAylaraBolunur
+                ? await avansBazaSorgu
+                    .Where(x => x.BaslamaTarixi < novbetiAyIlk && x.BitmeTarixi >= ayIlkGunu)
+                    .ToListAsync()
+                : await avansBazaSorgu
+                    .Where(x => x.OdenilmeTarixi.HasValue &&
+                                x.OdenilmeTarixi.Value.Year == cIl &&
+                                x.OdenilmeTarixi.Value.Month == cAy)
+                    .ToListAsync();
 
             var isciMezAvansMap = new Dictionary<int, (decimal brut, decimal gelirV, decimal dsmf, decimal iss, decimal itss, decimal net)>();
             foreach (var mav in mezuniyyetAvanslar)
             {
-                decimal avBrut = mav.OdenenMeblegBrut ?? 0m;
-                if (avBrut <= 0)
+                decimal avBrut;
+                decimal? avNetPay = null;   // yeni modeldə payın neti servisdən gəlir
+
+                if (avansAylaraBolunur)
                 {
-                    try
+                    // Bu ayın payı — hesablama ilə EYNİ mənbədən (tək yazıcı)
+                    var paylar = await _hesablamaService.MezuniyyetAvansAyPaylariAsync(
+                        mav.IsciId, mav.BaslamaTarixi, mav.BitmeTarixi, mav.OdenenMebleg);
+                    var buAy = paylar.FirstOrDefault(p => p.Il == cIl && p.Ay == cAy);
+                    if (buAy == null || buAy.Brut <= 0) continue;
+                    avBrut   = buAy.Brut;
+                    avNetPay = buAy.Net;
+                }
+                else
+                {
+                    avBrut = mav.OdenenMeblegBrut ?? 0m;
+                    if (avBrut <= 0)
                     {
-                        var dHesab = await _hesablamaService.MezuniyyetOdenisiDetalliHesablaAsync(
-                            mav.IsciId, mav.BaslamaTarixi, mav.BitmeTarixi);
-                        avBrut = dHesab.CemiOdenis;
+                        try
+                        {
+                            var dHesab = await _hesablamaService.MezuniyyetOdenisiDetalliHesablaAsync(
+                                mav.IsciId, mav.BaslamaTarixi, mav.BitmeTarixi);
+                            avBrut = dHesab.CemiOdenis;
+                        }
+                        catch { avBrut = mav.OdenenMebleg ?? 0m; }
                     }
-                    catch { avBrut = mav.OdenenMebleg ?? 0m; }
                 }
                 if (avBrut <= 0) continue;
 
@@ -1314,10 +1352,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 decimal avDsmf   = ftax.DsmfIsci       - itax.DsmfIsci;
                 decimal avIss    = ftax.IssizlikIsci   - itax.IssizlikIsci;
                 decimal avItss   = ftax.Itss           - itax.Itss;
-                // Faktiki ödənilmiş NET (saxlanılmışsa), yoxsa hesablanmış
-                decimal avNet    = (mav.OdenenMebleg > 0)
-                    ? mav.OdenenMebleg.Value
-                    : avBrut - (ftax.UmumiTutulma - itax.UmumiTutulma);
+                // NET — yeni modeldə BU AYIN payının neti (servisdən; netlərin cəmi
+                // ödənilmiş məbləğə qəpiyinə bağlıdır). Köhnə modeldə isə bütün
+                // ödəniş bir aya düşdüyü üçün faktiki ödənilmiş NET olduğu kimi.
+                decimal avNet = avNetPay
+                    ?? ((mav.OdenenMebleg > 0)
+                            ? mav.OdenenMebleg.Value
+                            : avBrut - (ftax.UmumiTutulma - itax.UmumiTutulma));
 
                 if (isciMezAvansMap.TryGetValue(mav.IsciId, out var ex))
                     isciMezAvansMap[mav.IsciId] = (ex.brut + avBrut,
