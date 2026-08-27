@@ -74,6 +74,23 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         // aşağı axın (vergi/bəyannamə) bunu ayın gəliri kimi istifadə edir.
         public decimal Secilen { get; set; }
         public string Qalib { get; set; } = "MH"; // MH / ƏH (hansı böyükdür; yeni qaydada dövrün qalibi)
+
+        // ── Mühasib cədvəli üçün əvəzləşmə (27.08.2026) — YALNIZ GÖSTƏRMƏ ──
+        // Detail səhifəsi doldurur; hesablama axını bunlara BAXMIR.
+        //
+        // Mühasib aylıq cədvəlində məzuniyyəti «cari maaş hesabı» payı (EH)
+        // ilə yazır: payın brütü ayın gəlirinə düşür, «Avans» sütununa isə
+        // payın NETİ (qabaqcadan verilmiş hissə) yazılmalıdır. Bu net əvvəllər
+        // heç yerdə görünmürdü və mühasib onu özü çıxarırdı — real hadisə
+        // (27.08.2026, Rüfət C.): əvəzləşməyə netto 32.20 əvəzinə başqa
+        // bölgünün brütü (30.45) yazıldı və ay 1.75 ₼ fərqlə bağlanmadı.
+        //
+        // EvezlesmeNet = tax(işlənmiş+EH).Net − tax(işlənmiş).Net — yəni payın
+        // MARJİNAL neti (ayın güzəştlərini işlənmiş maaş hissəsi uddugu üçün).
+        // Son ayın neti qalıqla bağlanır ki, cəm ödənilən NET-ə qəpiyinə
+        // bərabər olsun.
+        public decimal? EvezlesmeTutulma { get; set; }
+        public decimal? EvezlesmeNet { get; set; }
     }
 
     /// <summary>

@@ -190,6 +190,12 @@
         }
 
         @* ── Per-month breakdown ── *@
+        @{
+            // Əvəzləşmə sütunları yalnız qabaqcadan ödənişli qeyddə dolur
+            // (controller doldurur); köhnə/AySonu qeydlərdə boş qalır və
+            // sütunlar ümumiyyətlə göstərilmir — cədvəl boş «—» ilə dolmasın.
+            var evezlesmeVar = Model.AySliceleri.Any(x => x.EvezlesmeNet.HasValue);
+        }
         <div class="mod-card">
             <div class="mod-card-title"><i class="bi bi-calendar3"></i> Ay-ay bölünmə</div>
             <table class="mod-table">
@@ -209,6 +215,11 @@
                         {
                             <th class="mod-num" title="MAX(gündəlik dərəcələr) × iş günü — böyük gündəlik götürülür">Məzuniyyət ödənişi</th>
                         }
+                        @if (evezlesmeVar)
+                        {
+                            <th class="mod-num" title="«Cari maaş hesabı» payına düşən vergilər (marjinal — ayın güzəştlərini işlənmiş maaş udur)">Payın vergisi</th>
+                            <th class="mod-num" title="Mühasib aylıq cədvəlinin «Avans» sütununa yazılan rəqəm: payın brütü (cari maaş hesabı) − vergisi. Son ay ödənilən NET-lə qalıqla bağlanır">Əvəzləşmə (NET)</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -227,6 +238,11 @@
                                     (@(s.Qalib == "MH" ? "tarixi orta" : "cari maaş hesabı"))
                                 </small>
                             </td>
+                            @if (evezlesmeVar)
+                            {
+                                <td class="mod-num">@(s.EvezlesmeTutulma?.ToString("N2") ?? "—")</td>
+                                <td class="mod-num"><strong>@(s.EvezlesmeNet?.ToString("N2") ?? "—")</strong></td>
+                            }
                         </tr>
                     }
                 </tbody>
@@ -234,9 +250,24 @@
                     <tr>
                         <td colspan="6" class="mod-num"><strong>CƏMİ</strong></td>
                         <td class="mod-num mod-total">@Model.CemiOdenis.ToString("N2") ₼</td>
+                        @if (evezlesmeVar)
+                        {
+                            <td class="mod-num mod-total">@Model.AySliceleri.Sum(x => x.EvezlesmeTutulma ?? 0).ToString("N2") ₼</td>
+                            <td class="mod-num mod-total">@Model.AySliceleri.Sum(x => x.EvezlesmeNet ?? 0).ToString("N2") ₼</td>
+                        }
                     </tr>
                 </tfoot>
             </table>
+            @if (evezlesmeVar)
+            {
+                <div class="mod-muted" style="padding:8px 12px;font-size:12px">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Mühasib cədvəli üçün:</strong> ayın «Məzuniyyət haqqı» sütununa
+                    <em>Cari maaş hesabı</em> payı, «Avans» (əvəzləşmə) sütununa isə
+                    <em>Əvəzləşmə (NET)</em> yazılır. Netlərin cəmi ödənilən məbləğə bərabərdir —
+                    son ayın payı qalıqla bağlanır.
+                </div>
+            }
         </div>
 
         @* ── Addım-addım izahat ── *@

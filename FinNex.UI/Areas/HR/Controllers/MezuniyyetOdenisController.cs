@@ -139,6 +139,26 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
                 islenmisNetCemi += itax.Net;
                 mezOdenisNetCemi += ftax.Net - itax.Net;
+
+                // ── Mühasib cədvəli üçün əvəzləşmə (yalnız göstərmə) ─────────
+                // YALNIZ qabaqcadan ödənişdə dolur — AySonu qeydində qabaqcadan
+                // verilmiş pul yoxdur, «əvəzləşmə» anlayışı mənasızdır (view da
+                // netlər boş olanda sütunları ümumiyyətlə göstərmir).
+                //
+                // Payın brütü = EH («cari maaş hesabı» sütunu) — mühasib aylıq
+                // cədvəldə məzuniyyəti bu payla yazır (işlənmiş + EH = tam ay).
+                // Neti MARJİNAL hesablanır: tax(işlənmiş+EH) − tax(işlənmiş) —
+                // ayın güzəştlərini işlənmiş hissə udur, pay güzəştsiz vergilənir.
+                // Düz faiz (15.5%) YAZILMIR — aşağı maaşda güzəşt sərhədinə
+                // düşən hallar üçün real vergi funksiyası çağırılır.
+                if (mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+                {
+                    var etax = await _maasHesablamaService
+                        .TutulmalariHesablaAsync(im + s.EH, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
+                    s.EvezlesmeNet = Math.Round(etax.Net - itax.Net, 2);
+                    s.EvezlesmeTutulma = Math.Round(s.EH - s.EvezlesmeNet.Value, 2);
+                }
+
                 islenmisMaas += im;
                 islenmisGun += ig;
                 // Aylıq cəmi tutulma komponentləri (birləşdirilmiş brüt üzrə)
@@ -153,6 +173,19 @@ namespace FinNex.UI.Areas.HR.Controllers
             // Qabaqcadan ödəniş: məzuniyyət NET (vergidən sonra)
             decimal advanceNet = mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
                 ? mezOdenisNetCemi : 0;
+
+            // Əvəzləşmə netləri ÖDƏNİLƏN NET-ə qəpiyinə bağlanmalıdır — yoxsa
+            // mühasibin cədvəli bank köçürməsi ilə 1-2 qəpik fərqlənər və «niyə
+            // tutuşmur» sualı təzələnər. Yuvarlaqlaşma fərqi SON AYIN payına
+            // yazılır (son ay qalığı udur).
+            if (advanceNet > 0 && hesab.AySliceleri.Count > 0)
+            {
+                var evvelkiler = hesab.AySliceleri.Take(hesab.AySliceleri.Count - 1)
+                    .Sum(x => x.EvezlesmeNet ?? 0);
+                var son = hesab.AySliceleri[^1];
+                son.EvezlesmeNet = Math.Round(advanceNet - evvelkiler, 2);
+                son.EvezlesmeTutulma = Math.Round(son.EH - son.EvezlesmeNet.Value, 2);
+            }
             decimal advanceTutulma = advanceNet > 0 ? hesab.CemiOdenis - advanceNet : 0;
 
             // Maaş günü qalıq: aylıq NET - avans (artıq verilib) - HYS - avans kreditləri
