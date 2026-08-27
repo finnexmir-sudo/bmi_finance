@@ -411,14 +411,24 @@
         const sel = rows.filter(r => rd(r).checked);
         const t = sel.reduce((a, r) => {
             const d = rd(r);
-            // İşçi tərəfi — vergi sütunları maaş + məz.avansi hissəsini birlikdə toplayır
-            a.brut        += d.brut;
+            // İşçi tərəfi — MÜHASİB FORMATI (27.08.2026):
+            // Gross-a qabaqcadan ödənilmiş məzuniyyətin bu ayki payı (mavBrut) DA
+            // daxildir, avansa isə onun neti (mavNet). Excel ixracı onsuz da belə
+            // yazır (`gross = d.brut + d.mavBrut`, `v[25] = d.avans + d.mavNet`) —
+            // footer də eyni olsun ki, ekran ilə Excel arasında sual qalmasın.
+            //
+            // ⚠️ BU ÜÇLÜK BAĞLI SİSTEMDİR: Gross − Cəmi tutulma = NET.
+            // Əvvəl Gross mavBrut-u çıxarırdı, Cəmi tutulma isə mavNet-i çıxmırdı →
+            // yekun zolaq öz-özü ilə bağlanmırdı (real ölçmə: 60 461,15 − 17 088,73
+            // = 43 372,42, NET isə 43 419,03 — 46,61 fərq). Birini dəyişirsənsə
+            // o birini də dəyiş, yoxsa fərq səssizcə qayıdır.
+            a.brut        += d.brut + d.mavBrut;
             a.gelirV      += d.gelirV + d.mavGelirV;
             a.dsmfIsci    += d.dsmf  + d.mavDsmf;
             a.issIsci     += d.iss   + d.mavIss;
             a.itssIsci    += d.itss  + d.mavItss;
             a.hysIsci     += d.hys;
-            a.avans       += d.avans;
+            a.avans       += d.avans + d.mavNet;
             a.mavTutulma  += d.mavTutulma;
             a.tutulma     += d.tutulma;
             a.net         += d.net;
@@ -446,7 +456,14 @@
         s('mthFootHysIsci', fmt(t.hysIsci));
         s('mthFootAvans', fmt(t.avans));
         s('mthFootMavTutulma', fmt(t.mavTutulma));
-        s('mthFootTutulma', fmt(t.tutulma + t.hysIsci));
+        // Cəmi tutulma — komponentlərdən BİRBAŞA yığılır ki, yuxarıdakı xanalarla
+        // gözlə tutuşsun: 4 vergi (birləşmiş) + HYS + avans (məz. neti daxil).
+        // Əvvəl sətir-səviyyəsindəki `tutulma` toplanırdı — orada vergilər yalnız
+        // MAAŞ payı idi və avans məz. netini daşımırdı, ona görə Gross ilə bağlanmırdı.
+        // «Məz. avansı vergisi» BURAYA ƏLAVƏ EDİLMİR — o, artıq 4 verginin içindədir
+        // (birləşmiş baza üzrə hesablanıb); ayrıca xana yalnız məlumat üçündür.
+        s('mthFootTutulma', fmt(t.gelirV + t.dsmfIsci + t.issIsci + t.itssIsci
+                                + t.hysIsci + t.avans));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
         // Şirkət tərəfi
@@ -564,6 +581,20 @@
         const COLS = headers.length; // 32
 
         const num = v => (v && v > 0) ? Number(v).toFixed(2).replace('.', ',') : '0,00';
+
+        // ── EXCEL RƏQƏMİ — `x:num` MƏCBURİDİR (27.08.2026) ──────────────────
+        // `num()` vergüllü MƏTN qaytarır («6003,86»). Serverin mədəniyyəti az-AZ
+        // olduğu üçün insan oxuyanda düzdür, amma Excel-in özü ingilis lokalında
+        // olanda bunu RƏQƏM saymır — xanalar mətn kimi qalır və sütunu seçəndə
+        // status zolağında CƏM ÜMUMİYYƏTLƏ ÇIXMIR (istifadəçi şikayəti).
+        //
+        // Həll: `x:num` atributu ilə xam dəyəri (NÖQTƏ ilə) ayrıca göndəririk —
+        // Excel dəyəri oradan götürür, mətnə baxmır. Lokaldan asılı deyil.
+        // Yazı formatı isə xananın öz formatı ilə göstərilir.
+        //
+        // ⚠️ Yeni sütun əlavə edəndə `x:num`-u UNUTMA — unudulan sütun səssizcə
+        // mətn olur və yalnız «toplanmır» şikayəti ilə üzə çıxır.
+        const xnum = v => Number(v || 0).toFixed(2);
         const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
             ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
 
@@ -610,31 +641,33 @@
 
             for (let c = 3; c <= 30; c++) tot[c] += v[c];
 
-            const m = c => `<td style="text-align:right">${num(v[c])}</td>`;
+            const m = c => `<td x:num="${xnum(v[c])}" style="text-align:right">${num(v[c])}</td>`;
+            // DİQQƏT: IBAN sütununa `x:num` QOYULMUR — mətndir. Qoyulsa Excel onu
+            // ədədə çevirər, öndəki sıfırlar itər və nömrə eksponента düşər.
             return `<tr>
                 <td style="text-align:center">${i + 1}</td>
                 <td>${esc(ad)}</td>
                 <td>${esc(vez)}</td>
                 ${m(3)}${m(4)}${m(5)}${m(6)}${m(7)}${m(8)}${m(9)}${m(10)}${m(11)}${m(12)}${m(13)}${m(14)}${m(15)}${m(16)}${m(17)}
-                <td style="text-align:right;font-weight:bold;background:#e8f5ee">${num(v[18])}</td>
+                <td x:num="${xnum(v[18])}" style="text-align:right;font-weight:bold;background:#e8f5ee">${num(v[18])}</td>
                 ${m(19)}${m(20)}${m(21)}${m(22)}${m(23)}${m(24)}${m(25)}${m(26)}
-                <td style="text-align:right;color:#c83838">${num(v[27])}</td>
-                <td style="text-align:right;font-weight:bold;background:#fff7e0">${num(v[28])}</td>
+                <td x:num="${xnum(v[27])}" style="text-align:right;color:#c83838">${num(v[27])}</td>
+                <td x:num="${xnum(v[28])}" style="text-align:right;font-weight:bold;background:#fff7e0">${num(v[28])}</td>
                 ${m(29)}${m(30)}
                 <td>${esc(iban)}</td>
             </tr>`;
         }).join('');
 
-        const tm = c => `<td style="text-align:right">${num(tot[c])}</td>`;
+        const tm = c => `<td x:num="${xnum(tot[c])}" style="text-align:right">${num(tot[c])}</td>`;
         const totalRow = `<tr style="background:#f1f5f9;font-weight:bold">
             <td style="text-align:center">—</td>
             <td>CƏMİ — ${visibleRows.length} işçi</td>
             <td></td>
             ${tm(3)}${tm(4)}${tm(5)}${tm(6)}${tm(7)}${tm(8)}${tm(9)}${tm(10)}${tm(11)}${tm(12)}${tm(13)}${tm(14)}${tm(15)}${tm(16)}${tm(17)}
-            <td style="text-align:right;background:#e8f5ee">${num(tot[18])}</td>
+            <td x:num="${xnum(tot[18])}" style="text-align:right;background:#e8f5ee">${num(tot[18])}</td>
             ${tm(19)}${tm(20)}${tm(21)}${tm(22)}${tm(23)}${tm(24)}${tm(25)}${tm(26)}
-            <td style="text-align:right;color:#c83838">${num(tot[27])}</td>
-            <td style="text-align:right;background:#fff7e0">${num(tot[28])}</td>
+            <td x:num="${xnum(tot[27])}" style="text-align:right;color:#c83838">${num(tot[27])}</td>
+            <td x:num="${xnum(tot[28])}" style="text-align:right;background:#fff7e0">${num(tot[28])}</td>
             ${tm(29)}${tm(30)}
             <td></td>
         </tr>`;

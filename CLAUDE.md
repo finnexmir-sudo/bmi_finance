@@ -650,6 +650,54 @@ yəni səhv YALNIZ onluqlu sütunlarda idi.
 - Yeni Oracle sahəsi əlavə edəndə **ondalıqlı bir dəyəri əl ilə tutuşdur** —
   tam ədədlər səhvi gizlədir.
 
+## HTML-dən Excel İxracı — `x:num` Olmasa Sütun TOPLANMIR (KRİTİK)
+
+Layihədə «Excel» ixracı əslində **HTML cədvəlidir** (`.xls` adı ilə, `xmlns:x=
+"urn:schemas-microsoft-com:office:excel"`). Rəqəm xanası sadəcə mətn kimi
+yazılırsa (`6003,86` — az-AZ vergülü ilə), **ingilis lokalında işləyən Excel
+onu RƏQƏM SAYMIR**: sütunu seçəndə status zolağında cəm ümumiyyətlə çıxmır,
+`SUM()` sıfır verir. Heç bir xəta yoxdur — sadəcə hər şey mətndir.
+
+**Qayda:** hər rəqəm xanasına **`x:num` atributu** ilə xam dəyəri (NÖQTƏ ilə)
+də göndər — Excel dəyəri oradan götürür, mətnə baxmır, lokaldan asılı deyil:
+
+```js
+const num  = v => Number(v).toFixed(2).replace('.', ',');  // insan oxuyan
+const xnum = v => Number(v || 0).toFixed(2);               // Excel üçün xam
+`<td x:num="${xnum(x)}" style="text-align:right">${num(x)}</td>`
+```
+
+- **Cəmi sətrini də unutma** — yalnız sətirlərə qoysan, «CƏMİ» sətri mətn qalar.
+- **Mətn sütununa `x:num` QOYMA** (IBAN, hesab №, nömrə): Excel onu ədədə çevirər,
+  öndəki sıfırlar itər və uzun nömrə eksponentə düşər.
+- Yeni sütun əlavə edəndə `x:num`-u da əlavə et — unudulan sütun səssizcə mətn
+  olur və yalnız «toplanmır» şikayəti ilə üzə çıxır (27.08.2026, real hadisə).
+
+## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
+
+Toplu Maaş ekranının aşağı zolağında `Gross`, `Cəmi tutulma` və `NET` **bir-birini
+yoxlayan üçlükdür**. Biri dəyişəndə o birilər də dəyişməlidir, yoxsa zolaq
+öz-özü ilə bağlanmır və istifadəçi «hansı düzdür?» sualı ilə qalır.
+
+Real hadisə (27.08.2026): `Gross` qabaqcadan ödənilmiş məzuniyyətin brütünü
+**çıxarırdı** (4 204,41), `Cəmi tutulma` isə onun netini (3 438,80) **çıxmırdı**:
+
+```
+60 461,15 − 17 088,73 = 43 372,42     amma NET 43 419,03   → 46,61 fərq
+```
+
+Sətirlərin hamısı düz idi (hər işçinin NET-i Excel ilə qəpiyinə eyni) — **yalnız
+yekun zolaq yalan danışırdı**. İndi hər ikisi mühasib formatındadır (Excel ixracı
+onsuz da belə idi): `Gross += mavBrut`, `Avans += mavNet`, `Cəmi tutulma` isə
+komponentlərdən **birbaşa** yığılır — `4 vergi + HYS + Avans`.
+
+**«Məz. avansı vergisi» xanası «Cəmi tutulma»ya ƏLAVƏ EDİLMİR** — o məbləğ artıq
+4 verginin içindədir (vergilər birləşmiş baza üzrə hesablanır). Xana yalnız
+məlumat üçün qalıb və etiketində «(məlumat)» yazılır.
+
+**Qayda:** ekran ilə Excel ixracı **eyni təqdimatda** olmalıdır. İkisi fərqli
+«gross» tərifi işlədirsə, sual gec-tez qayıdır.
+
 ## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
 
 Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur

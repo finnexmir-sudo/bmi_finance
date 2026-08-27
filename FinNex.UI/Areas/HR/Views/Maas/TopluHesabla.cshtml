@@ -1227,7 +1227,16 @@
                                 </div>
                                 <div class="mth-footer-div"></div>
                                 <div class="mth-ftotal">
-                                    <span class="mth-ftotal-lbl" style="color:#c9900a;">Məz. Avansı Vergisi</span>
+                                    @* YALNIZ MƏLUMAT — «Cəmi tutulma»ya ƏLAVƏ EDİLMİR.
+                                       Bu məbləğ onsuz da yuxarıdakı 4 verginin içindədir
+                                       (vergilər birləşmiş baza üzrə hesablanır). Ayrıca
+                                       göstərilir ki, mühasib məzuniyyət payına düşən
+                                       vergini görə bilsin. Toplama sırası:
+                                       Gross − (4 vergi + HYS + Avans) = NET. *@
+                                    <span class="mth-ftotal-lbl" style="color:#c9900a;"
+                                          title="Yalnız məlumat üçün — vergilərin içindədir, «Cəmi tutulma»ya ayrıca əlavə olunmur">
+                                        Məz. Avansı Vergisi <span style="font-weight:400;">(məlumat)</span>
+                                    </span>
                                     <span class="mth-ftotal-val" id="mthFootMavTutulma">— ₼</span>
                                 </div>
                                 <div class="mth-footer-div"></div>
