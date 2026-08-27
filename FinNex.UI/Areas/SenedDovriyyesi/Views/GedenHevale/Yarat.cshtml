@@ -27,6 +27,11 @@
     <div class="fn-card" style="max-width:820px">
         <form asp-action="Yarat" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
+            @* maxlength dəyərləri GedenHevale sütun ölçüləridir (AppDbContext
+               HasMaxLength; BMI ilə eyni). Limitsiz uzun mətn SQL-də «String or
+               binary data would be truncated» ilə bütün yazını sındırırdı —
+               real hadisə 27.08.2026 (VM, CONTRAC_NOM 15). Server tərəfdə də
+               eyni yoxlama var: GedenHevaleService.UzunluqXetasi. *@
             <div class="dm-grid">
                 <div>
                     <label>Tarix</label>
@@ -44,11 +49,11 @@
                 </div>
                 <div class="dm-full">
                     <label>Soyad Ad Ata (S.A.A.) *</label>
-                    <input type="text" name="Saa" value="@Model.Saa" class="fn-input" placeholder="məs. Hüseynov Samir Əli oğlu" />
+                    <input type="text" name="Saa" value="@Model.Saa" maxlength="50" class="fn-input" placeholder="məs. Hüseynov Samir Əli oğlu" />
                 </div>
                 <div>
                     <label>Hesab №</label>
-                    <input type="text" name="HesNom" value="@Model.HesNom" class="fn-input" />
+                    <input type="text" name="HesNom" value="@Model.HesNom" maxlength="20" class="fn-input" />
                 </div>
                 <div class="dm-2col">
                     <div>
@@ -75,31 +80,31 @@
                 </div>
                 <div>
                     <label>Mənşə ölkə</label>
-                    <input type="text" name="MenOlke" value="@Model.MenOlke" class="fn-input" />
+                    <input type="text" name="MenOlke" value="@Model.MenOlke" maxlength="40" class="fn-input" />
                 </div>
                 <div>
                     <label>Təyinat ölkə</label>
-                    <input type="text" name="Olke" value="@Model.Olke" class="fn-input" />
+                    <input type="text" name="Olke" value="@Model.Olke" maxlength="40" class="fn-input" />
                 </div>
                 <div>
                     <label>Alan bank</label>
-                    <input type="text" name="AlBank" value="@Model.AlBank" class="fn-input" />
+                    <input type="text" name="AlBank" value="@Model.AlBank" maxlength="40" class="fn-input" />
                 </div>
                 <div>
                     <label>Həvalə tipi</label>
-                    <input type="text" name="HevTip" value="@Model.HevTip" class="fn-input" />
+                    <input type="text" name="HevTip" value="@Model.HevTip" maxlength="254" class="fn-input" />
                 </div>
                 <div>
                     <label>Göndərən tipi</label>
-                    <input type="text" name="GonTip" value="@Model.GonTip" class="fn-input" />
+                    <input type="text" name="GonTip" value="@Model.GonTip" maxlength="20" class="fn-input" />
                 </div>
                 <div>
                     <label>Müqavilə №</label>
-                    <input type="text" name="ContracNom" value="@Model.ContracNom" class="fn-input" />
+                    <input type="text" name="ContracNom" value="@Model.ContracNom" maxlength="15" class="fn-input" />
                 </div>
                 <div>
                     <label>Bəyannamə №</label>
-                    <input type="text" name="DeclarNom" value="@Model.DeclarNom" class="fn-input" />
+                    <input type="text" name="DeclarNom" value="@Model.DeclarNom" maxlength="15" class="fn-input" />
                 </div>
                 <div class="dm-full">
                     <label>Sənəd (qoşma) <span style="color:#94a3b8;font-weight:500">— istəyə bağlı</span></label>

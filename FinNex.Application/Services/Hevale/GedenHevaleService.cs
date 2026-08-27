@@ -125,10 +125,59 @@ public class GedenHevaleService : IGedenHevaleService
         };
     }
 
+    // GedenHevale sütunları BMI ölçülərindədir (AppDbContext: SAA 50, CONTRAC_NOM 15…).
+    // Limitdən uzun dəyər SQL-in özündə «String or binary data would be truncated»
+    // ilə BÜTÜN yazını sındırır və istifadəçi yalnız ümumi xəta səhifəsi görür —
+    // real hadisə 27.08.2026 (VM): «Müqavilə №» xanasına 15-dən uzun mətn yazıldı,
+    // CONTRAC_NOM nvarchar(15) qəbul etmədi, ekranda səbəbsiz «xəta baş verdi» çıxdı.
+    // Limitlər AppDbContext-dəki HasMaxLength ilə EYNİ olmalıdır — sxem dəyişəndə
+    // buranı da yenilə. View-lardakı maxlength atributları birinci qat qoruyucudur;
+    // bu yoxlama isə server tərəfdə son sözdür (köhnə brauzer / əl ilə POST halı).
+    private static string? UzunluqXetasi(GedenHevaleEditDto d) => UzunluqXetasi(
+        d.Saa, d.HesNom, d.TipRes, d.ValTip, d.MenOlke, d.Olke,
+        d.AlBank, d.HevTip, d.GonTip, d.ContracNom, d.DeclarNom);
+
+    private static string? UzunluqXetasi(GedenHevaleCreateDto d) => UzunluqXetasi(
+        d.Saa, d.HesNom, d.TipRes, d.ValTip, d.MenOlke, d.Olke,
+        d.AlBank, d.HevTip, d.GonTip, d.ContracNom, d.DeclarNom);
+
+    private static string? UzunluqXetasi(
+        string? saa, string? hesNom, string? tipRes, string? valTip,
+        string? menOlke, string? olke, string? alBank, string? hevTip,
+        string? gonTip, string? contracNom, string? declarNom)
+    {
+        var limitler = new (string? Deyer, int Limit, string Ad)[]
+        {
+            (saa,        50, "Soyad Ad Ata (S.A.A.)"),
+            (hesNom,     20, "Hesab №"),
+            (tipRes,     16, "Rezident tipi"),
+            (valTip,     10, "Valyuta"),
+            (menOlke,    40, "Mənşə ölkə"),
+            (olke,       40, "Təyinat ölkə"),
+            (alBank,     40, "Alan bank"),
+            (hevTip,    254, "Həvalə tipi"),
+            (gonTip,     20, "Göndərən tipi"),
+            (contracNom, 15, "Müqavilə №"),
+            (declarNom,  15, "Bəyannamə №"),
+        };
+        foreach (var (deyer, limit, ad) in limitler)
+        {
+            var uzunluq = deyer?.Trim().Length ?? 0;
+            if (uzunluq > limit)
+                return $"«{ad}» maksimum {limit} simvol ola bilər (daxil edilən: {uzunluq}). Qeyd yazılmadı.";
+        }
+        return null;
+    }
+
     public async Task<Result<string>> YaratAsync(GedenHevaleCreateDto dto, int yaradanUserId, string? faylYolu = null)
     {
         if (string.IsNullOrWhiteSpace(dto.Saa))
             return Result<string>.Fail("Soyad Ad Ata (S.A.A.) boş ola bilməz.");
+
+        // Uzunluq yoxlaması HƏR ŞEYDƏN ƏVVƏL — nömrə hesablamasından da qabaq
+        // (uğursuz ola biləcək hər şey nömrədən əvvəl yoxlanmalıdır — CLAUDE.md).
+        if (UzunluqXetasi(dto) is string uXeta)
+            return Result<string>.Fail(uXeta);
 
         // İcraçı nömrəsi — cari istifadəçinin işçisindən (Isci.AppUserId → IcraciNo)
         var isci = (await _uow.Repository<FinNex.Domain.Entities.HR.Isci>().HamisiniGetirAsync(
@@ -207,6 +256,9 @@ public class GedenHevaleService : IGedenHevaleService
     {
         if (string.IsNullOrWhiteSpace(dto.Saa))
             return Result.Fail("Soyad Ad Ata (S.A.A.) boş ola bilməz.");
+
+        if (UzunluqXetasi(dto) is string uXeta)
+            return Result.Fail(uXeta);
 
         var e = await _uow.Repository<GedenHevale>().GetirAsync(x => x.Id == dto.Id && !x.Silinib);
         if (e == null) return Result.Fail("Həvalə tapılmadı.");

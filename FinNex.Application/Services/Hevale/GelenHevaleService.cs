@@ -161,10 +161,54 @@ public class GelenHevaleService : IGelenHevaleService
         };
     }
 
+    // GelenHevale sütunları BMI ölçülərindədir (AppDbContext HasMaxLength).
+    // Limitdən uzun dəyər SQL-də «String or binary data would be truncated» ilə
+    // bütün yazını sındırır və istifadəçi yalnız ümumi xəta səhifəsi görür —
+    // GedenHevaleService.UzunluqXetasi ilə eyni qayda (real hadisə 27.08.2026, VM).
+    // Limitlər AppDbContext ilə EYNİ olmalıdır; view-lardakı maxlength birinci qatdır.
+    private static string? UzunluqXetasi(GelenHevaleCreateDto d) => UzunluqXetasi(
+        d.HevNom, d.Saa, d.HesNom, d.TipRes, d.ValTip, d.MenOlke,
+        d.GelOlke, d.AlBank, d.HevTip, d.GonTip, d.DecNom);
+
+    private static string? UzunluqXetasi(GelenHevaleEditDto d) => UzunluqXetasi(
+        d.HevNom, d.Saa, d.HesNom, d.TipRes, d.ValTip, d.MenOlke,
+        d.GelOlke, d.AlBank, d.HevTip, d.GonTip, d.DecNom);
+
+    private static string? UzunluqXetasi(
+        string? hevNom, string? saa, string? hesNom, string? tipRes, string? valTip,
+        string? menOlke, string? gelOlke, string? alBank, string? hevTip,
+        string? gonTip, string? decNom)
+    {
+        var limitler = new (string? Deyer, int Limit, string Ad)[]
+        {
+            (hevNom,     10, "Həvalə №"),
+            (saa,        50, "Soyad Ad Ata (S.A.A.)"),
+            (hesNom,     20, "Hesab №"),
+            (tipRes,     16, "Rezident tipi"),
+            (valTip,     10, "Valyuta"),
+            (menOlke,    40, "Mənşə ölkə"),
+            (gelOlke,    40, "Gəldiyi ölkə"),
+            (alBank,    250, "Alan bank"),
+            (hevTip,    254, "Həvalə tipi"),
+            (gonTip,     20, "Göndərən tipi"),
+            (decNom,     30, "Bəyannamə №"),
+        };
+        foreach (var (deyer, limit, ad) in limitler)
+        {
+            var uzunluq = deyer?.Trim().Length ?? 0;
+            if (uzunluq > limit)
+                return $"«{ad}» maksimum {limit} simvol ola bilər (daxil edilən: {uzunluq}). Qeyd yazılmadı.";
+        }
+        return null;
+    }
+
     public async Task<Result<string>> YaratAsync(GelenHevaleCreateDto dto, int yaradanUserId, string? faylYolu = null)
     {
         if (string.IsNullOrWhiteSpace(dto.Saa))
             return Result<string>.Fail("Soyad Ad Ata (S.A.A.) boş ola bilməz.");
+
+        if (UzunluqXetasi(dto) is string uXeta)
+            return Result<string>.Fail(uXeta);
 
         var isci = (await _uow.Repository<Isci>().HamisiniGetirAsync(
             predicate: x => x.AppUserId == yaradanUserId && !x.Silinib, izlemeden: true)).FirstOrDefault();
@@ -234,6 +278,9 @@ public class GelenHevaleService : IGelenHevaleService
     {
         if (string.IsNullOrWhiteSpace(dto.Saa))
             return Result.Fail("Soyad Ad Ata (S.A.A.) boş ola bilməz.");
+
+        if (UzunluqXetasi(dto) is string uXeta)
+            return Result.Fail(uXeta);
 
         var e = await _uow.Repository<GelenHevale>().GetirAsync(x => x.Id == dto.Id && !x.Silinib);
         if (e == null) return Result.Fail("Həvalə tapılmadı.");

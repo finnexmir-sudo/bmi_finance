@@ -34,7 +34,7 @@
                    redaktəni bloklayardı. Dublikat yoxlaması servisdədir. *@
                 <div>
                     <label>Həvalə № *</label>
-                    <input type="text" name="HevNom" value="@Model.HevNom" class="fn-input"
+                    <input type="text" name="HevNom" value="@Model.HevNom" maxlength="10" class="fn-input"
                            placeholder="məs. 046001" autocomplete="off" />
                     <div class="dm-hint-sm">Təkrar nömrə qəbul edilmir.</div>
                 </div>
@@ -54,11 +54,11 @@
                 </div>
                 <div class="dm-full">
                     <label>Soyad Ad Ata (S.A.A.) *</label>
-                    <input type="text" name="Saa" value="@Model.Saa" class="fn-input" />
+                    <input type="text" name="Saa" value="@Model.Saa" maxlength="50" class="fn-input" />
                 </div>
                 <div>
                     <label>Hesab №</label>
-                    <input type="text" name="HesNom" value="@Model.HesNom" class="fn-input" />
+                    <input type="text" name="HesNom" value="@Model.HesNom" maxlength="20" class="fn-input" />
                 </div>
                 <div class="dm-2col">
                     <div>
@@ -85,27 +85,27 @@
                 </div>
                 <div>
                     <label>Mənşə ölkə</label>
-                    <input type="text" name="MenOlke" value="@Model.MenOlke" class="fn-input" />
+                    <input type="text" name="MenOlke" value="@Model.MenOlke" maxlength="40" class="fn-input" />
                 </div>
                 <div>
                     <label>Gələn (mənbə) ölkə</label>
-                    <input type="text" name="GelOlke" value="@Model.GelOlke" class="fn-input" />
+                    <input type="text" name="GelOlke" value="@Model.GelOlke" maxlength="40" class="fn-input" />
                 </div>
                 <div>
                     <label>Alan bank</label>
-                    <input type="text" name="AlBank" value="@Model.AlBank" class="fn-input" />
+                    <input type="text" name="AlBank" value="@Model.AlBank" maxlength="250" class="fn-input" />
                 </div>
                 <div>
                     <label>Həvalə tipi</label>
-                    <input type="text" name="HevTip" value="@Model.HevTip" class="fn-input" />
+                    <input type="text" name="HevTip" value="@Model.HevTip" maxlength="254" class="fn-input" />
                 </div>
                 <div>
                     <label>Göndərən tipi</label>
-                    <input type="text" name="GonTip" value="@Model.GonTip" class="fn-input" />
+                    <input type="text" name="GonTip" value="@Model.GonTip" maxlength="20" class="fn-input" />
                 </div>
                 <div>
                     <label>Bəyannamə №</label>
-                    <input type="text" name="DecNom" value="@Model.DecNom" class="fn-input" />
+                    <input type="text" name="DecNom" value="@Model.DecNom" maxlength="30" class="fn-input" />
                 </div>
                 <div class="dm-full">
                     <label>Sənəd (qoşma) <span style="color:#94a3b8;font-weight:500">— istəyə bağlı</span></label>

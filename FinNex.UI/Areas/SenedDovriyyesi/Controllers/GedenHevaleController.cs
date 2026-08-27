@@ -84,6 +84,13 @@ public class GedenHevaleController : Controller
         var faylYolu = await QosmaYazAsync(fayl);
         var res = await _service.YaratAsync(dto, GetUserId(), faylYolu);
         TempData[res.Success ? "Success" : "Error"] = res.Message;
+        if (!res.Success)
+        {
+            // Xətada forma İTMƏSİN — istifadəçi yalnız səhv sahəni düzəltsin
+            // (Redakte POST ilə eyni qayda). Redirect etsək bütün xanalar boşalır.
+            await ValyutalariDoldurAsync();
+            return View(dto);
+        }
         return RedirectToAction(nameof(Index));
     }
 
