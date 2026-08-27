@@ -102,8 +102,11 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
     /// və maaş servisi bütün brütü ödənilmə ayına salırdı. İndi tək mənbə var:
     /// <c>MaasHesablamaService.MezuniyyetAvansAyPaylariAsync</c>.
     ///
-    /// · <see cref="Brut"/> — payın brütü = slice.EH («cari maaş hesabı»);
-    ///   işlənmiş maaş + Brut = işçinin həmin ayki tam maaşı.
+    /// · <see cref="Brut"/> — payın brütü: EH («cari maaş hesabı») bölgüsü,
+    ///   ödənilən cəmə normallaşdırılmış (`CemiOdenis × EH / ΣEH`). ÜSUL B
+    ///   qalib gələndə bu, elə EH-in özüdür; ÜSUL A qalibdirsə mütənasib
+    ///   böyüyür ki, payların cəmi ödənilən brütü dəqiq versin.
+    ///   İşlənmiş maaş + Brut = işçinin həmin ayki tam maaşı.
     /// · <see cref="Net"/>   — payın MARJİNAL neti: tax(işlənmiş+Brut) − tax(işlənmiş).
     ///   Ayın güzəştlərini işlənmiş hissə udur, ona görə düz faiz YAZILMIR.
     /// · <see cref="Vergi"/> — Brut − Net.

@@ -148,8 +148,18 @@ namespace FinNex.Application.Services.HR
                 .GetirAsync(x => x.IsciId == isciId);
             decimal cariMaas = maliye?.CariMaas ?? 0m;
 
+            // ⚠️ EH payları ÖDƏNİLƏN CƏMƏ normallaşdırılır, xam götürülmür.
+            // ÜSUL B qalib gələndə ΣEH = CemiOdenis olur və pay elə EH-ə bərabər
+            // çıxır (Rüfət C.: 38,10 / 327,27). ÜSUL A qalibdirsə CemiOdenis daha
+            // böyükdür — normallaşdırmasaq payların cəmi ödənilən brütdən AZ olar
+            // və həm vergi bazası, həm əvəzləşmə səssizcə əskik qalar.
+            decimal ehCemi = hesab.AySliceleri.Sum(x => x.EH);
+            if (ehCemi <= 0) return paylar;
+
             foreach (var s in hesab.AySliceleri)
             {
+                decimal brut = Math.Round(hesab.CemiOdenis * s.EH / ehCemi, 2);
+
                 // İşlənmiş günlərin maaşı — həmin ayın vergi güzəştini bu hissə udur
                 int ig = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun);
                 decimal im = (cariMaas > 0 && s.AyIsGun > 0)
@@ -157,16 +167,16 @@ namespace FinNex.Application.Services.HR
 
                 var ayIlk = new DateTime(s.Il, s.Ay, 1);
                 var itax = await TutulmalariHesablaAsync(im, ayIlk, isciId);
-                var etax = await TutulmalariHesablaAsync(im + s.EH, ayIlk, isciId);
+                var etax = await TutulmalariHesablaAsync(im + brut, ayIlk, isciId);
 
                 decimal net = Math.Round(etax.Net - itax.Net, 2);
                 paylar.Add(new MezuniyyetAvansAyPayiDto
                 {
                     Il    = s.Il,
                     Ay    = s.Ay,
-                    Brut  = s.EH,
+                    Brut  = brut,
                     Net   = net,
-                    Vergi = Math.Round(s.EH - net, 2)
+                    Vergi = Math.Round(brut - net, 2)
                 });
             }
 
@@ -523,11 +533,46 @@ namespace FinNex.Application.Services.HR
                             .FirstOrDefault(s => s.Il == input.Il && s.Ay == input.Ay);
                         if (slPay == null || mhesPay.CemiOdenis <= 0) continue;
 
-                        // Faktiki ödənilmiş brüt saxlanılıbsa, pay ona miqyaslanır;
-                        // yoxdursa (köhnə qeydlərdə brüt NULL) canlı hesabın payı götürülür.
-                        decimal pay = (advMez.OdenenMeblegBrut.HasValue && advMez.OdenenMeblegBrut.Value > 0)
-                            ? Math.Round(advMez.OdenenMeblegBrut.Value * slPay.Secilen / mhesPay.CemiOdenis, 2)
-                            : slPay.Secilen;
+                        // BÖLGÜ ÜSULU — vergi bazası ilə EYNİ olmalıdır (27.08.2026):
+                        //  · YENİ  → slPay.EH («cari maaş hesabı», iş günü bölgüsü).
+                        //            İşlənmiş maaş + EH = işçinin tam aylıq qazancı
+                        //            (Rüfət C.: avqust 761,90 + 38,10 = 800,00;
+                        //             sentyabr 472,73 + 327,27 = 800,00).
+                        //            Mühasib Exceli də məhz bunu yazır — «Cəmi
+                        //            hesablanmış aylıq ödənişlər» sütunu 800,00
+                        //            (2026 Əmək haqqı.xls, 08-2026, sətir 22).
+                        //  · KÖHNƏ → slPay.Secilen (təqvim bölgüsü): 792,35 / 807,65.
+                        //            Cəmi eynidir, aylıq bölgü fərqlidir.
+                        //
+                        // ⚠️ BU CƏDVƏL MƏZUNİYYƏT ORTALAMASININ YEGANƏ MƏNBƏYİDİR —
+                        // bölgü dəyişdiyi üçün gələcək məzuniyyət hesablamaları da
+                        // dəyişir. Kəsim tarixindən ƏVVƏLKİ aylar toxunulmur; keçmiş
+                        // qeydləri düzəltmək lazım olsa ayrıca SQL tələb olunur.
+                        // Faktiki ödənilmiş brüt saxlanılıbsa ona, yoxdursa (köhnə
+                        // qeydlərdə brüt NULL) canlı hesabın cəminə miqyaslanır.
+                        decimal hedefBrut = (advMez.OdenenMeblegBrut.HasValue && advMez.OdenenMeblegBrut.Value > 0)
+                            ? advMez.OdenenMeblegBrut.Value
+                            : mhesPay.CemiOdenis;
+
+                        decimal pay;
+                        if (AvansAylaraBolunurmu(input.Il, input.Ay))
+                        {
+                            // ⚠️ NORMALLAŞDIRICI ΣEH-dir, CemiOdenis DEYİL.
+                            // ÜSUL B qalib gələndə ΣEH = CemiOdenis olur və pay elə
+                            // EH-ə bərabər çıxır. ÜSUL A qalibdirsə CemiOdenis daha
+                            // böyükdür (ΣEH ≠ CemiOdenis) — CemiOdenis-ə bölsək
+                            // payların cəmi ödənilmiş brütdən AZ olar və qazanc
+                            // tarixçəsi səssizcə əskik yazılar.
+                            decimal ehCemi = mhesPay.AySliceleri.Sum(x => x.EH);
+                            if (ehCemi <= 0) continue;
+                            pay = Math.Round(hedefBrut * slPay.EH / ehCemi, 2);
+                        }
+                        else
+                        {
+                            // KÖHNƏ: təqvim bölgüsü. ΣSecilen = CemiOdenis olduğu
+                            // üçün normallaşdırıcı burada CemiOdenis-dir.
+                            pay = Math.Round(hedefBrut * slPay.Secilen / mhesPay.CemiOdenis, 2);
+                        }
                         qabaqcadanTarixcePayi += pay;
                     }
                     catch { /* pay hesablanmasa qazanc qeydi brutMaas ilə qalır — maaşı pozma */ }
