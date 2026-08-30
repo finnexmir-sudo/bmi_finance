@@ -1,0 +1,91 @@
+﻿@model IReadOnlyList<FinNex.Application.DTOs.Yardim.YardimEhateDto>
+@{
+    ViewData["Title"] = "Təlimat əhatəsi";
+    var yazilan = ViewBag.Yazilan as int? ?? 0;
+    var cemi    = ViewBag.Cemi as int? ?? 0;
+    var faiz    = cemi > 0 ? (yazilan * 100.0 / cemi) : 0;
+    var saheler = ViewBag.Saheler as List<string> ?? new List<string>();
+
+    // Faiz mətnləri MARKUP-DAN ƏVVƏL hazırlanır — iki səbəbdən (CLAUDE.md):
+    //  · atribut içində dırnaqlı `ToString("0.##")` Razor-un parserini sındırır;
+    //  · CSS-ə gedən rəqəm İNVARİANT olmalıdır — az-AZ vergülü ilə `width:73,3%`
+    //    CSS tərəfindən atılır və zolaq TAM DOLU görünür.
+    var inv     = System.Globalization.CultureInfo.InvariantCulture;
+    var faizGos = faiz.ToString("0.#", inv);    // insana göstərilən
+    var faizCss = faiz.ToString("0.##", inv);   // CSS eni
+}
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Təlimat əhatəsi</div>
+            <div class="fn-page-sub">
+                Hansı səhifənin izahı var, hansının yox — siyahı marşrut cədvəlindən gəlir
+            </div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">Geri</a>
+    </div>
+
+    <div class="fn-card" style="margin-bottom:14px">
+        <div style="font-size:22px;font-weight:800;color:#0f172a">
+            @yazilan / @cemi
+            <span style="font-size:13px;font-weight:600;color:#64748b">
+                (@faizGos%)
+            </span>
+        </div>
+        <div style="height:8px;background:#f1f5f9;border-radius:99px;margin-top:9px;overflow:hidden">
+            @* Faiz CSS-ə gedir → InvariantCulture MƏCBURİDİR; az-AZ vergülü ilə
+               CSS dəyəri atır və zolaq tam dolu görünür (CLAUDE.md qaydası). *@
+            <div style="height:100%;background:#1a2332;width:@faizCss%"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+            <a asp-action="Ehate" class="fn-btn fn-btn--outline" style="padding:3px 10px">Hamısı</a>
+            @foreach (var s in saheler)
+            {
+                <a asp-action="Ehate" asp-route-sahe="@s" class="fn-btn fn-btn--outline" style="padding:3px 10px">@s</a>
+            }
+        </div>
+    </div>
+
+    <div class="fn-card">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+                <tr style="text-align:left;color:#64748b;font-size:11px;text-transform:uppercase">
+                    <th style="padding:7px">Səhifə açarı</th>
+                    <th style="padding:7px">Başlıq</th>
+                    <th style="padding:7px">Vəziyyət</th>
+                    <th style="padding:7px"></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var e in Model)
+            {
+                <tr style="border-top:1px solid #f1f5f9">
+                    <td style="padding:7px;font-family:monospace;color:#475569">@e.Acar</td>
+                    <td style="padding:7px">@e.Basliq</td>
+                    <td style="padding:7px">
+                        @if (!e.Yazilib)
+                        {
+                            <span style="color:#b91c1c">yazılmayıb</span>
+                        }
+                        else if (e.Hazirlanir)
+                        {
+                            <span style="color:#92400e">hazırlanır</span>
+                        }
+                        else
+                        {
+                            <span style="color:#065f46">var</span>
+                        }
+                    </td>
+                    <td style="padding:7px;text-align:right">
+                        @if (!e.Yazilib)
+                        {
+                            <a asp-action="Redakte" asp-route-acar="@e.Acar"
+                               class="fn-btn fn-btn--outline" style="padding:3px 9px">Yaz</a>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,92 @@
+@model FinNex.Application.DTOs.Yardim.YardimUpsertDto
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Təlimatı redaktə et" : "Yeni təlimat";
+}
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@ViewData["Title"]</div>
+            <div class="fn-page-sub">Mətn bazada saxlanılır — dəyişiklik dərhal işə düşür</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null) { <div class="dm-alert dm-alert--err">@TempData["Error"]</div> }
+
+    <div class="fn-card" style="max-width:900px">
+        <form asp-action="Redakte" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+
+            <div class="ydm-grid">
+                <div>
+                    <label>Səhifə açarı *</label>
+                    <input type="text" name="Acar" value="@Model.Acar" class="fn-input"
+                           placeholder="user/mezuniyyet/create" maxlength="200" />
+                    <div class="ydm-hint">
+                        Formatı: <code>area/controller/action</code>, kiçik hərflə.
+                        Area yoxdursa <code>_</code>. Açarı bilmirsinizsə həmin səhifədə
+                        «?» basın — «təlimat yaz» düyməsi açarı özü doldurur.
+                    </div>
+                </div>
+                <div>
+                    <label>Qısa ünvan (slug)</label>
+                    <input type="text" name="Slug" value="@Model.Slug" class="fn-input"
+                           placeholder="boş buraxsanız başlıqdan yaranır" maxlength="200" />
+                    <div class="ydm-hint">Çatda paylaşmaq üçün: <code>/Yardim/Sehife/&lt;slug&gt;</code></div>
+                </div>
+                <div>
+                    <label>Başlıq *</label>
+                    <input type="text" name="Basliq" value="@Model.Basliq" class="fn-input" maxlength="200" />
+                </div>
+                <div>
+                    <label>Modul</label>
+                    <input type="text" name="Modul" value="@Model.Modul" class="fn-input"
+                           placeholder="Məzuniyyət, İcazə, Davamiyyət…" maxlength="100" />
+                    <div class="ydm-hint">İndeks səhifəsində qruplaşdırma üçün</div>
+                </div>
+                <div class="ydm-full">
+                    <label>Bir cümləlik xülasə</label>
+                    <input type="text" name="Xulase" value="@Model.Xulase" class="fn-input" maxlength="500" />
+                </div>
+                <div class="ydm-full">
+                    <label>Təlimat mətni (HTML)</label>
+                    <textarea name="Metn" class="fn-input" rows="18"
+                              style="font-family:Consolas,monospace;font-size:12px">@Model.Metn</textarea>
+                    <div class="ydm-hint">
+                        Sadə HTML işlədin: <code>&lt;h3&gt;</code>, <code>&lt;p&gt;</code>,
+                        <code>&lt;ul&gt;&lt;li&gt;</code>, <code>&lt;b&gt;</code>,
+                        <code>&lt;table&gt;</code>. Panelin eni ~420 px-dir — qısa abzaslar yazın.
+                    </div>
+                </div>
+                <div class="ydm-full" style="display:flex;gap:22px;align-items:center">
+                    <label style="display:flex;align-items:center;gap:7px;margin:0">
+                        <input type="hidden" name="Hazirlanir" value="false" />
+                        <input type="checkbox" name="Hazirlanir" value="true" @(Model.Hazirlanir ? "checked" : "") />
+                        <span>Hazırlanır (mətn yerinə xəbərdarlıq göstərilsin)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:7px;margin:0">
+                        <input type="hidden" name="YalnizAdmin" value="false" />
+                        <input type="checkbox" name="YalnizAdmin" value="true" @(Model.YalnizAdmin ? "checked" : "") />
+                        <span>Yalnız Admin görsün</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:18px">
+                <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+<style>
+    .ydm-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 18px }
+    .ydm-grid .ydm-full { grid-column:1/-1 }
+    .ydm-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px }
+    .ydm-hint { font-size:11px; color:#94a3b8; margin-top:4px }
+    .ydm-hint code { background:#f1f5f9; padding:1px 4px; border-radius:3px }
+    .dm-alert { padding:11px 16px;border-radius:10px;font-size:13px;margin-bottom:14px }
+    .dm-alert--err { background:#fef2f2;border:1px solid #fecaca;color:#b91c1c }
+    @@media (max-width:700px) { .ydm-grid { grid-template-columns:1fr } }
+</style>

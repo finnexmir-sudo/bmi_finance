@@ -1,0 +1,46 @@
+@model FinNex.Application.DTOs.Yardim.YardimPanelDto
+@{
+    ViewData["Title"] = Model.Basliq;
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
+}
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            @if (!string.IsNullOrWhiteSpace(Model.Modul))
+            {
+                <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase">@Model.Modul</div>
+            }
+            <div class="fn-page-title">@Model.Basliq</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Xulase))
+            {
+                <div class="fn-page-sub">@Model.Xulase</div>
+            }
+        </div>
+        <div style="display:flex;gap:8px">
+            @if (isAdmin)
+            {
+                <a href="/Admin/Yardim/Redakte/@Model.Id" class="fn-btn fn-btn--outline">Redaktə</a>
+            }
+            <a href="/Yardim" class="fn-btn fn-btn--outline">Bütün təlimatlar</a>
+        </div>
+    </div>
+
+    <div class="fn-card" style="max-width:860px;line-height:1.7">
+        @if (Model.Hazirlanir)
+        {
+            <div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:12px 14px;border-radius:8px">
+                Bu bölmə hazırlanır — təlimat tezliklə əlavə olunacaq.
+            </div>
+        }
+        else
+        {
+            @Html.Raw(Model.Metn)
+        }
+        @if (Model.Yenilenme.HasValue)
+        {
+            <div style="margin-top:18px;font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:10px">
+                Yenilənib: @Model.Yenilenme.Value.ToString("dd.MM.yyyy")
+            </div>
+        }
+    </div>
+</div>

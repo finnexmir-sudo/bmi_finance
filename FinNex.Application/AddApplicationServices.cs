@@ -1,4 +1,4 @@
-
+﻿
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.AI;
@@ -73,6 +73,11 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<FinNex.Application.Interfaces.Mektub.IXaricMektubService, FinNex.Application.Services.Mektub.XaricMektubService>();
         services.AddScoped<FinNex.Application.Interfaces.Mektub.IMektubImportService, FinNex.Application.Services.Mektub.MektubImportService>();
         services.AddScoped<FinNex.Application.Interfaces.Hevale.IGedenHevaleService, FinNex.Application.Services.Hevale.GedenHevaleService>();
+
+        // Səhifə təlimatları — «?» düyməsi və /Yardim indeksi (27.08.2026).
+        // Mətn bazadadır; admin onu sistemdən redaktə edir, deploy lazım deyil.
+        services.AddScoped<FinNex.Application.Interfaces.Yardim.ISehifeYardimiService,
+                           FinNex.Application.Services.Yardim.SehifeYardimiService>();
         services.AddScoped<FinNex.Application.Interfaces.Hevale.IGelenHevaleService, FinNex.Application.Services.Hevale.GelenHevaleService>();
         services.AddScoped<FinNex.Application.Interfaces.Hevale.IHevaleImportService, FinNex.Application.Services.Hevale.HevaleImportService>();
         services.AddScoped<FinNex.Application.Interfaces.Kurval.IBmiValyutaService, FinNex.Application.Services.Kurval.BmiValyutaService>();

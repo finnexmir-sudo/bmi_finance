@@ -1,4 +1,4 @@
-@{
+﻿@{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var currentUser = User.Identity?.Name ?? "Admin";
     var initials = currentUser.Length >= 2
@@ -183,5 +183,8 @@
     <script src="~/js/admin-sidebar.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+    @* Səhifə təlimatı — «?» düyməsi. Tam yol yazılır ki, bütün area-lardan
+       tapılsın. Login səhifəsinə (_AuthLayout) QƏSDƏN qoyulmayıb. *@
+    @await Html.PartialAsync("~/Views/Shared/_YardimDuymesi.cshtml")
 </body>
 </html>

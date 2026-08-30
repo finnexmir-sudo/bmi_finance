@@ -11,6 +11,7 @@ using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Sorgular;
 using FinNex.Domain.Entities.Structure;
+using FinNex.Domain.Entities.Yardim;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<GedenHevale> GedenHevaleler { get; set; }
     public DbSet<GelenHevale> GelenHevaleler { get; set; }
     public DbSet<Kocurme> Kocurmeler { get; set; }
+
+    // Səhifə təlimatları — «?» düyməsinin mətni (27.08.2026)
+    public DbSet<SehifeYardimi> SehifeYardimlari { get; set; }
     public DbSet<TelebeKocurme> TelebeKocurmeler { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
@@ -354,6 +358,24 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.HasIndex(x => x.IsciId);
             e.HasOne(x => x.Isci).WithMany()
                 .HasForeignKey(x => x.IsciId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<SehifeYardimi>(e =>
+        {
+            e.ToTable("SehifeYardimlari");
+            e.Property(x => x.Acar).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Slug).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Basliq).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Modul).HasMaxLength(100);
+            e.Property(x => x.Xulase).HasMaxLength(500);
+            // Mətn HTML-dir və uzun ola bilər — limit qoyulmur (nvarchar(max)).
+            // Limit qoysaq uzun təlimat SQL-də «String or binary data would be
+            // truncated» ilə bütün yazını sındırardı (27.08.2026 həvalə hadisəsi).
+
+            // Açar marşrutdan qurulur və HƏR SƏHİFƏ ÜÇÜN BİRDİR — unikal olmalıdır,
+            // yoxsa «?» hansı sətri gətirəcəyini bilməz.
+            e.HasIndex(x => x.Acar).IsUnique();
+            e.HasIndex(x => x.Slug).IsUnique();
         });
 
         builder.Entity<GedenHevale>(e =>

@@ -1,4 +1,4 @@
-@inject FinNex.Application.Interfaces.IDashboardService _layoutDashSvc
+﻿@inject FinNex.Application.Interfaces.IDashboardService _layoutDashSvc
 @inject FinNex.Application.Interfaces.Pid.IMehkemeIsiService _pidSorguSvc
 @inject FinNex.Application.Interfaces.IUserPermissionService _permSvc
 @{
@@ -1463,5 +1463,8 @@
 })();
 </script>
 
+    @* Səhifə təlimatı — «?» düyməsi. Tam yol yazılır ki, bütün area-lardan
+       tapılsın. Login səhifəsinə (_AuthLayout) QƏSDƏN qoyulmayıb. *@
+    @await Html.PartialAsync("~/Views/Shared/_YardimDuymesi.cshtml")
 </body>
 </html>

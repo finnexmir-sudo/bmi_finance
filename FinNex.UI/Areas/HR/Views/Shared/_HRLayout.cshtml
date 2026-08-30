@@ -210,5 +210,8 @@
     <script src="~/js/hr/sidebar.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 
+    @* Səhifə təlimatı — «?» düyməsi. Tam yol yazılır ki, bütün area-lardan
+       tapılsın. Login səhifəsinə (_AuthLayout) QƏSDƏN qoyulmayıb. *@
+    @await Html.PartialAsync("~/Views/Shared/_YardimDuymesi.cshtml")
 </body>
 </html>

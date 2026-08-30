@@ -1,0 +1,65 @@
+@model IReadOnlyList<FinNex.Application.DTOs.Yardim.YardimListDto>
+@{
+    ViewData["Title"] = "Təlimatlar";
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
+    var qruplar = Model.GroupBy(x => string.IsNullOrWhiteSpace(x.Modul) ? "Digər" : x.Modul!)
+                       .OrderBy(g => g.Key);
+}
+<div class="fn-page fn-tint">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Təlimatlar</div>
+            <div class="fn-page-sub">Səhifələrin necə işlədiyi — modul üzrə</div>
+        </div>
+        @if (isAdmin)
+        {
+            <a href="/Admin/Yardim" class="fn-btn fn-btn--outline">Redaktə (Admin)</a>
+        }
+    </div>
+
+    <div class="fn-card" style="margin-bottom:14px">
+        <form method="get" style="display:flex;gap:8px">
+            <input type="text" name="q" value="@ViewBag.Axtaris" class="fn-input"
+                   placeholder="Başlıq, modul və ya açıqlama üzrə axtar…" style="flex:1" />
+            <button type="submit" class="fn-btn fn-btn--primary">Axtar</button>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.Axtaris as string))
+            {
+                <a href="/Yardim" class="fn-btn fn-btn--outline">Sıfırla</a>
+            }
+        </form>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-card" style="text-align:center;color:#94a3b8;padding:34px">
+            Təlimat tapılmadı.
+        </div>
+    }
+    else
+    {
+        foreach (var q in qruplar)
+        {
+            <div class="fn-card" style="margin-bottom:12px">
+                <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:10px">
+                    @q.Key
+                </div>
+                @foreach (var s in q.OrderBy(x => x.Basliq))
+                {
+                    <div style="padding:9px 0;border-top:1px solid #f1f5f9">
+                        <a href="/Yardim/Sehife/@s.Slug" style="font-weight:600;color:#0f172a;text-decoration:none">
+                            @s.Basliq
+                        </a>
+                        @if (s.Hazirlanir)
+                        {
+                            <span style="margin-left:8px;font-size:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:1px 6px;border-radius:99px">hazırlanır</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(s.Xulase))
+                        {
+                            <div style="font-size:12px;color:#64748b;margin-top:2px">@s.Xulase</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

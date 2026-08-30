@@ -1,0 +1,144 @@
+@*
+    SƏHİFƏ TƏLİMATI — «?» düyməsi və yan panel (27.08.2026).
+
+    NİYƏ LAYOUT-DA: 295 səhifəyə ayrı-ayrı düymə qoymaq lazım deyil —
+    cəmi 5 layout var, hər birinə bu partial bir dəfə daxil edilir.
+
+    AÇAR MARŞRUTDAN HESABLANIR (`{area}/{controller}/{action}`), yəni yeni
+    səhifə əlavə olunanda mexanizm onu avtomatik tanıyır. Açarın quruluşu
+    serverdəki `YardimAcar.Qur(...)` ilə EYNİ olmalıdır — biri kiçik hərfə
+    salıb o biri salmasa, yardım heç vaxt tapılmaz və heç bir xəta çıxmaz.
+*@
+@{
+    var yArea = (ViewContext.RouteData.Values["area"]?.ToString() ?? "_").ToLowerInvariant();
+    var yCtrl = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "home").ToLowerInvariant();
+    var yAct  = (ViewContext.RouteData.Values["action"]?.ToString() ?? "index").ToLowerInvariant();
+    if (string.IsNullOrWhiteSpace(yArea)) { yArea = "_"; }
+    var yAcar = $"{yArea}/{yCtrl}/{yAct}";
+}
+
+<button type="button" id="fnYardimBtn" class="fn-yardim-btn" title="Bu səhifə necə işləyir?"
+        data-acar="@yAcar" aria-label="Səhifə təlimatı">?</button>
+
+<div id="fnYardimOrtu" class="fn-yardim-ortu" hidden></div>
+
+<aside id="fnYardimPanel" class="fn-yardim-panel" hidden aria-live="polite">
+    <div class="fn-yardim-head">
+        <div>
+            <div class="fn-yardim-modul" id="fnYardimModul"></div>
+            <div class="fn-yardim-basliq" id="fnYardimBasliq">Təlimat</div>
+        </div>
+        <button type="button" class="fn-yardim-bagla" id="fnYardimBagla" aria-label="Bağla">&times;</button>
+    </div>
+    <div class="fn-yardim-body" id="fnYardimBody">
+        <div class="fn-yardim-yukle">Yüklənir…</div>
+    </div>
+    <div class="fn-yardim-foot">
+        <a href="/Yardim" class="fn-yardim-link">Bütün təlimatlar</a>
+        <span id="fnYardimTarix" class="fn-yardim-tarix"></span>
+    </div>
+</aside>
+
+<style>
+    .fn-yardim-btn {
+        position: fixed; right: 18px; bottom: 18px; z-index: 1040;
+        width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+        border: none; background: #1a2332; color: #fff;
+        font-size: 20px; font-weight: 700; line-height: 1;
+        box-shadow: 0 4px 14px rgba(0,0,0,.28);
+    }
+    .fn-yardim-btn:hover { background: #2b3a4f; }
+
+    .fn-yardim-ortu {
+        position: fixed; inset: 0; background: rgba(15,23,42,.35); z-index: 1045;
+    }
+    .fn-yardim-panel {
+        position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 92vw;
+        background: #fff; z-index: 1050; display: flex; flex-direction: column;
+        box-shadow: -8px 0 26px rgba(0,0,0,.18); font-size: 13px;
+    }
+    .fn-yardim-head {
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+        padding: 14px 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc;
+    }
+    .fn-yardim-modul  { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+    .fn-yardim-basliq { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .fn-yardim-bagla  { border: none; background: none; font-size: 24px; line-height: 1; cursor: pointer; color: #64748b; }
+    .fn-yardim-body   { padding: 16px; overflow-y: auto; flex: 1; line-height: 1.65; color: #1f2937; }
+    .fn-yardim-body h3 { font-size: 13px; margin: 16px 0 6px; color: #0f172a; }
+    .fn-yardim-body ul, .fn-yardim-body ol { padding-left: 20px; margin: 6px 0; }
+    .fn-yardim-body table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 12px; }
+    .fn-yardim-body th, .fn-yardim-body td { border: 1px solid #e5e7eb; padding: 5px 7px; text-align: left; }
+    .fn-yardim-body th { background: #f1f5f9; }
+    .fn-yardim-yukle, .fn-yardim-bos { color: #94a3b8; text-align: center; padding: 26px 10px; }
+    .fn-yardim-hazir {
+        background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+        padding: 12px 14px; border-radius: 8px;
+    }
+    .fn-yardim-foot {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 16px; border-top: 1px solid #e5e7eb; background: #f8fafc; font-size: 11px;
+    }
+    .fn-yardim-link  { color: #1a2332; font-weight: 600; text-decoration: none; }
+    .fn-yardim-tarix { color: #94a3b8; }
+    @@media print { .fn-yardim-btn, .fn-yardim-panel, .fn-yardim-ortu { display: none !important; } }
+</style>
+
+<script>
+(function () {
+    var btn   = document.getElementById('fnYardimBtn');
+    var panel = document.getElementById('fnYardimPanel');
+    var ortu  = document.getElementById('fnYardimOrtu');
+    var body  = document.getElementById('fnYardimBody');
+    if (!btn || !panel) return;
+
+    var yuklendi = false;
+
+    function bagla() { panel.hidden = true; ortu.hidden = true; }
+
+    function ac() {
+        panel.hidden = false;
+        ortu.hidden = false;
+        if (yuklendi) return;      // bir dəfə yüklə, təkrar açılışda sorğu getməsin
+        yuklendi = true;
+
+        var acar = btn.dataset.acar || '';
+        // Endpoint həmişə TAM ünvanla yazılır — boş sətrə POST/GET səssizcə
+        // uğursuz olur və heç bir iz qalmır (CLAUDE.md, ErkenCixisIcazeVer hadisəsi).
+        fetch('/Yardim/Panel?acar=' + encodeURIComponent(acar), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                document.getElementById('fnYardimModul').textContent  = d.modul || '';
+                document.getElementById('fnYardimBasliq').textContent = d.basliq || 'Təlimat';
+                document.getElementById('fnYardimTarix').textContent  = d.yenilenme ? ('Yenilənib: ' + d.yenilenme) : '';
+
+                if (!d.var) {
+                    var yaz = d.adminmi
+                        ? '<p style="margin-top:10px"><a class="fn-yardim-link" href="/Admin/Yardim/Redakte?acar='
+                          + encodeURIComponent(acar) + '">Bu səhifə üçün təlimat yaz</a></p>'
+                        : '';
+                    body.innerHTML = '<div class="fn-yardim-bos">Bu səhifə üçün təlimat hələ yazılmayıb.'
+                                   + '</div>' + yaz;
+                    return;
+                }
+                if (d.hazirlanir) {
+                    body.innerHTML = '<div class="fn-yardim-hazir">Bu bölmə hazırlanır — '
+                                   + 'təlimat tezliklə əlavə olunacaq.</div>';
+                    return;
+                }
+                var xul = d.xulase ? '<p><em>' + d.xulase + '</em></p>' : '';
+                body.innerHTML = xul + (d.metn || '');
+            })
+            .catch(function () {
+                body.innerHTML = '<div class="fn-yardim-bos">Təlimat yüklənmədi. '
+                               + 'Bir azdan yenidən cəhd edin.</div>';
+                yuklendi = false;   // xətadan sonra təkrar cəhdə icazə ver
+            });
+    }
+
+    btn.addEventListener('click', ac);
+    document.getElementById('fnYardimBagla').addEventListener('click', bagla);
+    ortu.addEventListener('click', bagla);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') bagla(); });
+})();
+</script>
