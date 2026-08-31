@@ -2,91 +2,108 @@
 @{
     ViewData["Title"] = Model.Id > 0 ? "Təlimatı redaktə et" : "Yeni təlimat";
 }
-<div class="fn-page fn-tint">
-    <div class="fn-page-head">
+@* Admin sahəsi Bootstrap 5 işlədir (_AdminLayout: bootstrap.min.css + admin.css).
+   `fn-*` class-ları yalnız modul CSS fayllarındadır və burada YÜKLƏNMİR —
+   onları işlətsək forma stilsiz görünür (27.08.2026 real hadisə). *@
+<div class="container-fluid" style="max-width:960px">
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <div class="fn-page-title">@ViewData["Title"]</div>
-            <div class="fn-page-sub">Mətn bazada saxlanılır — dəyişiklik dərhal işə düşür</div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-question-circle me-2 text-primary"></i>@ViewData["Title"]
+            </h3>
+            <small class="text-muted">Mətn bazada saxlanılır — dəyişiklik dərhal işə düşür, deploy lazım deyil</small>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline">Geri</a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Geri
+        </a>
     </div>
 
-    @if (TempData["Error"] != null) { <div class="dm-alert dm-alert--err">@TempData["Error"]</div> }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
 
-    <div class="fn-card" style="max-width:900px">
-        <form asp-action="Redakte" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="Id" value="@Model.Id" />
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <form asp-action="Redakte" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" value="@Model.Id" />
 
-            <div class="ydm-grid">
-                <div>
-                    <label>Səhifə açarı *</label>
-                    <input type="text" name="Acar" value="@Model.Acar" class="fn-input"
-                           placeholder="user/mezuniyyet/create" maxlength="200" />
-                    <div class="ydm-hint">
-                        Formatı: <code>area/controller/action</code>, kiçik hərflə.
-                        Area yoxdursa <code>_</code>. Açarı bilmirsinizsə həmin səhifədə
-                        «?» basın — «təlimat yaz» düyməsi açarı özü doldurur.
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Səhifə açarı *</label>
+                        <input type="text" name="Acar" value="@Model.Acar" class="form-control"
+                               placeholder="user/mezuniyyet/create" maxlength="200" />
+                        <div class="form-text">
+                            Format: <code>area/controller/action</code>, kiçik hərflə. Area yoxdursa <code>_</code>.
+                            Açarı bilmirsinizsə həmin səhifədə <b>?</b> basın — «təlimat yaz» düyməsi açarı özü doldurur.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Qısa ünvan (slug)</label>
+                        <input type="text" name="Slug" value="@Model.Slug" class="form-control"
+                               placeholder="boş buraxsanız başlıqdan yaranır" maxlength="200" />
+                        <div class="form-text">Çatda paylaşmaq üçün: <code>/Yardim/Sehife/&lt;slug&gt;</code></div>
                     </div>
                 </div>
-                <div>
-                    <label>Qısa ünvan (slug)</label>
-                    <input type="text" name="Slug" value="@Model.Slug" class="fn-input"
-                           placeholder="boş buraxsanız başlıqdan yaranır" maxlength="200" />
-                    <div class="ydm-hint">Çatda paylaşmaq üçün: <code>/Yardim/Sehife/&lt;slug&gt;</code></div>
-                </div>
-                <div>
-                    <label>Başlıq *</label>
-                    <input type="text" name="Basliq" value="@Model.Basliq" class="fn-input" maxlength="200" />
-                </div>
-                <div>
-                    <label>Modul</label>
-                    <input type="text" name="Modul" value="@Model.Modul" class="fn-input"
-                           placeholder="Məzuniyyət, İcazə, Davamiyyət…" maxlength="100" />
-                    <div class="ydm-hint">İndeks səhifəsində qruplaşdırma üçün</div>
-                </div>
-                <div class="ydm-full">
-                    <label>Bir cümləlik xülasə</label>
-                    <input type="text" name="Xulase" value="@Model.Xulase" class="fn-input" maxlength="500" />
-                </div>
-                <div class="ydm-full">
-                    <label>Təlimat mətni (HTML)</label>
-                    <textarea name="Metn" class="fn-input" rows="18"
-                              style="font-family:Consolas,monospace;font-size:12px">@Model.Metn</textarea>
-                    <div class="ydm-hint">
-                        Sadə HTML işlədin: <code>&lt;h3&gt;</code>, <code>&lt;p&gt;</code>,
-                        <code>&lt;ul&gt;&lt;li&gt;</code>, <code>&lt;b&gt;</code>,
-                        <code>&lt;table&gt;</code>. Panelin eni ~420 px-dir — qısa abzaslar yazın.
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Başlıq *</label>
+                        <input type="text" name="Basliq" value="@Model.Basliq" class="form-control" maxlength="200" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Modul</label>
+                        <input type="text" name="Modul" value="@Model.Modul" class="form-control"
+                               placeholder="Məzuniyyət, İcazə, Davamiyyət…" maxlength="100" />
+                        <div class="form-text">İndeks səhifəsində qruplaşdırma üçün</div>
                     </div>
                 </div>
-                <div class="ydm-full" style="display:flex;gap:22px;align-items:center">
-                    <label style="display:flex;align-items:center;gap:7px;margin:0">
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Bir cümləlik xülasə</label>
+                    <input type="text" name="Xulase" value="@Model.Xulase" class="form-control" maxlength="500"
+                           placeholder="Siyahıda başlığın altında görünür" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Təlimat mətni (HTML)</label>
+                    <textarea name="Metn" class="form-control font-monospace" rows="18"
+                              style="font-size:12.5px">@Model.Metn</textarea>
+                    <div class="form-text">
+                        Sadə HTML: <code>&lt;h3&gt;</code>, <code>&lt;p&gt;</code>,
+                        <code>&lt;ul&gt;&lt;li&gt;</code>, <code>&lt;b&gt;</code>, <code>&lt;table&gt;</code>.
+                        Yan panelin eni ~420 px-dir — qısa abzaslar yazın.
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-4 mb-4">
+                    <div class="form-check">
+                        @* Checkbox işarəsiz qalanda POST-da SAHƏ GƏLMİR → gizli «false»
+                           qoyulur ki, işarənin götürülməsi də açıq göndərilsin
+                           (CLAUDE.md — şərtli sahə + default parametr tələsi). *@
                         <input type="hidden" name="Hazirlanir" value="false" />
-                        <input type="checkbox" name="Hazirlanir" value="true" @(Model.Hazirlanir ? "checked" : "") />
-                        <span>Hazırlanır (mətn yerinə xəbərdarlıq göstərilsin)</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:7px;margin:0">
+                        <input class="form-check-input" type="checkbox" id="chkHazirlanir"
+                               name="Hazirlanir" value="true" @(Model.Hazirlanir ? "checked" : "") />
+                        <label class="form-check-label" for="chkHazirlanir">
+                            Hazırlanır <span class="text-muted">(mətn yerinə xəbərdarlıq göstərilsin)</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
                         <input type="hidden" name="YalnizAdmin" value="false" />
-                        <input type="checkbox" name="YalnizAdmin" value="true" @(Model.YalnizAdmin ? "checked" : "") />
-                        <span>Yalnız Admin görsün</span>
-                    </label>
+                        <input class="form-check-input" type="checkbox" id="chkYalnizAdmin"
+                               name="YalnizAdmin" value="true" @(Model.YalnizAdmin ? "checked" : "") />
+                        <label class="form-check-label" for="chkYalnizAdmin">Yalnız Admin görsün</label>
+                    </div>
                 </div>
-            </div>
 
-            <div style="display:flex;gap:10px;margin-top:18px">
-                <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
-                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
-            </div>
-        </form>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Yadda saxla
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Ləğv et</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
-<style>
-    .ydm-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 18px }
-    .ydm-grid .ydm-full { grid-column:1/-1 }
-    .ydm-grid label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px }
-    .ydm-hint { font-size:11px; color:#94a3b8; margin-top:4px }
-    .ydm-hint code { background:#f1f5f9; padding:1px 4px; border-radius:3px }
-    .dm-alert { padding:11px 16px;border-radius:10px;font-size:13px;margin-bottom:14px }
-    .dm-alert--err { background:#fef2f2;border:1px solid #fecaca;color:#b91c1c }
-    @@media (max-width:700px) { .ydm-grid { grid-template-columns:1fr } }
-</style>

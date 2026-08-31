@@ -1,73 +1,97 @@
 @model IReadOnlyList<FinNex.Application.DTOs.Yardim.YardimListDto>
 @{ ViewData["Title"] = "Səhifə təlimatları"; }
-<div class="fn-page fn-tint">
-    <div class="fn-page-head">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <div class="fn-page-title">Səhifə təlimatları</div>
-            <div class="fn-page-sub">«?» düyməsinin mətnləri — deploy tələb olunmur</div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-question-circle me-2 text-primary"></i>Səhifə təlimatları
+            </h3>
+            <small class="text-muted">«?» düyməsinin mətnləri — redaktə üçün deploy lazım deyil</small>
         </div>
-        <div style="display:flex;gap:8px">
-            <a asp-action="Ehate" class="fn-btn fn-btn--outline">Əhatə</a>
-            <a asp-action="Redakte" class="fn-btn fn-btn--primary">+ Yeni təlimat</a>
+        <div class="d-flex gap-2">
+            <a asp-action="Ehate" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-check me-1"></i>Əhatə
+            </a>
+            <a asp-action="Redakte" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Yeni təlimat
+            </a>
         </div>
     </div>
 
-    @if (TempData["Success"] != null) { <div class="dm-alert dm-alert--ok">@TempData["Success"]</div> }
-    @if (TempData["Error"] != null)   { <div class="dm-alert dm-alert--err">@TempData["Error"]</div> }
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null)   { <div class="alert alert-danger">@TempData["Error"]</div> }
 
-    <div class="fn-card" style="margin-bottom:14px">
-        <form method="get" style="display:flex;gap:8px">
-            <input type="text" name="q" value="@ViewBag.Axtaris" class="fn-input" placeholder="Axtar…" style="flex:1" />
-            <button type="submit" class="fn-btn fn-btn--primary">Axtar</button>
-        </form>
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col">
+                    <input type="text" name="q" value="@ViewBag.Axtaris" class="form-control"
+                           placeholder="Başlıq, modul və ya açıqlama üzrə axtar…" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Axtar</button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(ViewBag.Axtaris as string))
+                {
+                    <div class="col-auto"><a asp-action="Index" class="btn btn-outline-secondary">Sıfırla</a></div>
+                }
+            </form>
+        </div>
     </div>
 
-    <div class="fn-card">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-            <thead>
-                <tr style="text-align:left;color:#64748b;font-size:11px;text-transform:uppercase">
-                    <th style="padding:8px">Başlıq</th>
-                    <th style="padding:8px">Modul</th>
-                    <th style="padding:8px">Açar</th>
-                    <th style="padding:8px;text-align:right">Baxış</th>
-                    <th style="padding:8px"></th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var s in Model)
-            {
-                <tr style="border-top:1px solid #f1f5f9">
-                    <td style="padding:8px">
-                        <a href="/Yardim/Sehife/@s.Slug" style="font-weight:600;color:#0f172a;text-decoration:none">@s.Basliq</a>
-                        @if (s.Hazirlanir)
-                        {
-                            <span style="margin-left:6px;font-size:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:1px 6px;border-radius:99px">hazırlanır</span>
-                        }
-                    </td>
-                    <td style="padding:8px;color:#64748b">@s.Modul</td>
-                    <td style="padding:8px;color:#94a3b8;font-family:monospace;font-size:11px">@s.Acar</td>
-                    <td style="padding:8px;text-align:right;color:#64748b">@s.BaxisSayi</td>
-                    <td style="padding:8px;text-align:right;white-space:nowrap">
-                        <a asp-action="Redakte" asp-route-id="@s.Id" class="fn-btn fn-btn--outline" style="padding:3px 9px">Redaktə</a>
-                        <form asp-action="Sil" method="post" style="display:inline"
-                              onsubmit="return confirm('«@s.Basliq» təlimatı silinsin?');">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@s.Id" />
-                            <button type="submit" class="fn-btn fn-btn--outline" style="padding:3px 9px;color:#c83838">Sil</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-            @if (!Model.Any())
-            {
-                <tr><td colspan="5" style="padding:26px;text-align:center;color:#94a3b8">Hələ təlimat yoxdur.</td></tr>
-            }
-            </tbody>
-        </table>
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Başlıq</th>
+                        <th>Modul</th>
+                        <th>Açar</th>
+                        <th class="text-end">Baxış</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td>
+                            <a href="/Yardim/Sehife/@s.Slug" class="fw-semibold text-decoration-none">@s.Basliq</a>
+                            @if (s.Hazirlanir)
+                            {
+                                <span class="badge text-bg-warning ms-2">hazırlanır</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(s.Xulase))
+                            {
+                                <div class="small text-muted">@s.Xulase</div>
+                            }
+                        </td>
+                        <td class="text-muted">@s.Modul</td>
+                        <td><code class="small">@s.Acar</code></td>
+                        <td class="text-end text-muted">@s.BaxisSayi</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Redakte" asp-route-id="@s.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="Sil" method="post" class="d-inline"
+                                  onsubmit="return confirm('«@s.Basliq» təlimatı silinsin?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-5">
+                        Hələ təlimat yoxdur. <a asp-action="Ehate">Əhatə</a> səhifəsindən başlaya bilərsiniz.
+                    </td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-<style>
-    .dm-alert { padding:11px 16px;border-radius:10px;font-size:13px;margin-bottom:14px }
-    .dm-alert--ok  { background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46 }
-    .dm-alert--err { background:#fef2f2;border:1px solid #fecaca;color:#b91c1c }
-</style>

@@ -5,60 +5,72 @@
     var qruplar = Model.GroupBy(x => string.IsNullOrWhiteSpace(x.Modul) ? "Digər" : x.Modul!)
                        .OrderBy(g => g.Key);
 }
-<div class="fn-page fn-tint">
-    <div class="fn-page-head">
+@* Kök _Layout yalnız Bootstrap + site.css yükləyir — `fn-*` class-ları
+   modul CSS fayllarındadır və BURADA YOXDUR. Ona görə Bootstrap işlədilir. *@
+<div class="container-fluid" style="max-width:960px">
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <div class="fn-page-title">Təlimatlar</div>
-            <div class="fn-page-sub">Səhifələrin necə işlədiyi — modul üzrə</div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-question-circle me-2 text-primary"></i>Təlimatlar
+            </h3>
+            <small class="text-muted">Səhifələrin necə işlədiyi — modul üzrə</small>
         </div>
         @if (isAdmin)
         {
-            <a href="/Admin/Yardim" class="fn-btn fn-btn--outline">Redaktə (Admin)</a>
+            <a href="/Admin/Yardim" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Redaktə
+            </a>
         }
     </div>
 
-    <div class="fn-card" style="margin-bottom:14px">
-        <form method="get" style="display:flex;gap:8px">
-            <input type="text" name="q" value="@ViewBag.Axtaris" class="fn-input"
-                   placeholder="Başlıq, modul və ya açıqlama üzrə axtar…" style="flex:1" />
-            <button type="submit" class="fn-btn fn-btn--primary">Axtar</button>
-            @if (!string.IsNullOrWhiteSpace(ViewBag.Axtaris as string))
-            {
-                <a href="/Yardim" class="fn-btn fn-btn--outline">Sıfırla</a>
-            }
-        </form>
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col">
+                    <input type="text" name="q" value="@ViewBag.Axtaris" class="form-control"
+                           placeholder="Başlıq, modul və ya açıqlama üzrə axtar…" />
+                </div>
+                <div class="col-auto"><button type="submit" class="btn btn-primary">Axtar</button></div>
+                @if (!string.IsNullOrWhiteSpace(ViewBag.Axtaris as string))
+                {
+                    <div class="col-auto"><a href="/Yardim" class="btn btn-outline-secondary">Sıfırla</a></div>
+                }
+            </form>
+        </div>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="fn-card" style="text-align:center;color:#94a3b8;padding:34px">
-            Təlimat tapılmadı.
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body text-center text-muted py-5">Təlimat tapılmadı.</div>
         </div>
     }
     else
     {
         foreach (var q in qruplar)
         {
-            <div class="fn-card" style="margin-bottom:12px">
-                <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:10px">
-                    @q.Key
-                </div>
-                @foreach (var s in q.OrderBy(x => x.Basliq))
-                {
-                    <div style="padding:9px 0;border-top:1px solid #f1f5f9">
-                        <a href="/Yardim/Sehife/@s.Slug" style="font-weight:600;color:#0f172a;text-decoration:none">
-                            @s.Basliq
-                        </a>
-                        @if (s.Hazirlanir)
+            <div class="card border-0 shadow-sm rounded-4 mb-3">
+                <div class="card-body">
+                    <div class="text-uppercase fw-bold text-muted small mb-2">@q.Key</div>
+                    <div class="list-group list-group-flush">
+                        @foreach (var s in q.OrderBy(x => x.Basliq))
                         {
-                            <span style="margin-left:8px;font-size:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:1px 6px;border-radius:99px">hazırlanır</span>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(s.Xulase))
-                        {
-                            <div style="font-size:12px;color:#64748b;margin-top:2px">@s.Xulase</div>
+                            <a href="/Yardim/Sehife/@s.Slug" class="list-group-item list-group-item-action px-0">
+                                <span class="fw-semibold">@s.Basliq</span>
+                                @if (s.Hazirlanir)
+                                {
+                                    <span class="badge text-bg-warning ms-2">hazırlanır</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(s.Xulase))
+                                {
+                                    <div class="small text-muted">@s.Xulase</div>
+                                }
+                            </a>
                         }
                     </div>
-                }
+                </div>
             </div>
         }
     }
