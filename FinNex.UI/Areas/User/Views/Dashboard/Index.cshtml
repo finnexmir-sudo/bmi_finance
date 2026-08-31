@@ -88,8 +88,8 @@
                     <a asp-area="User" asp-controller="Icaze" asp-action="Index" class="fn-card-link">Hamısı →</a>
                 </div>
                 <div style="display:flex;align-items:baseline;gap:8px;margin:8px 0 12px">
-                    <span style="font-size:28px;font-weight:800;color:#1a2332">@Model.IcazeIstifadeSaat.ToString("0.##")</span>
-                    <span style="font-size:14px;color:#94a3b8;font-weight:600">/ @Model.IcazeSaatLimiti.ToString("0.##") saat</span>
+                    <span style="font-size:28px;font-weight:800;color:#1a2332">@SaatFormat.Qisa(Model.IcazeIstifadeSaat)</span>
+                    <span style="font-size:14px;color:#94a3b8;font-weight:600">/ @SaatFormat.Limit(Model.IcazeSaatLimiti)</span>
                 </div>
                 <div class="fn-lb-track" style="height:12px">
                     <div class="fn-lb-fill" style="width:@(Model.IcazeFaizi)%;background:@(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")"></div>
@@ -98,11 +98,11 @@
                     <span style="font-weight:800;color:@(Model.IcazeAsib ? "#dc2626" : "#1e9b6b")">
                         @if (Model.IcazeAsib)
                         {
-                            <text>+@((Model.IcazeIstifadeSaat - Model.IcazeSaatLimiti).ToString("0.##")) saat aşıb</text>
+                            <text>+@SaatFormat.Qisa(Model.IcazeIstifadeSaat - Model.IcazeSaatLimiti) aşıb</text>
                         }
                         else
                         {
-                            <text>@Model.IcazeQaligSaat.ToString("0.##") saat qalıb</text>
+                            <text>@SaatFormat.Qisa(Model.IcazeQaligSaat) qalıb</text>
                         }
                     </span>
                     <a asp-area="User" asp-controller="Icaze" asp-action="Create"
