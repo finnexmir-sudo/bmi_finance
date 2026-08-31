@@ -115,8 +115,12 @@ public class AmlHesabatService : IAmlHesabatService
         try
         {
             // ── 1) Şapka: hesabın adı + giriş/son qalıq ──────────────────
-            // BMI bunu ayrıca `hesabad_qaliq()` ilə çəkir. Nəticə boş olarsa
-            // BMI «hesab giriş tarixindən sonra açılıb» xəbərdarlığı verirdi.
+            // BMI bunu ayrıca `hesabad_qaliq()` ilə çəkir.
+            //
+            // 31.08.2026 — sorğu `from dual` + üç müstəqil skalyar alt-sorğuya
+            // keçdi, yəni HƏMİŞƏ 1 sətir qaytarır (əvvəl daxili join idi və biri
+            // boş olanda üçü də itirirdi — hesabın adı da). Ona görə «tapılmadı»
+            // şərti artıq SƏTİR SAYINA yox, MƏZMUNA baxır.
             var qaliqSql = Doldur(await SqlAl(AdQaliq));
             var qaliq = await _oracle.SelectAsync(qaliqSql, maxRows: 1, ct);
             if (qaliq.Count > 0)
@@ -125,6 +129,11 @@ public class AmlHesabatService : IAmlHesabatService
                 dto.GirisQaliq = Dec(Val(qaliq[0], "GIR_QALIQ"));
                 dto.SonQaliq   = Dec(Val(qaliq[0], "SON_QALIQ"));
             }
+
+            // Üçü də boşdursa hesab nə `accounts`-da, nə də qalıq tarixçəsində var.
+            var hesabTapilmadi = string.IsNullOrWhiteSpace(dto.HesabAdi)
+                              && dto.GirisQaliq == null
+                              && dto.SonQaliq   == null;
 
             // ── 2) Əsas çıxarış ─────────────────────────────────────────
             var sql = Doldur(await SqlAl(sorgu.Huquqi ? AdHuquqi : AdFiziki));
@@ -135,7 +144,7 @@ public class AmlHesabatService : IAmlHesabatService
             dto.Ugurlu = true;
 
             if (dto.Setirler.Count == 0)
-                dto.Xeta = qaliq.Count == 0
+                dto.Xeta = hesabTapilmadi
                     ? "Nəticə yoxdur — hesab tapılmadı və ya seçilmiş giriş tarixindən sonra açılıb."
                     : "Seçilmiş dövrdə bu hesabda əməliyyat yoxdur.";
 

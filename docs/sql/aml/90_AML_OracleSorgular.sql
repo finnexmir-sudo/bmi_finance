@@ -6,6 +6,7 @@
      AML_HESAB_SORGU_FIZIKI   — «Fiziki şəxs» radio düyməsi
      AML_HESAB_SORGU_HUQUQI   — «Sahibkar / hüquqi şəxs VÖEN» radio düyməsi
      AML_HESAB_SORGU_QALIQ    — şapka: hesabın adı + giriş/son qalıq
+                              (31.08.2026 yeniləndi — bax 08_Qaliq_Sorgu_Update.sql)
 
    ── TOKENLƏR ────────────────────────────────────────────────────────────
    Üç sorğuda da {HESAB}, {TARIX1}, {TARIX2} tokenləri var. Onları
@@ -1287,23 +1288,28 @@ IF NOT EXISTS (SELECT 1 FROM OracleSorgular
 INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
 VALUES (
     N'AML_HESAB_SORGU_QALIQ',
-    N'AML — Hesab üzrə sorğu şapkası: hesabın adı (accounts.name_latin) + giriş/son qalıq (BMI: frmhesabsorgu.hesabad_qaliq()). Tokenlər: {HESAB}, {TARIX1}, {TARIX2}. Sütunlar: NAME_LATIN, GIR_QALIQ, SON_QALIQ.',
-    N'select ac.name_latin, p.gir_qaliq, k.son_qaliq
-  from (select t.licsch,
-               case when substr(t.licsch,6,2) = ''00'' then abs(t.saldo_ish_nacval)
-                    else abs(t.saldo_ish_inval) end gir_qaliq
-          from odb.arh_saldo_ls t
-         where t.licsch = ''{HESAB}''
-           and t.date_oper = to_date(''{TARIX1}'',''dd/mm/yyyy'')) p,
-       (select t.licsch,
-               case when substr(t.licsch,6,2) = ''00'' then abs(t.saldo_ish_nacval)
-                    else abs(t.saldo_ish_inval) end son_qaliq
-          from odb.arh_saldo_ls t
-         where t.licsch = ''{HESAB}''
-           and t.date_oper = odb.ish_gun_cari1(to_date(''{TARIX2}'',''dd/mm/yyyy''))) k,
-       odb.accounts ac
- where p.licsch = k.licsch
-   and p.licsch = ac.licsch',
+    N'AML — Hesab üzrə sorğu şapkası: hesabın adı (odb.accounts.name_latin) + giriş/son qalıq (BMI: frmhesabsorgu.hesabad_qaliq()). Tokenlər: {HESAB}, {TARIX1}, {TARIX2}. Sütunlar: NAME_LATIN, GIR_QALIQ, SON_QALIQ. 31.08.2026: üç hissə müstəqil skalyar alt-sorğudur (daxili join biri boş olanda üçünü də itirirdi); son qalıq TARIX2-yə qədər SONUNCU günə bağlıdır (bugünkü qalıq hələ yazılmır); giriş qalığı TARIX1-dən ƏVVƏLKİ sonuncu günün bağlanış qalığıdır.',
+    N'select
+  (select max(ac.name_latin)
+     from odb.accounts ac
+    where ac.licsch = ''{HESAB}'')                                          name_latin,
+
+  (select max(case when substr(t.licsch,6,2) = ''00''
+                   then abs(t.saldo_ish_nacval)
+                   else abs(t.saldo_ish_inval) end)
+            keep (dense_rank last order by t.date_oper)
+     from odb.arh_saldo_ls t
+    where t.licsch = ''{HESAB}''
+      and t.date_oper < to_date(''{TARIX1}'',''dd/mm/yyyy''))               gir_qaliq,
+
+  (select max(case when substr(t.licsch,6,2) = ''00''
+                   then abs(t.saldo_ish_nacval)
+                   else abs(t.saldo_ish_inval) end)
+            keep (dense_rank last order by t.date_oper)
+     from odb.arh_saldo_ls t
+    where t.licsch = ''{HESAB}''
+      and t.date_oper <= to_date(''{TARIX2}'',''dd/mm/yyyy''))              son_qaliq
+  from dual',
     1, 0, @DepId, SYSDATETIME(), 0);
 
 COMMIT TRAN;
