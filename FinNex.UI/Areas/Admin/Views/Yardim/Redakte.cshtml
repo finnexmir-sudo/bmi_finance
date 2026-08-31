@@ -1,4 +1,4 @@
-@model FinNex.Application.DTOs.Yardim.YardimUpsertDto
+﻿@model FinNex.Application.DTOs.Yardim.YardimUpsertDto
 @{
     ViewData["Title"] = Model.Id > 0 ? "Təlimatı redaktə et" : "Yeni təlimat";
 }
@@ -67,13 +67,20 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Təlimat mətni (HTML)</label>
-                    <textarea name="Metn" class="form-control font-monospace" rows="18"
-                              style="font-size:12.5px">@Model.Metn</textarea>
+                    <label class="form-label fw-semibold">Təlimat mətni</label>
+                    <textarea name="Metn" class="form-control" rows="18"
+                              placeholder="Adi mətn kimi yazın — HTML lazım deyil.">@Model.Metn</textarea>
                     <div class="form-text">
-                        Sadə HTML: <code>&lt;h3&gt;</code>, <code>&lt;p&gt;</code>,
-                        <code>&lt;ul&gt;&lt;li&gt;</code>, <code>&lt;b&gt;</code>, <code>&lt;table&gt;</code>.
-                        Yan panelin eni ~420 px-dir — qısa abzaslar yazın.
+                        <b>Adi mətn yazın — HTML bilməyə ehtiyac yoxdur.</b>
+                        Cəmi 4 işarə var, qalanı olduğu kimi görünür:
+                        <table class="table table-sm table-bordered mt-2 mb-1" style="max-width:520px">
+                            <tr><td><code># Başlıq</code></td><td>başlıq olur</td></tr>
+                            <tr><td><code>- sətir</code></td><td>nöqtəli siyahı</td></tr>
+                            <tr><td><code>1. sətir</code></td><td>nömrəli siyahı</td></tr>
+                            <tr><td><code>*söz*</code></td><td><b>qalın</b> yazılır</td></tr>
+                        </table>
+                        Boş sətir yeni abzas açır. Yan panelin eni ~420 px-dir — qısa cümlələr yazın.
+                        <br />Köhnə HTML mətnlər olduğu kimi işləməyə davam edir.
                     </div>
                 </div>
 

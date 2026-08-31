@@ -1,4 +1,4 @@
-using FinNex.Application.Common.Results;
+﻿using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Yardim;
 using FinNex.Application.Helpers.Yardim;
 using FinNex.Application.Interfaces.Yardim;
@@ -48,8 +48,11 @@ public class SehifeYardimiService : ISehifeYardimiService
             Basliq     = e.Basliq,
             Modul      = e.Modul,
             Xulase     = e.Xulase,
-            // «Hazırlanır» rejimində yarımçıq mətn göstərmirik
-            Metn       = e.Hazirlanir ? null : e.Metn,
+            // «Hazırlanır» rejimində yarımçıq mətn göstərmirik.
+            // Formatla(): admin SADƏ MƏTN yazır, HTML burada — GÖSTƏRMƏ anında —
+            // qurulur. Bazadakı mətn toxunulmur, yoxsa redaktəyə girəndə admin
+            // öz yazdığını yox, maşının HTML-ini görərdi.
+            Metn       = e.Hazirlanir ? null : YardimMetn.Formatla(e.Metn),
             Slug       = e.Slug,
             Hazirlanir = e.Hazirlanir,
             Var        = true,
@@ -68,7 +71,7 @@ public class SehifeYardimiService : ISehifeYardimiService
         return new YardimPanelDto
         {
             Id = e.Id, Basliq = e.Basliq, Modul = e.Modul, Xulase = e.Xulase,
-            Metn = e.Hazirlanir ? null : e.Metn, Slug = e.Slug,
+            Metn = e.Hazirlanir ? null : YardimMetn.Formatla(e.Metn), Slug = e.Slug,
             Hazirlanir = e.Hazirlanir, Var = true, Acar = e.Acar,
             Yenilenme = e.YenilenmeTarixi ?? e.YaradilmaTarixi
         };
