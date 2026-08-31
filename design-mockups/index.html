@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="utf-8"/>
+<title>BMI Finance — Dashboard Dizayn Təklifləri</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:#f4f6f8;color:#1a2332;padding:40px 24px;min-height:100vh}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:30px;margin-bottom:8px}
+  .lead{color:#667085;font-size:15px;margin-bottom:32px;max-width:760px;line-height:1.55}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .card{background:#fff;border:1px solid #e5e9ef;border-radius:18px;padding:26px;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;gap:12px}
+  .card:hover{border-color:#0f5132;transform:translateY(-2px);box-shadow:0 14px 32px -10px rgba(15,81,50,.2)}
+  .tag{display:inline-block;padding:4px 10px;background:#ecfdf3;color:#0f5132;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;align-self:flex-start}
+  .card h2{font-size:20px;font-weight:700}
+  .card p{color:#475467;font-size:13.5px;line-height:1.55}
+  .pros, .cons{font-size:12.5px;line-height:1.5}
+  .pros{color:#0f5132}
+  .cons{color:#b54708}
+  .meta{display:flex;gap:16px;padding-top:12px;border-top:1px solid #eef0f3;font-size:11.5px}
+  .link{margin-top:auto;color:#0f5132;font-weight:600;font-size:13px}
+  .note{background:#fff;border:1px solid #e5e9ef;border-radius:14px;padding:18px 22px;margin-bottom:28px;font-size:13.5px;color:#475467;line-height:1.55}
+  .note b{color:#1a2332}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>BMI Finance — Əsas səhifə üçün 4 dizayn təklifi</h1>
+  <p class="lead">Mövcud sol sidebar çox sıx (10+ alt-maddə, 5 qrup, 3 səviyyə) göründüyü üçün 4 fərqli istiqamət hazırlamışam. Hər faylı açıb real ölçüdə görə bilərsən.</p>
+
+  <div class="note">
+    <b>Tövsiyəm:</b> Sənin layihə (ASP.NET MVC, çoxlu rol, dərin menyu strukturu) üçün ən praktik seçim <b>Variant 4 (Hibrid)</b>-dir — mövcud Cshtml-ə ən az toxunuşla sol menyunu sadələşdirir, dashboard-u isə KPI kafelləri ilə "giriş nöqtəsi"nə çevirir. Əgər "tamamilə yeni görkəm" istəyirsənsə — <b>Variant 2 (İkon Rail)</b> peşəkar və müasir alternativdir.
+  </div>
+
+  <div class="grid">
+    <a class="card" href="option-1-topnav-mega.html">
+      <span class="tag">Variant 1</span>
+      <h2>Üst Navbar + Mega Menu</h2>
+      <p>Sidebar tamamilə yoxdur. Bütün bölmələr yuxarıda, hover-də mega-dropdown açılır. Geniş iş sahəsi.</p>
+      <div class="pros">✓ Maksimum iş sahəsi · Müasir SaaS görünüşü</div>
+      <div class="cons">⚠ Çox dərin menyu olan rollar (HR/Admin) üçün mega geniş olur</div>
+      <span class="link">→ Aç</span>
+    </a>
+
+    <a class="card" href="option-2-icon-rail.html">
+      <span class="tag">Variant 2</span>
+      <h2>İkon Rail + Kontekstli Panel</h2>
+      <p>VS Code üslubu: 68px dar ikon lenti + seçilən bölmənin kontekstli menyusu. İkinci panel bağlana bilər.</p>
+      <div class="pros">✓ Həmişə təmiz · Müasir · İki panel — favoritlər/son açılan</div>
+      <div class="cons">⚠ Tooltip tələb edir — ilk öyrənmə əyrisi var</div>
+      <span class="link">→ Aç</span>
+    </a>
+
+    <a class="card" href="option-3-command-palette.html">
+      <span class="tag">Variant 3</span>
+      <h2>Minimal Top + Command Palette</h2>
+      <p>Sidebar yoxdur, üstdə yalnız 2-3 tab. Hər şey <b>Ctrl+K</b> ilə əmr paletindən. Dashboard "kafel şəbəkəsi"dir.</p>
+      <div class="pros">✓ Ən təmiz · Peşəkar istifadəçi üçün çox sürətli</div>
+      <div class="cons">⚠ Qısayol mədəniyyəti tələb edir · Banka uyğun olmaya bilər</div>
+      <span class="link">→ Aç</span>
+    </a>
+
+    <a class="card" href="option-4-hybrid-collapsed.html" style="border-color:#0f5132;background:linear-gradient(135deg,#fff,#f0fdf4)">
+      <span class="tag" style="background:#0f5132;color:#fff">Variant 4 — TÖVSİYƏ</span>
+      <h2>Hibrid: Sadə Sidebar + Rol Dashboard</h2>
+      <p>Sol menyu 5 qrupa endirilib. Köhnə alt-maddələr KPI kafelləri və Dashboard qrafikləri ilə əvəz olunur.</p>
+      <div class="pros">✓ Mövcud MVC-ə ən az dəyişiklik · Rol-bazlı KPI-lar · Təqvim, müraciət, maaş hamısı görünür</div>
+      <div class="cons">⚠ Sidebar hələ də qalır — amma tam iki dəfə qısadır</div>
+      <span class="link">→ Aç</span>
+    </a>
+  </div>
+
+  <div style="margin-top:32px;padding:22px;background:#fff;border:1px solid #e5e9ef;border-radius:14px;font-size:13.5px;line-height:1.6;color:#475467">
+    <b style="color:#1a2332;display:block;margin-bottom:8px">Əlavə təkliflər (hər variantla birləşdirilə bilər):</b>
+    • <b>Ctrl+K axtarış</b> — hamısında ortaq əlavə edilsin (sürətli səhifə keçidi)<br>
+    • <b>Favoritlər</b> — istifadəçi tez-tez açdığı səhifələri sol menyuya sancsın<br>
+    • <b>Son açılan səhifələr</b> — avtomatik izlənsin və sürətli-bax paneli yaratsın<br>
+    • <b>Role switcher</b> — bir istifadəçidə bir neçə rol varsa, üstdə dəyişdirilsin<br>
+    • <b>Sidebar "collapse" düyməsi</b> — istifadəçi istədiyi an daraltsın (68px rail görkəminə)<br>
+    • <b>Breadcrumb</b> — hansı səhifədə olduğunu həmişə göstərsin<br>
+  </div>
+</div>
+</body>
+</html>
