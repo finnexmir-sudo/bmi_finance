@@ -57,6 +57,21 @@ public static class PulKocurmeVoucher
     private static string F(decimal v) => v.ToString(CultureInfo.InvariantCulture);
     private static decimal R(decimal v) => Math.Round(v, MidpointRounding.AwayFromZero);
 
+    /// <summary>
+    /// YALNIZ GÖSTƏRMƏ üçün 2 onluqla format (31.08.2026).
+    ///
+    /// NİYƏ: çarpaz kurs (`cross = ValyutaCbar / RialCbar`) decimal bölmədir və
+    /// 28 rəqəmə qədər uzanır — 1.70 / 0.0295 = 57.627118644067796610169491525.
+    /// Bu rəqəm təyinat mətninə olduğu kimi düşürdü, sətir 150+ simvol olurdu və
+    /// mühasibat sisteminə import edilə bilmirdi.
+    ///
+    /// ⚠️ HESABLAMAYA TOXUNMUR — `fark`/`ferq` yenə TAM dəqiqliklə hesablanır,
+    /// yəni provodkanın MƏBLƏĞİ dəyişmir (BMI ilə eyni qalır). Yuvarlaqlaşdırma
+    /// yalnız mətndədir.
+    /// </summary>
+    private static string F2(decimal v) =>
+        Math.Round(v, 2, MidpointRounding.AwayFromZero).ToString("0.00", CultureInfo.InvariantCulture);
+
     public static IList<MuhasibatSetirDto> Qur(Input inp)
     {
         var rows = new List<MuhasibatSetirDto>();
@@ -140,14 +155,14 @@ public static class PulKocurmeVoucher
                 fark = irial - cross;
                 ferq = fark * mbl * rcbar;
                 Add(Zerer, Xvalqisatqi, R(ferq * 100m) / 100m,
-                    $"{curWord}-{fxLabel} dilinq fərqi {F(cross)} - {F(irial)} =-{F(R(fark))} ({F(mbl)} {curWord}) {hev} {gond}");
+                    $"{curWord}-{fxLabel} dilinq fərqi {F2(cross)} - {F(irial)} =-{F(R(fark))} ({F(mbl)} {curWord}) {hev} {gond}");
             }
             else
             {
                 fark = cross - irial;
                 ferq = fark * mbl * rcbar;
                 Add(Xvalqisatqi, Gelir, R(ferq * 100m) / 100m,
-                    $"{curWord}-{fxLabel} dilinq fərqi {F(cross)} - {F(irial)} ={F(R(fark))} ({F(mbl)} {curWord}) {hev} {gond}");
+                    $"{curWord}-{fxLabel} dilinq fərqi {F2(cross)} - {F(irial)} ={F(R(fark))} ({F(mbl)} {curWord}) {hev} {gond}");
             }
         }
 
