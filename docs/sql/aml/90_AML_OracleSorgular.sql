@@ -1300,7 +1300,7 @@ VALUES (
             keep (dense_rank last order by t.date_oper)
      from odb.arh_saldo_ls t
     where t.licsch = ''{HESAB}''
-      and t.date_oper < to_date(''{TARIX1}'',''dd/mm/yyyy''))               gir_qaliq,
+      and t.date_oper <= to_date(''{TARIX1}'',''dd/mm/yyyy''))              gir_qaliq,
 
   (select max(case when substr(t.licsch,6,2) = ''00''
                    then abs(t.saldo_ish_nacval)

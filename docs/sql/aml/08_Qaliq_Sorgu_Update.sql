@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════════════════
    AML_HESAB_SORGU_QALIQ — sorğu mətninin YENİLƏNMƏSİ · 31.08.2026
    ───────────────────────────────────────────────────────────────────────────
    Bu skript SQL SERVER-də (FinNex_Maliyye_Db) işlədilir — `OracleSorgular`
@@ -38,7 +38,7 @@ SELECT Id, SorguAdi, Aktiv, LEN(SorguMetni) AS Uzunluq, SorguMetni
 BEGIN TRAN;
 
 UPDATE dbo.OracleSorgular
-   SET Mahiyyet = N'AML — Hesab üzrə sorğu şapkası: hesabın adı (odb.accounts.name_latin) + giriş/son qalıq. Tokenlər: {HESAB}, {TARIX1}, {TARIX2}. Sütunlar: NAME_LATIN, GIR_QALIQ, SON_QALIQ. 31.08.2026: üç hissə müstəqil skalyar alt-sorğuya ayrıldı (daxili join biri boş olanda üçünü də itirirdi); son qalıq dəqiq tarix əvəzinə TARIX2-yə qədər SONUNCU günə bağlandı (bugünkü qalıq hələ yazılmır); giriş qalığı TARIX1-dən ƏVVƏLKİ sonuncu günün bağlanış qalığıdır.',
+   SET Mahiyyet = N'AML — Hesab üzrə sorğu şapkası: hesabın adı (odb.accounts.name_latin) + giriş/son qalıq. Tokenlər: {HESAB}, {TARIX1}, {TARIX2}. Sütunlar: NAME_LATIN, GIR_QALIQ, SON_QALIQ. 31.08.2026: üç hissə müstəqil skalyar alt-sorğuya ayrıldı (daxili join biri boş olanda üçünü də itirirdi); hər iki qalıq DƏQİQ tarix əvəzinə həmin tarixə QƏDƏR sonuncu günün saldo_ish qalığıdır (bugünkü/həftəsonu qalığı hələ yazılmır). Tərif istifadəçinindir: giriş = TARIX1-dəki son qalıq, son = TARIX2-dəki son qalıq.',
        SorguMetni = N'select
   (select max(ac.name_latin)
      from odb.accounts ac
@@ -50,7 +50,7 @@ UPDATE dbo.OracleSorgular
             keep (dense_rank last order by t.date_oper)
      from odb.arh_saldo_ls t
     where t.licsch = ''{HESAB}''
-      and t.date_oper < to_date(''{TARIX1}'',''dd/mm/yyyy''))               gir_qaliq,
+      and t.date_oper <= to_date(''{TARIX1}'',''dd/mm/yyyy''))              gir_qaliq,
 
   (select max(case when substr(t.licsch,6,2) = ''00''
                    then abs(t.saldo_ish_nacval)
@@ -80,5 +80,10 @@ SELECT Id, SorguAdi, Aktiv, LEN(SorguMetni) AS Uzunluq, SorguMetni
    Yoxlama: Risk → AML → Hesab üzrə sorğu
        Hesab  41010000000008700000
        Dövr   28.08.2026 – 31.08.2026
-   Gözlənilən: Giriş qalığı 0,62 · Son qalıq 1 272,13 · Hesabın adı dolu.
+   Gözlənilən: Giriş qalığı 1 272,13 · Son qalıq 1 272,13 · Hesabın adı dolu.
+
+   ⚠️ İKİSİ EYNİ ÇIXIR — SƏHV DEYİL. Tərifə görə giriş = 28/08-in son qalığı;
+   31/08-ə qədər sonrakı əməliyyat günü yoxdur (29/30 həftəsonu, 31 hələ
+   bağlanmayıb), ona görə son qalıq da elə 28/08-in qalığıdır. Dövrü daha
+   geniş götürdükdə (məs. 20.08–28.08) ikisi fərqlənəcək.
    ═══════════════════════════════════════════════════════════════════════════ */
