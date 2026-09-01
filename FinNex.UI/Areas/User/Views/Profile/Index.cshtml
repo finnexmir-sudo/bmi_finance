@@ -397,20 +397,38 @@
 
 @section Scripts {
     <script src="~/js/User/user-profile.js" asp-append-version="true"></script>
-    @if (User.IsInRole("Rehber") || User.IsInRole("Admin"))
+    @* ⚠️ ŞƏRT YUXARIDAKI KART İLƏ EYNİ OLMALIDIR (01.09.2026 — real hadisə).
+       Kart `MailIcazesiVar`-a keçirilmişdi, bu blok isə köhnə rol şərtində
+       qalmışdı: icazəsi olan (amma Rəhbər olmayan) işçidə kart GÖRÜNÜRDÜ,
+       «Yadda Saxla» düyməsinin isə HEÇ BİR hadisə dinləyicisi yox idi —
+       klik heç nə etmirdi, nə sorğu gedirdi, nə mesaj çıxırdı. *@
+    @if (ViewBag.MailIcazesiVar == true)
     {
         <script>
         (function () {
             var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
 
+            // Cavab HƏMİŞƏ {success, message} formasında qaytarılır — server 403
+            // (icazə yoxdur) və ya sessiya bitmiş HTML qaytarsa `r.json()` istisna
+            // atır, düymə isə «disabled» qalıb SƏSSİZCƏ ölürdü. İndi səbəb ekranda.
             async function postJson(url, data) {
                 var body = Object.entries(data).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
-                var r = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
-                    body
-                });
-                return r.json();
+                try {
+                    var r = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                        body
+                    });
+                    if (r.status === 403)
+                        return { success: false, message: 'İcazəniz yoxdur — Admin ilə əlaqə saxlayın.' };
+                    if (r.status === 401)
+                        return { success: false, message: 'Sessiya bitib — səhifəni yeniləyin və yenidən daxil olun.' };
+                    if (!r.ok)
+                        return { success: false, message: 'Server xətası (' + r.status + ').' };
+                    return await r.json();
+                } catch (e) {
+                    return { success: false, message: 'Əlaqə xətası — yenidən cəhd edin.' };
+                }
             }
 
             function showMsg(msg, ok) {
