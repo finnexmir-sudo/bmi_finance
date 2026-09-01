@@ -1,5 +1,5 @@
 ﻿using FinNex.Application.Interfaces.Communication;
-using FinNex.Application.Interfaces.HR;
+using FinNex.Application.Interfaces;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;

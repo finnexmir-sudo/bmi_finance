@@ -203,6 +203,32 @@ Nəticədə `FinNex.Application` build olmadı (CS0535 + CS1501), bu da `FinNex.
 - Bir layihə build olmayanda asılı layihələrdəki xətalar yalançı istiqamətə
   yönəldə bilər — **kök səbəb həmişə build olmayan layihədədir**, oradan başla.
 
+## Qovluq Adı ≠ Namespace — `using` Yazmazdan Əvvəl FAYLA BAX (CS0246)
+
+`FinNex.Application/Interfaces/HR/` qovluğunda fayllar **iki fərqli namespace**
+işlədir və qovluq adına baxıb `using` yazmaq **CS0246** verir
+(*«The type or namespace name '…' could not be found»*):
+
+| Namespace | Nümunə fayllar |
+|---|---|
+| `FinNex.Application.Interfaces.HR` | `IIsciAyliqQazancService`, `IXestelikService`, `IKompensasiyaService` |
+| **`FinNex.Application.Interfaces`** (`.HR` YOX) | **`IUserPermissionService`**, `IPermissionService`, `IIsciTeyinatService`, `IIsciStrukturRoluService` |
+
+Real hadisə (01.09.2026): `IUserPermissionService` üçün faylın yolu
+`Interfaces/HR/`-dir deyə `using FinNex.Application.Interfaces.HR;` yazıldı →
+`FinNex.UI` build olmadı (2 × CS0246). Namespace isə `FinNex.Application.Interfaces`
+idi.
+
+**Qayda:** yeni bir servis/interfeys işlədəndə `using`-i qovluq yolundan
+**TƏXMİN ETMƏ** — faylın öz `namespace` sətrini oxu:
+
+```bash
+grep -m1 "^namespace" FinNex.Application/Interfaces/HR/IUserPermissionService.cs
+```
+
+Yaxud layihədə həmin tipin mövcud istifadəsinə bax (nümunə: `_UserLayout.cshtml`
+onu tam adı ilə çağırır — `@inject FinNex.Application.Interfaces.IUserPermissionService _permSvc`).
+
 ## Namespace Adı Entity Adını Kölgələyir (CS0118) — Kaskad Build Xətası (KRİTİK)
 
 C#-da alt namespace adı, valideyn namespace-dəki **tip adı** ilə eyni olarsa, həmin
