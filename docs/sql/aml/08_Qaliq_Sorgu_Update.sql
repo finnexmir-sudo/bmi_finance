@@ -5,7 +5,7 @@
    bizim öz cədvəlimizdir. Oracle-a heç bir yazı YOXDUR.
 
    ⚠️ ƏVVƏLCƏ 07_Qaliq_Yeni_Sorgu_Yoxlama.sql-i Oracle-da işlədin və
-      0,62 / 1272,13 gəldiyini görün. Yalnız ondan sonra buranı işlədin.
+      rəqəmlərin uyğun gəldiyini görün. Yalnız ondan sonra buranı işlədin.
 
    90_AML_OracleSorgular.sql yalnız «yoxdursa əlavə et» edir — mövcud sətri
    yeniləmir. Ona görə bu ayrıca UPDATE skripti lazımdır.
