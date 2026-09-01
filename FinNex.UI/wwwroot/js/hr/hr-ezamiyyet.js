@@ -1,6 +1,8 @@
-'use strict';
+﻿'use strict';
 
 let _ezCurrentId = null;
+// Son yüklənən sətirlər — modal maşın məlumatını Id ilə buradan oxuyur.
+var _ezRows = [];
 let _ezIsciTimer  = null;
 
 function ezIsciAxtar() {
@@ -28,6 +30,10 @@ async function ezYukle() {
 
     var res  = await fetch('/HR/Ezamiyyet/GetMuracietler?' + p.toString());
     var data = await res.json();
+    // Modal sətri Id ilə buradan tapır (01.09.2026). `ezOpenModal`-a 8 mövqe
+    // arqumenti onsuz da ötürülür; yeni sahələri də ora yığmaq apostroflu
+    // mətndə (məs. maşın modeli) onclick-i sındıra bilərdi.
+    _ezRows = data;
 
     if (!data.length) {
         tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#94a3b8">Müraciət yoxdur.</td></tr>';
@@ -69,7 +75,11 @@ async function ezYukle() {
             '<td style="padding:10px 14px"><strong>' + r.isciTamAd + '</strong>' +
                 (r.isciVezife ? '<br><small style="color:#94a3b8">' + r.isciVezife + '</small>' : '') + '</td>' +
             '<td style="padding:10px 14px;color:#0f172a">' + r.baslig + '</td>' +
-            '<td style="padding:10px 14px;color:#374151"><i class="bi bi-geo-alt text-muted"></i> ' + r.mekanAd + '</td>' +
+            '<td style="padding:10px 14px;color:#374151"><i class="bi bi-geo-alt text-muted"></i> ' + r.mekanAd +
+                (r.masinVar
+                    ? '<div style="font-size:11px;color:#0f766e;margin-top:3px"><i class="bi bi-car-front"></i> ' +
+                      (r.masinAdi ? ezEsc(r.masinAdi) : 'xidməti maşınla') + '</div>'
+                    : '') + '</td>' +
             '<td style="padding:10px 14px;white-space:nowrap">' + tarix + '<br><small style="color:#6366f1">' + r.gunSayi + ' gün</small>' + saat + '</td>' +
             '<td style="padding:10px 14px">' + st +
                 (r.rehberQeydi && r.status === 3 ? '<br><small style="color:#ef4444">' + r.rehberQeydi + '</small>' : '') +
@@ -115,6 +125,7 @@ function ezOpenModal(id, isci, baslig, mekan, bas, bit, basSaat, bitSaat) {
         '<div style="margin-bottom:6px"><strong>Məkan:</strong> ' + mekan + '</div>' +
         '<div style="margin-bottom:6px"><strong>Tarix:</strong> ' + bas + (bas !== bit ? ' – ' + bit : '') + '</div>' +
         '<div><strong>Saat:</strong> <span style="color:#0ea5e9"><i class="bi bi-clock"></i> ' + saatMetn + '</span></div>' +
+        ezMasinSetri(id) +
         '</div>';
     document.getElementById('ezOverlay').style.display = 'block';
     document.getElementById('ezModal').style.display   = 'block';
@@ -215,6 +226,29 @@ async function ezDuzeltSaxla() {
     if (json.success === false) { alert(json.message || 'Xəta baş verdi.'); return; }
     ezDuzeltClose();
     ezYukle();
+}
+
+/**
+ * Təsdiq modalında «Xidməti maşın» sətri (01.09.2026).
+ *
+ * NİYƏ LAZIMDIR: bu ezamiyyəti təsdiqləmək EYNİ ZAMANDA maşın açarına icazə
+ * verməkdir — rəhbər bunu bilmədən düyməyə basmamalıdır. İşçi portalındakı
+ * təsdiq ekranında (`Tesdiq/EzamiyyetDetal.cshtml`) eyni sətir var; təsdiqin
+ * İKİ giriş nöqtəsi var, birini unutsaq xəta yalnız o yolda görünər.
+ *
+ * Maşın istənməyibsə heç nə yazılmır (boş sətir).
+ */
+function ezMasinSetri(id) {
+    var r = _ezRows.filter(function (x) { return x.id === id; })[0];
+    if (!r || !r.masinVar) return '';
+
+    var ad = r.masinAdi ? ezEsc(r.masinAdi) : 'seçilib';
+    return '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0">' +
+           '<strong>Xidməti maşın:</strong> ' +
+           '<span style="color:#0f766e"><i class="bi bi-car-front"></i> ' + ad + '</span>' +
+           '<div style="font-size:11px;color:#64748b;margin-top:2px">' +
+           'Təsdiqlədikdə maşın müraciəti avtomatik yaranır və açar üçün kassaya düşür.' +
+           '</div></div>';
 }
 
 function ezEsc(s) {

@@ -1,4 +1,4 @@
-# Ezamiyyət ↔ Avtopark — «Bir forma, bir təsdiq» (01.09.2026)
+﻿# Ezamiyyət ↔ Avtopark — «Bir forma, bir təsdiq» (01.09.2026)
 
 **Status:** kod yazılıb, **build EDİLMƏYİB** (mühitdə `dotnet` yoxdur) + **migration işlədilməyib**
 
@@ -161,6 +161,23 @@ bağlanıb, yenisi yazıla bilər).
 - `Areas/User/Views/EzamiyyetMuraciet/Create.cshtml` — maşın bölməsi + JS
 - `Areas/User/Views/EzamiyyetMuraciet/Index.cshtml` — maşın nişanı
 - `Areas/User/Views/Tesdiq/EzamiyyetDetal.cshtml` — **təsdiq düyməsindən əvvəl** maşın sətri
+- `Areas/HR/Controllers/EzamiyyetController.cs` — `GetMuracietler` JSON proyeksiyasına
+  `MasinVar`/`MasinAdi` (proyeksiya AÇIQDIR — sahə yazılmasa JS-də `undefined` olur, xətasız)
+- `wwwroot/js/hr/hr-ezamiyyet.js` — HR/Rəhbər modalında maşın sətri + siyahı sətrində nişan
+
+### ⚠️ TƏSDİQİN İKİ EKRANI VAR
+
+Ezamiyyəti təsdiqləmək üçün **iki ayrı ekran** eyni servis metodunu
+(`EzamiyyetService.RehberTesdiqAsync`) çağırır:
+
+| Ekran | Fayl |
+|---|---|
+| İşçi portalı → Təsdiq | `Areas/User/Views/Tesdiq/EzamiyyetDetal.cshtml` |
+| HR → Ezamiyyət İzləmə (modal) | `wwwroot/js/hr/hr-ezamiyyet.js` + `Areas/HR/Views/Ezamiyyet/Index.cshtml` |
+
+Təsdiq ekranına məlumat əlavə edəndə **hər ikisini birlikdə yenilə**. 01.09.2026-da
+yalnız birincisi yenilənmişdi — rəhbər HR ekranından təsdiqləyəndə maşından xəbərsiz
+qalırdı (istifadəçi tapdı: «burda maşınla gedəcəyi bildirilmir?»).
 
 ---
 

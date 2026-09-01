@@ -1,4 +1,4 @@
-using FinNex.Application.DTOs.HR.Ezamiyyet;
+﻿using FinNex.Application.DTOs.HR.Ezamiyyet;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.HR;
 using FinNex.Domain;
@@ -84,7 +84,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 cihazQayidisIso   = x.CihazQayidisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
                 baslamaIso        = x.BaslamaTarixi.ToString("yyyy-MM-dd"),
                 bitmeIso          = x.BitmeTarixi.ToString("yyyy-MM-dd"),
-                yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm"),
+                // Avtopark (01.09.2026) — rəhbər təsdiq etməzdən ƏVVƏL maşını görsün.
+                // ⚠️ Bu proyeksiya AÇIQDIR: sahə əlavə edilməsə JS-də `undefined`
+                // olur və heç bir xəta çıxmır (CLAUDE.md — silinmiş data tələsi).
+                x.MasinVar, x.MasinAdi
             }));
         }
 
