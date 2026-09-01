@@ -33,6 +33,45 @@ namespace FinNex.Application.Interfaces.Avtopark
 
         Task<Result<int>> YaratAsync(MasinMuracietCreateDto dto, int userId);
 
+        // ══ EZAMİYYƏT BAĞLANTISI (01.09.2026) ══════════════════════════════
+        // İşçi ezamiyyətə maşınla gedirsə maşını Avtoparkda AYRICA yazmır —
+        // ezamiyyət formasında seçir, rəhbər ezamiyyəti təsdiqləyəndə maşın
+        // müraciəti burada yaranır. «Bir forma, bir təsdiq» (istifadəçi qərarı).
+
+        /// <summary>
+        /// Maşın seçimi qəbul edilə bilərmi (mövcuddur + `Aktiv`).
+        /// Ezamiyyət YARADILARKƏN çağırılır ki, təsdiq anında yox, elə
+        /// forma göndəriləndə xəbər verilsin.
+        /// </summary>
+        Task<Result> MasinSecimiYoxlaAsync(int masinId);
+
+        /// <summary>
+        /// Təsdiqlənmiş ezamiyyət üçün maşın müraciəti yaradır — DƏRHAL
+        /// <c>Tesdiqlenib</c> statusunda (rəhbər onsuz da ezamiyyəti təsdiqlədi,
+        /// eyni şeyi ikinci dəfə soruşmuruq) və birbaşa kassaya bildiriş gedir.
+        ///
+        /// ⚠️ `YaratAsync` ÇAĞIRILMIR: o, statusu müraciət sahibinin roluna görə
+        /// təyin edir (`IlkinStatus`) və adi işçidə `Gozlemede` yazardı — yəni
+        /// rəhbər eyni səfəri iki dəfə təsdiqləməli olardı.
+        ///
+        /// Çağıran TRANZAKSİYA açmalıdır — bu metod öz `YaddaSaxlaAsync`-ini
+        /// çağırır, amma ezamiyyətin statusu ilə birlikdə atomik olmalıdır.
+        /// </summary>
+        Task<Result<int>> EzamiyyetdenYaratAsync(
+            int ezamiyyetId, int masinId, int isciId,
+            DateTime planBaslama, string meqsed, string? marsrut,
+            int rehberIsciId, int userId);
+
+        /// <summary>
+        /// Ezamiyyət ləğv/imtina olunanda ona bağlı maşın müraciətini ləğv edir.
+        ///
+        /// Açar ARTIQ VERİLİBSƏ (`Cixib`) sətrə TOXUNULMUR — maşın fiziki olaraq
+        /// çöldədir, onu ekran «ləğv edilmiş» sayarsa kassa jurnalı yalan danışar
+        /// və maşın heç vaxt «qayıtdı» olmaz. Belə halda `false` qaytarılır ki,
+        /// çağıran istifadəçiyə xəbərdarlıq göstərə bilsin.
+        /// </summary>
+        Task<bool> EzamiyyetLegvindeMasiniLegvEtAsync(int ezamiyyetId, int userId);
+
         /// <param name="rehberIsciId">Təsdiqi edən işçinin Id-si (jurnalda qalır).</param>
         Task<Result> TesdiqEtAsync(int id, int rehberIsciId, int userId);
         Task<Result> ImtinaEtAsync(int id, int rehberIsciId, string? sebeb, int userId);

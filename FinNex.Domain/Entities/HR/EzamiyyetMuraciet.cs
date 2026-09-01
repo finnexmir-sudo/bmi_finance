@@ -17,6 +17,23 @@ namespace FinNex.Domain.Entities.HR
         public TimeSpan? BaslamaSaati { get; set; }
         public TimeSpan? BitisSaati { get; set; }
 
+        // ── Avtopark bağlantısı (01.09.2026) ─────────────────────────────
+        /// <summary>
+        /// İşçinin ezamiyyət üçün istədiyi maşın. `null` = maşın lazım deyil.
+        ///
+        /// NİYƏ BURADA SAXLANILIR: maşın müraciəti (`MasinMuraciet`) ezamiyyət
+        /// TƏSDİQLƏNƏNDƏ yaradılır — təsdiqə qədər seçim bir yerdə durmalıdır.
+        /// Təsdiqdən sonra əsl bağ əks istiqamətdədir:
+        /// <c>MasinMuraciet.EzamiyyetMuracietId</c>.
+        ///
+        /// ⚠️ Bu sahə «istək»dir, «verilmiş maşın» DEYİL — rəhbər imtina etsə,
+        /// yaxud müraciət ləğv olunsa burada dəyər qalır, amma maşın müraciəti
+        /// yaranmır/ləğv olunur. «Hansı maşın verildi» sualının cavabı həmişə
+        /// `MasinMuraciet`-dədir.
+        /// </summary>
+        public int? MasinId { get; set; }
+        public Avtopark.Masin? Masin { get; set; }
+
         public string? SenedYolu { get; set; }
         public string? SenedAd  { get; set; }
 

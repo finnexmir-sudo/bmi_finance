@@ -1,4 +1,5 @@
-using FinNex.Application.DTOs.HR.Ezamiyyet;
+﻿using FinNex.Application.DTOs.HR.Ezamiyyet;
+using FinNex.Application.Interfaces.Avtopark;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.HR;
 using FinNex.Domain;
@@ -6,6 +7,7 @@ using FinNex.Domain.Entities.Communication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FinNex.UI.Areas.User.Controllers
 {
@@ -18,16 +20,37 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IConfiguration _config;
         private readonly IBildirisRouter _bildirisRouter;
 
+        /// <summary>Ezamiyyət formasındakı maşın seçimi üçün (01.09.2026).</summary>
+        private readonly IMasinService _masin;
+
         public EzamiyyetMuracietController(
             IEzamiyyetService service,
             UserManager<AppUser> userManager,
             IConfiguration config,
-            IBildirisRouter bildirisRouter)
+            IBildirisRouter bildirisRouter,
+            IMasinService masin)
         {
             _service        = service;
             _userManager    = userManager;
             _config         = config;
             _bildirisRouter = bildirisRouter;
+            _masin          = masin;
+        }
+
+        /// <summary>
+        /// Maşın açılan siyahısı — YALNIZ AKTİV maşınlar.
+        /// Avtoparkdakı `MuracietController.DoldurMasinlarAsync` ilə eyni qayda:
+        /// təmirdə/istifadədən çıxmış maşın siyahıda görünmür ki, işçi seçib
+        /// sonra xəta almasın. Servis onsuz da ikinci qatda bloklayır.
+        /// </summary>
+        private async Task DoldurMasinlarAsync()
+        {
+            var masinlar = await _masin.HamisiniGetirAsync(yalnizAktiv: true);
+            ViewBag.Masinlar = masinlar
+                .Select(m => new SelectListItem(
+                    m.IndiColdedir ? $"{m.TamAd} — hazırda {m.IndiKimde}-dədir" : m.TamAd,
+                    m.Id.ToString()))
+                .ToList();
         }
 
         public async Task<IActionResult> Index()
@@ -43,6 +66,7 @@ namespace FinNex.UI.Areas.User.Controllers
         {
             var mekanlar = await _service.MekanlarAsync();
             ViewBag.Mekanlar = mekanlar;
+            await DoldurMasinlarAsync();
 
             // Öncədən doldurma (məs. məhkəmə görüşü → ezamiyyət linki). Parametr yoxdursa boş gəlir.
             var model = new EzamiyyetMuracietCreateDto
@@ -71,6 +95,7 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 TempData["Error"] = error;
                 ViewBag.Mekanlar  = await _service.MekanlarAsync();
+                await DoldurMasinlarAsync();
                 return View(dto);
             }
 
@@ -104,7 +129,12 @@ namespace FinNex.UI.Areas.User.Controllers
             var isciId = await GetIsciIdAsync();
             if (isciId == null) return Unauthorized();
             var (ok, error) = await _service.LegvEtAsync(id, isciId.Value);
-            TempData[ok ? "Success" : "Error"] = ok ? "Müraciət ləğv edildi." : error;
+            // UĞURDA DA MƏTN GƏLƏ BİLƏR: maşının açarı artıq verilibsə servis
+            // xəbərdarlıq qaytarır. Onu udmuruq — yoxsa işçi «ləğv edildi»
+            // görər, maşın isə çöldə qalar və heç kim xəbər tutmaz.
+            TempData[ok ? "Success" : "Error"] = ok
+                ? (string.IsNullOrWhiteSpace(error) ? "Müraciət ləğv edildi." : error)
+                : error;
             return RedirectToAction(nameof(Index));
         }
 

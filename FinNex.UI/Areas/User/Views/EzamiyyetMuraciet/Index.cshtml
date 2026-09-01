@@ -1,4 +1,4 @@
-@using FinNex.Application.DTOs.HR.Ezamiyyet
+﻿@using FinNex.Application.DTOs.HR.Ezamiyyet
 @using FinNex.Domain.Entities.HR
 @model IList<EzamiyyetMuracietListDto>
 @{
@@ -89,6 +89,13 @@
                             </td>
                             <td style="padding:10px 14px;color:#374151">
                                 <i class="bi bi-geo-alt text-muted"></i> @item.MekanAd
+                                @if (item.MasinVar)
+                                {
+                                    <div style="font-size:11px;color:#0f766e;margin-top:2px" title="Xidməti maşın">
+                                        <i class="bi bi-car-front"></i>
+                                        @(string.IsNullOrWhiteSpace(item.MasinAdi) ? "xidməti maşınla" : item.MasinAdi)
+                                    </div>
+                                }
                             </td>
                             <td style="padding:10px 14px;color:#475569;white-space:nowrap">
                                 @item.BaslamaTarixi.ToString("dd.MM.yyyy")

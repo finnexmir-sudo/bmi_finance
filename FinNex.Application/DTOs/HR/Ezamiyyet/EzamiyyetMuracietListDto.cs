@@ -1,4 +1,4 @@
-using FinNex.Domain.Entities.HR;
+﻿using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.Ezamiyyet
 {
@@ -29,6 +29,13 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
         public DateTime? CihazCixisVaxti    { get; set; }
         public DateTime? CihazQayidisVaxti  { get; set; }
         public DateTime  YaradilmaTarixi    { get; set; }
+
+        // ── Avtopark (01.09.2026) ────────────────────────────────────────
+        /// <summary>İstənilən maşın (`null` = maşın lazım deyil).</summary>
+        public int?     MasinId   { get; set; }
+        /// <summary>Göstərmə üçün: «90-AA-123 · Toyota Camry». Maşın yoxdursa `null`.</summary>
+        public string?  MasinAdi  { get; set; }
+        public bool     MasinVar => MasinId.HasValue && MasinId.Value > 0;
 
         public int GunSayi => (BitmeTarixi.Date - BaslamaTarixi.Date).Days + 1;
 

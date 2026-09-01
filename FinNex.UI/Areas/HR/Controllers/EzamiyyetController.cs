@@ -182,7 +182,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                     redirectUrl: Url.Action("Index", "EzamiyyetMuraciet", new { area = "User" }));
             }
 
-            return Json(new { success = ok, message = ok ? "Ezamiyyət ləğv edildi." : error });
+            // UĞURDA DA MƏTN GƏLƏ BİLƏR — maşının açarı artıq verilibsə servis
+            // xəbərdarlıq qaytarır (User tərəfindəki ləğv ilə eyni qayda).
+            return Json(new
+            {
+                success = ok,
+                message = ok
+                    ? (string.IsNullOrWhiteSpace(error) ? "Ezamiyyət ləğv edildi." : error)
+                    : error
+            });
         }
 
         // ── HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru) ──

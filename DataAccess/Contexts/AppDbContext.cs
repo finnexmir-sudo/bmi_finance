@@ -328,6 +328,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
                 .HasForeignKey(x => x.CixisQeydEdenId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.QayidisQeydEden).WithMany()
                 .HasForeignKey(x => x.QayidisQeydEdenId).OnDelete(DeleteBehavior.Restrict);
+
+            // Ezamiyyətdən avtomatik yaranan müraciət (01.09.2026).
+            // Restrict — bu cədvəldə onsuz da 5 Restrict FK var, kaskad yol açsaq
+            // SQL Server «multiple cascade paths» ilə migration-u sındırar.
+            e.HasOne(x => x.EzamiyyetMuraciet).WithMany()
+                .HasForeignKey(x => x.EzamiyyetMuracietId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.EzamiyyetMuracietId);
         });
 
         builder.Entity<MasinMuddetNovu>(e =>
@@ -1809,6 +1816,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.HasOne(x => x.Isci).WithMany().HasForeignKey(x => x.IsciId).OnDelete(DeleteBehavior.NoAction);
             e.HasOne(x => x.Mekan).WithMany(m => m.Muracietler).HasForeignKey(x => x.MekanId).OnDelete(DeleteBehavior.NoAction);
             e.HasOne(x => x.Rehber).WithMany().HasForeignKey(x => x.RehberId).OnDelete(DeleteBehavior.NoAction);
+            // İstənilən maşın (01.09.2026) — «verilmiş maşın» deyil, bax entity sənədi.
+            e.HasOne(x => x.Masin).WithMany().HasForeignKey(x => x.MasinId).OnDelete(DeleteBehavior.NoAction);
         });
 
     }

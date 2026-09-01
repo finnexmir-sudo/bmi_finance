@@ -1,4 +1,4 @@
-using FinNex.Application.Common.Results;
+﻿using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Avtopark;
 using FinNex.Application.Interfaces.Avtopark;
 using FinNex.Application.Interfaces.Communication;
@@ -324,6 +324,114 @@ public class MasinMuracietService : IMasinMuracietService
             ilkin == MasinMuracietStatus.Tesdiqlenib
                 ? "Müraciət yaradıldı və təsdiqləndi — açar üçün kassaya müraciət edin."
                 : "Müraciət göndərildi — rəhbər təsdiqi gözlənilir.");
+    }
+
+    // ══ EZAMİYYƏT BAĞLANTISI (01.09.2026) ═════════════════════════════════
+
+    /// <summary>Maşın mövcuddur və götürülə bilər? (ezamiyyət formasından çağırılır)</summary>
+    public async Task<Result> MasinSecimiYoxlaAsync(int masinId)
+    {
+        if (masinId <= 0) return Result.Fail("Maşın seçilməlidir.");
+
+        var masin = await _uow.Repository<Masin>()
+            .GetirAsync(x => x.Id == masinId && !x.Silinib, izlemeden: true);
+        if (masin == null) return Result.Fail("Maşın tapılmadı.");
+
+        if (masin.Status != MasinStatus.Aktiv)
+            return Result.Fail(
+                $"«{masin.DovletNomresi}» hazırda " +
+                $"{(masin.Status == MasinStatus.Temirde ? "təmirdədir" : "istifadədən çıxıb")} — seçilə bilməz.");
+
+        return Result.Ok();
+    }
+
+    public async Task<Result<int>> EzamiyyetdenYaratAsync(
+        int ezamiyyetId, int masinId, int isciId,
+        DateTime planBaslama, string meqsed, string? marsrut,
+        int rehberIsciId, int userId)
+    {
+        var yoxla = await MasinSecimiYoxlaAsync(masinId);
+        if (!yoxla.Success) return Result<int>.Fail(yoxla.Message ?? "Maşın seçilə bilmədi.");
+
+        if (string.IsNullOrWhiteSpace(meqsed))
+            return Result<int>.Fail("Məqsəd boşdur — ezamiyyətin başlığı oxunmadı.");
+
+        // Eyni ezamiyyət üçün ikinci müraciət yaranmasın: təsdiq düyməsi iki dəfə
+        // basıla bilər, yaxud ləğv → yenidən təsdiq axını olar. Ləğv edilmiş
+        // sətir saymır — o, qəsdən bağlanıb və yenisi yazıla bilər.
+        var movcud = await _uow.Repository<MasinMuraciet>().Query().AsNoTracking()
+            .FirstOrDefaultAsync(x => x.EzamiyyetMuracietId == ezamiyyetId
+                                   && x.Status != MasinMuracietStatus.LegvEdildi
+                                   && x.Status != MasinMuracietStatus.ImtinaEdildi
+                                   && !x.Silinib);
+        if (movcud != null) return Result<int>.Ok(movcud.Id, "Bu ezamiyyət üçün maşın müraciəti onsuz da var.");
+
+        var e = new MasinMuraciet
+        {
+            MasinId = masinId,
+            IsciId = isciId,
+            PlanBaslama = planBaslama,
+            // PlanBitme QƏSDƏN yazılmır — bax entity sənədi (21.08.2026).
+            Meqsed = meqsed.Trim(),
+            Marsrut = string.IsNullOrWhiteSpace(marsrut) ? null : marsrut.Trim(),
+            EzamiyyetMuracietId = ezamiyyetId,
+
+            // Rəhbər ezamiyyəti təsdiqlədi — maşın addımı ATLANIR.
+            Status = MasinMuracietStatus.Tesdiqlenib,
+            RehberId = rehberIsciId,
+            RehberTesdiqTarixi = DateTime.Now,
+
+            YaradanIcraciId = userId
+        };
+
+        await _uow.Repository<MasinMuraciet>().YaratAsync(e);
+        await _uow.YaddaSaxlaAsync();
+
+        var masinAdi = (await _uow.Repository<Masin>()
+            .GetirAsync(x => x.Id == masinId, izlemeden: true))?.DovletNomresi ?? "—";
+        var isciAdi = await IsciAdiAsync(isciId);
+
+        await GuvenliBildirisAsync(() => _bildiris.NotifyRoleAsync(
+            RoleNames.Kassa, BildirisNovu.MasinTesdiq,
+            "Maşın açarı gözləyir (ezamiyyət)",
+            $"{isciAdi} — {masinAdi} · {planBaslama:dd.MM.yyyy HH:mm} · {meqsed}",
+            "/Avtopark/Kassa/Index"));
+
+        return Result<int>.Ok(e.Id, "Ezamiyyət üçün maşın müraciəti yaradıldı.");
+    }
+
+    public async Task<bool> EzamiyyetLegvindeMasiniLegvEtAsync(int ezamiyyetId, int userId)
+    {
+        var e = await _uow.Repository<MasinMuraciet>()
+            .GetirAsync(x => x.EzamiyyetMuracietId == ezamiyyetId
+                          && x.Status != MasinMuracietStatus.LegvEdildi
+                          && x.Status != MasinMuracietStatus.ImtinaEdildi
+                          && !x.Silinib);
+        if (e == null) return true;   // bağlı müraciət yoxdur — ediləsi bir şey yoxdur
+
+        // Açar verilib (Cixib) və ya artıq qayıdıb — jurnal sətri toxunulmazdır.
+        if (e.Status != MasinMuracietStatus.Gozlemede &&
+            e.Status != MasinMuracietStatus.Tesdiqlenib)
+            return false;
+
+        e.Status = MasinMuracietStatus.LegvEdildi;
+        e.YenileyenIcraciId = userId;
+        e.YenilenmeTarixi = DateTime.Now;
+
+        await _uow.Repository<MasinMuraciet>().YenileAsync(e);
+        await _uow.YaddaSaxlaAsync();
+
+        // Ad ƏVVƏLCƏ alınır — `GuvenliBildirisAsync` sinxron lambda qəbul edir,
+        // onun içində `await` yazmaq olmaz (CS4034).
+        var isciAdi = await IsciAdiAsync(e.IsciId);
+
+        await GuvenliBildirisAsync(() => _bildiris.NotifyRoleAsync(
+            RoleNames.Kassa, BildirisNovu.MasinImtina,
+            "Maşın müraciəti ləğv edildi",
+            $"Ezamiyyət ləğv olundu — {isciAdi} üçün maşın açarı lazım deyil.",
+            "/Avtopark/Kassa/Index"));
+
+        return true;
     }
 
     // ══ RƏHBƏR MƏRHƏLƏSİ ══════════════════════════════════════════════════

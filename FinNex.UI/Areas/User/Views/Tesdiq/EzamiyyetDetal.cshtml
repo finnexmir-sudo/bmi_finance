@@ -1,4 +1,4 @@
-@model FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMuracietListDto
+﻿@model FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMuracietListDto
 @using FinNex.Domain.Entities.HR
 @{
     ViewData["Title"] = "Ezamiyyət Detalı";
@@ -73,6 +73,22 @@
                     <span class="tsd-info-lbl">Məkan</span>
                     <span class="tsd-info-val">@Model.MekanAd</span>
                 </div>
+                @* Maşın sətri TƏSDİQ DÜYMƏSİNDƏN ƏVVƏL göstərilir (01.09.2026):
+                   bu ezamiyyəti təsdiqləmək EYNİ ZAMANDA maşın açarına icazə
+                   verməkdir — rəhbər bunu bilmədən düyməyə basmamalıdır. *@
+                @if (Model.MasinVar)
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Xidməti maşın</span>
+                        <span class="tsd-info-val">
+                            <i class="bi bi-car-front"></i>
+                            @(string.IsNullOrWhiteSpace(Model.MasinAdi) ? "seçilib" : Model.MasinAdi)
+                            <div style="font-size:11px;color:#8a93a8;margin-top:2px">
+                                Təsdiqlədikdə maşın müraciəti avtomatik yaranır və açar üçün kassaya düşür.
+                            </div>
+                        </span>
+                    </div>
+                }
                 <div class="tsd-info-row">
                     <span class="tsd-info-lbl">Tarix</span>
                     <span class="tsd-info-val">

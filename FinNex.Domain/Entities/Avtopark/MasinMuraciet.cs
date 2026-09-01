@@ -47,6 +47,22 @@ namespace FinNex.Domain.Entities.Avtopark
         public string Meqsed { get; set; } = null!;
         public string? Marsrut { get; set; }
 
+        /// <summary>
+        /// Bu müraciət bir ezamiyyətdən avtomatik yaranıbsa — həmin ezamiyyət
+        /// (01.09.2026). Əl ilə yazılan müraciətlərdə `null`.
+        ///
+        /// Bağ AÇIQ SAHƏ ilədir, tarix/işçi uyğunluğu ilə YOX — eyni işçinin
+        /// eyni günə həm ezamiyyət maşını, həm əl ilə yazdığı müraciəti ola
+        /// bilər; uyğunluqla axtarsaq biri o birini üstələyərdi.
+        ///
+        /// Ezamiyyət ləğv olunanda bu sətir də ləğv edilir — AMMA yalnız açar
+        /// hələ verilməyibsə (`Gozlemede`/`Tesdiqlenib`). Maşın artıq çöldədirsə
+        /// (`Cixib`) sətrə toxunulmur: fiziki vəziyyəti ekran dəyişdirə bilməz,
+        /// kassa «Gəldi» yazmalıdır.
+        /// </summary>
+        public int? EzamiyyetMuracietId { get; set; }
+        public HR.EzamiyyetMuraciet? EzamiyyetMuraciet { get; set; }
+
         public MasinMuracietStatus Status { get; set; } = MasinMuracietStatus.Gozlemede;
 
         // ── Rəhbər mərhələsi ─────────────────────────────────────────────

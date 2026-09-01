@@ -1,4 +1,5 @@
-using FinNex.Application.DTOs.HR.Ezamiyyet;
+﻿using FinNex.Application.DTOs.HR.Ezamiyyet;
+using FinNex.Application.Interfaces.Avtopark;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,38 @@ namespace FinNex.Application.Services.HR
     {
         private readonly IUnitOfWork _uow;
 
-        public EzamiyyetService(IUnitOfWork uow) => _uow = uow;
+        /// <summary>
+        /// Avtopark bağlantısı (01.09.2026) — «bir forma, bir təsdiq».
+        /// İşçi ezamiyyət formasında maşın seçirsə, rəhbər ezamiyyəti
+        /// təsdiqləyəndə maşın müraciəti burada AVTOMATİK yaranır.
+        ///
+        /// Asılılıq TƏK İSTİQAMƏTLİDİR (Ezamiyyət → Avtopark). Avtopark
+        /// tərəfi ezamiyyəti tanımır — əks istiqamətdə asılılıq əlavə etmə,
+        /// DI dövrü yaranar.
+        /// </summary>
+        private readonly IMasinMuracietService _masin;
+
+        public EzamiyyetService(IUnitOfWork uow, IMasinMuracietService masin)
+        {
+            _uow = uow;
+            _masin = masin;
+        }
+
+        /// <summary>
+        /// Ezamiyyətin maşın müraciəti üçün plan başlama vaxtı.
+        ///
+        /// Saatlı ezamiyyətdə işçinin yazdığı saat götürülür; TAM GÜN
+        /// ezamiyyətdə (`BaslamaSaati == null`) iş gününün standart başlama
+        /// saatı — çünki `MasinMuraciet.PlanBaslama` saatsız ola bilməz və
+        /// `00:00` kassa ekranında yanlış görünərdi.
+        /// </summary>
+        private async Task<DateTime> MasinPlanBaslamaAsync(DateTime tarix, TimeSpan? saat)
+        {
+            if (saat.HasValue) return tarix.Date + saat.Value;
+
+            var p = await _uow.Repository<IsParametri>().Query().AsNoTracking().FirstOrDefaultAsync();
+            return tarix.Date + (p?.StandartGirisVaxti ?? new TimeSpan(9, 0, 0));
+        }
 
         // ── Siyahı əməliyyatları ─────────────────────────────
 
@@ -19,7 +51,8 @@ namespace FinNex.Application.Services.HR
                 .HamisiniGetirAsync(
                     x => x.IsciId == isciId && !x.Silinib,
                     include: q => q.Include(x => x.Mekan)
-                                   .Include(x => x.Rehber),
+                                   .Include(x => x.Rehber)
+                                   .Include(x => x.Masin),   // 01.09.2026 — maşın adı üçün
                     izlemeden: true);
             return list.OrderByDescending(x => x.BaslamaTarixi).Select(Map).ToList();
         }
@@ -35,6 +68,7 @@ namespace FinNex.Application.Services.HR
                     .ThenInclude(t => t.Departament)
                 .Include(x => x.Mekan)
                 .Include(x => x.Rehber)
+                .Include(x => x.Masin)      // 01.09.2026 — maşın adı üçün
                 .AsQueryable();
 
             if (filtr != null)
@@ -165,7 +199,8 @@ namespace FinNex.Application.Services.HR
                     include: q => q.Include(x => x.Isci)
                                        .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
                                        .ThenInclude(t => t.Departament)
-                                   .Include(x => x.Mekan),
+                                   .Include(x => x.Mekan)
+                                   .Include(x => x.Masin),   // 01.09.2026 — maşın adı üçün
                     izlemeden: true);
             return list.OrderBy(x => x.BaslamaTarixi).Select(Map).ToList();
         }
@@ -180,6 +215,7 @@ namespace FinNex.Application.Services.HR
                     .ThenInclude(t => t.Departament)
                 .Include(x => x.Mekan)
                 .Include(x => x.Rehber)
+                .Include(x => x.Masin)      // 01.09.2026 — maşın adı üçün
                 .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
             return entity == null ? null : Map(entity);
         }
@@ -195,6 +231,16 @@ namespace FinNex.Application.Services.HR
                 return (false, "Başlıq boş ola bilməz.", 0);
             if (dto.BaslamaTarixi.Date > dto.BitmeTarixi.Date)
                 return (false, "Başlama tarixi bitmə tarixindən böyük ola bilməz.", 0);
+
+            // Maşın seçilibsə YAZMADAN ƏVVƏL yoxlanılır — təsdiq anında yox.
+            // Yoxsa işçi formanı göndərəndə hər şey qaydasında görünər, problem
+            // günlər sonra rəhbərin ekranında üzə çıxardı.
+            if (dto.MasinId.HasValue && dto.MasinId.Value > 0)
+            {
+                var masinYoxla = await _masin.MasinSecimiYoxlaAsync(dto.MasinId.Value);
+                if (!masinYoxla.Success)
+                    return (false, masinYoxla.Message, 0);
+            }
 
             int mekanId;
             if (dto.MekanId.HasValue && dto.MekanId.Value > 0)
@@ -241,6 +287,8 @@ namespace FinNex.Application.Services.HR
                 SenedYolu     = senedYolu,
                 SenedAd       = senedAd,
                 Qeyd          = dto.Qeyd?.Trim(),
+                // «İstənilən» maşın — verilmiş maşın DEYİL (bax entity sənədi).
+                MasinId       = (dto.MasinId.HasValue && dto.MasinId.Value > 0) ? dto.MasinId : null,
                 Status        = EzamiyyetStatus.Gozleyir
             };
 
@@ -262,15 +310,86 @@ namespace FinNex.Application.Services.HR
             if (entity.Status != EzamiyyetStatus.Gozleyir)
                 return (false, "Müraciət artıq cavablanıb.");
 
+            // Rollback üçün əvvəlki hal saxlanılır — bax aşağıdakı `Geriye()`.
+            var evvStatus  = entity.Status;
+            var evvTesdiq  = entity.RehberTesdiq;
+            var evvRehber  = entity.RehberId;
+            var evvTarix   = entity.RehberTesdiqTarixi;
+            var evvQeyd    = entity.RehberQeydi;
+
             entity.RehberTesdiq       = tesdiq;
             entity.RehberId           = rehberId;
             entity.RehberTesdiqTarixi = DateTime.Now;
             entity.RehberQeydi        = qeyd;
             entity.Status             = tesdiq ? EzamiyyetStatus.Tesdiqlendi : EzamiyyetStatus.Reddedildi;
 
-            await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
-            await _uow.YaddaSaxlaAsync();
-            return (true, null);
+            // ⚠️ TRANZAKSİYA ROLLBACK-İ YADDAŞI GERİ QAYTARMIR.
+            // `entity` izlənilir (tracked) və dəyişdirilmiş vəziyyətdə qalır;
+            // eyni sorğuda sonradan istənilən `YaddaSaxlaAsync` (məs. bildiriş
+            // yazılışı) onu BAZAYA YENİDƏN yazardı — ezamiyyət «təsdiqlənmiş»
+            // görünər, maşın müraciəti isə olmazdı. Ona görə əl ilə qaytarırıq.
+            void Geriye()
+            {
+                entity.Status             = evvStatus;
+                entity.RehberTesdiq       = evvTesdiq;
+                entity.RehberId           = evvRehber;
+                entity.RehberTesdiqTarixi = evvTarix;
+                entity.RehberQeydi        = evvQeyd;
+            }
+
+            // ── Maşın istənməyibsə köhnə yol (01.09.2026-dan əvvəlki kimi) ──
+            if (!tesdiq || !entity.MasinId.HasValue)
+            {
+                await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+                await _uow.YaddaSaxlaAsync();
+                return (true, null);
+            }
+
+            // ── Maşınlı ezamiyyət — İKİSİ BİR YERDƏ YAZILIR ─────────────────
+            // Tranzaksiya MƏCBURİDİR: ezamiyyət «təsdiqləndi» yazılıb maşın
+            // müraciəti yazılmasa, işçi təsdiq görər, kassada isə heç nə
+            // olmaz — və bu, heç bir yerdə iz qoymaz.
+            var mekanAdi = await _uow.Repository<EzamiyyetMekan>().Query().AsNoTracking()
+                .Where(m => m.Id == entity.MekanId)
+                .Select(m => m.Ad)
+                .FirstOrDefaultAsync();
+
+            var planBaslama = await MasinPlanBaslamaAsync(entity.BaslamaTarixi, entity.BaslamaSaati);
+
+            await using var tran = await _uow.BeginTransactionAsync();
+            try
+            {
+                await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+                await _uow.YaddaSaxlaAsync();
+
+                var netice = await _masin.EzamiyyetdenYaratAsync(
+                    ezamiyyetId: entity.Id,
+                    masinId:     entity.MasinId.Value,
+                    isciId:      entity.IsciId,
+                    planBaslama: planBaslama,
+                    meqsed:      entity.Baslig,
+                    marsrut:     mekanAdi,
+                    rehberIsciId: rehberId,
+                    userId:      rehberId);
+
+                if (!netice.Success)
+                {
+                    await tran.RollbackAsync();
+                    Geriye();
+                    // Ezamiyyət də təsdiqlənmir — rəhbər səbəbi görüb qərar versin
+                    // (məs. maşın təmirə düşübsə başqa maşın seçilməlidir).
+                    return (false, $"Ezamiyyət təsdiqlənmədi — maşın müraciəti yaradıla bilmədi: {netice.Message}");
+                }
+
+                await tran.CommitAsync();
+                return (true, null);
+            }
+            catch
+            {
+                await tran.RollbackAsync();
+                Geriye();
+                throw;
+            }
         }
 
         // ── Ləğv et ──────────────────────────────────────────
@@ -291,6 +410,14 @@ namespace FinNex.Application.Services.HR
             entity.SilinmeTarixi = DateTime.Now;
             await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
             await _uow.YaddaSaxlaAsync();
+
+            // Bağlı maşın müraciəti də bağlanır — yoxsa kassa olmayan səfər üçün
+            // açar gözləyər. Açar ARTIQ VERİLİBSƏ toxunulmur (aşağıya bax).
+            var masinBagli = await _masin.EzamiyyetLegvindeMasiniLegvEtAsync(entity.Id, isciId);
+            if (!masinBagli)
+                return (true, "Ezamiyyət ləğv edildi, AMMA maşının açarı artıq verilib — " +
+                              "maşını qaytarıb kassaya «Gəldi» qeyd etdirin.");
+
             return (true, null);
         }
 
@@ -318,6 +445,14 @@ namespace FinNex.Application.Services.HR
             entity.GeriDonusQeydi  = $"Ləğv (Rəhbər/HR): {sebeb.Trim()}";
             await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
             await _uow.YaddaSaxlaAsync();
+
+            // İşçinin öz ləğvi ilə EYNİ qayda — ləğvin İKİ giriş nöqtəsi var,
+            // birini unutsaq xəta yalnız o yolda təzahür edər (CLAUDE.md).
+            var masinBagli = await _masin.EzamiyyetLegvindeMasiniLegvEtAsync(entity.Id, legvEdenIsciId);
+            if (!masinBagli)
+                return (true, "Ezamiyyət ləğv edildi, AMMA maşının açarı artıq verilib — " +
+                              "kassa «Gəldi» qeyd etməlidir.");
+
             return (true, null);
         }
 
@@ -510,7 +645,13 @@ namespace FinNex.Application.Services.HR
                 GeriDonusQeydi      = x.GeriDonusQeydi,
                 CihazCixisVaxti    = x.CihazCixisVaxti,
                 CihazQayidisVaxti  = x.CihazQayidisVaxti,
-                YaradilmaTarixi    = x.YaradilmaTarixi
+                YaradilmaTarixi    = x.YaradilmaTarixi,
+                MasinId            = x.MasinId,
+                // Naviqasiya Include edilməyibsə `null` qalır — ad yoxdursa
+                // ekran yalnız «maşınla» yazır, sətir sınmır.
+                MasinAdi           = x.Masin == null
+                    ? null
+                    : ($"{x.Masin.DovletNomresi} · {x.Masin.Marka} {x.Masin.Model}").Trim()
             };
         }
     }
