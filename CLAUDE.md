@@ -899,6 +899,61 @@ IIS Express altında o, **heç yerə düşmür** (Serilog `Console.WriteLine`-ı
 2. `Logs\log-<tarix>.txt` → `[Migration XƏTA]` sətri — əsl səbəb.
 3. Yalnız bundan sonra kodda axtar.
 
+### `[Migration]` ATRİBUTU OLMASA EF FAYLI GÖRMÜR (KRİTİK)
+
+Designer olmayan migration-da **iki atribut sinfin ÖZÜNDƏ olmalıdır**:
+
+```csharp
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+[DbContext(typeof(AppDbContext))]
+[Migration("20260901000000_EzamiyyetAvtoparkBaglantisi")]   // fayl adı ilə EYNİ
+public partial class EzamiyyetAvtoparkBaglantisi : Migration
+```
+
+Normalda `[Migration]` **`.Designer.cs`-də** olur. Bu layihədə Designer yazılmır,
+ona görə atribut əl ilə qoyulmalıdır.
+
+**ƏN TƏHLÜKƏLİ HİSSƏSİ — HEÇ BİR XƏTA YOXDUR.** Atributsuz fayl sadəcə
+`Migration`-dan törəyən adi sinifdir; EF onu **migration saymır**:
+`GetPendingMigrations()` **boş** qayıdır, `Migrate()` heç nə etmir, log təmiz
+qalır, tətbiq normal başlayır. Səhv yalnız səhifə açılanda görünür —
+**«Invalid column name '<sütun>'»** — və adam səbəbi kodda, EF konfiqurasiyasında
+axtarır. `[Migration] İŞLƏMİR` xətası ilə `InsertData` xətası tam əksdir:
+biri səssiz keçir, o biri migration-u bütöv sındırır.
+
+Real hadisə (01.09.2026, Ezamiyyət↔Avtopark): build 0 xəta, `Rebuild All
+succeeded`, amma `/User/Muraciet` → *Invalid column name 'MasinId'*.
+
+**Yoxlama — yeni migration yazandan sonra HƏMİŞƏ işlət:**
+
+```bash
+cd DataAccess/Migrations
+for f in $(ls *.cs | grep -v Designer | grep -v Snapshot); do
+    if ! grep -q "\[Migration(" "$f" && [ ! -f "${f%.cs}.Designer.cs" ]; then
+        echo "RİSK — EF bu faylı görmür: $f"
+    fi
+done
+```
+
+**⚠️ KÖHNƏ ATRİBUTSUZ MİGRATION-A ATRİBUT ƏLAVƏ ETMƏ.** Aşağıdakı ikisi
+əvvəldən atributsuzdur və EF onları heç vaxt görməyib — dəyişikliklər, yəqin ki,
+əl ilə tətbiq olunub:
+
+| Fayl | Vəziyyət |
+|---|---|
+| `20260514170000_AddGelenMailler.cs` | atributsuz, Designer yox |
+| `20260525140000_MezuniyyetSenedYoluMax.cs` | atributsuz, Designer yox |
+
+Atribut əlavə etsək onlar **«pending» olur** və `Migrate()` onları
+**ID sırası ilə ƏVVƏLCƏ** icra edir. Obyektlər onsuz da mövcud olduğu üçün
+«already exists» ilə sınacaq və **sonrakı bütün migration-ları bloklayacaq**.
+Toxunmaq lazımdırsa əvvəlcə `__EFMigrationsHistory`-yə sətir əlavə edilməlidir
+(yəni «tətbiq olunub» kimi işarələnməli) — bu, ayrıca qərardır.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

@@ -1,3 +1,6 @@
+﻿using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -28,7 +31,15 @@ namespace FinNex.DataAccess.Migrations
     /// ⚠️ Bu layihədə migration-lar ƏL İLƏ yazılır və `.Designer.cs` yoxdur —
     /// ona görə `InsertData`/`UpdateData`/`DeleteData` İŞLƏDİLMİR (CLAUDE.md).
     /// Burada onlara ehtiyac da yoxdur: sırf sxem dəyişikliyidir.
+    ///
+    /// ⚠️ AŞAĞIDAKI İKİ ATRİBUT MƏCBURİDİR. `.Designer.cs` normalda `[Migration]`
+    /// atributunu daşıyır; bu layihədə Designer yazılmadığı üçün atribut sinfin
+    /// ÖZÜNDƏ olmalıdır. Yoxdursa EF faylı MIGRATION SAYMIR:
+    /// `GetPendingMigrations()` boş qayıdır, HEÇ BİR XƏTA çıxmır, sütun isə
+    /// yaranmır — və səhifə «Invalid column name» verir (01.09.2026, real hadisə).
     /// </summary>
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260901000000_EzamiyyetAvtoparkBaglantisi")]
     public partial class EzamiyyetAvtoparkBaglantisi : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
