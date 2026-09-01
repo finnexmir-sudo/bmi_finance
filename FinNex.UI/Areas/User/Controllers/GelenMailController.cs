@@ -1,9 +1,10 @@
-using FinNex.Application.DTOs.Communication;
+﻿using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
+using FinNex.UI.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +15,11 @@ using System.Text.Json;
 namespace FinNex.UI.Areas.User.Controllers;
 
 [Area("User")]
-[Authorize(Roles = $"{RoleNames.Rehber},{RoleNames.Admin}")]
+[Authorize]
+// 01.09.2026 — rol yoxlaması icazəyə keçdi. Admin + Rəhbər rolu + «mail_istifade»
+// icazəsi olanlar girir. Qutu şəxsidir (`GelenMail.SahibUserId`) — hər kəs yalnız
+// özününküləri görür. Şərt `_UserLayout.cshtml` → `hasMail` ilə EYNİ olmalıdır.
+[MailIcazesi]
 public class GelenMailController : Controller
 {
     private readonly IGelenMailService _mailService;

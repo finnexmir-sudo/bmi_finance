@@ -1,4 +1,4 @@
-@model FinNex.Domain.Entities.HR.Isci
+﻿@model FinNex.Domain.Entities.HR.Isci
 @using FinNex.Domain.Entities.HR
 @{
     ViewData["Title"] = "Profil";
@@ -309,8 +309,11 @@
 
     </div>
 
-    @* ── Mail Ayarları (yalnız Rəhbər / Admin üçün) ── *@
-    @if (User.IsInRole("Rehber") || User.IsInRole("Admin"))
+    @* ── Mail Ayarları — Admin + Rəhbər rolu + «mail_istifade» icazəsi ──
+       01.09.2026: əvvəl yalnız rola baxırdı. Şərt `MailIcazesiAttribute` və
+       `_UserLayout.cshtml` → `hasMail` ilə EYNİ olmalıdır (üç yer).
+       Bayraq controller-də hesablanır — Razor yalnız oxuyur (CLAUDE.md). *@
+    @if (ViewBag.MailIcazesiVar == true)
     {
         <div class="up-card" style="margin-top:24px" id="mailAyarlariCard">
             <div class="up-card-title">

@@ -1,7 +1,9 @@
-using FinNex.Application.Interfaces.Communication;
+﻿using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
+using FinNex.UI.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -18,16 +20,20 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IDataProtector _protector;
         private readonly ISmtpMailService _smtp;
+        /// <summary>Profil səhifəsində «Mail Ayarları» kartının görünüşü üçün.</summary>
+        private readonly IUserPermissionService _permission;
 
         public ProfileController(
             IUnitOfWork unitOfWork,
             UserManager<AppUser> userManager,
             IDataProtectionProvider dpProvider,
-            ISmtpMailService smtp)
+            ISmtpMailService smtp,
+            IUserPermissionService permission)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _protector = dpProvider.CreateProtector("MailSmtpParol");
+            _permission = permission;
             _smtp = smtp;
         }
 
@@ -59,12 +65,29 @@ namespace FinNex.UI.Areas.User.Controllers
             ViewBag.MailSmtpHost      = appUser?.MailSmtpHost ?? "";
             ViewBag.MailSmtpKonfiqDir = !string.IsNullOrWhiteSpace(appUser?.MailSmtpParol);
 
+            // Mail kartı görünsünmü — şərt `MailIcazesiAttribute` ilə EYNİDİR.
+            // Razor-da qurmuruq: markup içində şərt qurmaq iki nüsxə yaradır və
+            // biri dəyişəndə o biri köhnə qalır (CLAUDE.md — «Rol Prioriteti»).
+            var mailIcazesiVar = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Rehber);
+            if (!mailIcazesiVar && appUser != null)
+            {
+                var pr = await _permission.HasPermissionAsync(appUser.Id, MailIcazesiAttribute.IcazeKodu);
+                mailIcazesiVar = pr.Success && pr.Data;
+            }
+            ViewBag.MailIcazesiVar = mailIcazesiVar;
+
             return View(isci);
         }
 
         // ── POST /User/Profile/MailAyarlariYenile (AJAX) ──────
+        // ⚠️ 01.09.2026: bu iki endpoint ƏVVƏL heç bir rol/icazə yoxlamasından
+        // keçmirdi — yalnız Profil səhifəsindəki KART gizlədilirdi. Yəni icazəsi
+        // olmayan istifadəçi birbaşa POST göndərib özünə SMTP qura bilərdi və
+        // «Gələn Maillər» sinxronizasiyası onun üçün də işləyərdi. Kartı gizlətmək
+        // qoruma DEYİL; qoruma buradadır.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [MailIcazesi]
         public async Task<IActionResult> MailAyarlariYenile(string? mailSmtpEmail, string? mailSmtpParol, string? mailSmtpHost)
         {
             var appUser = await _userManager.GetUserAsync(User);
@@ -84,6 +107,7 @@ namespace FinNex.UI.Areas.User.Controllers
         // ── POST /User/Profile/MailSina (AJAX) ────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [MailIcazesi]
         public async Task<IActionResult> MailSina()
         {
             var appUser = await _userManager.GetUserAsync(User);

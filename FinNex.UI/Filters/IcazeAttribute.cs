@@ -34,6 +34,21 @@ public class IcazeAttribute : Attribute, IAsyncAuthorizationFilter
     /// <summary>`Permissions.Kod` ilə eyni olan icazə kodu.</summary>
     public string Kod { get; }
 
+    /// <summary>
+    /// İCAZƏ İLƏ YANAŞI bu rol da keçir (istəyə bağlı, default `null`).
+    ///
+    /// <code>[Icaze("mail_istifade", ElaveRol = RoleNames.Rehber)]</code>
+    ///
+    /// NİYƏ LAZIMDIR: bir funksiya əvvəl rola bağlı idisə və icazə sisteminə
+    /// keçirilirsə, rolu birdən kəsmək mövcud istifadəçiləri **build-dən dərhal
+    /// sonra** funksiyadan məhrum edir. Bu xassə ilə keçid yumşaq olur — köhnə
+    /// rol işləməyə davam edir, Admin isə əlavə adamlara icazə verir.
+    ///
+    /// ⚠️ Sidebar/view şərti bunu da nəzərə almalıdır — yalnız icazəyə baxsa,
+    /// rolu olan istifadəçi linki görməz, amma səhifəyə girə bilər.
+    /// </summary>
+    public string? ElaveRol { get; init; }
+
     public IcazeAttribute(string kod) => Kod = kod;
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -47,6 +62,9 @@ public class IcazeAttribute : Attribute, IAsyncAuthorizationFilter
         }
 
         if (user.IsInRole(RoleNames.Admin)) return;
+
+        // Köhnə rol (varsa) — icazə sisteminə yumşaq keçid üçün.
+        if (!string.IsNullOrWhiteSpace(ElaveRol) && user.IsInRole(ElaveRol)) return;
 
         var uidStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (int.TryParse(uidStr, out var uid))
