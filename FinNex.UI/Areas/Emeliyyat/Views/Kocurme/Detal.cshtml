@@ -4,6 +4,12 @@
     ViewData["Title"] = baslik + " — mühasibat yazılışı";
     string T(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
     string M(decimal? v) => v.HasValue ? v.Value.ToString("#,0.00") : "—";
+
+    // Məzənnə üçün ayrıca format. `M()` («#,0.00») İŞLƏMİR: rialın MB kursu
+    // 0,000002950-dir və 2 onluqda ekranda «0,00» görünür — istifadəçi kursun
+    // itdiyini zənn edir, halbuki bazada düzgün yazılıb (01.09.2026).
+    // Artıq sıfırlar atılır, yəni 1,7 kursu «1,70» yox, «1,7» görünür.
+    string Kurs(decimal? v) => v.HasValue ? v.Value.ToString("0.##########") : "—";
     var userId = (int)(ViewBag.UserId ?? 0);
     var isAdmin = (bool)(ViewBag.IsAdmin ?? false);
     var avtoYukle = TempData["AvtoYukle"] != null;
@@ -40,9 +46,9 @@
             <div><span>Mədaxil valyuta</span><b>@T(Model.MedaxilValyuta)</b></div>
             <div><span>Köçürülən valyuta</span><b>@T(Model.KocurulenValyuta)</b></div>
             <div><span>Seçim</span><b>@T(Model.Secim)</b></div>
-            <div><span>İran Rial / kurs</span><b>@M(Model.IranRial)</b></div>
-            <div><span>Rial CBAR</span><b>@M(Model.RialCbar)</b></div>
-            <div><span>Valyuta CBAR</span><b>@M(Model.ValyutaCbar)</b></div>
+            <div><span>İran Rial / kurs</span><b>@Kurs(Model.IranRial)</b></div>
+            <div><span>Rial CBAR</span><b>@Kurs(Model.RialCbar)</b></div>
+            <div><span>Valyuta CBAR</span><b>@Kurs(Model.ValyutaCbar)</b></div>
             <div><span>Bank</span><b>@T(Model.BankAd)</b></div>
             <div><span>Alan hesab</span><b>@T(Model.AlanHesab)</b></div>
             <div><span>Məqsəd</span><b>@T(Model.Meqsed)</b></div>

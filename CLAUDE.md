@@ -1185,6 +1185,48 @@ Rəqəm formatı: qrup ayırıcısı **yoxdur**, artıq sıfır **yoxdur** (`0.#
 Valyuta adı iki cür yazılır — «Valyuta növü» sətrində «İran **R**ialı», «Satılan»
 sətrində «İran **r**ialı»; köhnə formada belədir, qəsdən saxlanılıb.
 
+### Məzənnə Sahəsi — `step` və `decimal(p,s)` BİR YERDƏ MƏHDUDLAŞDIRIR (KRİTİK)
+
+Bir rəqəm sahəsinin real dəqiqliyini **üç** yer birlikdə müəyyən edir; biri dar
+qalsa istifadəçi düzgün dəyəri ümumiyyətlə yaza bilmir və ya dəyər səssizcə itir:
+
+| Qat | Yer | Səhv olanda nə olur |
+|---|---|---|
+| Brauzer | `<input type="number" step="…">` | **Görünən** xəta: «Please enter a valid value. The two nearest valid values are 0 and 0.0001» — forma göndərilmir |
+| Baza | `HasPrecision(18, 4)` + migration | **SƏSSİZ**: `0,000002950` → `0,0000` yuvarlaqlaşır |
+| Ekran | `ToString("#,0.00")` | **SƏSSİZ**: bazada düzgündür, ekranda «0,00» görünür |
+
+Real hadisə (01.09.2026, Pul köçürməsi 26-T-29): İran rialının MB kursu
+`0,000002950`-dir. `step="0.0001"` onu qəbul etmirdi, `Kocurme.RialCbar` isə
+`decimal(18,4)` idi. İstifadəçi məcbur olub **10 000 dəfə böyüdülmüş** `0,0295`
+yazırdı və bu, mühasibat yazılışının **dilinq fərqi sətrini 10 000 dəfə**
+şişirdirdi: `5 014 800,00` əvəzinə `301,50`
+(`PulKocurmeVoucher.DilingAdd` → `ferq = Mebleg × IranRial × RialCbar − Mebleg × ValyutaCbar`).
+
+**Ən təhlükəli hal:** kurs `0`-a yuvarlaqlaşsa `DilingAdd()` sıfıra bölmə
+qoruyucusuna düşür (`rcbar == 0` → `return`) və **dilinq fərqi sətri provodkadan
+tamamilə yox olur**. Xəta yox, log yox — sadəcə bir sətir əskik.
+
+**Qaydalar:**
+- **Məzənnə sahəsində `step="any"`** yaz. Onluq yerlərin sayı məzənnədə sabit
+  deyil. `step="0.01"` yalnız **pul** məbləğində düzgündür (qəpik həqiqətən 2 onluqdur).
+- Baza sütununun `scale`-i real dəyərdən ən azı 2 rəqəm geniş olsun. MB kursları
+  `decimal(18,10)`-dur (migration `20260901120000_KocurmeKursDeqiqliyi`).
+  `IranRial` **qəsdən (18,2)** qalıb — o, «1 vahid = N rial» kursudur (850 000),
+  yəni tam hissəsi böyükdür; 18,10 etsək tam hissəyə cəmi 8 rəqəm qalardı.
+- Ekranda məzənnəni `"#,0.00"` ilə **yazma** — `0.##########` işlət
+  (`Detal.cshtml` → `Kurs()`, `_Form.cshtml` → `K()`).
+- `<input type="number">` **yalnız NÖQTƏ** qəbul edir → `value`-nu həmişə
+  `InvariantCulture` ilə yaz. az-AZ vergülü ilə xana **boş** açılır və yadda
+  saxlayanda dəyər itər. (Geri oxumaq təhlükəsizdir — `FlexibleDecimalModelBinder`
+  həm nöqtəni, həm vergülü qəbul edir.)
+- Miqyas dəyişikliyindən sonra **keçmiş sətirlər köhnə miqyasda qalır**. Diaqnostika:
+  `docs/sql/emeliyyat/01_Kocurme_RialCbar_Yoxlama.sql` (yalnız SELECT; UPDATE
+  şablonu şərh içindədir — düzgün kursu **yalnız mühasib** deyə bilər).
+- SQL diaqnostikasında `Mebleg × IranRial × RialCbar` ifadəsini **`float`-a cast et** —
+  `decimal(18,2)×decimal(18,2)×decimal(18,10)` 38 rəqəm həddini aşır və
+  *«Arithmetic overflow error converting expression to data type numeric»* verir.
+
 ### Kredit Müqaviləsi — Şablonlar YALNIZ AZN üçündür (KRİTİK)
 
 `{k_val}` `KreditMuqavileController`-də sabit `"AZN"` yazılır və

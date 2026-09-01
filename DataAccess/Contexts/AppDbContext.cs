@@ -453,9 +453,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.AlanPassport).HasMaxLength(30);
             e.Property(x => x.AlanTelefon).HasMaxLength(30);
             e.Property(x => x.Mebleg).HasPrecision(18, 2);
-            e.Property(x => x.RialCbar).HasPrecision(18, 4);
-            e.Property(x => x.ValyutaCbar).HasPrecision(18, 4);
-            e.Property(x => x.IranRial).HasPrecision(18, 2);
+            // MB kursları — 10 onluq. İran rialının kursu 0,000002950-dir; 4 onluqda
+            // 0,0000 olur və `PulKocurmeVoucher` sıfır kursda dilinq fərqi sətrini
+            // ümumiyyətlə yazmır. Migration: 20260901120000_KocurmeKursDeqiqliyi.
+            e.Property(x => x.RialCbar).HasPrecision(18, 10);
+            e.Property(x => x.ValyutaCbar).HasPrecision(18, 10);
+            e.Property(x => x.IranRial).HasPrecision(18, 2);   // «1 vahid = N rial» — BÖYÜK rəqəm
             e.Property(x => x.MedaxilValyuta).HasMaxLength(10);
             e.Property(x => x.KocurulenValyuta).HasMaxLength(10);
             e.Property(x => x.Secim).HasMaxLength(30);

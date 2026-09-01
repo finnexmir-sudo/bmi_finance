@@ -1,6 +1,13 @@
 @model KocurmeFormDto
 @{
     string I(decimal? v) => v?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
+
+    // Məzənnə xanası üçün — artıq sıfırları atır (`0,0295000000` → `0.0295`).
+    // Baza sütunu decimal(18,10) olduğuna görə EF dəyəri 10 onluqla qaytarır;
+    // `I()` ilə yazsaq xanada uzun quyruq görünərdi.
+    // ⚠️ InvariantCulture MƏCBURİDİR — `<input type="number">` yalnız NÖQTƏ qəbul
+    // edir, az-AZ vergülü ilə xana BOŞ açılır və yadda saxlayanda kurs itər.
+    string K(decimal? v) => v?.ToString("0.##########", System.Globalization.CultureInfo.InvariantCulture) ?? "";
     var medaxil = new[] { "USD", "Avro", "AZN" };
     var kocurulen = new[] { "USD", "Avro", "Rial" };
     var secimler = new[] { "Hesab açmadan", "Hesab və mədaxil", "Hesabdan" };
@@ -85,9 +92,14 @@
                 </div>
                 <div><label>Məbləğ</label><input type="number" step="0.01" name="Mebleg" value="@I(Model.Mebleg)" class="pk-in pk-in--big" placeholder="0.00" /></div>
                 <div><label>Tarix</label><input type="date" name="Tarix" value="@(Model.Tarix?.ToString("yyyy-MM-dd"))" class="pk-in" /></div>
-                <div class="pk-rate-f"><label>Rial (MB kursu)</label><input type="number" step="0.0001" name="RialCbar" value="@I(Model.RialCbar)" class="pk-in pk-rate" /></div>
-                <div class="pk-rate-f"><label>Valyuta (MB kursu)</label><input type="number" step="0.0001" name="ValyutaCbar" value="@I(Model.ValyutaCbar)" class="pk-in pk-rate" /></div>
-                <div class="pk-rate-f"><label>İran Rial (kurs)</label><input type="number" step="0.0001" name="IranRial" value="@I(Model.IranRial)" class="pk-in pk-rate" /></div>
+                @* ⚠️ step="any" MƏCBURİDİR — məzənnədə onluq yerlərin sayı sabit deyil.
+                   Rialın MB kursu 0,000002950-dir; `step="0.0001"` olanda brauzer
+                   «Please enter a valid value. The two nearest valid values are 0
+                   and 0.0001» deyib formanı ümumiyyətlə göndərmir (01.09.2026, real
+                   hadisə). Məbləğ (`step="0.01"`) qəsdən belə qalır — o, puldur. *@
+                <div class="pk-rate-f"><label>Rial (MB kursu)</label><input type="number" step="any" name="RialCbar" value="@K(Model.RialCbar)" class="pk-in pk-rate" /></div>
+                <div class="pk-rate-f"><label>Valyuta (MB kursu)</label><input type="number" step="any" name="ValyutaCbar" value="@K(Model.ValyutaCbar)" class="pk-in pk-rate" /></div>
+                <div class="pk-rate-f"><label>İran Rial (kurs)</label><input type="number" step="any" name="IranRial" value="@K(Model.IranRial)" class="pk-in pk-rate" /></div>
             </div>
         </div>
     </div>
