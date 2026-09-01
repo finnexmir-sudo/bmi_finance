@@ -45,7 +45,7 @@
         var _mid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (int.TryParse(_mid, out var _muid))
         {
-            var _mr = await _permSvc.HasPermissionAsync(_muid, "mail_istifade");
+            var _mr = await _permSvc.HasPermissionAsync(_muid, FinNex.Domain.IcazeKodlari.MailIstifade);
             hasMail = _mr.Success && _mr.Data;
         }
     }
@@ -56,7 +56,7 @@
         var _aid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (int.TryParse(_aid, out var _auid))
         {
-            var _ar = await _permSvc.HasPermissionAsync(_auid, "avtopark_idare");
+            var _ar = await _permSvc.HasPermissionAsync(_auid, FinNex.Domain.IcazeKodlari.AvtoparkIdare);
             hasAvtoparkIdare = _ar.Success && _ar.Data;
         }
     }

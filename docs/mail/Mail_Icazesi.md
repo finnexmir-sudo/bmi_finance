@@ -1,4 +1,4 @@
-# Mail — roldan icazəyə keçid (01.09.2026)
+﻿# Mail — roldan icazəyə keçid (01.09.2026)
 
 **Status:** kod yazılıb, **build EDİLMƏYİB** (mühitdə `dotnet` yoxdur) + **SQL işlədilməyib**
 
@@ -38,16 +38,51 @@ xana artırardı.
 
 ---
 
-## Şərt ÜÇ YERDƏ var — birlikdə dəyişməlidir
+## Şərt BEŞ YERDƏ var — birlikdə dəyişməlidir
 
 | Yer | Fayl |
 |---|---|
 | **Server qoruması** | `FinNex.UI/Filters/MailIcazesiAttribute.cs` |
 | Sidebar + üst panel ikonu | `Areas/User/Views/Shared/_UserLayout.cshtml` → `hasMail` |
 | Profil kartı | `ProfileController` → `ViewBag.MailIcazesiVar` |
+| Profildəki **script bloku** | `Profile/Index.cshtml` → `@section Scripts` |
+| **Fon sinxronizasiyası** | `GelenMailSyncService.GetAllImapCredentialsAsync` |
 
 Biri köhnə qalsa: ya istifadəçi linki görüb **403** alar, ya da icazəsi olduğu
 halda linki **tapa bilməz**. Heç bir xəta çıxmaz.
+
+### ⚠️ FON SERVİSLƏRİ ROLA GÖRƏ SİYAHI QURUR — UNUDULUR
+
+Bir funksiyanı roldan icazəyə keçirəndə **fon servislərini də yoxla**. Onların
+HTTP istifadəçisi yoxdur, ona görə işçiləri **rol üzrə sadalayırlar**
+(`GetUsersInRoleAsync`) və dəyişiklikdən kənarda qalırlar.
+
+Real hadisə (01.09.2026): `mail_istifade` icazəsi verilmiş işçi
+- səhifəni **AÇA bilirdi** ✔
+- «Yenilə» düyməsi **işləyirdi** ✔ (o, cari istifadəçi ilə işləyir)
+- amma fon servisi onun qutusunu **heç vaxt yoxlamırdı** ✘
+
+Nəticə: mail **əl ilə** gəlirdi, bildiriş isə **heç vaxt** gəlmirdi. Xəta yox
+idi; log yalnız «GelenMail: heç bir istifadəçidə IMAP məlumatları tapılmadı»
+yazırdı — o da yanıldıcıdır, çünki məlumat VAR idi, sadəcə sorğu onu görmürdü.
+
+### İki sinxronizasiya yolu var — biri bildiriş yaratmır
+
+| Yol | Mail gətirir | Bildiriş yaradır |
+|---|---|---|
+| «Yenilə» düyməsi (`GelenMailController.ManualSync`) | ✔ | ✘ **yox** |
+| Fon servisi (hər 5 dəq) | ✔ | ✔ |
+
+Bu, **qəsdəndir** — özün «Yenilə»yə basmısansa nəticəni onsuz da ekranda
+görürsən. AMMA sınaq edərkən bunu bil: «Yenilə»yə bassan həmin məktub artıq
+bazaya düşür və fon servisi onu `count = 0` sayır — o məktub üçün bildiriş
+**heç vaxt gəlməyəcək**. Sınağı ikinci məktubla, düyməyə basmadan et.
+
+### İcazə kodu TƏK YERDƏDİR
+
+`FinNex.Domain/IcazeKodlari.cs` — `RoleNames` ilə eyni məntiq. Application
+layihəsi UI-a istinad edə bilmir, kod isə hər ikisinə lazımdır. Literal kimi
+yazılsa biri dəyişəndə o biri səssizcə köhnə qalar.
 
 ---
 

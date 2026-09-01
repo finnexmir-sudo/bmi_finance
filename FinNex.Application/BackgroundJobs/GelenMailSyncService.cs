@@ -1,8 +1,9 @@
-using FinNex.Application.Interfaces.Communication;
+﻿using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.Communication;
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;   // UserPermission (01.09.2026)
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -87,7 +88,32 @@ public class GelenMailSyncService : BackgroundService
 
         var rehberUsers = await userManager.GetUsersInRoleAsync(RoleNames.Rehber);
         var adminUsers  = await userManager.GetUsersInRoleAsync(RoleNames.Admin);
-        var candidates  = rehberUsers.Concat(adminUsers)
+
+        // «mail_istifade» icazəsi verilmiş işçilər (01.09.2026).
+        //
+        // ⚠️ ƏVVƏL YALNIZ ROL VAR İDİ. Mail girişi icazəyə keçiriləndə burası
+        // unudulmuşdu: icazəli işçi səhifəni AÇA bilirdi və «Yenilə» düyməsi
+        // işləyirdi (o, cari istifadəçi ilə işləyir), amma FON SERVİSİ onun
+        // qutusunu heç vaxt yoxlamırdı — yəni bildiriş HEÇ VAXT gəlmirdi.
+        // Heç bir xəta çıxmırdı; log yalnız «heç bir istifadəçidə IMAP
+        // məlumatları tapılmadı» yazırdı (real hadisə).
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var icazeliIdler = await db.Set<UserPermission>()
+            .AsNoTracking()
+            .Where(up => up.Allowed && !up.Silinib
+                      && up.Permission.Kod == IcazeKodlari.MailIstifade
+                      && !up.Permission.Silinib)
+            .Select(up => up.UserId)
+            .ToListAsync();
+
+        var icazeliUsers = new List<AppUser>();
+        foreach (var uid in icazeliIdler.Distinct())
+        {
+            var u = await userManager.FindByIdAsync(uid.ToString());
+            if (u != null) icazeliUsers.Add(u);
+        }
+
+        var candidates = rehberUsers.Concat(adminUsers).Concat(icazeliUsers)
             .GroupBy(u => u.Id)
             .Select(g => g.First());
 

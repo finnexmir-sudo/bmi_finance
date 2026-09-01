@@ -1,4 +1,4 @@
-using FinNex.Domain;
+﻿using FinNex.Domain;
 
 namespace FinNex.UI.Filters;
 
@@ -35,7 +35,7 @@ public sealed class MailIcazesiAttribute : IcazeAttribute
     /// İcazə kodu — `Permissions.Kod` sütunu ilə HƏRFƏN eynidir.
     /// Bazaya salan skript: `docs/sql/mail/01_Mail_Istifade_Icazesi.sql`.
     /// </summary>
-    public const string IcazeKodu = "mail_istifade";
+    public const string IcazeKodu = IcazeKodlari.MailIstifade;
 
     public MailIcazesiAttribute() : base(IcazeKodu)
     {

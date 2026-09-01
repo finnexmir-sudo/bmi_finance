@@ -1,4 +1,4 @@
-using FinNex.UI.Filters;
+﻿using FinNex.UI.Filters;
 
 namespace FinNex.UI.Areas.Avtopark;
 
@@ -28,7 +28,7 @@ public sealed class AvtoparkIdareIcazesiAttribute : IcazeAttribute
     /// Adı `Kod` DEYİL, çünki bazada `IcazeAttribute.Kod` xassəsi var və eyni
     /// adlı sabit onu kölgələyərdi (`new` tələb edərdi) — oxuyan çaşardı.
     /// </summary>
-    public const string IcazeKodu = "avtopark_idare";
+    public const string IcazeKodu = FinNex.Domain.IcazeKodlari.AvtoparkIdare;
 
     public AvtoparkIdareIcazesiAttribute() : base(IcazeKodu) { }
 }
