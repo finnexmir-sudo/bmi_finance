@@ -1,4 +1,4 @@
-@model FinNex.UI.Areas.User.Models.MuracietPortalViewModel
+﻿@model FinNex.UI.Areas.User.Models.MuracietPortalViewModel
 @using FinNex.Domain.Entities.HR
 @using FinNex.Application.DTOs.HR.Ezamiyyet
 @{
@@ -86,10 +86,14 @@
 
     @* ── Tab-lar ── *@
     <div class="fn-card" style="padding:0">
-        <div class="fn-tabs">
+        @* Başlıq 01.09.2026-da əlavə olundu: zolağın nə üçün olduğu bilinmirdi,
+           işçilər bölmələri klikləyə biləcəklərini başa düşmürdülər. *@
+        <div class="fn-tabs-basliq">Müraciət növünü seçin</div>
+        <div class="fn-tabs" role="tablist">
             <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
                asp-route-tab="mezuniyyet"
-               class="fn-tab @(mezTab ? "fn-tab--active" : "")">
+               class="fn-tab @(mezTab ? "fn-tab--active" : "")"
+               role="tab" aria-selected="@(mezTab ? "true" : "false")">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
                     <path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
@@ -99,7 +103,8 @@
             </a>
             <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
                asp-route-tab="icaze"
-               class="fn-tab @(icazeTab ? "fn-tab--active" : "")">
+               class="fn-tab @(icazeTab ? "fn-tab--active" : "")"
+               role="tab" aria-selected="@(icazeTab ? "true" : "false")">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
                     <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
@@ -109,7 +114,8 @@
             </a>
             <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
                asp-route-tab="ezamiyyet"
-               class="fn-tab @(ezamiyyetTab ? "fn-tab--active" : "")">
+               class="fn-tab @(ezamiyyetTab ? "fn-tab--active" : "")"
+               role="tab" aria-selected="@(ezamiyyetTab ? "true" : "false")">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <rect x="2" y="4" width="10" height="8" rx="1.2" stroke="currentColor" stroke-width="1.2" />
                     <path d="M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />

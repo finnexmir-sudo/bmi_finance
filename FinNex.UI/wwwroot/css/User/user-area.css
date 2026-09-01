@@ -1223,51 +1223,78 @@ body {
     margin-top: 2px;
 }
 
-/* Tabs */
+/* Tabs — «seçilə bilən» görünüş (01.09.2026)
+   ƏVVƏL: düz mətn + 2px alt xətt. İstifadəçi şikayəti — «işçilər seçə
+   bilmirlər»: bölmələr klikləyə biləcəkləri düymə kimi görünmürdü və
+   hansının seçili olduğu 2 piksellik xəttdən bilinirdi.
+   İNDİ: boz zolaq (track) içində düymələr, seçilən AĞ KART kimi qalxır.
+   Bu blok yalnız `User/Muraciet/Index` səhifəsində işlənir. */
+.fn-tabs-basliq {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: #8a93a8;
+    padding: 14px 16px 0;
+}
+
 .fn-tabs {
     display: flex;
-    border-bottom: 1px solid #e4e8f0;
-    padding: 0 4px;
+    flex-wrap: wrap;          /* dar ekranda alt sətrə keçsin, sıxılmasın */
+    gap: 6px;
+    margin: 8px 16px 16px;
+    padding: 5px;
+    background: #f4f6fa;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
 }
 
 .fn-tab {
     display: flex;
     align-items: center;
     gap: 7px;
-    padding: 13px 18px;
+    padding: 10px 16px;
     font-size: 13px;
-    font-weight: 500;
-    color: #8a93a8;
+    font-weight: 600;
+    color: #5a647a;
     text-decoration: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: color .15s, border-color .15s;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s, box-shadow .15s, border-color .15s;
 }
 
     .fn-tab:hover {
         color: #1a2332;
+        background: rgba(255,255,255,.75);
         text-decoration: none;
     }
 
 .fn-tab--active {
     color: #1a2332;
-    border-bottom-color: #e8b84b;
+    background: #fff;
+    border-color: #e4e8f0;
+    /* İki ayrı işarə: qalxma kölgəsi + altdan qızılı zolaq.
+       Rəngdən asılı OLMAYAN ikinci işarə lazımdır — ucuz monitorda və
+       rəng korluğunda tək rəng fərqi bilinmir. */
+    box-shadow: 0 1px 3px rgba(26,35,50,.12), inset 0 -3px 0 #e8b84b;
 }
 
 .fn-tab-count {
-    background: #f0f2f7;
+    background: #e7eaf1;
     color: #5a647a;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     padding: 2px 7px;
     border-radius: 20px;
     min-width: 20px;
     text-align: center;
 }
 
+/* Seçilən bölmənin sayğacı DOLU qızılı — üçüncü işarə. */
 .fn-tab--active .fn-tab-count {
-    background: rgba(232,184,75,0.15);
-    color: #c9900a;
+    background: #e8b84b;
+    color: #1a2332;
 }
 
 .fn-tab-empty {
