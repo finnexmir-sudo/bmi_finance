@@ -21,10 +21,10 @@
 
     @* ── Axtarış ── *@
     <div class="fn-card fn-card--form" style="margin-bottom:14px">
-        <form asp-action="Borcalan" method="get" class="ar-axtar">
+        <form asp-action="Borcalan" method="get" class="ar-axtar" autocomplete="off">
             <div class="fn-form-group" style="flex:1;min-width:220px">
                 <label class="fn-label">Qeydiyyat kodu (regnom)</label>
-                <input type="text" name="regnom" value="@regnom" class="fn-input"
+                <input type="text" name="regnom" autocomplete="off" value="@regnom" class="fn-input"
                        placeholder="Müştərinin qeydiyyat kodu" autofocus />
             </div>
             <button type="submit" class="fn-btn fn-btn--primary">Sorğu</button>
@@ -85,7 +85,7 @@
 
     @* ── Arayış forması ── *@
     <div class="fn-form-wrap" style="max-width:900px">
-        <form asp-action="Borcalan" method="post">
+        <form asp-action="Borcalan" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Regnom" value="@regnom" />
 

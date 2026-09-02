@@ -21,10 +21,10 @@
 
     @* ── Axtarış ── *@
     <div class="fn-card fn-card--form" style="margin-bottom:14px">
-        <form asp-action="Zamin" method="get" class="ar-axtar">
+        <form asp-action="Zamin" method="get" class="ar-axtar" autocomplete="off">
             <div class="fn-form-group" style="flex:1;min-width:220px">
                 <label class="fn-label">Zaminin FİN kodu</label>
-                <input type="text" name="fin" value="@fin" class="fn-input"
+                <input type="text" name="fin" autocomplete="off" value="@fin" class="fn-input"
                        placeholder="Məs: 1AB2CD3" maxlength="20" autofocus />
             </div>
             <button type="submit" class="fn-btn fn-btn--primary">Sorğu</button>
@@ -85,7 +85,7 @@
 
     @* ── Arayış forması ── *@
     <div class="fn-form-wrap" style="max-width:900px">
-        <form asp-action="Zamin" method="post">
+        <form asp-action="Zamin" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Fin" value="@fin" />
 
