@@ -1,7 +1,15 @@
 ﻿@inject FinNex.Application.Interfaces.IDashboardService _layoutDashSvc
 @inject FinNex.Application.Interfaces.Pid.IMehkemeIsiService _pidSorguSvc
 @inject FinNex.Application.Interfaces.IUserPermissionService _permSvc
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfg
 @{
+    // ── BREND ────────────────────────────────────────────────────────────
+    // Müştərinin adı/loqosu appsettings → Brend blokundan gəlir.
+    // FinNex sabitdir — məhsulun adıdır, konfiqurasiyadan OXUNMUR.
+    // Açar yoxdursa köhnə dəyərlərə düşür ki, ekran boş qalmasın.
+    var brendQisa = _cfg["Brend:SirketQisa"] ?? "BMI";
+    var brendAd = _cfg["Brend:SirketAdi"] ?? "Finance";
+    var brendLogo = _cfg["Brend:Logo"] ?? "/images/Logobank.jpg";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
@@ -207,9 +215,15 @@
 <!-- ══════════════════ YUXARI NAVBAR ══════════════════ -->
 <header class="fn-topnav">
     <div class="fn-topnav-inner">
+        @* Başlıq MÜŞTƏRİNİNDİR — ad və loqo appsettings → Brend blokundan.
+           İkinci sətir «powered by FinNex» — məhsulun imzası, sabitdir.
+           Sıra QƏSDƏN belədir: böyük ad müştərinin, kiçik sətir məhsulun. *@
         <a asp-area="User" asp-controller="Dashboard" asp-action="Index" class="fn-topnav-brand">
-            <img src="~/images/Logobank.jpg" alt="BMI" class="fn-topnav-logo" />
-            <span class="fn-topnav-brand-text">BMI <b>Finance</b></span>
+            <img src="@Url.Content(brendLogo)" alt="@brendQisa @brendAd" class="fn-topnav-logo" />
+            <span class="fn-topnav-brand-stack">
+                <span class="fn-topnav-brand-text">@brendQisa <b>@brendAd</b></span>
+                <span class="fn-topnav-powered">powered by <b>FinNex</b></span>
+            </span>
         </a>
 
         <nav class="fn-topnav-tabs">
@@ -1429,6 +1443,20 @@
                 }
                 break;
         }
+
+        @* ── MƏHSUL İMZASI ────────────────────────────────────────────────
+           FinNex burada SABİTDİR — konfiqurasiyadan oxunmur, hər müştəridə
+           eynidir. Versiya assembly-dən gəlir ki, əl ilə yenilənməsin.
+           Reklam mətni QƏSDƏN yoxdur: bunu görən işçidir, alıcı deyil. *@
+        <div class="fn-sidebar-foot">
+            <svg class="fn-brandmark" width="18" height="18" viewBox="0 0 38 38" fill="none" aria-hidden="true">
+                <path d="M8 27.5C11.8 19.8 18.2 13.4 29.5 10" stroke="currentColor" stroke-width="6" stroke-linecap="round" opacity=".95" />
+                <path d="M7 18.5C12.4 12.8 18.8 9.5 27.5 8" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".65" />
+                <path d="M8 32C15 29.5 21.8 25.8 27 19" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".45" />
+            </svg>
+            <span class="fn-brandword">Fin<b>Nex</b></span>
+            <span class="fn-brandver">v@(System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "1.0.0")</span>
+        </div>
 
     </aside>
 
