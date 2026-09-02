@@ -175,6 +175,24 @@ FİN → yalnız hərf/rəqəm) və `{REGNOM}` / `{PINCODE}` yer tutucusu əvəz
 6. Real rejimdə bir sənəd hazırlayın və **Xaric məktub jurnalında** sətrin
    yarandığını, nömrənin sənəddəki ilə eyni olduğunu yoxlayın.
 
+## Sıralama — KS (subschkre) üzrə
+
+Siyahı BMI ilə eyni qaydada, **KS üzrə azalan** sıralanır. İstifadəçi qərarı
+(02.09.2026): «sıralama sub koda görə idi, o da qala bilər, problem yoxdur».
+
+Bilinməli: KS sırası tarixlə həmişə uyğun gəlmir — real nümunədə (regnom
+000087, 11 kredit) KS=0 olan kredit 04.06.2014 tarixlidir və siyahının ən
+sonuna düşür. Bu, səhv deyil.
+
+Siyahıda **bütün kreditlər görünmür** — bu da normaldır: sorğu
+`odb.srokpogprockre` cədvəlinə bağlıdır, ona görə praktikada bağlanmış
+kreditlər görünür (arayışın mənası da elə budur). Yuxarıdakı nümunədə KS=1 və
+KS=2 yoxdur — yəqin hələ açıq kreditlərdir.
+
+Dəyişmək lazım olsa: Admin → Oracle Sorğular → «Arayış Borcalan» / «Arayış
+Zamin» → `order by` sətri. `docs/sql/kredit/Arayis_OracleSorgular.sql` faylını
+təkrar işlətmək KİFAYƏT ETMİR — o, `IF NOT EXISTS` ilə yalnız YENİ sətir əlavə edir.
+
 ## Yoxlama siyahısı
 
 - [ ] Sorğular Admin panelində görünür və aktivdir
