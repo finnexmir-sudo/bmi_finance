@@ -1202,6 +1202,53 @@ Real nümunələr (Kredit Arayışları portu, BMI şablonları ilə tutuşdurma
 - Köhnə `.doc` (OLE2) faylları `KreditWordService` ilə **açılmır** — OpenXML
   yalnız `.docx` oxuyur. Word-də «Farklı kaydet → .docx» lazımdır.
 
+### Köhnə Word Şablonu — TOKEN ADI YALAN DANIŞIR + ŞRİFT UNICODE OXUMUR (02.09.2026, KRİTİK)
+
+BMI şablonlarını köçürəndə iki tələ var; hər ikisi **xəta vermir**, yalnız
+çıxan sənəddə görünür.
+
+**1. Token adı ilə yeri uyğun gəlmir — şablondan şablona dəyişir.**
+
+| Şablon | başlıq «№ … il» | mətn «… il tarixində bağlanmış» |
+|---|---|---|
+| DYP, Borcalan | `{muqtar}` | `{mektarixi}` |
+| **Zamin** | **`{mektarixi}`** | **`{muqtar}`** ← tərsinə |
+| Saipa ×2 | `{muqtar}` | token yoxdur |
+
+`{mektarixi}` adı «məktub tarixi» kimi oxunur, amma DYP/Borcalan-da **müqavilə
+tarixidir**. BMI-də görünmürdü, çünki hər ikisinə **bugünkü tarix** yazılırdı.
+Real tarix veriləndə dərhal üzə çıxdı: başlıqda müqavilə tarixi, mətndə bugünkü.
+
+**Qayda:** tokeni adına görə xəritələmə — şablonun İÇİNƏ bax. Token run-lara
+bölünə bilir, xam `grep` kifayət etmir; paraqrafın bütün `<w:t>` parçalarını
+birləşdir.
+
+**2. Köhnə Azəri şriftləri Unicode hərfləri oxumur.**
+
+`Times Latin`, `Ora Times`, `A3 Times AzLat`, `AzrTimes_Lat` — bu şriftlərdə
+`Ə Ü İ Ğ Ş Ç Ö` **yoxdur** (mətn Kiril kod nöqtələri ilə yazılır və şrift onu
+Azəri hərfi kimi göstərir). Belə run-a müasir Unicode ad yazılanda Word hər
+xüsusi hərf üçün başqa şriftə keçir və aralarda **boşluq qalır**:
+
+```
+HÜSEYNOV SAMİR MİRHÜSEYN OĞLU  →  HÜ SEYNOV SAMİ R Mİ RHÜ SEYN OĞ LU
+```
+
+Şablonun özü də bunu bilir — «ilə» sözündəki `ə` ayrıca `Times New Roman`
+run-una qoyulub.
+
+**Həll:** `KreditWordService.Doldur(..., unicodeSrift: "Times New Roman")` —
+dəyər yazılan run-un `w:ascii`/`w:hAnsi` şrifti dəyişir, **yalnız dəyərdə
+ASCII-dən kənar hərf varsa**. Ölçü/qalın/maili/altxətt toxunulmur; `w:cs`
+(complex script) də toxunulmur. Parametr **defolt `null`-dır** ki, mövcud
+müqavilə şablonlarının görünüşü dəyişməsin.
+
+**3. Şablondakı sabit şəkilçi.** `{muqtar}-cи il` yazılıbsa və kod tarixi
+onsuz da şəkilçi ilə verirsə, nəticə «2021-ci-ci il» olur. Üstəlik şablondakı
+sabit `-cи` **həmişə «-ci»** çıxır — 2026 üçün səhvdir. Düzgünü: şablondan
+sabit şəkilçini götür, şəkilçini `KreditSozeCevir.TarixiSoze` versin.
+⚠️ Şablon serverdəki orijinalla əvəz olunsa bu düzəliş İTİR.
+
 ### Kredit Arayışları — BMI-nin ÖLÜ MENYU BƏNDLƏRİ (02.09.2026)
 
 BMI «Kredit DP → Arayışlar» menyusunda **7 bənd** var, amma **yalnız 4-ü işləyir**.

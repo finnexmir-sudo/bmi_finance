@@ -63,7 +63,7 @@ VALUES (
    and t.licschkre = k.licschkre
    and t.subschkre = k.subschkre
    and m.licsch    = k.licsch_3(+)
- order by t.subschkre desc',
+ order by t.date_open desc, t.subschkre desc',
   1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ── 2. ARAYIŞ ZAMIN — zaminin FİN kodu üzrə zaminlikləri ────────────────── */
@@ -88,7 +88,7 @@ VALUES (
    and t.licschkre = k.licschkre
    and t.subschkre = k.subschkre
    and m.licsch    = k.licsch_3(+)
- order by t.subschkre desc',
+ order by t.date_open desc, t.subschkre desc',
   1, 0, @DepId, SYSDATETIME(), 0);
 
 COMMIT TRAN;
@@ -111,7 +111,15 @@ WHERE  SorguAdi IN (N'Arayış Borcalan', N'Arayış Zamin') AND ISNULL(Silinib,
       SİLİNMƏYİB: BMI-nin sorğusu ilə hərfi-hərfinə eyni qalsın deyə. Sabah
       nəticələr fərqlənsə «biz nəyisə dəyişmişik» sualı yaranmasın.
 
-   3. `date_close` şərti YOXDUR — bağlanmış kredit üçün arayış verilir, elə
+   3. SIRALAMA: BMI `order by t.subschkre desc` yazırdı — yəni KS (subschkre)
+      üzrə. KS artım sırası tarixlə HƏMİŞƏ uyğun gəlmir: real nümunədə
+      (regnom 000087) KS=0 olan kredit 04.06.2014 tarixlidir və KS-ə görə
+      siyahının ƏN SONUNA düşürdü, halbuki tarixcə ortada olmalı idi.
+      İstifadəçi qərarı (02.09.2026): sıralama VERİLMƏ TARİXİ üzrə, yenidən
+      köhnəyə doğru. KS ikinci açar kimi qalır ki, eyni gündə verilmiş
+      kreditlərin sırası sabit olsun.
+
+   4. `date_close` şərti YOXDUR — bağlanmış kredit üçün arayış verilir, elə
       arayışın mənası da odur ki, borc bağlanıb. Açıq/bağlı filtri qoymaq
       SƏHV olardı.
    ═══════════════════════════════════════════════════════════════════════════ */

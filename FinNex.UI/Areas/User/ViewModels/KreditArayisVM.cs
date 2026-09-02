@@ -88,6 +88,9 @@ public class SaipaArayisVM
     /// <summary>Yalnız «Texpasport dəyişmə» rejimində — `{texpNo}`. Orada MƏCBURİDİR.</summary>
     public string? TexpasportNo   { get; set; }
 
-    public DateTime? MuqavileTarixi { get; set; }
+    // ⚠️ `MuqavileTarixi` YOXDUR — QƏSDƏN. Hər iki Saipa şablonunda müqavilə
+    // tarixi üçün token ümumiyyətlə yoxdur (02.09.2026 yoxlanıldı); sahə
+    // saxlansaydı operator onu doldurar, dəyər isə heç yerə düşməzdi.
+    // Şablona belə token əlavə olunsa, sahə də bura qaytarılmalıdır.
     public DateTime? MektubTarixi   { get; set; } = DateTime.Today;
 }

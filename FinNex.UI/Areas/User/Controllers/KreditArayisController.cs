@@ -90,6 +90,36 @@ public class KreditArayisController : Controller
     private IActionResult Icazesiz() => Forbid();
 
     // ══════════════════════════════════════════════════════════════════
+    //  ⚠️ TOKEN ADLARI ALDADICIDIR — ŞABLONDAN ŞABLONA MƏNASI DƏYİŞİR
+    //
+    //  Şablonların İÇİNƏ baxıldı (02.09.2026, run-lar birləşdirilib):
+    //
+    //  | Şablon        | başlıq «№ … il»  | mətn «… il tarixində bağlanmış» |
+    //  |---------------|------------------|---------------------------------|
+    //  | DYP           | {muqtar}         | {mektarixi}                     |
+    //  | Borcalan      | {muqtar}         | {mektarixi}                     |
+    //  | Zamin         | {mektarixi}      | {muqtar}          ← TƏRSİNƏ     |
+    //  | Saipa (hər 2) | {muqtar}         | — yoxdur                        |
+    //
+    //  Yəni `{mektarixi}` adı «məktubun tarixi» kimi oxunur, amma DYP/Borcalan-da
+    //  MÜQAVİLƏ tarixidir. BMI-də bu görünmürdü, çünki hər ikisinə BUGÜNKÜ tarix
+    //  yazılırdı — səhv gizli qalırdı. Real tarix veriləndə dərhal üzə çıxdı:
+    //  başlıqda müqavilə tarixi, mətndə isə bugünkü tarix çap olundu.
+    //
+    //  ⚠️ Şablon dəyişəndə bu cədvəli YENİDƏN yoxla:
+    //     unzip -p <fayl>.docx word/document.xml | grep -o "{[a-zA-Z]*}"
+    //  (token run-lara bölünə bilir — paraqrafın run-larını birləşdirib bax).
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Şablonlara yazılan şrift. Köhnə BMI şablonlarında mətn `Times Latin` /
+    /// `Ora Times` kimi əvvəlki nəsil Azəri şriftlərindədir — orada Ə/Ü/İ/Ğ
+    /// YOXDUR və Word hər hərf üçün başqa şriftə keçir: «HÜ SEYNOV SAMİ R OĞ LU».
+    /// Şablonun özü də «ilə» sözündəki `ə` üçün Times New Roman işlədir.
+    /// </summary>
+    private const string UnicodeSrift = "Times New Roman";
+
+    // ══════════════════════════════════════════════════════════════════
     //  DYP ARAYIŞ — avtomobilin girovdan çıxması (axtarış yoxdur)
     // ══════════════════════════════════════════════════════════════════
     [HttpGet]
@@ -126,9 +156,9 @@ public class KreditArayisController : Controller
         var tokenler = new Dictionary<string, string?>
         {
             ["{mekNo}"]     = mekNo,
-            ["{mektarixi}"] = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),
+            ["{muqtar}"]    = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),   // BAŞLIQ — məktub tarixi
+            ["{mektarixi}"] = Tarix(m.MuqavileTarixi),                                        // MƏTN — müqavilə tarixi
             ["{borcalan}"]  = m.Musteri,
-            ["{muqtar}"]    = m.MuqavileTarixi.HasValue ? KreditSozeCevir.TarixiSoze(m.MuqavileTarixi.Value) : "",
             ["{muqNo}"]     = m.MuqavileNo,
             ["{avtoNo}"]    = m.AvtoNo,
             ["{marka}"]     = m.Marka,
@@ -138,7 +168,7 @@ public class KreditArayisController : Controller
             ["{reng}"]      = m.Reng,
         };
 
-        var data = KreditWordService.Doldur(sablon, tokenler);
+        var data = KreditWordService.Doldur(sablon, tokenler, UnicodeSrift);
         return WordCavab(data, $"DYP arayis {m.AvtoNo}");
     }
 
@@ -186,14 +216,14 @@ public class KreditArayisController : Controller
         var tokenler = new Dictionary<string, string?>
         {
             ["{mekNo}"]     = mekNo,
-            ["{mektarixi}"] = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),
-            ["{muqtar}"]    = m.MuqavileTarixi.HasValue ? KreditSozeCevir.TarixiSoze(m.MuqavileTarixi.Value) : "",
+            ["{muqtar}"]    = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),   // BAŞLIQ — məktub tarixi
+            ["{mektarixi}"] = Tarix(m.MuqavileTarixi),                                        // MƏTN — müqavilə tarixi
             ["{borcalan}"]  = m.Borcalan,
             ["{muqno}"]     = m.MuqavileNo,
             ["{mebleg}"]    = MeblegMetni(m.Mebleg, m.Valyuta),
         };
 
-        var data = KreditWordService.Doldur(sablon, tokenler);
+        var data = KreditWordService.Doldur(sablon, tokenler, UnicodeSrift);
         return WordCavab(data, $"Borcalan arayis {m.Borcalan}");
     }
 
@@ -244,14 +274,14 @@ public class KreditArayisController : Controller
         var tokenler = new Dictionary<string, string?>
         {
             ["{mekNo}"]     = mekNo,
-            ["{mektarixi}"] = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),
-            ["{muqtar}"]    = m.MuqavileTarixi.HasValue ? KreditSozeCevir.TarixiSoze(m.MuqavileTarixi.Value) : "",
+            ["{mektarixi}"] = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),   // BAŞLIQ — məktub tarixi (TƏRSİNƏ!)
+            ["{muqtar}"]    = Tarix(m.MuqavileTarixi),                                        // MƏTN — müqavilə tarixi (TƏRSİNƏ!)
             ["{borcalan}"]  = m.Borcalan,
             ["{zamin}"]     = m.Zamin,
             ["{mebleg}"]    = MeblegMetni(m.Mebleg, m.Valyuta),
         };
 
-        var data = KreditWordService.Doldur(sablon, tokenler);
+        var data = KreditWordService.Doldur(sablon, tokenler, UnicodeSrift);
         return WordCavab(data, $"Zamin arayis {m.Zamin}");
     }
 
@@ -299,14 +329,13 @@ public class KreditArayisController : Controller
             tarix: m.MektubTarixi ?? DateTime.Today);
         if (xeta != null) { TempData["Error"] = xeta; await NomreOnizleAsync(); return View(m); }
 
-        // ⚠️ `carsgirovcix1.docx`-də `{mektarixi}` tokeni YOXDUR (02.09.2026
-        // yoxlanıldı) — məktubun tarixi o sənəddə çap olunmur. Token yenə də
-        // göndərilir: şablona sonradan əlavə edilsə kod dəyişməsin.
+        // ⚠️ `{mektarixi}` GÖNDƏRİLMİR — hər iki Saipa şablonunda belə token
+        // YOXDUR (02.09.2026 yoxlanıldı). Məktubun tarixi orada `{muqtar}`
+        // yerinə düşür (başlıqda, «№ … il» sətrində).
         var tokenler = new Dictionary<string, string?>
         {
             ["{mekNo}"]     = mekNo,
-            ["{mektarixi}"] = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),
-            ["{muqtar}"]    = m.MuqavileTarixi.HasValue ? KreditSozeCevir.TarixiSoze(m.MuqavileTarixi.Value) : "",
+            ["{muqtar}"]    = KreditSozeCevir.TarixiSoze(m.MektubTarixi ?? DateTime.Today),   // BAŞLIQ — məktub tarixi
             ["{avtoNo}"]    = m.AvtoNo,
             ["{avtoil}"]    = m.BuraxilisIli,
             ["{muh}"]       = m.Muherrik,
@@ -315,7 +344,7 @@ public class KreditArayisController : Controller
             ["{texpNo}"]    = m.TexpasportNo,
         };
 
-        var data = KreditWordService.Doldur(sablon, tokenler);
+        var data = KreditWordService.Doldur(sablon, tokenler, UnicodeSrift);
         var ad = texpasport ? $"Saipa texpasport {m.AvtoNo}" : $"Saipa girovdan cixma {m.AvtoNo}";
         return WordCavab(data, ad);
     }
@@ -401,6 +430,10 @@ public class KreditArayisController : Controller
         var reqem = m.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
         return $"{reqem} ({KreditSozeCevir.MebleghSozeValyuta(m, valyuta)})";
     }
+
+    /// <summary>Boş tarixdə boş sətir — «01 Yanvar 0001» yazılmasın.</summary>
+    private static string Tarix(DateTime? t)
+        => t.HasValue ? KreditSozeCevir.TarixiSoze(t.Value) : "";
 
     private IActionResult WordCavab(byte[] data, string ad)
     {

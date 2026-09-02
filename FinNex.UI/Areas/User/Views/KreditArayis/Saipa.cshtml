@@ -76,18 +76,16 @@
                         <label class="fn-label">Rəng</label>
                         <input type="text" name="Reng" value="@Model?.Reng" class="fn-input" />
                     </div>
+                    @* «Müqavilə tarixi» xanası ÇIXARILDI: Saipa şablonlarının heç
+                       birində müqavilə tarixi tokeni YOXDUR (02.09.2026 yoxlanıldı) —
+                       xana doldurulsa da sənədə heç yerə düşmürdü. *@
                     <div class="fn-form-group">
-                        <label class="fn-label">İpoteka müqaviləsinin tarixi</label>
-                        <input type="date" name="MuqavileTarixi" class="fn-input"
-                               value="@(Model?.MuqavileTarixi?.ToString("yyyy-MM-dd"))" />
+                        <label class="fn-label">Məktubun tarixi</label>
+                        <input type="date" name="MektubTarixi" class="fn-input"
+                               value="@((Model?.MektubTarixi ?? DateTime.Today).ToString("yyyy-MM-dd"))" />
                     </div>
                 </div>
 
-                <div class="fn-form-group">
-                    <label class="fn-label">Məktubun tarixi</label>
-                    <input type="date" name="MektubTarixi" class="fn-input"
-                           value="@((Model?.MektubTarixi ?? DateTime.Today).ToString("yyyy-MM-dd"))" />
-                </div>
             </div>
 
             <div style="text-align:right;margin-top:14px">

@@ -45,26 +45,71 @@ siyahıdır — ikinci siyahı qurulmadı, yoxsa biri köhnə qalar.
 
 ## Şablonlar və tokenlər
 
-| Fayl | BMI-dəki adı | Tokenlər |
+| Fayl | BMI-dəki adı |
+|---|---|
+| `DYP_arayis_girovdan_cixma.docx` | `DYP arayış girovda çıxma1.doc` |
+| `Borcalan_temizlik_arayisi.docx` | `borcalan arayis.docx` |
+| `Zamin_temizlik_arayisi.docx` | `Zaminarayis1.docx` |
+| `Saipa_girovdan_cixma.docx` | `carsgirovcix1.docx` |
+| `Saipa_texpasport_deyisme.docx` | `Cars Şehadetneme deyismesi1.docx` |
+
+### ⚠️ TOKEN ADLARI ALDADICIDIR — ŞABLONDAN ŞABLONA MƏNASI DƏYİŞİR
+
+Şablonların içinə baxıldı (02.09.2026, paraqrafın run-ları birləşdirilərək):
+
+| Şablon | başlıq «№ … il» | mətn «… il tarixində bağlanmış» |
 |---|---|---|
-| `DYP_arayis_girovdan_cixma.docx` | `DYP arayış girovda çıxma1.doc` | `{mekNo} {mektarixi} {borcalan} {muqtar} {muqNo} {avtoNo} {marka} {avtoil} {muh} {ban} {reng}` |
-| `Borcalan_temizlik_arayisi.docx` | `borcalan arayis.docx` | `{mekNo} {mektarixi} {muqtar} {borcalan} {muqno} {mebleg}` |
-| `Zamin_temizlik_arayisi.docx` | `Zaminarayis1.docx` | `{mekNo} {mektarixi} {muqtar} {borcalan} {zamin} {mebleg}` |
-| `Saipa_girovdan_cixma.docx` | `carsgirovcix1.docx` | `{mekNo} {muqtar} {avtoNo} {avtoil} {muh} {ban} {reng}` |
-| `Saipa_texpasport_deyisme.docx` | `Cars Şehadetneme deyismesi1.docx` | yuxarıdakılar + `{texpNo}` |
+| DYP | `{muqtar}` | `{mektarixi}` |
+| Borcalan | `{muqtar}` | `{mektarixi}` |
+| **Zamin** | **`{mektarixi}`** | **`{muqtar}`** ← TƏRSİNƏ |
+| Saipa (hər ikisi) | `{muqtar}` | — token yoxdur |
 
-⚠️ **`{muqno}` ilə `{muqNo}` FƏRQLİ TOKENLƏRDİR** — borcalan şablonunda kiçik `n`,
-DYP-də böyük `N`. BMI-də də belədir. Birini o birinə «uyğunlaşdırmaq» olmaz:
-şablonda olmayan token səssizcə itir, xəta çıxmır.
+Yəni `{mektarixi}` adı «məktubun tarixi» kimi oxunur, amma DYP və Borcalan-da
+**müqavilə tarixidir**. BMI-də bu görünmürdü, çünki hər ikisinə **bugünkü tarix**
+yazılırdı — səhv gizli qalırdı. Real tarix veriləndə dərhal üzə çıxdı: başlıqda
+müqavilə tarixi, mətndə isə bugünkü tarix çap olundu (02.09.2026, real hadisə).
 
-⚠️ **`{krtar}`** — BMI zamin arayışında bu tokeni doldururdu (üstəlik zaminin adı
-ilə, səhv görünürdü), amma `Zaminarayis1.docx`-də belə token **ümumiyyətlə yoxdur**
-(02.09.2026 yoxlanıldı). Ona görə burada da yazılmır.
+**Şablon dəyişəndə bu cədvəli yenidən yoxla** — token run-lara bölünə bilir, ona
+görə xam `grep` kifayət etmir; paraqrafın bütün `<w:t>` parçalarını birləşdir.
 
-⚠️ **`{mektarixi}` `Saipa_girovdan_cixma.docx`-də YOXDUR** — həmin sənəddə
-məktubun tarixi çap olunmur, yalnız `{muqtar}` var. Token yenə də göndərilir ki,
-şablona sonradan əlavə edilsə kod dəyişməsin. Şablonun səhvi olub-olmadığı
-**istifadəçidən soruşulub, cavab gözlənilir**.
+### Digər token qeydləri
+
+- **`{muqno}` (Borcalan) ≠ `{muqNo}` (DYP)** — kiçik/böyük `n`. Fərqli tokenlərdir.
+- **`{krtar}`** — BMI zamin arayışında doldururdu, `Zaminarayis1.docx`-də belə
+  token **ümumiyyətlə yoxdur**. Burada da yazılmır.
+- **Saipa şablonlarında `{mektarixi}` yoxdur** — məktubun tarixi `{muqtar}`
+  yerinə düşür. Ona görə Saipa formasında «müqavilə tarixi» xanası da yoxdur.
+
+### ŞABLONLARDA EDİLƏN DÜZƏLİŞ (02.09.2026)
+
+Dörd şablonda başlıq sətrindəki **sabit şəkilçi götürüldü**:
+
+```
+KÖHNƏ:  {muqtar}-cи il     →  «09 Dekabr 2021-ci-ci il»   (ikiqat şəkilçi)
+KÖHNƏ:  {mektarixi}- il    →  «09 Dekabr 2021-ci- il»     (artıq tire)
+YENİ:   {muqtar} il        →  «09 Dekabr 2021-ci il»      ✔
+```
+
+Şəkilçini kod verir (`KreditSozeCevir.TarixiSoze`) və o, ilə görə düzgün
+seçilir (`-cı/-ci/-cu/-cü`). Şablondakı sabit `-cи` isə **həmişə «-ci»** çıxırdı —
+yəni 2026 üçün də səhv olardı.
+
+⚠️ Şablonu serverdəki orijinalla əvəz etsəniz bu düzəliş İTİR. DYP şablonu
+`.docx`-ə çevrildikdən sonra onun mətnindəki `{mektarixi}- ил тарихли` hissəsi
+də eyni qaydada təmizlənməlidir.
+
+### ŞRİFT — «HÜ SEYNOV SAMİ R OĞ LU» problemi
+
+Şablonlarda mətn `Times Latin` / `Ora Times` kimi **əvvəlki nəsil Azəri
+şriftlərindədir** — orada müasir Unicode `Ə Ü İ Ğ Ş Ç Ö` hərfləri YOXDUR.
+Belə run-a ad yazılanda Word hər xüsusi hərf üçün başqa şriftə keçir və
+aralarda boşluq qalır. Şablonun özü də bunu bilir: «ilə» sözündəki `ə`
+ayrıca `Times New Roman` run-una qoyulub.
+
+Həll: `KreditWordService.Doldur(..., unicodeSrift: "Times New Roman")` —
+dəyər yazılan run-un şrifti dəyişir, **yalnız dəyərdə ASCII-dən kənar hərf
+varsa**. Ölçü/qalın/maili/altxətt toxunulmur. Defolt `null`, yəni mövcud
+müqavilə şablonları təsirlənmir.
 
 ## ÖNİZLƏMƏ REJİMİ — `KreditArayis:NomreYaz`
 

@@ -13,7 +13,21 @@ namespace FinNex.UI.Services.Kredit;
 /// </summary>
 public static class KreditWordService
 {
-    public static byte[] Doldur(string templatePath, IReadOnlyDictionary<string, string?> tokenler)
+    /// <param name="unicodeSrift">
+    /// Dəyər yazılan run-un şrifti bununla əvəz olunur — AMMA yalnız dəyərdə
+    /// ASCII-dən kənar hərf (Ə, Ü, İ, Ğ, Ş, Ç, Ö) varsa. `null` = toxunma.
+    ///
+    /// NİYƏ LAZIMDIR: köhnə BMI şablonlarında mətn `Times Latin` / `Ora Times`
+    /// kimi ƏVVƏLKİ NƏSİL Azəri şriftlərindədir — orada müasir Unicode hərfləri
+    /// YOXDUR. Belə run-a «HÜSEYNOV SAMİR OĞLU» yazsan Word hər xüsusi hərf üçün
+    /// başqa şriftə keçir və aralarda boşluq qalır: «HÜ SEYNOV SAMİ R OĞ LU».
+    /// Şablonun özü də bu problemi bilir — «ilə» sözündəki `ə` ayrıca
+    /// `Times New Roman` run-una qoyulub (02.09.2026 yoxlanıldı).
+    ///
+    /// ⚠️ Defolt `null` — mövcud MÜQAVİLƏ şablonlarının görünüşü dəyişməsin.
+    /// </param>
+    public static byte[] Doldur(string templatePath, IReadOnlyDictionary<string, string?> tokenler,
+                                string? unicodeSrift = null)
     {
         var templateBytes = File.ReadAllBytes(templatePath);
         using var ms = new MemoryStream();
@@ -22,9 +36,9 @@ public static class KreditWordService
         using (var doc = WordprocessingDocument.Open(ms, true))
         {
             var main = doc.MainDocumentPart!;
-            DoldurElement(main.Document.Body!, tokenler);
-            foreach (var h in main.HeaderParts) DoldurElement(h.Header, tokenler);
-            foreach (var f in main.FooterParts) DoldurElement(f.Footer, tokenler);
+            DoldurElement(main.Document.Body!, tokenler, unicodeSrift);
+            foreach (var h in main.HeaderParts) DoldurElement(h.Header, tokenler, unicodeSrift);
+            foreach (var f in main.FooterParts) DoldurElement(f.Footer, tokenler, unicodeSrift);
             main.Document.Save();
         }
 
@@ -83,14 +97,16 @@ public static class KreditWordService
         return ms.ToArray();
     }
 
-    private static void DoldurElement(OpenXmlElement root, IReadOnlyDictionary<string, string?> tokenler)
+    private static void DoldurElement(OpenXmlElement root, IReadOnlyDictionary<string, string?> tokenler,
+                                      string? unicodeSrift)
     {
         foreach (var para in root.Descendants<Paragraph>())
-            ParaqrafiEvezle(para, tokenler);
+            ParaqrafiEvezle(para, tokenler, unicodeSrift);
     }
 
     // Bir paraqrafda bütün tokenləri run formatını qoruyaraq əvəz edir
-    private static void ParaqrafiEvezle(Paragraph para, IReadOnlyDictionary<string, string?> tokenler)
+    private static void ParaqrafiEvezle(Paragraph para, IReadOnlyDictionary<string, string?> tokenler,
+                                        string? unicodeSrift)
     {
         // Hər run-u tək Text-ə normallaşdır (yalnız RUN daxilində — format dəyişmir)
         foreach (var run in para.Elements<Run>())
@@ -119,7 +135,7 @@ public static class KreditWordService
             {
                 var idx = full.IndexOf(kv.Key, StringComparison.Ordinal);
                 if (idx < 0) continue;
-                DiapazonuEvezle(texts, idx, kv.Key.Length, kv.Value ?? "");
+                DiapazonuEvezle(texts, idx, kv.Key.Length, kv.Value ?? "", unicodeSrift);
                 tapildi = true;
                 break; // yenidən tara (offsetlər dəyişdi)
             }
@@ -129,7 +145,8 @@ public static class KreditWordService
 
     // [start, start+length) diapazonunu (run-lara yayıla bilər) val ilə əvəz edir.
     // Dəyər başladığı run-un formatını alır; digər run-ların formatı toxunulmur.
-    private static void DiapazonuEvezle(List<Text> texts, int start, int length, string val)
+    private static void DiapazonuEvezle(List<Text> texts, int start, int length, string val,
+                                        string? unicodeSrift = null)
     {
         var end = start + length;
         var pos = 0;
@@ -146,9 +163,39 @@ public static class KreditWordService
             var before = t.Text.Substring(0, localStart);
             var after = t.Text.Substring(localEnd);
 
+            var buRunaYazilir = !dolduruldu;
             t.Text = dolduruldu ? before + after : before + val + after;
             t.Space = SpaceProcessingModeValues.Preserve;
+
+            // Dəyər məhz BU run-a yazıldısa və içində ASCII-dən kənar hərf varsa,
+            // run-un şriftini Unicode oxuyan şriftlə əvəz et (yuxarıdakı izah).
+            // Ölçü/qalın/maili/altxətt TOXUNULMUR — yalnız şrift adı dəyişir.
+            if (buRunaYazilir && unicodeSrift != null && val.Any(c => c > 127))
+                SriftiDeyis(t, unicodeSrift);
+
             dolduruldu = true;
         }
+    }
+
+    /// <summary>
+    /// Text-in aid olduğu run-un `w:ascii` / `w:hAnsi` şriftini dəyişir.
+    /// `w:cs` (complex script) TOXUNULMUR — o, ərəb/fars mətni üçündür və
+    /// şablonlarda ayrıca təyin olunub.
+    /// </summary>
+    private static void SriftiDeyis(Text t, string srift)
+    {
+        if (t.Parent is not Run run) return;
+
+        var rPr = run.RunProperties ??= new RunProperties();
+        var fonts = rPr.GetFirstChild<RunFonts>();
+        if (fonts == null)
+        {
+            fonts = new RunFonts();
+            // RunFonts sxemə görə RunProperties-in İLK elementi olmalıdır —
+            // sonda əlavə etsək Word faylı «zədəlidir» sayır və açmır.
+            rPr.InsertAt(fonts, 0);
+        }
+        fonts.Ascii = srift;
+        fonts.HighAnsi = srift;
     }
 }
