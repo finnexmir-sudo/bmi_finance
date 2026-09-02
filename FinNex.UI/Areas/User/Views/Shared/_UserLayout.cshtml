@@ -595,35 +595,83 @@
                 break;
 
             case "kredit":
-                <div class="fn-nav-label">Kredit</div>
-                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
-                   class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
-                    <i class="bi bi-credit-card"></i> Müraciətlər
-                </a>
-                <a asp-area="User" asp-controller="KreditMuqavile" asp-action="Index"
-                   class="fn-nav-item @(currentController == "KreditMuqavile" ? "active" : "")">
-                    <i class="bi bi-file-earmark-text"></i> Müqavilələr
-                </a>
-                @if (isAdmin)
                 {
-                    @* Nömrə sayğaclarına toxunmaq müqavilə nömrələrini dəyişir — yalnız Admin *@
-                    <a asp-area="User" asp-controller="MuqavileSayghac" asp-action="Index"
-                       class="fn-nav-item @(currentController == "MuqavileSayghac" ? "active" : "")">
-                        <i class="bi bi-123"></i> Müqavilə sayğacları
-                    </a>
+                    // ── KREDİT SIDEBAR — QRUPLU (02.09.2026) ──────────────────
+                    // Əvvəl 6 bənd bir-birinin ardınca düz siyahı idi və müraciət
+                    // işləri (Komitə, Qərarlar, Randevular) müqavilə işləri ilə
+                    // qarışırdı. İstifadəçi qərarı: müraciətlə bağlı hər şey bir
+                    // qrupda, müqavilələr ayrı — kreditdə işlər artacaq.
+                    //
+                    // Qrup açıq/bağlı vəziyyəti: `open` class-ını RAZOR verir
+                    // (aktiv səhifəyə uyğun qrup açıq gəlir), sonra istifadəçi
+                    // başlığa klikləyib dəyişir (`.fn-nav-g-head` — ortaq JS,
+                    // bu faylın sonunda). Vəziyyət yadda saxlanmır.
+                    //
+                    // ⚠️ YENİ BƏND ƏLAVƏ EDƏNDƏ qrupun `...Active` şərtinə də
+                    // əlavə et — yoxsa həmin səhifədə qrup BAĞLI açılır və
+                    // istifadəçi «linkim yoxa çıxdı» deyir.
+                    var kredMuracietActive = currentController == "KreditMuraciet";
+                    var kredMuqavileActive = currentController is "KreditMuqavile" or "MuqavileSayghac";
+
+                    <div class="fn-nav-label">Kredit</div>
+
+                    <div class="fn-nav-g @(kredMuracietActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Müraciətlər</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
+                               class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
+                                <i class="bi bi-credit-card"></i> Bütün müraciətlər
+                            </a>
+                            <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
+                               class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Komite" ? "active" : "")">
+                                <i class="bi bi-people"></i> Kredit Komitəsi
+                            </a>
+                            <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
+                               class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Qerarlar" ? "active" : "")">
+                                <i class="bi bi-journal-check"></i> Komitə Qərarları
+                            </a>
+                            <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Randevular"
+                               class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Randevular" ? "active" : "")">
+                                <i class="bi bi-calendar-plus"></i> Randevular
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="fn-nav-g @(kredMuqavileActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Müqavilələr</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="KreditMuqavile" asp-action="Index"
+                               class="fn-nav-item @(currentController == "KreditMuqavile" ? "active" : "")">
+                                <i class="bi bi-file-earmark-text"></i> Müqavilələr
+                            </a>
+                            @if (isAdmin)
+                            {
+                                @* Nömrə sayğaclarına toxunmaq müqavilə nömrələrini dəyişir — yalnız Admin *@
+                                <a asp-area="User" asp-controller="MuqavileSayghac" asp-action="Index"
+                                   class="fn-nav-item @(currentController == "MuqavileSayghac" ? "active" : "")">
+                                    <i class="bi bi-123"></i> Müqavilə sayğacları
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    @* GƏLƏCƏK — «Arayışlar» qrupu. Növlər çox olarsa içəridə
+                       İKİNCİ SƏVİYYƏ qrup açmaq mümkündür; CSS hazırdır:
+                       <div class="fn-nav-g fn-nav-g--sub">
+                           <button type="button" class="fn-nav-g-head fn-nav-g-head--sub">…</button>
+                           <div class="fn-nav-g-body fn-nav-g-body--nested">…</div>
+                       </div>
+                       Yeni qrup əlavə edəndə: (1) `...Active` dəyişəni yaz,
+                       (2) controller adını `SidebarModul()`-un "kredit" şərtinə
+                       əlavə et (bu faylın yuxarısı) — yoxsa yeni səhifədə
+                       sidebar tamamilə başqa modula keçər. *@
                 }
-                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
-                   class="fn-nav-item @(currentAction == "Komite" ? "active" : "")">
-                    <i class="bi bi-people"></i> Kredit Komitəsi
-                </a>
-                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
-                   class="fn-nav-item @(currentAction == "Qerarlar" ? "active" : "")">
-                    <i class="bi bi-journal-check"></i> Komitə Qərarları
-                </a>
-                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Randevular"
-                   class="fn-nav-item @(currentAction == "Randevular" ? "active" : "")">
-                    <i class="bi bi-calendar-plus"></i> Randevular
-                </a>
                 break;
 
             case "pid":
