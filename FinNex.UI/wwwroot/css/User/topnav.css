@@ -637,7 +637,17 @@ body.theme-midnight .fn-topnav-dd-item--active {
     position: sticky;
     top: 60px;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.04);
+    /* Sütun flex — SƏBƏB: məhsul imzası `margin-top:auto` ilə həqiqi dibə
+       otursun (siyahı qısa olanda altda boşluq qalmasın). */
+    display: flex;
+    flex-direction: column;
 }
+
+    /* Flex sütununda övladlar şaquli sıxıla bilər — bənd hündürlükləri
+       əzilməsin deyə sıxılma söndürülür; artıq məzmun sürüşür. */
+    .fn-sidebar2 > * {
+        flex-shrink: 0;
+    }
 
 /* ── Məhsul imzası (sidebar altı) ─────────────────────────────────────
    position:sticky → siyahı uzun olanda aşağıda ilişib qalır, qısa olanda
@@ -645,11 +655,14 @@ body.theme-midnight .fn-topnav-dd-item--active {
    Fon sıxdır ki, altından sürüşən bəndlər görünməsin. */
 /* Sticky zolaq — YALNIZ fon rolunu oynayır. Kartın özü şəffaf fonludur,
    ona görə altdan sürüşən bəndlər görünməsin deyə bu qat sıx olmalıdır. */
+/* margin-top:auto → siyahı QISA olanda dibə itələyir.
+   position:sticky   → siyahı UZUN olanda sürüşərkən dibdə ilişib qalır.
+   İkisi birlikdə hər iki halı örtür. */
 .fn-sidebar-foot {
     position: sticky;
     bottom: 0;
-    margin: 20px -10px 0;
-    padding: 10px;
+    margin: auto -10px 0; /* top=auto, yanlar aside padding-ini udur */
+    padding: 14px 10px 10px;
     background: var(--sb-bg);
     box-shadow: 0 -8px 12px -8px rgba(0, 0, 0, 0.10);
 }
