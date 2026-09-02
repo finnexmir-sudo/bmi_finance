@@ -195,30 +195,10 @@ body.theme-midnight {
     color: var(--nav-accent);
 }
 
-/* Brend iki sətirdir: müştərinin adı + məhsulun imzası.
-   İkisi birlikdə ~28px — 60px-lik zolağa rahat sığır, sekmelər sıxılmır. */
-.fn-topnav-brand-stack {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    line-height: 1.15;
-    gap: 1px;
-    min-width: 0;
-}
-
-.fn-topnav-powered {
-    font-size: 11.5px;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    color: rgba(255, 255, 255, 0.55);
-    white-space: nowrap;
-}
-
-    /* Vurğu rəngi tokendən gəlir → 4 temanın hamısında uyğunlaşır */
-    .fn-topnav-powered b {
-        font-weight: 600;
-        color: var(--nav-accent);
-    }
+/* QEYD: başlıqdakı «powered by FinNex» ikinci sətri 03.09.2026-da
+   ÇIXARILDI (istifadəçi qərarı) — zolaqda iki brend sıxışdırırdı.
+   Geri lazım olsa: `git show 2f8160cb -- FinNex.UI/wwwroot/css/User/topnav.css`
+   (.fn-topnav-brand-stack + .fn-topnav-powered qaydaları oradadır). */
 
 /* Tabs */
 .fn-topnav-tabs {
@@ -684,16 +664,17 @@ body.theme-midnight .fn-topnav-dd-item--active {
     border: 1px solid var(--sb-border);
 }
 
-/* Nişan aktiv naviqasiya bəndi ilə EYNİ qradiyentdədir — sidebar bütöv görünsün */
+/* Kafel PARLAQ vurğu qradiyentindədir (avatarla eyni) — tünd variantda
+   nişan yuyulub itirdi. Rənglər yenə tokendən, yəni 4 temada uyğunlaşır. */
 .fn-brandmark-tile {
     flex: 0 0 auto;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, var(--sb-active-bg-1), var(--sb-active-bg-2));
-    color: var(--sb-active-icon); /* SVG currentColor-dan rəng alır */
+    background: linear-gradient(135deg, var(--avatar-bg-1), var(--avatar-bg-2));
+    box-shadow: 0 2px 8px -2px var(--avatar-bg-2);
 }
 
 .fn-brandmeta {
