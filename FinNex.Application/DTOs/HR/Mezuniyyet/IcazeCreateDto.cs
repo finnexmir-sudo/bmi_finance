@@ -211,6 +211,19 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public double? FaktikiSaat { get; set; }
         public IcazeCixisGirisStatus CixisStatus { get; set; }
 
+        /// <summary>
+        /// İcazə qeydinin YARANMA anı (`Icaze.YaradilmaTarixi`) — sıralama açarı.
+        ///
+        /// NİYƏ LAZIMDIR: `IcazeTarixi` yalnız GÜNDÜR (saatsız). Eyni günə aid
+        /// icazələr arasında sıra təsadüfi olurdu — yeni yazılan qeyd siyahının
+        /// ortasına düşürdü. İkinci açar kimi bu sahə işlədilir: eyni gün içində
+        /// ƏN SON yazılan qeyd ƏN YUXARIDA görünür (02.09.2026, istifadəçi tələbi).
+        ///
+        /// ⚠️ Sintetik (CixisGiris qeydi olmayan) sətirlərdə də doldurulmalıdır —
+        /// yoxsa onlar `DateTime.MinValue` ilə həmişə günün ən altına düşər.
+        /// </summary>
+        public DateTime YaradilmaTarixi { get; set; }
+
         // ── Nahar ──────────────────────────────────────────────
         // FaktikiSaat servisdə onsuz da nahar çıxılmış gəlir; plan tərəfi də eyni
         // olmalıdır, yoxsa müqayisə (fərq) həmişə "erkən qayıdıb" kimi görünür.

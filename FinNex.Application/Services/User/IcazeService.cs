@@ -1382,8 +1382,11 @@ namespace FinNex.Application.Services
                         berpaAcarlari.Max(k => k.Tarix))
                     : (new Dictionary<string, List<DateTime>>(), new Dictionary<string, DateTime>());
 
+                // ⚠️ SIRALAMA BURADA EDİLMİR — hamısı SONDA, tək yerdə (sintetik
+                // sətirlər əlavə olunandan sonra). Burada sıralasaq və aşağıda da
+                // sıralasaq, iki fərqli qayda yaranar: sintetik sətir olmayan
+                // sorğuda buradakı, olan sorğuda isə aşağıdakı işləyər.
                 var dtos = list
-                    .OrderByDescending(x => x.Icaze.IcazeTarixi)
                     .Select(c =>
                     {
                         var (fcx, fqy) = (c.CixisVaxt == null && c.Status == IcazeCixisGirisStatus.Gozlenir)
@@ -1416,6 +1419,7 @@ namespace FinNex.Application.Services
                                 .Select(t => t.Departament?.Ad)
                                 .FirstOrDefault() ?? "-",
                             IcazeTarixi = c.Icaze.IcazeTarixi,
+                            YaradilmaTarixi = c.Icaze.YaradilmaTarixi,   // ikinci sıralama açarı
                             BaslamaSaati = c.Icaze.BaslamaSaati,
                             BitisSaati = c.Icaze.BitisSaati,
                             PlanlananSaat = c.Icaze.IcazeSaati,
@@ -1454,6 +1458,7 @@ namespace FinNex.Application.Services
                             .Select(t => t.Departament?.Ad)
                             .FirstOrDefault() ?? "-",
                         IcazeTarixi = i.IcazeTarixi,
+                        YaradilmaTarixi = i.YaradilmaTarixi,   // ikinci sıralama açarı
                         BaslamaSaati = i.BaslamaSaati,
                         BitisSaati = i.BitisSaati,
                         PlanlananSaat = i.IcazeSaati,
@@ -1469,10 +1474,22 @@ namespace FinNex.Application.Services
                     };
                 }).ToList();
 
-                if (sintetikler.Count > 0)
-                    dtos = dtos.Concat(sintetikler)
-                               .OrderByDescending(x => x.IcazeTarixi)
-                               .ToList();
+                // ── SIRALAMA — TƏK YER, ÜÇ AÇAR (02.09.2026) ─────────────────────
+                // 1) İcazə GÜNÜ — yeni gün yuxarıda;
+                // 2) Qeydin yaranma anı — EYNİ GÜN içində ən son yazılan yuxarıda;
+                // 3) IcazeId — eyni tick-də yazılmış qeydlərdə sıra sabit qalsın.
+                //    Onsuz siyahı hər açılışda fərqli düzülə bilər — mənbə
+                //    sorğunun sırası zəmanətli deyil.
+                //
+                // ⚠️ `.Date` MƏCBURİDİR. `Icaze.IcazeTarixi` saat komponenti daşıya
+                // bilir (bazaya necə yazılıbsa). Xam dəyərlə sıralasaq eyni günün
+                // içində sıranı həmin saat verər və 2-ci açar (yaranma anı) HEÇ VAXT
+                // işə düşməz — yəni istənilən davranış səssizcə alınmaz.
+                dtos = dtos.Concat(sintetikler)
+                           .OrderByDescending(x => x.IcazeTarixi.Date)
+                           .ThenByDescending(x => x.YaradilmaTarixi)
+                           .ThenByDescending(x => x.IcazeId)
+                           .ToList();
 
                 return Result<IList<IcazeDovriyyeDto>>.Ok(dtos);
             }
