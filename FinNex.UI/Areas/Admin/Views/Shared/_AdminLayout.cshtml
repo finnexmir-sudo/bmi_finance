@@ -102,6 +102,12 @@
                 Komitə üzvləri
             </a>
 
+            <a class="nav-link @(currentController == "KreditReddSebebi" ? "active" : "")"
+               asp-area="Admin" asp-controller="KreditReddSebebi" asp-action="Index">
+                <i class="bi bi-x-octagon"></i>
+                Rədd səbəbləri
+            </a>
+
             <div class="nav-section">Sorğular</div>
 
             <a class="nav-link @(currentController == "OracleSorgu" ? "active" : "")"

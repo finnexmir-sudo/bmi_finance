@@ -52,6 +52,36 @@ namespace FinNex.Application.Interfaces.Kredit
         Task KomiteyeGonderAsync(int muracietId, int gonderenIsciId, string? qeyd);
 
         /// <summary>
+        /// KOMİTƏSİZ RƏDD — baxan işçi müraciəti komitəyə göndərmədən bağlayır
+        /// (02.09.2026, BMI iş prinsipi). Status → <c>ReddEdilib</c>.
+        ///
+        /// Səbəb MƏCBURİDİR (<c>KreditReddSebebi</c> açar cədvəlindən, aktiv
+        /// olmalıdır); <paramref name="qeyd"/> sərbəst əlavə izahdır, məcburi deyil.
+        ///
+        /// ⚠️ `KreditQerar` sətri YARADILMIR — komitə jurnalı təmiz qalır.
+        /// «Komitəsiz rədd» şərti elə budur: <c>Status == ReddEdilib &amp;&amp; Qerar == null</c>.
+        ///
+        /// Yalnız <c>Yeni</c> və <c>Yoxlanılır</c> statuslarında işləyir.
+        /// Komitəyə göndərilmiş müraciəti işçi geri rədd EDƏ BİLMƏZ — o mərhələdə
+        /// qərar komitənindir.
+        /// </summary>
+        Task KomitesizReddEtAsync(int muracietId, int reddSebebiId, string? qeyd, int reddEdenIsciId);
+
+        /// <summary>
+        /// Komitəsiz rəddi geri qaytarır — status rəddən əvvəlki mərhələyə düşür
+        /// (<c>BaxanIsciId</c> varsa <c>Yoxlanılır</c>, yoxsa <c>Yeni</c>) və rədd
+        /// sahələri təmizlənir.
+        ///
+        /// İCAZƏ: yalnız rəddi YAZAN işçi, ya da Admin
+        /// (<paramref name="adminMi"/>). İstifadəçi qərarı (02.09.2026).
+        ///
+        /// ⚠️ KOMİTƏ QƏRARINI GERİ QAYTARMIR — müraciətin `Qerar`-ı varsa metod
+        /// istisna atır. Komitənin protokolla verdiyi qərarı bir işçinin düyməsi
+        /// ilə ləğv etmək olmaz.
+        /// </summary>
+        Task ReddiGeriQaytarAsync(int muracietId, int isciId, bool adminMi);
+
+        /// <summary>
         /// Müraciəti yeniləyir (müştəri məlumatları). Status toxunulmur.
         /// </summary>
         Task YenileAsync(KreditMuraciet entity, int? yenileyenIcraciId);

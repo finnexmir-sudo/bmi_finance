@@ -1144,6 +1144,42 @@ limitlər (məs. zamin sayı), fayl/şablon mövcudluğu, xarici asılılıqlar 
 yoxlanmış olmalıdır. Xəta mətnində "nömrələr ayrılmadı, heç nə yazılmadı" yaz ki,
 istifadəçi təkrar cəhd etməkdən çəkinməsin.
 
+### Kredit Müraciəti — `ReddEdilib` Statusunun İKİ YAZICISI (02.09.2026, KRİTİK)
+
+`KreditMuracietStatus.ReddEdilib` **iki müstəqil yerdən** yazılır. Rədd
+məntiqinə toxunanda hər ikisini tutuşdur — biri köhnə qalsa xəta yalnız o yolda
+görünər:
+
+| Yazıcı | Yer | Tələb |
+|---|---|---|
+| **Komitə qərarı** | `KreditQerarService.QebulEtAsync` | protokol № + ən azı bir **aktiv** `KomiteUzvu` imzası, tranzaksiya |
+| **Komitəsiz rədd** | `KreditMuracietService.KomitesizReddEtAsync` | səbəb (açar cədvəlindən, aktiv), status `Yeni`/`Yoxlanılır` |
+
+**AYRICA STATUS QƏSDƏN YOXDUR** — ikisini `Qerar` ayırd edir:
+
+```
+Komitəsiz rədd  →  Status == ReddEdilib  VƏ  Qerar == null
+Komitə rəddi    →  Status == ReddEdilib  VƏ  Qerar != null
+```
+
+Komitəsiz rəddə `KreditQerar` sətri **yaradılmır** — «Komitə Qərarları»
+səhifəsi yalnız `KreditQerar` oxuduğu üçün işçi rəddi ora düşmür (istifadəçi
+qərarı: komitə jurnalı təmiz qalsın).
+
+**Qaydalar:**
+- `ReddiGeriQaytarAsync` **komitə qərarına toxunmur** — `Qerar != null` olarsa
+  istisna atır. Protokolla verilmiş qərarı bir işçinin düyməsi ilə ləğv etmək olmaz.
+- Komitəyə göndərilmiş müraciəti işçi rədd **edə bilməz** (`Status <= Yoxlanilir`
+  şərti). O mərhələdə qərar komitənindir.
+- Rədd səbəbi **enum deyil, cədvəldir** (`KreditReddSebebleri`) — siyahı biznes
+  qərarıdır və artır. Səbəb **silinmir, deaktiv edilir**: keçmiş müraciətlər FK
+  ilə ona bağlıdır, silinsə tarixçə «səbəbsiz» qalar.
+- Yeni status əlavə etsən enum kifayət etmir: `Index.cshtml` sekmeleri,
+  `ViewBag.StatusSaylari` və `Detail.cshtml`-dəki `StatusText`/`StatusCls` də
+  yenilənməlidir.
+
+Ətraflı: `docs/kredit/Komitesiz_Redd.md`.
+
 ### Kredit Məbləği — `summakre` (müqavilə) vs `summa` (qalıq) (KRİTİK)
 
 `odb.licschkre`-də iki məbləğ var və mənaları FƏRQLİDİR (13.08.2026, BMI datası

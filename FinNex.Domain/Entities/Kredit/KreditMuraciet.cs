@@ -44,6 +44,33 @@ namespace FinNex.Domain.Entities.Kredit
         public int? AsanFinanceBaxanIsciId { get; set; }
         public Isci? AsanFinanceBaxanIsci { get; set; }
 
+        // ─── KOMİTƏSİZ RƏDD (işçi mərhələsində) ──────────────
+        // BMI-dəki iş prinsipi: müraciət hər zaman komitəyə getmir — MKR-i pis
+        // çıxan, sənədi natamam olan, ya şərtlərə uyğun gəlməyən müştərinin
+        // müraciətini baxan işçi elə orada bağlayır. 02.09.2026-ya qədər FinNex-də
+        // bu yol YOX idi: `ReddEdilib` statusunu YALNIZ `KreditQerarService` yaza
+        // bilirdi və o da protokol nömrəsi + aktiv komitə üzvünün imzasını tələb
+        // edir. Nəticədə belə müraciət ya uydurma protokolla komitəyə göndərilir,
+        // ya da «Yoxlanılır» statusunda əbədi qalırdı.
+        //
+        // ⚠️ AYIRD ETMƏ ÜÇÜN AYRICA STATUS YOXDUR — ehtiyac da yoxdur:
+        // komitəsiz rəddin `Qerar`-ı `null` olur, komitə rəddinin isə var.
+        // Şərt: `Status == ReddEdilib && Qerar == null` → komitəsiz rədd.
+        public int? ReddSebebiId { get; set; }
+        public KreditReddSebebi? ReddSebebi { get; set; }
+
+        /// <summary>Səbəbə əlavə sərbəst izah — MƏCBURİ DEYİL (səbəbin özü məcburidir).</summary>
+        public string? ReddQeyd { get; set; }
+
+        public DateTime? ReddTarixi { get; set; }
+
+        /// <summary>
+        /// Rəddi yazan işçi. Geri qaytarma icazəsi bu sahəyə baxır — rəddi yalnız
+        /// onu yazan işçi (və ya Admin) geri qaytara bilər.
+        /// </summary>
+        public int? ReddEdenIsciId { get; set; }
+        public Isci? ReddEdenIsci { get; set; }
+
         // ─── Əlaqəli obyektlər ───────────────────────────────
         public ICollection<KreditZamin> Zaminler { get; set; } = new List<KreditZamin>();
         public KreditQerar? Qerar { get; set; }

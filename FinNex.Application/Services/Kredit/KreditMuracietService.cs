@@ -23,6 +23,8 @@ namespace FinNex.Application.Services.Kredit
                 q = q.Include(x => x.BaxanIsci)
                      .Include(x => x.MkrBaxanIsci)
                      .Include(x => x.AsanFinanceBaxanIsci)
+                     .Include(x => x.ReddEdenIsci)      // komitəsiz rədd — kim yazdı
+                     .Include(x => x.ReddSebebi)        // komitəsiz rədd — səbəb
                      .Include(x => x.Zaminler.Where(z => !z.Silinib))
                      .Include(x => x.Qerar!).ThenInclude(q => q.Imzalar.Where(i => !i.Silinib))
                          .ThenInclude(i => i.KomiteUzvu).ThenInclude(u => u.Isci)
@@ -138,6 +140,76 @@ namespace FinNex.Application.Services.Kredit
             if (!string.IsNullOrWhiteSpace(qeyd)) m.Qeyd = qeyd;
             m.YenileyenIcraciId = gonderenIsciId;
             m.YenilenmeTarixi = DateTime.Now;
+            await _uow.Repository<KreditMuraciet>().YenileAsync(m);
+            await _uow.YaddaSaxlaAsync();
+        }
+
+        public async Task KomitesizReddEtAsync(int muracietId, int reddSebebiId, string? qeyd, int reddEdenIsciId)
+        {
+            var m = await _uow.Repository<KreditMuraciet>().Query()
+                        .Include(x => x.Qerar)
+                        .FirstOrDefaultAsync(x => x.Id == muracietId && !x.Silinib)
+                ?? throw new InvalidOperationException("Müraciət tapılmadı.");
+
+            // Yalnız işçi mərhələsi. Komitəyə göndərildikdən sonra qərar komitənindir.
+            if (m.Status != KreditMuracietStatus.Yeni && m.Status != KreditMuracietStatus.Yoxlanilir)
+                throw new InvalidOperationException(
+                    "Yalnız 'Yeni' və ya 'Yoxlanılır' statusundakı müraciət komitəsiz rədd edilə bilər. " +
+                    "Komitəyə göndərilmiş müraciətin qərarını komitə verir.");
+
+            // Təhlükəsizlik qatı: qərar varsa status onsuz da işçi mərhələsində olmazdı,
+            // amma data əl ilə dəyişdirilibsə bu şərt komitə qərarını qoruyur.
+            if (m.Qerar != null)
+                throw new InvalidOperationException("Bu müraciətin komitə qərarı var — komitəsiz rədd edilə bilməz.");
+
+            var sebeb = await _uow.Repository<KreditReddSebebi>().Query()
+                            .FirstOrDefaultAsync(x => x.Id == reddSebebiId && !x.Silinib)
+                ?? throw new InvalidOperationException("Rədd səbəbi tapılmadı.");
+            if (!sebeb.Aktivdir)
+                throw new InvalidOperationException("Seçilən rədd səbəbi aktiv deyil.");
+
+            m.Status = KreditMuracietStatus.ReddEdilib;
+            m.ReddSebebiId = sebeb.Id;
+            m.ReddQeyd = string.IsNullOrWhiteSpace(qeyd) ? null : qeyd.Trim();
+            m.ReddTarixi = DateTime.Now;
+            m.ReddEdenIsciId = reddEdenIsciId;
+            m.YenileyenIcraciId = reddEdenIsciId;
+            m.YenilenmeTarixi = DateTime.Now;
+
+            await _uow.Repository<KreditMuraciet>().YenileAsync(m);
+            await _uow.YaddaSaxlaAsync();
+        }
+
+        public async Task ReddiGeriQaytarAsync(int muracietId, int isciId, bool adminMi)
+        {
+            var m = await _uow.Repository<KreditMuraciet>().Query()
+                        .Include(x => x.Qerar)
+                        .FirstOrDefaultAsync(x => x.Id == muracietId && !x.Silinib)
+                ?? throw new InvalidOperationException("Müraciət tapılmadı.");
+
+            if (m.Status != KreditMuracietStatus.ReddEdilib)
+                throw new InvalidOperationException("Bu müraciət rədd edilməyib.");
+
+            // KOMİTƏ QƏRARINA TOXUNMUR — protokolla verilmiş qərarı düymə ilə ləğv etmək olmaz.
+            if (m.Qerar != null)
+                throw new InvalidOperationException(
+                    "Bu, komitə qərarı ilə rədd edilib — buradan geri qaytarıla bilməz.");
+
+            if (!adminMi && m.ReddEdenIsciId != isciId)
+                throw new InvalidOperationException("Rəddi yalnız onu yazan işçi geri qaytara bilər.");
+
+            // Rəddən əvvəlki mərhələ: baxan işçi təyin olunubsa «Yoxlanılır», yoxsa «Yeni».
+            m.Status = m.BaxanIsciId.HasValue
+                ? KreditMuracietStatus.Yoxlanilir
+                : KreditMuracietStatus.Yeni;
+
+            m.ReddSebebiId = null;
+            m.ReddQeyd = null;
+            m.ReddTarixi = null;
+            m.ReddEdenIsciId = null;
+            m.YenileyenIcraciId = isciId;
+            m.YenilenmeTarixi = DateTime.Now;
+
             await _uow.Repository<KreditMuraciet>().YenileAsync(m);
             await _uow.YaddaSaxlaAsync();
         }

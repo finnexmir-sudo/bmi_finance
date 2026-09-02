@@ -11,6 +11,16 @@
     var erisim = ViewBag.Erisim as FinNex.UI.Areas.User.Controllers.KreditMuracietController.KreditAccess;
     var isAdmin = erisim?.IsAdmin ?? false;
 
+    // ── Komitəsiz rədd ─────────────────────────────────────────────
+    // Ayrıca status yoxdur: komitəsiz rəddin `Qerar`-ı null olur, komitə
+    // rəddinin isə var. Şərtləri burada bir dəfə hesablayıb markup-da
+    // yalnız oxuyuruq (markup içində şərt qurmuruq — CLAUDE.md).
+    var reddSebebleri = ViewBag.ReddSebebleri as IList<KreditReddSebebi> ?? new List<KreditReddSebebi>();
+    var komitesizRedd = Model.Status == KreditMuracietStatus.ReddEdilib && qerar == null;
+    // Geri qaytarma: rəddi yazan işçi, ya da Admin (istifadəçi qərarı 02.09.2026).
+    var geriQaytaraBiler = komitesizRedd
+        && (isAdmin || (erisim != null && erisim.IsciId != null && Model.ReddEdenIsciId == erisim.IsciId));
+
     string StatusText(KreditMuracietStatus s) => s switch {
         KreditMuracietStatus.Yeni => "Yeni",
         KreditMuracietStatus.Yoxlanilir => "Yoxlanılır",
@@ -337,6 +347,95 @@
                     <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
                 </div>
             </form>
+        </div>
+
+        @* ══════ Komitəsiz rədd ══════
+           BMI iş prinsipi: müraciət hər zaman komitəyə getmir — MKR-i pis çıxan,
+           sənədi natamam olan müştərinin müraciətini baxan işçi elə burada bağlayır.
+           Komitə qərarı YARANMIR, ona görə «Komitə Qərarları» jurnalı təmiz qalır. *@
+        <div class="fn-card km-action-card" style="border-color:#fecaca">
+            <div class="km-detail-section-title" style="color:#dc2626">Komitəsiz rədd</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:10px">
+                Müraciət komitəyə göndərilmədən bağlanır. Komitə qərarı yazılmır.
+            </div>
+            @if (reddSebebleri.Count == 0)
+            {
+                <div style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;padding:10px 14px;border-radius:8px;font-size:13px">
+                    Rədd səbəbi siyahısı boşdur. Admin → «Kredit rədd səbəbləri» bölməsindən əlavə edilməlidir.
+                </div>
+            }
+            else
+            {
+                <form asp-action="KomitesizRedd" method="post"
+                      onsubmit="return confirm('Müraciət komitəsiz rədd edilsin?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="km-action-grid">
+                        <div class="fn-form-group">
+                            <label class="fn-label">Rədd səbəbi <span style="color:#dc2626">*</span></label>
+                            <select name="reddSebebiId" class="fn-input" required>
+                                <option value="">— seçin —</option>
+                                @foreach (var s in reddSebebleri)
+                                {
+                                    <option value="@s.Id">@s.Ad</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="fn-form-group">
+                            <label class="fn-label">Əlavə izah (məcburi deyil)</label>
+                            <input type="text" name="qeyd" class="fn-input" placeholder="Ətraflı izah..." />
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;text-align:right">
+                        <button type="submit" class="fn-btn fn-btn--outline"
+                                style="color:#dc2626;border-color:#dc2626">Rədd et</button>
+                    </div>
+                </form>
+            }
+        </div>
+    }
+
+    @* ══════ Komitəsiz rədd — nəticə (verilmiş qərar) ══════ *@
+    @if (komitesizRedd)
+    {
+        <div class="fn-card km-action-card" style="border-color:#fecaca">
+            <div class="km-detail-section-title" style="color:#dc2626">Rədd edilib — komitəsiz</div>
+            <div class="km-detail-row">
+                <span class="km-detail-label">Səbəb</span>
+                <span class="km-detail-value">@(Model.ReddSebebi?.Ad ?? "—")</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ReddQeyd))
+            {
+                <div class="km-detail-row">
+                    <span class="km-detail-label">İzah</span>
+                    <span class="km-detail-value">@Model.ReddQeyd</span>
+                </div>
+            }
+            <div class="km-detail-row">
+                <span class="km-detail-label">Rədd edən</span>
+                <span class="km-detail-value">
+                    @(Model.ReddEdenIsci != null ? $"{Model.ReddEdenIsci.Ad} {Model.ReddEdenIsci.Soyad}" : "—")
+                    @if (Model.ReddTarixi.HasValue)
+                    {
+                        <span style="color:#64748b"> — @Model.ReddTarixi.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                    }
+                </span>
+            </div>
+            @if (geriQaytaraBiler)
+            {
+                <div style="margin-top:12px;text-align:right">
+                    <form asp-action="ReddiGeriQaytar" method="post"
+                          onsubmit="return confirm('Rədd geri qaytarılsın? Müraciət yenidən baxışa düşəcək.');">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="fn-btn fn-btn--outline">↩ Rəddi geri qaytar</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div style="font-size:12px;color:#64748b;margin-top:10px">
+                    Rəddi yalnız onu yazan işçi geri qaytara bilər.
+                </div>
+            }
         </div>
     }
 

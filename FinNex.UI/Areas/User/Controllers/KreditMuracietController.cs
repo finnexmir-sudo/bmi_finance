@@ -19,6 +19,7 @@ public class KreditMuracietController : Controller
 {
     private readonly IKreditMuracietService _muracietService;
     private readonly IKreditQerarService _qerarService;
+    private readonly IKreditReddSebebiService _reddSebebiService;
     private readonly IKreditZaminService _zaminService;
     private readonly IKreditRandevuService _randevuService;
     private readonly IKreditSmsService _smsService;
@@ -32,6 +33,7 @@ public class KreditMuracietController : Controller
     public KreditMuracietController(
         IKreditMuracietService muracietService,
         IKreditQerarService qerarService,
+        IKreditReddSebebiService reddSebebiService,
         IKreditZaminService zaminService,
         IKreditRandevuService randevuService,
         IKreditSmsService smsService,
@@ -44,6 +46,7 @@ public class KreditMuracietController : Controller
     {
         _muracietService = muracietService;
         _qerarService = qerarService;
+        _reddSebebiService = reddSebebiService;
         _zaminService = zaminService;
         _randevuService = randevuService;
         _smsService = smsService;
@@ -192,6 +195,10 @@ public class KreditMuracietController : Controller
         ViewBag.Zaminler = await _zaminService.MuracietZaminleriniGetirAsync(id);
         ViewBag.SmsLoglar = await _smsService.MuracietUzreGetirAsync(id);
         ViewBag.Erisim = erisim;
+        // Komitəsiz rədd forması üçün — yalnız AKTİV səbəblər.
+        // Deaktiv səbəb köhnə qeydlərdə görünməyə davam edir (Model.ReddSebebi),
+        // amma yeni rəddə seçilə bilmir.
+        ViewBag.ReddSebebleri = await _reddSebebiService.AktivleriGetirAsync();
 
         // Mail-i arxa planda oxunmuş et
         if (!string.IsNullOrEmpty(muraciet.MailMessageId))
@@ -230,6 +237,54 @@ public class KreditMuracietController : Controller
             {
                 TempData["Error"] = "Bu status keçidi İşçi üçün icazəli deyil.";
             }
+        }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction("Detail", new { id });
+    }
+
+    // POST /User/KreditMuraciet/KomitesizRedd
+    // Baxan işçi müraciəti komitəyə göndərmədən rədd edir (BMI iş prinsipi).
+    // Səbəb MƏCBURİDİR — açar siyahısından. `KreditQerar` YARADILMIR.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> KomitesizRedd(int id, int reddSebebiId, string? qeyd)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id }); }
+
+        if (reddSebebiId <= 0)
+        {
+            TempData["Error"] = "Rədd səbəbi seçilməlidir.";
+            return RedirectToAction("Detail", new { id });
+        }
+
+        try
+        {
+            await _muracietService.KomitesizReddEtAsync(id, reddSebebiId, qeyd, erisim.IsciId.Value);
+            TempData["Success"] = "Müraciət rədd edildi (komitəsiz).";
+        }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction("Detail", new { id });
+    }
+
+    // POST /User/KreditMuraciet/ReddiGeriQaytar
+    // Yalnız rəddi YAZAN işçi (və ya Admin). Komitə qərarına toxunmur —
+    // servis `Qerar != null` halında istisna atır.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReddiGeriQaytar(int id)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id }); }
+
+        try
+        {
+            await _muracietService.ReddiGeriQaytarAsync(id, erisim.IsciId.Value, erisim.IsAdmin);
+            TempData["Success"] = "Rədd geri qaytarıldı — müraciət yenidən baxışdadır.";
         }
         catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
 

@@ -193,6 +193,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<FinNex.Domain.Entities.Kredit.KreditMuraciet> KreditMuracietler { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditBaxanIsci> KreditBaxanIsciler { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KomiteUzvu> KomiteUzvleri { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditReddSebebi> KreditReddSebebleri { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditQerar> KreditQerarlar { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditQerarImza> KreditQerarImzalar { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditZamin> KreditZaminler { get; set; }
@@ -1441,6 +1442,26 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.AsanFinanceBaxanIsciId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // Komitəsiz rədd — rəddi yazan işçi və səbəb açarı.
+        // NoAction: `Isci` silinsə müraciətin rədd tarixçəsi qalmalıdır.
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditMuraciet>()
+            .HasOne(x => x.ReddEdenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.ReddEdenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditMuraciet>()
+            .HasOne(x => x.ReddSebebi)
+            .WithMany()
+            .HasForeignKey(x => x.ReddSebebiId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditReddSebebi>(e =>
+        {
+            e.ToTable("KreditReddSebebleri");
+            e.Property(x => x.Ad).IsRequired().HasMaxLength(200);
+        });
 
         // ── Kredit Baxan İşçilər ──────────────────────────────
         builder.Entity<FinNex.Domain.Entities.Kredit.KreditBaxanIsci>()

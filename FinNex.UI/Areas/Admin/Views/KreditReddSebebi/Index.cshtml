@@ -1,0 +1,114 @@
+@model IList<FinNex.Domain.Entities.Kredit.KreditReddSebebi>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="alert alert-light border">
+    <i class="bi bi-info-circle me-2"></i>
+    Bu siyahı kredit müraciətinin <strong>komitəsiz rədd</strong> səbəbləridir — baxan işçi
+    müraciəti komitəyə göndərmədən bağlayanda buradan seçir.
+    <br />
+    Səbəb <strong>silinmir, deaktiv edilir</strong>: keçmiş müraciətlər bu sətrə istinad edir.
+    Deaktiv səbəb yeni rəddlərdə seçim siyahısında görünmür, köhnə qeydlərdə isə qalır.
+</div>
+
+<div class="admin-table-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-plus-lg me-2"></i>Yeni səbəb</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Yarat" method="post" class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label">Səbəbin adı</label>
+                <input type="text" name="ad" class="form-control" maxlength="200" required
+                       placeholder="məs. Girov dəyəri kifayət deyil" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Sıra</label>
+                <input type="number" name="sira" class="form-control" value="@((Model.Count + 1) * 10)" step="1" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Əlavə et</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="admin-table-card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Rədd səbəbləri (@Model.Count)</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table admin-table">
+            <thead>
+                <tr>
+                    <th style="width:90px">Sıra</th>
+                    <th>Ad</th>
+                    <th style="width:110px">Status</th>
+                    <th class="text-end" style="width:230px">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-center text-muted py-4">Səbəb yoxdur.</td></tr>
+                }
+                else
+                {
+                    @* ⚠️ <form> BİRBAŞA <tr>/<td> ARASINDA OLA BİLMƏZ — brauzer onu
+                       cədvəldən kənara atır və sahələr formadan qopur (düymə səssizcə
+                       işləmir). Ona görə formalar cədvəldən SONRA durur, xanalardakı
+                       sahələr isə HTML5 `form="..."` atributu ilə onlara bağlanır. *@
+                    foreach (var s in Model)
+                    {
+                        <tr class="@(s.Aktivdir ? "" : "text-muted")">
+                            <td><input type="number" form="f-yenile-@s.Id" name="sira" value="@s.Sira" step="1" class="form-control form-control-sm" /></td>
+                            <td><input type="text" form="f-yenile-@s.Id" name="ad" value="@s.Ad" maxlength="200" required class="form-control form-control-sm" /></td>
+                            <td>
+                                @if (s.Aktivdir)
+                                {
+                                    <span class="badge bg-success">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Deaktiv</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button type="submit" form="f-yenile-@s.Id" class="btn btn-sm btn-outline-primary">Yadda saxla</button>
+                                <button type="submit" form="f-aktiv-@s.Id"
+                                        class="btn btn-sm @(s.Aktivdir ? "btn-outline-secondary" : "btn-outline-success")">
+                                    @(s.Aktivdir ? "Deaktiv et" : "Aktivləşdir")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* Cədvəldəki sahələrin bağlandığı formalar — markup baxımından cədvəldən kənardadır. *@
+@foreach (var s in Model)
+{
+    <form id="f-yenile-@s.Id" asp-action="Yenile" method="post" class="d-none">
+        <input type="hidden" name="id" value="@s.Id" />
+    </form>
+    <form id="f-aktiv-@s.Id" asp-action="AktivliyiDeyis" method="post" class="d-none">
+        <input type="hidden" name="id" value="@s.Id" />
+        <input type="hidden" name="aktivdir" value="@((!s.Aktivdir).ToString().ToLowerInvariant())" />
+    </form>
+}
