@@ -1180,6 +1180,41 @@ qərarı: komitə jurnalı təmiz qalsın).
 
 Ətraflı: `docs/kredit/Komitesiz_Redd.md`.
 
+### Word Şablonu — Token Şablonda YOXDURSA Dəyər SƏSSİZCƏ İTİR (02.09.2026)
+
+`KreditWordService.Doldur` şablonda tapmadığı tokeni **sadəcə ötürür** — nə xəta,
+nə log. Kod tokeni doldurur, sənəddə isə heç nə görünmür.
+
+Real nümunələr (Kredit Arayışları portu, BMI şablonları ilə tutuşdurma):
+
+| Token | Kod doldurur | Şablonda | Nəticə |
+|---|---|---|---|
+| `{krtar}` | ✅ (BMI `zaminarayis`) | **YOXDUR** | dəyər heç yerə düşmür — «səhv kimi görünən» kod əslində effektsizdir |
+| `{mektarixi}` | ✅ | `carsgirovcix1.docx`-də **YOXDUR** | məktubun tarixi sənəddə çap olunmur |
+| `{muqno}` / `{muqNo}` | ikisi də var | **fərqli şablonlarda fərqli** | birini o birinə «uyğunlaşdırsan» token itir |
+
+**Qaydalar:**
+- Şablonu dəyişəndə/əvəz edəndə tokenləri **əl ilə tutuşdur**. Tez yol:
+  `unzip -p <fayl>.docx word/document.xml | grep -o "{[a-zA-Z]*}" | sort -u`
+- Nömrə ilə bağlı tokenlərdə `KreditWordService.TokenVarmi(...)` ilə **açıq
+  yoxlama** qoy — səssiz itki orada dağıdıcıdır.
+- Böyük/kiçik hərf fərqi tokeni **başqa token** edir.
+- Köhnə `.doc` (OLE2) faylları `KreditWordService` ilə **açılmır** — OpenXML
+  yalnız `.docx` oxuyur. Word-də «Farklı kaydet → .docx» lazımdır.
+
+### Kredit Arayışları — BMI-nin ÖLÜ MENYU BƏNDLƏRİ (02.09.2026)
+
+BMI «Kredit DP → Arayışlar» menyusunda **7 bənd** var, amma **yalnız 4-ü işləyir**.
+«BTİ arayış», «Qeydiyyata düşmə», «İcarə məktubu» — `Click` handler-i, forma sinfi,
+SQL və şablonu OLMAYAN boş menyu elementləridir. Köçürüləndə bu üçü **qəsdən
+buraxılıb**; lazım olsalar sıfırdan qurulmalıdır.
+
+**Qayda:** köhnə sistemdən modul köçürəndə menyu siyahısını «tələb» sayma —
+əvvəlcə hər bəndin handler-i və formasının **həqiqətən mövcud olduğunu** yoxla.
+Olmayan bəndi «köçürdüm» kimi təqdim etmək daha pisdir: istifadəçi onu axtarır.
+
+Ətraflı: `docs/kredit/Arayislar.md`.
+
 ### Kredit Məbləği — `summakre` (müqavilə) vs `summa` (qalıq) (KRİTİK)
 
 `odb.licschkre`-də iki məbləğ var və mənaları FƏRQLİDİR (13.08.2026, BMI datası

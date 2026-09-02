@@ -74,6 +74,87 @@ public static class KreditSozeCevir
         return yazi.Trim();
     }
 
+    // ── Aletler.YaziyaCevir(tutar, valyuta) — VALYUTALI variant (02.09.2026) ──
+    //
+    // NİYƏ AYRICA METOD: yuxarıdakı `MebleghSoze` valyuta sözünü SABİT «manat»/
+    // «qəpik» yazır (kredit müqaviləsi AZN-dir). Arayışlarda isə valyuta hesab
+    // nömrəsindən gəlir (00→AZN, 01→USD, 02→AVRO) və mətn ona uyğun olmalıdır.
+    //
+    // ⚠️ BMI-də bu İKİ AYRI ALQORİTMDİR — `yaziyaCevir` ilə `YaziyaCevir` fərqli
+    // qruplaşdırma işlədir («bir yüz» vs «yüz»). Burada BMI-nin ARAYIŞLARDA
+    // işlətdiyi `YaziyaCevir` hərfi-hərfinə köçürülüb ki, sənəd mətni dəyişməsin.
+    // İkisini «birləşdirmək» olmaz — çıxan mətn fərqlənər.
+    public static string MebleghSozeValyuta(decimal tutar, string? valyuta)
+    {
+        string[] birler = { "", " bir", " iki", " üç", " dörd", " beş", " altı", " yeddi", " səkkiz", " doqquz" };
+        string[] onlar  = { "", " on", " iyirmi", " otuz", " qırx", " əlli", " altmış", " yetmiş", " səksən", " doxsan" };
+        string[] binler = { "", " min", " milyon", " milyard", " trilyon" };
+
+        if (tutar == 0) return "sıfır";
+
+        var sTutar = tutar.ToString("F2", CultureInfo.InvariantCulture).Replace('.', ',');
+        var tamHisse   = sTutar.Split(',')[0];
+        var kicikHisse = sTutar.Split(',')[1];
+
+        var sonuc = TamHisseSoz(tamHisse, birler, onlar, binler);
+        sonuc += $" {ValyutaTamAd(valyuta)}";
+
+        if (kicikHisse != "00")
+            sonuc += " " + (onlar[kicikHisse[0] - '0'] + birler[kicikHisse[1] - '0']).Trim()
+                   + $" {ValyutaKicikAd(valyuta)}";
+
+        return sonuc.Trim();
+    }
+
+    /// <summary>Valyutanın tam hissəsinin adı (BMI `ValyutaTamAd`).</summary>
+    private static string ValyutaTamAd(string? v) => v switch
+    {
+        "AZN"  => "manat",
+        "USD"  => "dollar",
+        "AVRO" => "avro",
+        _      => ""      // BMI-də də boş qalır — naməlum valyutada söz yazılmır
+    };
+
+    /// <summary>Valyutanın qəpik hissəsinin adı (BMI `ValyutaKicikAd`).</summary>
+    private static string ValyutaKicikAd(string? v) => v switch
+    {
+        "AZN"  => "qəpik",
+        "USD"  => "sent",
+        "AVRO" => "sent",
+        _      => ""
+    };
+
+    // BMI `ConvertTamHisse` + `ConvertUcReqem`. Diqqət: `ConvertUcReqem`-də
+    // «yüz» üçün 1 xüsusi haldır («bir yüz» YOX, sadəcə «yüz»).
+    private static string TamHisseSoz(string tamHisse, string[] birler, string[] onlar, string[] binler)
+    {
+        tamHisse = tamHisse.PadLeft((tamHisse.Length + 2) / 3 * 3, '0');
+        var sonuc = "";
+        var grupSayisi = tamHisse.Length / 3;
+
+        for (var i = 0; i < grupSayisi; i++)
+        {
+            var ucReqem = tamHisse.Substring(i * 3, 3);
+            var grupIndex = grupSayisi - i - 1;
+            if (grupIndex >= binler.Length) continue;   // BMI-də qorunma yoxdur — trilyondan böyük məbləğ olmur
+
+            var soz = UcReqemSoz(ucReqem, birler, onlar);
+            if (!string.IsNullOrWhiteSpace(soz))
+                sonuc += soz + binler[grupIndex] + " ";
+        }
+        return sonuc.Trim();
+    }
+
+    private static string UcReqemSoz(string ucReqem, string[] birler, string[] onlar)
+    {
+        int yuzler = ucReqem[0] - '0', onlarR = ucReqem[1] - '0', birlerR = ucReqem[2] - '0';
+        var sonuc = "";
+        if (yuzler != 0) sonuc += yuzler == 1 ? "yüz" : birler[yuzler] + " yüz";
+        if (onlarR != 0) sonuc += onlar[onlarR];
+        if (birlerR != 0) sonuc += birler[birlerR];
+        return sonuc.Trim();
+    }
+
     // Aletler.yaziyaCevirqepiksiz — yalnız tam hissə (girov dəyəri üçün)
     public static string MebleghSozeQepiksiz(decimal tutar)
     {

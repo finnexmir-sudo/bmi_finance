@@ -1,0 +1,45 @@
+@*
+    Bütün arayış səhifələrinin ortaq başlıq zolağı: xəta/uğur mesajı + növbəti
+    Qeydiyyat № + preview xəbərdarlığı.
+
+    ⚠️ Mesaj qutusuna `fn-alert` class-ı QOYULMUR — `user-area.js` bütün
+    `.fn-alert`-ləri 4 saniyəyə silir və istifadəçi xətanı görməyə bilmir
+    (CLAUDE.md, TeyinatDeyis hadisəsi).
+*@
+@{
+    var nomreYaz = ViewBag.NomreYaz as bool? ?? false;
+    var novbeti = ViewBag.NovbetiNomre as string;
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="arayis-alert arayis-alert--err">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="arayis-alert arayis-alert--ok">@TempData["Success"]</div>
+}
+
+<div class="arayis-nomre">
+    <span>Növbəti Qeydiyyat №:</span>
+    <b>@(novbeti ?? "—")</b>
+    @if (!nomreYaz)
+    {
+        <span class="arayis-preview">ÖNİZLƏMƏ REJİMİ — jurnala heç nə yazılmır</span>
+    }
+</div>
+
+<style>
+    .arayis-alert { padding:10px 16px; border-radius:8px; font-size:13px; margin-bottom:12px; }
+    .arayis-alert--err { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+    .arayis-alert--ok  { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+    .arayis-nomre {
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+        font-size:13px; color:#475569; margin-bottom:14px;
+    }
+    .arayis-nomre b { color:#1a2332; font-size:14px; }
+    .arayis-preview {
+        background:#fffbeb; color:#92400e; border:1px solid #fde68a;
+        padding:2px 10px; border-radius:999px; font-size:11.5px; font-weight:600;
+    }
+</style>

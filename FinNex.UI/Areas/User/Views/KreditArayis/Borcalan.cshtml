@@ -1,0 +1,175 @@
+@using FinNex.Application.DTOs.Kredit.Arayis
+@{
+    ViewData["Title"] = "Borcalan təmizlik arayışı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var nomreYaz = ViewBag.NomreYaz as bool? ?? false;
+    var regnom = ViewBag.Regnom as string;
+    var netice = ViewBag.Netice as List<BorcalanArayisSatirDto> ?? new List<BorcalanArayisSatirDto>();
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Borcalan təmizlik arayışı</div>
+            <div class="fn-page-sub">Borcun bağlandığını təsdiqləyən arayış</div>
+        </div>
+        <a asp-controller="KreditMuraciet" asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    <partial name="_ArayisBaslik" />
+
+    @* ── Axtarış ── *@
+    <div class="fn-card fn-card--form" style="margin-bottom:14px">
+        <form asp-action="Borcalan" method="get" class="ar-axtar">
+            <div class="fn-form-group" style="flex:1;min-width:220px">
+                <label class="fn-label">Qeydiyyat kodu (regnom)</label>
+                <input type="text" name="regnom" value="@regnom" class="fn-input"
+                       placeholder="Müştərinin qeydiyyat kodu" autofocus />
+            </div>
+            <button type="submit" class="fn-btn fn-btn--primary">Sorğu</button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(regnom))
+    {
+        <div class="fn-card" style="margin-bottom:14px">
+            <div class="km-detail-section-title">Tapılan kreditlər (@netice.Count)</div>
+
+            @if (netice.Count == 0)
+            {
+                <div style="padding:18px;text-align:center;color:#64748b;font-size:13px">
+                    Bu qeydiyyat kodu üzrə kredit tapılmadı.
+                </div>
+            }
+            else
+            {
+                <div style="overflow-x:auto">
+                    <table class="ar-table">
+                        <thead>
+                            <tr>
+                                <th>Adı</th><th>Hesab</th><th>KS</th><th>Tarix</th>
+                                <th style="text-align:right">Kredit</th>
+                                <th style="text-align:right">Qalıq</th>
+                                <th>Val</th><th>Müq. №</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in netice)
+                            {
+                                <tr>
+                                    <td>@r.Adi</td>
+                                    <td class="ar-mono">@r.HesabNo</td>
+                                    <td>@r.Ks</td>
+                                    <td>@r.Tarix?.ToString("dd.MM.yyyy")</td>
+                                    <td style="text-align:right">@r.Kredit?.ToString("N2")</td>
+                                    <td style="text-align:right">@r.Qaliq?.ToString("N2")</td>
+                                    <td>@r.Valyuta</td>
+                                    <td>@r.MuqavileNo</td>
+                                    <td>
+                                        <button type="button" class="fn-btn fn-btn--outline ar-sec"
+                                                data-ad="@r.Adi"
+                                                data-muqno="@r.MuqavileNo"
+                                                data-mebleg="@(r.Kredit?.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                                                data-val="@r.Valyuta"
+                                                data-tarix="@r.Tarix?.ToString("yyyy-MM-dd")">Seç</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    @* ── Arayış forması ── *@
+    <div class="fn-form-wrap" style="max-width:900px">
+        <form asp-action="Borcalan" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Regnom" value="@regnom" />
+
+            <div class="fn-card fn-card--form">
+                <div class="km-detail-section-title">Arayışın məlumatları</div>
+
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Borcalan</label>
+                        <input type="text" name="Borcalan" id="f_borcalan" class="fn-input" required />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Müqavilə №</label>
+                        <input type="text" name="MuqavileNo" id="f_muqno" class="fn-input" />
+                    </div>
+                </div>
+
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Məbləğ</label>
+                        @* step="any" — məbləğ InvariantCulture ilə yazılır, vergüllə boş açılar *@
+                        <input type="number" step="0.01" name="Mebleg" id="f_mebleg" class="fn-input" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Valyuta</label>
+                        <select name="Valyuta" id="f_val" class="fn-input">
+                            <option value="AZN">AZN</option>
+                            <option value="USD">USD</option>
+                            <option value="AVRO">AVRO</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Müqavilə tarixi</label>
+                        <input type="date" name="MuqavileTarixi" id="f_muqtar" class="fn-input" />
+                        <div style="font-size:12px;color:#64748b;margin-top:4px">
+                            Sənəddə «… il tarixində bağlanmış» yerinə düşür.
+                        </div>
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Məktubun tarixi</label>
+                        <input type="date" name="MektubTarixi" class="fn-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align:right;margin-top:14px">
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    📄 Arayışı hazırla@(nomreYaz ? "" : " (önizləmə)")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .ar-axtar { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+        .ar-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .ar-table th, .ar-table td { padding:8px 10px; border-bottom:1px solid #eef1f6; text-align:left; }
+        .ar-table th { color:#64748b; font-weight:600; font-size:12px; }
+        .ar-mono { font-family:ui-monospace,Consolas,monospace; font-size:12px; }
+        .ar-sec { padding:4px 12px; font-size:12px; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Cədvəldən sətir seçəndə aşağıdakı formanı doldurur.
+        // ⚠️ Rəqəm InvariantCulture ilə (nöqtə ilə) gəlir — `type=number` yalnız
+        // nöqtə qəbul edir, vergüllə xana BOŞ açılar və dəyər itər (CLAUDE.md).
+        document.querySelectorAll('.ar-sec').forEach(function (b) {
+            b.addEventListener('click', function () {
+                document.getElementById('f_borcalan').value = b.dataset.ad || '';
+                document.getElementById('f_muqno').value    = b.dataset.muqno || '';
+                document.getElementById('f_mebleg').value   = b.dataset.mebleg || '';
+                document.getElementById('f_muqtar').value   = b.dataset.tarix || '';
+                var val = document.getElementById('f_val');
+                if (val && b.dataset.val) val.value = b.dataset.val;
+                document.getElementById('f_borcalan').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+    </script>
+}

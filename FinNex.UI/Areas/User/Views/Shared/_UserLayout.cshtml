@@ -121,7 +121,7 @@
         if (currentArea == "Risk") return "risk";
         if (currentArea == "Muhasibat") return "muhasibat";
         if (currentController == "Tesdiq") return "tesdiq";
-        if (currentController is "KreditMuraciet" or "KreditMuqavile" or "MuqavileSayghac") return "kredit";
+        if (currentController is "KreditMuraciet" or "KreditMuqavile" or "MuqavileSayghac" or "KreditArayis") return "kredit";
         if (currentController is "PidSms" or "MehkemeIsi" or "OdenisNezareti" or "MehkemeCedvel") return "pid";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
@@ -612,6 +612,7 @@
                     // istifadəçi «linkim yoxa çıxdı» deyir.
                     var kredMuracietActive = currentController == "KreditMuraciet";
                     var kredMuqavileActive = currentController is "KreditMuqavile" or "MuqavileSayghac";
+                    var kredArayisActive   = currentController == "KreditArayis";
 
                     <div class="fn-nav-label">Kredit</div>
 
@@ -658,6 +659,31 @@
                                     <i class="bi bi-123"></i> Müqavilə sayğacları
                                 </a>
                             }
+                        </div>
+                    </div>
+
+                    <div class="fn-nav-g @(kredArayisActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Arayışlar</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="KreditArayis" asp-action="Dyp"
+                               class="fn-nav-item @(currentAction == "Dyp" ? "active" : "")">
+                                <i class="bi bi-car-front"></i> DYP arayış
+                            </a>
+                            <a asp-area="User" asp-controller="KreditArayis" asp-action="Borcalan"
+                               class="fn-nav-item @(currentAction == "Borcalan" ? "active" : "")">
+                                <i class="bi bi-person-check"></i> Borcalan təmizlik
+                            </a>
+                            <a asp-area="User" asp-controller="KreditArayis" asp-action="Zamin"
+                               class="fn-nav-item @(currentAction == "Zamin" ? "active" : "")">
+                                <i class="bi bi-people"></i> Zamin təmizlik
+                            </a>
+                            <a asp-area="User" asp-controller="KreditArayis" asp-action="Saipa"
+                               class="fn-nav-item @(currentAction == "Saipa" ? "active" : "")">
+                                <i class="bi bi-truck"></i> Saipa girovdan çıxma
+                            </a>
                         </div>
                     </div>
 

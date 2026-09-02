@@ -158,6 +158,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IKreditMuracietService, KreditMuracietService>();
         services.AddScoped<IKreditQerarService, KreditQerarService>();
         services.AddScoped<IKreditReddSebebiService, KreditReddSebebiService>();
+        services.AddScoped<IKreditArayisService, KreditArayisService>();
         services.AddScoped<IKreditZaminService, KreditZaminService>();
         services.AddScoped<IKreditRandevuService, KreditRandevuService>();
         services.AddScoped<IKreditSmsService, KreditSmsService>();

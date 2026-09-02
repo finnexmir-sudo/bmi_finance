@@ -1,0 +1,113 @@
+@using FinNex.UI.Areas.User.ViewModels
+@model SaipaArayisVM
+@{
+    ViewData["Title"] = "Saipa — girovdan çıxma";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var nomreYaz = ViewBag.NomreYaz as bool? ?? false;
+    var texpasport = Model?.Rejim == SaipaArayisVM.RejimTexpasport;
+}
+
+<div class="fn-page fn-tint">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Saipa — girovdan çıxma</div>
+            <div class="fn-page-sub">«Atlas Cars» avtomobilləri — DYP-yə məktub</div>
+        </div>
+        <a asp-controller="KreditMuraciet" asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    <partial name="_ArayisBaslik" />
+
+    <div class="fn-form-wrap" style="max-width:900px">
+        <form asp-action="Saipa" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-card fn-card--form">
+                <div class="km-detail-section-title">Məktubun növü</div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Rejim</label>
+                    <select name="Rejim" id="saipaRejim" class="fn-input">
+                        <option value="@SaipaArayisVM.RejimGirov" selected="@(!texpasport)">@SaipaArayisVM.RejimGirov</option>
+                        <option value="@SaipaArayisVM.RejimTexpasport" selected="@texpasport">@SaipaArayisVM.RejimTexpasport</option>
+                    </select>
+                    <div class="fn-hint" style="font-size:12px;color:#64748b;margin-top:4px">
+                        Rejim şablonu dəyişir — girovdan çıxma və texpasport dəyişmə ayrı sənədlərdir.
+                    </div>
+                </div>
+
+                @* Şəhadətnamə nömrəsi YALNIZ texpasport rejimində LAZIMDIR, amma sahə
+                   HƏMİŞƏ render olunur — şərtlə gizlədilən sahə POST-da gəlmir və
+                   dəyər səssizcə itir (CLAUDE.md). Burada yalnız gizlədilir/göstərilir. *@
+                <div class="fn-form-group" id="texpQutu" style="@(texpasport ? "" : "display:none")">
+                    <label class="fn-label">Şəhadətnamə (texpasport) № <span style="color:#dc2626">*</span></label>
+                    <input type="text" name="TexpasportNo" value="@Model?.TexpasportNo" class="fn-input"
+                           placeholder="Məs: AZE 123456" />
+                </div>
+            </div>
+
+            <div class="fn-card fn-card--form">
+                <div class="km-detail-section-title">Avtomobil</div>
+
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Avto №</label>
+                        <input type="text" name="AvtoNo" value="@Model?.AvtoNo" class="fn-input" required />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Buraxılış ili</label>
+                        <input type="text" name="BuraxilisIli" value="@Model?.BuraxilisIli" class="fn-input" />
+                    </div>
+                </div>
+
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Mühərrik</label>
+                        <input type="text" name="Muherrik" value="@Model?.Muherrik" class="fn-input" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Ban</label>
+                        <input type="text" name="Ban" value="@Model?.Ban" class="fn-input" />
+                    </div>
+                </div>
+
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Rəng</label>
+                        <input type="text" name="Reng" value="@Model?.Reng" class="fn-input" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">İpoteka müqaviləsinin tarixi</label>
+                        <input type="date" name="MuqavileTarixi" class="fn-input"
+                               value="@(Model?.MuqavileTarixi?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                </div>
+
+                <div class="fn-form-group">
+                    <label class="fn-label">Məktubun tarixi</label>
+                    <input type="date" name="MektubTarixi" class="fn-input"
+                           value="@((Model?.MektubTarixi ?? DateTime.Today).ToString("yyyy-MM-dd"))" />
+                </div>
+            </div>
+
+            <div style="text-align:right;margin-top:14px">
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    📄 Məktubu hazırla@(nomreYaz ? "" : " (önizləmə)")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var rejim = document.getElementById('saipaRejim');
+            var qutu = document.getElementById('texpQutu');
+            if (!rejim || !qutu) return;
+            rejim.addEventListener('change', function () {
+                qutu.style.display = (rejim.value === '@SaipaArayisVM.RejimTexpasport') ? '' : 'none';
+            });
+        })();
+    </script>
+}
