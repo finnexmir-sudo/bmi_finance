@@ -177,17 +177,17 @@ body.theme-midnight {
 }
 
 .fn-topnav-logo {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
     object-fit: cover;
 }
 
 .fn-topnav-brand-text {
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 17px;
+    font-weight: 600;
     color: var(--nav-text-strong);
-    letter-spacing: -0.2px;
+    letter-spacing: -0.3px;
 }
 
 .fn-topnav-brand-text b {
@@ -207,10 +207,10 @@ body.theme-midnight {
 }
 
 .fn-topnav-powered {
-    font-size: 10px;
+    font-size: 11.5px;
     font-weight: 400;
     letter-spacing: 0.01em;
-    color: rgba(255, 255, 255, 0.42);
+    color: rgba(255, 255, 255, 0.55);
     white-space: nowrap;
 }
 
@@ -682,9 +682,9 @@ body.theme-midnight .fn-topnav-dd-item--active {
 }
 
 .fn-brandword {
-    font-size: 12.5px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     color: var(--sb-label-active);
 }
 
@@ -695,9 +695,9 @@ body.theme-midnight .fn-topnav-dd-item--active {
 
 .fn-brandver {
     margin-inline-start: auto;
-    font-size: 10px;
+    font-size: 10.5px;
     color: var(--sb-label);
-    opacity: 0.75;
+    opacity: 0.8;
     font-variant-numeric: tabular-nums;
 }
 
