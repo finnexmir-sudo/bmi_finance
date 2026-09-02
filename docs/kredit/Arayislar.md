@@ -47,7 +47,7 @@ siyahıdır — ikinci siyahı qurulmadı, yoxsa biri köhnə qalar.
 
 | Fayl | BMI-dəki adı |
 |---|---|
-| `DYP_arayis_girovdan_cixma.docx` | `DYP arayış girovda çıxma1.doc` |
+| `DYP_arayis_girovdan_cixma.docx` | `DYP arayış girovda çıxma1.doc` → `.docx` çevrilib |
 | `Borcalan_temizlik_arayisi.docx` | `borcalan arayis.docx` |
 | `Zamin_temizlik_arayisi.docx` | `Zaminarayis1.docx` |
 | `Saipa_girovdan_cixma.docx` | `carsgirovcix1.docx` |
@@ -163,12 +163,12 @@ FİN → yalnız hərf/rəqəm) və `{REGNOM}` / `{PINCODE}` yer tutucusu əvəz
 1. **VS-də build.** (Bu kod build EDİLMƏYİB — mühitdə `dotnet` yoxdur.)
 2. `docs/sql/kredit/Arayis_OracleSorgular.sql` işlədin → Admin → Oracle Sorğular-da
    «Arayış Borcalan» və «Arayış Zamin» görünməlidir (aktiv).
-3. **DYP şablonu:** `DYP arayış girovda çıxma1.doc` **köhnə `.doc` formatındadır** —
-   `KreditWordService` (OpenXML) onu aça bilmir. Word-də açıb
-   **«Farklı kaydet → Word Belgesi (.docx)»** edin və faylı
-   `wwwroot/Files/Word/Kredit/Arayis/DYP_arayis_girovdan_cixma.docx`
-   adı ilə qoyun. O olmadan DYP səhifəsi «Şablon tapılmadı» deyir və **nömrə
-   ayırmır** (jurnala heç nə yazılmır).
+3. **DYP şablonu hazırdır** (02.09.2026). Orijinal köhnə `.doc` (OLE2)
+   formatında idi — OpenXML onu aça bilmir; istifadəçi Word-də `.docx` kimi
+   yenidən saxladı, fayl repo-ya `DYP_arayis_girovdan_cixma.docx` adı ilə
+   salındı və mətnindəki artıq tire (`{mektarixi}- ил тарихли`) təmizləndi.
+   ⚠️ `wwwroot`-a ƏL İLƏ salınmış `DYP arayış girovda çıxma1.docx` faylı
+   varsa SİLİN — kod onu oxumur, yalnız çaşdırır.
 4. Hər dörd səhifəni **önizləmə rejimində** (`NomreYaz=false`) sınayın — sənədin
    içindəki bütün xanaları BMI-dən çıxan sənədlə tutuşdurun.
 5. Nəticə düz olanda `appsettings.json → KreditArayis:NomreYaz = true`.
