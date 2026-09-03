@@ -2,7 +2,13 @@
 <html lang="az">
 <head>
     <meta charset="utf-8" />
-    <title>@ViewData["Title"] - BMI Finance</title>
+    @* Brauzer tabı MƏHSULUN adını daşıyır — _UserLayout ilə eyni qayda
+       («Dashboard — FinNex»). Əvvəl burada «- BMI Finance» yazılırdı və
+       giriş səhifəsi digər səhifələrdən fərqli görünürdü.
+       QEYD: aşağıdakı `application-name` / `apple-mobile-web-app-title`
+       (PWA adı) və favicon QƏSDƏN toxunulmadı — onlar telefon ekranında
+       görünür, istifadəçi təsdiqi gözləyir. *@
+    <title>@ViewData["Title"] — FinNex</title>
 
     <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
     <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" />

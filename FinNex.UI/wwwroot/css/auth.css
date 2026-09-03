@@ -16,27 +16,35 @@
     box-shadow: 0 25px 50px rgba(0,0,0,.25);
 }
 
+/* Loqo ilə ad arasındakı boşluq 25px idi — üstəlik şəklin ÖZ ağ haşiyəsi
+   var (kvadrat JPG, gerb ortada). İkisi toplananda ~35px açılırdı.
+   `display:block` + `margin:auto` sətir altındakı boşluğu da götürür
+   (inline şəkil öz sətrinin descender yerini saxlayır). */
 .auth-logo {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 8px;
+    line-height: 0;
 }
 
     .auth-logo img {
         width: 70px;
         border-radius: 12px;
+        display: block;
+        margin: 0 auto;
     }
 
 .auth-title {
     text-align: center;
     font-weight: 700;
     font-size: 26px;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
 }
 
 .auth-subtitle {
     text-align: center;
     color: #6c757d;
-    margin-bottom: 30px;
+    margin-bottom: 26px;
 }
 
 .form-control {
@@ -63,3 +71,41 @@
     text-align: center;
     margin-top: 20px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MƏHSUL İMZASI — giriş kartının altında (03.09.2026)
+
+   Sıra `_UserLayout` ilə EYNİDİR və qəsdəndir:
+   böyük ad MÜŞTƏRİNİN, kiçik imza MƏHSULUN. Tərsi («FinNex / powered by
+   BMI Finance») müştərini texnologiya təchizatçısı kimi göstərir.
+
+   FinNex burada SABİTDİR — konfiqurasiyadan oxunmur; müştəri adı isə
+   appsettings → Brend blokundan gəlir.
+   ═══════════════════════════════════════════════════════════════════ */
+.auth-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid #e9edf3;
+}
+
+    .auth-brand img {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        display: block;
+    }
+
+.auth-brand-text {
+    font-size: 11.5px;
+    color: #9aa4b2;
+    letter-spacing: 0.01em;
+}
+
+    .auth-brand-text b {
+        font-weight: 700;
+        color: #5a6675;
+    }

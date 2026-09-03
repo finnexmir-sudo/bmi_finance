@@ -1,16 +1,23 @@
 ﻿@model FinNex.UI.DTO.LoginDto
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfg
 
 @{
     Layout = "_AuthLayout";
+
+    // Müştərinin adı/loqosu appsettings → Brend blokundan (başlıq zolağı ilə
+    // eyni mənbə). FinNex isə aşağıda SABİTDİR — məhsulun adıdır.
+    var brendQisa = _cfg["Brend:SirketQisa"] ?? "BMI";
+    var brendAd = _cfg["Brend:SirketAdi"] ?? "Finance";
+    var brendLogo = _cfg["Brend:Logo"] ?? "/images/Logobank.jpg";
 }
 
 <div class="auth-card">
 
     <div class="auth-logo">
-        <img src="~/images/Logobank.jpg" />
+        <img src="@Url.Content(brendLogo)" alt="@brendQisa @brendAd" />
     </div>
 
-    <div class="auth-title">BMI Finance</div>
+    <div class="auth-title">@brendQisa @brendAd</div>
     <div class="auth-subtitle">Təhlükəsiz giriş</div>
 
     @if (!ViewData.ModelState.IsValid)
@@ -48,6 +55,11 @@
         </a>
     </div>
 
+    @* Məhsul imzası — SABİTDİR, konfiqurasiyadan oxunmur. *@
+    <div class="auth-brand">
+        <img src="~/images/finnex-mark.png" alt="FinNex" />
+        <span class="auth-brand-text">powered by <b>FinNex</b></span>
+    </div>
 
 </div>
 
