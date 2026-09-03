@@ -1,4 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@{
+    // Giriş səhifəsi ViewData["Title"] təyin etmir → sadəcə «— FinNex»
+    // yazılırdı, öndə asılı tire ilə. Ayırıcı yalnız başlıq VARSA qoyulur.
+    var sehifeBasligi = ViewData["Title"] as string;
+    var tabBasligi = string.IsNullOrWhiteSpace(sehifeBasligi)
+        ? "FinNex"
+        : $"{sehifeBasligi} — FinNex";
+}
+<!DOCTYPE html>
 <html lang="az">
 <head>
     <meta charset="utf-8" />
@@ -8,7 +16,7 @@
        QEYD: aşağıdakı `application-name` / `apple-mobile-web-app-title`
        (PWA adı) və favicon QƏSDƏN toxunulmadı — onlar telefon ekranında
        görünür, istifadəçi təsdiqi gözləyir. *@
-    <title>@ViewData["Title"] — FinNex</title>
+    <title>@tabBasligi</title>
 
     <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
     <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" />
