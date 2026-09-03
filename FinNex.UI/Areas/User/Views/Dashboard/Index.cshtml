@@ -51,12 +51,25 @@
     <div class="fn-dashboard">
 
         @* ── Salam + sürətli əməliyyatlar ── *@
+        @* Ayırıcılar BOŞ sahələrdə asılı qalmasın — admin kimi şöbəsi/vəzifəsi
+           olmayan istifadəçidə ekranda «· · 0 il staj» görünürdü. *@
+        @{
+            var salamAd = string.IsNullOrWhiteSpace(Model.TamAd) ? "" : $", {Model.TamAd}";
+            var altParcalar = new[]
+            {
+                Model.SobeAdi,
+                Model.VezifeAdi,
+                Model.IsStaji > 0 ? $"{Model.IsStaji} il staj" : null
+            }.Where(x => !string.IsNullOrWhiteSpace(x));
+            var altSetir = string.Join(" · ", altParcalar);
+        }
         <div class="fn-greeting-bar">
             <div>
-                <div class="fn-greeting-title">Xoş gəldin, @Model.TamAd</div>
-                <div class="fn-greeting-sub">
-                    @Model.SobeAdi · @Model.VezifeAdi · @Model.IsStaji il staj
-                </div>
+                <div class="fn-greeting-title">Xoş gəldin@salamAd</div>
+                @if (!string.IsNullOrEmpty(altSetir))
+                {
+                    <div class="fn-greeting-sub">@altSetir</div>
+                }
             </div>
         <div class="fn-quick-actions"> 
             <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create" class="fn-qa-btn fn-qa-btn--primary">
