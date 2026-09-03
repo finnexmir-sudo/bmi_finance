@@ -65,7 +65,10 @@
         }
         <div class="fn-greeting-bar">
             <div>
-                <div class="fn-greeting-title">Xoş gəldin@salamAd</div>
+                @* ⚠️ MÖTƏRİZƏ MƏCBURİDİR: `gəldin@salamAd` yazsaq Razor onu
+                   E-POÇT ÜNVANI sayır (hərf + @ + hərf) və olduğu kimi çap edir.
+                   `@(...)` açıq ifadədir — həmişə kod kimi işlənir. *@
+                <div class="fn-greeting-title">Xoş gəldin@(salamAd)</div>
                 @if (!string.IsNullOrEmpty(altSetir))
                 {
                     <div class="fn-greeting-sub">@altSetir</div>
