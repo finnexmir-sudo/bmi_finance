@@ -575,9 +575,12 @@ public class MasinMuracietService : IMasinMuracietService
         await _uow.Repository<MasinMuraciet>().YenileAsync(e);
         await _uow.YaddaSaxlaAsync();
 
+        // İŞÇİYƏ BİLDİRİŞ GETMİR (03.09.2026, istifadəçi qərarı) — açarı alan
+        // adam həmin an kassadadır, hadisəni onsuz da bilir. Rəhbərə gedir.
         await BildirIsciVeRehberAsync(e, BildirisNovu.MasinCixis,
             "Maşın çıxdı",
-            $"{e.Masin?.DovletNomresi} — açar verildi ({e.CixisTarixi:dd.MM.yyyy HH:mm}).");
+            $"{e.Masin?.DovletNomresi} — açar verildi ({e.CixisTarixi:dd.MM.yyyy HH:mm}).",
+            isciyeDe: false);
 
         return Result.Ok($"«Çıxdı» qeyd edildi — {e.CixisTarixi:HH:mm}.");
     }
@@ -627,16 +630,33 @@ public class MasinMuracietService : IMasinMuracietService
     /// <summary>
     /// İşçiyə və (fərqlidirsə) təsdiqləyən rəhbərə bildiriş.
     ///
-    /// Rəhbər öz müraciətini yazıbsa `RehberId == IsciId` olur — şərt olmasa
-    /// eyni adama EYNİ bildiriş iki dəfə gedərdi.
-    /// Bildirişlər ARDICIL yazılır (`Task.WhenAll` YOX) — `BildirisService`
-    /// sorğunun ortaq `DbContext`-ini işlədir, o isə thread-safe deyil
-    /// (CLAUDE.md — paralel yazı və ölü bildiriş).
+    /// <para><b>«isciyeDe» — 03.09.2026, istifadəçi qərarı.</b>
+    /// Açarı TƏHVİL ALANDA işçiyə bildiriş getmir: o, həmin an kassanın
+    /// qarşısında dayanıb və açarı əlinə alır — hadisəni onsuz da bilir.
+    /// QAYTARANDA isə gedir: qeydin bağlandığını (və müddəti) görməlidir.
+    /// <b>Rəhbərə hər iki halda gedir</b> — o, kassada deyil.</para>
+    ///
+    /// <para>Rəhbər öz müraciətini yazıbsa `RehberId == IsciId` olur — şərt
+    /// olmasa eyni adama EYNİ bildiriş iki dəfə gedərdi. ⚠️ Nəticə olaraq
+    /// belə halda ÇIXIŞDA heç kimə bildiriş getmir; bu, qəsdəndir — orada
+    /// «rəhbər» elə açarı alan adamın özüdür.</para>
+    ///
+    /// <para>Bildirişlər ARDICIL yazılır (`Task.WhenAll` YOX) —
+    /// `BildirisService` sorğunun ortaq `DbContext`-ini işlədir, o isə
+    /// thread-safe deyil (CLAUDE.md — paralel yazı və ölü bildiriş).</para>
     /// </summary>
-    private async Task BildirIsciVeRehberAsync(MasinMuraciet e, BildirisNovu nov, string bashliq, string metn)
+    /// <param name="isciyeDe">
+    /// `false` olanda müraciəti yazan işçiyə bildiriş YAZILMIR; rəhbər
+    /// hissəsi toxunulmur.
+    /// </param>
+    private async Task BildirIsciVeRehberAsync(
+        MasinMuraciet e, BildirisNovu nov, string bashliq, string metn, bool isciyeDe = true)
     {
-        await GuvenliBildirisAsync(() => _bildiris.NotifyIsciAsync(
-            e.IsciId, nov, bashliq, metn, "/Avtopark/Muraciet/Index"));
+        if (isciyeDe)
+        {
+            await GuvenliBildirisAsync(() => _bildiris.NotifyIsciAsync(
+                e.IsciId, nov, bashliq, metn, "/Avtopark/Muraciet/Index"));
+        }
 
         if (e.RehberId.HasValue && e.RehberId.Value != e.IsciId)
         {

@@ -82,7 +82,7 @@ namespace FinNex.Domain.Entities.Communication
         MasinMuraciet          = 49,
         MasinTesdiq            = 50,
         MasinImtina            = 51,
-        MasinCixis             = 52,   // açar verildi — işçi + rəhbər
+        MasinCixis             = 52,   // açar verildi — YALNIZ rəhbər (03.09.2026)
         MasinQayidis           = 53,   // açar geri alındı — işçi + rəhbər
         MasinMuddetXeberdarliq = 54,   // sığorta/baxış/yağ bitməyə yaxınlaşır
     }
