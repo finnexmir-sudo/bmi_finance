@@ -105,7 +105,20 @@
     letter-spacing: 0.01em;
 }
 
-    .auth-brand-text b {
-        font-weight: 700;
-        color: #5a6675;
+/* Rənglər sidebar-dakı imzadan (topnav.css → .fn-brandword) götürülüb:
+       «Fin» = --sb-label-active   → #1e3a5f
+       «Nex» = --sb-icon           → #2d6cdf
+   Burada TOKEN yox, SABİT dəyər yazılır — auth.css tema sistemindən
+   kənardadır (giriş səhifəsində `body.theme-*` class-ı qoyulmur).
+   Tema seçimi giriş səhifəsinə gətirilsə, bu iki dəyər dəyişənə keçməlidir. */
+.auth-brand-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1e3a5f;
+}
+
+    .auth-brand-name b {
+        font-weight: 800;
+        color: #2d6cdf;
     }
