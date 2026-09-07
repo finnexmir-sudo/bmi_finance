@@ -202,7 +202,20 @@ namespace FinNex.Application.Services.HR
                                    .Include(x => x.Mekan)
                                    .Include(x => x.Masin),   // 01.09.2026 — maşın adı üçün
                     izlemeden: true);
-            return list.OrderBy(x => x.BaslamaTarixi).Select(Map).ToList();
+            // Sıralama: YENİDƏN KÖHNƏYƏ — tarix, sonra saat (istifadəçi qərarı 07.09.2026).
+            // Təsdiq panelinə ən son gələn yuxarıda olmalıdır; əvvəl `OrderBy` idi
+            // (köhnədən yeniyə) və rəhbər hər dəfə siyahının dibinə enirdi.
+            //
+            // `BaslamaSaati` NULL = TAM GÜN ezamiyyəti — `TimeSpan.Zero` sayılır,
+            // yəni eyni tarixdə saatlı müraciətlərdən SONRA gəlir (gün 00:00-da başlayır).
+            //
+            // ⚠️ Bu metodu HƏM Rəhbər, HƏM HR paneli çağırır (`TesdiqController`),
+            // yəni sıra hər ikisində eynidir — qəsdən: eyni siyahının iki panel-də
+            // fərqli sıralanması istifadəçini çaşdırardı.
+            return list
+                .OrderByDescending(x => x.BaslamaTarixi.Date)
+                .ThenByDescending(x => x.BaslamaSaati ?? TimeSpan.Zero)
+                .Select(Map).ToList();
         }
 
         public async Task<EzamiyyetMuracietListDto?> DetayAsync(int id)

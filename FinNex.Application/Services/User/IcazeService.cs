@@ -507,8 +507,14 @@ namespace FinNex.Application.Services
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
+                // Sıralama: YENİDƏN KÖHNƏYƏ — tarix, SONRA BAŞLAMA SAATI
+                // (istifadəçi qərarı 07.09.2026). Əvvəl yalnız tarix üzrə idi:
+                // eyni günün icazələri baza sırası ilə gəlirdi, yəni səhər 09:00
+                // müraciəti günorta 15:00 müraciətindən yuxarıda dura bilirdi.
                 return Result<IList<IcazeListDto>>.Ok(
-                    list.OrderByDescending(x => x.IcazeTarixi).Select(MapToListDto).ToList());
+                    list.OrderByDescending(x => x.IcazeTarixi.Date)
+                        .ThenByDescending(x => x.BaslamaSaati)
+                        .Select(MapToListDto).ToList());
             }
             catch (Exception ex)
             {
