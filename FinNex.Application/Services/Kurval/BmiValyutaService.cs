@@ -74,6 +74,77 @@ public class BmiValyutaService : IBmiValyutaService
         }
     }
 
+    // ══ VALYUTA KURSU (20 000 USD limiti üçün) ════════════════════════════
+
+    private const string KursSorguAdi = "VALYUTA_KURSU";
+
+    public async Task<decimal?> KursAsync(string valyutaKodu, DateTime tarix, CancellationToken ct = default)
+    {
+        // Kod yalnız RƏQƏMDİR («00», «01»…) — sorğuya birbaşa yapışdırılır,
+        // ona görə burada TƏMİZLƏNİR. Təmizlənməsə inyeksiyaya açıq olardı.
+        var kod = new string((valyutaKodu ?? "").Where(char.IsDigit).ToArray());
+        if (kod.Length is 0 or > 4) return null;
+
+        try
+        {
+            var sorgu = (await _uow.Repository<OracleSorgu>()
+                    .HamisiniGetirAsync(x => !x.Silinib && x.Aktiv, izlemeden: true))
+                .FirstOrDefault(x => string.Equals((x.SorguAdi ?? "").Trim(), KursSorguAdi,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (sorgu == null || string.IsNullOrWhiteSpace(sorgu.SorguMetni))
+                return null;   // sorğu quraşdırılmayıb — səssiz 0 YOX
+
+            var sql = sorgu.SorguMetni
+                .Replace("{KOD}", kod)
+                .Replace("{TARIX}", tarix.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture));
+
+            var setirler = await _oracle.SelectAsync(sql, 1, ct);
+            if (setirler.Count == 0) return null;
+
+            var kurs = Reqem(setirler[0], "KURS");
+
+            // 0 və mənfi kurs REAL DEYİL — bölmədə istifadə olunsa nəticə
+            // ya sonsuz, ya mənfi çıxar. Belə dəyəri «alınmadı» sayırıq.
+            return kurs is > 0 ? kurs : null;
+        }
+        catch
+        {
+            return null;   // Oracle əlçatmazdır — çağıran tərəf bloklayacaq
+        }
+    }
+
+    /// <summary>
+    /// Oracle NUMBER sütunu — TİPİ BİRBAŞA götürülür.
+    ///
+    /// ⚠️ `ToString()` + `Parse` DƏQİQ 100× SƏHV verir: `120.58m.ToString()`
+    /// cari mədəniyyətdə «120,58» olur, `TryParse(NumberStyles.Any, Invariant)`
+    /// isə vergülü MİN AYIRICISI sayıb 12058 qaytarır (CLAUDE.md, 19.08.2026
+    /// VM 98.2.1 hadisəsi). Ona görə burada çevirmə YOXDUR.
+    /// </summary>
+    private static decimal? Reqem(IDictionary<string, object?> s, string sutun)
+    {
+        var acar = s.Keys.FirstOrDefault(k => string.Equals(k, sutun, StringComparison.OrdinalIgnoreCase));
+        if (acar == null) return null;
+
+        return s[acar] switch
+        {
+            null      => null,
+            decimal d => d,
+            double dd => (decimal)dd,
+            float f   => (decimal)f,
+            int i     => i,
+            long l    => l,
+            short sh  => sh,
+            // Sütun həqiqətən MƏTN gəlsə: NumberStyles.Float — `Any` İŞLƏTMƏ,
+            // o, min ayırıcısına icazə verir və eyni 100× səhvi qaytarır.
+            string st => decimal.TryParse(st, NumberStyles.Float, CultureInfo.InvariantCulture, out var m1) ? m1
+                       : decimal.TryParse(st, NumberStyles.Float, CultureInfo.CurrentCulture, out var m2) ? m2
+                       : null,
+            _         => null
+        };
+    }
+
     // Sütun adı böyük/kiçik hərflə gələ bilər — müqayisə həssas deyil.
     private static string Metn(IDictionary<string, object?> s, string sutun)
     {

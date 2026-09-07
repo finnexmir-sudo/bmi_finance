@@ -20,10 +20,16 @@ public abstract class KocurmeControllerBase : Controller
 {
     protected readonly IKocurmeService _service;
     private readonly IWebHostEnvironment _env;
-    protected KocurmeControllerBase(IKocurmeService service, IWebHostEnvironment env)
+
+    // 20 000 USD limitinin əsaslandırma sənədləri — seçim siyahısı + inline əlavə
+    private readonly IKocurmeSenedNovuService _senedNovu;
+
+    protected KocurmeControllerBase(IKocurmeService service, IWebHostEnvironment env,
+                                    IKocurmeSenedNovuService senedNovu)
     {
         _service = service;
         _env = env;
+        _senedNovu = senedNovu;
     }
 
     protected abstract string Novu { get; }     // "Pul" / "Telebe"
@@ -42,6 +48,16 @@ public abstract class KocurmeControllerBase : Controller
         ViewBag.IsAdmin = IsAdmin();
     }
 
+    /// <summary>
+    /// Sənəd növləri siyahısı — formanın HƏR render-ində lazımdır.
+    ///
+    /// ⚠️ POST UĞURSUZ OLANDA DA çağırılmalıdır: `View(dto)` ilə qayıdanda
+    /// `ViewBag` yenidən qurulur və doldurulmasa açılan siyahı BOŞ gələr —
+    /// operator limit xətasını görər, amma sənədi seçə bilməz və qıfıla düşər.
+    /// </summary>
+    private async Task SenedNovleriniYukleAsync()
+        => ViewBag.SenedNovleri = await _senedNovu.AktivlerAsync();
+
     public async Task<IActionResult> Index(int? il)
     {
         var model = await _service.HamisiniGetirAsync(Novu, il);
@@ -54,6 +70,7 @@ public abstract class KocurmeControllerBase : Controller
     public async Task<IActionResult> Yarat()
     {
         Baza();
+        await SenedNovleriniYukleAsync();
         var dto = new KocurmeCreateDto { Tarix = DateTime.Today, HevaleNo = await _service.NovbetiHevaleNoAsync(Novu) };
         return View($"{V}Yarat.cshtml", dto);
     }
@@ -69,6 +86,7 @@ public abstract class KocurmeControllerBase : Controller
             return RedirectToAction(nameof(Index));
         }
         Baza();
+        await SenedNovleriniYukleAsync();
         ViewBag.Tekrar = true;
         return View($"{V}Yarat.cshtml", dto);
     }
@@ -82,6 +100,7 @@ public abstract class KocurmeControllerBase : Controller
         if (!res.Success)
         {
             Baza();
+            await SenedNovleriniYukleAsync();   // yoxsa siyahı boş gələr, operator qıfıla düşər
             return View($"{V}Yarat.cshtml", dto);
         }
         // Qeyddən sonra Detal-a keç və Word+Excel avtomatik yüklənsin
@@ -215,6 +234,7 @@ public abstract class KocurmeControllerBase : Controller
             return RedirectToAction(nameof(Index));
         }
         Baza();
+        await SenedNovleriniYukleAsync();
         return View($"{V}Redakte.cshtml", dto);
     }
 
@@ -227,9 +247,88 @@ public abstract class KocurmeControllerBase : Controller
         if (!res.Success)
         {
             Baza();
+            await SenedNovleriniYukleAsync();   // yoxsa siyahı boş gələr
             return View($"{V}Redakte.cshtml", dto);
         }
         return RedirectToAction(nameof(Index));
+    }
+
+    // ══ 20 000 USD AYLIQ LİMİTİ ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Formadakı CANLI yoxlama. Cavabı SERVER hesablayır — yadda saxlama yolu
+    /// ilə eyni metod (`LimitYoxlaAsync`). JS burada heç nə hesablamır.
+    ///
+    /// `ValidateAntiForgeryToken` YOXDUR — bu, yalnız OXUYAN endpoint-dir,
+    /// heç nə yazmır. Token tələb etsəydik hər fetch-ə əlavə iş düşərdi.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> LimitYoxla(
+        string? fin, decimal? mebleg, string? medaxilValyuta, DateTime? tarix, int? id)
+    {
+        var n = await _service.LimitYoxlaAsync(Novu, fin, mebleg, medaxilValyuta, tarix, id);
+
+        return Json(new
+        {
+            cemiUsd          = n.Movcud.CemiUsd,
+            sayi             = n.Movcud.Sayi,
+            yeniUsd          = n.YeniUsd,
+            sonraCem         = n.SonraCem,
+            limit            = n.Movcud.Limit,
+            senedTelebOlunur = n.SenedTelebOlunur,
+            kursAlinmadi     = n.KursAlinmadi,
+            mesaj            = n.Mesaj
+        });
+    }
+
+    /// <summary>
+    /// Siyahı səhifəsindəki FİN axtarışı — bir şəxsin bir ayının cəmi.
+    /// Rəqəm forma ilə EYNİ mənbədən gəlir (`FinAyliqCemAsync`).
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> FinAyliqCem(string? fin, int? il, int? ay)
+    {
+        var indi = DateTime.Today;
+        var n = await _service.FinAyliqCemAsync(fin, il ?? indi.Year, ay ?? indi.Month);
+
+        var mesaj = string.IsNullOrWhiteSpace(n.Fin)
+            ? "FİN yazın."
+            : n.Sayi == 0
+                ? $"«{n.Fin}» üzrə bu ayda köçürmə tapılmadı."
+                : $"«{n.Fin}» — {n.Sayi} əməliyyat, cəmi {n.CemiUsd:N2} USD. " +
+                  (n.Asilib
+                      ? $"Hədd ({n.Limit:N0} USD) AŞILIB — {(n.CemiUsd - n.Limit):N2} USD artıq."
+                      : $"Qalıq: {n.Qaliq:N2} USD.");
+
+        return Json(new
+        {
+            fin     = n.Fin,
+            sayi    = n.Sayi,
+            cemiUsd = n.CemiUsd,
+            limit   = n.Limit,
+            qaliq   = n.Qaliq,
+            asilib  = n.Asilib,
+            mesaj
+        });
+    }
+
+    /// <summary>
+    /// Siyahıda olmayan sənəd növünü ELƏ FORMADAN əlavə etmək (istifadəçi
+    /// qərarı 07.09.2026). Növ ortaq cədvələ düşür — növbəti dəfə hamı
+    /// siyahıdan seçir, «hərə nə gəldi yazmasın» qaydası belə qorunur.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SenedNovuYarat(string ad)
+    {
+        var res = await _senedNovu.YaratAsync(ad, GetUserId());
+        return Json(new
+        {
+            ugur  = res.Success,
+            id    = res.Success ? res.Data : 0,
+            ad    = (ad ?? "").Trim(),
+            mesaj = res.Message
+        });
     }
 
     [HttpPost]

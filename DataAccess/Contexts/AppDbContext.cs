@@ -65,6 +65,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<GedenHevale> GedenHevaleler { get; set; }
     public DbSet<GelenHevale> GelenHevaleler { get; set; }
     public DbSet<Kocurme> Kocurmeler { get; set; }
+    public DbSet<KocurmeSenedNovu> KocurmeSenedNovleri { get; set; }
 
     // Səhifə təlimatları — «?» düyməsinin mətni (27.08.2026)
     public DbSet<SehifeYardimi> SehifeYardimlari { get; set; }
@@ -469,6 +470,32 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Elave).HasMaxLength(200);
             e.Property(x => x.Meqsed).HasMaxLength(200);
             e.HasIndex(x => new { x.Novu, x.Tarix });
+
+            // ── 20 000 USD aylıq limiti (07.09.2026) ──────────────────────
+            e.Property(x => x.GonderenFin).HasMaxLength(10);
+            e.Property(x => x.UsdEkvivalent).HasPrecision(18, 2);
+            e.Property(x => x.UsdKursu).HasPrecision(18, 10);   // MB kursu — 10 onluq
+            e.Property(x => x.LimitQeydi).HasMaxLength(500);
+
+            // Aylıq cəm sorğusunun indeksi: Novu + FİN + Tarix.
+            // Filtr həmişə bu üçü ilə gedir (yalnız "Pul", bir FİN, bir ay).
+            e.HasIndex(x => new { x.Novu, x.GonderenFin, x.Tarix });
+
+            // NoAction — sənəd növü SİLİNMİR, deaktiv edilir. Cascade qoysaq
+            // növ silinəndə köçürmə qeydləri də gedərdi.
+            e.HasOne(x => x.SenedNovu)
+             .WithMany()
+             .HasForeignKey(x => x.SenedNovuId)
+             .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // Limit əsaslandırması üçün sənəd növləri — açar siyahısı.
+        // Seed YOXDUR: operator ilk lazım olanda köçürmə formasından əlavə edir.
+        builder.Entity<KocurmeSenedNovu>(e =>
+        {
+            e.ToTable("KocurmeSenedNovleri");
+            e.Property(x => x.Ad).HasMaxLength(200).IsRequired();
+            e.HasIndex(x => new { x.Aktivdir, x.Sira });
         });
 
         // Tələbə köçürməsi (təhsil haqqı) — FinNex cədvəli

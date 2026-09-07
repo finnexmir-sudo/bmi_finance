@@ -69,4 +69,29 @@
     @@media (max-width:820px) {
         .pk-row--2, .pk-row--3, .pk-row--amt, .pk-f2 { grid-template-columns:1fr; }
     }
+
+/* ══ 20 000 USD aylıq limiti (07.09.2026) ═══════════════════════════════ */
+.pk-fin-hint { font-weight: 400; color: #94a3b8; font-size: 11px; }
+
+.pk-limit { border-left: 4px solid #cbd5e1; transition: border-color .15s, background .15s; }
+.pk-limit--ok   { border-left-color: #16a34a; }
+.pk-limit--asib { border-left-color: #dc2626; background: #fff7f7; }
+.pk-limit--xeta { border-left-color: #d97706; background: #fffbeb; }
+
+.pk-limit-body   { padding: 4px 2px 2px; }
+.pk-limit-status { font-size: 13px; color: #475569; line-height: 1.5; }
+.pk-limit--asib .pk-limit-status { color: #b91c1c; font-weight: 600; }
+.pk-limit--xeta .pk-limit-status { color: #92400e; font-weight: 600; }
+
+.pk-limit-sened { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e2e8f0; }
+.pk-req { color: #dc2626; }
+
+.pk-sened-row { display: flex; gap: 8px; align-items: center; }
+.pk-sened-row .pk-in { flex: 1; }
+.pk-sened-add {
+    flex: 0 0 auto; padding: 8px 12px; border: 1px solid #cbd5e1; background: #fff;
+    border-radius: 9px; font-size: 12.5px; cursor: pointer; white-space: nowrap; color: #334155;
+}
+.pk-sened-add:hover { background: #f1f5f9; border-color: #94a3b8; }
+.pk-sened-add:disabled { opacity: .5; cursor: default; }
 </style>

@@ -6,17 +6,25 @@ using FinNex.Domain.Entities.Emeliyyat;
 using FinNex.Domain.Entities.HR;
 using FinNex.Application.Services.Hevale;
 using FinNex.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;   // AnyAsync — limit yoxlamasında sənəd növü
 using GedenHevaleEntity = FinNex.Domain.Entities.Hevale.GedenHevale;
 
 namespace FinNex.Application.Services.Emeliyyat;
 
-public class KocurmeService : IKocurmeService
+// `partial` — 20 000 USD aylıq limitinin məntiqi ayrıca fayldadır:
+// `KocurmeLimit.cs`. Hüquqi tələbdir, dəyişəndə harada olduğu görünsün.
+public partial class KocurmeService : IKocurmeService
 {
     private readonly IUnitOfWork _uow;
 
-    public KocurmeService(IUnitOfWork uow)
+    // MB kursu üçün — Oracle `func_get_kurval`. Limit «ekvivalent» tələb edir.
+    private readonly FinNex.Application.Interfaces.Kurval.IBmiValyutaService _valyuta;
+
+    public KocurmeService(IUnitOfWork uow,
+                          FinNex.Application.Interfaces.Kurval.IBmiValyutaService valyuta)
     {
         _uow = uow;
+        _valyuta = valyuta;
     }
 
     // Həvalə № prefiksi (BMI: pul köçürməsi "T", tələbə köçürməsi "TL")
@@ -58,6 +66,12 @@ public class KocurmeService : IKocurmeService
 
         var adMap = await IcraciAdMapAsync();
 
+        // Sənəd növünün ADI — bir sorğu ilə xəritə. Sətir-sətir oxusaq N+1
+        // olardı; siyahıda yüzlərlə qeyd ola bilər.
+        var senedMap = await _uow.Repository<KocurmeSenedNovu>().Query()
+            .AsNoTracking()
+            .ToDictionaryAsync(x => x.Id, x => x.Ad);
+
         return list
             .OrderByDescending(x => x.Tarix)
             .ThenByDescending(x => SonReqem(x.HevaleNo))
@@ -73,7 +87,11 @@ public class KocurmeService : IKocurmeService
                 BankAd        = x.BankAd,
                 Icra          = x.Icra,
                 IcraciAd      = (x.Icra.HasValue && adMap.TryGetValue(x.Icra.Value, out var ad)) ? ad : null,
-                YaradanId     = x.YaradanIcraciId
+                YaradanId     = x.YaradanIcraciId,
+                GonderenFin   = x.GonderenFin,
+                UsdEkvivalent = x.UsdEkvivalent,
+                SenedNovuAd   = (x.SenedNovuId.HasValue && senedMap.TryGetValue(x.SenedNovuId.Value, out var sn)) ? sn : null,
+                LimitQeydi    = x.LimitQeydi
             })
             .ToList();
     }
@@ -116,7 +134,13 @@ public class KocurmeService : IKocurmeService
             AlanHesab        = e.AlanHesab,
             Elave            = e.Elave,
             Meqsed           = e.Meqsed,
-            Qeyd             = e.Qeyd
+            Qeyd             = e.Qeyd,
+
+            // FİN köçürülür — təkrar adətən EYNİ göndərənə görə edilir.
+            GonderenFin      = e.GonderenFin
+            // ⚠️ SenedNovuId / LimitQeydi QƏSDƏN köçürülmür: onlar KEÇMİŞ
+            // əməliyyatın əsaslandırmasıdır. Köçsəydi operator yeni köçürməni
+            // köhnə sənədlə, yenidən baxmadan keçirə bilərdi.
         };
     }
 
@@ -136,12 +160,21 @@ public class KocurmeService : IKocurmeService
         // nömrə almış ola bilər). Mənbə eyni helper-dir — bax: NovbetiHevaleNoAsync.
         var hevaleNo = await HevaleNomreHelper.NovbetiAsync(_uow, il, Prefiks(novu));
 
+        var e = new Kocurme { Novu = novu, HevaleNo = hevaleNo, YaradanIcraciId = yaradanUserId, Icra = icraNo };
+        Doldur(e, dto);
+
+        // ⚠️ LİMİT YOXLAMASI TRANZAKSİYADAN VƏ NÖMRƏDƏN ƏVVƏLDİR.
+        // `HevaleNomreHelper.NovbetiAsync` yuxarıda artıq nömrə hesablayıb,
+        // amma HEÇ NƏ YAZILMAYIB — yazılan an tranzaksiyanın içidir. Yoxlama
+        // burada uğursuz olsa heç bir sətir yaranmır, nömrə də «yeyilmir»
+        // (CLAUDE.md — «nömrə ayrılmadan ƏVVƏL bütün yoxlamalar»).
+        var limit = await LimitTetbiqEtAsync(e, novu, dto, xaricId: null);
+        if (!limit.Success)
+            return Result<int>.Fail(limit.Message ?? "Aylıq limit yoxlamasından keçmədi.");
+
         // Köçürmə + jurnal sətri BİR tranzaksiyada. Ayrı-ayrı yazılsa, ikinci yazı
         // sınanda nömrə «yeyilmiş», jurnal isə boş qalardı — nömrə geri qaytarılmır.
         using var tx = await _uow.BeginTransactionAsync();
-
-        var e = new Kocurme { Novu = novu, HevaleNo = hevaleNo, YaradanIcraciId = yaradanUserId, Icra = icraNo };
-        Doldur(e, dto);
 
         await _uow.Repository<Kocurme>().YaratAsync(e);
         await _uow.YaddaSaxlaAsync();   // e.Id burada yaranır — jurnal bağı üçün lazımdır
@@ -357,7 +390,10 @@ public class KocurmeService : IKocurmeService
             AlanHesab        = e.AlanHesab,
             Elave            = e.Elave,
             Meqsed           = e.Meqsed,
-            Qeyd             = e.Qeyd
+            Qeyd             = e.Qeyd,
+            GonderenFin      = e.GonderenFin,
+            SenedNovuId      = e.SenedNovuId,
+            LimitQeydi       = e.LimitQeydi
         };
     }
 
@@ -369,6 +405,14 @@ public class KocurmeService : IKocurmeService
             return Result.Fail("Yalnız öz qeydinizi və ya Admin dəyişə bilər.");
 
         Doldur(e, dto);   // HevaleNo dəyişməz
+
+        // ⚠️ REDAKTƏDƏ `xaricId` MƏCBURİDİR — qeydin ÖZÜ cəmdən çıxarılmalıdır.
+        // Olmasa 10 000-lik köçürməni açan operator cəmdə həmin 10 000-i də
+        // görər və məbləği artırmadan «limit aşıldı» xəbərdarlığı alar
+        // (məzuniyyət tarix konfliktində eyni qayda).
+        var limit = await LimitTetbiqEtAsync(e, novu, dto, xaricId: e.Id);
+        if (!limit.Success) return limit;
+
         e.YenileyenIcraciId = userId;
         e.YenilenmeTarixi   = DateTime.Now;
 
@@ -446,5 +490,79 @@ public class KocurmeService : IKocurmeService
         e.Elave            = dto.Elave?.Trim();
         e.Meqsed           = dto.Meqsed?.Trim();
         e.Qeyd             = dto.Qeyd?.Trim();
+
+        // ── 20 000 USD limiti ─────────────────────────────────────────────
+        // FİN NORMALLAŞDIRILIR (boşluqsuz, BÖYÜK hərf) — axtarış da eyni
+        // metoddan keçir; biri normallaşdırıb o biri normallaşdırmasa
+        // «5ab2cd1» və «5AB2CD1» iki ayrı şəxs sayılar və limit ikiqat açılar.
+        var fin = FinTemizle(dto.GonderenFin);
+        e.GonderenFin = fin.Length > 0 ? fin : null;
+
+        // SenedNovuId / LimitQeydi BURADA YAZILMIR — onları çağıran metod
+        // (YaratAsync / YenileAsync) YOXLAMADAN SONRA yazır. Burada yazsaq,
+        // limit aşılmadığı halda da köhnə sənəd bağlı qalardı.
+    }
+
+    /// <summary>
+    /// Limit yoxlaması + USD ekvivalentinin YAZILMASI — yaratma və redaktə
+    /// yollarının ORTAQ addımı.
+    ///
+    /// ⚠️ Yazma yolu İKİDİR (`YaratAsync`, `YenileAsync`). Yoxlamanı hər
+    /// ikisində ayrıca yazsaq biri gec-tez köhnə qalar və limit yalnız o
+    /// yolda yan keçilər (CLAUDE.md — «yoxlama BÜTÜN giriş nöqtələrində»).
+    /// Ona görə tək metoddur.
+    /// </summary>
+    private async Task<Result> LimitTetbiqEtAsync(
+        Kocurme e, string novu, KocurmeFormDto dto, int? xaricId)
+    {
+        var tarix = dto.Tarix ?? DateTime.Now;
+
+        // Limitə düşməyən növ (Tələbə) — USD ekvivalenti də yazılmır,
+        // sənəd sahələri təmizlənir.
+        if (!string.Equals(novu, "Pul", StringComparison.OrdinalIgnoreCase))
+        {
+            e.UsdEkvivalent = null;
+            e.UsdKursu      = null;
+            e.SenedNovuId   = null;
+            e.LimitQeydi    = null;
+            return Result.Ok();
+        }
+
+        var yox = await LimitYoxlaAsync(novu, e.GonderenFin, dto.Mebleg,
+                                        dto.MedaxilValyuta, tarix, xaricId);
+
+        // Oracle kursu alınmadı → BLOK (istifadəçi qərarı 07.09.2026).
+        // Kurssuz yazsaq aylıq cəm səssizcə əskik qalardı və limit
+        // növbəti əməliyyatlarda yanlış hesablanardı.
+        if (yox.KursAlinmadi)
+            return Result.Fail(yox.Mesaj ?? "Valyuta kursu alınmadı — əməliyyat qeydə alınmadı.");
+
+        if (yox.SenedTelebOlunur && (dto.SenedNovuId is null or <= 0))
+            return Result.Fail(
+                (yox.Mesaj ?? "Aylıq limit aşılır.") +
+                " Əsas sənədin növü seçilmədən qeyd yadda saxlanıla bilməz.");
+
+        // Seçilmiş sənəd növü HƏQİQƏTƏN mövcud və aktiv olmalıdır — forma
+        // dəyəri uydurula bilər (hazırkı POST-a inanmırıq).
+        if (dto.SenedNovuId is int sid && sid > 0)
+        {
+            var novVar = await _uow.Repository<KocurmeSenedNovu>().Query()
+                .AnyAsync(x => x.Id == sid && !x.Silinib && x.Aktivdir);
+            if (!novVar)
+                return Result.Fail("Seçilmiş sənəd növü tapılmadı və ya deaktivdir.");
+        }
+
+        // USD ekvivalenti YAZILAN anda dondurulur — sonrakı kurs dəyişikliyi
+        // keçmiş ayın cəmini tərpətməsin.
+        var (usd, kurs) = await UsdEkvivalentAsync(dto.Mebleg, dto.MedaxilValyuta, tarix);
+        e.UsdEkvivalent = usd;
+        e.UsdKursu      = kurs;
+
+        // Sənəd yalnız limit aşılanda saxlanılır — aşılmayıbsa təmizlənir
+        // (redaktədə məbləğ azaldılsa köhnə sənəd asılı qalmasın).
+        e.SenedNovuId = yox.SenedTelebOlunur ? dto.SenedNovuId : null;
+        e.LimitQeydi  = yox.SenedTelebOlunur ? dto.LimitQeydi?.Trim() : null;
+
+        return Result.Ok();
     }
 }

@@ -36,6 +36,24 @@
             <div class="dm-hint">Cəmi: @Model.Count əməliyyat</div>
         </div>
 
+        @* ══ FİN ÜZRƏ AYLIQ CƏM — 20 000 USD limiti ════════════════════════
+           Yalnız «Pul» köçürməsində göstərilir: tələbə köçürməsi GƏLƏN puldur,
+           limitə düşmür (istifadəçi qərarı 07.09.2026). *@
+        @if ((string)(ViewBag.Novu ?? "") == "Pul")
+        {
+            <div class="km-finbar">
+                <div class="km-finbar-t"><i class="bi bi-shield-check"></i> FİN üzrə aylıq yoxlama</div>
+                <div class="km-finbar-f">
+                    <input type="text" id="kmFin" class="km-fin-in" maxlength="10"
+                           placeholder="FİN" autocomplete="off" />
+                    <input type="month" id="kmAy" class="km-fin-in km-fin-in--ay"
+                           value="@DateTime.Today.ToString("yyyy-MM")" />
+                    <button type="button" id="kmSorgu" class="fn-btn fn-btn--outline fn-btn--sm">Sorğu</button>
+                </div>
+                <div class="km-finbar-n" id="kmNetice">FİN yazın və «Sorğu» düyməsini basın.</div>
+            </div>
+        }
+
         @if (!Model.Any())
         {
             <div class="dm-empty"><i class="bi bi-inbox"></i> Hələ köçürmə yoxdur.</div>
@@ -53,6 +71,9 @@
                             <th class="dm-r">Məbləğ</th>
                             <th>Valyuta</th>
                             <th>Bank</th>
+                            <th>FİN</th>
+                            <th class="dm-r">USD ekv.</th>
+                            <th>Limit əsası</th>
                             <th>İcraçı</th>
                             <th></th>
                         </tr>
@@ -60,7 +81,7 @@
                     <tbody>
                         @foreach (var m in Model)
                         {
-                            <tr class="dm-row" data-search="@($"{m.HevaleNo} {m.GonderenTamAd} {m.AlanTamAd} {m.BankAd} {m.IcraciAd}".ToLower())">
+                            <tr class="dm-row" data-search="@($"{m.HevaleNo} {m.GonderenTamAd} {m.AlanTamAd} {m.BankAd} {m.IcraciAd} {m.GonderenFin}".ToLower())">
                                 <td class="dm-num">@T(m.HevaleNo)</td>
                                 <td>@D(m.Tarix)</td>
                                 <td class="dm-name">@T(m.GonderenTamAd)</td>
@@ -68,6 +89,20 @@
                                 <td class="dm-r dm-mono">@M(m.Mebleg)</td>
                                 <td>@T(m.KocurulenValyuta)</td>
                                 <td>@T(m.BankAd)</td>
+                                <td class="dm-mono">@T(m.GonderenFin)</td>
+                                <td class="dm-r dm-mono">@M(m.UsdEkvivalent)</td>
+                                @* «Sistem düz işləyib — işçi filan sənədə görə keçirə bilib»
+                                   sualı ekrandan cavablansın deyə sənəd növü SİYAHIDA görünür. *@
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(m.SenedNovuAd))
+                                    {
+                                        <span class="km-sened" title="@m.LimitQeydi">@m.SenedNovuAd</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dm-dim">—</span>
+                                    }
+                                </td>
                                 <td>@(m.IcraciAd ?? (m.Icra?.ToString() ?? "—"))</td>
                                 <td class="dm-ops">
                                     <a asp-action="Tekrarla" asp-route-id="@m.Id" class="dm-op dm-op--repeat" title="Təkrar göndər (yeni №)"><i class="bi bi-arrow-repeat"></i></a>
@@ -98,6 +133,19 @@
         .dm-search i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; }
         .dm-search input { width:100%; padding:9px 12px 9px 34px; border:1px solid #e2e8f0; border-radius:10px; font-size:13px; outline:none; background:#fbfcff; }
         .dm-search input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+
+        /* ── FİN üzrə aylıq yoxlama zolağı (20 000 USD limiti) ── */
+        .km-finbar { border:1px solid #e2e8f0; background:#f8fafc; border-radius:12px; padding:12px 14px; margin-bottom:14px; }
+        .km-finbar-t { font-size:12.5px; font-weight:700; color:#334155; margin-bottom:9px; }
+        .km-finbar-f { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .km-fin-in { padding:8px 11px; border:1px solid #e2e8f0; border-radius:9px; font-size:13px; outline:none; background:#fff; width:170px; }
+        .km-fin-in--ay { width:150px; }
+        .km-fin-in:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+        .km-finbar-n { margin-top:9px; font-size:12.5px; color:#64748b; }
+        .km-finbar-n--ok { color:#15803d; font-weight:600; }
+        .km-finbar-n--asib { color:#b91c1c; font-weight:700; }
+        .km-sened { display:inline-block; padding:2px 8px; border-radius:6px; background:#fef3c7; color:#92400e; font-size:11.5px; font-weight:600; }
+        .dm-dim { color:#cbd5e1; }
         .dm-hint { font-size:12px; color:#64748b; }
         .dm-twrap { overflow-x:auto; }
         .dm-table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
@@ -142,6 +190,49 @@
                     r.style.display = (q === '' || hay.indexOf(q) !== -1) ? '' : 'none';
                 });
             });
+        })();
+
+        // ══ FİN üzrə aylıq cəm ═══════════════════════════════════════════
+        // Rəqəmi SERVER verir (`FinAyliqCem` → `FinAyliqCemAsync`) — forma ilə
+        // EYNİ mənbə. Burada heç nə hesablanmır, yalnız göstərilir.
+        (function () {
+            var fin  = document.getElementById('kmFin');
+            var ay   = document.getElementById('kmAy');
+            var dym  = document.getElementById('kmSorgu');
+            var net  = document.getElementById('kmNetice');
+            if (!fin || !dym || !net) return;
+
+            function sorgu() {
+                var f = (fin.value || '').trim();
+                if (!f) { net.textContent = 'FİN yazın və «Sorğu» düyməsini basın.'; net.className = 'km-finbar-n'; return; }
+
+                var d = (ay && ay.value) ? ay.value.split('-') : [];
+                var b = new URLSearchParams();
+                b.set('fin', f);
+                if (d.length === 2) { b.set('il', d[0]); b.set('ay', d[1]); }
+
+                net.textContent = 'Yoxlanılır…';
+                net.className = 'km-finbar-n';
+
+                fetch('FinAyliqCem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: b.toString()
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (x) {
+                    net.textContent = x.mesaj || '';
+                    net.className = 'km-finbar-n ' + (x.asilib ? 'km-finbar-n--asib' : 'km-finbar-n--ok');
+                })
+                .catch(function () {
+                    // Səssiz qalmır — istifadəçi nəticənin gəlmədiyini bilməlidir.
+                    net.textContent = 'Sorğu alınmadı — bağlantını yoxlayın.';
+                    net.className = 'km-finbar-n km-finbar-n--asib';
+                });
+            }
+
+            dym.addEventListener('click', sorgu);
+            fin.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sorgu(); } });
         })();
     </script>
 }

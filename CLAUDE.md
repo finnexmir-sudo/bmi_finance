@@ -1438,6 +1438,63 @@ eyni nömrəni `Kocurme.HevaleNo`-da da saxlayır.
   dəyər yazmaqdansa boş yaxşıdır. Qayda dəqiqləşəndə **yalnız** `HevaleSetriniDoldur`
   dəyişir (yaratma və redaktə yolu onu ortaq çağırır).
 
+### Pul Köçürməsi — 20 000 USD AYLIQ LİMİTİ (07.09.2026, KRİTİK)
+
+Qanun: «məqsədi bəyan edilməklə rezident və qeyri-rezident **fiziki şəxsin təqvim
+ayı ərzində cəmi 20 000 ABŞ dolları EKVİVALENTİNƏDƏK** məbləğdə olan köçürmələri».
+Həddi aşan hissə üçün **əsas sənəd** tələb olunur.
+
+**Məntiq TƏK FAYLDADIR:** `FinNex.Application/Services/Emeliyyat/KocurmeLimit.cs`
+(`KocurmeService`-in `partial` hissəsi). Hədd — `AylikLimitUsd` sabiti.
+
+| Qərar | Dəyər | Səbəb |
+|---|---|---|
+| Sayılan məbləğ | **`Mebleg`** (alınan) | rialda köçürülən 765 000 000 elə həmin 900 USD-dir |
+| Ekvivalent | Oracle `func_get_kurval` | əl ilə yazılmır |
+| `Secim` | **hər üç variant** sayılır | qanun mətnindən asılı deyil, istifadəçi qərarı |
+| `Novu` | **yalnız «Pul»** | Tələbə köçürməsi GƏLƏN puldur, fiziki şəxsdən çıxmır |
+| Limit aşılır, sənəd yox | **BLOK** | əməliyyat qeydə alınmır |
+| Kurs alınmadı | **BLOK** | «Oracle işləməsə heç nə işləməz» |
+
+**`UsdEkvivalent` ƏMƏLİYYAT ANINDA DONDURULUR.** Aylıq cəm həmin sütunu
+**toplayır**, yenidən hesablamır — yoxsa kurs dəyişəndə keçmiş ayın cəmi də
+dəyişər və audit zamanı «dünən 19 800 idi, bu gün 20 100» vəziyyəti yaranar.
+
+**FİN NORMALLAŞDIRMASI — `FinTemizle` (boşluqsuz, BÖYÜK hərf).** Yazan da,
+axtaran da EYNİ bu metoddan keçir. Biri normallaşdırıb o biri keçməsə
+«5ab2cd1» ilə «5AB2CD1» iki ayrı şəxs sayılar və limit **səssizcə ikiqat açılar**.
+
+**REDAKTƏDƏ `xaricId` MƏCBURİDİR** — qeydin özü cəmdən çıxarılmalıdır, yoxsa
+10 000-lik köçürməni açan operator məbləği artırmadan «limit aşıldı» alar
+(üst-üstə düşən məzuniyyətdə eyni qayda).
+
+**Yazma yolu İKİDİR** — `YaratAsync` və `YenileAsync`. Yoxlama ortaq metoddadır
+(`LimitTetbiqEtAsync`); ayrı-ayrı yazılsa biri gec-tez köhnə qalar və limit
+yalnız o yolda yan keçilər.
+
+**Ekran SERVERİN rəqəmini göstərir** — `LimitYoxla` endpoint-i yadda saxlama ilə
+**eyni** `LimitYoxlaAsync`-i çağırır. JS heç nə hesablamır; iki hesablayıcı
+saxlansaydı göstərilən ilə tətbiq olunan gec-tez fərqlənərdi.
+
+**Sənəd növləri açar cədvəldir** (`KocurmeSenedNovleri`) — **seed YOXDUR**,
+siyahı boş başlayır. Operator lazım olanı elə köçürmə formasından əlavə edir
+(«+ Yeni növ»), növbəti dəfə hamı siyahıdan seçir. Növ **silinmir, deaktiv edilir**.
+
+**Sənəd sahələri formada HƏMİŞƏ render olunur** (yalnız `hidden` ilə gizlənir) —
+şərtlə render etsək, göndərilməyən sahə POST-da `null` gəlib mövcud dəyəri
+**səssizcə silərdi** (icazə nahar bayrağı hadisəsi).
+
+**Oracle sorğusu:** `VALYUTA_KURSU` — `docs/sql/valyuta/Valyuta_Kursu_OracleSorgu.sql`.
+Sütun adı **`KURS`** olmalıdır; adı dəyişsə kurs `null` qayıdar və **hər əməliyyat
+bloklanar**. Yer tutucuları: `{KOD}`, `{TARIX}`.
+
+**Formadakı valyuta MƏTNDİR** («USD»/«Avro»/«AZN»), Gedən həvalədən fərqli olaraq
+(orada KOD saxlanılır) — `ValyutaKodu()` xəritəsi ona görə var. Formaya yeni mədaxil
+valyutası əlavə olunsa **xəritəyə də əlavə edilməlidir**, yoxsa əməliyyat bloklanar.
+
+**Keçmiş qeydlərdə FİN boşdur** — cəmə düşmür. İstifadəçi qərarı: köhnələrə FİN
+**əl ilə** yazılacaq (redaktə səhifəsindən).
+
 ### Jurnal Nömrəsi Öz Bazamızdan Verilirsə — ƏVVƏLCƏ İDXAL (KRİTİK)
 
 FinNex-də jurnal nömrəsi (məktub Qeydiyyat №, həvalə №) **həmin ilin FinNex

@@ -1,4 +1,4 @@
-﻿
+
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.AI;
@@ -88,6 +88,8 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<FinNex.Application.Interfaces.Kredit.IIsciKreditFaydaService, FinNex.Application.Services.Kredit.IsciKreditFaydaService>();
         services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.IKocurmeService, FinNex.Application.Services.Emeliyyat.KocurmeService>();
         services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.ITelebeKocurmeService, FinNex.Application.Services.Emeliyyat.TelebeKocurmeService>();
+        // 20 000 USD aylıq limiti — əsaslandırma sənədlərinin açar siyahısı (07.09.2026)
+        services.AddScoped<FinNex.Application.Interfaces.Emeliyyat.IKocurmeSenedNovuService, FinNex.Application.Services.Emeliyyat.KocurmeSenedNovuService>();
         // Avtopark — xidməti maşınlar, açar jurnalı, müddət izləmə
         services.AddScoped<FinNex.Application.Interfaces.Avtopark.IMasinService, FinNex.Application.Services.Avtopark.MasinService>();
         services.AddScoped<FinNex.Application.Interfaces.Avtopark.IMasinMuracietService, FinNex.Application.Services.Avtopark.MasinMuracietService>();

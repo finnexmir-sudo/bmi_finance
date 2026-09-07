@@ -29,6 +29,16 @@
                     <div><label>Passport</label><input type="text" name="GonderenPassport" value="@Model.GonderenPassport" class="pk-in" /></div>
                     <div><label>Telefon</label><input type="text" name="GonderenTelefon" value="@Model.GonderenTelefon" class="pk-in" /></div>
                 </div>
+
+                @* FİN — 20 000 USD aylıq limiti BU SAHƏ üzrə hesablanır.
+                   `id` JS üçün lazımdır: FİN/məbləğ/valyuta/tarix dəyişdikcə
+                   server yoxlanılır və nəticə aşağıdakı paneldə göstərilir. *@
+                <div>
+                    <label>FİN <span class="pk-fin-hint">— aylıq 20 000 USD limiti bu kod üzrə yoxlanılır</span></label>
+                    <input type="text" name="GonderenFin" id="pkFin" value="@Model.GonderenFin"
+                           class="pk-in pk-mono" maxlength="10" autocomplete="off"
+                           placeholder="məs. 5AB2CD1" />
+                </div>
             </div>
         </div>
 
@@ -104,6 +114,57 @@
         </div>
     </div>
 
+    @* ══ 20 000 USD AYLIQ LİMİTİ ═════════════════════════════════════════
+       Panel HƏMİŞƏ render olunur, yalnız məzmunu JS ilə dəyişir.
+
+       ⚠️ ŞƏRTLƏ RENDER ETMƏK OLMAZ: sənəd seçimi `@@if` ilə gizlədilsəydi,
+       göndərilməyən sahə POST-da NULL gəlib mövcud dəyəri SİLƏRDİ — layihədə
+       bu, icazə nahar bayrağında bir dəfə baş verib (CLAUDE.md). Ona görə
+       sahələr daim mövcuddur, yalnız `hidden` ilə görünmür. *@
+    <div class="pk-row">
+        <div class="pk-card pk-limit" id="pkLimitCard">
+            <div class="pk-head pk-head--sm">
+                <i class="bi bi-shield-check"></i> Aylıq limit — 20 000 USD
+            </div>
+
+            <div class="pk-limit-body">
+                <div class="pk-limit-status" id="pkLimitStatus">
+                    FİN daxil edin — bu şəxsin cari ay üzrə köçürmələri yoxlanılacaq.
+                </div>
+
+                @* Sənəd bloku: limit aşılanda JS `hidden` atributunu götürür.
+                   `hidden` işlədilir, `style.display` yox — layihə qaydası. *@
+                <div class="pk-limit-sened" id="pkSenedBlok" hidden>
+                    <div class="pk-f2">
+                        <div>
+                            <label>Əsas sənədin növü <span class="pk-req">*</span></label>
+                            <div class="pk-sened-row">
+                                <select name="SenedNovuId" id="pkSenedNovu" class="pk-in">
+                                    <option value="">— seçin —</option>
+                                    @foreach (var sn in (ViewBag.SenedNovleri as IList<KocurmeSenedNovuDto>) ?? new List<KocurmeSenedNovuDto>())
+                                    {
+                                        <option value="@sn.Id" selected="@(Model.SenedNovuId == sn.Id)">@sn.Ad</option>
+                                    }
+                                </select>
+                                @* Siyahıda olmayanı işçi ELƏ BURADA əlavə edir
+                                   (istifadəçi qərarı) — sonra hamı siyahıdan seçir,
+                                   «hərə nə gəldi yazmasın» qaydası belə qorunur. *@
+                                <button type="button" class="pk-sened-add" id="pkSenedAdd"
+                                        title="Siyahıda yoxdursa yeni növ əlavə et">+ Yeni növ</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>İzah (istəyə bağlı)</label>
+                            <input type="text" name="LimitQeydi" id="pkLimitQeyd"
+                                   value="@Model.LimitQeydi" class="pk-in" maxlength="500"
+                                   placeholder="məs. müqavilə № və tarixi" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bank + qeydlər -->
     <div class="pk-row pk-row--2">
         <div class="pk-card">
@@ -169,5 +230,139 @@
         }
         kocRadios.forEach(function (r) { r.addEventListener('change', tetbiq); });
         tetbiq();
+    })();
+
+    // ══ 20 000 USD AYLIQ LİMİTİ — canlı yoxlama ═══════════════════════════
+    //
+    // ⚠️ BU JS RƏQƏM UYDURMUR. Cəmi və USD ekvivalentini SERVER hesablayır
+    //    (`LimitYoxla` → `KocurmeService.LimitYoxlaAsync`) — yadda saxlama
+    //    yolu ilə EYNİ metod. İki ayrı hesablayıcı saxlasaq, ekranda görünən
+    //    ilə tətbiq olunan gec-tez fərqlənərdi (CLAUDE.md — «bir elementə iki
+    //    yazıcı»). Burada yalnız GÖSTƏRİLİR.
+    (function () {
+        var fin    = document.getElementById('pkFin');
+        var status = document.getElementById('pkLimitStatus');
+        var blok   = document.getElementById('pkSenedBlok');
+        var kart   = document.getElementById('pkLimitCard');
+        var novu   = document.getElementById('pkSenedNovu');
+        var elave  = document.getElementById('pkSenedAdd');
+        if (!fin || !status || !blok) return;
+
+        var meblegEl = document.querySelector('input[name="Mebleg"]');
+        var tarixEl  = document.querySelector('input[name="Tarix"]');
+
+        var endpoint = fin.getAttribute('data-limit-url')
+                    || (window.PK_LIMIT_URL || 'LimitYoxla');
+
+        var sonAcar = null;      // köhnəlmiş cavab qoruyucusu
+        var taymer  = null;
+
+        function medaxil() {
+            var r = document.querySelector('input[name="MedaxilValyuta"]:checked');
+            return r ? r.value : '';
+        }
+
+        function yoxla() {
+            var f = (fin.value || '').trim();
+            if (!f) {
+                status.textContent = 'FİN daxil edin — bu şəxsin cari ay üzrə köçürmələri yoxlanılacaq.';
+                kart.classList.remove('pk-limit--asib', 'pk-limit--ok', 'pk-limit--xeta');
+                blok.hidden = true;
+                return;
+            }
+
+            var acar = [f, meblegEl ? meblegEl.value : '', medaxil(), tarixEl ? tarixEl.value : ''].join('|');
+            sonAcar = acar;
+
+            var body = new URLSearchParams();
+            body.set('fin', f);
+            body.set('mebleg', meblegEl ? meblegEl.value : '');
+            body.set('medaxilValyuta', medaxil());
+            body.set('tarix', tarixEl ? tarixEl.value : '');
+            var idEl = document.querySelector('input[name="Id"]');
+            if (idEl && idEl.value) body.set('id', idEl.value);
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                // Ard-arda dəyişikliklərdə cavablar SIRA İLƏ GƏLMİR — gec gələn
+                // köhnə cavab yenisini üstələməsin.
+                if (acar !== sonAcar) return;
+
+                status.textContent = d.mesaj || '';
+                kart.classList.remove('pk-limit--asib', 'pk-limit--ok', 'pk-limit--xeta');
+
+                if (d.kursAlinmadi) {
+                    kart.classList.add('pk-limit--xeta');
+                    blok.hidden = true;
+                    return;
+                }
+
+                blok.hidden = !d.senedTelebOlunur;
+                kart.classList.add(d.senedTelebOlunur ? 'pk-limit--asib' : 'pk-limit--ok');
+            })
+            .catch(function () {
+                if (acar !== sonAcar) return;
+                // Səssiz qalmır — operator yoxlamanın işləmədiyini bilməlidir.
+                status.textContent = 'Limit yoxlaması alınmadı. Yadda saxlayanda server yenidən yoxlayacaq.';
+                kart.classList.remove('pk-limit--asib', 'pk-limit--ok');
+                kart.classList.add('pk-limit--xeta');
+            });
+        }
+
+        function gecikdir() { clearTimeout(taymer); taymer = setTimeout(yoxla, 400); }
+
+        fin.addEventListener('input', gecikdir);
+        if (meblegEl) meblegEl.addEventListener('input', gecikdir);
+        if (tarixEl)  tarixEl.addEventListener('change', yoxla);
+        document.querySelectorAll('input[name="MedaxilValyuta"]')
+                .forEach(function (r) { r.addEventListener('change', yoxla); });
+
+        // Yeni sənəd növü — elə bu səhifədən (istifadəçi qərarı 07.09.2026)
+        if (elave && novu) {
+            elave.addEventListener('click', function () {
+                var ad = (prompt('Yeni sənəd növünün adı:') || '').trim();
+                if (!ad) return;
+
+                var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                var b = new URLSearchParams();
+                b.set('ad', ad);
+                if (tokenEl) b.set('__RequestVerificationToken', tokenEl.value);
+
+                elave.disabled = true;
+                fetch('SenedNovuYarat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: b.toString()
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    elave.disabled = false;
+                    if (!d.ugur) { alert(d.mesaj || 'Əlavə edilmədi.'); return; }
+
+                    // Mövcud idisə də Id qayıdır — dublikat option yaratmırıq.
+                    var varmi = Array.prototype.some.call(novu.options, function (o) {
+                        return o.value === String(d.id);
+                    });
+                    if (!varmi) {
+                        var o = document.createElement('option');
+                        o.value = String(d.id); o.textContent = d.ad;
+                        novu.appendChild(o);
+                    }
+                    novu.value = String(d.id);
+                })
+                .catch(function () {
+                    elave.disabled = false;
+                    alert('Sənəd növü əlavə edilmədi — bağlantını yoxlayın.');
+                });
+            });
+        }
+
+        // Səhifə açılanda mövcud dəyərlə bir dəfə yoxla (redaktə/təkrar halı).
+        if ((fin.value || '').trim()) yoxla();
     })();
 </script>
