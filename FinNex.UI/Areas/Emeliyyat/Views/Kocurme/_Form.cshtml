@@ -15,6 +15,63 @@
 
 <div class="pk-form">
 
+    @* ══ 1-ci ADDIM: FİN VƏ AYLIQ LİMİT ═══════════════════════════════════
+       Forma ƏN ÜSTDƏN başlayır (istifadəçi qərarı 07.09.2026): operator FİN-i
+       birinci yazır və limit vəziyyətini DƏRHAL görür. Əks halda bütün formanı
+       doldurub yalnız «Yadda saxla»da limitin aşıldığını bilərdi — əməkdən
+       boş yerə gedərdi.
+
+       ⚠️ Panel HƏMİŞƏ render olunur, yalnız məzmunu dəyişir. Sənəd sahələrini
+       `@@if` ilə gizlətsək, göndərilməyən sahə POST-da null gəlib mövcud dəyəri
+       SƏSSİZCƏ silərdi (CLAUDE.md — icazə nahar bayrağı hadisəsi). *@
+    <div class="pk-row">
+        <div class="pk-card pk-limit" id="pkLimitCard">
+            <div class="pk-head">
+                <span class="pk-ic pk-ic--fin"><i class="bi bi-person-vcard"></i></span>
+                Göndərənin FİN kodu
+                <span class="pk-step">1-ci addım</span>
+            </div>
+
+            <div class="pk-limit-body">
+                <div class="pk-fin-row">
+                    <input type="text" name="GonderenFin" id="pkFin" value="@Model.GonderenFin"
+                           class="pk-in pk-mono pk-fin-in" maxlength="10" autocomplete="off"
+                           placeholder="məs. 5AB2CD1" autofocus />
+                    <div class="pk-limit-status" id="pkLimitStatus">
+                        FİN yazın — bu şəxsin cari ay üzrə köçürmələri dərhal yoxlanılacaq.
+                    </div>
+                </div>
+
+                <div class="pk-limit-sened" id="pkSenedBlok" hidden>
+                    <div class="pk-f2">
+                        <div>
+                            <label>Əsas sənədin növü <span class="pk-req">*</span></label>
+                            <div class="pk-sened-row">
+                                <select name="SenedNovuId" id="pkSenedNovu" class="pk-in">
+                                    <option value="">— seçin —</option>
+                                    @foreach (var sn in (ViewBag.SenedNovleri as IList<KocurmeSenedNovuDto>) ?? new List<KocurmeSenedNovuDto>())
+                                    {
+                                        <option value="@sn.Id" selected="@(Model.SenedNovuId == sn.Id)">@sn.Ad</option>
+                                    }
+                                </select>
+                                @* Siyahıda olmayanı işçi ELƏ BURADA əlavə edir (istifadəçi
+                                   qərarı) — sonra hamı siyahıdan seçir. *@
+                                <button type="button" class="pk-sened-add" id="pkSenedAdd"
+                                        title="Siyahıda yoxdursa yeni növ əlavə et">+ Yeni növ</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>İzah (istəyə bağlı)</label>
+                            <input type="text" name="LimitQeydi" id="pkLimitQeyd"
+                                   value="@Model.LimitQeydi" class="pk-in" maxlength="500"
+                                   placeholder="məs. müqavilə № və tarixi" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Tərəflər -->
     <div class="pk-row pk-row--2">
         <div class="pk-card pk-card--send">
@@ -28,16 +85,6 @@
                 <div class="pk-f2">
                     <div><label>Passport</label><input type="text" name="GonderenPassport" value="@Model.GonderenPassport" class="pk-in" /></div>
                     <div><label>Telefon</label><input type="text" name="GonderenTelefon" value="@Model.GonderenTelefon" class="pk-in" /></div>
-                </div>
-
-                @* FİN — 20 000 USD aylıq limiti BU SAHƏ üzrə hesablanır.
-                   `id` JS üçün lazımdır: FİN/məbləğ/valyuta/tarix dəyişdikcə
-                   server yoxlanılır və nəticə aşağıdakı paneldə göstərilir. *@
-                <div>
-                    <label>FİN <span class="pk-fin-hint">— aylıq 20 000 USD limiti bu kod üzrə yoxlanılır</span></label>
-                    <input type="text" name="GonderenFin" id="pkFin" value="@Model.GonderenFin"
-                           class="pk-in pk-mono" maxlength="10" autocomplete="off"
-                           placeholder="məs. 5AB2CD1" />
                 </div>
             </div>
         </div>
@@ -110,57 +157,6 @@
                 <div class="pk-rate-f"><label>Rial (MB kursu)</label><input type="number" step="any" name="RialCbar" value="@K(Model.RialCbar)" class="pk-in pk-rate" /></div>
                 <div class="pk-rate-f"><label>Valyuta (MB kursu)</label><input type="number" step="any" name="ValyutaCbar" value="@K(Model.ValyutaCbar)" class="pk-in pk-rate" /></div>
                 <div class="pk-rate-f"><label>İran Rial (kurs)</label><input type="number" step="any" name="IranRial" value="@K(Model.IranRial)" class="pk-in pk-rate" /></div>
-            </div>
-        </div>
-    </div>
-
-    @* ══ 20 000 USD AYLIQ LİMİTİ ═════════════════════════════════════════
-       Panel HƏMİŞƏ render olunur, yalnız məzmunu JS ilə dəyişir.
-
-       ⚠️ ŞƏRTLƏ RENDER ETMƏK OLMAZ: sənəd seçimi `@@if` ilə gizlədilsəydi,
-       göndərilməyən sahə POST-da NULL gəlib mövcud dəyəri SİLƏRDİ — layihədə
-       bu, icazə nahar bayrağında bir dəfə baş verib (CLAUDE.md). Ona görə
-       sahələr daim mövcuddur, yalnız `hidden` ilə görünmür. *@
-    <div class="pk-row">
-        <div class="pk-card pk-limit" id="pkLimitCard">
-            <div class="pk-head pk-head--sm">
-                <i class="bi bi-shield-check"></i> Aylıq limit — 20 000 USD
-            </div>
-
-            <div class="pk-limit-body">
-                <div class="pk-limit-status" id="pkLimitStatus">
-                    FİN daxil edin — bu şəxsin cari ay üzrə köçürmələri yoxlanılacaq.
-                </div>
-
-                @* Sənəd bloku: limit aşılanda JS `hidden` atributunu götürür.
-                   `hidden` işlədilir, `style.display` yox — layihə qaydası. *@
-                <div class="pk-limit-sened" id="pkSenedBlok" hidden>
-                    <div class="pk-f2">
-                        <div>
-                            <label>Əsas sənədin növü <span class="pk-req">*</span></label>
-                            <div class="pk-sened-row">
-                                <select name="SenedNovuId" id="pkSenedNovu" class="pk-in">
-                                    <option value="">— seçin —</option>
-                                    @foreach (var sn in (ViewBag.SenedNovleri as IList<KocurmeSenedNovuDto>) ?? new List<KocurmeSenedNovuDto>())
-                                    {
-                                        <option value="@sn.Id" selected="@(Model.SenedNovuId == sn.Id)">@sn.Ad</option>
-                                    }
-                                </select>
-                                @* Siyahıda olmayanı işçi ELƏ BURADA əlavə edir
-                                   (istifadəçi qərarı) — sonra hamı siyahıdan seçir,
-                                   «hərə nə gəldi yazmasın» qaydası belə qorunur. *@
-                                <button type="button" class="pk-sened-add" id="pkSenedAdd"
-                                        title="Siyahıda yoxdursa yeni növ əlavə et">+ Yeni növ</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label>İzah (istəyə bağlı)</label>
-                            <input type="text" name="LimitQeydi" id="pkLimitQeyd"
-                                   value="@Model.LimitQeydi" class="pk-in" maxlength="500"
-                                   placeholder="məs. müqavilə № və tarixi" />
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -251,8 +247,12 @@
         var meblegEl = document.querySelector('input[name="Mebleg"]');
         var tarixEl  = document.querySelector('input[name="Tarix"]');
 
-        var endpoint = fin.getAttribute('data-limit-url')
-                    || (window.PK_LIMIT_URL || 'LimitYoxla');
+        // ⚠️ NİSBİ ÜNVAN YAZMA. `'LimitYoxla'` yalnız `/…/Yarat` səhifəsində
+        //    düz işləyir; `/…/Redakte/5`-də `/…/Redakte/LimitYoxla`-ya gedər
+        //    və yoxlama SƏSSİZCƏ dayanardı (CLAUDE.md — boş/səhv endpoint).
+        //    `id = null` ambient route dəyərini atır; qeydin Id-si onsuz da
+        //    form sahəsindən (`input[name="Id"]`) göndərilir.
+        var endpoint = '@Url.Action("LimitYoxla", new { id = (int?)null })';
 
         var sonAcar = null;      // köhnəlmiş cavab qoruyucusu
         var taymer  = null;
@@ -334,7 +334,8 @@
                 if (tokenEl) b.set('__RequestVerificationToken', tokenEl.value);
 
                 elave.disabled = true;
-                fetch('SenedNovuYarat', {
+                // Nisbi ünvan YOX — redaktə səhifəsində səhv yola düşərdi.
+                fetch('@Url.Action("SenedNovuYarat", new { id = (int?)null })', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: b.toString()

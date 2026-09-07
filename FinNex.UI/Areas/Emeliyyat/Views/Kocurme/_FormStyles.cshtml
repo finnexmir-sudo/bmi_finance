@@ -94,4 +94,23 @@
 }
 .pk-sened-add:hover { background: #f1f5f9; border-color: #94a3b8; }
 .pk-sened-add:disabled { opacity: .5; cursor: default; }
+
+/* ── 1-ci addım kartı (FİN + limit) ────────────────────────────────────────
+   FİN xanası ilə serverin cavabı YANAŞI durur: operator yazan kimi
+   nəticəni elə orada görür, aşağı sürüşdürmür. Dar ekranda alt-alta düşür. */
+.pk-ic--fin { background:#eef2ff; color:#4f46e5; }
+
+/* «1-ci addım» nişanı — başlığın sağ ucuna itələnir. */
+.pk-step {
+    margin-left:auto; font-size:10px; font-weight:700; letter-spacing:.04em;
+    text-transform:uppercase; color:#64748b; background:#f1f5f9;
+    border:1px solid #e2e8f0; border-radius:999px; padding:3px 9px;
+}
+
+.pk-fin-row { display:grid; grid-template-columns:220px 1fr; gap:14px; align-items:center; }
+.pk-fin-in  { font-size:15px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+
+@@media (max-width: 900px) {
+    .pk-fin-row { grid-template-columns:1fr; gap:8px; }
+}
 </style>

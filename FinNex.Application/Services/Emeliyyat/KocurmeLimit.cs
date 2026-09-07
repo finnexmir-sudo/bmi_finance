@@ -168,12 +168,35 @@ public partial class KocurmeService
         n.Movcud  = await FinAyliqCemAsync(fin, t.Year, t.Month, xaricId);
         n.Movcud.Limit = AylikLimitUsd;
 
+        // Vəziyyət mətni ÜÇ HALDIR. Birincisi qəsdən ayrıdır: operator FİN-i
+        // yazan kimi (məbləğ hələ boşdur) «bu əməliyyatla … olur» yazsaq,
+        // mövcud olmayan məbləğdən danışmış olarıq. O anda ona lazım olan
+        // yeganə şey — bu şəxsə bu ay nə qədər yer qalıb; limit onsuz da
+        // aşılıbsa formanı ümumiyyətlə doldurmasın (istifadəçi qərarı 07.09.2026).
+        var ayAdi = AyAdi(t.Month);
+        var cem   = n.Movcud.CemiUsd;
+        var say   = n.Movcud.Sayi;
+
+        if (n.YeniUsd <= 0)
+        {
+            n.Mesaj = say == 0
+                ? $"Bu FİN üzrə {ayAdi} ayında köçürmə yoxdur. " +
+                  $"Aylıq hədd {AylikLimitUsd:N0} USD — tam açıqdır."
+                : n.Movcud.Asilib
+                    ? $"Bu FİN üzrə {ayAdi} ayında {say} köçürmə, cəmi {cem:N2} USD keçib — " +
+                      $"{AylikLimitUsd:N0} USD həddi ARTIQ AŞILIB. Yeni əməliyyat üçün əsas sənəd tələb olunacaq."
+                    : $"Bu FİN üzrə {ayAdi} ayında {say} köçürmə, cəmi {cem:N2} USD keçib. " +
+                      $"Həddə {n.Movcud.Qaliq:N2} USD qalır (hədd {AylikLimitUsd:N0} USD).";
+            return n;
+        }
+
         n.Mesaj = n.SenedTelebOlunur
-            ? $"Bu FİN üzrə {AyAdi(t.Month)} ayında {n.Movcud.CemiUsd:N2} USD keçib. " +
+            ? $"Bu FİN üzrə {ayAdi} ayında {cem:N2} USD keçib. " +
               $"Bu əməliyyatla {n.SonraCem:N2} USD olur — {AylikLimitUsd:N0} USD həddi aşılır. " +
               "Əsas sənəd seçilməlidir."
-            : $"Bu FİN üzrə {AyAdi(t.Month)} ayında {n.Movcud.CemiUsd:N2} USD keçib. " +
-              $"Bu əməliyyatla {n.SonraCem:N2} USD olur (hədd {AylikLimitUsd:N0} USD).";
+            : $"Bu FİN üzrə {ayAdi} ayında {cem:N2} USD keçib. " +
+              $"Bu əməliyyatla {n.SonraCem:N2} USD olur — həddə {(n.Movcud.Limit - n.SonraCem):N2} USD qalır " +
+              $"(hədd {AylikLimitUsd:N0} USD).";
 
         return n;
     }

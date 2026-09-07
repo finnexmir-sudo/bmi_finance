@@ -1495,6 +1495,22 @@ valyutası əlavə olunsa **xəritəyə də əlavə edilməlidir**, yoxsa əməl
 **Keçmiş qeydlərdə FİN boşdur** — cəmə düşmür. İstifadəçi qərarı: köhnələrə FİN
 **əl ilə** yazılacaq (redaktə səhifəsindən).
 
+**FORMA FİN-DƏN BAŞLAYIR (1-ci addım).** İstifadəçi qərarı: «bəlkə limiti keçib,
+boş yerə niyə doldursun». FİN xanası formanın ƏN ÜSTÜNDƏDİR (`pkLimitCard`,
+`autofocus`), «Göndərən» kartının içində DEYİL — operator FİN yazan kimi serverdən
+cavab gəlir və lazım olsa sənəd sahələri elə orada açılır. Xanaları aşağı qaytarsan
+bütün mənası itir.
+
+Məbləğ hələ yazılmayanda mesaj **ayrı qoldadır** (`YeniUsd <= 0`) — «bu əməliyyatla
+… olur» yazmaq mövcud olmayan məbləğdən danışmaq olardı; o an lazım olan yeganə
+rəqəm ayın cəmi və qalıqdır.
+
+**`fetch`-də NİSBİ ÜNVAN YAZMA.** `fetch('LimitYoxla')` yalnız `/…/Yarat`-da düz
+işləyir; `/…/Redakte/5`-də brauzer onu `/…/Redakte/LimitYoxla` kimi həll edir və
+yoxlama **səssizcə** dayanır (JS `.catch`-ə düşür). Üç yer də `@Url.Action(...)`
+ilə mütləq ünvan yazır — `LimitYoxla`, `SenedNovuYarat` (`_Form.cshtml`),
+`FinAyliqCem` (`Index.cshtml`). `id = (int?)null` ambient route dəyərini atır.
+
 ### Jurnal Nömrəsi Öz Bazamızdan Verilirsə — ƏVVƏLCƏ İDXAL (KRİTİK)
 
 FinNex-də jurnal nömrəsi (məktub Qeydiyyat №, həvalə №) **həmin ilin FinNex
