@@ -160,7 +160,7 @@ public partial class KocurmeService
         if (usd == null)
         {
             n.KursAlinmadi = true;
-            n.Mesaj = "Valyuta kursu alınmadı (Oracle). Limit hesablana bilmir — əməliyyat qeydə alınmır.";
+            n.Mesaj = "**Valyuta kursu alınmadı (Oracle).** Limit hesablana bilmir — əməliyyat qeydə alınmır.";
             return n;
         }
 
@@ -177,25 +177,31 @@ public partial class KocurmeService
         var cem   = n.Movcud.CemiUsd;
         var say   = n.Movcud.Sayi;
 
+        // ⚠️ `**…**` — VURĞU NİŞANIDIR, mətnin özünə aid deyil.
+        //    Ekranda `<b>` olur (`_Form.cshtml` çevirir), server tərəfindəki
+        //    xəta mesajında isə `MesajDuz()` ilə ATILIR. Beləliklə mətn TƏK
+        //    yerdə qurulur — ikinci nüsxə saxlasaq biri gec-tez köhnə qalardı.
+        //    Nişanı yalnız RƏQƏMƏ və qərarı bildirən sözə qoy; hər şeyi
+        //    qalınlaşdırsan heç nə seçilmir.
         if (n.YeniUsd <= 0)
         {
             n.Mesaj = say == 0
                 ? $"Bu FİN üzrə {ayAdi} ayında köçürmə yoxdur. " +
-                  $"Aylıq hədd {AylikLimitUsd:N0} USD — tam açıqdır."
+                  $"Aylıq hədd **{AylikLimitUsd:N0} USD** — **tam açıqdır**."
                 : n.Movcud.Asilib
-                    ? $"Bu FİN üzrə {ayAdi} ayında {say} köçürmə, cəmi {cem:N2} USD keçib — " +
-                      $"{AylikLimitUsd:N0} USD həddi ARTIQ AŞILIB. Yeni əməliyyat üçün əsas sənəd tələb olunacaq."
-                    : $"Bu FİN üzrə {ayAdi} ayında {say} köçürmə, cəmi {cem:N2} USD keçib. " +
-                      $"Həddə {n.Movcud.Qaliq:N2} USD qalır (hədd {AylikLimitUsd:N0} USD).";
+                    ? $"Bu FİN üzrə {ayAdi} ayında **{say}** köçürmə, cəmi **{cem:N2} USD** keçib — " +
+                      $"{AylikLimitUsd:N0} USD həddi **ARTIQ AŞILIB**. Yeni əməliyyat üçün əsas sənəd tələb olunacaq."
+                    : $"Bu FİN üzrə {ayAdi} ayında **{say}** köçürmə, cəmi **{cem:N2} USD** keçib. " +
+                      $"Həddə **{n.Movcud.Qaliq:N2} USD** qalır (hədd {AylikLimitUsd:N0} USD).";
             return n;
         }
 
         n.Mesaj = n.SenedTelebOlunur
-            ? $"Bu FİN üzrə {ayAdi} ayında {cem:N2} USD keçib. " +
-              $"Bu əməliyyatla {n.SonraCem:N2} USD olur — {AylikLimitUsd:N0} USD həddi aşılır. " +
-              "Əsas sənəd seçilməlidir."
-            : $"Bu FİN üzrə {ayAdi} ayında {cem:N2} USD keçib. " +
-              $"Bu əməliyyatla {n.SonraCem:N2} USD olur — həddə {(n.Movcud.Limit - n.SonraCem):N2} USD qalır " +
+            ? $"Bu FİN üzrə {ayAdi} ayında **{cem:N2} USD** keçib. " +
+              $"Bu əməliyyatla **{n.SonraCem:N2} USD** olur — {AylikLimitUsd:N0} USD həddi **AŞILIR**. " +
+              "**Əsas sənəd seçilməlidir.**"
+            : $"Bu FİN üzrə {ayAdi} ayında **{cem:N2} USD** keçib. " +
+              $"Bu əməliyyatla **{n.SonraCem:N2} USD** olur — həddə **{(n.Movcud.Limit - n.SonraCem):N2} USD** qalır " +
               $"(hədd {AylikLimitUsd:N0} USD).";
 
         return n;
@@ -210,6 +216,16 @@ public partial class KocurmeService
     /// </summary>
     public static string FinTemizle(string? fin)
         => new string((fin ?? "").Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+
+    /// <summary>
+    /// Vurğu nişanlarını (`**`) atır — mətni SADƏ hala salır.
+    ///
+    /// Harada lazımdır: `Mesaj` brauzerdən kənara çıxanda — yadda saxlama
+    /// xətası (`TempData`), log, e-poçt. Razor `@TempData["Error"]`-u
+    /// HTML-kodlaşdırır, yəni nişan atılmasa istifadəçi ekranda hərfi
+    /// `**19.117,65 USD**` görər.
+    /// </summary>
+    public static string MesajDuz(string? mesaj) => (mesaj ?? "").Replace("**", "");
 
     private static string AyAdi(int ay) => ay switch
     {

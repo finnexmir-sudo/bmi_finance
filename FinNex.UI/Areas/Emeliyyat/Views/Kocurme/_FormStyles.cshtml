@@ -79,9 +79,21 @@
 .pk-limit--xeta { border-left-color: #d97706; background: #fffbeb; }
 
 .pk-limit-body   { padding: 4px 2px 2px; }
-.pk-limit-status { font-size: 13px; color: #475569; line-height: 1.5; }
-.pk-limit--asib .pk-limit-status { color: #b91c1c; font-weight: 600; }
-.pk-limit--xeta .pk-limit-status { color: #92400e; font-weight: 600; }
+.pk-limit-status { font-size: 13.5px; color: #475569; line-height: 1.6; }
+.pk-limit--asib .pk-limit-status { color: #b91c1c; }
+.pk-limit--xeta .pk-limit-status { color: #92400e; }
+
+/* Vurğulanan hissə — rəqəmlər və qərar sözü (serverdə `**…**` ilə işarələnir,
+   JS `<b>`-yə çevirir).
+   FON/PİLL QOYULMADI: vurğu bəzən tam cümlədir («Əsas sənəd seçilməlidir.») —
+   fonlu pill dar ekranda sətri qırır və mətn ləkə kimi görünür. */
+.pk-limit-status b {
+    font-weight: 800; font-size: 14.5px; color: #0f172a;
+    font-variant-numeric: tabular-nums;   /* rəqəm dəyişəndə eni sıçramasın */
+}
+.pk-limit--ok   .pk-limit-status b { color: #15803d; }
+.pk-limit--asib .pk-limit-status b { color: #b91c1c; }
+.pk-limit--xeta .pk-limit-status b { color: #92400e; }
 
 .pk-limit-sened { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e2e8f0; }
 .pk-req { color: #dc2626; }

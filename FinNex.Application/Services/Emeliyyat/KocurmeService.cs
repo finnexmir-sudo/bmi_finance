@@ -534,12 +534,16 @@ public partial class KocurmeService : IKocurmeService
         // Oracle kursu alınmadı → BLOK (istifadəçi qərarı 07.09.2026).
         // Kurssuz yazsaq aylıq cəm səssizcə əskik qalardı və limit
         // növbəti əməliyyatlarda yanlış hesablanardı.
+        // ⚠️ `MesajDuz` MƏCBURİDİR — mətndəki `**` yalnız ekran vurğusudur.
+        //    Buradan çıxan mesaj `TempData`-ya düşür, Razor onu HTML-kodlaşdırır
+        //    və nişan atılmasa istifadəçi hərfi `**19.117,65 USD**` görər.
         if (yox.KursAlinmadi)
-            return Result.Fail(yox.Mesaj ?? "Valyuta kursu alınmadı — əməliyyat qeydə alınmadı.");
+            return Result.Fail(MesajDuz(yox.Mesaj) is { Length: > 0 } m1
+                ? m1 : "Valyuta kursu alınmadı — əməliyyat qeydə alınmadı.");
 
         if (yox.SenedTelebOlunur && (dto.SenedNovuId is null or <= 0))
             return Result.Fail(
-                (yox.Mesaj ?? "Aylıq limit aşılır.") +
+                (MesajDuz(yox.Mesaj) is { Length: > 0 } m2 ? m2 : "Aylıq limit aşılır.") +
                 " Əsas sənədin növü seçilmədən qeyd yadda saxlanıla bilməz.");
 
         // Seçilmiş sənəd növü HƏQİQƏTƏN mövcud və aktiv olmalıdır — forma

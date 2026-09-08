@@ -257,6 +257,18 @@
         var sonAcar = null;      // köhnəlmiş cavab qoruyucusu
         var taymer  = null;
 
+        // Serverin mesajını ekrana yazır. `**…**` → `<b>…</b>`.
+        //
+        // ⚠️ SIRA VACİBDİR: əvvəl HTML qaçırılır, SONRA nişan çevrilir.
+        //    Tərsinə etsək, mesaja düşən istənilən mətn (məs. FİN) HTML kimi
+        //    işlənərdi. Nişan serverdə qoyulur — JS mətn qurmur, yalnız
+        //    formatlayır (rəqəmlərin TƏK mənbəyi `LimitYoxlaAsync`-dir).
+        function yaz(mesaj) {
+            var t = String(mesaj || '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            status.innerHTML = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        }
+
         function medaxil() {
             var r = document.querySelector('input[name="MedaxilValyuta"]:checked');
             return r ? r.value : '';
@@ -265,7 +277,7 @@
         function yoxla() {
             var f = (fin.value || '').trim();
             if (!f) {
-                status.textContent = 'FİN daxil edin — bu şəxsin cari ay üzrə köçürmələri yoxlanılacaq.';
+                yaz('FİN daxil edin — bu şəxsin cari ay üzrə köçürmələri yoxlanılacaq.');
                 kart.classList.remove('pk-limit--asib', 'pk-limit--ok', 'pk-limit--xeta');
                 blok.hidden = true;
                 return;
@@ -293,7 +305,7 @@
                 // köhnə cavab yenisini üstələməsin.
                 if (acar !== sonAcar) return;
 
-                status.textContent = d.mesaj || '';
+                yaz(d.mesaj);
                 kart.classList.remove('pk-limit--asib', 'pk-limit--ok', 'pk-limit--xeta');
 
                 if (d.kursAlinmadi) {
@@ -308,7 +320,7 @@
             .catch(function () {
                 if (acar !== sonAcar) return;
                 // Səssiz qalmır — operator yoxlamanın işləmədiyini bilməlidir.
-                status.textContent = 'Limit yoxlaması alınmadı. Yadda saxlayanda server yenidən yoxlayacaq.';
+                yaz('**Limit yoxlaması alınmadı.** Yadda saxlayanda server yenidən yoxlayacaq.');
                 kart.classList.remove('pk-limit--asib', 'pk-limit--ok');
                 kart.classList.add('pk-limit--xeta');
             });
