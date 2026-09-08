@@ -54,7 +54,14 @@ namespace FinNex.Application.Services.HR
                                    .Include(x => x.Rehber)
                                    .Include(x => x.Masin),   // 01.09.2026 — maşın adı üçün
                     izlemeden: true);
-            return list.OrderByDescending(x => x.BaslamaTarixi).Select(Map).ToList();
+            // İşçinin öz siyahısı da eyni qaydadadır — tarix, sonra saat, azalan.
+            // Burada siyahı ARTIQ materiallaşıb (repo metodu), yəni LINQ-to-Objects:
+            // NULL saat üçün `?? TimeSpan.Zero` yazılır ki, tam gün ezamiyyəti
+            // eyni tarixdə saatlılardan SONRA gəlsin (EF-dəki NULL davranışı ilə eyni).
+            return list
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .ThenByDescending(x => x.BaslamaSaati ?? TimeSpan.Zero)
+                .Select(Map).ToList();
         }
 
         public async Task<IList<EzamiyyetMuracietListDto>> HamisiniGetirAsync(EzamiyyetFiltrDto? filtr = null)
@@ -90,7 +97,20 @@ namespace FinNex.Application.Services.HR
                         .Any(t => !t.Silinib && t.DepartamentId == filtr.DepartamentId.Value));
             }
 
-            var list = await query.OrderByDescending(x => x.BaslamaTarixi).ToListAsync();
+            // Sıralama: YENİDƏN KÖHNƏYƏ — tarix, SONRA BAŞLAMA SAATI
+            // (istifadəçi qərarı 08.09.2026). Əvvəl yalnız tarix üzrə idi:
+            // eyni günün müraciətləri baza sırası ilə gəlirdi — 08.09-da
+            // 14:00 müraciəti 15:25-dən yuxarıda görünürdü.
+            //
+            // ⚠️ Bu, EF sorğusudur (`ToListAsync` sondadır). `BaslamaSaati`
+            // NULL = TAM GÜN ezamiyyəti; SQL Server-də DESC sıralamada NULL
+            // ƏN SONA düşür — istədiyimiz elə budur (gün 00:00-da başlayır).
+            // `?? TimeSpan.Zero` yazmağa ehtiyac yoxdur və o, tərcümə riski
+            // gətirərdi.
+            var list = await query
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .ThenByDescending(x => x.BaslamaSaati)
+                .ToListAsync();
             return list.Select(Map).ToList();
         }
 

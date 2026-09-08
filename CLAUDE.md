@@ -414,6 +414,39 @@ istifadələri (Hesabat, Performans, MaasHesablamaService) hələ köhnədir** �
 filtered `Include` olduğu üçün yalnız şöbə/vəzifə **göstərişini** boşaldır, məbləği
 pozmur; toxunanda bu bölməni tutuşdur.
 
+## Ezamiyyət/İcazə Siyahıları — TARİX + SAAT, Yenidən Köhnəyə (08.09.2026)
+
+İstifadəçi qərarı: bu siyahılarda ən son gələn **yuxarıda** olmalıdır və eyni günün
+qeydləri **saata görə** sıralanmalıdır. Yalnız tarixə görə sıralasan eyni günün
+sətirləri baza sırası ilə gəlir — 08.09-da 14:00 müraciəti 15:25-dən yuxarıda
+görünür və istifadəçi «niyə qarışıqdır?» sualı verir.
+
+| Metod | Səhifə | Kontekst |
+|---|---|---|
+| `EzamiyyetService.HamisiniGetirAsync` | **HR → Ezamiyyət İdarəetməsi** (+ AJAX filtri) | EF sorğusu |
+| `EzamiyyetService.IsciMuracietleriAsync` | işçinin öz siyahısı | LINQ-to-Objects |
+| `EzamiyyetService.GozleyenlerAsync` | Rəhbər **və** HR təsdiq paneli | LINQ-to-Objects |
+| `IcazeService.GetRehberTesdiqindeAsync` | Rəhbər təsdiq paneli + Gələn Qutusu | LINQ-to-Objects |
+
+**NULL saat = TAM GÜN ezamiyyəti və HƏMİŞƏ SONA düşür** (gün 00:00-da başlayır).
+İki kontekstdə fərqli yazılır, nəticə eynidir:
+
+- **EF sorğusu** — sadəcə `.ThenByDescending(x => x.BaslamaSaati)`. SQL Server-də
+  DESC sıralamada NULL onsuz da sona düşür; `?? TimeSpan.Zero` yazmaq lazım deyil
+  və tərcümə riski gətirər.
+- **Materiallaşmış siyahı** — `.ThenByDescending(x => x.BaslamaSaati ?? TimeSpan.Zero)`.
+  LINQ-to-Objects-də NULL ƏN ƏVVƏLƏ düşərdi, ona görə coalesce MƏCBURİDİR.
+
+Sıralama **yalnız servisdədir** — view `foreach` edir, JS-də sıralama yoxdur.
+Yeni siyahı metodu yazsan bu cədvələ sətir əlavə et.
+
+⚠️ **`IcazeService`-də hələ yalnız tarixə görə sıralanan metodlar var** —
+`GetAllAsync`, `GetGozlemededeAsync`, `GetSobeyeGoreIcazelerAsync`,
+`GetHrTesdiqindeAsync`, `GetIsciIcazeleriAsync`, `GetIsciIzlemeAsync`,
+`GetDovriyyeAsync`, `GetFiltrliAsync`. Qəsdən toxunulmayıb: hansı səhifəyə
+baxdıqları təsdiqlənməyib. Şikayət gələndə əvvəlcə səhifənin hansı metodu
+çağırdığını tap, sonra dəyiş.
+
 ## İşçi Siyahıları — Sıralama və Filtr Qaydası (KRİTİK)
 
 İşçi siyahısı göstərən **hər** səhifədə eyni qayda tətbiq olunmalıdır — mənbə
