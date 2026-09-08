@@ -24,7 +24,9 @@
        ⚠️ Panel HƏMİŞƏ render olunur, yalnız məzmunu dəyişir. Sənəd sahələrini
        `@@if` ilə gizlətsək, göndərilməyən sahə POST-da null gəlib mövcud dəyəri
        SƏSSİZCƏ silərdi (CLAUDE.md — icazə nahar bayrağı hadisəsi). *@
-    <div class="pk-row">
+    @* `pk-row--fin` — ARDICILLIQ KİLİDİNİN AÇARI: JS bu sinfə görə ayırd edir
+       ki, hansı sətir kilidlənməyəcək. Sinfi silsən bütün forma kilidlənər. *@
+    <div class="pk-row pk-row--fin">
         <div class="pk-card pk-limit" id="pkLimitCard">
             <div class="pk-head">
                 <span class="pk-ic pk-ic--fin"><i class="bi bi-person-vcard"></i></span>
@@ -40,6 +42,14 @@
                     <div class="pk-limit-status" id="pkLimitStatus">
                         FİN yazın — bu şəxsin cari ay üzrə köçürmələri dərhal yoxlanılacaq.
                     </div>
+                </div>
+
+                @* Yalnız kilid bağlı olanda görünür — göstərilməsi TAM CSS-dədir
+                   (`form.pk-kilidli .pk-kilid-not`), JS onu ayrıca idarə etmir.
+                   İki idarəedici olsaydı biri gec-tez o birini üstələyərdi. *@
+                <div class="pk-kilid-not" id="pkKilidNot">
+                    <i class="bi bi-lock"></i>
+                    Formanın qalan hissəsi FİN yazılandan sonra açılır.
                 </div>
 
                 <div class="pk-limit-sened" id="pkSenedBlok" hidden>
@@ -269,6 +279,62 @@
             status.innerHTML = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
         }
 
+        // ══ ARDICILLIQ KİLİDİ (08.09.2026, istifadəçi qərarı) ═══════════════
+        // «FİN yazmadan digər işlər … yazmaq mümkün olmasın» — forma FİN
+        // yazılana qədər solğun və toxunulmazdır.
+        //
+        // ⚠️ `disabled` İŞLƏDİLMİR. Brauzer `disabled` sahəni POST-a ÜMUMİYYƏTLƏ
+        //    qoymur — gizlətmək (render etməmək) ilə eyni nəticə: redaktədə
+        //    mövcud dəyərlər səssizcə silinərdi (CLAUDE.md — «şərtli render
+        //    olunan form sahəsi + default parametr = səssiz data itkisi»).
+        //    `inert` isə yalnız toxunmağı/fokusu bağlayır, dəyər normal gedir.
+        //    CSS-dəki `pointer-events:none` `inert`-i dəstəkləməyən köhnə
+        //    brauzer üçün ehtiyatdır.
+        //
+        // ⚠️ REDAKTƏDƏ KİLİD YOXDUR: köhnə qeydlərdə FİN onsuz da boşdur
+        //    (istifadəçi qərarı — sonradan əl ilə yazılır). Kilid orada da
+        //    işləsəydi, məsələn yalnız məzənnəni düzəltmək istəyən operator
+        //    FİN-i bilmədən qeydə ümumiyyətlə toxuna bilməzdi.
+        var forma        = fin.form;
+        var redakteMi    = !!(forma && forma.querySelector('input[name="Id"]'));
+        var gonderDugmes = forma ? forma.querySelector('button[type="submit"]') : null;
+
+        // Kilidlənən elementlər BİR DƏFƏ yığılır — DOM sonradan dəyişmir.
+        var kilidlenenler = [];
+        if (forma && !redakteMi) {
+            forma.querySelectorAll('.pk-form > .pk-row').forEach(function (r) {
+                if (!r.classList.contains('pk-row--fin')) kilidlenenler.push(r);
+            });
+            // Mühasibat yazılışı kartı — `.pk-form`-dan kənarda, formanın
+            // birbaşa övladıdır (Yarat.cshtml).
+            forma.querySelectorAll(':scope > .pk-card').forEach(function (c) {
+                kilidlenenler.push(c);
+            });
+        }
+
+        function finVarmi() { return (fin.value || '').trim().length > 0; }
+
+        function kilidiTetbiqEt() {
+            if (!forma || redakteMi) return;
+            var aciq = finVarmi();
+            forma.classList.toggle('pk-kilidli', !aciq);
+            kilidlenenler.forEach(function (el) { el.inert = !aciq; });
+            if (gonderDugmes) gonderDugmes.disabled = !aciq;
+        }
+
+        // Son sədd: klaviatura ilə (Enter) göndərilməyə cəhd olunsa da kəsir.
+        // Düymənin `disabled` olması tək başına kifayət deyil.
+        if (forma && !redakteMi) {
+            forma.addEventListener('submit', function (ev) {
+                if (finVarmi()) return;
+                ev.preventDefault();
+                yaz('**Əvvəlcə göndərənin FİN kodunu yazın.** Formanın qalan hissəsi ondan sonra açılır.');
+                kart.classList.remove('pk-limit--ok', 'pk-limit--asib');
+                kart.classList.add('pk-limit--xeta');
+                fin.focus();
+            });
+        }
+
         function medaxil() {
             var r = document.querySelector('input[name="MedaxilValyuta"]:checked');
             return r ? r.value : '';
@@ -328,7 +394,9 @@
 
         function gecikdir() { clearTimeout(taymer); taymer = setTimeout(yoxla, 400); }
 
-        fin.addEventListener('input', gecikdir);
+        // Kilid DƏRHAL açılır (gecikdirilmiş `yoxla`-nı gözləmir) — ilk hərfdə
+        // forma canlanır, sorğu isə 400 ms sonra gedir.
+        fin.addEventListener('input', function () { kilidiTetbiqEt(); gecikdir(); });
         if (meblegEl) meblegEl.addEventListener('input', gecikdir);
         if (tarixEl)  tarixEl.addEventListener('change', yoxla);
         document.querySelectorAll('input[name="MedaxilValyuta"]')
@@ -375,7 +443,9 @@
             });
         }
 
-        // Səhifə açılanda mövcud dəyərlə bir dəfə yoxla (redaktə/təkrar halı).
+        // Səhifə açılanda: əvvəl kilid (dəyər varsa dərhal açıq), sonra yoxlama.
+        // «Təkrarla» axınında FİN köçürülür, yəni forma elə açıq gəlir.
+        kilidiTetbiqEt();
         if ((fin.value || '').trim()) yoxla();
     })();
 </script>

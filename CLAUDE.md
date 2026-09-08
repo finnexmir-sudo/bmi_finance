@@ -1503,7 +1503,37 @@ bütün mənası itir.
 
 Məbləğ hələ yazılmayanda mesaj **ayrı qoldadır** (`YeniUsd <= 0`) — «bu əməliyyatla
 … olur» yazmaq mövcud olmayan məbləğdən danışmaq olardı; o an lazım olan yeganə
-rəqəm ayın cəmi və qalıqdır.
+rəqəm ayın cəmi və qalıqdır. Vurğulanan hissə serverdə `**…**` ilə işarələnir,
+`_Form.cshtml`-dəki `yaz()` onu `<b>`-yə çevirir (əvvəl HTML qaçırılır, SONRA
+nişan çevrilir). `TempData`-ya gedən mətndə nişan `KocurmeService.MesajDuz()`
+ilə atılır — yoxsa istifadəçi hərfi `**19.117,65 USD**` görər.
+
+### ARDICILLIQ KİLİDİ — `disabled` YOX, `inert` (08.09.2026)
+
+İstifadəçi qərarı: «FİN yazmadan digər işlər … yazmaq mümkün olmasın».
+FİN boş olanda formanın qalan hissəsi **solğun və toxunulmazdır**; ilk hərfdə açılır.
+
+| Seçim | Səbəb |
+|---|---|
+| Gizlətmək YOX, **kilidləmək** | gizli sahə render olunmur → POST-da getmir → redaktədə dəyər silinər |
+| `disabled` YOX, **`inert`** | `disabled` sahəni brauzer POST-a **ümumiyyətlə qoymur** — gizlətmək ilə eyni nəticə |
+| `filter` YOX, yalnız `opacity` | `filter` mətni bulanıqlaşdırır, `position:fixed` üçün containing block yaradır |
+| **Redaktədə kilid YOXDUR** | köhnə qeydlərdə FİN onsuz da boşdur; kilid onları düzəltməyi bloklayardı |
+| `.dm-actions` bütöv kilidlənmir | «Ləğv et» həmişə işləməlidir — yalnız göndər düyməsi sönür |
+
+Göndər düyməsi **`disabled` edilir** — o, data sahəsi deyil, POST-da itən bir şey
+yoxdur. Əlavə sədd: `form.submit` hadisəsində FİN boşdursa `preventDefault()`
+(Enter ilə göndərmə düymənin `disabled`-ını yan keçir).
+
+Kilidlənən elementlər `pk-row--fin` sinfinə görə ayırd olunur — həmin sinif
+silinsə **bütün forma kilidlənər** və heç bir xəta çıxmaz.
+
+⚠️ **KİLİD SERVER QAYDASI DEYİL.** Server hələ də boş FİN-li qeydi qəbul edir və
+belə qeyd heç kimin aylıq cəminə düşmür (bölünmüş məbləğlərlə limit yan keçilə
+bilər). Tək istisna — əməliyyatın ÖZÜ 20 000-i aşırsa, FİN olmasa da bloklanır.
+FİN-i serverdə məcburi etmək **hələ qərar verilməyib**: əcnəbi göndərənin
+(qeyri-rezident) AZ FİN-i olmaya bilər, məcburi etsək operator uydurma FİN
+yazardı və cəm yalançı şəxs altında toplanardı — bu, boşluqdan da pisdir.
 
 **`fetch`-də NİSBİ ÜNVAN YAZMA.** `fetch('LimitYoxla')` yalnız `/…/Yarat`-da düz
 işləyir; `/…/Redakte/5`-də brauzer onu `/…/Redakte/LimitYoxla` kimi həll edir və
