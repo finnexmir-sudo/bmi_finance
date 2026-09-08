@@ -378,8 +378,38 @@ t.Aktivdir                        // cari təyinat (köhnəsi say=ikiqat olması
 `IsciStrukturRolu` sətri də deaktiv olmur. Filtr qoyulmasa çıxmış işçi sxemdə və
 sayğacda qalır.
 
+### `IsciTeyinat` KÖK SORĞUDURSA XÜSUSİ TƏHLÜKƏLİDİR (08.09.2026)
+
+Yuxarıdakı `Include(...Where(t => t.Aktivdir))` istifadələri **yalnız göstərişi**
+boşaldır (şöbə adı «—» olur). Amma sorğunun **KÖKÜ** `IsciTeyinat`-dırsa, təyinat
+sətri **kimin siyahıda olacağını** həll edir — çıxmış işçi bütöv sətir kimi qalır.
+
+Real hadisə: **HR → Müqavilə Bitmə** səhifəsi. Şərt `!t.Silinib && t.Aktivdir &&
+t.BitmeTarixi.HasValue` idi. İlkin Q. 17.07.2026-da işdən çıxıb, müqaviləsi 22.07-də
+bitib → səhifədə «48 gün keçib» sətri və **«Uzat» düyməsi** görünürdü. «İşçilər»
+səhifəsi onu «İşdən Çıxmış» sekmesində göstərirdi — yəni iki səhifə eyni adama
+fərqli baxırdı.
+
+**Bu funksiyanın İKİ yazıcısı var — birlikdə dəyiş:**
+
+| Yer | Nə edir |
+|---|---|
+| `MuqavileBitmeController.LoadRowsAsync` | səhifə **və** Excel ixracı (ortaq metod) |
+| `XatirlatmaBackgroundService` (~sətir 132) | 10 iş günü qalmış HR-a **xatırlatma** |
+
+İkincisi köhnə qalsa ekranda görünməyən adam üçün bildiriş gələr — daha çaşdırıcı.
+
+**`== IsciStatus.Aktiv` YAZMA, `!= IshtenCixib` yaz.** Məzuniyyətdəki işçi hələ
+işləyir və onun müqaviləsi də bitir; `== Aktiv` onu gizlədər və real bitən müqavilə
+gözdən qaçar. Şərt «İşçilər» səhifəsi ilə eyni olmalıdır (`IsciService.cs:86`) —
+orada da «Aktiv» sekmesi `Status != IshtenCixib` deməkdir.
+
+KPI kartları `Rows`-dan hesablanır (`MuqavileBitmeIndexVM`), ona görə say=siyahı
+avtomatik tutuşur — filtri sorğuda saxla, view-da təkrarlama.
+
 Düzəldilən yerlər: `DepartmentService` (3 sorğu), `VezifeService`,
-`OrganizasiyaController` (təyinatlar + struktur rolları). **Qalan `BitmeTarixi == null`
+`OrganizasiyaController` (təyinatlar + struktur rolları), `MuqavileBitmeController`,
+`XatirlatmaBackgroundService`. **Qalan `BitmeTarixi == null`
 istifadələri (Hesabat, Performans, MaasHesablamaService) hələ köhnədir** — onlar
 filtered `Include` olduğu üçün yalnız şöbə/vəzifə **göstərişini** boşaldır, məbləği
 pozmur; toxunanda bu bölməni tutuşdur.

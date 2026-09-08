@@ -134,10 +134,18 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     .Include(t => t.Isci)
                     .Include(t => t.Departament)
                     .Include(t => t.Vezife)
+                    // ⚠️ İŞÇİNİN ÖZ STATUSU DA YOXLANILIR (08.09.2026) — şərt
+                    // `MuqavileBitmeController.LoadRowsAsync` ilə EYNİ olmalıdır.
+                    // İşçi işdən çıxanda `IsciTeyinat` sətri passivləşmir, ona
+                    // görə çıxmış işçi üçün HR-a «müqaviləsi bitir» xatırlatması
+                    // gedirdi. Səhifə düzəlib bu yer köhnə qalsa, ekranda
+                    // görünməyən adam üçün bildiriş gələr — daha da çaşdırıcı.
                     .Where(t => !t.Silinib
                         && t.Aktivdir
                         && t.BitmeTarixi.HasValue
-                        && t.BitmeTarixi.Value.Date == hedeftarix.Date)
+                        && t.BitmeTarixi.Value.Date == hedeftarix.Date
+                        && !t.Isci.Silinib
+                        && t.Isci.Status != IsciStatus.IshtenCixib)
                     .ToListAsync();
 
                 var hrIscileri = await GetHrIsciIdleriAsync(db, userManager);

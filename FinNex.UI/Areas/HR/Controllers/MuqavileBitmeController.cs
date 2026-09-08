@@ -104,7 +104,21 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Include(t => t.Isci)
                 .Include(t => t.Departament)
                 .Include(t => t.Vezife)
-                .Where(t => !t.Silinib && t.Aktivdir && t.BitmeTarixi.HasValue)
+                // ⚠️ İŞÇİNİN ÖZ STATUSU DA YOXLANILIR (08.09.2026).
+                // Əvvəl yalnız `t.Aktivdir` var idi. İşçi işdən çıxanda
+                // `IsciTeyinat` sətri PASSİVLƏŞMİR (`IsciService.CixarAsync`
+                // yalnız `Isci.Status`-u dəyişir) → çıxmış işçi bu səhifədə
+                // «müqaviləsi bitir» kimi görünürdü. Real hadisə: İlkin Q.
+                // 17.07.2026-da çıxıb, 22.07 müqaviləsi ilə «48 gün keçib»
+                // sətrində qalmışdı və «Uzat» düyməsi də təklif olunurdu.
+                //
+                // Şərt «İşçilər» səhifəsi ilə EYNİDİR — `IsciService:86`
+                // `Status != IshtenCixib`. `== Aktiv` YAZMA: məzuniyyətdəki
+                // işçi hələ işləyir və onun müqaviləsi də bitir; onu gizlətsək
+                // real bitən müqavilə gözdən qaçardı.
+                .Where(t => !t.Silinib && t.Aktivdir && t.BitmeTarixi.HasValue
+                         && !t.Isci.Silinib
+                         && t.Isci.Status != IsciStatus.IshtenCixib)
                 .ToListAsync();
 
             return teyinatlar
