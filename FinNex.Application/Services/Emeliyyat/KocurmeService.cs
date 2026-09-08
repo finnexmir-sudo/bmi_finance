@@ -168,7 +168,7 @@ public partial class KocurmeService : IKocurmeService
         // amma HEÇ NƏ YAZILMAYIB — yazılan an tranzaksiyanın içidir. Yoxlama
         // burada uğursuz olsa heç bir sətir yaranmır, nömrə də «yeyilmir»
         // (CLAUDE.md — «nömrə ayrılmadan ƏVVƏL bütün yoxlamalar»).
-        var limit = await LimitTetbiqEtAsync(e, novu, dto, xaricId: null);
+        var limit = await LimitTetbiqEtAsync(e, novu, dto, xaricId: null, yeniQeyd: true);
         if (!limit.Success)
             return Result<int>.Fail(limit.Message ?? "Aylıq limit yoxlamasından keçmədi.");
 
@@ -404,13 +404,21 @@ public partial class KocurmeService : IKocurmeService
         if (!isAdmin && e.YaradanIcraciId != userId)
             return Result.Fail("Yalnız öz qeydinizi və ya Admin dəyişə bilər.");
 
+        // ⚠️ `Doldur`-DAN ƏVVƏL — o, `GonderenFin`-i formadakı dəyərlə üstələyir.
+        //    Köhnə dəyəri sonra oxusaq «silindimi?» sualına cavab verə bilmərik.
+        var kohneFin = e.GonderenFin;
+
         Doldur(e, dto);   // HevaleNo dəyişməz
 
         // ⚠️ REDAKTƏDƏ `xaricId` MƏCBURİDİR — qeydin ÖZÜ cəmdən çıxarılmalıdır.
         // Olmasa 10 000-lik köçürməni açan operator cəmdə həmin 10 000-i də
         // görər və məbləği artırmadan «limit aşıldı» xəbərdarlığı alar
         // (məzuniyyət tarix konfliktində eyni qayda).
-        var limit = await LimitTetbiqEtAsync(e, novu, dto, xaricId: e.Id);
+        //
+        // `yeniQeyd: false` — köhnə qeydlərdə FİN boşdur və məhz bu səhifədən
+        // yazılır; məcburi etsək onları düzəltmək mümkün olmazdı.
+        var limit = await LimitTetbiqEtAsync(e, novu, dto, xaricId: e.Id,
+                                             yeniQeyd: false, kohneFin: kohneFin);
         if (!limit.Success) return limit;
 
         e.YenileyenIcraciId = userId;
@@ -512,13 +520,23 @@ public partial class KocurmeService : IKocurmeService
     /// yolda yan keçilər (CLAUDE.md — «yoxlama BÜTÜN giriş nöqtələrində»).
     /// Ona görə tək metoddur.
     /// </summary>
+    /// <param name="yeniQeyd">
+    /// `true` — yaratma yolu: FİN MƏCBURİDİR. `false` — redaktə yolu: boş qala
+    /// bilər (köhnə qeydlərdə FİN onsuz da yoxdur və məhz orada yazılır), amma
+    /// MÖVCUD FİN silinə bilməz.
+    /// </param>
+    /// <param name="kohneFin">
+    /// Redaktədə qeydin ƏVVƏLKİ FİN-i — `Doldur` onu üstələdiyi üçün çağıran
+    /// tərəf `Doldur`-dan ƏVVƏL saxlamalıdır.
+    /// </param>
     private async Task<Result> LimitTetbiqEtAsync(
-        Kocurme e, string novu, KocurmeFormDto dto, int? xaricId)
+        Kocurme e, string novu, KocurmeFormDto dto, int? xaricId,
+        bool yeniQeyd, string? kohneFin = null)
     {
         var tarix = dto.Tarix ?? DateTime.Now;
 
         // Limitə düşməyən növ (Tələbə) — USD ekvivalenti də yazılmır,
-        // sənəd sahələri təmizlənir.
+        // sənəd sahələri təmizlənir. FİN də tələb olunmur.
         if (!string.Equals(novu, "Pul", StringComparison.OrdinalIgnoreCase))
         {
             e.UsdEkvivalent = null;
@@ -526,6 +544,29 @@ public partial class KocurmeService : IKocurmeService
             e.SenedNovuId   = null;
             e.LimitQeydi    = null;
             return Result.Ok();
+        }
+
+        // ══ FİN MƏCBURİDİR (08.09.2026) ═══════════════════════════════════
+        // Formadakı kilid (`_Form.cshtml`) onsuz da FİN-siz göndərməyə imkan
+        // vermir, amma o, GÖSTƏRMƏ qatıdır: JS sönük brauzer, birbaşa POST və
+        // ya köhnə açıq səhifə onu yan keçir. Qayda burada olmalıdır.
+        //
+        // FİN-siz qeyd HEÇ KİMİN aylıq cəminə düşmür — yəni limit səssizcə
+        // yan keçilər (bölünmüş məbləğlərlə). Xəta yox, log yox: CLAUDE.md-dəki
+        // ən təhlükəli kateqoriya.
+        if (string.IsNullOrWhiteSpace(e.GonderenFin))
+        {
+            if (yeniQeyd)
+                return Result.Fail(
+                    "Göndərənin FİN kodu yazılmadan köçürmə qeydə alına bilməz — " +
+                    "aylıq 20 000 USD limiti bu sahə üzrə hesablanır.");
+
+            // Redaktə: boş qeyd boş qala bilər, amma DOLU sahəni boşaltmaq olmaz —
+            // keçmiş əməliyyat aylıq cəmdən səssizcə düşərdi.
+            if (!string.IsNullOrWhiteSpace(kohneFin))
+                return Result.Fail(
+                    $"Mövcud FİN kodu («{kohneFin}») silinə bilməz — bu qeyd aylıq cəmdən düşərdi. " +
+                    "Səhvdirsə, boşaltmaq yerinə düzgün FİN yazın.");
         }
 
         var yox = await LimitYoxlaAsync(novu, e.GonderenFin, dto.Mebleg,

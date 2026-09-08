@@ -649,6 +649,31 @@ bütün `FinNex.UI` build-ini dayandırdı. **Qayda:** şərtli mətni markup or
 qurma — dəyəri `@if` gövdəsinin əvvəlində hazır dəyişənə yaz, markup-da yalnız
 `@dəyişən` çağır.
 
+## Razor — ŞƏRHDƏ TAG HELPER ADI (RZ1034)
+
+`.cshtml` faylında **şərh də Razor parser-indən keçir**. CSS və ya HTML şərhinin
+içində tag helper hədəflənən elementin adını bucaq mötərizədə yazsan, Razor onu
+əsl tag sayır və qapanan cütünü axtarır:
+
+```
+RZ1034: Found a malformed 'form' tag helper.
+        Tag helpers must have a start and end tag or be self closing.
+```
+
+Real hadisə (08.09.2026, `_FormStyles.cshtml:131`): `<style>` blokunun şərhində
+«Sinfi JS \`&lt;form&gt;\`-a qoyur» yazıldı → **bütün `FinNex.UI` build olmadı**.
+Xəta CSS faylını göstərir, halbuki orada bir sətir də HTML yoxdur.
+
+**Qaydalar:**
+- Şərhdə element adını bucaqsız yaz: «forma elementinə», «`input` sahəsi».
+- Risk yalnız **tag helper hədəflənən** elementlərdədir — `form`, `input`,
+  `select`, `textarea`, `a`, `img`, `label`, `link`, `script`, `environment`.
+  `<b>`, `<tr>` kimi adi taglar bu xətanı vermir (ona görə `<script>` içindəki
+  `'<b>' + x + '</b>'` sətri problem yaratmır).
+- **`@@{ }` blokundakı C# şərhi təhlükəsizdir** — o, markup deyil. `_Form.cshtml:8`
+  onilliklərdir `<input type="number">` yazır və build olur.
+- CSS/JS şərhi isə markup kontekstindədir — orada ehtiyatlı ol.
+
 ## Oracle Rəqəmi — `ToString()` + `Parse` = 100× SƏHV (KRİTİK)
 
 `OracleService` sətirləri `reader.GetValue()` ilə oxuyur — NUMBER sütunu artıq
@@ -1528,12 +1553,30 @@ yoxdur. Əlavə sədd: `form.submit` hadisəsində FİN boşdursa `preventDefaul
 Kilidlənən elementlər `pk-row--fin` sinfinə görə ayırd olunur — həmin sinif
 silinsə **bütün forma kilidlənər** və heç bir xəta çıxmaz.
 
-⚠️ **KİLİD SERVER QAYDASI DEYİL.** Server hələ də boş FİN-li qeydi qəbul edir və
-belə qeyd heç kimin aylıq cəminə düşmür (bölünmüş məbləğlərlə limit yan keçilə
-bilər). Tək istisna — əməliyyatın ÖZÜ 20 000-i aşırsa, FİN olmasa da bloklanır.
-FİN-i serverdə məcburi etmək **hələ qərar verilməyib**: əcnəbi göndərənin
-(qeyri-rezident) AZ FİN-i olmaya bilər, məcburi etsək operator uydurma FİN
-yazardı və cəm yalançı şəxs altında toplanardı — bu, boşluqdan da pisdir.
+### FİN MƏCBURİDİR — İKİ QATDA (08.09.2026)
+
+| Qat | Qayda |
+|---|---|
+| İnterfeys | kilid — FİN boşdursa forma açılmır, düymə sönükdür |
+| **Server** | `YaratAsync` → FİN boşdursa `Result.Fail`, heç nə yazılmır |
+
+Kilid **tək başına kifayət deyil**: JS sönük brauzer, birbaşa POST, köhnə açıq
+səhifə onu yan keçir. Kilid rahatlıq üçündür, **qayda serverdədir** — layihədə
+bunun beş real hadisəsi var (silinmiş action, `undefined` data-atribut, boş
+endpoint: «ekranda düz görünürdü, arxada işləmirdi»).
+
+**`YenileAsync` FƏRQLİDİR — orada FİN boş qala bilər.** Səbəb: köhnə qeydlərdə
+FİN onsuz da yoxdur və məhz redaktə səhifəsindən yazılır (istifadəçi qərarı).
+Məcburi etsək, FİN-i bilməyən operator həmin qeydin məzənnəsini belə düzəldə
+bilməzdi. Qoruyucu var: **mövcud FİN SİLİNƏ BİLMƏZ** — dolu sahəni boşaltmaq
+cəhdi bloklanır (yoxsa keçmiş əməliyyat aylıq cəmdən səssizcə düşərdi).
+
+⚠️ **AÇIQ MƏSƏLƏ — əcnəbi göndərən.** Qanun qeyri-rezidenti də əhatə edir, amma
+bir dəfəlik gələn əcnəbinin AZ FİN-i olmaya bilər. İndiki qayda onu FİN yazmağa
+məcbur edir; sahə yoxdursa operator uydurma dəyər yazar və cəm **yalançı şəxs
+altında** toplanar — limit işləmiş kimi görünər, əslində işləməz. Həlli
+qərarlaşmayıb (ehtimal: FİN **və ya** passport üzrə tanıma). Şikayət gələndə
+əvvəlcə bura bax — səbəb kodda yox, açarın seçimindədir.
 
 **`fetch`-də NİSBİ ÜNVAN YAZMA.** `fetch('LimitYoxla')` yalnız `/…/Yarat`-da düz
 işləyir; `/…/Redakte/5`-də brauzer onu `/…/Redakte/LimitYoxla` kimi həll edir və

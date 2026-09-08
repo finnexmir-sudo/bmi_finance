@@ -128,7 +128,11 @@
 
 /* ── ARDICILLIQ KİLİDİ (08.09.2026) ────────────────────────────────────────
    FİN yazılana qədər formanın qalan hissəsi solğun və toxunulmazdır.
-   Sinfi JS `<form>`-a qoyur (`pk-kilidli`); toxunulmazlığın ƏSAS mexanizmi
+   ⚠️ ŞƏRHDƏ BELƏ `form` SÖZÜNÜ BUCAQ MÖTƏRİZƏDƏ YAZMA — Razor onu tag helper
+   sayır və RZ1034 verir («malformed form tag helper»), bütün UI build olmur.
+   Fayl `.cshtml`-dir: şərh də Razor parser-indən keçir.
+
+   Sinfi JS forma elementinə qoyur (`pk-kilidli`); toxunulmazlığın ƏSAS mexanizmi
    `inert` atributudur, buradakı `pointer-events` onu dəstəkləməyən brauzer
    üçün ehtiyatdır.
 
