@@ -514,6 +514,72 @@ yalnız iş günlərini istəyirsə bu QƏSDƏN dəyişilməlidir, öz-özünə 
 `TabelService` `EzamiyyetMuraciet` cədvəlini ümumiyyətlə oxumur. Qalıbda sütun
 və işarə var, data yoxdur. Ayrıca iş kimi qalır.
 
+## Məzuniyyət Balansı — «Limit 14 gün» (09.09.2026)
+
+Ə.M. md.137: əsas məzuniyyətin **hissələrindən biri ən azı 14 gün** olmalıdır.
+`HR → Məzuniyyət Balansı` səhifəsində bu, **hər iş ili üçün AYRICA** göstərilir.
+
+| Vəziyyət | Göstərilən |
+|---|---|
+| Həmin iş ilində birdəfəlik **≥14 günlük** məzuniyyət götürülüb | limit YOX — bütün qalıq sərbəst |
+| Götürülməyib | sərbəst = `qalıq − 14` |
+| Qalıq 14-dən az | **0** + «14 günlük hissə üçün qalıq çatmır» |
+
+**MƏNFİ RƏQƏM VERİLMİR** (istifadəçi qərarı). Yekun sütun hər ilin sərbəst
+hissəsinin **CƏMİdir** — «bütöv qalıqdan bir dəfə 14 çıxmaq» səhv olardı,
+tələb hər iş ilinə ayrıca aiddir.
+
+⚠️ **YALNIZ GÖSTƏRİŞDİR** — balansdan heç nə çıxılmır, heç bir müraciət bu
+rəqəmə görə bloklanmır.
+
+⚠️ **MÜHASİBİN EXCELİ İLƏ QƏSDƏN FƏRQLİDİR** (`İşçilərin məzuniyyətləri.xlsx`
+→ «Cari qalıq», L sütunu). İki fərq var:
+1. Excel 14-ü **həmişə** çıxır, hətta ≥14 günlük məzuniyyət artıq
+   götürülmüşdüsə də (Nadirova 19 günlük məzuniyyət alıb, Excel yenə `−9`).
+   İstifadəçi təsdiqi: «mənim qaydam, excel səhvdir».
+2. Excel hansı il sütunundan çıxacağını **əl ilə** seçir və özü ilə
+   ziddiyyətlidir — İbrahimov `D3-14`, Axundov `C4-14`, hər ikisi fevral
+   işçisidir. Sistem iş ilini avtomatik təyin edir.
+
+**İŞ İLİ ≠ TƏQVİM İLİ** — işə qəbul ildönümündən başlayır. Hesablayan iki yer
+var və **eyni clamp qaydasındadır** (29 fevral → ayın son günü):
+`MezuniyyetBalansController.IsIliniTap` və `Index.cshtml`-dəki `SonIldonum`.
+Birini dəyişəndə o birini də dəyiş — yoxsa sütundakı il ilə limitin ili
+sürüşər və **heç bir xəta çıxmaz**.
+
+Məzuniyyət iki iş ilinə düşə bilər (`BalansiFifoKesAsync` FIFO kəsir), amma
+«birdəfəlik 14 gün» tələbi **fasiləsizlik** haqqındadır — qeyd **BAŞLADIĞI**
+iş ilinə yazılır.
+
+## Şəxsiyyət Vəsiqəsi Müddəti — HEÇ YERƏ YAZILMIR (09.09.2026)
+
+`HR → Müddətlər → Şəxsiyyət vəsiqəsi` sekmesi tarixi **BMI-dən canlı** oxuyur
+(`regnom.pasport_date_close`, FİN üzrə). İstifadəçi qərarı: **«sadəcə
+göstəririk, heç yerə yazmayacağıq»**.
+
+- `Isci`-də vəsiqə tarixi sütunu **YOXDUR və olmamalıdır** — iki nüsxə
+  saxlansa biri gec-tez köhnələr;
+- «idxal et / yenilə» düyməsi **yoxdur** — səhifəni yeniləmək kifayətdir;
+- Sorğu `OracleSorgular`-dadır (`SorguAdi = VESIQE_BITME`), mətn
+  `docs/sql/hr/Vesiqe_Bitme_OracleSorgu.sql`. Quraşdırılmayıbsa səhifə
+  **açıq xəbərdarlıq** verir, səssiz boş siyahı göstərmir.
+
+**Sütun alias-ları məcburidir:** `FIN`, `VESIQE_BIT_TARIXI`. Ad dəyişsə dəyər
+səssizcə boşalmır — servis açıq xəbərdarlıq qaytarır. Tarix `to_char` ilə
+**mətnə çevrilməməlidir** (Oracle DATE tipi birbaşa oxunur).
+
+Bir FİN üçün `regnom`-da birdən çox sətir ola bilər — **ƏN SON tarix**
+götürülür ki, köhnə vəsiqə sətri yenisini üstələməsin.
+
+**Tarixi tapılmayan işçi «bitib» SAYILMIR** — ayrıca «Tarix tapılmadı»
+sayğacındadır və siyahının sonunda gəlir. Yoxsa doldurulmamış işçilər təcili
+siyahını doldurardı.
+
+`MuqavileBitmeController`-də iki action var, amma **sorğular birləşdirilməyib**:
+müqavilə siyahısının kökü `IsciTeyinat`, vəsiqəninki BMI sətridir —
+birləşdirsək müqavilə filtrləri (gün, `BitmeTarixi.HasValue`) səssizcə
+vəsiqəyə də tətbiq olunardı.
+
 ## İşçi Siyahıları — Sıralama və Filtr Qaydası (KRİTİK)
 
 İşçi siyahısı göstərən **hər** səhifədə eyni qayda tətbiq olunmalıdır — mənbə
