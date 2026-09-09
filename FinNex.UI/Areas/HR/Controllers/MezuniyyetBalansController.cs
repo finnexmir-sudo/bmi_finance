@@ -60,10 +60,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .AsNoTracking()
                 .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
                 .Include(x => x.MezuniyyetBalanslari.Where(b => !b.Silinib && b.Il == cariIl))
-                .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
+                // «Cari təyinat» = Aktivdir, `BitmeTarixi == null` YOX.
+                // BitmeTarixi PLANLAŞDIRILMIŞ bitmə tarixidir; redaktədə yazılır və
+                // sətir `Aktivdir=1` VƏ `BitmeTarixi=<tarix>` qalır (bazada 29-dan 22-si
+                // belədir). Köhnə şərtlə işçilərin çoxunda Departament «—» görünürdü.
+                .Include(x => x.IsciTeyinatlari.Where(t => t.Aktivdir && !t.Silinib))
                     .ThenInclude(t => t.Departament)
-                .OrderBy(x => x.Soyad)
+                // Sıralama qaydası: HR-ın «İşçi Sıralaması» səhifəsində verdiyi `Sira`
+                // əsasdır; ad/soyad əlifbası yalnız eyni `Sira` daxilində işləyir.
+                .OrderBy(x => x.Sira)
                 .ThenBy(x => x.Ad)
+                .ThenBy(x => x.Soyad)
                 .ToListAsync();
 
             // Bütün illərin balansı (həm keçmiş, həm cari) — yan sütunda
@@ -98,7 +105,80 @@ namespace FinNex.UI.Areas.HR.Controllers
                     )).OrderByDescending(x => x.Il).ToList()
                 );
 
+            // ── «Limit 14 gün» (Ə.M. md.137) ────────────────────────────────
+            // Əsas məzuniyyətin hissələrindən BİRİ ən azı 14 gün olmalıdır. Ona
+            // görə hər iş ilində birdəfəlik ≥14 günlük məzuniyyət GÖTÜRÜLMƏYİBSƏ,
+            // həmin ilin qalığından 14 gün «ehtiyat» sayılır və sərbəst hissə
+            // (qalıq − 14) göstərilir.
+            //
+            // ⚠️ Bu YALNIZ GÖSTƏRİŞDİR — balansdan heç nə çıxılmır, heç bir sorğu
+            //    bu rəqəmə görə bloklanmır (istifadəçi qərarı 09.09.2026).
+            // ⚠️ Excel («Cari qalıq» vərəqi, L sütunu) 14-ü HƏMİŞƏ çıxırdı — ≥14
+            //    günlük məzuniyyət artıq götürülübsə də. Bu SƏHVDİR və qəsdən
+            //    təkrarlanmır (istifadəçi təsdiqi: «mənim qaydam, excel səhvdir»).
+            var uzunMezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .AsNoTracking()
+                .Where(m => !m.Silinib
+                         && m.Nov == MezuniyyetNovu.Illik
+                         && m.Status == MezuniyyetStatus.Tesdiqlenib
+                         && isciIds.Contains(m.IsciId))
+                // EfektivGunSayi [NotMapped]-dir — SQL-ə tərcümə olunmur, ona görə
+                // xam sahələr gətirilir və gün sayı yaddaşda hesablanır.
+                .Select(m => new
+                {
+                    m.IsciId,
+                    m.BaslamaTarixi,
+                    m.IsGunlerininSayi,
+                    m.IsGunlerininSayiManual
+                })
+                .ToListAsync();
+
+            var iseQebulMap = isciler.ToDictionary(i => i.Id, i => i.IsheQebulTarixi.Date);
+
+            // { isciId: { iş ili, ... } } — həmin iş ilində ≥14 günlük birdəfəlik
+            // məzuniyyət götürülüb.
+            var onDordGunVar = new Dictionary<int, HashSet<int>>();
+            foreach (var m in uzunMezuniyyetler)
+            {
+                int gun = m.IsGunlerininSayiManual ?? m.IsGunlerininSayi;
+                if (gun < MinBirdefelikGun) continue;
+                if (!iseQebulMap.TryGetValue(m.IsciId, out var qebul)) continue;
+
+                // Məzuniyyət iki iş ilinə də düşə bilər (balans FIFO kəsir), amma
+                // «birdəfəlik 14 gün» tələbi fasiləsizlik haqqındadır — qeyd
+                // BAŞLADIĞI iş ilinə yazılır.
+                int isIli = IsIliniTap(qebul, m.BaslamaTarixi);
+                if (!onDordGunVar.TryGetValue(m.IsciId, out var set))
+                    onDordGunVar[m.IsciId] = set = new HashSet<int>();
+                set.Add(isIli);
+            }
+
+            ViewBag.OnDordGunVar = onDordGunVar;
+            ViewBag.MinBirdefelikGun = MinBirdefelikGun;
+
             return View(isciler);
+        }
+
+        /// <summary>Ə.M. md.137 — əsas məzuniyyətin bir hissəsinin minimum müddəti.</summary>
+        private const int MinBirdefelikGun = 14;
+
+        /// <summary>
+        /// Verilmiş tarixin hansı İŞ İLİNƏ düşdüyünü qaytarır. İş ili təqvim ili
+        /// deyil — işə qəbul ildönümündən başlayır (2026-02-02 işə qəbul → 2026 iş ili
+        /// 02.02.2026-dan 01.02.2027-yə qədərdir).
+        ///
+        /// ⚠️ Index.cshtml-dəki `SonIldonum` ilə EYNİ qaydadır (29 fevral kimi hüdud
+        /// hallarında ayın son gününə clamp). Birini dəyişəndə o birini də dəyiş —
+        /// yoxsa sütundakı il ilə limitin ili sürüşər və heç bir xəta çıxmaz.
+        /// </summary>
+        private static int IsIliniTap(DateTime iseQebul, DateTime tarix)
+        {
+            var t = tarix.Date;
+            int ay = iseQebul.Month;
+            int gun = Math.Min(iseQebul.Day, DateTime.DaysInMonth(t.Year, ay));
+            var buIlDonum = new DateTime(t.Year, ay, gun);
+            return t >= buIlDonum ? t.Year : t.Year - 1;
         }
 
         // POST /HR/MezuniyyetBalans/Update

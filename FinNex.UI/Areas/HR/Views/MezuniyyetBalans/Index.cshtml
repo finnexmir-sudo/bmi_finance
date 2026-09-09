@@ -9,6 +9,12 @@
     var illerUzreQaliq = ViewBag.IllerUzreQaliq as Dictionary<int, List<(int Il, int Qaliq, bool Cari)>>
                        ?? new Dictionary<int, List<(int Il, int Qaliq, bool Cari)>>();
     var standartGun = (int)(ViewBag.StandartIllikGun ?? 21);
+
+    // «Limit 14 gün» — Ə.M. md.137. { isciId: { iş ili } } — həmin iş ilində
+    // birdəfəlik ≥14 günlük məzuniyyət götürülüb (controller hesablayır).
+    var onDordGunVar = ViewBag.OnDordGunVar as Dictionary<int, HashSet<int>>
+                     ?? new Dictionary<int, HashSet<int>>();
+    var minBirdefelik = (int)(ViewBag.MinBirdefelikGun ?? 14);
 }
 
 @functions {
@@ -33,6 +39,15 @@
     // İş ili tək təqvim ilini yox, işə qəbul dönümündən növbəti ilə keçən dövrü
     // əhatə edir — ona görə "2026" yox, "2026–2027" göstərilir.
     static string IlAralik(int il) => $"{il}–{il + 1}";
+
+    // «Limit 14 gün» — bir iş ilinin sərbəst (bölünə bilən) hissəsi.
+    // Ə.M. md.137: əsas məzuniyyətin hissələrindən biri ən azı 14 gün olmalıdır.
+    //   onDordVar = true  → tələb artıq ödənilib, bütün qalıq sərbəstdir
+    //   onDordVar = false → qalıqdan 14 gün ehtiyat saxlanılır
+    // MƏNFİ RƏQƏM VERİLMİR (istifadəçi qərarı) — qalıq 14-dən azdırsa nəticə 0-dır
+    // və bu, «14 günlük hissə üçün qalıq çatmır» deməkdir.
+    static int Serbest(bool onDordVar, int qaliq, int min)
+        => onDordVar ? Math.Max(0, qaliq) : Math.Max(0, qaliq - min);
 }
 
 @section Styles {
@@ -128,6 +143,27 @@
         }
         .mb-btn-edit:hover { background:#f1f5f9; border-color:#94a3b8 }
         .mb-btn-edit i { font-size:13px }
+
+        /* ── Limit 14 gün (Ə.M. md.137) ──────────────────────────────────
+           Hər iş ili sətrinin altındakı kiçik nişan + sağdakı yekun sütun.
+           YALNIZ GÖSTƏRİŞDİR — balansdan heç nə çıxılmır. */
+        .mb-l14 {
+            display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+            font-size:10.5px; font-weight:600; line-height:1.4;
+            margin:3px 0 7px; padding:3px 8px; border-radius:5px;
+        }
+        .mb-l14 i { font-size:10px }
+        .mb-l14--ok   { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0 }
+        .mb-l14--wait { background:#fffbeb; color:#b45309; border:1px solid #fde68a }
+        .mb-l14--none { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca }
+        .mb-l14-formula { font-weight:400; opacity:.75 }
+
+        .mb-l14-big { font-size:20px; font-weight:800; line-height:1.1 }
+        .mb-l14-big--ok   { color:#047857 }
+        .mb-l14-big--none { color:#94a3b8 }
+        .mb-l14-big-unit  { font-size:11px; font-weight:600; color:#64748b }
+        .mb-l14-sub { font-size:10px; color:#94a3b8; margin-top:3px; line-height:1.35 }
+        .mb-l14-sub--warn { color:#b45309 }
     </style>
 }
 
@@ -175,16 +211,23 @@
                 <table class="mb-table" id="mbTable">
                     <thead>
                         <tr>
-                            <th style="min-width:200px">İşçi</th>
+                            <th style="width:38px;text-align:center">№</th>
+                            <th style="min-width:190px">İşçi</th>
                             <th>Departament</th>
-                            <th style="min-width:240px">Qalıq məzuniyyət (bütöv)</th>
-                            <th style="min-width:220px">İllər üzrə qalıq</th>
+                            <th style="width:96px">İşə qəbul</th>
+                            <th style="min-width:230px">Qalıq məzuniyyət (bütöv)</th>
+                            <th style="min-width:240px">İllər üzrə qalıq</th>
+                            <th style="width:118px" title="Ə.M. md.137 — əsas məzuniyyətin hissələrindən biri ən azı 14 gün olmalıdır. Bu, yalnız göstərişdir: balansdan heç nə çıxılmır.">
+                                Limit @minBirdefelik gün
+                            </th>
                             <th style="width:110px">Əməliyyat</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @{ int sira = 0; }
                         @foreach (var isci in Model)
                         {
+                            sira++;
                             var teyinat = isci.IsciTeyinatlari?.FirstOrDefault();
                             var deptAd = teyinat?.Departament?.Ad ?? "—";
                             var balanslar = isci.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
@@ -234,7 +277,21 @@
                             var cariQaliq = illik?.QaliqGun ?? 0;
                             var umumiQaliq = cariQaliq + kecmisQaliqSum;
 
+                            // «Limit 14 gün» — bu işçinin hansı iş illərində birdəfəlik
+                            // ≥14 günlük məzuniyyəti var (controller hesablayıb).
+                            var isciOnDord = onDordGunVar.TryGetValue(isci.Id, out var odSet) ? odSet : null;
+                            var cariOnDordVar = isciOnDord != null && isciOnDord.Contains(secilmisIl);
+                            var cariSerbest = Serbest(cariOnDordVar, cariQaliq, minBirdefelik);
+
+                            // Yekun: HƏR iş ili öz qalığından öz limitini çıxır, sonra
+                            // toplanır. «Bütöv qalıqdan bir dəfə 14 çıxmaq» SƏHV olardı —
+                            // 14 günlük tələb hər iş ili üçün ayrıca qüvvədədir.
+                            var umumiSerbest = cariSerbest + kecmisIller.Sum(y =>
+                                Serbest(isciOnDord != null && isciOnDord.Contains(y.Il), y.Qaliq, minBirdefelik));
+                            var ehtiyat = umumiQaliq - umumiSerbest;   // limitə görə saxlanan gün
+
                             <tr>
+                                <td style="text-align:center;color:#94a3b8;font-size:12px">@sira</td>
                                 <td>
                                     <div class="mb-isci-ad">@isci.Ad @isci.Soyad</div>
                                     @if (!string.IsNullOrEmpty(isci.FIN))
@@ -244,6 +301,23 @@
                                 </td>
                                 <td>
                                     <span class="mb-dept">@deptAd</span>
+                                </td>
+
+                                @* ═══ İşə qəbul + illik hüquq (Excel: «işə başlama tarixi» + «MH») ═══ *@
+                                <td>
+                                    <div style="font-size:12px;font-weight:600;color:#0f172a">
+                                        @isci.IsheQebulTarixi.ToString("dd.MM.yyyy")
+                                    </div>
+                                    <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">
+                                        @if (illik != null)
+                                        {
+                                            <text>illik hüquq: <strong style="color:#475569">@illik.ToplamGun</strong> gün</text>
+                                        }
+                                        else
+                                        {
+                                            <text>illik hüquq təyin edilməyib</text>
+                                        }
+                                    </div>
                                 </td>
 
                                 @* ═══ Qalıq məzuniyyət (cari il əsas göstəriş) ═══ *@
@@ -303,6 +377,26 @@
                                                 <span class="il">@IlAralik(secilmisIl) (cari)</span>
                                                 <span class="gun">@illik.QaliqGun gün</span>
                                             </div>
+                                            @* Hər iş ili ÖZ limitini daşıyır — «hər sütunda ayrı» (istifadəçi qərarı) *@
+                                            @if (cariOnDordVar)
+                                            {
+                                                <div class="mb-l14 mb-l14--ok">
+                                                    <i class="bi bi-check-circle-fill"></i> @minBirdefelik günlük hissə alınıb — qalıq sərbəstdir
+                                                </div>
+                                            }
+                                            else if (cariSerbest > 0)
+                                            {
+                                                <div class="mb-l14 mb-l14--wait">
+                                                    <i class="bi bi-hourglass-split"></i> sərbəst: <strong>@cariSerbest</strong> gün
+                                                    <span class="mb-l14-formula">(@cariQaliq − @minBirdefelik)</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="mb-l14 mb-l14--none">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> @minBirdefelik günlük hissə üçün qalıq çatmır
+                                                </div>
+                                            }
                                             // Növbəti yenilənmə = işə qəbul ildönümü əsasında (yuxarıda hesablanıb)
                                             var gorunecekTarix = novbetiYenilenme;
                                             var haqqPct2 = illik.ToplamGun > 0
@@ -336,15 +430,58 @@
                                         @* Keçmiş illər — qalığı olanlar *@
                                         @foreach (var y in kecmisIller)
                                         {
+                                            var yOnDord = isciOnDord != null && isciOnDord.Contains(y.Il);
+                                            var ySerbest = Serbest(yOnDord, y.Qaliq, minBirdefelik);
                                             <div class="mb-prev-year-row">
                                                 <span class="il">@IlAralik(y.Il)</span>
                                                 <span class="gun">@y.Qaliq gün</span>
                                             </div>
+                                            @if (yOnDord)
+                                            {
+                                                <div class="mb-l14 mb-l14--ok">
+                                                    <i class="bi bi-check-circle-fill"></i> @minBirdefelik günlük hissə alınıb — qalıq sərbəstdir
+                                                </div>
+                                            }
+                                            else if (ySerbest > 0)
+                                            {
+                                                <div class="mb-l14 mb-l14--wait">
+                                                    <i class="bi bi-hourglass-split"></i> sərbəst: <strong>@ySerbest</strong> gün
+                                                    <span class="mb-l14-formula">(@y.Qaliq − @minBirdefelik)</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="mb-l14 mb-l14--none">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> @minBirdefelik günlük hissə üçün qalıq çatmır
+                                                </div>
+                                            }
                                         }
                                     </div>
                                     @if (illik != null && kecmisIller.Any())
                                     {
                                         <span class="mb-prev-cemi">Cəm: @umumiQaliq gün</span>
+                                    }
+                                </td>
+
+                                @* ═══ Limit 14 gün — YEKUN (Excel «Cari qalıq» L sütunu) ═══ *@
+                                @* Hər ilin sərbəst hissəsinin CƏMİ. Detallar yan sütundadır. *@
+                                <td>
+                                    @if (umumiQaliq <= 0)
+                                    {
+                                        <span class="mb-l14-big mb-l14-big--none">—</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="mb-l14-big @(umumiSerbest > 0 ? "mb-l14-big--ok" : "mb-l14-big--none")">
+                                            @umumiSerbest <span class="mb-l14-big-unit">gün</span>
+                                        </div>
+                                        <div class="mb-l14-sub">sərbəst bölünə bilər</div>
+                                        @if (ehtiyat > 0)
+                                        {
+                                            <div class="mb-l14-sub mb-l14-sub--warn">
+                                                @ehtiyat gün @minBirdefelik günlük hissə üçün saxlanılır
+                                            </div>
+                                        }
                                     }
                                 </td>
 
