@@ -577,9 +577,16 @@ sayğacındadır. Yoxsa doldurulmamış işçilər təcili siyahını doldurard�
 **SIRALAMA `Sira`-YA GÖRƏDİR** (istifadəçi qərarı: «işçi sıralamasından
 götürülməlidir») — ilk yazılışda qalan günə görə sıralanmışdı, səhv idi.
 Təcililik siyahının sırasında yox, «Qalan gün» sütununun **rəngində** və
-KPI kartlarında görünür. ⚠️ Qonşu **Müqavilə** sekmesi isə hələ `QalanGun`
-üzrədir — o, «növbəti N gün» filtri ilə işləyən son-tarix səhifəsidir və
-qəsdən toxunulmayıb; dəyişmək ayrıca qərardır.
+KPI kartlarında görünür.
+
+📌 **AÇIQ İŞ — Müqavilə sekmesi də `Sira`-ya keçirilsin.** Qonşu **Müqavilə**
+sekmesi hələ `QalanGun` üzrə sıralanır (`MuqavileBitmeController.LoadRowsAsync`
+sonundakı `.OrderBy(r => r.QalanGun)`). İstifadəçi 09.09.2026-da bunu
+**«yaxşı fikirdir»** deyə qiymətləndirdi, amma həmin an tətbiq edilmədi —
+növbəti dəfə bu səhifəyə toxunanda et. Nəzərə al: o səhifədə «növbəti N gün»
+filtri var, yəni sıra dəyişsə də siyahının **məzmunu** dəyişmir; təcililik
+`Tecililik` sinfinin rəngində və KPI kartlarında qalır. Excel ixracı eyni
+`LoadRowsAsync`-i çağırdığı üçün avtomatik uyğunlaşacaq.
 
 `MuqavileBitmeController`-də iki action var, amma **sorğular birləşdirilməyib**:
 müqavilə siyahısının kökü `IsciTeyinat`, vəsiqəninki BMI sətridir —
