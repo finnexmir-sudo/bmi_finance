@@ -191,6 +191,10 @@ namespace FinNex.UI
             builder.Services.AddScoped<FinNex.Application.Services.HR.ITabelService,
                                         FinNex.Application.Services.HR.TabelService>();
 
+            // ── Şəxsiyyət vəsiqəsi müddəti (BMI-dən CANLI oxunur, yazılmır) ──
+            builder.Services.AddScoped<FinNex.Application.Services.HR.IVesiqeService,
+                                        FinNex.Application.Services.HR.VesiqeService>();
+
             // ── Oracle (yalnız oxuma) ──────────────────────────
             builder.Services.AddScoped<FinNex.Application.Interfaces.Oracle.IOracleService,
                                         FinNex.Application.Services.Oracle.OracleService>();

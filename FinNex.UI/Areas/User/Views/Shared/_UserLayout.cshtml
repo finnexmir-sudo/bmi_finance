@@ -883,7 +883,8 @@
                             {
                                 <a asp-area="HR" asp-controller="MuqavileBitme" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MuqavileBitme" ? "active" : "")">
-                                    <i class="bi bi-file-earmark-x"></i> Müqavilə Bitmə
+                                    @* Səhifədə iki sekme var: Müqavilə + Şəxsiyyət vəsiqəsi. *@
+                                    <i class="bi bi-hourglass-split"></i> Müddətlər
                                 </a>
                             }
                         </div>

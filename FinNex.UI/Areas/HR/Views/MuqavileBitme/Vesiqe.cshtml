@@ -1,7 +1,7 @@
-@model FinNex.UI.Areas.HR.ViewModels.MuqavileBitme.MuqavileBitmeIndexVM
+@model FinNex.UI.Areas.HR.ViewModels.MuqavileBitme.VesiqeIndexVM
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["Title"] = "Müqavilə Bitmə Tarixi";
+    ViewData["Title"] = "Şəxsiyyət vəsiqəsinin müddəti";
 }
 
 <style>
@@ -21,19 +21,18 @@
     .qalan-cell.qirmizi { color:#dc2626; }
     .qalan-cell.sari    { color:#d97706; }
     .qalan-cell.normal  { color:#475569; }
+    .qalan-cell.yoxdur  { color:#94a3b8; font-weight:500; }
 
     .yenil-btn { padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; border:1px solid transparent; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
     .yenil-btn--primary { background:#2563eb; color:#fff; }
     .yenil-btn--ghost   { background:#fff; color:#475569; border-color:#cbd5e1; }
     .yenil-btn--excel   { background:#16a34a; color:#fff; }
-    .yenil-btn--uzat    { background:#7c3aed; color:#fff; padding:4px 10px; font-size:12px; border-radius:5px; }
-    .yenil-btn--uzat:hover { background:#6d28d9; color:#fff; text-decoration:none; }
 
     .yenil-input, .yenil-select { padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; min-width:140px; }
     .yenil-empty { background:#fff; padding:48px; text-align:center; color:#6b7280; border-radius:8px; }
     .yenil-card  { background:#fff; border-radius:8px; overflow:auto; max-height:70vh; border:1px solid #e5e7eb; }
 
-    /* Sekmelər — «Müddətlər» səhifəsinin iki görünüşü (Vesiqe.cshtml ilə eyni) */
+    /* Sekmelər — «Müddətlər» səhifəsinin iki görünüşü */
     .mdt-tabs { display:flex; gap:4px; border-bottom:2px solid #e5e7eb; margin-bottom:16px; }
     .mdt-tab {
         padding:9px 16px; font-size:13px; font-weight:600; color:#64748b;
@@ -42,49 +41,64 @@
     }
     .mdt-tab:hover { color:#334155; text-decoration:none; }
     .mdt-tab.active { color:#2563eb; border-bottom-color:#2563eb; }
+
+    .mdt-xeta {
+        background:#fef2f2; border:1px solid #fecaca; color:#b91c1c;
+        border-radius:8px; padding:14px 16px; font-size:13px; margin-bottom:16px;
+        display:flex; gap:10px; align-items:flex-start; line-height:1.55;
+    }
+    .mdt-qeyd {
+        background:#f8fafc; border:1px solid #e2e8f0; color:#64748b;
+        border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:16px;
+        display:flex; gap:8px; align-items:center;
+    }
 </style>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
     <div>
-        <h2 style="margin:0;font-size:20px;">Müqavilə Bitmə Tarixi</h2>
+        <h2 style="margin:0;font-size:20px;">Şəxsiyyət vəsiqəsinin müddəti</h2>
         <p style="margin:4px 0 0;color:#6b7280;font-size:13px;">
-            Aktiv işçilərin müqavilə / təyinat bitmə tarixinə görə izləmə
+            Vəsiqənin etibarlılıq tarixi — BMI bazasından canlı oxunur
         </p>
     </div>
-    <a class="yenil-btn yenil-btn--excel"
-       asp-action="Excel"
-       asp-route-gun="@Model.Gun"
-       asp-route-departamentId="@Model.DepartamentId"
-       asp-route-search="@Model.Search">
+    <a class="yenil-btn yenil-btn--excel" asp-action="VesiqeExcel">
         <i class="bi bi-file-earmark-excel-fill"></i> Excel-ə Çıxart
     </a>
 </div>
 
 @* Sekmelər *@
 <div class="mdt-tabs">
-    <a asp-action="Index" class="mdt-tab active">
+    <a asp-action="Index" class="mdt-tab">
         <i class="bi bi-file-earmark-text"></i> Müqavilə
     </a>
-    <a asp-action="Vesiqe" class="mdt-tab">
+    <a asp-action="Vesiqe" class="mdt-tab active">
         <i class="bi bi-person-vcard"></i> Şəxsiyyət vəsiqəsi
     </a>
 </div>
 
-@* Filter *@
-<form method="get" asp-action="Index" class="yenil-filter">
-    <div>
-        <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Növbəti N gün</label>
-        <select name="gun" class="yenil-select">
-            <option value="7"   selected="@(Model.Gun == 7)">7 gün</option>
-            <option value="14"  selected="@(Model.Gun == 14)">14 gün</option>
-            <option value="30"  selected="@(Model.Gun == 30)">30 gün</option>
-            <option value="60"  selected="@(Model.Gun == 60)">60 gün</option>
-            <option value="90"  selected="@(Model.Gun == 90)">90 gün</option>
-            <option value="180" selected="@(Model.Gun == 180)">180 gün</option>
-            <option value="365" selected="@(Model.Gun == 365)">Bütün il</option>
-            <option value="730" selected="@(Model.Gun == 730)">2 il</option>
-        </select>
+@if (!string.IsNullOrEmpty(Model.Xeta))
+{
+    <div class="mdt-xeta">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size:16px"></i>
+        <div>
+            <strong>Məlumat alınmadı.</strong><br />
+            @Model.Xeta
+        </div>
     </div>
+}
+else
+{
+    <div class="mdt-qeyd">
+        <i class="bi bi-info-circle"></i>
+        <span>
+            Tarixlər BMI-dən (<code>regnom.pasport_date_close</code>) hər açılışda yenidən oxunur —
+            FinNex bazasında saxlanılmır. Səhv görünürsə düzəliş BMI tərəfində edilməlidir.
+        </span>
+    </div>
+}
+
+@* Filter *@
+<form method="get" asp-action="Vesiqe" class="yenil-filter">
     <div>
         <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Departament</label>
         <select name="departamentId" class="yenil-select">
@@ -104,42 +118,46 @@
             <i class="bi bi-funnel-fill"></i> Filtrlə
         </button>
     </div>
-    @if (Model.Gun != 30 || Model.DepartamentId.HasValue || !string.IsNullOrEmpty(Model.Search))
+    @if (Model.DepartamentId.HasValue || !string.IsNullOrEmpty(Model.Search))
     {
         <div>
-            <a asp-action="Index" class="yenil-btn yenil-btn--ghost">
+            <a asp-action="Vesiqe" class="yenil-btn yenil-btn--ghost">
                 <i class="bi bi-x-lg"></i> Sıfırla
             </a>
         </div>
     }
 </form>
 
-@* Stats *@
+@* Stats — hamısı Rows-dan hesablanır, say = siyahı *@
 <div class="yenil-stats">
     <div class="yenil-stat">
         <div class="yenil-stat-num" style="color:#2563eb;">@Model.CemiSay</div>
-        <div class="yenil-stat-lbl">Cəmi yaxınlaşan</div>
+        <div class="yenil-stat-lbl">Cəmi işçi</div>
+    </div>
+    <div class="yenil-stat">
+        <div class="yenil-stat-num" style="color:#7c3aed;">@Model.KecmisSay</div>
+        <div class="yenil-stat-lbl">Müddəti keçib</div>
     </div>
     <div class="yenil-stat">
         <div class="yenil-stat-num" style="color:#dc2626;">@Model.TecibiSay</div>
-        <div class="yenil-stat-lbl">Təcili (≤ 7 gün)</div>
+        <div class="yenil-stat-lbl">Təcili (≤ 30 gün)</div>
     </div>
     <div class="yenil-stat">
         <div class="yenil-stat-num" style="color:#d97706;">@Model.DiqqetSay</div>
-        <div class="yenil-stat-lbl">Diqqət (8–30 gün)</div>
+        <div class="yenil-stat-lbl">Diqqət (31–90 gün)</div>
     </div>
     <div class="yenil-stat">
-        <div class="yenil-stat-num" style="color:#7c3aed;">@Model.KecmisKimi</div>
-        <div class="yenil-stat-lbl">Müddəti keçib</div>
+        <div class="yenil-stat-num" style="color:#94a3b8;">@Model.YoxdurSay</div>
+        <div class="yenil-stat-lbl">Tarix tapılmadı</div>
     </div>
 </div>
 
 @if (!Model.Rows.Any())
 {
     <div class="yenil-empty">
-        <i class="bi bi-file-earmark-x" style="font-size:32px;color:#9ca3af;"></i>
+        <i class="bi bi-person-vcard" style="font-size:32px;color:#9ca3af;"></i>
         <h5 style="margin-top:10px;">Nəticə tapılmadı</h5>
-        <p style="font-size:13px;color:#6b7280;">Seçilmiş filtrə uyğun yaxınlaşan müqavilə yoxdur.</p>
+        <p style="font-size:13px;color:#6b7280;">Seçilmiş filtrə uyğun işçi yoxdur.</p>
     </div>
 }
 else
@@ -153,10 +171,8 @@ else
                     <th>FIN</th>
                     <th>Departament</th>
                     <th>Vəzifə</th>
-                    <th>İşə qəbul</th>
-                    <th>Müqavilə bitir</th>
+                    <th>Vəsiqə bitir</th>
                     <th>Qalan gün</th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -174,12 +190,24 @@ else
                         <td><code style="font-size:11px;">@r.FIN</code></td>
                         <td>@r.DepartamentAd</td>
                         <td>@r.VezifeAd</td>
-                        <td>@r.IsheQebulTarixi.ToString("dd.MM.yyyy")</td>
-                        <td style="font-weight:600;">@r.BitmeTarixi.ToString("dd.MM.yyyy")</td>
-                        <td class="qalan-cell @r.Tecililik">
-                            @if (r.QalanGun < 0)
+                        <td style="font-weight:600;">
+                            @if (r.BitmeTarixi.HasValue)
                             {
-                                <span>@Math.Abs(r.QalanGun) gün keçib</span>
+                                <span>@r.BitmeTarixi.Value.ToString("dd.MM.yyyy")</span>
+                            }
+                            else
+                            {
+                                <span style="color:#94a3b8;font-weight:500;">—</span>
+                            }
+                        </td>
+                        <td class="qalan-cell @r.Tecililik">
+                            @if (r.QalanGun == null)
+                            {
+                                <span>BMI-də tapılmadı</span>
+                            }
+                            else if (r.QalanGun < 0)
+                            {
+                                <span>@Math.Abs(r.QalanGun.Value) gün keçib</span>
                             }
                             else if (r.QalanGun == 0)
                             {
@@ -189,13 +217,6 @@ else
                             {
                                 <span>@r.QalanGun gün</span>
                             }
-                        </td>
-                        <td>
-                            <a asp-area="HR" asp-controller="MuqavileYenileme" asp-action="Yenile"
-                               asp-route-isciId="@r.IsciId"
-                               class="yenil-btn yenil-btn--uzat">
-                                <i class="bi bi-arrow-clockwise"></i> Uzat
-                            </a>
                         </td>
                     </tr>
                     idx++;
