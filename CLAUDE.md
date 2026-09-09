@@ -158,6 +158,39 @@ ilə tutuşdu (`2026 Əmək haqqı.xls`, 08-2026, sətir 22 — «Cəmi hesablan
 Kəsimdən əvvəlki aylar toxunulmayıb; keçmişi düzəltmək üçün ayrıca SQL lazımdır
 (hələ verilməyib).
 
+## Jetonla Ödənilmiş Məzuniyyət — NƏ KƏSİNTİ, NƏ ÖDƏNİŞ (09.09.2026, KRİTİK)
+
+`Mezuniyyet.JetonIleOdendi = true` olan qeyd maaşda **tamamilə neytraldır**: jeton
+həmin günü ödəyib, gün adi iş günü kimi qalır. Entity sənədi əvvəldən belə deyirdi,
+amma **kod üç yerdə onu pozurdu**:
+
+| Yer | Səhv | İşçiyə təsiri |
+|---|---|---|
+| `OzHesabinaIsGunuSayAsync` (~1600) | `Nov == OzHesabina`, jeton yoxlanmırdı | jeton xərclənir **VƏ** günün baza haqqı kəsilir → **İKİ DƏFƏ itki** |
+| `MaasHesablamaService:~815` | post-korreksiya sorğusu | jetonlu günə **əlavə məzuniyyət haqqı** |
+| `MaasHesablamaService:~2620` | eyni sorğunun ikinci nüsxəsi | eyni ikiqat ödəniş |
+
+Dördüncü yer (`~1678`, əsas məzuniyyət haqqı) **əvvəldən düzgün idi** — ona görə
+səhv yalnız iki dar halda görünürdü və uzun müddət gizli qaldı.
+
+**İstifadəçi qərarı: «jeton seçilibsə artıq öz hesabına anlamı qalmasın».**
+Yəni jeton bayrağı növdən **ÜSTÜNDÜR**. İndi hər dörd sorğuda `!x.JetonIleOdendi` var.
+
+**`OzHesabinaIsGunuSayAsync` TƏK MƏNBƏDİR** — həm `FerdiHesabla` (əsl hesablama),
+həm `MaasController` (TopluHesabla önizləməsi) onu çağırır, ona görə ekran ilə
+hesablama avtomatik uyğun gəlir. Nüsxə çıxarma.
+
+**JETONLU MƏZUNİYYƏT YALNIZ YARADILMA ANINDA TƏYİN OLUNUR** — `HR → Geriyə qeyd`
+formasındakı «Jeton ilə əvəzləşdir». Mövcud qeydi sonradan jetona çevirən düymə
+YOXDUR; «Növ düzəlt (admin)» yalnız İllik ↔ Öz hesabına arasında keçir və
+`JetonIleOdendi`-yə toxunmur. Çevirmək lazımdırsa: ləğv et → yenidən yaz.
+
+⚠️ **DAVAMİYYƏT HƏLƏ UYĞUNSUZDUR:** jetonlu qeyd üçün davamiyyət statusu hələ
+**növə görə** yazılır (`OzHesabina` → «Ödənişsiz məzuniyyət», `Illik` → «Məzuniyyətdə»),
+halbuki tabel və maaş onu **adi iş günü** sayır. Yəni Davamiyyət səhifəsi ilə Tabel
+eyni gün üçün fərqli danışır. Toxunulmadı — düzəltmək 4 çağırış yerini dəyişməkdir
+(`MezuniyyetService` 547/965/1099/1180/2703), ayrıca qərardır.
+
 ## EF Core — Filtered Include + Tracking Tələsi (KRİTİK)
 
 Tracking ilə işləyən sorğuda `Include(x => x.Nav.Where(...))` (filtered include)

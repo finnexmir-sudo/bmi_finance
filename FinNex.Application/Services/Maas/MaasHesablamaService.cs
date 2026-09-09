@@ -813,6 +813,9 @@ namespace FinNex.Application.Services.HR
                                 // ayrıca ödəniş tələb etmir, post-korreksiyaya daxil edilməməlidir.
                                 && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
                                 && x.Nov != MezuniyyetNovu.OzHesabina   // ödənişsiz — məzuniyyət haqqı yoxdur
+                                // Jetonla ödənilmiş gün üçün məzuniyyət haqqı YOXDUR —
+                                // jeton onsuz da günü ödəyib (09.09.2026).
+                                && !x.JetonIleOdendi
                                 && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                                 && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                                 && x.BaslamaTarixi <= prevAyBitis
@@ -1604,6 +1607,13 @@ namespace FinNex.Application.Services.HR
                 .Where(x => x.IsciId == isciId && !x.Silinib
                          && x.Status == MezuniyyetStatus.Tesdiqlenib
                          && x.Nov == MezuniyyetNovu.OzHesabina
+                         // ⚠️ JETON «ÖZ HESABINA» MƏNASINI LƏĞV EDİR (09.09.2026,
+                         //    istifadəçi qərarı). Jeton həmin günü ÖDƏYİR — gün adi
+                         //    iş günü sayılır. Bu şərt olmasa işçi İKİ DƏFƏ itirir:
+                         //    8 saat jetonu xərclənir VƏ günün baza haqqı kəsilir.
+                         //    Entity sənədi onsuz da belə deyir: «JetonIleOdendi=true
+                         //    → maaş hesablamasında kəsinti VƏ ödəniş OLMUR».
+                         && !x.JetonIleOdendi
                          && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                          && x.BaslamaTarixi <= ayBitis
                          && x.BitmeTarixi >= ayBaslangic)
@@ -2613,6 +2623,8 @@ namespace FinNex.Application.Services.HR
                         && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
                         && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
                         && x.Nov != MezuniyyetNovu.OzHesabina   // ödənişsiz — məzuniyyət haqqı yoxdur
+                        // Jetonla ödənilmiş gün üçün məzuniyyət haqqı YOXDUR (09.09.2026).
+                        && !x.JetonIleOdendi
                         && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                         && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                         && x.BaslamaTarixi <= prevAyBitis
