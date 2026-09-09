@@ -11,17 +11,61 @@
         });
     }
 
+    // ── Sətri aç/bağla (illər üzrə detal) ─────────────────
+    //
+    // Cədvəldə hər işçi üçün İKİ sətir var: `.mbk-row` (icmal) və onun
+    // altındakı `.mbk-detal` (gizli detal). Detal sətri `hidden` atributu
+    // ilə gizlədilir — `style.display` YOX, çünki axtarış filtri də
+    // `style.display` işlədir və ikisi bir-birini üstələyərdi.
+    function detalTap(row) {
+        const id = row.getAttribute('data-detal');
+        return id ? document.getElementById(id) : null;
+    }
+
+    function setriAcBagla(row) {
+        const detal = detalTap(row);
+        if (!detal) return;
+        const acilir = detal.hidden;
+        detal.hidden = !acilir;
+        row.classList.toggle('acilib', acilir);
+    }
+
+    document.querySelectorAll('#mbTable tbody tr.mbk-row').forEach(function (row) {
+        row.addEventListener('click', function (ev) {
+            // «Dəyiş» düyməsi öz modalını açır — sətri də açmasın.
+            if (ev.target.closest('.mb-btn-edit')) return;
+            setriAcBagla(row);
+        });
+    });
+
     // ── İşçi axtarışı (ad, FİN, departament, vəzifə) ──────
+    //
+    // ⚠️ YALNIZ `.mbk-row` sətirləri süzülür. Bütün `tr`-lər üzərində
+    // gəzsək detal sətirləri də «uyğun gəlib-gəlmədiyinə» görə açılıb
+    // bağlanardı və sayğac ikiqat sayardı.
     const searchInput = document.getElementById('mbSearch');
     const visibleCountEl = document.getElementById('mbVisibleCount');
     if (searchInput) {
         searchInput.addEventListener('input', function () {
             const t = this.value.trim().toLowerCase();
-            const rows = document.querySelectorAll('#mbTable tbody tr');
+            const rows = document.querySelectorAll('#mbTable tbody tr.mbk-row');
             let gorunen = 0;
             rows.forEach(function (r) {
                 const match = !t || r.textContent.toLowerCase().indexOf(t) >= 0;
                 r.style.display = match ? '' : 'none';
+
+                // Detal sətri həmişə öz işçisi ilə birlikdə gizlənir;
+                // gizlənəndə həm də bağlanır ki, axtarış təmizlənəndə
+                // ekran açıq detallarla dolu qalmasın.
+                const detal = detalTap(r);
+                if (detal) {
+                    detal.style.display = match ? '' : 'none';
+                    if (!match) {
+                        detal.hidden = true;
+                        r.classList.remove('acilib');
+                    }
+                }
+
                 if (match) gorunen++;
             });
             if (visibleCountEl) visibleCountEl.textContent = gorunen;

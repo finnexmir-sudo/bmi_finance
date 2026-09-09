@@ -53,117 +53,107 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/mezuniyyet-balans.css" asp-append-version="true" />
     <style>
-        /* ── Sakit və oxunaqlı dizayn ── */
-        .mb-table tbody td { vertical-align: middle; padding: 16px 14px }
-        .mb-table thead th { padding: 12px 14px; font-size: 11px; letter-spacing: .4px }
+        /* ══ KOMPAKT CƏDVƏL (09.09.2026) ═══════════════════════════════════
+           Əvvəl hər işçi 4 sətir hündürlükdə blok idi: qalıq bloku, illər
+           siyahısı, yenilənmə qutusu, limit nişanları — hamısı eyni anda.
+           26 işçi 5 ekran tuturdu və rəqəmlər bir-birinə qarışırdı.
 
-        .mb-isci-ad { font-weight: 600; color: #0f172a; font-size: 13.5px }
-        .mb-dept { font-size: 12.5px; color: #64748b }
+           İndi: bir işçi = BİR sətir (yalnız rəqəmlər). Sətrə klikləyəndə
+           altında detal açılır (illər üzrə bölgü + cari dövr). Beləcə icmal
+           bir ekrana sığır, detal isə lazım olanda görünür. */
 
-        /* İllik balansı — qalıq mərkəzdə, istifadə altda */
-        .mb-balance-block { display:flex; flex-direction:column; gap:6px; min-width:180px; max-width:240px }
-        .mb-qaliq-row {
-            display:flex; align-items:baseline; gap:6px;
-        }
-        .mb-qaliq-big {
-            font-size:22px; font-weight:800; color:#0f172a; line-height:1
-        }
-        .mb-qaliq-unit { font-size:12px; color:#64748b; font-weight:500 }
-        .mb-toplam-badge {
-            font-size:11px; color:#475569; font-weight:600;
-            padding:2px 8px; background:#f1f5f9; border-radius:8px;
-            border:1px solid #e2e8f0; margin-left:4px
-        }
-        .mb-istifade-info {
-            font-size:11.5px; color:#94a3b8; font-weight:500
-        }
-        .mb-istifade-info strong { color:#0f172a; font-weight:600 }
+        .mbk-wrap { overflow-x: auto; border-top: 1px solid #e2e8f0 }
 
-        .mb-prog {
-            height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden
+        .mbk-table { width: 100%; border-collapse: collapse; font-size: 13px }
+        .mbk-table thead th {
+            background: #f8fafc; color: #64748b; font-size: 10.5px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .4px; text-align: left;
+            padding: 10px 10px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+            position: sticky; top: 0; z-index: 2;
         }
-        .mb-prog__bar { height:100%; border-radius:3px; transition:width .3s }
-        .mb-prog__bar--green  { background:linear-gradient(90deg,#16a34a,#22c55e) }
-        .mb-prog__bar--yellow { background:linear-gradient(90deg,#f59e0b,#fbbf24) }
-        .mb-prog__bar--red    { background:linear-gradient(90deg,#dc2626,#ef4444) }
+        .mbk-table thead th.num { text-align: center }
 
-        /* Əvvəlki illər siyahısı */
-        .mb-prev-years { display:flex; flex-direction:column; gap:5px; min-width:150px; max-width:210px }
-        .mb-prev-year-row {
-            display:flex; justify-content:space-between; align-items:center;
-            font-size:12px; padding:5px 11px; background:#f8fafc;
-            border-radius:6px; border:1px solid #e2e8f0
-        }
-        .mb-prev-year-row .il { color:#64748b; font-weight:600 }
-        .mb-prev-year-row .gun { color:#0f172a; font-weight:700 }
-        .mb-year-current { background:#eff6ff !important; border-color:#bfdbfe !important }
-        .mb-year-current .il { color:#1e40af }
-        .mb-no-balance {
-            font-size:12px; color:#991b1b; background:#fef2f2; border:1px solid #fecaca;
-            padding:8px 12px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;
-            font-weight:600
-        }
-        .mb-prev-empty { font-size:12px; color:#cbd5e1; font-style:italic }
-        .mb-prev-cemi {
-            font-size:11px; color:#1e40af; font-weight:700; margin-top:4px;
-            padding:3px 10px; background:#eff6ff; border-radius:10px; display:inline-block;
-            border:1px solid #dbeafe
+        .mbk-row > td { padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle }
+        .mbk-row { cursor: pointer; transition: background .12s }
+        .mbk-row:hover { background: #f8fafc }
+        .mbk-row.acilib { background: #eff6ff }
+        .mbk-row.acilib > td { border-bottom-color: #bfdbfe }
+
+        .mbk-sira { text-align: center; color: #94a3b8; font-size: 12px; width: 34px }
+
+        .mbk-ad { font-weight: 600; color: #0f172a; font-size: 13px; line-height: 1.3 }
+        .mbk-fin { font-size: 10px; color: #94a3b8; font-family: ui-monospace, monospace; margin-top: 1px }
+        .mbk-dept { font-size: 12px; color: #475569 }
+        .mbk-tarix { font-size: 12px; color: #475569; white-space: nowrap }
+
+        /* Rəqəm xanaları — hamısı eyni cür oxunsun */
+        .mbk-n { text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap }
+        .mbk-n b { font-size: 14px; font-weight: 700; color: #0f172a }
+        .mbk-n .vahid { font-size: 10px; color: #94a3b8; margin-left: 2px }
+        .mbk-bos { color: #cbd5e1 }
+
+        .mbk-cem b { font-size: 17px; color: #1e40af }
+        .mbk-serbest b { font-size: 15px; color: #047857 }
+        .mbk-serbest.sifir b { color: #b45309 }
+
+        /* «Təyin edilməyib» — xəta deyil, sadəcə boşluq */
+        .mbk-teyinsiz {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 10.5px; color: #94a3b8; font-weight: 500; white-space: nowrap;
         }
 
-        /* Cari il inline detail (yenilənmə + haqq) */
-        .mb-cari-detail {
-            display:flex; flex-direction:column; gap:3px; margin-top:6px;
-            padding:6px 10px; background:#eff6ff; border-radius:6px; border:1px solid #bfdbfe
+        .mbk-emeliyyat { text-align: right; white-space: nowrap }
+        .mbk-detal-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border: 1px solid #cbd5e1; background: #fff;
+            border-radius: 6px; color: #475569; font-size: 12px; cursor: pointer;
+            transition: transform .15s, background .12s; vertical-align: middle;
         }
-        .mb-cari-detail-item { font-size:11px; color:#1e40af; font-weight:600; white-space:normal; overflow-wrap:anywhere }
-        .mb-cari-detail-label { font-weight:400; color:#3b82f6 }
-        .mb-cari-haqq-bar {
-            width:100%; height:3px; background:#bfdbfe; border-radius:2px; margin-top:4px; overflow:hidden
-        }
-        .mb-cari-haqq-bar-fill { height:100%; background:#6366f1; border-radius:2px }
-        .mb-haqq-formula { color:#64748b; font-weight:400; font-size:10px; margin-left:2px }
+        .mbk-detal-btn:hover { background: #f1f5f9 }
+        .mbk-row.acilib .mbk-detal-btn { transform: rotate(180deg); background: #dbeafe; border-color: #93c5fd }
 
-        /* "hələ verilməyib" — neytral, səliqəli (qırmızı xəta deyil) */
-        .mb-year-pending {
-            background:#f8fafc !important; border:1px dashed #cbd5e1 !important
+        .mbk-duzelt {
+            display: inline-flex; align-items: center; gap: 5px; margin-left: 6px;
+            padding: 5px 11px; background: #fff; border: 1px solid #cbd5e1;
+            border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+            color: #0f172a; vertical-align: middle;
         }
-        .mb-year-pending .il { color:#64748b; font-weight:600 }
-        .gun-pending {
-            color:#94a3b8; font-size:11px; font-weight:500;
-            display:inline-flex; align-items:center; gap:4px
+        .mbk-duzelt:hover { background: #f1f5f9; border-color: #94a3b8 }
+
+        /* ── Detal sətri ────────────────────────────────────────────── */
+        .mbk-detal > td { padding: 0; border-bottom: 1px solid #e2e8f0; background: #f8fafc }
+        .mbk-detal-ic {
+            display: grid; grid-template-columns: minmax(300px, 1.4fr) minmax(240px, 1fr);
+            gap: 18px; padding: 14px 16px 16px;
+        }
+        @@media (max-width: 900px) { .mbk-detal-ic { grid-template-columns: 1fr } }
+
+        .mbk-blok-basliq {
+            font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;
+            letter-spacing: .4px; margin-bottom: 7px;
         }
 
-        /* Əməliyyat sütunu — daha aydın düymə */
-        .mb-btn-edit {
-            display:inline-flex; align-items:center; gap:5px;
-            padding:7px 14px; background:#fff; border:1px solid #cbd5e1;
-            border-radius:7px; cursor:pointer; font-size:12.5px; font-weight:600;
-            color:#0f172a; transition:all .15s;
-            white-space:nowrap
+        .mbk-iller { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden }
+        .mbk-iller th {
+            background: #f1f5f9; font-size: 10px; color: #64748b; font-weight: 700;
+            text-transform: uppercase; padding: 6px 9px; text-align: left;
         }
-        .mb-btn-edit:hover { background:#f1f5f9; border-color:#94a3b8 }
-        .mb-btn-edit i { font-size:13px }
+        .mbk-iller td { padding: 7px 9px; border-top: 1px solid #f1f5f9; font-size: 12px }
+        .mbk-iller tr.cari td { background: #eff6ff; font-weight: 600 }
+        .mbk-iller .g { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; width: 70px }
 
-        /* ── Limit 14 gün (Ə.M. md.137) ──────────────────────────────────
-           Hər iş ili sətrinin altındakı kiçik nişan + sağdakı yekun sütun.
-           YALNIZ GÖSTƏRİŞDİR — balansdan heç nə çıxılmır. */
-        .mb-l14 {
-            display:flex; align-items:center; gap:5px; flex-wrap:wrap;
-            font-size:10.5px; font-weight:600; line-height:1.4;
-            margin:3px 0 7px; padding:3px 8px; border-radius:5px;
-        }
-        .mb-l14 i { font-size:10px }
-        .mb-l14--ok   { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0 }
-        .mb-l14--wait { background:#fffbeb; color:#b45309; border:1px solid #fde68a }
-        .mb-l14--none { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca }
-        .mb-l14-formula { font-weight:400; opacity:.75 }
+        .mbk-nisan { font-size: 11px; font-weight: 600; white-space: nowrap }
+        .mbk-nisan.ok   { color: #047857 }
+        .mbk-nisan.gz   { color: #b45309 }
+        .mbk-nisan.yox  { color: #b91c1c }
 
-        .mb-l14-big { font-size:20px; font-weight:800; line-height:1.1 }
-        .mb-l14-big--ok   { color:#047857 }
-        .mb-l14-big--none { color:#94a3b8 }
-        .mb-l14-big-unit  { font-size:11px; font-weight:600; color:#64748b }
-        .mb-l14-sub { font-size:10px; color:#94a3b8; margin-top:3px; line-height:1.35 }
-        .mb-l14-sub--warn { color:#b45309 }
+        .mbk-kart { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 11px 13px }
+        .mbk-setir { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; padding: 3px 0 }
+        .mbk-setir span:first-child { color: #64748b }
+        .mbk-setir span:last-child { font-weight: 600; color: #0f172a; font-variant-numeric: tabular-nums }
+        .mbk-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 7px; overflow: hidden }
+        .mbk-bar i { display: block; height: 100%; background: #6366f1; border-radius: 2px }
+        .mbk-qeyd { font-size: 10.5px; color: #94a3b8; margin-top: 8px; line-height: 1.5 }
     </style>
 }
 
@@ -196,31 +186,34 @@
             <span class="mb-card__badge">@IlAralik(secilmisIl)</span>
         </div>
 
-        @* ── Axtarış + departament filtri ── *@
-        <div style="padding:12px 16px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        @* ── Axtarış ── *@
+        <div style="padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <div style="flex:1;min-width:260px;position:relative">
                 <i class="bi bi-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px"></i>
                 <input type="text" id="mbSearch" placeholder="İşçi adı, FİN, departament və ya vəzifə ilə axtar..."
                        style="width:100%;padding:9px 14px 9px 38px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none" />
             </div>
+            <span style="font-size:11px;color:#94a3b8;white-space:nowrap">
+                <i class="bi bi-info-circle"></i> Sətrə klikləyin — illər üzrə detal açılır
+            </span>
         </div>
 
         @if (Model.Any())
         {
-            <div class="mb-table-wrap">
-                <table class="mb-table" id="mbTable">
+            <div class="mbk-wrap">
+                <table class="mbk-table" id="mbTable">
                     <thead>
                         <tr>
-                            <th style="width:38px;text-align:center">№</th>
-                            <th style="min-width:190px">İşçi</th>
-                            <th>Departament</th>
-                            <th style="width:96px">İşə qəbul</th>
-                            <th style="min-width:230px">Qalıq məzuniyyət (bütöv)</th>
-                            <th style="min-width:240px">İllər üzrə qalıq</th>
-                            <th style="width:118px" title="Ə.M. md.137 — əsas məzuniyyətin hissələrindən biri ən azı 14 gün olmalıdır. Bu, yalnız göstərişdir: balansdan heç nə çıxılmır.">
-                                Limit @minBirdefelik gün
-                            </th>
-                            <th style="width:110px">Əməliyyat</th>
+                            <th class="num">№</th>
+                            <th style="min-width:180px">İşçi</th>
+                            <th style="min-width:130px">Departament</th>
+                            <th style="width:92px">İşə qəbul</th>
+                            <th class="num" style="width:74px" title="Bu iş ili üçün təyin edilmiş illik məzuniyyət hüququ (Excel: «MH»)">İllik hüquq</th>
+                            <th class="num" style="width:74px">Cari il</th>
+                            <th class="num" style="width:80px">Keçmiş illər</th>
+                            <th class="num" style="width:82px">Cəmi qalıq</th>
+                            <th class="num" style="width:92px" title="Ə.M. md.137 — bir hissə ən azı 14 gün olmalıdır. Bu, yalnız göstərişdir: balansdan heç nə çıxılmır.">Sərbəst</th>
+                            <th style="width:150px"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -232,21 +225,17 @@
                             var deptAd = teyinat?.Departament?.Ad ?? "—";
                             var balanslar = isci.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
 
-                            // DİQQƏT: b.Il == secilmisIl filtri MÜTLƏQDİR. Yoxsa
-                            // naviqasiyaya əvvəlki illərin balansı düşərsə (EF fixup),
-                            // əvvəlki ilin balansı cari il kimi göstərilə bilər.
+                            // DİQQƏT: b.Il == secilmisIl filtri MÜTLƏQDİR. Yoxsa naviqasiyaya
+                            // əvvəlki illərin balansı düşərsə (EF fixup), əvvəlki ilin balansı
+                            // cari il kimi göstərilə bilər.
                             var illik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik && b.Il == secilmisIl);
 
-                            // Yenilənmə tsikli işə qəbul ildönümünə bağlıdır:
-                            //   sonYenilenme    = ən son keçmiş ildönümü (cari dövrün başlanğıcı)
-                            //   novbetiYenilenme = son yenilənmə + 1 il (göstəriləcək yenilənmə tarixi)
+                            // Yenilənmə tsikli işə qəbul ildönümünə bağlıdır.
                             var bugun = DateTime.Now.Date;
                             var sonYenilenme = SonIldonum(isci.IsheQebulTarixi.Date, bugun);
                             var novbetiYenilenme = sonYenilenme.AddYears(1);
 
-                            // Haqq qazanılmış: yenilənəndən (son ildönümündən) bu günə qədər
-                            int haqqGun = 0;
-                            int gecenGun = 0;
+                            int haqqGun = 0, gecenGun = 0;
                             int daysInYear = DateTime.IsLeapYear(secilmisIl) ? 366 : 365;
                             if (illik != null)
                             {
@@ -263,12 +252,7 @@
                                 qaliq = b.QaliqGun
                             }));
 
-                            // İllər üzrə qalıq (cari il də daxil)
                             var illerList = illerUzreQaliq.TryGetValue(isci.Id, out var list) ? list : null;
-
-                            // Bütöv qalıq = cari il + keçmiş illərin qalığı. Cari il üçün illik.QaliqGun
-                            // (filtered Include mənbəyi) götürülür ki, sağ sütundakı "Cəm" ilə eyni qiymət
-                            // olsun və EF "relationship fixup" ziddiyyəti yaranmasın.
                             var kecmisIller = illerList?
                                 .Where(x => !x.Cari && x.Qaliq > 0)
                                 .OrderByDescending(x => x.Il)
@@ -277,223 +261,230 @@
                             var cariQaliq = illik?.QaliqGun ?? 0;
                             var umumiQaliq = cariQaliq + kecmisQaliqSum;
 
-                            // «Limit 14 gün» — bu işçinin hansı iş illərində birdəfəlik
-                            // ≥14 günlük məzuniyyəti var (controller hesablayıb).
+                            // «Limit 14 gün» — hansı iş illərində birdəfəlik ≥14 gün alınıb.
                             var isciOnDord = onDordGunVar.TryGetValue(isci.Id, out var odSet) ? odSet : null;
                             var cariOnDordVar = isciOnDord != null && isciOnDord.Contains(secilmisIl);
                             var cariSerbest = Serbest(cariOnDordVar, cariQaliq, minBirdefelik);
 
-                            // Yekun: HƏR iş ili öz qalığından öz limitini çıxır, sonra
-                            // toplanır. «Bütöv qalıqdan bir dəfə 14 çıxmaq» SƏHV olardı —
-                            // 14 günlük tələb hər iş ili üçün ayrıca qüvvədədir.
+                            // Yekun: HƏR iş ili öz qalığından öz limitini çıxır, sonra toplanır.
+                            // «Bütöv qalıqdan bir dəfə 14 çıxmaq» SƏHV olardı — tələb hər iş
+                            // ili üçün ayrıca qüvvədədir.
                             var umumiSerbest = cariSerbest + kecmisIller.Sum(y =>
                                 Serbest(isciOnDord != null && isciOnDord.Contains(y.Il), y.Qaliq, minBirdefelik));
-                            var ehtiyat = umumiQaliq - umumiSerbest;   // limitə görə saxlanan gün
+                            var ehtiyat = umumiQaliq - umumiSerbest;
 
-                            <tr>
-                                <td style="text-align:center;color:#94a3b8;font-size:12px">@sira</td>
+                            <tr class="mbk-row" data-detal="mbd-@isci.Id">
+                                <td class="mbk-sira">@sira</td>
                                 <td>
-                                    <div class="mb-isci-ad">@isci.Ad @isci.Soyad</div>
+                                    <div class="mbk-ad">@isci.Ad @isci.Soyad</div>
                                     @if (!string.IsNullOrEmpty(isci.FIN))
                                     {
-                                        <div style="font-size:10px;color:#94a3b8;margin-top:2px">FİN: @isci.FIN</div>
+                                        <div class="mbk-fin">@isci.FIN</div>
                                     }
                                 </td>
-                                <td>
-                                    <span class="mb-dept">@deptAd</span>
-                                </td>
+                                <td><span class="mbk-dept">@deptAd</span></td>
+                                <td><span class="mbk-tarix">@isci.IsheQebulTarixi.ToString("dd.MM.yyyy")</span></td>
 
-                                @* ═══ İşə qəbul + illik hüquq (Excel: «işə başlama tarixi» + «MH») ═══ *@
-                                <td>
-                                    <div style="font-size:12px;font-weight:600;color:#0f172a">
-                                        @isci.IsheQebulTarixi.ToString("dd.MM.yyyy")
-                                    </div>
-                                    <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">
-                                        @if (illik != null)
-                                        {
-                                            <text>illik hüquq: <strong style="color:#475569">@illik.ToplamGun</strong> gün</text>
-                                        }
-                                        else
-                                        {
-                                            <text>illik hüquq təyin edilməyib</text>
-                                        }
-                                    </div>
-                                </td>
-
-                                @* ═══ Qalıq məzuniyyət (cari il əsas göstəriş) ═══ *@
-                                <td>
-                                    @if (umumiQaliq <= 0 && illik == null)
+                                @* İllik hüquq (Excel «MH») *@
+                                <td class="mbk-n">
+                                    @if (illik != null)
                                     {
-                                        <div class="mb-no-balance">
-                                            <i class="bi bi-hourglass-split"></i> @IlAralik(secilmisIl) iş ili məzuniyyəti təyin edilməyib
-                                        </div>
+                                        <b>@illik.ToplamGun</b><span class="vahid">gün</span>
                                     }
                                     else
                                     {
-                                        // Böyük rəqəm — BÜTÖV qalıq (bütün illər). Progress bar cari ilin
-                                        // istifadə vəziyyətini göstərir (aktiv tsikl).
-                                        var pct = (illik != null && illik.ToplamGun > 0)
-                                            ? (int)Math.Round((double)illik.QaliqGun / illik.ToplamGun * 100)
-                                            : (umumiQaliq > 0 ? 100 : 0);
-                                        var cls = pct > 50 ? "green" : (pct >= 20 ? "yellow" : "red");
-
-                                        <div class="mb-balance-block">
-                                            <div class="mb-qaliq-row">
-                                                <span class="mb-qaliq-big">@umumiQaliq</span>
-                                                <span class="mb-qaliq-unit">gün qalır</span>
-                                            </div>
-                                            <div class="mb-prog">
-                                                <div class="mb-prog__bar mb-prog__bar--@cls" style="width:@(pct)%"></div>
-                                            </div>
-                                            <div class="mb-istifade-info">
-                                                @if (illik != null)
-                                                {
-                                                    <span>Cari iş ili (@IlAralik(secilmisIl)): <strong>@cariQaliq</strong> gün</span>
-                                                    @if (kecmisQaliqSum > 0)
-                                                    {
-                                                        <span> · keçmiş illər: <strong>@kecmisQaliqSum</strong> gün</span>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <span><i class="bi bi-exclamation-triangle" style="color:#d97706"></i> Cari il təyin edilməyib · keçmiş illər: <strong>@kecmisQaliqSum</strong> gün</span>
-                                                }
-                                            </div>
-                                        </div>
+                                        <span class="mbk-bos">—</span>
                                     }
                                 </td>
 
-                                @* ═══ İllər üzrə qalıq (hər il ayrıca) ═══ *@
-                                @*  Cari il əsas sütunla EYNİ mənbədən (illik) gəlir ki, *@
-                                @*  iki sütun arasında ziddiyyət olmasın. Keçmiş illər isə *@
-                                @*  illerList-dən (yalnız qalığı olanlar). *@
-                                <td>
-                                    @* kecmisIller və umumiQaliq yuxarıda (əsas sütunla eyni mənbədən) hesablanıb *@
-                                    <div class="mb-prev-years">
-                                        @* Cari il — illik mövcuddursa real qalıq, yoxsa "hələ verilməyib" *@
-                                        @if (illik != null)
-                                        {
-                                            <div class="mb-prev-year-row mb-year-current">
-                                                <span class="il">@IlAralik(secilmisIl) (cari)</span>
-                                                <span class="gun">@illik.QaliqGun gün</span>
-                                            </div>
-                                            @* Hər iş ili ÖZ limitini daşıyır — «hər sütunda ayrı» (istifadəçi qərarı) *@
-                                            @if (cariOnDordVar)
-                                            {
-                                                <div class="mb-l14 mb-l14--ok">
-                                                    <i class="bi bi-check-circle-fill"></i> @minBirdefelik günlük hissə alınıb — qalıq sərbəstdir
-                                                </div>
-                                            }
-                                            else if (cariSerbest > 0)
-                                            {
-                                                <div class="mb-l14 mb-l14--wait">
-                                                    <i class="bi bi-hourglass-split"></i> sərbəst: <strong>@cariSerbest</strong> gün
-                                                    <span class="mb-l14-formula">(@cariQaliq − @minBirdefelik)</span>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="mb-l14 mb-l14--none">
-                                                    <i class="bi bi-exclamation-triangle-fill"></i> @minBirdefelik günlük hissə üçün qalıq çatmır
-                                                </div>
-                                            }
-                                            // Növbəti yenilənmə = işə qəbul ildönümü əsasında (yuxarıda hesablanıb)
-                                            var gorunecekTarix = novbetiYenilenme;
-                                            var haqqPct2 = illik.ToplamGun > 0
-                                                ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
-                                                : 0;
-                                            <div class="mb-cari-detail">
-                                                <span class="mb-cari-detail-item">
-                                                    <span class="mb-cari-detail-label">Yenilənmə:</span>
-                                                    @gorunecekTarix.ToString("dd.MM.yyyy")
-                                                </span>
-                                                <span class="mb-cari-detail-item">
-                                                    <span class="mb-cari-detail-label">Haqq qazanılmış:</span>
-                                                    @haqqGun/@illik.ToplamGun gün
-                                                    <span class="mb-haqq-formula">(@gecenGun/@daysInYear×@illik.ToplamGun)</span>
-                                                </span>
-                                                <div class="mb-cari-haqq-bar">
-                                                    <div class="mb-cari-haqq-bar-fill" style="width:@(haqqPct2)%"></div>
-                                                </div>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="mb-prev-year-row mb-year-pending">
-                                                <span class="il">@IlAralik(secilmisIl) (cari)</span>
-                                                <span class="gun-pending">
-                                                    <i class="bi bi-hourglass-split"></i> təyin edilməyib
-                                                </span>
-                                            </div>
-                                        }
-
-                                        @* Keçmiş illər — qalığı olanlar *@
-                                        @foreach (var y in kecmisIller)
-                                        {
-                                            var yOnDord = isciOnDord != null && isciOnDord.Contains(y.Il);
-                                            var ySerbest = Serbest(yOnDord, y.Qaliq, minBirdefelik);
-                                            <div class="mb-prev-year-row">
-                                                <span class="il">@IlAralik(y.Il)</span>
-                                                <span class="gun">@y.Qaliq gün</span>
-                                            </div>
-                                            @if (yOnDord)
-                                            {
-                                                <div class="mb-l14 mb-l14--ok">
-                                                    <i class="bi bi-check-circle-fill"></i> @minBirdefelik günlük hissə alınıb — qalıq sərbəstdir
-                                                </div>
-                                            }
-                                            else if (ySerbest > 0)
-                                            {
-                                                <div class="mb-l14 mb-l14--wait">
-                                                    <i class="bi bi-hourglass-split"></i> sərbəst: <strong>@ySerbest</strong> gün
-                                                    <span class="mb-l14-formula">(@y.Qaliq − @minBirdefelik)</span>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="mb-l14 mb-l14--none">
-                                                    <i class="bi bi-exclamation-triangle-fill"></i> @minBirdefelik günlük hissə üçün qalıq çatmır
-                                                </div>
-                                            }
-                                        }
-                                    </div>
-                                    @if (illik != null && kecmisIller.Any())
+                                @* Cari iş ilinin qalığı *@
+                                <td class="mbk-n">
+                                    @if (illik != null)
                                     {
-                                        <span class="mb-prev-cemi">Cəm: @umumiQaliq gün</span>
+                                        <b>@cariQaliq</b>
+                                    }
+                                    else
+                                    {
+                                        <span class="mbk-teyinsiz" title="@IlAralik(secilmisIl) iş ili üçün balans hələ təyin edilməyib">
+                                            <i class="bi bi-hourglass-split"></i> təyin edilməyib
+                                        </span>
                                     }
                                 </td>
 
-                                @* ═══ Limit 14 gün — YEKUN (Excel «Cari qalıq» L sütunu) ═══ *@
-                                @* Hər ilin sərbəst hissəsinin CƏMİ. Detallar yan sütundadır. *@
-                                <td>
+                                @* Keçmiş illərdən qalan *@
+                                <td class="mbk-n">
+                                    @if (kecmisQaliqSum > 0)
+                                    {
+                                        <b>@kecmisQaliqSum</b>
+                                    }
+                                    else
+                                    {
+                                        <span class="mbk-bos">—</span>
+                                    }
+                                </td>
+
+                                @* Cəmi qalıq — səhifənin əsas rəqəmi *@
+                                <td class="mbk-n mbk-cem"><b>@umumiQaliq</b></td>
+
+                                @* Sərbəst (14 gün limitindən sonra) *@
+                                <td class="mbk-n mbk-serbest @(umumiSerbest > 0 ? "" : "sifir")">
                                     @if (umumiQaliq <= 0)
                                     {
-                                        <span class="mb-l14-big mb-l14-big--none">—</span>
+                                        <span class="mbk-bos">—</span>
                                     }
                                     else
                                     {
-                                        <div class="mb-l14-big @(umumiSerbest > 0 ? "mb-l14-big--ok" : "mb-l14-big--none")">
-                                            @umumiSerbest <span class="mb-l14-big-unit">gün</span>
-                                        </div>
-                                        <div class="mb-l14-sub">sərbəst bölünə bilər</div>
-                                        @if (ehtiyat > 0)
-                                        {
-                                            <div class="mb-l14-sub mb-l14-sub--warn">
-                                                @ehtiyat gün @minBirdefelik günlük hissə üçün saxlanılır
-                                            </div>
-                                        }
+                                        <b>@umumiSerbest</b>
                                     }
                                 </td>
 
-                                <td>
-                                    <button class="mb-btn-edit"
+                                <td class="mbk-emeliyyat">
+                                    <button type="button" class="mbk-detal-btn" title="İllər üzrə detalı aç">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                    <button type="button" class="mbk-duzelt mb-btn-edit"
                                             data-isci-id="@isci.Id"
                                             data-isci-ad="@isci.Ad @isci.Soyad"
                                             data-il="@secilmisIl"
                                             data-balanslar="@Html.Raw(System.Net.WebUtility.HtmlEncode(balansJson))"
                                             title="İşçinin məzuniyyət balansını illərə görə redaktə et və ya yeni il üçün gün əlavə et">
-                                        <i class="bi bi-sliders"></i> Balansı dəyiş
+                                        <i class="bi bi-sliders"></i> Dəyiş
                                     </button>
+                                </td>
+                            </tr>
+
+                            @* ── DETAL SƏTRİ — klikləyəndə açılır ────────────────── *@
+                            <tr class="mbk-detal" id="mbd-@isci.Id" hidden>
+                                <td colspan="10">
+                                    <div class="mbk-detal-ic">
+
+                                        <div>
+                                            <div class="mbk-blok-basliq">İllər üzrə qalıq</div>
+                                            <table class="mbk-iller">
+                                                <thead>
+                                                    <tr>
+                                                        <th>İş ili</th>
+                                                        <th class="g">Qalıq</th>
+                                                        <th>14 günlük hissə</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="cari">
+                                                        <td>@IlAralik(secilmisIl) <span style="color:#3b82f6;font-size:10px">(cari)</span></td>
+                                                        <td class="g">
+                                                            @if (illik != null)
+                                                            {
+                                                                <text>@cariQaliq gün</text>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="mbk-bos">—</span>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            @if (illik == null)
+                                                            {
+                                                                <span class="mbk-bos" style="font-size:11px">balans təyin edilməyib</span>
+                                                            }
+                                                            else if (cariOnDordVar)
+                                                            {
+                                                                <span class="mbk-nisan ok"><i class="bi bi-check-circle-fill"></i> alınıb — qalıq sərbəst</span>
+                                                            }
+                                                            else if (cariSerbest > 0)
+                                                            {
+                                                                <span class="mbk-nisan gz">sərbəst @cariSerbest gün (@cariQaliq − @minBirdefelik)</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="mbk-nisan yox">qalıq @minBirdefelik günə çatmır</span>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                    @foreach (var y in kecmisIller)
+                                                    {
+                                                        var yOnDord = isciOnDord != null && isciOnDord.Contains(y.Il);
+                                                        var ySerbest = Serbest(yOnDord, y.Qaliq, minBirdefelik);
+                                                        <tr>
+                                                            <td>@IlAralik(y.Il)</td>
+                                                            <td class="g">@y.Qaliq gün</td>
+                                                            <td>
+                                                                @if (yOnDord)
+                                                                {
+                                                                    <span class="mbk-nisan ok"><i class="bi bi-check-circle-fill"></i> alınıb — qalıq sərbəst</span>
+                                                                }
+                                                                else if (ySerbest > 0)
+                                                                {
+                                                                    <span class="mbk-nisan gz">sərbəst @ySerbest gün (@y.Qaliq − @minBirdefelik)</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="mbk-nisan yox">qalıq @minBirdefelik günə çatmır</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                            <div class="mbk-qeyd">
+                                                «Sərbəst» — bölünə bilən gün sayı. Ə.M. md.137: əsas məzuniyyətin
+                                                hissələrindən biri ən azı @minBirdefelik gün olmalıdır, ona görə həmin
+                                                qədər gün ehtiyatda saxlanılır. <b>Bu, yalnız göstərişdir</b> —
+                                                balansdan heç nə çıxılmır və heç bir müraciət bloklanmır.
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="mbk-blok-basliq">Cari dövr</div>
+                                            <div class="mbk-kart">
+                                                <div class="mbk-setir">
+                                                    <span>İşə qəbul</span>
+                                                    <span>@isci.IsheQebulTarixi.ToString("dd.MM.yyyy")</span>
+                                                </div>
+                                                <div class="mbk-setir">
+                                                    <span>Dövrün başlanğıcı</span>
+                                                    <span>@sonYenilenme.ToString("dd.MM.yyyy")</span>
+                                                </div>
+                                                <div class="mbk-setir">
+                                                    <span>Növbəti yenilənmə</span>
+                                                    <span>@novbetiYenilenme.ToString("dd.MM.yyyy")</span>
+                                                </div>
+                                                @if (illik != null)
+                                                {
+                                                    <div class="mbk-setir">
+                                                        <span>Haqq qazanılmış</span>
+                                                        <span>@haqqGun / @illik.ToplamGun gün</span>
+                                                    </div>
+                                                    var haqqPct = illik.ToplamGun > 0
+                                                        ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
+                                                        : 0;
+                                                    <div class="mbk-bar"><i style="width:@(haqqPct)%"></i></div>
+                                                    <div class="mbk-qeyd">
+                                                        Dövrün @gecenGun / @daysInYear günü keçib.
+                                                        «Haqq qazanılmış» — bu günə qədər qazanılmış hissə;
+                                                        balans il əvvəlində tam verilir.
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="mbk-qeyd">
+                                                        @IlAralik(secilmisIl) iş ili üçün balans hələ təyin edilməyib —
+                                                        «Dəyiş» düyməsi ilə əlavə edin.
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            @if (ehtiyat > 0)
+                                            {
+                                                <div class="mbk-kart" style="margin-top:10px;border-color:#fde68a;background:#fffbeb">
+                                                    <div class="mbk-setir">
+                                                        <span style="color:#b45309">@minBirdefelik günlük hissə üçün saxlanılır</span>
+                                                        <span style="color:#b45309">@ehtiyat gün</span>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                    </div>
                                 </td>
                             </tr>
                         }
