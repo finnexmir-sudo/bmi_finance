@@ -35,7 +35,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             var data      = await _tabelService.GenerateTabelAsync(il, ay);
             int gunSayi   = data.GunSayi;
             int sumStart  = 4 + gunSayi;   // birinci yekun sütunu (İş günü)
-            int totalCols = sumStart + 4;   // son sütun (Xəst.)
+            // Yekun sütunları: İş günü | İş saatı | Məz. | Öz hes. | Ezam. | Xəst.
+            // «Öz hes.» 09.09.2026-da əlavə olundu → 5 deyil, 6 sütun.
+            // ⚠️ Bu rəqəmi dəyişəndə AŞAĞIDAKI DÖRD yeri də dəyiş: `sumHdrs`
+            // dövrəsi, sətir yazma, CƏMİ dövrəsi, sütun eni. Biri köhnə qalsa
+            // ya başlıq sürüşür, ya CƏMİ son sütunu toplamır — heç bir xəta çıxmır.
+            const int YEKUN_SUTUN = 6;
+            int totalCols = sumStart + YEKUN_SUTUN - 1;   // son sütun (Xəst.)
 
             // ── Şablonu aç ────────────────────────────────────────────────────
             var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Templates", "Tabel_isci.xlsx");
@@ -144,6 +150,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var cMez       = XLColor.FromArgb(0xBB, 0xDE, 0xFB);
             var cXest      = XLColor.FromArgb(0xFF, 0xCC, 0xCC);
             var cEzam      = XLColor.FromArgb(0xC8, 0xF0, 0xC8);
+            var cOzHesab   = XLColor.FromArgb(0xDD, 0xD0, 0xF0);   // «G» — öz hesabına
             var cAzSaat    = XLColor.FromArgb(0xFF, 0xF0, 0xCC);
             var cYekun     = XLColor.FromArgb(0xE2, 0xEF, 0xDA);
 
@@ -204,8 +211,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(HR1, 4, HR1, 3 + gunSayi).Merge(); ws.Cell(HR1, 4).Value = "Ayın günləri";
             for (int d = 1; d <= gunSayi; d++) ws.Cell(HR2, 3 + d).Value = d;
 
-            var sumHdrs = new[] { "İş\ngünü", "İş\nsaatı", "Məz.", "Ezam.", "Xəst." };
-            for (int i = 0; i < 5; i++)
+            var sumHdrs = new[] { "İş\ngünü", "İş\nsaatı", "Məz.", "Öz\nhes.", "Ezam.", "Xəst." };
+            for (int i = 0; i < YEKUN_SUTUN; i++)
             {
                 ws.Range(HR1, sumStart + i, HR2, sumStart + i).Merge();
                 ws.Cell(HR1, sumStart + i).Value = sumHdrs[i];
@@ -249,6 +256,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         case "İ": cell.Value = "İ"; cell.Style.Fill.BackgroundColor = cIstirahit; cell.Style.Font.FontColor = XLColor.Gray; break;
                         case "B": cell.Value = "B"; cell.Style.Fill.BackgroundColor = cBayram; cell.Style.Font.Bold = true; break;
                         case "M": cell.Value = "M"; cell.Style.Fill.BackgroundColor = cMez; break;
+                        case "G": cell.Value = "G"; cell.Style.Fill.BackgroundColor = cOzHesab; break;
                         case "X": cell.Value = "X"; cell.Style.Fill.BackgroundColor = cXest; break;
                         case "E": cell.Value = "E"; cell.Style.Fill.BackgroundColor = cEzam; break;
                         default:
@@ -263,8 +271,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ws.Cell(dr, sumStart).Value     = satir.IsGunSayi;
                 ws.Cell(dr, sumStart + 1).Value = satir.IsSaatSayi;
                 ws.Cell(dr, sumStart + 2).Value = satir.MezuniyyetGun;
-                ws.Cell(dr, sumStart + 3).Value = satir.EzamiyyetGun;
-                ws.Cell(dr, sumStart + 4).Value = satir.XestelikGun;
+                ws.Cell(dr, sumStart + 3).Value = satir.OzHesabinaGun;
+                ws.Cell(dr, sumStart + 4).Value = satir.EzamiyyetGun;
+                ws.Cell(dr, sumStart + 5).Value = satir.XestelikGun;
                 for (int sc = sumStart; sc <= totalCols; sc++)
                     ws.Cell(dr, sc).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
@@ -279,7 +288,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(dr, 1, dr, 3).Merge();
             ws.Cell(dr, 1).Style.Font.Bold            = true;
             ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            for (int i = 0; i <= 4; i++)
+            for (int i = 0; i < YEKUN_SUTUN; i++)
             {
                 int sc = sumStart + i;
                 ws.Cell(dr, sc).FormulaA1 = $"=SUM({ws.Cell(firstDr,sc).Address}:{ws.Cell(dr-1,sc).Address})";
@@ -327,9 +336,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             for (int d = 1; d <= gunSayi; d++) ws.Column(3 + d).Width = 3.2;
             ws.Column(sumStart).Width     = 7;
             ws.Column(sumStart + 1).Width = 7;
-            ws.Column(sumStart + 2).Width = 6;
-            ws.Column(sumStart + 3).Width = 6;
-            ws.Column(sumStart + 4).Width = 6;
+            for (int i = 2; i < YEKUN_SUTUN; i++) ws.Column(sumStart + i).Width = 6;
 
             ws.SheetView.FreezeRows(HR2);
             ws.SheetView.FreezeColumns(3);

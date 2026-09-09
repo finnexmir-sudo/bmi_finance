@@ -142,7 +142,7 @@ namespace FinNex.Application.Services.HR
                     Departament = t.Departament?.Ad ?? "",
                 };
 
-                int isGunSayi = 0, isSaatSayi = 0, mezGun = 0, xestGun = 0;
+                int isGunSayi = 0, isSaatSayi = 0, mezGun = 0, ozHesGun = 0, xestGun = 0;
 
                 for (int d = 1; d <= gunSayi; d++)
                 {
@@ -163,7 +163,11 @@ namespace FinNex.Application.Services.HR
 
                     // Jetonla ödənilmiş məzuniyyət "M" sayılmır — jeton mükafatı günü ödəyir,
                     // ona görə adi iş günü kimi (saat yazılır) qalır. Yalnız adi məzuniyyət → "M".
-                    bool hasMez = mezuniyyetler.Any(m => m.IsciId == isci.Id &&
+                    //
+                    // ⚠️ `Any` YOX, `FirstOrDefault` — günü ÖRTƏN qeydin NÖVÜ lazımdır:
+                    //    öz hesabına (ödənişsiz) məzuniyyət tabeldə «M» deyil, «G» yazılır
+                    //    (rəsmi qalıb: «işə gəlmədiyi günlər (G)», istifadəçi qərarı 09.09.2026).
+                    var gunMez = mezuniyyetler.FirstOrDefault(m => m.IsciId == isci.Id &&
                         !m.JetonIleOdendi &&
                         gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
 
@@ -174,9 +178,18 @@ namespace FinNex.Application.Services.HR
                         // sayılmır: "B" yazılır və Məz. sayğacına daxil edilmir.
                         kod = "B";
                     }
-                    else if (hasMez)
+                    else if (gunMez != null)
                     {
-                        kod = "M"; mezGun++;
+                        if (gunMez.Nov == MezuniyyetNovu.OzHesabina)
+                        {
+                            // Ödənişsiz gün: iş günü/saatı sayılmır (əvvəlki davranış),
+                            // amma «Məz.» sayğacına da düşmür — öz sütununda sayılır.
+                            kod = "G"; ozHesGun++;
+                        }
+                        else
+                        {
+                            kod = "M"; mezGun++;
+                        }
                     }
                     else if (!isWorkingDay)
                     {
@@ -206,7 +219,8 @@ namespace FinNex.Application.Services.HR
                 satir.IsGunSayi     = isGunSayi;
                 satir.IsSaatSayi    = isSaatSayi;
                 satir.MezuniyyetGun = mezGun;
-                satir.EzamiyyetGun  = 0;
+                satir.OzHesabinaGun = ozHesGun;
+                satir.EzamiyyetGun  = 0;   // ⚠️ hələ hesablanmır — aşağıdakı qeydə bax
                 satir.XestelikGun   = xestGun;
 
                 satirlar.Add(satir);

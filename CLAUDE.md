@@ -447,6 +447,40 @@ Yeni siyahı metodu yazsan bu cədvələ sətir əlavə et.
 baxdıqları təsdiqlənməyib. Şikayət gələndə əvvəlcə səhifənin hansı metodu
 çağırdığını tap, sonra dəyiş.
 
+## Tabel Excel — «M» vs «G»: ÖZ HESABINA AYRI SÜTUNDUR (09.09.2026)
+
+Rəsmi tabel qalıbının işarələri: `İ` istirahət, `B` bayram, `E` ezamiyyət,
+`X` xəstəlik, `M` məzuniyyət, **`G` işə gəlmədiyi günlər**.
+
+**`MezuniyyetNovu.OzHesabina` (ödənişsiz, Ə.M. 129) tabeldə «M» DEYİL, «G»-dir**
+və «Məz.» sütununa DÜŞMÜR — öz **«Öz hes.»** sütununda sayılır (istifadəçi qərarı:
+«bu qalıb bizdə»). Əvvəl «M» yazılırdı və ödənişli məzuniyyətlə eyni xanada
+toplanırdı; mühasib öz Exceli ilə tutuşdura bilmirdi.
+
+Nümunə (Nərminə Q., 08.09.2026, 1 gün öz hesabına): `İş günü 21 · Məz. 0 ·
+**Öz hes. 1**` — əvvəl `Məz. 1` idi. **İş günü/saatı DƏYİŞMİR** — ödənişsiz gün
+onsuz da işlənməmiş sayılırdı.
+
+**Kod bir neçə yerdədir — biri köhnə qalsa sütunlar sürüşür, xəta çıxmır:**
+
+| Yer | Nə edir |
+|---|---|
+| `TabelService` — `gunMez.Nov` yoxlaması | «G» kodu + `OzHesabinaGun` sayğacı |
+| `TabelDto.OzHesabinaGun` | DTO sahəsi (`MezuniyyetGun`-a daxil DEYİL) |
+| `TabelController.YEKUN_SUTUN` sabiti | yekun sütunların **sayı** |
+| `TabelController` — `sumHdrs`, sətir yazma, CƏMİ, sütun eni | 4 yer, hamısı sabitə bağlıdır |
+| `Views/Tabel/Index.cshtml` — kodlar izahı | ekran ilə Excel eyni danışsın |
+
+⚠️ `Any` YOX, **`FirstOrDefault`** — günü örtən qeydin **növü** lazımdır.
+
+⚠️ **Məzuniyyət aralığındakı HƏFTƏSONU da sayılır** — bu, «M» üçün əvvəldən belə
+idi (30 günlük məzuniyyət «Məz. 30» yazır) və «G» də eyni qaydadadır. Mühasib
+yalnız iş günlərini istəyirsə bu QƏSDƏN dəyişilməlidir, öz-özünə fərz etmə.
+
+⚠️ **`EzamiyyetGun` hələ HƏMİŞƏ 0-dır** və «E» kodu heç vaxt yazılmır —
+`TabelService` `EzamiyyetMuraciet` cədvəlini ümumiyyətlə oxumur. Qalıbda sütun
+və işarə var, data yoxdur. Ayrıca iş kimi qalır.
+
 ## İşçi Siyahıları — Sıralama və Filtr Qaydası (KRİTİK)
 
 İşçi siyahısı göstərən **hər** səhifədə eyni qayda tətbiq olunmalıdır — mənbə
