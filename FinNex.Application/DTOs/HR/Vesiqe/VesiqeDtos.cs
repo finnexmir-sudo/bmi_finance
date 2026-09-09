@@ -11,6 +11,13 @@ namespace FinNex.Application.DTOs.HR.Vesiqe
     public class VesiqeSetriDto
     {
         public int     IsciId        { get; set; }
+
+        /// <summary>
+        /// HR-ın «İşçi Sıralaması» səhifəsində drag-and-drop ilə verdiyi sıra.
+        /// Siyahının sıralaması BUNA görədir — qalan günə görə YOX.
+        /// </summary>
+        public int     Sira          { get; set; }
+
         public string  Ad            { get; set; } = "";
         public string  Soyad         { get; set; } = "";
         public string? AtaAdi        { get; set; }

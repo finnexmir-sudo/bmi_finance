@@ -166,6 +166,7 @@ namespace FinNex.Application.Services.HR
                     return new VesiqeSetriDto
                     {
                         IsciId        = t.IsciId,
+                        Sira          = t.Isci.Sira,
                         Ad            = t.Isci.Ad,
                         Soyad         = t.Isci.Soyad,
                         AtaAdi        = t.Isci.AtaAdi,
@@ -177,9 +178,15 @@ namespace FinNex.Application.Services.HR
                         QalanGun      = bitme == null ? null : (bitme.Value.Date - bugun).Days
                     };
                 })
-                // Tarixi olmayanlar SONA — onlar «təcili» deyil, «məlum deyil».
-                .OrderBy(r => r.QalanGun == null)
-                .ThenBy(r => r.QalanGun)
+                // ⚠️ SIRALAMA `Sira`-YA GÖRƏDİR, qalan günə görə YOX (istifadəçi
+                // qərarı 09.09.2026: «işçi sıralamasından götürülməlidir»).
+                // HR «İşçi Sıralaması» səhifəsində drag-and-drop ilə təyin edir;
+                // ad/soyad əlifbası yalnız eyni `Sira` daxilində işləyir.
+                // Təcililik siyahının SIRASINDA yox, «Qalan gün» sütununun
+                // RƏNGİNDƏ və yuxarıdakı KPI kartlarında görünür.
+                .OrderBy(r => r.Sira)
+                .ThenBy(r => r.Ad)
+                .ThenBy(r => r.Soyad)
                 .ToList();
 
             netice.Ugurlu = true;

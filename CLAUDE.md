@@ -572,8 +572,14 @@ Bir FİN üçün `regnom`-da birdən çox sətir ola bilər — **ƏN SON tarix*
 götürülür ki, köhnə vəsiqə sətri yenisini üstələməsin.
 
 **Tarixi tapılmayan işçi «bitib» SAYILMIR** — ayrıca «Tarix tapılmadı»
-sayğacındadır və siyahının sonunda gəlir. Yoxsa doldurulmamış işçilər təcili
-siyahını doldurardı.
+sayğacındadır. Yoxsa doldurulmamış işçilər təcili siyahını doldurardı.
+
+**SIRALAMA `Sira`-YA GÖRƏDİR** (istifadəçi qərarı: «işçi sıralamasından
+götürülməlidir») — ilk yazılışda qalan günə görə sıralanmışdı, səhv idi.
+Təcililik siyahının sırasında yox, «Qalan gün» sütununun **rəngində** və
+KPI kartlarında görünür. ⚠️ Qonşu **Müqavilə** sekmesi isə hələ `QalanGun`
+üzrədir — o, «növbəti N gün» filtri ilə işləyən son-tarix səhifəsidir və
+qəsdən toxunulmayıb; dəyişmək ayrıca qərardır.
 
 `MuqavileBitmeController`-də iki action var, amma **sorğular birləşdirilməyib**:
 müqavilə siyahısının kökü `IsciTeyinat`, vəsiqəninki BMI sətridir —
