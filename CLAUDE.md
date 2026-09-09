@@ -1272,6 +1272,33 @@ Xəta yenə də təkrarlanırsa problem koddadır deyil: bağlantı sətrinə
 `Validate Connection=true` əlavə edin (ölü hovuz bağlantısı istifadədən əvvəl
 yoxlanır) və ya şəbəkə/firewall boşdayanma müddətinə baxın.
 
+### Saxlanmış Sorğu `--` ŞƏRHİ İLƏ BAŞLAYA BİLMƏZ (09.09.2026)
+
+`OracleService.YalnizSelect` (sətir 143-150) sorğunun **«SELECT» və ya «WITH»
+ilə BAŞLAMASINI** tələb edir:
+
+```csharp
+var trimmed = sql.TrimStart();
+if (!trimmed.StartsWith("SELECT", …) && !trimmed.StartsWith("WITH", …))
+    throw new InvalidOperationException("Oracle-da yalnız SELECT sorğusuna icazə var.");
+```
+
+Yəni `OracleSorgular.SorguMetni` **`--` şərh sətri ilə başlayırsa** sorğu Oracle-a
+**heç getmir**. Oracle özü belə mətni qəbul edərdi — məhdudiyyət bizimdir.
+
+Real hadisə (09.09.2026, VESIQE_BITME): `docs/sql/hr/…` faylı **bütöv** yapışdırıldı,
+mətn «`-- — TÖVSİYƏ OLUNAN VARİANT…`» ilə başladı. Ekranda isə **«BMI-yə bağlanmaq
+alınmadı»** yazıldı, çünki servisin `catch (Exception)` bloku hər istisnanı bağlantı
+xətası kimi təqdim edirdi — səbəb şəbəkədə axtarıldı.
+
+**Qaydalar:**
+- `docs/sql/**` fayllarında **«KOPYALANACAQ MƏTN»** bölməsini açıq işarələ; başlıq
+  şərhini sorğunun ÜSTÜNDƏ yox, ayrıca blokda saxla.
+- Saxlanmış sorğunu icra edən servisdə `InvalidOperationException`-u **ayrıca tut**
+  və mətni olduğu kimi göstər. Ümumi «bağlanmaq alınmadı» mesajı diaqnozu yanlış
+  istiqamətə aparır.
+- Sorğunun **ORTASINDA** və sonunda `--` şərhi problem deyil — yalnız BAŞLANĞIC.
+
 ### Oracle `CASE` — Sadə (simple) vs Şərtli (searched) — ORA-00932 (KRİTİK)
 
 Oracle-da iki `CASE` forması var və **avtomatik tip çevirmə qaydası fərqlidir**:

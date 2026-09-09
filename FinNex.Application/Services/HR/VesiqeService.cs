@@ -108,6 +108,19 @@ namespace FinNex.Application.Services.HR
                 // yaddaşda işləyir — ona görə limit geniş verilir.
                 setirler = await _oracle.SelectAsync(sql, 200_000, ct);
             }
+            catch (InvalidOperationException ex)
+            {
+                // ⚠️ Bunu «bağlantı xətası» kimi yazma — `OracleService.YalnizSelect`
+                // sorğunun SELECT/WITH ilə BAŞLAMASINI tələb edir. Saxlanmış mətn
+                // `--` şərh sətri ilə başlayırsa sorğu Oracle-a heç getmir.
+                // Real hadisə (09.09.2026): sənəd faylı bütöv yapışdırıldı, mətn
+                // «-- TÖVSİYƏ OLUNAN VARİANT…» ilə başladı, ekran isə «BMI-yə
+                // bağlanmaq alınmadı» yazdı və şəbəkədə səbəb axtarıldı.
+                netice.Xeta = $"Sorğu icra olunmadı: {ex.Message} " +
+                              "Saxlanmış mətn birbaşa «select» sözü ilə başlamalıdır — " +
+                              "əvvəldəki `--` şərh sətirlərini silin.";
+                return netice;
+            }
             catch (Exception ex)
             {
                 netice.Xeta = $"BMI-yə bağlanmaq alınmadı: {ex.Message}";
