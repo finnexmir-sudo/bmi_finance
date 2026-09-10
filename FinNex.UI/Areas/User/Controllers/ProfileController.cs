@@ -1,5 +1,6 @@
 ﻿using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Services.Communication;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -117,7 +118,12 @@ namespace FinNex.UI.Areas.User.Controllers
             if (string.IsNullOrWhiteSpace(appUser.MailSmtpEmail) || string.IsNullOrWhiteSpace(appUser.MailSmtpParol))
                 return Json(new { success = false, message = "Əvvəlcə mail və şifrəni yadda saxlayın." });
 
-            var parol = _protector.Unprotect(appUser.MailSmtpParol);
+            // ⚠️ `Unprotect`-i BİRBAŞA çağırma — açar dəstəsi dəyişibsə istisna atır
+            // və bu action `try` içində olmadığı üçün istifadəçi «Server xətası (500)»
+            // görür (real hadisə 10.09.2026). Ortaq köməkçi `null` qaytarır.
+            var parol = MailParolQoruyucu.Ac(_protector, appUser.MailSmtpParol);
+            if (parol == null)
+                return Json(new { success = false, message = MailParolQoruyucu.AcilmadiMesaji });
 
             var (ok, xeta) = await _smtp.GonderAsync(
                 kimeEmail: appUser.MailSmtpEmail,

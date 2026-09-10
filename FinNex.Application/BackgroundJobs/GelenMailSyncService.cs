@@ -45,7 +45,7 @@ public class GelenMailSyncService : BackgroundService
             {
                 List<(int userId, string imapHost, string email, string password)> hesablar;
                 using (var scope = _scopeFactory.CreateScope())
-                    hesablar = await GetAllImapCredentialsAsync(scope);
+                    hesablar = await GetAllImapCredentialsAsync(scope, _logger);
 
                 if (hesablar.Count == 0)
                 {
@@ -80,7 +80,8 @@ public class GelenMailSyncService : BackgroundService
     }
 
     // Mail məlumatı konfiqurasiya edilmiş BÜTÜN Rəhbər/Admin istifadəçiləri (hərə öz qutusu)
-    private static async Task<List<(int userId, string imapHost, string email, string password)>> GetAllImapCredentialsAsync(IServiceScope scope)
+    private static async Task<List<(int userId, string imapHost, string email, string password)>> GetAllImapCredentialsAsync(
+        IServiceScope scope, ILogger<GelenMailSyncService> logger)
     {
         var dpProvider  = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
         var protector   = dpProvider.CreateProtector("MailSmtpParol");
@@ -123,13 +124,34 @@ public class GelenMailSyncService : BackgroundService
             if (string.IsNullOrWhiteSpace(user.MailSmtpEmail) || string.IsNullOrWhiteSpace(user.MailSmtpParol))
                 continue;
 
+            // ⚠️ ƏVVƏL BURADA `catch { }` VAR İDİ — BOŞ.
+            // Data Protection açar dəstəsi publish-dən sonra yenilənəndə
+            // `Unprotect` istisna atır və bu boş `catch` onu udurdu: istifadəçi
+            // «mail gəlmir» görürdü, logda isə HEÇ NƏ yox idi. Diaqnoz yalnız
+            // kodu oxumaqla mümkün olurdu (real hadisə 10.09.2026).
+            //
+            // İndi açma ortaq köməkçidədir (istisna atmır) və alınmayan hal
+            // AÇIQ şəkildə loga yazılır — hansı istifadəçi olduğu da bilinir.
+            var password = MailParolQoruyucu.Ac(protector, user.MailSmtpParol);
+            if (password == null)
+            {
+                logger.LogWarning(
+                    "GelenMail: {Email} (UserId={UserId}) üçün saxlanmış şifrə açılmadı — " +
+                    "Data Protection açarları dəyişib. İstifadəçi Profil → Mail Ayarları " +
+                    "bölməsində şifrəni yenidən yazmalıdır.",
+                    user.MailSmtpEmail, user.Id);
+                continue;
+            }
+
             try
             {
-                var password = protector.Unprotect(user.MailSmtpParol);
                 var imapHost = GelenMailImapSyncer.DeriveImapHost(user.MailSmtpHost, user.MailSmtpEmail);
                 list.Add((user.Id, imapHost, user.MailSmtpEmail, password));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "GelenMail: {Email} üçün IMAP host təyin edilmədi.", user.MailSmtpEmail);
+            }
         }
 
         return list;

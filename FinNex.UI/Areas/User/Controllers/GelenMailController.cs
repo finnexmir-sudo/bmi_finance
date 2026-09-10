@@ -1,6 +1,7 @@
 ﻿using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.HR;
+using FinNex.Application.Services.Communication;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
@@ -290,7 +291,13 @@ public class GelenMailController : Controller
 
         try
         {
-            var password = _protector.Unprotect(appUser.MailSmtpParol);
+            // ⚠️ Ortaq köməkçi — `Unprotect` açar dəstəsi dəyişəndə istisna atır.
+            // Buradakı `catch (Exception)` onu udardı və istifadəçi ümumi mesaj
+            // görüb şifrəni yenidən yazmalı olduğunu bilməzdi.
+            var password = MailParolQoruyucu.Ac(_protector, appUser.MailSmtpParol);
+            if (password == null)
+                return Json(new { success = false, count = 0, message = MailParolQoruyucu.AcilmadiMesaji });
+
             var imapHost = FinNex.Application.Services.Communication.GelenMailImapSyncer.DeriveImapHost(appUser.MailSmtpHost, appUser.MailSmtpEmail);
             var count = await _imapSyncer.SyncNowAsync(imapHost, appUser.MailSmtpEmail, password, appUser.Id);
             return Json(new { success = true, count, message = count > 0 ? $"{count} yeni mail tapıldı." : "Yeni mail yoxdur." });
@@ -348,7 +355,10 @@ public class GelenMailController : Controller
         var appUser = await _userManager.GetUserAsync(User);
         if (string.IsNullOrWhiteSpace(appUser?.MailSmtpEmail) || string.IsNullOrWhiteSpace(appUser?.MailSmtpParol))
             return Json(new { success = false, message = "SMTP məlumatları tapılmadı. Profil → Mail Ayarları bölməsindən əlavə edin." });
-        var smtpParol = _protector.Unprotect(appUser.MailSmtpParol);
+        var smtpParol = MailParolQoruyucu.Ac(_protector, appUser.MailSmtpParol);
+        if (smtpParol == null)
+            return Json(new { success = false, message = MailParolQoruyucu.AcilmadiMesaji });
+
         var (ok, xeta) = await _smtp.GonderAsync(dto.KimeEmail, dto.KimeAd, dto.Movzu, dto.CavabMetni, appUser.MailSmtpEmail, smtpParol, appUser.MailSmtpHost, string.IsNullOrWhiteSpace(dto.MessageId) ? null : dto.MessageId);
         if (ok) await _mailService.CavabVerildiIsareEtAsync(dto.MailId, appUser.Id);
         return Json(new { success = ok, message = ok ? "Cavab göndərildi." : $"Xəta: {xeta}" });
@@ -421,7 +431,12 @@ public class GelenMailController : Controller
             return RedirectToAction(nameof(Cavab), new { id = dto.MailId });
         }
 
-        var smtpParol = _protector.Unprotect(appUser.MailSmtpParol);
+        var smtpParol = MailParolQoruyucu.Ac(_protector, appUser.MailSmtpParol);
+        if (smtpParol == null)
+        {
+            TempData["Error"] = MailParolQoruyucu.AcilmadiMesaji;
+            return RedirectToAction(nameof(Cavab), new { id = dto.MailId });
+        }
 
         var (ok, xeta) = await _smtp.GonderAsync(
             dto.KimeEmail,

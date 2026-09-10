@@ -6,6 +6,7 @@ using FinNex.UI.Configurations;
 using FinNex.UI.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.DataProtection;
 using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -136,6 +137,38 @@ namespace FinNex.UI
 
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             });
+
+            // ==================================================
+            // 3.5. DATA PROTECTION — AÇARLAR QALICI YERDƏ SAXLANILIR
+            // ==================================================
+            //
+            // ⚠️ BU BLOK OLMADAN SAXLANMIŞ ŞİFRƏLƏR HƏR YENİDƏN BAŞLAMADA ÖLÜR.
+            //
+            // `IDataProtector` ilə qorunan yeganə dəyər — istifadəçinin SMTP
+            // şifrəsidir (`AppUser.MailSmtpParol`, protector adı «MailSmtpParol»).
+            // Konfiqurasiya edilməyəndə ASP.NET Core açar dəstəsini istifadəçi
+            // profilinə/registry-yə yazır; IIS-də app pool profili yüklənmirsə
+            // açarlar YALNIZ YADDAŞDA qalır və hər publish/recycle-da YENİDƏN
+            // yaradılır. Nəticədə köhnə şifrə açıla bilmir:
+            //
+            //   · `ProfileController.MailSina` → tutulmamış `CryptographicException`
+            //     → istifadəçi «Server xətası (500)» görür;
+            //   · `GelenMailSyncService` → `catch { }` içində udulur → gələn mail
+            //     sinxronu və bildiriş SƏSSİZCƏ dayanır (real hadisə 10.09.2026).
+            //
+            // Açarlar `wwwroot`-a YAZILMIR — publish onu silir (layihə qaydası).
+            // `DocumentStorage:RootPath` altındakı qovluq publish-dən kənardadır.
+            //
+            // `SetApplicationName` MƏCBURİDİR: dəyişsə açar dəstəsi «başqa
+            // tətbiqin»ki sayılır və bütün şifrələr yenidən açılmaz olur.
+            var dpKeyDir = Path.Combine(
+                builder.Configuration["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS",
+                "dp-keys");
+            Directory.CreateDirectory(dpKeyDir);
+
+            builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(dpKeyDir))
+                .SetApplicationName("FinNex");
 
             // ==================================================
             // 4. MVC + FluentValidation (.NET 8 way)
