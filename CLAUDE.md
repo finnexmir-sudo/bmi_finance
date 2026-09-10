@@ -191,6 +191,60 @@ halbuki tabel və maaş onu **adi iş günü** sayır. Yəni Davamiyyət səhif�
 eyni gün üçün fərqli danışır. Toxunulmadı — düzəltmək 4 çağırış yerini dəyişməkdir
 (`MezuniyyetService` 547/965/1099/1180/2703), ayrıca qərardır.
 
+## Yumşaq Silinmiş Sətir + UNİKAL İNDEKS = Səssiz INSERT Xətası (10.09.2026, KRİTİK)
+
+`Davamiyyetler` cədvəlində **unikal indeks (IsciId, Tarix)** var və o, `Silinib`
+sütununu **FİLTRLƏMİR**. Repozitoriya isə əksinə — `GetirAsync` / `Query()`
+avtomatik `!Silinib` tətbiq edir (`EfRepositoryAsync:25, 42`).
+
+İki qayda bir-birinə ziddir və nəticə budur:
+
+1. Məzuniyyət ləğv edilir → `DavamiyyetIzleriniSilAsync` sətirləri **yumşaq**
+   silir (sətir bazada, öz `IsciId`+`Tarix` ilə qalır);
+2. HR eyni tarixlərə yenidən məzuniyyət yazır → `GetirAsync` həmin sətri
+   **GÖRMÜR** → kod «qeyd yoxdur» deyib `INSERT` edir;
+3. Unikal indeks pozulur → `DbUpdateException`.
+
+Real hadisə: admin «öz hesabına» məzuniyyəti ləğv etdi, HR eyni günə **Geriyə
+qeyd** yazdı → forma dayandı.
+
+**HƏLL — `MezuniyyetService.DavamiyyetUpsertAsync` (yeganə yazıcı).** Sıra:
+`aktiv qeyd` → `yumşaq silinmiş qeyd (dirilt)` → `yeni yarat`. Yeni Davamiyyət
+yazma yolu əlavə edəndə **öz sorğunu yazma**, bunu çağır. Metod
+`DavamiyyetUpsertNeticesi` qaytarır (Deyismedi / Yenilendi / Berpa / Yaradildi)
+ki, çağıran tərəf sayğac saxlaya bilsin.
+
+| Yer | Vəziyyət |
+|---|---|
+| `MezuniyyetService` — HR təsdiqi, Geriyə qeyd, Dövlət vəzifəsi | ✅ üçü də `DavamiyyetUpsertAsync` çağırır |
+| `MezuniyyetService.HrTarixDeyisAsync` | ✅ elə həmin metodu işlədir |
+| `JetonService` (jeton redim, tam iş günü) | ✅ inline dirildilmə (metod `private`-dır) |
+| `QayibMarkerBackgroundService` | ✅ `silinmisDict` ilə öz toplu axınında |
+| `ADMSController` | ✅ risk yoxdur — `_db.Davamiyyetler`-ə **filtrsiz** baxır, silinmiş sətri onsuz da tapır |
+
+⚠️ **`DavamiyyetUpsertAsync` `private`-dır** — `JetonService` onu çağıra bilmir və
+qaydanın nüsxəsini saxlayır. Qaydaya toxunanda **ikisini birlikdə** dəyiş.
+
+⚠️ **Üstələnən statuslar yerə görə fərqlidir.** Default: `Qayib + Isde + Gecikme`
+(gəlmədi, yaxud səhvən cihaza basıb). Qəsdən qoyulmuş leave statuslarına
+(İcazəli / Xəstəlik / Ezamiyyət / Dövlət vəzifəsi) **toxunulmur** — onları
+üst-üstə düşmə yoxlaması tutur. İSTİSNA: **dövlət vəzifəsi korreksiyası** mövcud
+əmək məzuniyyətini əvəz etdiyi üçün `İcazəli`-ni də üstələyir (`ustelenenStatuslar`
+parametri ilə açıq verilir).
+
+### `ex.Message` TƏK BAŞINA HEÇ NƏ DEMİR
+
+EF-in `DbUpdateException.Message`-i həmişə eynidir — *«An error occurred while
+saving the entity changes. See the inner exception for details.»* SQL Server-in
+əsl mətni (indeks adı, FK, truncation) **`InnerException`-dadır**.
+
+Yuxarıdakı hadisədə ekran məhz bu mətni göstərirdi və səbəb yalnız kodu oxumaqla
+tapıldı. İndi yazma yolları `MezuniyyetService.KokSebeb(ex)` işlədir — ən dərin
+inner exception-un mətni əsas mesaja əlavə olunur.
+
+**Qayda:** `SaveChanges` ola bilən hər `catch`-də `ex.Message` YAZMA — kök səbəbi
+də göstər. Oxuma sorğularında adi `ex.Message` kifayətdir.
+
 ## EF Core — Filtered Include + Tracking Tələsi (KRİTİK)
 
 Tracking ilə işləyən sorğuda `Include(x => x.Nav.Where(...))` (filtered include)

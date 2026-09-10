@@ -559,31 +559,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (skipBayramlar.Any(b => b.Tarix.Date == gun.Date))
                     continue;
 
-                // Cari günün qeydi varmı? Varsa və "Qayıb" idisə — yeni statusa çevir.
-                // Başqa status (məs. İşdə) idisə toxunma. Qeyd yoxdursa — yeni yarat.
-                // Bu məntiq HR-in keçmiş tarixlər üçün yazdığı məzuniyyətləri də
+                // Bu məntiq HR-in keçmiş tarixlər üçün təsdiqlədiyi məzuniyyətləri də
                 // düzgün emal edir (məs: işçi bir neçə gün gəlmədi, Qayıb yazıldı,
                 // sonra sənəd gətirdi — HR təsdiq edəndə Qayıb → Xəstəlik/Ezamiyyət
                 // olaraq avtomatik düzəlir).
-                var mevcud = await _unitOfWork.Repository<Davamiyyet>()
-                    .GetirAsync(x => x.IsciId == m.IsciId && x.Tarix.Date == gun.Date);
-
-                if (mevcud != null)
-                {
-                    if (mevcud.Status == DavamiyyetStatus.Qayib)
-                    {
-                        mevcud.Status = davamiyyetStatusu;
-                        await _unitOfWork.Repository<Davamiyyet>().YenileAsync(mevcud);
-                    }
-                    continue;
-                }
-
-                await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
-                {
-                    IsciId = m.IsciId,
-                    Tarix = gun,
-                    Status = davamiyyetStatusu
-                });
+                //
+                // ⚠️ ÖZ SORĞUNU YAZMA — `DavamiyyetUpsertAsync` yumşaq silinmiş sətri
+                // də yoxlayır (unikal indeks (IsciId, Tarix) `Silinib`-i filtrləmir).
+                // Köhnə inline kod yalnız `Qayib`-i çevirirdi; indi səhvən vurulmuş
+                // cihaz girişi (İşdə/Gecikmə) də düzəlir — Geriyə qeyd axını ilə eyni.
+                await DavamiyyetUpsertAsync(m.IsciId, gun, davamiyyetStatusu);
             }
 
             // Üst-üstə düşən təsdiqlənmiş İcazələri ləğv et (gün məzuniyyətdir → İcazə artıqdır)
@@ -1410,49 +1395,130 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     }
 
     /// <summary>
-    /// Davamiyyət upsert (tarix-dəyiş üçün). Aktiv qeyd varsa yalnız Qayib-i çevirir
-    /// (digər statuslara toxunmur — təsdiq məntiqi ilə eyni). Soft-silinmiş qeyd varsa
-    /// onu dirildir — çünki unikal index (IsciId, Tarix) Silinib-i filtrləmir,
-    /// üstünə YENİ insert constraint pozar. Heç biri yoxdursa yeni qeyd yaradır.
+    /// İstisnanın ƏSL səbəbi — ən dərin `InnerException`-un mətni.
+    ///
+    /// ⚠️ EF-in `DbUpdateException.Message`-i HƏMİŞƏ eynidir:
+    /// «An error occurred while saving the entity changes. See the inner
+    /// exception for details.» — yəni ekranda tək başına HEÇ NƏ demir.
+    /// SQL Server-in əsl mətni (unikal indeks adı, FK pozuntusu, truncation)
+    /// məhz `InnerException`-dadır.
+    ///
+    /// Real hadisə (10.09.2026): geriyə məzuniyyət qeydi bu mesajla dayandı,
+    /// səbəbi isə yumşaq silinmiş `Davamiyyet` sətri idi — mesaj bunu demirdi
+    /// və diaqnoz koda baxmaqla aparıldı. İndi ekranda kök səbəb görünür.
+    ///
+    /// Yalnız YAZMA yollarında işlədilir (`SaveChanges` ola bilən yerlər);
+    /// oxuma sorğularında adi `ex.Message` kifayətdir.
     /// </summary>
-    private async Task DavamiyyetUpsertAsync(int isciId, DateTime gun, DavamiyyetStatus status)
+    private static string KokSebeb(Exception ex)
     {
-        var aktiv = await _unitOfWork.Repository<Davamiyyet>()
-            .GetirAsync(x => x.IsciId == isciId && x.Tarix.Date == gun.Date);
+        var kok = ex;
+        while (kok.InnerException != null) kok = kok.InnerException;
+        return ReferenceEquals(kok, ex) ? ex.Message : $"{ex.Message} → {kok.Message}";
+    }
+
+    /// <summary>Davamiyyət upsert-in nəticəsi — çağıran tərəf sayğac saxlaya bilsin.</summary>
+    private enum DavamiyyetUpsertNeticesi
+    {
+        /// <summary>Aktiv qeyd var idi, amma statusu üstələnməyənlərdəndir — toxunulmadı.</summary>
+        Deyismedi,
+        /// <summary>Mövcud aktiv qeydin statusu dəyişdirildi.</summary>
+        Yenilendi,
+        /// <summary>Yumşaq silinmiş qeyd dirildildi.</summary>
+        Berpa,
+        /// <summary>Yeni qeyd yaradıldı.</summary>
+        Yaradildi
+    }
+
+    /// <summary>
+    /// Davamiyyət qeydinin YEGANƏ yazıcısı (məzuniyyət axınında).
+    ///
+    /// ⚠️ SOFT-SİLİNMİŞ SƏTİR TƏLƏSİ — bu metodun əsas mövcudluq səbəbi budur.
+    /// `Davamiyyetler` cədvəlində **unikal indeks (IsciId, Tarix)** var və o,
+    /// `Silinib` sütununu FİLTRLƏMİR. Repozitoriyanın `GetirAsync`/`Query()`
+    /// metodları isə avtomatik `!Silinib` tətbiq edir (EfRepositoryAsync:25, 42).
+    ///
+    /// Nəticə: məzuniyyət ləğv ediləndə `DavamiyyetIzleriniSilAsync` sətirləri
+    /// YUMŞAQ silir (sətir bazada qalır). Sonra HR eyni tarixlərə yenidən
+    /// məzuniyyət yazanda `GetirAsync` həmin sətri GÖRMÜR → kod «qeyd yoxdur»
+    /// deyib INSERT edir → unikal indeks pozulur:
+    ///
+    ///     «An error occurred while saving the entity changes.
+    ///      See the inner exception for details.»
+    ///
+    /// Real hadisə (10.09.2026): admin «öz hesabına» məzuniyyəti ləğv etdi,
+    /// HR eyni günə geriyə qeyd yazdı → forma bu xəta ilə dayandı.
+    ///
+    /// Ona görə: aktiv qeyd → soft-silinmiş qeyd → yeni yaratma, məhz bu sıra ilə.
+    /// Yeni bir Davamiyyət yazma yolu əlavə edəndə BU METODU çağır, öz sorğunu yazma.
+    /// (`QayibMarkerBackgroundService` eyni qaydanı öz toplu axınında tətbiq edir;
+    ///  `ADMSController` isə `_db.Davamiyyetler`-ə filtrsiz baxdığı üçün onsuz da
+    ///  silinmiş sətri tapır və bu tələyə düşmür.)
+    /// </summary>
+    /// <param name="ustelenenStatuslar">
+    /// Mövcud aktiv qeydin statusu bunlardan biridirsə üstələnir. Default:
+    /// Qayib + Isde + Gecikme — yəni «gəlmədi» və səhvən vurulmuş cihaz girişi.
+    /// Qəsdən qoyulmuş leave statuslarına (İcazəli/Xəstəlik/Ezamiyyət/Dövlət
+    /// vəzifəsi) toxunulmur; onları üst-üstə düşmə yoxlaması tutur.
+    /// </param>
+    private async Task<DavamiyyetUpsertNeticesi> DavamiyyetUpsertAsync(
+        int isciId,
+        DateTime gun,
+        DavamiyyetStatus status,
+        DavamiyyetStatus[]? ustelenenStatuslar = null,
+        bool? maasdanKes = null,
+        string? qayibSebebi = null)
+    {
+        var ustelenenler = ustelenenStatuslar ?? new[]
+        {
+            DavamiyyetStatus.Qayib,
+            DavamiyyetStatus.Isde,
+            DavamiyyetStatus.Gecikme
+        };
+
+        var repo = _unitOfWork.Repository<Davamiyyet>();
+
+        // 1) Aktiv qeyd
+        var aktiv = await repo.GetirAsync(x => x.IsciId == isciId && x.Tarix.Date == gun.Date);
         if (aktiv != null)
         {
-            // Qayıb VƏ səhvən vurulmuş cihaz girişi (İşdə/Gecikmə) → məzuniyyət statusuna çevir
-            // (bugünə/keçmişə uzadılanda işçi cihaza basmış ola bilər). Qəsdən qoyulmuş leave
-            // statuslarına (İcazəli/Xəstəlik/Ezamiyyət/Dövlət vəzifəsi) toxunmuruq.
-            if (aktiv.Status == DavamiyyetStatus.Qayib ||
-                aktiv.Status == DavamiyyetStatus.Isde ||
-                aktiv.Status == DavamiyyetStatus.Gecikme)
-            {
-                aktiv.Status     = status;
-                aktiv.GirisVaxti = null;
-                aktiv.CixisVaxti = null;
-                await _unitOfWork.Repository<Davamiyyet>().YenileAsync(aktiv);
-            }
-            return;
+            if (!ustelenenler.Contains(aktiv.Status))
+                return DavamiyyetUpsertNeticesi.Deyismedi;
+
+            aktiv.Status     = status;
+            aktiv.GirisVaxti = null;   // səhv giriş/çıxış təmizlənir — məzuniyyət günüdür
+            aktiv.CixisVaxti = null;   // (xam punch CihazOxuma cədvəlində audit üçün qalır)
+            if (maasdanKes.HasValue)   aktiv.MaasdanKes  = maasdanKes.Value;
+            if (qayibSebebi != null)   aktiv.QayibSebebi = qayibSebebi;
+            await repo.YenileAsync(aktiv);
+            return DavamiyyetUpsertNeticesi.Yenilendi;
         }
 
-        var silinmis = await _unitOfWork.Repository<Davamiyyet>()
-            .SilinmisGetirAsync(x => x.IsciId == isciId && x.Tarix.Date == gun.Date);
+        // 2) Yumşaq silinmiş qeyd — DİRİLDİLİR, üstünə yeni INSERT edilmir
+        var silinmis = await repo.SilinmisGetirAsync(x => x.IsciId == isciId && x.Tarix.Date == gun.Date);
         if (silinmis != null)
         {
-            silinmis.Silinib = false;
+            silinmis.Silinib       = false;
             silinmis.SilinmeTarixi = null;
-            silinmis.Status = status;
-            await _unitOfWork.Repository<Davamiyyet>().YenileAsync(silinmis);
-            return;
+            silinmis.Status        = status;
+            silinmis.GirisVaxti    = null;
+            silinmis.CixisVaxti    = null;
+            if (maasdanKes.HasValue)   silinmis.MaasdanKes  = maasdanKes.Value;
+            if (qayibSebebi != null)   silinmis.QayibSebebi = qayibSebebi;
+            await repo.YenileAsync(silinmis);
+            return DavamiyyetUpsertNeticesi.Berpa;
         }
 
-        await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
+        // 3) Heç nə yoxdur — yeni qeyd
+        await repo.YaratAsync(new Davamiyyet
         {
-            IsciId = isciId,
-            Tarix = gun,
-            Status = status
+            IsciId      = isciId,
+            Tarix       = gun,
+            Status      = status,
+            MaasdanKes  = maasdanKes ?? false,   // entity default-u ilə eynidir
+            QayibSebebi = qayibSebebi
         });
+        return DavamiyyetUpsertNeticesi.Yaradildi;
     }
 
     // ════════════════════════════════════════════════════════════
@@ -2715,38 +2781,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     // Həftəsonu artıq skip edilmir — yeni qayda
                     if (skipBayramlar.Any(b => b.Tarix.Date == gun.Date)) continue;
 
-                    var mevcud = await _unitOfWork.Repository<Davamiyyet>()
-                        .GetirAsync(x => x.IsciId == dto.IsciId && x.Tarix.Date == gun.Date);
+                    // ⚠️ ÖZ SORĞUNU YAZMA — `DavamiyyetUpsertAsync` yumşaq silinmiş
+                    // sətri də yoxlayır. Buradakı köhnə inline kod yalnız `GetirAsync`
+                    // (avtomatik `!Silinib`) ilə baxırdı: ləğv edilmiş məzuniyyətin
+                    // sətri görünmür, üstünə INSERT gedir və unikal indeks (IsciId,
+                    // Tarix) pozulurdu. Real hadisə 10.09.2026 — bax metodun sənədinə.
+                    var netice = await DavamiyyetUpsertAsync(dto.IsciId, gun, yeniStatus);
 
-                    if (mevcud != null)
-                    {
-                        // Qayıb VƏ YA səhvən vurulmuş cihaz girişi (İşdə/Gecikmə) → məzuniyyət
-                        // statusuna çevir. Səbəb: işçi cihaza basıbsa davamiyyət real-vaxtda
-                        // "İşdə"/"Gecikmə" olur; HR sonradan geriyə məzuniyyət yazanda həmin gün
-                        // də düzəlməlidir (köhnə kod yalnız "Qayıb"-ı çevirirdi, "İşdə" qalırdı).
-                        // Qəsdən qoyulmuş leave-tipli statuslara (İcazəli/Xəstəlik/Ezamiyyət/
-                        // Dövlət vəzifəsi) toxunmuruq — onları yuxarıdakı konflikt yoxlaması tutur.
-                        if (mevcud.Status == DavamiyyetStatus.Qayib
-                            || mevcud.Status == DavamiyyetStatus.Isde
-                            || mevcud.Status == DavamiyyetStatus.Gecikme)
-                        {
-                            mevcud.Status     = yeniStatus;
-                            mevcud.GirisVaxti = null;   // səhv giriş/çıxış təmizlənir — məzuniyyət günüdür
-                            mevcud.CixisVaxti = null;   // (xam punch CihazOxuma cədvəlində audit üçün qalır)
-                            await _unitOfWork.Repository<Davamiyyet>().YenileAsync(mevcud);
-                            duzeldilenQaib++;
-                        }
-                    }
-                    else
-                    {
-                        await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
-                        {
-                            IsciId = dto.IsciId,
-                            Tarix = gun,
-                            Status = yeniStatus
-                        });
-                        yeniQeyd++;
-                    }
+                    if (netice == DavamiyyetUpsertNeticesi.Yenilendi) duzeldilenQaib++;
+                    else if (netice == DavamiyyetUpsertNeticesi.Yaradildi
+                          || netice == DavamiyyetUpsertNeticesi.Berpa) yeniQeyd++;
                 }
 
                 // 7.1 Üst-üstə düşən təsdiqlənmiş İcazələri ləğv et (gün məzuniyyətdir → İcazə artıqdır)
@@ -2804,7 +2848,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return Result<MezuniyyetDto>.Fail($"Xəta baş verdi: {ex.Message}");
+                return Result<MezuniyyetDto>.Fail($"Xəta baş verdi: {KokSebeb(ex)}");
             }
         }
     }
@@ -2938,34 +2982,21 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             {
                 if (skipBayramlar.Any(b => b.Tarix.Date == gun)) continue;
 
-                var dav = await _unitOfWork.Repository<Davamiyyet>()
-                    .GetirAsync(x => x.IsciId == dto.IsciId && x.Tarix.Date == gun);
+                // ⚠️ ÖZ SORĞUNU YAZMA — `DavamiyyetUpsertAsync` yumşaq silinmiş sətri
+                // də yoxlayır (unikal indeks (IsciId, Tarix) `Silinib`-i filtrləmir).
+                //
+                // Burada üstələnən statuslar FƏRQLİDİR: dövlət vəzifəsi mövcud ƏMƏK
+                // məzuniyyətinin korreksiyasıdır, ona görə «İcazəli» də üstələnir
+                // (default siyahıda o yoxdur — adi məzuniyyət qəsdən qoyulmuş leave
+                // statusuna toxunmamalıdır).
+                var netice = await DavamiyyetUpsertAsync(
+                    dto.IsciId, gun, DavamiyyetStatus.OdenisDovletVezifesi,
+                    ustelenenStatuslar: new[] { DavamiyyetStatus.Icazeli, DavamiyyetStatus.Qayib },
+                    maasdanKes: false,
+                    qayibSebebi: "Dövlət vəzifəsinin icrası (Maddə 173)");
 
-                if (dav != null)
-                {
-                    // Icazeli idi → dövlət vəzifəsinə çevir
-                    if (dav.Status == DavamiyyetStatus.Icazeli ||
-                        dav.Status == DavamiyyetStatus.Qayib)
-                    {
-                        dav.Status      = DavamiyyetStatus.OdenisDovletVezifesi;
-                        dav.MaasdanKes  = false;
-                        dav.QayibSebebi = "Dövlət vəzifəsinin icrası (Maddə 173)";
-                        await _unitOfWork.Repository<Davamiyyet>().YenileAsync(dav);
-                        yenilenDavamiyyet++;
-                    }
-                }
-                else
-                {
-                    await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
-                    {
-                        IsciId      = dto.IsciId,
-                        Tarix       = gun,
-                        Status      = DavamiyyetStatus.OdenisDovletVezifesi,
-                        MaasdanKes  = false,
-                        QayibSebebi = "Dövlət vəzifəsinin icrası (Maddə 173)"
-                    });
+                if (netice != DavamiyyetUpsertNeticesi.Deyismedi)
                     yenilenDavamiyyet++;
-                }
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
@@ -2992,7 +3023,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return Result<MezuniyyetDto>.Fail($"Korreksiya xətası: {ex.Message}");
+            return Result<MezuniyyetDto>.Fail($"Korreksiya xətası: {KokSebeb(ex)}");
         }
     }
 

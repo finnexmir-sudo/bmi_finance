@@ -587,14 +587,37 @@ namespace FinNex.Application.Services.HR
                             && x.Tarix.Date == icazeGunu && !x.Silinib);
                     if (dav == null)
                     {
-                        await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
+                        // ⚠️ YUMŞAQ SİLİNMİŞ SƏTİR — yuxarıdakı sorğu `!Silinib`
+                        // filtri ilə işlədiyi üçün ləğv edilmiş məzuniyyətdən qalan
+                        // sətri GÖRMÜR. `Davamiyyetler`-də unikal indeks (IsciId,
+                        // Tarix) isə `Silinib`-i filtrləmir → üstünə INSERT etsək
+                        // «An error occurred while saving the entity changes» alarıq.
+                        // Kanonik həll: `MezuniyyetService.DavamiyyetUpsertAsync`
+                        // (o, private-dır; qayda dəyişəndə ikisini birlikdə dəyiş).
+                        var silinmis = await _unitOfWork.Repository<Davamiyyet>()
+                            .SilinmisGetirAsync(x => x.IsciId == redim.IsciId
+                                                  && x.Tarix.Date == icazeGunu);
+                        if (silinmis != null)
                         {
-                            IsciId          = redim.IsciId,
-                            Tarix           = icazeGunu,
-                            Status          = DavamiyyetStatus.Icazeli,
-                            MaasdanKes      = false,
-                            YaradilmaTarixi = DateTime.Now
-                        });
+                            silinmis.Silinib       = false;
+                            silinmis.SilinmeTarixi = null;
+                            silinmis.Status        = DavamiyyetStatus.Icazeli;
+                            silinmis.MaasdanKes    = false;
+                            silinmis.GirisVaxti    = null;
+                            silinmis.CixisVaxti    = null;
+                            await _unitOfWork.Repository<Davamiyyet>().YenileAsync(silinmis);
+                        }
+                        else
+                        {
+                            await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
+                            {
+                                IsciId          = redim.IsciId,
+                                Tarix           = icazeGunu,
+                                Status          = DavamiyyetStatus.Icazeli,
+                                MaasdanKes      = false,
+                                YaradilmaTarixi = DateTime.Now
+                            });
+                        }
                     }
                     else if (dav.Status == DavamiyyetStatus.Qayib)
                     {
