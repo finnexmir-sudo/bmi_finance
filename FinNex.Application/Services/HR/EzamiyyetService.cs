@@ -97,18 +97,33 @@ namespace FinNex.Application.Services.HR
                         .Any(t => !t.Silinib && t.DepartamentId == filtr.DepartamentId.Value));
             }
 
-            // Sıralama: YENİDƏN KÖHNƏYƏ — tarix, SONRA BAŞLAMA SAATI
-            // (istifadəçi qərarı 08.09.2026). Əvvəl yalnız tarix üzrə idi:
-            // eyni günün müraciətləri baza sırası ilə gəlirdi — 08.09-da
-            // 14:00 müraciəti 15:25-dən yuxarıda görünürdü.
+            // Sıralama — İKİ QATLI:
+            //
+            //   1) GÖZLƏYƏNLƏR HƏMİŞƏ ƏN YUXARIDA (14.09.2026, rəhbər şikayəti);
+            //   2) sonra tarix, SONRA BAŞLAMA SAATI — yenidən köhnəyə
+            //      (istifadəçi qərarı 08.09.2026, olduğu kimi saxlanılıb).
+            //
+            // ⚠️ NİYƏ STATUS PRİORİTETİ LAZIMDIR: bu səhifə (HR → Ezamiyyət
+            // İdarəetməsi) BÜTÜN statusları göstərir — 49 müraciətdən yalnız 1-i
+            // «Gözləyir» ola bilər. Yalnız tarixə görə sıralasaq həmin tək qeyd
+            // 48 təsdiqlənmişin arasında itir. Rəhbər bildirişdən bu səhifəyə
+            // keçir, yuxarı baxır, təsdiqlənmiş qeydlər görür və «yeni yoxdur»
+            // deyir — halbuki aşağıda təsdiq gözləyən var.
+            //
+            // Süzgəc DEYİL, sıralamadır: təsdiqlənmiş qeydlər siyahıdan itmir,
+            // sadəcə iş tələb edənlərdən sonra gəlir.
             //
             // ⚠️ Bu, EF sorğusudur (`ToListAsync` sondadır). `BaslamaSaati`
             // NULL = TAM GÜN ezamiyyəti; SQL Server-də DESC sıralamada NULL
             // ƏN SONA düşür — istədiyimiz elə budur (gün 00:00-da başlayır).
             // `?? TimeSpan.Zero` yazmağa ehtiyac yoxdur və o, tərcümə riski
             // gətirərdi.
+            //
+            // `Status` üzrə filtr seçiləndə bu prefiks təsirsizdir (hamısı eyni
+            // statusdadır) — yəni köhnə davranış filtrli görünüşdə qorunur.
             var list = await query
-                .OrderByDescending(x => x.BaslamaTarixi)
+                .OrderBy(x => x.Status == EzamiyyetStatus.Gozleyir ? 0 : 1)
+                .ThenByDescending(x => x.BaslamaTarixi)
                 .ThenByDescending(x => x.BaslamaSaati)
                 .ToListAsync();
             return list.Select(Map).ToList();
