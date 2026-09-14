@@ -222,33 +222,19 @@ namespace FinNex.Application.Services.HR
                                    .Include(x => x.Mekan)
                                    .Include(x => x.Masin),   // 01.09.2026 — maşın adı üçün
                     izlemeden: true);
-            // Sıralama: MÜRACİƏTİN GƏLDİYİ VAXTA görə, yenidən köhnəyə (14.09.2026).
+            // Sıralama: YENİDƏN KÖHNƏYƏ — tarix, sonra saat (istifadəçi qərarı 07.09.2026).
+            // Təsdiq panelinə ən son gələn yuxarıda olmalıdır; əvvəl `OrderBy` idi
+            // (köhnədən yeniyə) və rəhbər hər dəfə siyahının dibinə enirdi.
             //
-            // ⚠️ ƏVVƏL `BaslamaTarixi` (ezamiyyətin ÖZ tarixi) üzrə idi — TƏSDİQ
-            // PANELİ ÜÇÜN SƏHV AÇARDIR. İkisi eyni şey deyil:
-            //
-            //   bu gün gələn, tarixi 15.09 olan müraciət  →  AŞAĞIDA
-            //   keçən həftə gələn, tarixi 25.09 olan       →  YUXARIDA
-            //
-            // Rəhbərin şikayəti: «ən yuxarı baxıram ki, YENİLƏR varsa təsdiqləyim,
-            // amma üstdəki tanışdır, yenilər isə aşağıda qalır». Yəni o, siyahının
-            // başında MÜRACİƏTİN GƏLİŞ sırasını gözləyir, ezamiyyətin tarixini yox.
-            //
-            // Panel onsuz da YALNIZ gözləyənləri gətirir (yuxarıdakı `Gozleyir`
-            // filtri) — problem süzgəcdə deyil, sıralama AÇARINDA idi.
-            //
-            // `YaradilmaTarixi` tam DateTime-dır (saniyə dəqiqliyi ilə), ona görə
-            // `BaslamaSaati` ikinci açar kimi artıq lazım deyil — həm də tam gün
-            // ezamiyyətinin NULL saatı ilə bağlı coalesce ehtiyacı aradan qalxır.
-            // `Id` yalnız determinizm üçün: eyni tick-də yaranmış iki qeyd sabit
-            // sırada dursun.
+            // `BaslamaSaati` NULL = TAM GÜN ezamiyyəti — `TimeSpan.Zero` sayılır,
+            // yəni eyni tarixdə saatlı müraciətlərdən SONRA gəlir (gün 00:00-da başlayır).
             //
             // ⚠️ Bu metodu HƏM Rəhbər, HƏM HR paneli çağırır (`TesdiqController`),
-            // yəni sıra hər ikisində eynidir — qəsdən: eyni siyahının iki paneldə
+            // yəni sıra hər ikisində eynidir — qəsdən: eyni siyahının iki panel-də
             // fərqli sıralanması istifadəçini çaşdırardı.
             return list
-                .OrderByDescending(x => x.YaradilmaTarixi)
-                .ThenByDescending(x => x.Id)
+                .OrderByDescending(x => x.BaslamaTarixi.Date)
+                .ThenByDescending(x => x.BaslamaSaati ?? TimeSpan.Zero)
                 .Select(Map).ToList();
         }
 

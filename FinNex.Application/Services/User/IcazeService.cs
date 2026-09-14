@@ -507,29 +507,13 @@ namespace FinNex.Application.Services
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
-                // Sıralama: MÜRACİƏTİN GƏLDİYİ VAXTA görə, yenidən köhnəyə (14.09.2026).
-                //
-                // ⚠️ ƏVVƏL `IcazeTarixi` (icazənin ÖZ tarixi) üzrə idi — TƏSDİQ
-                // PANELİ ÜÇÜN SƏHV AÇARDIR. İkisi eyni şey deyil:
-                //
-                //   bu gün gələn, tarixi 15.09 olan icazə  →  AŞAĞIDA
-                //   keçən həftə gələn, tarixi 25.09 olan    →  YUXARIDA
-                //
-                // Rəhbərin şikayəti: «ən yuxarı baxıram ki, YENİLƏR varsa
-                // təsdiqləyim, amma üstdəki tanışdır, yenilər isə aşağıda qalır».
-                //
-                // Panel onsuz da YALNIZ `RehberTesdiqinde` olanları gətirir —
-                // problem süzgəcdə deyil, sıralama AÇARINDA idi.
-                //
-                // `YaradilmaTarixi` tam DateTime-dır (saniyə dəqiqliyi ilə), ona görə
-                // `BaslamaSaati` ikinci açar kimi artıq lazım deyil. `Id` determinizm
-                // üçündür — eyni tick-də yaranmış iki qeyd sabit sırada dursun.
-                //
-                // ⚠️ Bu metodu `TesdiqController.Rehber` (təsdiq paneli) və
-                // `InboxController` (Gələn Qutusu) çağırır — sıra hər ikisində eynidir.
+                // Sıralama: YENİDƏN KÖHNƏYƏ — tarix, SONRA BAŞLAMA SAATI
+                // (istifadəçi qərarı 07.09.2026). Əvvəl yalnız tarix üzrə idi:
+                // eyni günün icazələri baza sırası ilə gəlirdi, yəni səhər 09:00
+                // müraciəti günorta 15:00 müraciətindən yuxarıda dura bilirdi.
                 return Result<IList<IcazeListDto>>.Ok(
-                    list.OrderByDescending(x => x.YaradilmaTarixi)
-                        .ThenByDescending(x => x.Id)
+                    list.OrderByDescending(x => x.IcazeTarixi.Date)
+                        .ThenByDescending(x => x.BaslamaSaati)
                         .Select(MapToListDto).ToList());
             }
             catch (Exception ex)
