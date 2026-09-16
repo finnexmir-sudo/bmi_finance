@@ -2311,9 +2311,14 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         "Digər yerləşdirmələr / likvid aktivlər",
         "Müştərilərə kreditlər",
         "Digər ehtiyyat",
-        "Hesablanmış faizlər və digər aktivlər",
-        "Əsas vəsaitlər və qeyri-maddi aktivlər",
+        // 16.09.2026 — etiket «Hesablanmış faizlər və digər aktivlər»dən «Digər
+        // aktivlər»ə qısaldıldı (istifadəçi qərarı). Aşağıdakı `Tesnif` switch-ində
+        // 24/25/26 və `_` qolu ARTIQ EYNİ ADI qaytarır, ona görə burada da TƏK sətir
+        // olmalıdır — `aktiv` lüğəti ada görə yığır, yəni iki qol bir sətirdə birləşir.
+        // Sıra qəsdən burada (Əsas vəsaitlərdən ƏVVƏL) saxlanılıb: 24-26 hesabları
+        // 27-28-dən qabaq gəlir, siyahının mühasibat ardıcıllığı dəyişməsin.
         "Digər aktivlər",
+        "Əsas vəsaitlər və qeyri-maddi aktivlər",
     };
     private static readonly string[] OhdelikSira =
     {
@@ -2413,7 +2418,7 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                 "15" => "Müxbir hesablar",                 // mühasib: ilk 2 rəqəm 15 → M/H (müxbir hesab)
                 "12" or "13" or "14" => "Qiymətli kağızlar",
                 "20" or "21" or "22" or "23" => "Müştərilərə kreditlər",
-                "24" or "25" or "26" => "Hesablanmış faizlər və digər aktivlər",
+                "24" or "25" or "26" => "Digər aktivlər",       // 16.09.2026: etiket qısaldıldı
                 "27" or "28" => "Əsas vəsaitlər və qeyri-maddi aktivlər",
                 _ => "Digər aktivlər"
             };
