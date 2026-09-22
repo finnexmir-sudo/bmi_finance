@@ -20,7 +20,7 @@ namespace FinNex.Application.Services.Aml;
 /// FinNex-ə səhvən ikincisi «Məlumat Bazası» adı ilə köçürülmüşdü.
 ///
 /// ── TARİX ARALIĞI ────────────────────────────────────────────────────────
-/// 11 sorğudan **8-i** dövr qəbul edir (`{DOVREVVEL}` / `{DOVRSON}`), **3-ü**
+/// 11 sorğudan **7-si** dövr qəbul edir (`{DOVREVVEL}` / `{DOVRSON}`), **4-ü**
 /// dövrsüzdür və HƏMİŞƏ cari vəziyyəti verir — BMI-də də belədir, «tarix
 /// qoyulmayıb» deyil, QƏSDƏN belədir:
 ///   Owner (təsisçilər), A_M_L (əlaqəli şəxslər), Kred_zamin (kredit zaminləri),
