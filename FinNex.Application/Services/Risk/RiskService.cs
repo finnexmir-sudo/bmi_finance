@@ -33,8 +33,32 @@ public class RiskService : IRiskService
     // panelində adi hesabat kartı kimi göründü. Onların öz səhifəsi var
     // (Risk → AML → Hesab üzrə sorğu) — siyahıda yeri yoxdur.
     //
-    // Şərt QƏSDƏN ada görə deyil, TOKENƏ görədir: gələcəkdə başqa modul öz
-    // tokenli sorğusunu əlavə etsə, siyahı avtomatik təmiz qalır.
+    // Şərt əsasən TOKENƏ görədir: başqa modul öz tokenli sorğusunu əlavə etsə,
+    // siyahı avtomatik təmiz qalır.
+    //
+    // ⚠️ AMMA TOKEN TƏK BAŞINA KİFAYƏT ETMİR (22.09.2026). «Məlumat Bazası»
+    // modulunun 11 sorğusundan 4-ü DÖVRSÜZDÜR — heç bir tokeni yoxdur
+    // (AML_MB_OWNER, AML_MB_ELAQELI_SEXS, AML_MB_KREDIT_ZAMIN,
+    //  AML_MB_AKTIV_HESABLAR). Onlar süzgəcdən keçib Risk panelində 4 artıq
+    // kart kimi görünərdi — 20.08-dəki `AML_HESAB_SORGU_*` hadisəsinin eynisi.
+    // Ona görə AD PREFİKSİ üzrə ikinci qat əlavə edildi: `AML_` ilə başlayan
+    // sorğular MODULUN ÖZ ekranına aiddir (Risk → AML → …), kart siyahısında
+    // yeri yoxdur.
+    //
+    // Yeni modul öz sorğularını `OracleSorgular`-a əlavə edəndə: ya tokenli
+    // olsun, ya da adı bu prefiks siyahısına düşsün — yoxsa panelə sızar.
+    private static readonly string[] ModulPrefiksleri = { "AML_" };
+
+    /// <summary>Sorğu Risk panelinin kart siyahısına aid deyil — başqa modulun öz ekranındadır.</summary>
+    private static bool RiskDoldurabilmir(string? sorguAdi, string? sql)
+    {
+        var ad = (sorguAdi ?? "").TrimStart();
+        if (ModulPrefiksleri.Any(p => ad.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            return true;
+
+        return RiskDoldurabilmir(sql);
+    }
+
     private static bool RiskDoldurabilmir(string? sql)
     {
         if (string.IsNullOrEmpty(sql)) return false;
@@ -58,7 +82,7 @@ public class RiskService : IRiskService
 
         return res.Data
             .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk")
-                     && !RiskDoldurabilmir(x.SorguMetni))
+                     && !RiskDoldurabilmir(x.SorguAdi, x.SorguMetni))
             .OrderBy(x => x.SorguAdi)
             .Select(x => new RiskHesabatDto { Id = x.Id, Ad = x.SorguAdi, Mahiyyet = DrillStrip(x.Mahiyyet) })
             .ToList();
@@ -174,7 +198,7 @@ public class RiskService : IRiskService
         var res = await _sorguService.HamisiniGetirAsync();
         var list = res?.Data?
             .Where(x => x.Aktiv && Norm(x.DepartamentAd).Contains("risk")
-                     && !RiskDoldurabilmir(x.SorguMetni))
+                     && !RiskDoldurabilmir(x.SorguAdi, x.SorguMetni))
             .OrderBy(x => x.SorguAdi)
             .ToList() ?? new();
 

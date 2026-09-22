@@ -274,3 +274,22 @@ BEGIN CATCH
     PRINT N'XƏTA: ' + ERROR_MESSAGE();
     THROW;
 END CATCH
+
+/* ============================================================================
+   GERİ QAYTARMA (lazım olsa) — script-i işlətdikdən sonra fikrini dəyişsən.
+   ⚠️ ŞƏRHDƏN ÇIXARIB İŞLƏT, yuxarıdakı ilə birlikdə YOX.
+
+   Yumşaq silmə (tövsiyə olunur — tarixçə qalır):
+
+       UPDATE OracleSorgular
+          SET Silinib = 1
+        WHERE SorguAdi LIKE N'AML_MB_%' AND ISNULL(Silinib,0) = 0;
+
+   Tam silmə (yalnız səhv yazılıbsa və heç işlədilməyibsə):
+
+       DELETE FROM OracleSorgular WHERE SorguAdi LIKE N'AML_MB_%';
+
+   Sorğunun MƏTNİNİ dəyişmək üçün silib yenidən əlavə etməyə ehtiyac yoxdur —
+   Admin → Oracle Sorğular ekranından redaktə et. Servis onları ADA görə
+   oxuyur (`AML_MB_*`), Id-yə görə yox.
+   ========================================================================== */
