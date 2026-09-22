@@ -13,6 +13,13 @@
             <div class="fn-page-sub">Dövr üzrə AML paketi — @vereqler.Count vərəqli Excel</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            @* İki səhifə BİR İŞİN addımlarıdır — keçid hər ikisində olmalıdır.
+               22.09.2026: Excel səhifəsinin adı dəyişdi («Məlumat Bazası» →
+               «Axtarılanlar») və istifadəçi onu tapa bilmədi. Kart Risk
+               panelindədir, amma bu səhifəyə birbaşa gələndə görünmürdü. *@
+            <a asp-action="Axtarilanlar" class="fn-btn fn-btn--outline">
+                <i class="bi bi-search"></i> Axtarılanlar (Excel)
+            </a>
             <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
         </div>
     </div>
