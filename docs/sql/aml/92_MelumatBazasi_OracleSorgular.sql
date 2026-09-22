@@ -1,33 +1,106 @@
-/* ============================================================================
-   AML → «Məlumat Bazası» — 11 Oracle sorğusu
-   Mənbə: BMI desktop → BMI/AML/Sorgular/MelumatBazasi.cs (excelDoldur)
+﻿/* ============================================================================
+   AML → «Məlumat Bazası» — 11 Oracle sorğusu  (SİYAHI ÜZRƏ SÜZGƏCLİ VARİANT)
+   Mənbə: BMI FoxPro → melumat_bazasi_kodlari.prg
    Hədəf: FinNex → Risk → Məlumat Bazası (MelumatBazasiService)
 
    BU FAYLI SQL SERVER-DƏ (FinNex bazasında) İŞLƏT — Oracle-da YOX.
-   Sorğuların özü Oracle-a gedir, amma mətnləri `OracleSorgular` cədvəlində
-   saxlanılır (layihə qaydası — CLAUDE.md).
+   Script TƏKRAR İŞLƏDİLƏ BİLƏR: mövcud AML_MB_* sətirləri YENİLƏNİR, yoxdursa
+   əlavə olunur (Id və tarixçə qorunur).
+
+   ── NƏ DƏYİŞDİ (22.09.2026) ────────────────────────────────────────────────
+   Əvvəlki variant BMI-nin C# nüsxəsindən (BMI/AML/Sorgular/MelumatBazasi.cs)
+   köçürülmüşdü və orada `aml_yoxlama` ÜMUMİYYƏTLƏ YOXDUR — yəni sorğular
+   BÜTÜN dövrü qaytarırdı, siyahı üzrə süzmürdü. Əsl proqram FoxPro-dur və
+   onun 11 sorğusunun HAMISI `odb.aml_yoxlama y` ilə birləşir.
+
+   Oracle-a yazmaq QADAĞAN olduğu üçün (CLAUDE.md) `aml_yoxlama` cədvəli
+   `{SIYAHI}` yer tutucusu ilə əvəz olunub — servis onu sətiriçi siyahıya
+   çevirir və sütun adları EYNİ qalır (`y.a_s_a`, `y.fin`, `y.voen`, `y.tel`),
+   ona görə BMI-nin `where` məntiqi olduğu kimi köçüb:
+
+       ( select 'HUSEYNOV SAMIR MIRHUSEYN' a_s_a, '1EZVKMS' fin,
+                '~' voen, '~' tel from dual
+         union all select ... ) y
 
    ── YER TUTUCULARI ─────────────────────────────────────────────────────────
    {DOVREVVEL} , {DOVRSON}  →  servis `dd-MM-yyyy` formatında əvəz edir.
-   Sorğularda `TO_DATE('{DOVREVVEL}','DD-MM-YYYY')` yazılır — format
-   DƏYİŞDİRİLMƏMƏLİDİR, yoxsa gün/ay yerdəyişər və səhv dövr gələr.
+                               Format DƏYİŞDİRİLMƏMƏLİDİR (gün/ay yerdəyişər).
+   {SIYAHI}                 →  Exceldən oxunan şəxslərin `from dual` siyahısı.
+                               11 sorğunun HAMISINDA var.
 
-   ⚠️ BMI-də bu dəyərlər BIND parametri idi (:dovrevvel). FinNex-in
-   `IOracleService.SelectAsync` bind qəbul etmir — yalnız tam mətn SQL.
-   Ona görə token əvəzlənməsinə keçirildi. Dəyər istifadəçidən GƏLMİR:
-   `DateTime` seçicisindən oxunub serverdə formatlanır, yəni mətn kimi
-   içəri nəsə yazmaq mümkün deyil.
+   ⚠️ SİYAHIYA GEDƏN AD ASCII OLMALIDIR. `odb.func_utf8_to_latin` Azəri
+   hərflərini ASCII-yə çevirir və müqayisə onun çıxışı ilə gedir:
+        Ə→A   İ→I   Ü→U   Ö→O   Ş→S   Ç→C   Ğ→G
+   (22.09.2026-da BMI-də ölçülüb: «ƏLİYEVA ÜLVİYYƏ ŞÖVQİ» → «ALIYEVA ULVIYYA SOVQI»)
+   DİQQƏT: `Ə → A`-dır, `E` DEYİL. Layihədəki `Sadeles` metodu `ə→e` edir və
+   BU İŞ ÜÇÜN YARAMIR — ayrıca `BmiLatin` metodu işlədilir. Səhv tərəf seçilsə
+   heç bir xəta çıxmır, sadəcə heç nə tapılmır.
 
-   ⚠️ 11 sorğudan 4-ü DÖVRSÜZDÜR (token yoxdur), 7-si dövrlüdür — BMI-də də belədir:
-      AML_MB_OWNER, AML_MB_ELAQELI_SEXS, AML_MB_KREDIT_ZAMIN,
-      AML_MB_AKTIV_HESABLAR
-   Onlar həmişə CARİ vəziyyəti verir. Dövr əlavə etmək məzmunu dəyişər —
-   mühasib/AML tərəfin qərarı olmadan etmə.
+   ⚠️ Boş xanalar üçün `null` YOX, `'~'` sentineli göndərilir: Oracle-da `''`
+   elə `null`-dır və `union all` qollarında tip qarışıqlığı yaradır; `'~'` isə
+   heç bir real dəyərə bərabər deyil, şərt sakitcə söndürülür.
+   «Yalnız FİN/VÖEN» rejimində `a_s_a` xanasına `'~~AD_YOXDUR~~'` yazılır —
+   SQL mətni dəyişmir, sadəcə ad şərti heç vaxt tutmur.
 
-   ⚠️ Sorğu adları QƏSDƏN ASCII-dir — SSMS-də Azərbaycan hərfləri pozulanda
-   `=` müqayisəsi sükutla sınır.
+   ⚠️ 11 sorğudan 4-ü DÖVRSÜZDÜR ({DOVREVVEL} yoxdur) — BMI-də də belədir:
+      AML_MB_OWNER, AML_MB_ELAQELI_SEXS, AML_MB_KREDIT_ZAMIN, AML_MB_AKTIV_HESABLAR
 
-   Yoxlama (ən sonda): 11 sətir qayıtmalıdır.
+   ── BMI-DƏKİ SƏHVLƏR — DÜZƏLDİLDİ ──────────────────────────────────────────
+   #1 OWNER — mötərizə: `(A and B or C)` → `(A and (B or C))`.
+      `odb.balschkli b` cədvəlinin YEGANƏ bağlantısı `substr(licsch,1,5) in b.balsch`
+      idi; FİN uyğun gələndə o qol keçilir və `b` SƏRBƏST qalırdı → dekart hasili.
+      `distinct` çıxışı təmizləyirdi, amma Oracle milyonlarla cütü qurub atırdı.
+      NƏTİCƏ: sətir sayı BMI-dəki 4396-dan AZ olacaq — bu, düzəlişin özüdür.
+   #2 OPEN_ACCOUNTS — `icra` sütunu `qey_nezaret`-dən gəlir (C# nüsxəsi onu atıb
+      `log_accounts`-a hər sətir üçün iç-içə MAX qoymuşdu — yavaşlığın səbəbi).
+   #3 OPEN_ACCOUNTS — `qey_nezaret` alt sorğusu `group by` ilə `qn` üzrə təkliyə
+      salındı; əks halda LEFT JOIN hesab sətrini İKİLƏŞDİRİRDİ.
+   #4 Rəqəm/mətn qarışığı — `substr(...)` mətn qaytarır, amma `in (10020,…)` və
+      `substr(t.debet,1,4)=1005` rəqəm yazılmışdı (Exchange-də eyni sətirdə biri
+      dırnaqlı, biri dırnaqsız!). Hamısı dırnağa alındı: nəticə eynidir, amma
+      hesab nömrəsində hərf olan gün ORA-01722 vermir.
+   #5 A_M_L — `to_date(doguldugu_tarix)` maskasız idi (NLS-dən asılı). Sütun
+      VARCHAR2-dur və `DD-MM-YYYY` formatındadır (ölçülüb); üstəlik `regexp_like`
+      qoruyucusu əlavə edildi ki, bir pozuq sətir bütün vərəqi sındırmasın.
+   #6 Mənasız outer join-lar (`= r.regnom(+)` + `where`-də `r.*` şərti) adi
+      join-a çevrildi — nəticə eynidir, plan sadələşir.
+   #7 `y` ilə açar üzrə join YOXDUR (BMI-də də belə idi): Exceldə 2 adam eyni
+      sətrə uyğun gəlsə sətir İKİ dəfə çıxır. QƏSDƏN SAXLANILIB — indi
+      «Axtarılan şəxs» sütunu var, yəni iki sətir DÜZGÜNDÜR.
+
+   ── FinNex ƏLAVƏLƏRİ (BMI-də yox idi) ──────────────────────────────────────
+   * Hər vərəqdə 2 yeni sütun: `axtarilan` (Exceldən hansı sətir tutdu) və
+     `uygunluq` (FİN / VÖEN / Telefon / Ad — hansı kriteriya işlədi).
+   * KOCURME_MUSTERI — `name_licsch` (hesab sahibinin rəsmi adı) və
+     `pincode_or_passport` (FİN) əlavə edildi. BMI yalnız `primechanie`
+     (sərbəst mətn) üzrə axtarırdı və ata adı ora nadir hallarda yazıldığı
+     üçün praktikada çox şey itirirdi.
+   * TRANSFER — 4 mənbənin hamısı `odb.regnom`-a join edildi (`inn_regnom`,
+     `pincode`). Bağlantı düsturları BMI-nin `frmhesabsorgu` formasından
+     götürülüb. `odb.left/odb.right` ƏVƏZİNƏ standart `substr(lpad(...),18,6)`
+     işlədilir — eyni nəticə, FOXPRO istifadəçisi üçün icazə asılılığı yoxdur.
+     Join `(+)` (outer) olduğu üçün YALNIZ ƏLAVƏ EDİR, heç bir sətri atmır.
+   * OWNER — `t.inn_licsch` üzrə VÖEN axtarışı.
+   * A_M_L — 3-cü union qolunda `fin` sütunu ƏSLİNDƏ VÖEN saxlayır (BMI-də
+     sütun adı yalan danışır). `kod_novu` ilə ayrıldı, yoxsa hüquqi şəxs
+     heç vaxt tapılmırdı.
+   * EMIT_BENEF, 3-cu shexs, A_M_L, Kred_zamin — TƏRS `LIKE` qolu əlavə edildi.
+     Bazada ad 2 hissəlidir («SOYAD AD»), Exceldə 3 («SOYAD AD ATAADI») →
+     `like '%3 hissə%'` heç vaxt tutmurdu. Tərs qolda `length >= 8` qoruyucusu
+     MƏCBURİDİR, yoxsa qısa/zibil ad HƏR adama uyğun gələr.
+
+   ── MƏLUM MƏHDUDİYYƏTLƏR (BMI datası ilə ölçülüb, 22.09.2026) ───────────────
+   * `emitent_benefisiar.b_pincode` — nümunədə BOŞ → benefisiar FİN üzrə tapılmır.
+   * `creditinfoguarantee.pincode` və `telefon` — nümunədə BOŞ → Kred_zamin
+     praktikada YALNIZ ad üzrə işləyir. `guarantee_id` FİN deyil, PASPORTdur
+     (AZE00277678, IIRG9301272 — ölkə prefiksi ilə).
+   * `docfio` — FİN sütunu YOXDUR (`SSN`, `PASPORT` boş; `PASSPORT_ID` = 'AZE',
+     yəni ölkə kodudur). `LAST_NAME/FIRST_NAME/MIDDLE_NAME` də boşdur → yalnız `FIO`.
+   * `y.tel` hazırda HƏMİŞƏ '~'-dir: `AMLexcel.xlsx` şablonunda telefon sütunu
+     yoxdur. Şərtlər silinmədi — şablona `tel` sütunu əlavə edilsə koda
+     toxunmadan işə düşəcək.
+
+   Yoxlama (ən sonda): 11 sətir, hamısında {SIYAHI} olmalıdır.
    ========================================================================== */
 
 SET NOCOUNT ON;
@@ -35,10 +108,8 @@ BEGIN TRY
 BEGIN TRAN;
 
 /* Departament — 90_AML_OracleSorgular.sql ilə EYNİ üsul.
-   ⚠️ Departament adına görə axtarmaq ETİBARSIZDIR (ad «Risk», «Risk İdarəetməsi»,
-   «Təhlükəsizlik»… ola bilər) — NULL qayıdarsa `DepartamentId` NOT NULL olduğu
-   üçün 11 INSERT-in hamısı anlaşılmaz xəta ilə sınardı.
-   Ona görə: mövcud RISK% sorğularının departamenti → yoxsa ilk aktiv → yoxsa dayan. */
+   Departament ADINA görə axtarmaq etibarsızdır («Risk», «Risk İdarəetməsi»…),
+   NULL qayıtsa `DepartamentId` NOT NULL olduğu üçün hamısı sınardı. */
 DECLARE @DepId INT;
 
 SELECT TOP 1 @DepId = DepartamentId FROM OracleSorgular
@@ -56,214 +127,431 @@ BEGIN
 END
 
 /* ⚠️ `OracleSorgular.Kataloq` MƏTN DEYİL, BIT-dir — «Ümumi cari Kataloq»
-   comboboxunda görünsünmü bayrağı (entity: `OracleSorgu.Kataloq`, bool).
-   İlk yazılışda ora kataloq ADI yazılmışdı və script 1-ci INSERT-də sınırdı:
+   comboboxunda görünsünmü bayrağı. İlk yazılışda ora kataloq ADI yazılmışdı
+   və script 1-ci INSERT-də sınırdı:
        Msg 245 — Conversion failed when converting the nvarchar value
        'AML / Məlumat Bazası' to data type bit.
-   Bu 11 sorğu modulun ÖZ ekranına aiddir, ümumi kataloqda görünməməlidir → 0.
-   (90_AML_OracleSorgular.sql-də də eyni: `1, 0, @DepId, …`) */
+   Bu 11 sorğu modulun ÖZ ekranına aiddir → Kataloq = 0. */
+
+DECLARE @Ad NVARCHAR(200), @Mahiyyet NVARCHAR(MAX), @Sql NVARCHAR(MAX);
 
 /* ---------------------------------------------------------------- 1/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_OPEN_ACCOUNTS' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_OPEN_ACCOUNTS',
- N'Məlumat Bazası → Open_Accounts vərəqi. Dövr ərzində açılmış hesablar (3x/4x) + hesabı açan istifadəçi.',
- N'SELECT
-    l.date_open_licsch AS ac_tar,
-    l.licsch AS hn,
-    odb.func_utf8_to_latin(l.name_licsch) AS adi,
-    (
-        SELECT r.u_s_e_r
-        FROM log_accounts r
-        WHERE r.LICSCH = l.licsch
-          AND r.STATUS = ''INSERT''
-          AND r.date_insupddel = (
-              SELECT MAX(r2.date_insupddel)
-              FROM log_accounts r2
-              WHERE r2.LICSCH = r.LICSCH
-                AND r2.STATUS = ''INSERT''
-          )
-    ) AS ad
-FROM ODB.licsch l
-LEFT JOIN (
-    SELECT
-        TO_CHAR(f.tarix, ''dd/mm/yyyy'') AS tarix,
-        TRIM(f.teyinat) AS teyinat,
-        TRIM(f.qn) AS qn,
-        SUBSTR(f.ic_kod, 1, 2) AS ic_kod,
-        TRIM(f.Icraci) AS icra
-    FROM odb.qey_nezaret f
-    WHERE f.tarix BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                      AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
-      AND f.teyinat = ''INSERT''
-) n
-ON SUBSTR(l.licsch, 10, 6) = n.qn
-WHERE l.date_open_licsch BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                              AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
-  AND SUBSTR(l.licsch, 1, 1) IN (3,4)
-ORDER BY l.date_open_licsch, l.licsch',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_OPEN_ACCOUNTS';
+SET @Mahiyyet = N'Məlumat Bazası → Open_Accounts. Dövrdə açılmış hesablar (3x/4x) + hesabı açan icraçı. Uyğunluq: hesabın adı.';
+SET @Sql      = N'select l.date_open_licsch                              ac_tar,
+       nvl(n.icra, ''OLD_REGNOM'')                       icra,
+       l.licsch                                        hn,
+       odb.func_utf8_to_latin(l.name_licsch)           adi,
+       y.a_s_a                                         axtarilan,
+       ''Ad'' uygunluq
+  from odb.licsch l,
+       ( select trim(f.qn) qn, trim(f.icraci) icra
+           from odb.qey_nezaret f
+          where f.tarix between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                            and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+            and f.teyinat = ''INSERT''
+            and f.qn is not null
+          group by trim(f.qn), trim(f.icraci) ) n,
+       ( {SIYAHI} ) y
+ where l.date_open_licsch between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                              and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and substr(l.licsch,1,1) in (''3'',''4'')
+   and substr(l.licsch,10,6) = n.qn(+)
+   and odb.func_utf8_to_latin(upper(l.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+ order by l.date_open_licsch, l.licsch';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ---------------------------------------------------------------- 2/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_KOCURME_DAXILI' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_KOCURME_DAXILI',
- N'Məlumat Bazası → Kochurme_Daxili_hes vərəqi. Daxili hesablar arası köçürmələr.',
- N'SELECT
-    t.date_oper AS tarix,
-    t.debet,
-    t.kredit,
-    t.summa_v_nacval AS mebleg,
-    odb.func_utf8_to_latin(t.primechanie) AS qeyd
-FROM odb.arh_dd t
-WHERE t.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                      AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
-  AND (
-        (SUBSTR(t.debet,1,5) IN (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
-         AND SUBSTR(t.kredit,1,5) IN (''45021'',''45023'',''45029'',''45089''))
-     OR (SUBSTR(t.debet,1,5) IN (''45021'',''45023'',''45029'',''45089'')
-         AND SUBSTR(t.kredit,1,5) IN (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089''))
-      )
-ORDER BY t.recnum',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_KOCURME_DAXILI';
+SET @Mahiyyet = N'Məlumat Bazası → Kochurme_Daxili_hes. Daxili hesablar arası köçürmələr. Uyğunluq: hesab sahibinin adı (arh_dd.name_licsch).';
+SET @Sql      = N'select t.date_oper                                     tarix,
+       t.debet, t.kredit,
+       t.summa_v_nacval                                mebleg,
+       odb.func_utf8_to_latin(t.primechanie)           qeyd,
+       y.a_s_a                                         axtarilan,
+       ''Ad (hesab sahibi)'' uygunluq
+  from odb.arh_dd t, ( {SIYAHI} ) y
+ where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                       and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and ( (substr(t.debet,1,5)  in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
+          and substr(t.kredit,1,5) in (''45021'',''45023'',''45029'',''45089''))
+      or (substr(t.debet,1,5)  in (''45021'',''45023'',''45029'',''45089'')
+          and substr(t.kredit,1,5) in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')) )
+   and odb.func_utf8_to_latin(upper(t.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+ order by t.recnum';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ---------------------------------------------------------------- 3/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_KOCURME_MUSTERI' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_KOCURME_MUSTERI',
- N'Məlumat Bazası → Kochurme_Mushteri_hes vərəqi. Müştəri hesabları ilə köçürmələr (vid_operacii < 96).',
- N'select t.date_oper tarix, t.debet, t.kredit, t.summa_v_inval valuta, t.summa_v_nacval manat, odb.func_utf8_to_latin(t.primechanie) qeyd
-  from odb.arh_dd t
- where t.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                       AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
-   and ((SUBSTR(t.debet,1,5) in (15025,35025,45021,45023,45029,45089)  and (SUBSTR(t.kredit,1,2) in (38,39,40,41) or SUBSTR(t.kredit,1,5) in (35090,35100)) )
-     or (SUBSTR(t.kredit,1,5) in (15025,35025,45021,45023,45029,45089)  and (SUBSTR(t.debet,1,2) in (38,39,40,41) or SUBSTR(t.debet,1,5) in (35090,35100)) ))
-   and (t.vid_operacii < 96 or t.vid_operacii is null)',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_KOCURME_MUSTERI';
+SET @Mahiyyet = N'Məlumat Bazası → Kochurme_Mushteri_hes. Müştəri hesabları üzrə köçürmələr. Uyğunluq: FİN (pincode_or_passport), hesab sahibinin adı, qeyd mətni.';
+SET @Sql      = N'select t.date_oper                                     tarix,
+       t.debet, t.kredit,
+       t.summa_v_inval                                 valuta,
+       t.summa_v_nacval                                manat,
+       odb.func_utf8_to_latin(t.primechanie)           qeyd,
+       y.a_s_a                                         axtarilan,
+       case when t.pincode_or_passport = y.fin then ''FİN''
+            when odb.func_utf8_to_latin(upper(t.name_licsch))
+                 like ''%'' || upper(y.a_s_a) || ''%''     then ''Ad (hesab sahibi)''
+            else ''Ad (qeyd mətnində)'' end              uygunluq
+  from odb.arh_dd t, ( {SIYAHI} ) y
+ where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                       and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and ( (substr(t.debet,1,5)  in (''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
+          and (substr(t.kredit,1,2) in (''38'',''39'',''40'',''41'')
+            or substr(t.kredit,1,5) in (''35090'',''35100'')))
+      or (substr(t.kredit,1,5) in (''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
+          and (substr(t.debet,1,2)  in (''38'',''39'',''40'',''41'')
+            or substr(t.debet,1,5)  in (''35090'',''35100''))) )
+   and (t.vid_operacii < 96 or t.vid_operacii is null)
+   and ( odb.func_utf8_to_latin(upper(t.primechanie))  like ''%'' || upper(y.a_s_a) || ''%''
+      or odb.func_utf8_to_latin(upper(t.name_licsch))  like ''%'' || upper(y.a_s_a) || ''%''
+      or t.pincode_or_passport = y.fin )';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ---------------------------------------------------------------- 4/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_EXCHANGE' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_EXCHANGE',
- N'Məlumat Bazası → Exchange vərəqi. Valyuta mübadiləsi (1005 ↔ 1006).',
- N'select t.date_oper tarix, t.debet, t.kredit, t.summa_v_inval valuta, t.summa_v_nacval manat, odb.func_utf8_to_latin(t.primechanie) qeyd
-  from odb.arh_dd t
- where t.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                       AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
-   and ((substr(t.debet,1,4)=1005 and substr(t.kredit,1,4)=''1006'') or (substr(t.debet,1,4)=1006 and substr(t.kredit,1,4)=''1005''))
- order by recnum',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_EXCHANGE';
+SET @Mahiyyet = N'Məlumat Bazası → Exchange. Valyuta alqı-satqısı (kassa 1005 <-> 1006). Uyğunluq: FİN (pincode_or_passport) və qeyd mətni.';
+SET @Sql      = N'select t.date_oper                                     tarix,
+       t.debet, t.kredit,
+       t.summa_v_inval                                 valuta,
+       t.summa_v_nacval                                manat,
+       odb.func_utf8_to_latin(t.primechanie)           qeyd,
+       y.a_s_a                                         axtarilan,
+       case when t.pincode_or_passport = y.fin then ''FİN''
+            else ''Ad (qeyd mətnində)'' end              uygunluq
+  from odb.arh_dd t, ( {SIYAHI} ) y
+ where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                       and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and ( (substr(t.debet,1,4) = ''1005'' and substr(t.kredit,1,4) = ''1006'')
+      or (substr(t.debet,1,4) = ''1006'' and substr(t.kredit,1,4) = ''1005'') )
+   and ( odb.func_utf8_to_latin(upper(t.primechanie)) like ''%'' || trim(upper(y.a_s_a)) || ''%''
+      or t.pincode_or_passport = y.fin )
+ order by t.recnum';
 
-/* ---------------------------------------------------------------- 5/11  (DÖVRSÜZ) */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_OWNER' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_OWNER',
- N'Məlumat Bazası → Owner vərəqi. Hüquqi şəxs/sahibkar təsisçiləri və payları. DÖVRSÜZ — cari vəziyyət.',
- N'select t.registrac_nomer rn, t.inn_licsch, odb.func_utf8_to_latin(g.name_regnom) ad, t.countrycode olke, t.licsch,
-        odb.func_utf8_to_latin(r.owner_name) own, r.owner_id, r.pincode, r.tesischinin_payi pay, odb.func_utf8_to_latin(r.countrycode) vatan,
-        case when g.yurik=1 then ''Huquqi'' else ''Sahibkar'' end Nov
-   from odb.licsch t, odb.regnomowner r, odb.regnom g, odb.balschkli b
-  where t.registrac_nomer=r.regnom(+) and t.registrac_nomer=g.regnom and (g.yurik=1 or g.predprinimatel=1)
-    and substr(t.licsch,1,5) in b.balsch
-  order by t.registrac_nomer, r.owner_name, t.licsch, g.yurik',
- 1, 0, @DepId, SYSDATETIME(), 0);
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
+
+/* ---------------------------------------------------------------- 5/11 */
+SET @Ad       = N'AML_MB_OWNER';
+SET @Mahiyyet = N'Məlumat Bazası → Owner. Hüquqi şəxs / sahibkar hesablarının təsisçiləri. Uyğunluq: təsisçinin FİN-i, şirkətin VÖEN-i, təsisçinin adı. DÖVRSÜZ.';
+SET @Sql      = N'select distinct
+       t.registrac_nomer                               rn,
+       t.inn_licsch,
+       odb.func_utf8_to_latin(g.name_regnom)           ad,
+       t.countrycode                                   olke,
+       t.licsch,
+       odb.func_utf8_to_latin(r.owner_name)            own,
+       r.owner_id, r.pincode,
+       r.tesischinin_payi                              pay,
+       odb.func_utf8_to_latin(r.countrycode)           vatan,
+       case when g.yurik = 1 then ''Huquqi'' else ''Sahibkar'' end  nov,
+       y.a_s_a                                         axtarilan,
+       case when trim(r.pincode)     = y.fin  then ''FİN''
+            when trim(t.inn_licsch)  = y.voen then ''VÖEN''
+            else ''Ad (təsisçi)'' end                    uygunluq
+  from odb.licsch t, odb.regnomowner r, odb.regnom g, odb.balschkli b, ( {SIYAHI} ) y
+ where t.registrac_nomer = r.regnom
+   and t.registrac_nomer = g.regnom
+   and (g.yurik = 1 or g.predprinimatel = 1)
+   and substr(t.licsch,1,5) in (b.balsch)
+   and ( odb.func_utf8_to_latin(upper(r.owner_name)) like ''%'' || upper(y.a_s_a) || ''%''
+      or trim(r.pincode)    = y.fin
+      or trim(t.inn_licsch) = y.voen )
+ order by t.registrac_nomer, t.licsch';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ---------------------------------------------------------------- 6/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_EMIT_BENEF' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_EMIT_BENEF',
- N'Məlumat Bazası → Emit_benef vərəqi. Emitent və benefisiar məlumatları.',
- N'select to_char(t.date_oper,''dd/mm/yyyy'') tarix, SUBSTR(odb.func_utf8_to_latin(TRIM(k.e_soyadi)||'' ''||TRIM(k.e_adi)),1,30) emi_ad,
-        to_char(k.e_tevellud,''dd/mm/yyyy'') em_dog_tar, SUBSTR(TRIM(k.e_senedin_seriya_ve_nomresi),1,11) emi_sened,
-        SUBSTR(odb.func_utf8_to_latin(TRIM(k.b_soyadi)||'' ''||TRIM(k.b_adi)),1,30) ben_ad, SUBSTR(TRIM(k.b_senedin_seriya_ve_nomresi),1,11) ben_sened,
-        SUBSTR(odb.func_utf8_to_latin(t.primechanie),1,60) qeyd
-   from odb.arh_dd t, odb.emitent_benefisiar k
-  where t.recnum=k.doc_id
-    and t.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                        AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_EMIT_BENEF';
+SET @Mahiyyet = N'Məlumat Bazası → Emit_benef. Əməliyyatın emitenti və benefisiarı. Uyğunluq: FİN (e_pincode/b_pincode) və ad (TƏRS LIKE — bazada 2 hissəli ad saxlanılır).';
+SET @Sql      = N'select t.date_oper                                     tarix,
+       odb.func_utf8_to_latin(trim(k.e_soyadi) || '' '' || trim(k.e_adi))  emi_ad,
+       k.e_tevellud                                    em_dog_tar,
+       trim(k.e_senedin_seriya_ve_nomresi)             emi_sened,
+       odb.func_utf8_to_latin(trim(k.b_soyadi) || '' '' || trim(k.b_adi))  ben_ad,
+       trim(k.b_senedin_seriya_ve_nomresi)             ben_sened,
+       odb.func_utf8_to_latin(t.primechanie)           qeyd,
+       y.a_s_a                                         axtarilan,
+       case when y.fin in (k.e_pincode, k.b_pincode) then ''FİN''
+            when upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(
+                   upper(trim(k.e_soyadi) || '' '' || trim(k.e_adi))) || ''%'' then ''Ad (emitent)''
+            else ''Ad (benefisiar)'' end                 uygunluq
+  from odb.arh_dd t, odb.emitent_benefisiar k, ( {SIYAHI} ) y
+ where t.recnum = k.doc_id
+   and t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                       and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and ( upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(
+              upper(trim(k.e_soyadi) || '' '' || trim(k.e_adi))) || ''%''
+      or upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(
+              upper(trim(k.b_soyadi) || '' '' || trim(k.b_adi))) || ''%''
+      or y.fin in (k.e_pincode, k.b_pincode) )';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ---------------------------------------------------------------- 7/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_UCUNCU_SEXS' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_UCUNCU_SEXS',
- N'Məlumat Bazası → «3-cu shexs» vərəqi. Üçüncü şəxs adından aparılan əməliyyatlar (docfio).',
- N'select t.date_oper tarix, t.debet, t.kredit, t.summa_v_inval valuta, t.summa_v_nacval manat, t.kurs_valuti kurs,
-        odb.func_utf8_to_latin(t.primechanie) qeyd, odb.func_utf8_to_latin(t.fio) fio22
-   from odb.docfio t
-  where t.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'')
-                        AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
-    and not t.recnum is null
-  order by t.date_oper',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_UCUNCU_SEXS';
+SET @Mahiyyet = N'Məlumat Bazası → 3-cu shexs. docfio üzrə 3-cü şəxs əməliyyatları. Uyğunluq: YALNIZ ad (docfio-da FİN sütunu yoxdur — SSN/PASPORT boşdur).';
+SET @Sql      = N'select t.date_oper                                     tarix,
+       t.debet, t.kredit,
+       t.summa_v_inval                                 valuta,
+       t.summa_v_nacval                                manat,
+       t.kurs_valuti                                   kurs,
+       odb.func_utf8_to_latin(t.primechanie)           qeyd,
+       odb.func_utf8_to_latin(t.fio)                   fio22,
+       y.a_s_a                                         axtarilan,
+       ''Ad (3-cü şəxs)'' uygunluq
+  from odb.docfio t, ( {SIYAHI} ) y
+ where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                       and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and t.recnum is not null
+   and ( odb.func_utf8_to_latin(upper(t.fio)) like ''%'' || upper(y.a_s_a) || ''%''
+      or ( length(trim(t.fio)) >= 8
+           and upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(upper(trim(t.fio))) || ''%'' ) )';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 /* ---------------------------------------------------------------- 8/11 */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_TRANSFER' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_TRANSFER',
- N'Məlumat Bazası → Transfer vərəqi. Xarici köçürmələr — 4 mənbənin UNION-u (inval, nacval, swift, postupl).',
- N'select t.* from
-(select v.date_oper tarix, odb.func_utf8_to_latin(v.account_name) emit_name, odb.func_utf8_to_latin(v.beneficiary_name) ben_name, v.amount, v.currency valuta, odb.func_utf8_to_latin(v.comments) cmnt
-   from odb.doc_vnesh_inval v
-  where v.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'') AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
- union all
- select v.date_oper tarix, odb.func_utf8_to_latin(v.name_debet) emit_name, odb.func_utf8_to_latin(v.name_credit) ben_name, v.summa_v_nacval amount, ''AZN'' valuta, ''Odemeler '' cmnt
-   from odb.doc_vnesh_nacval v
-  where v.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'') AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
- union all
- select v.date_oper tarix, odb.func_utf8_to_latin(v.sender_name) emit_name, odb.func_utf8_to_latin(v.beneficiary_name) ben_name, v.amount, v.currency valuta, ''Daxilolma'' cmnt
-   from odb.doc_vnesh_swift v
-  where v.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'') AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'')
- union all
- select v.date_oper tarix, odb.func_utf8_to_latin(v.name_debet) emit_name, odb.func_utf8_to_latin(v.kredit_name) ben_name, v.sum1 amount, ''AZN'' valuta, ''Daxilolma'' cmnt
-   from odb.doc_vnesh_postupl v
-  where v.date_oper BETWEEN TO_DATE(''{DOVREVVEL}'', ''DD-MM-YYYY'') AND TO_DATE(''{DOVRSON}'', ''DD-MM-YYYY'') ) t
- order by t.tarix, t.cmnt',
- 1, 0, @DepId, SYSDATETIME(), 0);
+SET @Ad       = N'AML_MB_TRANSFER';
+SET @Mahiyyet = N'Məlumat Bazası → Transfer. 4 mənbəli ödəmə/mədaxil. Uyğunluq: FİN və VÖEN (regnom join — FinNex ƏLAVƏSİ) + göndərən/alan adı.';
+SET @Sql      = N'select t.tarix, t.emit_name, t.ben_name, t.amount, t.valuta, t.cmnt, t.voen, t.fin,
+       y.a_s_a                                         axtarilan,
+       case when trim(t.fin)  = y.fin  then ''FİN''
+            when trim(t.voen) = y.voen then ''VÖEN''
+            when upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%'' then ''Ad (göndərən)''
+            else ''Ad (alan)'' end                       uygunluq
+  from (
+    select v.date_oper                                 tarix,
+           odb.func_utf8_to_latin(v.account_name)      emit_name,
+           odb.func_utf8_to_latin(v.beneficiary_name)  ben_name,
+           v.amount, v.currency valuta,
+           odb.func_utf8_to_latin(v.comments)          cmnt,
+           r.inn_regnom voen, r.pincode fin
+      from odb.doc_vnesh_inval v, odb.regnom r
+     where v.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                           and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+       and substr(v.account_no,10,6) = r.regnom(+)
+    union all
+    select v.date_oper,
+           odb.func_utf8_to_latin(v.name_debet),
+           odb.func_utf8_to_latin(v.name_credit),
+           v.summa_v_nacval, ''AZN'', ''Odemeler '',
+           r.inn_regnom, r.pincode
+      from odb.doc_vnesh_nacval v, odb.regnom r
+     where v.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                           and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+       and substr(v.debet,10,6) = r.regnom(+)
+    union all
+    select v.date_oper,
+           odb.func_utf8_to_latin(v.sender_name),
+           odb.func_utf8_to_latin(v.beneficiary_name),
+           v.amount, v.currency, ''Daxilolma'',
+           r.inn_regnom, r.pincode
+      from odb.doc_vnesh_swift v, odb.regnom r
+     where v.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                           and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+       and substr(lpad(v.beneficiary_account,28,''0''),18,6) = r.regnom(+)
+    union all
+    select v.date_oper,
+           odb.func_utf8_to_latin(v.name_debet),
+           odb.func_utf8_to_latin(v.kredit_name),
+           v.sum1, ''AZN'', ''Daxilolma'',
+           r.inn_regnom, r.pincode
+      from odb.doc_vnesh_postupl v, odb.regnom r
+     where v.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
+                           and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+       and substr(lpad(v.kredit,28,''0''),18,6) = r.regnom(+)
+  ) t, ( {SIYAHI} ) y
+ where ( upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%''
+      or upper(trim(t.ben_name))  like ''%'' || upper(y.a_s_a) || ''%''
+      or trim(t.fin)  = y.fin
+      or trim(t.voen) = y.voen )
+ order by t.tarix, t.cmnt';
 
-/* ---------------------------------------------------------------- 9/11  (DÖVRSÜZ) */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_ELAQELI_SEXS' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_ELAQELI_SEXS',
- N'Məlumat Bazası → A_M_L vərəqi. Əlaqəli şəxslər: imza səlahiyyətli + nümayəndə + əlaqəli hüquqi şəxs. DÖVRSÜZ.',
- N'select distinct t.* from
-(select t.regnom, odb.func_utf8_to_latin(UPPER(t.soyadi||'' ''||t.adi||'' ''||t.ata_adi)) A_S_A, odb.func_utf8_to_latin(t.fin) fin, to_date(t.doguldugu_tarix, ''DD-MM-YYYY'') dog_tar, ''ELA_SHEXS'' tip from odb.imza_huquqi_olan_shexsler t
- union all
- select t.regnom, odb.func_utf8_to_latin(UPPER(t.soyadi||'' ''||t.adi||'' ''||t.ata_adi)) A_S_A, odb.func_utf8_to_latin(t.fin) fin, to_date(t.doguldugu_tarix, ''DD-MM-YYYY'') dog_tar, ''NUMAYEN'' tip from odb.numayende t
- union all
- select t.regnom, odb.func_utf8_to_latin(UPPER(t.adi)) A_S_A, odb.func_utf8_to_latin(t.voen) fin, null dog_tar, ''ELA_HUQUQ'' tip from odb.elaqeli_huquqi_shexsler t ) t
- where length(trim(t.a_s_a))>0 order by t.regnom',
- 1, 0, @DepId, SYSDATETIME(), 0);
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
-/* ---------------------------------------------------------------- 10/11 (DÖVRSÜZ) */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_KREDIT_ZAMIN' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_KREDIT_ZAMIN',
- N'Məlumat Bazası → Kred_zamin vərəqi. Açıq kreditlərin zaminləri. DÖVRSÜZ.',
- N'select t.licschkre, t.subschkre sk, g.guarantee_id id, odb.func_utf8_to_latin(g.guarantee_name) zamin, t.summakre mabl, g.pincode
-   from odb.licschkre t, odb.creditinfoguarantee g
-  where t.licschkre=g.licschkre and t.subschkre=g.subschkre and t.date_close is null and t.bs_vbs is not null and g.guarantee_id is not null',
- 1, 0, @DepId, SYSDATETIME(), 0);
+/* ---------------------------------------------------------------- 9/11 */
+SET @Ad       = N'AML_MB_ELAQELI_SEXS';
+SET @Mahiyyet = N'Məlumat Bazası → A_M_L. Əlaqəli şəxslər / nümayəndələr / əlaqəli hüquqi şəxslər. 3-cü qolda fin sütunu VÖEN saxlayır — kod_novu ilə ayrılır. DÖVRSÜZ.';
+SET @Sql      = N'select distinct
+       t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
+       y.a_s_a                                         axtarilan,
+       case when t.kod_novu = ''FIN''  and t.fin = y.fin  then ''FİN''
+            when t.kod_novu = ''VOEN'' and t.fin = y.voen then ''VÖEN''
+            else ''Ad'' end                              uygunluq
+  from (
+    select t.regnom,
+           odb.func_utf8_to_latin(upper(t.soyadi || '' '' || t.adi || '' '' || t.ata_adi)) a_s_a,
+           odb.func_utf8_to_latin(t.fin) fin, ''FIN'' kod_novu,
+           case when regexp_like(trim(t.doguldugu_tarix), ''^[0-9]{2}-[0-9]{2}-[0-9]{4}$'')
+                then to_date(trim(t.doguldugu_tarix),''DD-MM-YYYY'') end dog_tar,
+           ''ELA_SHEXS'' tip
+      from odb.imza_huquqi_olan_shexsler t
+    union all
+    select t.regnom,
+           odb.func_utf8_to_latin(upper(t.soyadi || '' '' || t.adi || '' '' || t.ata_adi)),
+           odb.func_utf8_to_latin(t.fin), ''FIN'',
+           case when regexp_like(trim(t.doguldugu_tarix), ''^[0-9]{2}-[0-9]{2}-[0-9]{4}$'')
+                then to_date(trim(t.doguldugu_tarix),''DD-MM-YYYY'') end,
+           ''NUMAYEN''
+      from odb.numayende t
+    union all
+    select t.regnom,
+           odb.func_utf8_to_latin(upper(t.adi)),
+           odb.func_utf8_to_latin(t.voen), ''VOEN'',
+           null,
+           ''ELA_HUQUQ''
+      from odb.elaqeli_huquqi_shexsler t
+  ) t, ( {SIYAHI} ) y
+ where length(trim(t.a_s_a)) > 0
+   and ( upper(t.a_s_a) like ''%'' || upper(y.a_s_a) || ''%''
+      or ( length(trim(t.a_s_a)) >= 8
+           and upper(y.a_s_a) like ''%'' || upper(trim(t.a_s_a)) || ''%'' )
+      or (t.kod_novu = ''FIN''  and t.fin = y.fin)
+      or (t.kod_novu = ''VOEN'' and t.fin = y.voen) )
+ order by t.regnom';
 
-/* ---------------------------------------------------------------- 11/11 (DÖVRSÜZ) */
-IF NOT EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = N'AML_MB_AKTIV_HESABLAR' AND ISNULL(Silinib,0)=0)
-INSERT INTO OracleSorgular (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
-VALUES (N'AML_MB_AKTIV_HESABLAR',
- N'Məlumat Bazası → Aktiv_hesablar vərəqi. Bağlanmamış hesabı olan müştərilər və ilk açılış tarixi. DÖVRSÜZ.',
- N'select r.regnom rn, min(t.date_open_licsch) ac_tar, odb.func_utf8_to_latin(r.name_regnom) adi
-   from odb.licsch t, odb.regnom r
-  where t.registrac_nomer = r.regnom(+) and length(t.licsch) = 20 and t.date_close_licsch is null
-  group by r.regnom, r.name_regnom
-  order by r.regnom',
- 1, 0, @DepId, SYSDATETIME(), 0);
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
+
+/* ---------------------------------------------------------------- 10/11 */
+SET @Ad       = N'AML_MB_KREDIT_ZAMIN';
+SET @Mahiyyet = N'Məlumat Bazası → Kred_zamin. Açıq kreditlərin zaminləri. DİQQƏT: creditinfoguarantee.pincode və telefon əsasən BOŞDUR — praktikada yalnız ad işləyir. DÖVRSÜZ.';
+SET @Sql      = N'select t.licschkre, t.subschkre                        sk,
+       g.guarantee_id                                  id,
+       odb.func_utf8_to_latin(g.guarantee_name)        zamin,
+       t.summakre                                      mabl,
+       g.pincode,
+       y.a_s_a                                         axtarilan,
+       case when trim(g.pincode) = y.fin then ''FİN'' else ''Ad (zamin)'' end  uygunluq
+  from odb.licschkre t, odb.creditinfoguarantee g, ( {SIYAHI} ) y
+ where t.licschkre = g.licschkre
+   and t.subschkre = g.subschkre
+   and t.date_close is null
+   and t.bs_vbs is not null
+   and g.guarantee_id is not null
+   and ( odb.func_utf8_to_latin(upper(g.guarantee_name)) like ''%'' || trim(upper(y.a_s_a)) || ''%''
+      or ( length(trim(g.guarantee_name)) >= 8
+           and upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(upper(trim(g.guarantee_name))) || ''%'' )
+      or trim(g.pincode) = y.fin
+      or trim(translate(nvl(g.telefon,''0''),''(-)'','' ''))
+             like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%'' )';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
+
+/* ---------------------------------------------------------------- 11/11 */
+SET @Ad       = N'AML_MB_AKTIV_HESABLAR';
+SET @Mahiyyet = N'Məlumat Bazası → Aktiv_hesablar. Açıq hesabı olan müştərilər (müştəri başına 1 sətir). Dörd kriteriya: ad + FİN + VÖEN + telefon. DÖVRSÜZ.';
+SET @Sql      = N'select min(t.date_open_licsch)                         ac_tar,
+       r.regnom                                        rn,
+       odb.func_utf8_to_latin(r.name_regnom)           adi,
+       y.a_s_a                                         axtarilan,
+       case when trim(r.pincode)    = y.fin  then ''FİN''
+            when trim(r.inn_regnom) = y.voen then ''VÖEN''
+            when trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
+                 like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%''
+                 then ''Telefon''
+            else ''Ad'' end                              uygunluq
+  from odb.licsch t, odb.regnom r, ( {SIYAHI} ) y
+ where t.registrac_nomer = r.regnom
+   and length(t.licsch) = 20
+   and t.date_close_licsch is null
+   and ( odb.func_utf8_to_latin(upper(r.name_regnom)) like ''%'' || trim(upper(y.a_s_a)) || ''%''
+      or trim(r.pincode)    = y.fin
+      or trim(r.inn_regnom) = y.voen
+      or trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
+             like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%'' )
+ group by r.regnom, r.name_regnom, r.pincode, r.inn_regnom, r.mobilniy, y.a_s_a
+ order by r.regnom';
+
+IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
+    UPDATE OracleSorgular
+       SET SorguMetni = @Sql, Mahiyyet = @Mahiyyet, Aktiv = 1
+     WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0;
+ELSE
+    INSERT INTO OracleSorgular
+           (SorguAdi, Mahiyyet, SorguMetni, Aktiv, Kataloq, DepartamentId, YaradilmaTarixi, Silinib)
+    VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, SYSDATETIME(), 0);
 
 COMMIT TRAN;
-PRINT N'Məlumat Bazası sorğuları hazırdır (11 ədəd).';
+PRINT N'Məlumat Bazası sorğuları hazırdır (11 ədəd, siyahı üzrə süzgəcli).';
 
-/* ── YOXLAMA — 11 sətir qayıtmalıdır ─────────────────────────────────── */
-SELECT Id, SorguAdi, Aktiv, DepartamentId,
-       CASE WHEN SorguMetni LIKE N'%{DOVREVVEL}%' THEN N'dövrlü' ELSE N'dövrsüz' END AS Novu,
-       LEN(SorguMetni) AS SorguUzunlugu
+/* ── YOXLAMA — 11 sətir qayıtmalı, «Siyahı» sütununun HAMISI «var» olmalıdır ── */
+SELECT SorguAdi, Aktiv, DepartamentId,
+       CASE WHEN SorguMetni LIKE N'%{DOVREVVEL}%' THEN N'dövrlü' ELSE N'dövrsüz' END AS Dovr,
+       CASE WHEN SorguMetni LIKE N'%{SIYAHI}%'    THEN N'var'    ELSE N'YOXDUR!' END AS Siyahi,
+       LEN(SorguMetni) AS Uzunluq
   FROM OracleSorgular
  WHERE SorguAdi LIKE N'AML_MB_%' AND ISNULL(Silinib,0) = 0
  ORDER BY SorguAdi;
@@ -276,20 +564,11 @@ BEGIN CATCH
 END CATCH
 
 /* ============================================================================
-   GERİ QAYTARMA (lazım olsa) — script-i işlətdikdən sonra fikrini dəyişsən.
-   ⚠️ ŞƏRHDƏN ÇIXARIB İŞLƏT, yuxarıdakı ilə birlikdə YOX.
+   GERİ QAYTARMA — ŞƏRHDƏN ÇIXARIB AYRICA İŞLƏT.
 
-   Yumşaq silmə (tövsiyə olunur — tarixçə qalır):
-
-       UPDATE OracleSorgular
-          SET Silinib = 1
+       UPDATE OracleSorgular SET Silinib = 1
         WHERE SorguAdi LIKE N'AML_MB_%' AND ISNULL(Silinib,0) = 0;
 
-   Tam silmə (yalnız səhv yazılıbsa və heç işlədilməyibsə):
-
-       DELETE FROM OracleSorgular WHERE SorguAdi LIKE N'AML_MB_%';
-
-   Sorğunun MƏTNİNİ dəyişmək üçün silib yenidən əlavə etməyə ehtiyac yoxdur —
-   Admin → Oracle Sorğular ekranından redaktə et. Servis onları ADA görə
-   oxuyur (`AML_MB_*`), Id-yə görə yox.
+   Sorğu MƏTNİNİ dəyişmək üçün silməyə ehtiyac yoxdur — Admin → Oracle Sorğular
+   ekranından redaktə et. Servis onları ADA görə oxuyur, Id-yə görə yox.
    ========================================================================== */
