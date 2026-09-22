@@ -114,6 +114,17 @@
             </div>
             <i class="bi bi-chevron-right rk-arrow"></i>
         </a>
+        @* 22.09.2026: əvvəl sol menyuda idi — istifadəçi qərarı ilə kart kimi bura köçdü.
+           «Sorğular» bölməsinə QOYULMADI: o bölmə `Model.Hesabatlar.Any()` şərti ilə
+           render olunur, yəni OracleSorgular boş qalsa kart tamamilə yoxa çıxardı. *@
+        <a asp-action="MelumatBazasi" class="rk-card">
+            <div class="rk-ic"><i class="bi bi-search"></i></div>
+            <div class="rk-body">
+                <div class="rk-title">Məlumat Bazası</div>
+                <div class="rk-sub">Axtarılanlar siyahısını (Excel) bank müştəriləri ilə yoxla — ad/VÖEN/FİN</div>
+            </div>
+            <i class="bi bi-chevron-right rk-arrow"></i>
+        </a>
     </div>
 
     @* ---- Adi hesabat kartları (tag-siz) ---- *@

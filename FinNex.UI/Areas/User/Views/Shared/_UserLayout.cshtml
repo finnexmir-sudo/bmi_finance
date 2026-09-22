@@ -1419,13 +1419,12 @@
             case "risk":
                 {
                     <div class="fn-nav-label">Risk Departamenti</div>
+                    @* «Məlumat Bazası» QƏSDƏN burada DEYİL (22.09.2026, istifadəçi qərarı) —
+                       girişi Risk panelindəki «AML hesabatları» kartıdır, «Hesab üzrə sorğu»
+                       ilə yanaşı. Sidebar yalnız bölmənin kökünü saxlayır. *@
                     <a asp-area="Risk" asp-controller="Dashboard" asp-action="Index"
                        class="fn-nav-item @(currentAction == "Index" ? "active" : "")">
                         <i class="bi bi-grid"></i> Hesabatlar
-                    </a>
-                    <a asp-area="Risk" asp-controller="Dashboard" asp-action="MelumatBazasi"
-                       class="fn-nav-item @(currentAction == "MelumatBazasi" || currentAction == "MelumatBazasiYukle" ? "active" : "")">
-                        <i class="bi bi-search"></i> Məlumat Bazası
                     </a>
                 }
                 break;
