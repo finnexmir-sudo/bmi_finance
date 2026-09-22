@@ -34,6 +34,15 @@ public sealed class MelumatBazasiNeticeDto
     public DateTime SonTarix { get; set; }
     public List<MelumatBazasiVereqDto> Vereqler { get; set; } = new();
 
+    /// <summary>Exceldən neçə şəxs axtarıldı (hədd: <c>BmiLatin.MaxSetir</c>).</summary>
+    public int AxtarilanSay { get; set; }
+
+    /// <summary>`true` — ad şərti söndürülüb, yalnız FİN/VÖEN üzrə axtarılıb.</summary>
+    public bool YalnizFinVoen { get; set; }
+
+    /// <summary>Paket alındı, amma deməli bir şey var (məs. siyahı kəsildi).</summary>
+    public string? Xeberdarliq { get; set; }
+
     /// <summary>Paket bütövlükdə alınmadısa (məs. Oracle bağlanmadı).</summary>
     public string? Xeta { get; set; }
 

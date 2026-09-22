@@ -1058,6 +1058,136 @@ soruş — özbaşına fərz etmə.
 Boş sətir şərti: `ad`, `VÖEN`, `FİN` **üçü də** boşdursa sətir atılır. Yalnız
 «Növü» dolu olması sətri saxlatmır — axtarılacaq heç nə yoxdur.
 
+## AML → «Məlumat Bazası» — BMI-nin İKİ NÜSXƏSİ VAR (22.09.2026, KRİTİK)
+
+BMI-də bu hesabatın **iki** implementasiyası mövcuddur və onlar **eyni deyil**:
+
+| Nüsxə | Yer | `odb.aml_yoxlama` |
+|---|---|---|
+| C# | `BMI/AML/Sorgular/MelumatBazasi.cs` | **YOXDUR** — sorğular bütün dövrü qaytarır |
+| **FoxPro (əsl)** | `melumat_bazasi_kodlari.prg` | **11 sorğunun HAMISINDA var** |
+
+FinNex-ə əvvəlcə **C# nüsxəsi** köçürülmüşdü, yəni hesabat siyahı üzrə
+**süzmürdü**. Əsl məntiq FoxPro-dadır: hesabat heç vaxt «bütün dövr» olmayıb,
+həmişə axtarılan şəxslər siyahısı üzrə süzülüb.
+
+**Oracle-a yazmaq qadağan olduğu üçün** `aml_yoxlama` cədvəli `{SIYAHI}` tokeni
+ilə əvəz olunub — Exceldən oxunan şəxslər sətiriçi blok kimi yapışdırılır:
+
+```sql
+from odb.arh_dd t,
+     ( select 'HUSEYNOV SAMIR MIRHUSEYN' a_s_a, '1EZVKMS' fin, '~' voen, '~' tel from dual
+       union all select 'QARADAG TIKINTI MMC', '~', '1234567890', '~' from dual ) y
+```
+
+Sütun adları BMI ilə **eynidir** (`a_s_a / fin / voen / tel`), ona görə 11 sorğunun
+`where` hissəsi olduğu kimi köçüb. Quraşdırma: `docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql`.
+
+⚠️ **`{SIYAHI}` tokeni olmayan sorğu = köhnə variant.** `Replace` səssizcə heç nə
+etməz və sorğu bütün dövrü qaytarar; istifadəçi isə onu «axtarışın nəticəsi» sanar.
+`MelumatBazasiService` bunu **açıq yoxlayır** və vərəqə xəta yazır.
+
+⚠️ **Boş siyahı ilə icra etmə** — `( ) y` sintaksis xətasıdır. Servis əvvəlcədən dayanır.
+
+⚠️ **Boş ad göndərmə** — `like '%%'` **BÜTÜN sətirləri** qaytarar. Boş xanalara
+`'~'`, söndürülən ad şərtinə `'~~AD_YOXDUR~~'` sentineli yazılır (`null` YOX:
+Oracle-da `''` elə `null`-dır və `union all` qollarında tip qarışıqlığı yaradır).
+
+### `func_utf8_to_latin` XƏRİTƏSİ — `Ə → A`-dır, `E` DEYİL
+
+BMI-də ölçülüb (22.09.2026):
+
+```
+odb.func_utf8_to_latin('ƏLİYEVA ÜLVİYYƏ ŞÖVQİ İSMAYIL ÇƏMƏNZƏMİNLİ')
+     →  ALIYEVA ULVIYYA SOVQI ISMAYIL CAMANZAMINLI
+```
+
+`Ə→A`  `İ→I`  `Ü→U`  `Ö→O`  `Ş→S`  `Ç→C`  `Ğ→G`
+
+Sorğularda müqayisə həmin funksiyanın **çıxışı** ilə gedir, ona görə Exceldən
+gələn ad da eyni xəritədən keçməlidir — **`FinNex.Application/Helpers/Aml/BmiLatin.cs`**.
+
+🔴 **`DashboardController.Sadeles` BU İŞ ÜÇÜN YARAMIR** — o `ə → e` edir (Excel
+BAŞLIQLARINI tanımaq üçün yazılıb, orada düzgündür). İşlətsən «MƏLAHƏT» → `MELAHET`
+olar, bazada isə `MALAHAT`-dır: **heç vaxt tapılmaz və heç bir xəta verməz**.
+
+`BmiLatin.Tehlukesiz` həm də ağ siyahı tətbiq edir (`A–Z 0–9 . - / & '`, apostrof
+ikiləşdirilir) — mətn istifadəçinin Excel faylından gəlir və birbaşa SQL-ə
+yapışdırılır (`IOracleService` bind parametri qəbul etmir).
+
+### Mənbələrdə HANSI AÇAR VAR — «FİN üzrə axtaraq» hər yerdə işləmir
+
+BMI datası ilə yoxlanıb (22.09.2026):
+
+| Vərəq | Ad | FİN | VÖEN |
+|---|---|---|---|
+| Aktiv_hesablar | `name_regnom` | `pincode` | **`inn_regnom`** |
+| Owner | `owner_name` | `pincode` | `inn_licsch` |
+| A_M_L | `a_s_a` | `fin` | 3-cü qolda `fin` sütunu **VÖEN saxlayır** |
+| Kochurme_Mushteri | `primechanie`, `name_licsch` | `pincode_or_passport` | — |
+| Exchange | `primechanie` | `pincode_or_passport` | — |
+| Emit_benef | e/b adı | `e_pincode` (**`b_pincode` BOŞ**) | — |
+| Kred_zamin | `guarantee_name` | `pincode` — **BOŞ** | — |
+| Open_Accounts, Kochurme_Daxili, 3-cu shexs | ad | **yoxdur** | — |
+| Transfer | ad | `regnom` join ilə | `regnom` join ilə |
+
+**«Yalnız FİN/VÖEN» rejimində 4 vərəq həmişə boş gəlir** — səhv deyil, o
+mənbələrdə sütun yoxdur. Ekranda bu, açıq yazılıb.
+
+Boş çıxan sütunlar (`b_pincode`, `creditinfoguarantee.pincode`/`telefon`,
+`docfio.ssn`/`pasport`) — şərtlər **silinməyib**, doldurulsa işə düşəcək.
+`creditinfoguarantee.guarantee_id` FİN deyil, **pasportdur** (`AZE00277678`).
+`docfio.passport_id` = `AZE`, yəni **ölkə kodudur** — adı yanıldıcıdır.
+
+### AD UZUNLUĞU — `like` İSTİQAMƏTİ SƏSSİZCƏ SINIR
+
+Bazada ad bəzən **2 hissəlidir** (`soyadi||' '||adi`), Exceldə isə **3**
+(«SOYAD AD ATAADI»). `«HUSEYNOV SAMIR» like '%HUSEYNOV SAMIR MIRHUSEYN%'` →
+**heç vaxt tutmur**, çünki axtarılan mətn hədəfdən uzundur.
+
+Düzəliş — **tərs qol** əlavə olunur (`Emit_benef`, `3-cu shexs`, `A_M_L`, `Kred_zamin`):
+
+```sql
+or ( length(trim(<ad_sütunu>)) >= 8
+     and upper(y.a_s_a) like '%' || upper(trim(<ad_sütunu>)) || '%' )
+```
+
+⚠️ **`length >= 8` qoruyucusu MƏCBURİDİR** — qısa/zibil ad (`A`, `-`) tərs qolda
+**HƏR adama** uyğun gələr və vərəq minlərlə yalançı sətirlə dolar.
+
+### BMI-də tapılan və düzəldilən səhvlər
+
+| # | Harada | Nə |
+|---|---|---|
+| 1 | Owner | `(A and B or C)` — mötərizə yoxdur. `balschkli` cədvəlinin **yeganə** bağlantısı `A`-dır; FİN uyğun gələndə o qol keçilir və cədvəl **dekart hasili** verir. `distinct` çıxışı gizlədir, amma Oracle milyonlarla cütü qurub atır → **paketin ən yavaş yeri**. Düzəlişdən sonra **sətir sayı azalır** (4396-dan) |
+| 2 | Open_Accounts | `icra` sütunu `qey_nezaret`-dəndir; C# nüsxəsi onu atıb `log_accounts`-a hər sətir üçün **iç-içə MAX** qoymuşdu |
+| 3 | Open_Accounts | `qey_nezaret` alt sorğusu `qn` üzrə təkrarlanırdı → LEFT JOIN hesab sətrini **ikiləşdirirdi** |
+| 4 | Exchange / Kochurme | `substr()` mətn qaytarır, amma hesab kodları **rəqəm** yazılmışdı — Exchange-də **eyni sətirdə** biri dırnaqlı, biri dırnaqsız. Hamısı dırnağa alındı (ORA-01722 qoruması) |
+| 5 | A_M_L | `to_date(doguldugu_tarix)` **maskasız** idi. Sütun VARCHAR2-dur, format `DD-MM-YYYY`; `regexp_like` qoruyucusu da əlavə edildi ki, bir pozuq sətir bütün vərəqi sındırmasın |
+
+### Excel şablonu — HƏR VƏRƏQİN DATA SƏTRİ FƏRQLİDİR
+
+Şablon: `FinNex.UI/App_Data/Templates/Melumat_bazasi.xlsx` (BMI-nin öz faylı,
+data sətirləri təmizlənib: 4,3 MB → 21 KB). Sıfırdan qurmuruq — `Esas_Sehife`
+vərəqi hazırdır (`COUNT(...)` + `=HYPERLINK("#'"&C5&"'!A1","Bax")`).
+
+| Vərəq | Data sətri |
+|---|---|
+| **Emit_benef** | **4** |
+| **Kred_zamin** | **5** |
+| qalan 9-u | **6** |
+
+Bu sətirlər `Esas_Sehife`-dəki `COUNT` aralıqları ilə **bağlıdır** — səhv sətirdən
+yazsan başlıq üstələnər **və** «Nəticə sayı» yanlış çıxar, heç bir xəta olmaz.
+`Esas_Sehife` **A sütununu** sayır, ona görə № xanası mütləq yazılmalıdır.
+
+⚠️ **`wb.SetForceFormulaRecalculation(true)` MƏCBURİDİR** — NPOI formulu
+hesablamır, yalnız mətnini saxlayır. Bunsuz «Nəticə sayı» və vərəqlərdəki
+`=Aktiv_hesablar!B4` istinadları **keşlənmiş (boş) dəyərlə** açılar.
+
+⚠️ Stilləri (`CreateCellStyle`) **bir dəfə** yarat — hər xana üçün çağırsan
+NPOI-nin 64 000 stil həddinə dəyər və fayl açılmaz olar.
+
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
 Toplu Maaş ekranının aşağı zolağında `Gross`, `Cəmi tutulma` və `NET` **bir-birini

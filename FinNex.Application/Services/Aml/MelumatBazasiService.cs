@@ -1,5 +1,7 @@
 using FinNex.Application.DTOs.Aml;
+using FinNex.Application.DTOs.Risk;
 using FinNex.Application.DTOs.Sorgular;
+using FinNex.Application.Helpers.Aml;
 using FinNex.Application.Interfaces.Aml;
 using FinNex.Application.Interfaces.Oracle;
 using FinNex.Application.Interfaces.Sorgular;
@@ -10,14 +12,24 @@ namespace FinNex.Application.Services.Aml;
 /// AML → «Məlumat Bazası» (BMI: <c>AML/Sorgular/MelumatBazasi.cs</c>).
 ///
 /// ── NƏDİR ────────────────────────────────────────────────────────────────
-/// BMI-də forma İKİ tarixdən ibarətdir («Əvvəlki ay son iş günü» — «Cari ay
-/// son iş günü») və «Ümumi sorğu» düyməsi <c>excelDoldur()</c>-u çağırır:
-/// 11 Oracle SELECT icra olunur, hər biri hazır `Melumat bazasi.xlsx`
-/// şablonunun ÖZ VƏRƏQİNƏ (6-cı sətirdən) yazılır və fayl açılır.
+/// İKİ tarix + AXTARILANLAR SİYAHISI → 11 Oracle SELECT → hazır
+/// `Melumat bazasi.xlsx` şablonunun 11 vərəqi + `Esas_Sehife` xülasəsi.
 ///
-/// ⚠️ BU, «Axtarılanlar» Excel yoxlaması DEYİL. Köhnə BMI-də ikisi AYRI
-/// formadır (`MelumatBazasi.cs` və `AMLexcel.cs`) və 22.09.2026-ya qədər
-/// FinNex-ə səhvən ikincisi «Məlumat Bazası» adı ilə köçürülmüşdü.
+/// ⚠️ SİYAHI MƏCBURİDİR. Əsl BMI proqramı FoxPro-dur
+/// (`melumat_bazasi_kodlari.prg`) və 11 sorğunun HAMISI
+/// <c>odb.aml_yoxlama</c> cədvəli ilə birləşir — yəni hesabat HEÇ VAXT
+/// «bütün dövr» demək olmayıb, həmişə siyahı üzrə süzülüb.
+///
+/// 22.09.2026-ya qədər FinNex-ə BMI-nin C# nüsxəsi (`MelumatBazasi.cs`)
+/// köçürülmüşdü və orada `aml_yoxlama` ÜMUMİYYƏTLƏ YOXDUR → sorğular
+/// süzgəcsiz idi. İndi cədvəl <c>{SIYAHI}</c> tokeni ilə əvəz olunub:
+/// Exceldən oxunan şəxslər <c>select … from dual union all</c> bloku kimi
+/// yapışdırılır (Oracle-a yazmaq qadağandır — CLAUDE.md). Sütun adları
+/// BMI ilə eynidir (<c>a_s_a / fin / voen / tel</c>), ona görə 11 sorğunun
+/// `where` hissəsi BMI-dən OLDUĞU KİMİ köçüb.
+///
+/// Siyahı <see cref="BmiLatin"/> ilə hazırlanır — Azəri hərfləri BMI-nin
+/// <c>func_utf8_to_latin</c> xəritəsi ilə ASCII-yə endirilir (`Ə → A`!).
 ///
 /// ── TARİX ARALIĞI ────────────────────────────────────────────────────────
 /// 11 sorğudan **7-si** dövr qəbul edir (`{DOVREVVEL}` / `{DOVRSON}`), **4-ü**
@@ -87,15 +99,50 @@ public class MelumatBazasiService : IMelumatBazasiService
             && string.Equals((x.SorguAdi ?? "").Trim(), ad, StringComparison.OrdinalIgnoreCase))?.SorguMetni;
     }
 
-    public async Task<MelumatBazasiNeticeDto> HazirlaAsync(DateTime basTarix, DateTime sonTarix, CancellationToken ct = default)
+    public async Task<MelumatBazasiNeticeDto> HazirlaAsync(
+        DateTime basTarix,
+        DateTime sonTarix,
+        IReadOnlyList<AxtarisSetriDto> axtarilanlar,
+        bool yalnizFinVoen = false,
+        CancellationToken ct = default)
     {
-        var netice = new MelumatBazasiNeticeDto { BasTarix = basTarix.Date, SonTarix = sonTarix.Date };
+        var netice = new MelumatBazasiNeticeDto
+        {
+            BasTarix      = basTarix.Date,
+            SonTarix      = sonTarix.Date,
+            YalnizFinVoen = yalnizFinVoen
+        };
 
         if (netice.SonTarix < netice.BasTarix)
         {
             netice.Xeta = "Son tarix başlanğıc tarixdən əvvəl ola bilməz.";
             return netice;
         }
+
+        // ── Axtarılanlar siyahısı ────────────────────────────────────────────
+        // ⚠️ BOŞ SİYAHI İLƏ İCRA ETMƏ. BMI-də bu, `odb.aml_yoxlama` cədvəli idi;
+        // siyahı boş olsa `{SIYAHI}` bloku da boş qalar, `( ) y` sintaksis xətası
+        // verər — yaxud (daha pisi) kimsə tokeni silsə sorğular BÜTÜN dövrü
+        // qaytarar. Ona görə burada açıq dayanırıq.
+        if (axtarilanlar == null || axtarilanlar.Count == 0)
+        {
+            netice.Xeta = "Axtarılacaq şəxs siyahısı boşdur — əvvəlcə Excel faylını yükləyin.";
+            return netice;
+        }
+
+        var siyahi = BmiLatin.SiyahiQur(axtarilanlar, yalnizFinVoen);
+        if (string.IsNullOrWhiteSpace(siyahi))
+        {
+            netice.Xeta = yalnizFinVoen
+                ? "Siyahıda heç bir FİN və ya VÖEN yoxdur — «yalnız FİN/VÖEN» rejimində axtarılacaq heç nə qalmır."
+                : "Siyahıdakı sətirlərin heç birində ad, FİN və ya VÖEN tapılmadı.";
+            return netice;
+        }
+
+        netice.AxtarilanSay = Math.Min(axtarilanlar.Count, BmiLatin.MaxSetir);
+        if (axtarilanlar.Count > BmiLatin.MaxSetir)
+            netice.Xeberdarliq = $"Siyahıda {axtarilanlar.Count} sətir var, " +
+                                 $"yalnız ilk {BmiLatin.MaxSetir} sətir axtarıldı.";
 
         // ⚠️ FORMAT `dd-MM-yyyy` OLMALIDIR — sorğularda `TO_DATE(…,'DD-MM-YYYY')`
         // yazılıb (BMI-dən olduğu kimi). Başqa format versək Oracle ORA-01861
@@ -136,8 +183,21 @@ public class MelumatBazasiService : IMelumatBazasiService
                 continue;
             }
 
-            // Dövrsüz sorğuda token yoxdur — `Replace` sadəcə heç nə etmir.
-            isler.Add((vereq, sql.Replace("{DOVREVVEL}", d1).Replace("{DOVRSON}", d2)));
+            // ⚠️ `{SIYAHI}` TOKENİ OLMAYAN SORĞU = KÖHNƏ (SÜZGƏCSİZ) VARİANT.
+            // `Replace` səssizcə heç nə etməzdi və sorğu BÜTÜN dövrü qaytarardı —
+            // istifadəçi isə onu «axtarışın nəticəsi» sanardı. Açıq dayanırıq.
+            if (!sql.Contains("{SIYAHI}", StringComparison.Ordinal))
+            {
+                vereq.Xeta = $"«{sablon.SorguAdi}» köhnə (süzgəcsiz) variantdır — mətnində {{SIYAHI}} tokeni yoxdur. " +
+                             "docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql yenidən işlədilməlidir.";
+                isler.Add((vereq, null));
+                continue;
+            }
+
+            // Dövrsüz sorğuda tarix tokeni yoxdur — `Replace` sadəcə heç nə etmir.
+            isler.Add((vereq, sql.Replace("{DOVREVVEL}", d1)
+                                 .Replace("{DOVRSON}", d2)
+                                 .Replace("{SIYAHI}", siyahi)));
         }
 
         // ── 2-ci addım: Oracle sorğuları PARALEL ────────────────────────────

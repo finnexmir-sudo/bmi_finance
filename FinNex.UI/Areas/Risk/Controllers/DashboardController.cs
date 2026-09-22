@@ -17,10 +17,14 @@ public class DashboardController : Controller
     private readonly IRiskService _service;
     private readonly IMelumatBazasiService _mb;
 
-    public DashboardController(IRiskService service, IMelumatBazasiService mb)
+    /// <summary>«Məlumat Bazası» Excel şablonu üçün — `App_Data/Templates/`.</summary>
+    private readonly IWebHostEnvironment _env;
+
+    public DashboardController(IRiskService service, IMelumatBazasiService mb, IWebHostEnvironment env)
     {
         _service = service;
         _mb = mb;
+        _env = env;
     }
 
     // Risk dashboard: KPI kartları + qrafiklər + hesabat kartları
@@ -90,27 +94,104 @@ public class DashboardController : Controller
     //    BMI mənbəyi: `BMI/AML/Sorgular/MelumatBazasi.cs` → `excelDoldur()`.
     //    İki tarix + «Ümumi sorğu» → 11 Oracle SELECT → 11 vərəqli Excel.
 
-    // GET: iki tarix seçimi. Defolt — keçən ayın son günü → bu ayın son günü
-    // (BMI-də dəyərlər Designer-də SABİT yazılmışdı: 31-01-2025 / 28-02-2025,
-    //  yəni heç bir «iş günü» hesablaması yox idi — operator əl ilə seçirdi).
+    // GET: 1-ci addım — Excel siyahısı yüklənir. Tarix seçimi yüklədikdən SONRA
+    // açılır, çünki siyahı olmadan sorğu icra edilmir (BMI-də siyahı
+    // `odb.aml_yoxlama` cədvəlində saxlanılırdı; biz Oracle-a yazmırıq).
     public IActionResult MelumatBazasi()
     {
-        var bugun = DateTime.Today;
-        var ayBasi = new DateTime(bugun.Year, bugun.Month, 1);
         ViewBag.Vereqler = _mb.Vereqler;
-        return View(new FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto
-        {
-            BasTarix = ayBasi.AddDays(-1),                                  // keçən ayın son günü
-            SonTarix = ayBasi.AddMonths(1).AddDays(-1)                      // bu ayın son günü
-        });
+        return View(VarsayilanNetice());
     }
 
-    // POST: «Ümumi sorğu» — paketi hazırlayıb .xlsx kimi verir.
+    private static FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto VarsayilanNetice()
+    {
+        // Defolt dövr — keçən ayın son günü → bu ayın son günü.
+        // (BMI-də dəyərlər Designer-də SABİT idi: 31-01-2025 / 28-02-2025,
+        //  yəni heç bir «iş günü» hesablaması yox idi — operator əl ilə seçirdi.)
+        var ayBasi = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        return new FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto
+        {
+            BasTarix = ayBasi.AddDays(-1),
+            SonTarix = ayBasi.AddMonths(1).AddDays(-1)
+        };
+    }
+
+    // POST 1-ci ADDIM: .xlsx oxunur və cədvəldə GÖSTƏRİLİR. BMI-yə sorğu GETMİR.
+    // Oxuyucu `Axtarilanlar` axını ilə ORTAQDIR (`ExceldenOxu`) — iki nüsxə
+    // saxlansa biri gec-tez köhnə qalar.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> MelumatBazasiPaket(DateTime basTarix, DateTime sonTarix, CancellationToken ct)
+    public IActionResult MelumatBazasiYukle(IFormFile fayl)
     {
-        var netice = await _mb.HazirlaAsync(basTarix, sonTarix, ct);
+        var uzanti = Path.GetExtension(fayl?.FileName ?? "");
+        if (fayl == null || fayl.Length == 0)
+        {
+            TempData["Error"] = "Excel faylı seçilməyib.";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+        if (!string.Equals(uzanti, ".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = $"Yalnız .xlsx faylı oxunur (seçilən: «{fayl.FileName}»). " +
+                                "Köhnə .xls faylını Excel-də açıb «Farklı kaydet → Excel Workbook (.xlsx)» edin.";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        ExcelOxunus oxunus;
+        try
+        {
+            using var stream = fayl.OpenReadStream();
+            oxunus = ExceldenOxu(stream);
+        }
+        catch (Exception ex)
+        {
+            var kok = ex; while (kok.InnerException != null) kok = kok.InnerException;
+            TempData["Error"] = "Excel faylı oxuna bilmədi: " +
+                (ReferenceEquals(kok, ex) ? ex.Message : $"{ex.Message} → {kok.Message}");
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        if (oxunus.Xeta != null)
+        {
+            TempData["Error"] = oxunus.Xeta;
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        var netice = VarsayilanNetice();
+        netice.AxtarilanSay = oxunus.Setirler.Count;
+
+        // Kəsilmə xəbərdarlığı MƏHZ BURADA verilir: «Ümumi sorğu» addımı fayl
+        // qaytarır, səhifə render olunmur — orada yazılan mesaj heç yerə düşməzdi.
+        if (oxunus.Setirler.Count > FinNex.Application.Helpers.Aml.BmiLatin.MaxSetir)
+            TempData["Error"] = $"Siyahıda {oxunus.Setirler.Count} sətir var — " +
+                                $"yalnız ilk {FinNex.Application.Helpers.Aml.BmiLatin.MaxSetir} sətir axtarılacaq.";
+
+        ViewBag.Vereqler   = _mb.Vereqler;
+        ViewBag.Siyahi     = oxunus.Setirler;
+        ViewBag.SiyahiJson = JsonSerializer.Serialize(oxunus.Setirler);
+        ViewBag.Menbe      = $"{fayl.FileName} · {oxunus.Diaqnostika}";
+        return View("MelumatBazasi", netice);
+    }
+
+    // POST 2-ci ADDIM: «Ümumi sorğu» — paketi hazırlayıb .xlsx kimi verir.
+    // Siyahı gizli sahədə JSON kimi gəlir (fayl input-u yenidən doldurula bilmir,
+    // `TempData` isə bu həcmi saxlamır) — `Axtarilanlar` axınında olduğu kimi.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MelumatBazasiPaket(
+        string setirlerJson, DateTime basTarix, DateTime sonTarix,
+        bool yalnizFinVoen, CancellationToken ct)
+    {
+        List<AxtarisSetriDto>? setirler;
+        try { setirler = JsonSerializer.Deserialize<List<AxtarisSetriDto>>(setirlerJson); }
+        catch { setirler = null; }
+
+        if (setirler == null || setirler.Count == 0)
+        {
+            TempData["Error"] = "Axtarılacaq siyahı itdi — Excel faylını yenidən yükləyin.";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        var netice = await _mb.HazirlaAsync(basTarix, sonTarix, setirler, yalnizFinVoen, ct);
 
         if (netice.Xeta != null)
         {
@@ -126,44 +207,112 @@ public class DashboardController : Controller
             return RedirectToAction(nameof(MelumatBazasi));
         }
 
-        // ⚠️ XSSF (.xlsx) — HSSF (.xls) DEYİL: köhnə formatda vərəqdə 65 536 sətir
-        // həddi var, `arh_dd` üzrə aylıq köçürmələr bunu rahat keçə bilər və
-        // sətirlər SƏSSİZCƏ itərdi. BMI də `.xlsx` yazırdı (EPPlus).
-        var wb = new XSSFWorkbook();
+        byte[] fayl;
+        try { fayl = PaketiQur(netice); }
+        catch (FileNotFoundException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        var ad = $"Melumat bazasi {netice.SonTarix:MMyyyy}.xlsx";   // BMI ilə eyni ad qaydası
+        return File(fayl, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ad);
+    }
+
+    // ── Excel paketi — HAZIR ŞABLON DOLDURULUR ───────────────────────────────
+    //
+    // Şablon: `App_Data/Templates/Melumat_bazasi.xlsx` (BMI-nin öz faylı, data
+    // sətirləri təmizlənmiş). Sıfırdan qurmaq ƏVƏZİNƏ doldururuq, çünki:
+    //   * `Esas_Sehife` vərəqi hazırdır — «Nəticə sayı» `COUNT(...)` formulu və
+    //     `=HYPERLINK("#'"&C5&"'!A1","Bax")` keçidi ilə;
+    //   * başlıqlar, sütun enləri, «Əsas səhifə» geri keçidləri saxlanılır;
+    //   * AML işçisi öz köhnə faylı ilə tutuşdura bilir.
+    //
+    // ⚠️ HƏR VƏRƏQİN DATA SƏTRİ FƏRQLİDİR — `Esas_Sehife`-dəki COUNT aralıqları
+    // ilə tutuşdurulub (Emit_benef A4, Kred_zamin A5, qalanları A6). Səhv sətirdən
+    // yazsaq başlıq üstələnər VƏ «Nəticə sayı» yanlış çıxar; heç bir xəta olmaz.
+    private static readonly Dictionary<string, int> DataSetri = new()   // Excel sətri (1-dən)
+    {
+        ["Aktiv_hesablar"] = 6, ["Open_Accounts"]        = 6, ["Kochurme_Daxili_hes"] = 6,
+        ["Exchange"]       = 6, ["Kochurme_Mushteri_hes"] = 6, ["Owner"]              = 6,
+        ["Emit_benef"]     = 4, ["3-cu shexs"]           = 6, ["Transfer"]            = 6,
+        ["A_M_L"]          = 6, ["Kred_zamin"]           = 5,
+    };
+
+    /// <summary>Sorğu alias-ı → Excel başlığı (şablonda olmayan YENİ sütunlar üçün).</summary>
+    private static readonly Dictionary<string, string> YeniSutunBasliq = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["axtarilan"] = "Axtarılan şəxs",
+        ["uygunluq"]  = "Uyğunluq",
+        ["voen"]      = "VÖEN",
+        ["fin"]       = "FİN",
+    };
+
+    private byte[] PaketiQur(FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto netice)
+    {
+        var yol = Path.Combine(_env.ContentRootPath, "App_Data", "Templates", "Melumat_bazasi.xlsx");
+        if (!System.IO.File.Exists(yol))
+            throw new FileNotFoundException("Şablon tapılmadı: App_Data/Templates/Melumat_bazasi.xlsx");
+
+        XSSFWorkbook wb;
+        using (var fs = new FileStream(yol, FileMode.Open, FileAccess.Read))
+            wb = new XSSFWorkbook(fs);
+
+        // ⚠️ Stilləri BİR DƏFƏ yarat. Hər xana üçün `CreateCellStyle()` çağırmaq
+        // NPOI-nin 64 000 stil həddinə dəyir və fayl açılmaz olur.
+        var serhed = wb.CreateCellStyle();
+        serhed.BorderTop = serhed.BorderBottom = serhed.BorderLeft = serhed.BorderRight
+             = NPOI.SS.UserModel.BorderStyle.Thin;
+
+        var tarixStil = wb.CreateCellStyle();
+        tarixStil.CloneStyleFrom(serhed);
+        tarixStil.DataFormat = wb.CreateDataFormat().GetFormat("dd.mm.yyyy");
 
         foreach (var v in netice.Vereqler)
         {
-            // NPOI vərəq adında `[ ] * / \ ? :` qəbul etmir; «3-cu shexs» təhlükəsizdir,
-            // amma gələcək vərəq adı üçün təmizləyirik.
-            var sh = wb.CreateSheet(NPOI.SS.Util.WorkbookUtil.CreateSafeSheetName(v.Ad));
+            var sh = wb.GetSheet(v.Ad);
+            if (sh == null) continue;               // şablonda olmayan vərəq — atla
+
+            var dataSetri = DataSetri.TryGetValue(v.Ad, out var ds) ? ds : 6;
+            var basliqIdx = dataSetri - 2;          // NPOI 0-dan sayır: Excel 6 → başlıq idx 4
 
             if (v.Xeta != null)
             {
-                sh.CreateRow(0).CreateCell(0).SetCellValue("XƏTA: " + v.Xeta);
+                var xr = sh.GetRow(dataSetri - 1) ?? sh.CreateRow(dataSetri - 1);
+                (xr.GetCell(0) ?? xr.CreateCell(0)).SetCellValue("XƏTA: " + v.Xeta);
                 continue;
             }
 
-            // 1-ci sətir: dövr və hazırlanma vaxtı (BMI-də bu, Aktiv_hesablar
-            // vərəqinin B4/E4 xanalarında idi — burada HƏR vərəqdə var ki,
-            // vərəq tək-tək göndəriləndə də dövrü bilinsin).
-            var bas = sh.CreateRow(0);
-            bas.CreateCell(0).SetCellValue($"{v.Baslik} · dövr: " +
-                (v.Dovrlu ? $"{netice.BasTarix:dd.MM.yyyy} – {netice.SonTarix:dd.MM.yyyy}" : "dövrsüz (cari vəziyyət)"));
-            bas.CreateCell(5).SetCellValue($"Hazırlandı: {DateTime.Now:dd.MM.yyyy HH:mm}");
-
-            var hdr = sh.CreateRow(1);
-            hdr.CreateCell(0).SetCellValue("№");
-            for (int c = 0; c < v.Sutunlar.Count; c++)
-                hdr.CreateCell(c + 1).SetCellValue(v.Sutunlar[c]);
+            // Şablonda olmayan YENİ sütunların başlığını əlavə et (Axtarılan şəxs,
+            // Uyğunluq, Transfer-də əlavə olaraq VÖEN/FİN). `№` 0-cı sütundadır,
+            // ona görə sorğunun c-ci sütunu Excel-də c+1-dir.
+            var bsh = sh.GetRow(basliqIdx);
+            if (bsh != null)
+            {
+                var sonBasliq = bsh.LastCellNum;    // mövcud başlıqların sayı
+                for (int c = 0; c < v.Sutunlar.Count; c++)
+                {
+                    if (c + 1 < sonBasliq) continue;
+                    var ad = YeniSutunBasliq.TryGetValue(v.Sutunlar[c], out var b) ? b : v.Sutunlar[c];
+                    var h = bsh.CreateCell(c + 1);
+                    h.SetCellValue(ad);
+                    if (bsh.GetCell(0)?.CellStyle is { } st) h.CellStyle = st;   // başlıq görünüşünü təkrarla
+                }
+            }
 
             for (int i = 0; i < v.Setirler.Count; i++)
             {
-                var r = sh.CreateRow(i + 2);
-                r.CreateCell(0).SetCellValue(i + 1);
+                var r = sh.CreateRow(dataSetri - 1 + i);
+                var nCell = r.CreateCell(0);
+                nCell.SetCellValue(i + 1);          // `Esas_Sehife` məhz A sütununu COUNT edir
+                nCell.CellStyle = serhed;
+
                 var sətir = v.Setirler[i];
                 for (int c = 0; c < sətir.Length; c++)
                 {
                     var cell = r.CreateCell(c + 1);
+                    cell.CellStyle = serhed;
+
                     // ⚠️ Rəqəmi `ToString()` ilə YAZMA — az-AZ vergülü Excel-də
                     // mətnə çevirər və sütun toplanmaz (CLAUDE.md, `x:num` hadisəsi).
                     switch (sətir[c])
@@ -174,18 +323,34 @@ public class DashboardController : Controller
                         case float f:     cell.SetCellValue(f); break;
                         case int i32:     cell.SetCellValue(i32); break;
                         case long i64:    cell.SetCellValue(i64); break;
-                        case DateTime dt: cell.SetCellValue(dt.ToString("dd.MM.yyyy")); break;
+                        // Tarix MƏTN kimi yazılsa Excel-də süzülmür və sıralanmır.
+                        case DateTime dt: cell.SetCellValue(dt); cell.CellStyle = tarixStil; break;
                         default:          cell.SetCellValue(sətir[c]!.ToString()); break;
                     }
                 }
             }
         }
 
+        // Dövr və hazırlanma vaxtı — BMI-də olduğu kimi `Aktiv_hesablar` B4/D4-də.
+        // Qalan vərəqlər onu FORMUL ilə oxuyur (`=Aktiv_hesablar!B4`).
+        var ah = wb.GetSheet("Aktiv_hesablar");
+        if (ah != null)
+        {
+            var r4 = ah.GetRow(3) ?? ah.CreateRow(3);
+            (r4.GetCell(1) ?? r4.CreateCell(1))
+                .SetCellValue($"{netice.BasTarix:dd.MM.yyyy}  -  {netice.SonTarix:dd.MM.yyyy}");
+            (r4.GetCell(3) ?? r4.CreateCell(3))
+                .SetCellValue($"{DateTime.Now:dd.MM.yyyy HH:mm}");
+        }
+
+        // ⚠️ MƏCBURİDİR. NPOI formulu HESABLAMIR, yalnız mətnini saxlayır.
+        // Bunsuz `Esas_Sehife`-dəki «Nəticə sayı» və vərəqlərdəki
+        // `=Aktiv_hesablar!B4` istinadları KEŞLƏNMİŞ (boş) dəyərlə açılar.
+        wb.SetForceFormulaRecalculation(true);
+
         using var ms = new MemoryStream();
         wb.Write(ms, true);
-        var ad = $"Melumat_bazasi_{netice.SonTarix:MM-yyyy}.xlsx";
-        return File(ms.ToArray(),
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ad);
+        return ms.ToArray();
     }
 
     // ── Axtarılanlar — Excel siyahısının bank müştəriləri ilə yoxlanması ──────

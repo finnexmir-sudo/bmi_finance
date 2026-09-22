@@ -1,24 +1,27 @@
 @using FinNex.Application.DTOs.Aml
+@using FinNex.Application.DTOs.Risk
 @model MelumatBazasiNeticeDto
 @{
     ViewData["Title"] = "Məlumat Bazası";
     var vereqler = ViewBag.Vereqler as IReadOnlyList<MelumatBazasiVereqDto> ?? new List<MelumatBazasiVereqDto>();
+    var siyahi   = ViewBag.Siyahi   as List<AxtarisSetriDto>;
+    var siyahiVar = siyahi != null && siyahi.Count > 0;
     var dovrlu   = vereqler.Count(v => v.Dovrlu);
+    var novVar   = siyahiVar && siyahi!.Any(s => !string.IsNullOrWhiteSpace(s.Novu));
 }
 
 <div class="fn-page fn-tint">
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Məlumat Bazası</div>
-            <div class="fn-page-sub">Dövr üzrə AML paketi — @vereqler.Count vərəqli Excel</div>
+            <div class="fn-page-sub">Exceldəki şəxslər BMI-nin @vereqler.Count mənbəyində axtarılır</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             @* İki səhifə BİR İŞİN addımlarıdır — keçid hər ikisində olmalıdır.
                22.09.2026: Excel səhifəsinin adı dəyişdi («Məlumat Bazası» →
-               «Axtarılanlar») və istifadəçi onu tapa bilmədi. Kart Risk
-               panelindədir, amma bu səhifəyə birbaşa gələndə görünmürdü. *@
+               «Axtarılanlar») və istifadəçi onu tapa bilmədi. *@
             <a asp-action="Axtarilanlar" class="fn-btn fn-btn--outline">
-                <i class="bi bi-search"></i> Axtarılanlar (Excel)
+                <i class="bi bi-search"></i> Axtarılanlar (tək siyahı)
             </a>
             <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
         </div>
@@ -36,12 +39,14 @@
         <div class="mb-note-b">
             <div class="mb-note-h">Necə işləyir</div>
             <div class="mb-note-t">
-                İki tarix seçilir və <b>Ümumi sorğu</b> basılır — BMI-də @vereqler.Count sorğu icra olunur
-                və nəticə <b>@vereqler.Count vərəqli Excel</b> faylı kimi endirilir.
+                <b>1.</b> Axtarılacaq şəxslərin Excel faylı yüklənir və cədvəldə göstərilir.
+                <b>2.</b> Dövr seçilir və <b>Ümumi sorğu</b> basılır — BMI-də @vereqler.Count sorğu
+                icra olunur və nəticə <b>@(vereqler.Count + 1) vərəqli Excel</b> kimi endirilir
+                (@vereqler.Count mənbə + <code>Esas_Sehife</code> xülasəsi).
             </div>
             <ul class="mb-note-l">
-                <li><b>@dovrlu vərəq</b> seçilmiş dövrə görə süzülür.</li>
-                <li><b>@(vereqler.Count - dovrlu) vərəq dövrsüzdür</b> — təsisçilər, əlaqəli şəxslər,
+                <li><b>@dovrlu mənbə</b> seçilmiş dövrə görə süzülür.</li>
+                <li><b>@(vereqler.Count - dovrlu) mənbə dövrsüzdür</b> — təsisçilər, əlaqəli şəxslər,
                     kredit zaminləri, aktiv hesablar. Onlar həmişə <b>cari vəziyyəti</b> verir
                     (BMI-də də belədir, qəsdəndir).</li>
                 <li><b>Heç nə yazılmır</b> — BMI bazasına yalnız SELECT göndərilir.</li>
@@ -49,25 +54,108 @@
         </div>
     </div>
 
+    @* ── 1-ci ADDIM: fayl yükləmə ───────────────────────────────────────── *@
+    <div class="mb-sec"><span class="mb-sec-bar"></span> 1. Axtarılacaq şəxslər</div>
     <div class="fn-card mb-param">
-        <form asp-action="MelumatBazasiPaket" method="post" class="mb-form" id="mbForm">
+        <form asp-action="MelumatBazasiYukle" method="post" enctype="multipart/form-data" class="mb-form">
             @Html.AntiForgeryToken()
             <div class="mb-field">
-                <label>Əvvəlki ay son iş günü</label>
-                <input type="date" name="basTarix" required class="mb-date"
-                       value="@Model.BasTarix.ToString("yyyy-MM-dd")" />
+                <label>Excel faylı (.xlsx)</label>
+                <input type="file" name="fayl" accept=".xlsx" required class="mb-file" />
             </div>
-            <div class="mb-field">
-                <label>Cari ay son iş günü</label>
-                <input type="date" name="sonTarix" required class="mb-date"
-                       value="@Model.SonTarix.ToString("yyyy-MM-dd")" />
-            </div>
-            <button type="submit" class="fn-btn fn-btn--primary" id="mbBtn">
-                <i class="bi bi-search"></i> Ümumi sorğu
+            <button type="submit" class="fn-btn fn-btn--primary">
+                <i class="bi bi-upload"></i> Yüklə və göstər
             </button>
-            <span class="mb-hint" id="mbHint">Paket böyükdür — bir neçə dəqiqə çəkə bilər.</span>
+            <span class="mb-hint">
+                Sütunlar: <code>Adlar</code>, <code>VOEN</code>, <code>fin</code>, <code>novu</code> —
+                sıra sərbəstdir, başlıq adına görə tanınır.
+            </span>
         </form>
     </div>
+
+    @if (siyahiVar)
+    {
+        <div class="mb-sec">
+            <span class="mb-sec-bar"></span> Yüklənən siyahı — @siyahi!.Count sətir
+        </div>
+        <div class="fn-card">
+            @if (ViewBag.Menbe != null)
+            {
+                <div class="mb-diag"><i class="bi bi-file-earmark-spreadsheet"></i> @ViewBag.Menbe</div>
+            }
+            <div class="mb-twrap mb-twrap--scroll">
+                <table class="mb-table">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>Ad Soyad Ata adı</th><th>VÖEN</th><th>FİN</th>
+                            @if (novVar)
+                            {
+                                <th>Növü</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in siyahi!)
+                        {
+                            <tr>
+                                <td>@s.Sira</td>
+                                <td>@s.AdSoyadAta</td>
+                                <td>@s.Voen</td>
+                                <td>@s.Fin</td>
+                                @if (novVar)
+                                {
+                                    <td>@s.Novu</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @* ── 2-ci ADDIM: dövr + rejim + sorğu ───────────────────────────── *@
+        <div class="mb-sec"><span class="mb-sec-bar"></span> 2. Dövr və axtarış rejimi</div>
+        <div class="fn-card mb-param">
+            <form asp-action="MelumatBazasiPaket" method="post" id="mbForm">
+                @Html.AntiForgeryToken()
+                @* Siyahı gizli sahədə daşınır — fayl input-u yenidən doldurula bilmir,
+                   TempData isə bu həcmi saxlamır (CLAUDE.md). *@
+                <input type="hidden" name="setirlerJson" value="@ViewBag.SiyahiJson" />
+
+                <div class="mb-form">
+                    <div class="mb-field">
+                        <label>Əvvəlki ay son iş günü</label>
+                        <input type="date" name="basTarix" required class="mb-date"
+                               value="@Model.BasTarix.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="mb-field">
+                        <label>Cari ay son iş günü</label>
+                        <input type="date" name="sonTarix" required class="mb-date"
+                               value="@Model.SonTarix.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <button type="submit" class="fn-btn fn-btn--primary" id="mbBtn">
+                        <i class="bi bi-search"></i> Ümumi sorğu
+                    </button>
+                    <span class="mb-hint" id="mbHint">Paket böyükdür — bir neçə dəqiqə çəkə bilər.</span>
+                </div>
+
+                <div class="mb-rejim">
+                    @* Gizli sahə MƏCBURİDİR: işarələnməyən checkbox POST-da ÜMUMİYYƏTLƏ
+                       getmir və server dəyəri səssizcə `false` sayar (CLAUDE.md). *@
+                    <input type="hidden" name="yalnizFinVoen" value="false" />
+                    <label class="mb-check">
+                        <input type="checkbox" name="yalnizFinVoen" value="true" />
+                        <span>Yalnız <b>FİN və VÖEN</b> üzrə axtar (ad nəzərə alınmasın)</span>
+                    </label>
+                    <div class="mb-rejim-t">
+                        Adsız axtarışda <code>Open_Accounts</code>, <code>Kochurme_Daxili_hes</code>,
+                        <code>3-cu shexs</code>, <code>Transfer</code> vərəqləri <b>boş gələcək</b> —
+                        həmin mənbələrdə FİN/VÖEN sütunu yoxdur. Bu, səhv deyil.
+                    </div>
+                </div>
+            </form>
+        </div>
+    }
 
     <div class="mb-sec"><span class="mb-sec-bar"></span> Paketin tərkibi</div>
     <div class="fn-card">
@@ -122,19 +210,28 @@
         .mb-param { margin-bottom:16px; }
         .mb-form { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
         .mb-field label { display:block; font-size:11px; color:#64748b; font-weight:600; margin-bottom:5px; }
-        .mb-date { padding:9px 12px; border:1px solid #e2e8f0; border-radius:10px; font-size:13px;
+        .mb-date, .mb-file { padding:9px 12px; border:1px solid #e2e8f0; border-radius:10px; font-size:13px;
             outline:none; background:#fbfcff; }
-        .mb-date:focus { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+        .mb-date:focus, .mb-file:focus { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
         .mb-hint { font-size:12px; color:#64748b; }
+        .mb-hint code, .mb-rejim-t code { background:#f1f5f9; padding:1px 5px; border-radius:4px; }
+
+        .mb-rejim { margin-top:14px; padding-top:12px; border-top:1px dashed #e2e8f0; }
+        .mb-check { display:flex; align-items:center; gap:8px; font-size:13px; color:#0f172a; cursor:pointer; }
+        .mb-rejim-t { font-size:12px; color:#64748b; margin-top:5px; padding-left:24px; line-height:1.55; }
+
+        .mb-diag { font-size:12px; color:#475569; background:#f8fafc; border:1px solid #e2e8f0;
+            border-radius:8px; padding:7px 11px; margin-bottom:10px; }
 
         .mb-sec { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:800;
             color:#0f172a; margin:2px 0 10px; }
         .mb-sec-bar { width:4px; height:17px; border-radius:3px; background:linear-gradient(180deg,#dc2626,#ea580c); }
 
         .mb-twrap { overflow-x:auto; }
+        .mb-twrap--scroll { max-height:340px; overflow-y:auto; }
         .mb-table { width:100%; border-collapse:collapse; font-size:13px; }
         .mb-table thead th { background:#f1f5f9; color:#475569; font-weight:600; font-size:12px; text-align:left;
-            padding:9px 12px; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+            padding:9px 12px; border-bottom:1px solid #e2e8f0; white-space:nowrap; position:sticky; top:0; }
         .mb-table td { padding:9px 12px; border-bottom:1px solid #f1f5f9; color:#1e293b; }
         .mb-table code { background:#f1f5f9; padding:1px 6px; border-radius:5px; font-size:12px; }
         .mb-dim { color:#94a3b8; }
