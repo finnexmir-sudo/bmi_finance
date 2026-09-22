@@ -114,9 +114,16 @@
             </div>
             <i class="bi bi-chevron-right rk-arrow"></i>
         </a>
-        @* 22.09.2026: əvvəl sol menyuda idi — istifadəçi qərarı ilə kart kimi bura köçdü.
-           «Sorğular» bölməsinə QOYULMADI: o bölmə `Model.Hesabatlar.Any()` şərti ilə
-           render olunur, yəni OracleSorgular boş qalsa kart tamamilə yoxa çıxardı. *@
+    </div>
+
+    @* ---- Sorğular — OracleSorgular sətirləri + öz ekranı olan «Məlumat Bazası» ----
+       «Məlumat Bazası» kartı 22.09.2026-da istifadəçi qərarı ilə sol menyudan bura
+       köçdü. Bölmə ƏVVƏL bütövlükdə `Model.Hesabatlar.Any()` şərtinin içində idi —
+       həmin şərt GÖTÜRÜLDÜ. Səbəb: kart cədvəldən asılı deyil; köhnə quruluşda
+       OracleSorgular boşalsa bölmə bütöv gizlənər və kart səssizcə yoxa çıxardı.
+       Boş siyahıda `foreach` onsuz da heç nə çap etmir, ayrıca şərtə ehtiyac yoxdur. *@
+    <div class="rk-sec"><span class="rk-sec-bar"></span> Sorğular</div>
+    <div class="rk-grid">
         <a asp-action="MelumatBazasi" class="rk-card">
             <div class="rk-ic"><i class="bi bi-search"></i></div>
             <div class="rk-body">
@@ -125,29 +132,24 @@
             </div>
             <i class="bi bi-chevron-right rk-arrow"></i>
         </a>
-    </div>
 
-    @* ---- Adi hesabat kartları (tag-siz) ---- *@
-    @if (Model.Hesabatlar.Any())
-    {
-        <div class="rk-sec"><span class="rk-sec-bar"></span> Sorğular</div>
-        <div class="rk-grid">
-            @foreach (var h in Model.Hesabatlar)
-            {
-                <a asp-action="Hesabat" asp-route-id="@h.Id" class="rk-card">
-                    <div class="rk-ic"><i class="bi bi-shield-check"></i></div>
-                    <div class="rk-body">
-                        <div class="rk-title">@h.Ad</div>
-                        @if (!string.IsNullOrWhiteSpace(h.Mahiyyet))
-                        {
-                            <div class="rk-sub">@h.Mahiyyet</div>
-                        }
-                    </div>
-                    <i class="bi bi-chevron-right rk-arrow"></i>
-                </a>
-            }
-        </div>
-    }
+        @* OracleSorgular-dan gələn kartlar — EYNİ `rk-grid` içindədir ki, «Məlumat
+           Bazası» ilə bir axında (eyni sətirdə) düzülsün, ayrı sətrə düşməsin. *@
+        @foreach (var h in Model.Hesabatlar)
+        {
+            <a asp-action="Hesabat" asp-route-id="@h.Id" class="rk-card">
+                <div class="rk-ic"><i class="bi bi-shield-check"></i></div>
+                <div class="rk-body">
+                    <div class="rk-title">@h.Ad</div>
+                    @if (!string.IsNullOrWhiteSpace(h.Mahiyyet))
+                    {
+                        <div class="rk-sub">@h.Mahiyyet</div>
+                    }
+                </div>
+                <i class="bi bi-chevron-right rk-arrow"></i>
+            </a>
+        }
+    </div>
 </div>
 
 @section Styles {
