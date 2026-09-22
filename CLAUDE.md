@@ -1268,6 +1268,59 @@ Atribut əlavə etsək onlar **«pending» olur** və `Migrate()` onları
 Toxunmaq lazımdırsa əvvəlcə `__EFMigrationsHistory`-yə sətir əlavə edilməlidir
 (yəni «tətbiq olunub» kimi işarələnməli) — bu, ayrıca qərardır.
 
+## İKİ AYRI TARİXÇƏ — `main` vs `…xge7j5` (22.09.2026, KRİTİK)
+
+Repozitoriyada **ortaq atası olmayan iki git tarixçəsi** var. `git merge-base`
+bunların arasında **heç nə qaytarmır** (exit=1) — yəni bir-birinə qohum deyillər:
+
+| Budaq | Commit sayı | Kök commit | Ağacın vəziyyəti |
+|---|---|---|---|
+| `main` (+ `…xge7j5-0murf5`) | **55** | `ab9221fc` — 01.09.2026 11:10 | **CARİ** — bütün 01–22.09 işi buradadır |
+| `claude/…-xge7j5` | 3027 | `ec607b70` «first clean commit» | **01.09-da DONUB** + üstündə 1 commit |
+
+01.09.2026-da bir sessiya repozitoriyanı **dayaz (shallow)** klonlayıb push edib:
+ağac bütöv köçüb, **tarixçə qırılıb**. O vaxtdan bəri bütün iş orfan `main`
+üzərində gedir. Köhnə `…xge7j5` budağı isə tarixçəni saxlayır, amma **ağacı
+01.09-dan bəri yenilənmir**.
+
+**55 commit mesajının HEÇ BİRİ o biri budaqda yoxdur** (`grep -Fxv` ilə yoxlandı)
+— yəni `main`-dəki iş (Kredit Arayışları, Pul köçürməsi 20 000 USD limiti,
+HR → Müddətlər/Vəsiqə, Məzuniyyət Balansı kompakt cədvəl, Mail Data Protection,
+AML «Hesab üzrə sorğu», FinNex brendi, Balans İcmalı…) `…xge7j5`-də **ümumiyyətlə
+mövcud deyil**.
+
+⚠️ **`…xge7j5`-i pull etmək 3 həftə GERİ getməkdir.** Real hadisə: istifadəçi
+onu pull etdi və Risk panelində «AML hesabatları» bölməsi yoxa çıxdı,
+`AML_HESAB_SORGU_*` sətirləri xam şəkildə kart kimi göründü (o budaqda
+`RiskService.RiskDoldurabilmir` süzgəci yoxdur). Heç bir xəta çıxmadı — sadəcə
+kod köhnə idi.
+
+**Qaydalar:**
+- **İş `main`-dədir.** Yeni sessiya `…xge7j5`-ə commit etməməlidir.
+- O budaqda qalan iş varsa **`git cherry-pick -x <sha>`** ilə gətir — tarixçələr
+  qohum olmadığı üçün `merge` yalnız `--allow-unrelated-histories` ilə işləyir və
+  bütün ağacı toqquşdurar. Cherry-pick təmiz keçir (yamaq kimi tətbiq olunur).
+- Budaqların fərqini **mesaja görə** ölç, `git log A ^B` sayına görə yox:
+  qohum olmayan tarixçələrdə o say heç nə demir.
+  ```bash
+  git log --format=%s origin/main > /tmp/a && git log --format=%s origin/claude/…-xge7j5 > /tmp/b
+  grep -Fxv -f /tmp/b /tmp/a      # yalnız main-də olan iş
+  ```
+- Tarixçəni birləşdirmək (`--allow-unrelated-histories` və ya `replace --graft`)
+  **ayrıca qərardır** — özbaşına etmə.
+
+### `OracleSorgular` DATA-dır, KOD DEYİL
+
+Risk panelinin KPI kartları və hesabat kartları `OracleSorgular` cədvəlindən
+(SQL Server) gəlir. Prod ilə lokal **fərqli SQL Server bazalarıdır**, ona görə:
+
+- eyni səhifə iki mühitdə fərqli kart **sayı** və fərqli qrafik göstərə bilər;
+- təkrarlanan kart (məs. «Qeyri-rezidentlər» iki dəfə) **cədvəldə iki sətir**
+  deməkdir — kodda dublikat süzgəci yoxdur və qəsdən yoxdur.
+
+«Pull-dan sonra rəqəm dəyişdi» şikayətində əvvəlcə **hansı bazaya baxdığını**
+müəyyənləşdir; kodda səbəb axtarmaq vaxt itkisi ola bilər.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
