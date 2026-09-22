@@ -15,4 +15,8 @@ public interface IRiskService
     // ({BASTARIX}/{SONTARIX}/{TARIX}/{HEDD}/{IL}) varsa və dəyər verilməyibsə,
     // icra olunmur — yalnız hansı parametrlərin lazım olduğu qaytarılır.
     Task<RiskNeticeDto?> IcraEtAsync(int sorguId, RiskParametrDeyer? deyerler = null, int maxRows = 100000);
+
+    // "Məlumat bazası" — Excel-dən oxunan Axtarılanlar siyahısını (Ad/VÖEN/FİN)
+    // bank müştəriləri ilə (Oracle, yalnız SELECT) tam uyğunluqla yoxlayır.
+    Task<AxtarisNeticeDto> AxtarilanlariYoxlaAsync(IList<AxtarisSetriDto> setirler);
 }

@@ -83,3 +83,40 @@ public class RiskNeticeDto
     public int             DrillSutun   { get; set; } = -1; // hansı sütunun dəyəri ötürülür
     public bool            DrillVar => DrillId.HasValue && !string.IsNullOrEmpty(DrillParam) && DrillSutun >= 0;
 }
+
+// ── Məlumat Bazası — "Axtarılanlar" siyahısının bank müştəriləri ilə yoxlanması ──
+
+// Excel-dən oxunan bir axtarış sətri (Ad Soyad Ata adı / VÖEN / FİN)
+public class AxtarisSetriDto
+{
+    public int     Sira        { get; set; }
+    public string? AdSoyadAta  { get; set; }
+    public string? Voen        { get; set; }
+    public string? Fin         { get; set; }
+}
+
+// Bir axtarış sətrinin bank bazasında tapılan uyğunluğu (varsa)
+public class AxtarisUygunlugDto
+{
+    public string  Menbe     { get; set; } = "";   // hansı Oracle mənbəyindən tapıldı (məs. "Müştəri qeydiyyatı")
+    public string? Regnom    { get; set; }          // VÖEN / qeydiyyat nömrəsi
+    public string? AdSoyad   { get; set; }
+    public string? UygunSahe { get; set; }          // "AD" | "VOEN" | "FIN" — hansı sahəyə görə tapıldı
+}
+
+// Bir axtarış sətrinin tam nəticəsi
+public class AxtarisNeticeSetriDto
+{
+    public AxtarisSetriDto Axtarilan { get; set; } = new();
+    public bool Tapildi => Uygunluqlar.Count > 0;
+    public List<AxtarisUygunlugDto> Uygunluqlar { get; set; } = new();
+}
+
+// Bütöv icra nəticəsi (Excel yükləmədən sonra)
+public class AxtarisNeticeDto
+{
+    public List<AxtarisNeticeSetriDto> Setirler   { get; set; } = new();
+    public int     UmumiSay   { get; set; }
+    public int     TapilanSay { get; set; }
+    public string? Xeta       { get; set; }
+}

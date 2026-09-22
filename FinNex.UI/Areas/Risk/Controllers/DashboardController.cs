@@ -1,3 +1,5 @@
+using System.Text.Json;
+using ClosedXML.Excel;
 using FinNex.Application.DTOs.Risk;
 using FinNex.Application.Interfaces.Risk;
 using Microsoft.AspNetCore.Authorization;
@@ -77,6 +79,112 @@ public class DashboardController : Controller
         using var ms = new MemoryStream();
         wb.Write(ms, true);
         var ad = $"Risk_{m.Ad.Replace(" ", "_").Replace("/", "-")}.xls";
+        return File(ms.ToArray(), "application/vnd.ms-excel", ad);
+    }
+
+    // ── Məlumat Bazası — "Axtarılanlar" siyahısının bank müştəriləri ilə yoxlanması ──
+
+    // GET: boş forma (fayl yükləmə)
+    public IActionResult MelumatBazasi() => View(new AxtarisNeticeDto());
+
+    // POST: .xlsx faylını oxuyur (Ad Soyad Ata adı | VÖEN | FİN sütunları, 1-ci sətir başlıq),
+    // Oracle-da (yalnız SELECT) yoxlayır və nəticəni səhifədə göstərir.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MelumatBazasiYukle(IFormFile fayl)
+    {
+        if (fayl == null || fayl.Length == 0)
+        {
+            TempData["Error"] = "Excel faylı seçilməyib.";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        var setirler = new List<AxtarisSetriDto>();
+        try
+        {
+            using var stream = fayl.OpenReadStream();
+            using var wb = new XLWorkbook(stream);
+            var ws = wb.Worksheet(1);
+            var sira = 1;
+            foreach (var row in ws.RangeUsed()!.RowsUsed().Skip(1)) // 1-ci sətir başlıqdır
+            {
+                var ad   = row.Cell(1).GetString().Trim();
+                var voen = row.Cell(2).GetString().Trim();
+                var fin  = row.Cell(3).GetString().Trim();
+                if (ad.Length == 0 && voen.Length == 0 && fin.Length == 0) continue; // boş sətir
+                setirler.Add(new AxtarisSetriDto { Sira = sira++, AdSoyadAta = ad, Voen = voen, Fin = fin });
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Excel faylı oxuna bilmədi: " + ex.Message;
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        if (setirler.Count == 0)
+        {
+            TempData["Error"] = "Excel faylında oxunacaq sətir tapılmadı. Sütunlar: A=Ad Soyad Ata adı, B=VÖEN, C=FİN (1-ci sətir başlıq).";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        var netice = await _service.AxtarilanlariYoxlaAsync(setirler);
+        return View("MelumatBazasi", netice);
+    }
+
+    // POST: göstərilən nəticəni Excel-ə ixrac edir (yenidən Oracle sorğusu icra etmir —
+    // artıq göstərilən nəticəni JSON-dan bərpa edir).
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult MelumatBazasiExcel(string neticeJson)
+    {
+        AxtarisNeticeDto? netice;
+        try { netice = JsonSerializer.Deserialize<AxtarisNeticeDto>(neticeJson); }
+        catch { netice = null; }
+        if (netice == null || netice.Setirler.Count == 0)
+        {
+            TempData["Error"] = "İxrac ediləcək nəticə tapılmadı.";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Axtarilanlar");
+        var hdr = sh.CreateRow(0);
+        string[] basliqlar = { "№", "Ad Soyad Ata adı", "VÖEN", "FİN", "Tapıldı", "Mənbə", "Uyğun ad", "Uyğun regnom", "Uyğun sahə" };
+        for (int c = 0; c < basliqlar.Length; c++) hdr.CreateCell(c).SetCellValue(basliqlar[c]);
+
+        int r = 1;
+        foreach (var setir in netice.Setirler)
+        {
+            if (setir.Uygunluqlar.Count == 0)
+            {
+                var row = sh.CreateRow(r++);
+                row.CreateCell(0).SetCellValue(setir.Axtarilan.Sira);
+                row.CreateCell(1).SetCellValue(setir.Axtarilan.AdSoyadAta ?? "");
+                row.CreateCell(2).SetCellValue(setir.Axtarilan.Voen ?? "");
+                row.CreateCell(3).SetCellValue(setir.Axtarilan.Fin ?? "");
+                row.CreateCell(4).SetCellValue("Xeyr");
+            }
+            else
+            {
+                foreach (var u in setir.Uygunluqlar)
+                {
+                    var row = sh.CreateRow(r++);
+                    row.CreateCell(0).SetCellValue(setir.Axtarilan.Sira);
+                    row.CreateCell(1).SetCellValue(setir.Axtarilan.AdSoyadAta ?? "");
+                    row.CreateCell(2).SetCellValue(setir.Axtarilan.Voen ?? "");
+                    row.CreateCell(3).SetCellValue(setir.Axtarilan.Fin ?? "");
+                    row.CreateCell(4).SetCellValue("Bəli");
+                    row.CreateCell(5).SetCellValue(u.Menbe);
+                    row.CreateCell(6).SetCellValue(u.AdSoyad ?? "");
+                    row.CreateCell(7).SetCellValue(u.Regnom ?? "");
+                    row.CreateCell(8).SetCellValue(u.UygunSahe ?? "");
+                }
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        var ad = $"Melumat_bazasi_axtaris_{DateTime.Now:yyyyMMdd_HHmm}.xls";
         return File(ms.ToArray(), "application/vnd.ms-excel", ad);
     }
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using FinNex.Application.DTOs.Oracle;
 using FinNex.Application.DTOs.Risk;
 using FinNex.Application.Interfaces.Oracle;
@@ -323,5 +324,125 @@ public class RiskService : IRiskService
     {
         n.IcraOlundu = false;
         return n;
+    }
+
+    // ── Məlumat Bazası — "Axtarılanlar" siyahısının bank müştəriləri ilə yoxlanması ──
+    //
+    // ORACLE-A YALNIZ SELECT: heç nə yazılmır (köhnə BMI desktop tətbiqi AML_YOXLAMA
+    // cədvəlinə INSERT/DELETE edirdi — bu, yeni sistemdə TƏKRARLANMIR).
+    //
+    // Mənbələr (köhnə MelumatBazasi.cs / AMLexcel.cs sorğularından götürülüb):
+    //   - odb.regnom                    → bütün müştərilər (VÖEN=regnom, Ad=name_regnom)
+    //   - odb.imza_huquqi_olan_shexsler  → imza səlahiyyətli fiziki şəxslər (Ad, FİN)
+    //   - odb.numayende                  → nümayəndələr (Ad, FİN)
+    // DİQQƏT: bu 3 cədvəl köhnə kodda GÖRÜNƏN mənbələrdir — tam Oracle sxemi bu
+    // sessiyada yoxlanıla bilmədi. Canlı test lazımdır; əlavə/fərqli mənbə lazım
+    // gələrsə (məs. regnomowner) bu metoda əlavə edilməlidir.
+    //
+    // Bind parametr dəstəklənmədiyi üçün (IOracleService.SelectAsync yalnız tam
+    // mətn SQL qəbul edir) hər dəyər whitelist regex ilə doğrulanıb literal kimi
+    // əlavə olunur — SQL injection-a qapalıdır (yalnız hərf/rəqəm/boşluq/defis).
+    private static readonly Regex AdRegex  = new(@"^[A-ZƏĞIİÖŞÜÇa-zəğıiöşüç0-9 .\-]{1,120}$", RegexOptions.Compiled);
+    private static readonly Regex KodRegex = new(@"^[A-Za-z0-9]{1,20}$", RegexOptions.Compiled);
+
+    private static string SqlListEsc(IEnumerable<string?> xam, Regex qaydasi)
+    {
+        var temiz = xam
+            .Select(v => (v ?? "").Trim().ToUpperInvariant())
+            .Where(v => v.Length > 0 && qaydasi.IsMatch(v))
+            .Distinct()
+            .Select(v => "'" + v.Replace("'", "''") + "'")
+            .ToList();
+        return temiz.Count > 0 ? string.Join(",", temiz) : "'__HEC_BIR_DEYER_UYGUN_GELMIR__'";
+    }
+
+    public async Task<AxtarisNeticeDto> AxtarilanlariYoxlaAsync(IList<AxtarisSetriDto> setirler)
+    {
+        var netice = new AxtarisNeticeDto { UmumiSay = setirler.Count };
+        foreach (var s in setirler)
+            netice.Setirler.Add(new AxtarisNeticeSetriDto { Axtarilan = s });
+
+        if (setirler.Count == 0) return netice;
+
+        var adlar   = SqlListEsc(setirler.Select(s => s.AdSoyadAta), AdRegex);
+        var voenler = SqlListEsc(setirler.Select(s => s.Voen), KodRegex);
+        var finler  = SqlListEsc(setirler.Select(s => s.Fin), KodRegex);
+
+        var sql = $@"
+SELECT menbe, regnom, ad_soyad, uygun_sahe FROM (
+  SELECT 'Müştəri qeydiyyatı' AS menbe, r.regnom AS regnom,
+         odb.func_utf8_to_latin(r.name_regnom) AS ad_soyad,
+         CASE WHEN r.regnom IN ({voenler}) THEN 'VOEN'
+              WHEN UPPER(TRIM(odb.func_utf8_to_latin(r.name_regnom))) IN ({adlar}) THEN 'AD'
+         END AS uygun_sahe
+  FROM odb.regnom r
+  WHERE r.regnom IN ({voenler})
+     OR UPPER(TRIM(odb.func_utf8_to_latin(r.name_regnom))) IN ({adlar})
+  UNION ALL
+  SELECT 'İmza səlahiyyətli şəxs' AS menbe, t.regnom,
+         odb.func_utf8_to_latin(UPPER(t.soyadi||' '||t.adi||' '||t.ata_adi)) AS ad_soyad,
+         CASE WHEN odb.func_utf8_to_latin(t.fin) IN ({finler}) THEN 'FIN'
+              WHEN UPPER(TRIM(odb.func_utf8_to_latin(t.soyadi||' '||t.adi||' '||t.ata_adi))) IN ({adlar}) THEN 'AD'
+         END AS uygun_sahe
+  FROM odb.imza_huquqi_olan_shexsler t
+  WHERE odb.func_utf8_to_latin(t.fin) IN ({finler})
+     OR UPPER(TRIM(odb.func_utf8_to_latin(t.soyadi||' '||t.adi||' '||t.ata_adi))) IN ({adlar})
+  UNION ALL
+  SELECT 'Nümayəndə' AS menbe, t.regnom,
+         odb.func_utf8_to_latin(UPPER(t.soyadi||' '||t.adi||' '||t.ata_adi)) AS ad_soyad,
+         CASE WHEN odb.func_utf8_to_latin(t.fin) IN ({finler}) THEN 'FIN'
+              WHEN UPPER(TRIM(odb.func_utf8_to_latin(t.soyadi||' '||t.adi||' '||t.ata_adi))) IN ({adlar}) THEN 'AD'
+         END AS uygun_sahe
+  FROM odb.numayende t
+  WHERE odb.func_utf8_to_latin(t.fin) IN ({finler})
+     OR UPPER(TRIM(odb.func_utf8_to_latin(t.soyadi||' '||t.adi||' '||t.ata_adi))) IN ({adlar})
+)";
+
+        List<Dictionary<string, object?>> tapilanlar;
+        try
+        {
+            tapilanlar = await _oracle.SelectAsync(sql, 20000);
+        }
+        catch (Exception ex)
+        {
+            netice.Xeta = ex.Message;
+            return netice;
+        }
+
+        string? S(Dictionary<string, object?> row, string key) =>
+            row.TryGetValue(key, out var v) ? v?.ToString() : null;
+
+        foreach (var setir in netice.Setirler)
+        {
+            var ad   = (setir.Axtarilan.AdSoyadAta ?? "").Trim().ToUpperInvariant();
+            var voen = (setir.Axtarilan.Voen ?? "").Trim().ToUpperInvariant();
+            var fin  = (setir.Axtarilan.Fin ?? "").Trim().ToUpperInvariant();
+
+            foreach (var row in tapilanlar)
+            {
+                var rRegnom = (S(row, "REGNOM") ?? "").Trim().ToUpperInvariant();
+                var rAd     = (S(row, "AD_SOYAD") ?? "").Trim().ToUpperInvariant();
+                var rSahe   = S(row, "UYGUN_SAHE") ?? "";
+
+                var uygunGeldi =
+                    (rSahe == "VOEN" && voen.Length > 0 && rRegnom == voen) ||
+                    (rSahe == "FIN"  && fin.Length  > 0 && rRegnom == fin)  ||
+                    (rSahe == "AD"   && ad.Length   > 0 && rAd == ad);
+
+                if (uygunGeldi)
+                {
+                    setir.Uygunluqlar.Add(new AxtarisUygunlugDto
+                    {
+                        Menbe     = S(row, "MENBE") ?? "",
+                        Regnom    = S(row, "REGNOM"),
+                        AdSoyad   = S(row, "AD_SOYAD"),
+                        UygunSahe = rSahe
+                    });
+                }
+            }
+        }
+
+        netice.TapilanSay = netice.Setirler.Count(s => s.Tapildi);
+        return netice;
     }
 }
