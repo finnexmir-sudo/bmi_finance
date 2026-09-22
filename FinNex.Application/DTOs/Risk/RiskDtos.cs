@@ -119,4 +119,17 @@ public class AxtarisNeticeDto
     public int     UmumiSay   { get; set; }
     public int     TapilanSay { get; set; }
     public string? Xeta       { get; set; }
+
+    /// <summary>
+    /// Axtarış İKİ ADDIMDIR (22.09.2026, istifadəçi qərarı: «həmin exceli tabledə
+    /// göstərsin və sonra bazada axtarmaq işlərinə getsin buton ilə»).
+    ///   false → Excel oxundu, cədvəldə göstərilir, BMI-yə hələ sorğu getməyib;
+    ///   true  → «Bazada axtar» basılıb, `Uygunluqlar` doludur.
+    /// Bayraq olmasa ekran «tapılmadı» ilə «hələ axtarılmayıb» halını AYIRD EDƏ
+    /// BİLMİR — ikisi də boş `Uygunluqlar` deməkdir.
+    /// </summary>
+    public bool    AxtarisEdildi { get; set; }
+
+    /// <summary>Excel-in necə oxunduğu (vərəq, başlıq sətri, sütun xəritəsi) — ekranda göstərilir.</summary>
+    public string? Menbe { get; set; }
 }

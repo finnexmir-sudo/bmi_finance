@@ -987,6 +987,62 @@ const xnum = v => Number(v || 0).toFixed(2);               // Excel üçün xam
 - Yeni sütun əlavə edəndə `x:num`-u da əlavə et — unudulan sütun səssizcə mətn
   olur və yalnız «toplanmır» şikayəti ilə üzə çıxır (27.08.2026, real hadisə).
 
+## Excel OXUNUŞU (ClosedXML) — SƏRT FƏRZİYYƏ = SƏSSİZ BOŞ NƏTİCƏ (22.09.2026)
+
+İstifadəçinin yüklədiyi faylın quruluşunu **bilmirsən**. Risk → Məlumat Bazası
+oxuyucusu üç sərt fərziyyə qurmuşdu və üçü də real faylda pozuldu:
+
+| Fərziyyə | Pozulanda |
+|---|---|
+| data 1-ci vərəqdədir (`wb.Worksheet(1)`) | boş vərəq → «sətir tapılmadı» |
+| 1-ci sətir başlıqdır (`.Skip(1)`) | başlıqsız faylda **yeganə data sətri yeyilir** |
+| sütunlar A/B/C-dir | başqa sıralamada dəyərlər **səhv sahəyə** düşür, xəta yox |
+
+**İki konkret ClosedXML tələsi:**
+
+1. **`ws.RangeUsed()` BOŞ vərəqdə `null` qaytarır.** `RangeUsed()!.RowsUsed()`
+   yazılmışdı — `!` yalnız kompilyatoru susdurur, icra anında
+   `NullReferenceException` → ekranda *«Object reference not set to an instance
+   of an object»*. Səbəb mətndən heç cür görünmür.
+2. **`RangeUsed()` üzərindəki sətirdə `Cell(1)` NİSBİDİR** — istifadə olunan
+   aralığın birinci sütunudur. A sütunu boşdursa `Cell(1)` = B olur və sütunlar
+   **səssizcə sürüşür**. Bu ikincisi daha təhlükəlidir: xəta vermir, sadəcə
+   ad VÖEN xanasına düşür.
+
+**Qaydalar:**
+- **`ws.RowsUsed()` işlət** — boş vərəqdə boş kolleksiya qaytarır və `Cell(n)`
+  HƏMİŞƏ mütləq sütundur.
+- Data olan **ilk vərəqi tap**, `Worksheet(1)`-ə bağlanma.
+- Başlıq sətrini **axtar** (ilk ~10 sətirdə «Ad Soyad»/«VÖEN»/«FİN» sözləri),
+  sütunları ada görə xəritələ. **Başlıq tapılmasa HEÇ NƏ ATMA** — `Skip(1)`
+  başlıqsız faylda datanı yeyir.
+- Azəri başlıqlarını müqayisədən əvvəl sadələşdir (`ə→e, ö→o, ü→u, ı→i, ğ→g,
+  ş→s, ç→c` + `İ`-nin `ToLowerInvariant` qalıq nöqtəsi `\u0307`) — yoxsa
+  «VÖEN» ilə «VOEN» fərqli sayılar.
+- **Nəticə boş çıxanda faylda NƏ GÖRDÜYÜNÜ yaz** — ilk sətirlərin ilk
+  xanalarını mesaja qoy. «Sətir tapılmadı» tək başına istifadəçini də, növbəti
+  sessiyanı da kor qoyur.
+- Oxunuşun **necə** aparıldığını ekranda göstər (vərəq adı, başlıq sətri, sütun
+  hərfləri) — «niyə sütunlar sürüşüb» sualı koda baxmadan cavablansın.
+- `.xlsx` olmayan faylı **adına görə əvvəlcədən rədd et**: köhnə `.doc`/`.xls`
+  (OLE2) ClosedXML/OpenXML ilə açılmır, kitabxana mətni isə anlaşılmaz olur.
+
+### İki addımlı axın: əvvəl GÖSTƏR, sonra SORĞU
+
+İstifadəçi qərarı: «həmin exceli tabledə göstərsin və **sonra** bazada axtarmaq
+işlərinə getsin buton ilə». Yükləmə Oracle-a sorğu **göndərmir** — yalnız oxuyub
+cədvəldə göstərir; BMI sorğusu ikinci addımdadır.
+
+Siyahı addımlar arasında **gizli sahədə JSON** kimi daşınır (fayl input-u
+yenidən doldurula bilmir, `TempData` isə bu həcmi saxlamır). Hədd:
+`FormOptions.ValueLengthLimit` defolt **4 MB** — sətir başına ~100 bayt, yəni
+~40 000 sətir. Daha böyük siyahı lazım olsa fayl müvəqqəti saxlanmalıdır
+(`C:\FinNex_DMS\`), JSON həddi artırılmamalıdır.
+
+`AxtarisNeticeDto.AxtarisEdildi` bayrağı **məcburidir**: onsuz ekran
+«tapılmadı» ilə «hələ axtarılmayıb» halını ayırd edə bilmir — ikisi də boş
+`Uygunluqlar` deməkdir.
+
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
 Toplu Maaş ekranının aşağı zolağında `Gross`, `Cəmi tutulma` və `NET` **bir-birini
