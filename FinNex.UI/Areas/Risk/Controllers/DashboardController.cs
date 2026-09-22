@@ -99,31 +99,71 @@ public class DashboardController : Controller
             return RedirectToAction(nameof(MelumatBazasi));
         }
 
+        // ⚠️ KÖHNƏ .xls (OLE2) ClosedXML ilə AÇILMIR — OpenXML yalnız .xlsx oxuyur.
+        // Adına görə əvvəlcədən deyirik, yoxsa aşağıdakı `catch` anlaşılmaz
+        // kitabxana mətni göstərər.
+        var uzanti = Path.GetExtension(fayl.FileName);
+        if (!string.Equals(uzanti, ".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = $"Yalnız .xlsx faylı oxunur (seçilən: «{fayl.FileName}»). " +
+                                "Köhnə .xls faylını Excel-də açıb «Farklı kaydet → Excel Workbook (.xlsx)» edin.";
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
         var setirler = new List<AxtarisSetriDto>();
         try
         {
             using var stream = fayl.OpenReadStream();
             using var wb = new XLWorkbook(stream);
-            var ws = wb.Worksheet(1);
-            var sira = 1;
-            foreach (var row in ws.RangeUsed()!.RowsUsed().Skip(1)) // 1-ci sətir başlıqdır
+
+            if (wb.Worksheets.Count == 0)
             {
-                var ad   = row.Cell(1).GetString().Trim();
-                var voen = row.Cell(2).GetString().Trim();
-                var fin  = row.Cell(3).GetString().Trim();
+                TempData["Error"] = "Excel faylında heç bir vərəq (sheet) yoxdur.";
+                return RedirectToAction(nameof(MelumatBazasi));
+            }
+
+            var ws = wb.Worksheet(1);
+
+            // ⚠️ ƏVVƏL `ws.RangeUsed()!.RowsUsed()` yazılmışdı — İKİ SƏHV:
+            //
+            //  1. `RangeUsed()` BOŞ vərəqdə `null` qaytarır, `!` isə yalnız
+            //     kompilyatoru susdurur → icra anında NullReferenceException
+            //     («Object reference not set to an instance of an object»).
+            //     İstifadəçi bu mətni görürdü və səbəbi bilinmirdi (real hadisə
+            //     22.09.2026). Kitabxananın özü yox, kodun günahı idi.
+            //
+            //  2. `RangeUsed()` üzərindəki sətirdə `Cell(1)` **istifadə olunan
+            //     aralığa görə NİSBİDİR** — data B sütunundan başlayırsa (ya da
+            //     A sütunu boşdursa) `Cell(1)` artıq A yox, B olur və sütunlar
+            //     SƏSSİZCƏ sürüşür: ad → VÖEN xanasına düşər.
+            //
+            // `ws.RowsUsed()` hər ikisini həll edir: boş vərəqdə boş kolleksiya
+            // qaytarır və `Cell(1)` HƏMİŞƏ A sütunudur.
+            var sira = 1;
+            foreach (var row in ws.RowsUsed().Skip(1))   // 1-ci sətir başlıqdır
+            {
+                var ad   = row.Cell(1).GetString().Trim();   // A
+                var voen = row.Cell(2).GetString().Trim();   // B
+                var fin  = row.Cell(3).GetString().Trim();   // C
                 if (ad.Length == 0 && voen.Length == 0 && fin.Length == 0) continue; // boş sətir
                 setirler.Add(new AxtarisSetriDto { Sira = sira++, AdSoyadAta = ad, Voen = voen, Fin = fin });
             }
         }
         catch (Exception ex)
         {
-            TempData["Error"] = "Excel faylı oxuna bilmədi: " + ex.Message;
+            // Kök səbəbi də göstər — kitabxana xətaları çox vaxt InnerException-dadır
+            // və tək `ex.Message` diaqnozu yanlış istiqamətə aparır (CLAUDE.md).
+            var kok = ex; while (kok.InnerException != null) kok = kok.InnerException;
+            var metn = ReferenceEquals(kok, ex) ? ex.Message : $"{ex.Message} → {kok.Message}";
+            TempData["Error"] = "Excel faylı oxuna bilmədi: " + metn;
             return RedirectToAction(nameof(MelumatBazasi));
         }
 
         if (setirler.Count == 0)
         {
-            TempData["Error"] = "Excel faylında oxunacaq sətir tapılmadı. Sütunlar: A=Ad Soyad Ata adı, B=VÖEN, C=FİN (1-ci sətir başlıq).";
+            TempData["Error"] = "Excel faylında oxunacaq sətir tapılmadı. " +
+                                "Gözlənilən quruluş: 1-ci sətir başlıq, sonra A=Ad Soyad Ata adı, B=VÖEN, C=FİN. " +
+                                "Data BİRİNCİ vərəqdə və A sütunundan başlamalıdır.";
             return RedirectToAction(nameof(MelumatBazasi));
         }
 
