@@ -93,6 +93,15 @@ public class AxtarisSetriDto
     public string? AdSoyadAta  { get; set; }
     public string? Voen        { get; set; }
     public string? Fin         { get; set; }
+
+    /// <summary>
+    /// Excel şablonundakı «novu» sütunu (22.09.2026 — istifadəçinin real faylı).
+    /// ⚠️ AXTARIŞDA İŞTİRAK ETMİR — yalnız oxunur, cədvəldə və Excel ixracında
+    /// göstərilir. Uyğunluq hələ yalnız ad/VÖEN/FİN üzrədir. Bu sütun axtarışa
+    /// təsir etməlidirsə (məs. fiziki/hüquqi ayırmaq), qayda əvvəlcə
+    /// istifadəçidən soruşulmalıdır — özbaşına fərz etmə.
+    /// </summary>
+    public string? Novu        { get; set; }
 }
 
 // Bir axtarış sətrinin bank bazasında tapılan uyğunluğu (varsa)

@@ -1043,6 +1043,21 @@ yenidən doldurula bilmir, `TempData` isə bu həcmi saxlamır). Hədd:
 «tapılmadı» ilə «hələ axtarılmayıb» halını ayırd edə bilmir — ikisi də boş
 `Uygunluqlar` deməkdir.
 
+### Real şablon: `AMLexcel.xlsx`, vərəq «Axtarilanlar»
+
+İşçinin doldurduğu fayl **dörd sütunludur**: `A=Adlar`, `B=VOEN`, `C=fin`,
+`D=novu`. Başlıqlar Azəri hərfsiz və kiçik hərflə yazılır — tanıma buna görə
+`Sadeles` ilə normallaşdırılmış müqayisə üzərində qurulub, hərfi bərabərlik
+YOX (`«Adlar»` → `startsWith("ad")`, `«novu»` → `startsWith("nov")`).
+
+⚠️ **«Növü» AXTARIŞDA İŞTİRAK ETMİR** — oxunur, cədvəldə və Excel ixracında
+göstərilir, vəssalam. Nə demək olduğu (fiziki/hüquqi? siyahının mənbəyi?)
+**istifadəçidən soruşulmayıb**. Uyğunluq qaydasına təsir etməlidirsə, əvvəlcə
+soruş — özbaşına fərz etmə.
+
+Boş sətir şərti: `ad`, `VÖEN`, `FİN` **üçü də** boşdursa sətir atılır. Yalnız
+«Növü» dolu olması sətri saxlatmır — axtarılacaq heç nə yoxdur.
+
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
 Toplu Maaş ekranının aşağı zolağında `Gross`, `Cəmi tutulma` və `NET` **bir-birini

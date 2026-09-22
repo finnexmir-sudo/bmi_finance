@@ -224,10 +224,11 @@ public class DashboardController : Controller
         var baxilacaq   = Math.Min(sonSutun, 30);
 
         // Başlıq sətrini ilk 10 sətirdə axtar (fayl başında boş/başlıq mətni ola bilər).
-        int basliqIdx = -1, adC = 0, voenC = 0, finC = 0;
+        // Real şablon (22.09.2026): A=«Adlar», B=«VOEN», C=«fin», D=«novu».
+        int basliqIdx = -1, adC = 0, voenC = 0, finC = 0, novC = 0;
         for (var i = 0; i < Math.Min(10, hamSetirler.Count); i++)
         {
-            int a = 0, v = 0, f = 0;
+            int a = 0, v = 0, f = 0, n = 0;
             for (var c = 1; c <= baxilacaq; c++)
             {
                 var h = Sadeles(hamSetirler[i].Cell(c).GetString());
@@ -236,8 +237,9 @@ public class DashboardController : Controller
                 else if (v == 0 && h.Contains("voen")) v = c;
                 else if (a == 0 && (h.Contains("soyad") || h.Contains("saa")
                                  || h.Contains("sexs")  || h.StartsWith("ad"))) a = c;
+                else if (n == 0 && h.StartsWith("nov")) n = c;   // «novu» / «Növü»
             }
-            if (a > 0 || v > 0 || f > 0) { basliqIdx = i; adC = a; voenC = v; finC = f; break; }
+            if (a > 0 || v > 0 || f > 0) { basliqIdx = i; adC = a; voenC = v; finC = f; novC = n; break; }
         }
 
         var diaq = new System.Text.StringBuilder($"vərəq «{ws.Name}»");
@@ -248,6 +250,7 @@ public class DashboardController : Controller
             data = hamSetirler.Skip(basliqIdx + 1);
             diaq.Append($" · başlıq {hamSetirler[basliqIdx].RowNumber()}-ci sətir · sütunlar: ")
                 .Append($"Ad={SutunHerfi(adC)}, VÖEN={SutunHerfi(voenC)}, FİN={SutunHerfi(finC)}");
+            if (novC > 0) diaq.Append($", Növü={SutunHerfi(novC)}");
         }
         else
         {
@@ -265,8 +268,15 @@ public class DashboardController : Controller
             var ad   = adC   > 0 ? row.Cell(adC).GetString().Trim()   : "";
             var voen = voenC > 0 ? row.Cell(voenC).GetString().Trim() : "";
             var fin  = finC  > 0 ? row.Cell(finC).GetString().Trim()  : "";
+            var novu = novC  > 0 ? row.Cell(novC).GetString().Trim()  : "";
+
+            // «Növü» TƏK BAŞINA sətri saxlatmır — axtarılacaq heç nə yoxdursa sətir boşdur.
             if (ad.Length == 0 && voen.Length == 0 && fin.Length == 0) continue;
-            setirler.Add(new AxtarisSetriDto { Sira = sira++, AdSoyadAta = ad, Voen = voen, Fin = fin });
+
+            setirler.Add(new AxtarisSetriDto
+            {
+                Sira = sira++, AdSoyadAta = ad, Voen = voen, Fin = fin, Novu = novu
+            });
         }
 
         if (setirler.Count == 0)
@@ -304,35 +314,42 @@ public class DashboardController : Controller
         var wb = new HSSFWorkbook();
         var sh = wb.CreateSheet("Axtarilanlar");
         var hdr = sh.CreateRow(0);
-        string[] basliqlar = { "№", "Ad Soyad Ata adı", "VÖEN", "FİN", "Tapıldı", "Mənbə", "Uyğun ad", "Uyğun regnom", "Uyğun sahə" };
+        // «Növü» — istifadəçinin şablonundakı 4-cü sütun; axtarışda iştirak etmir,
+        // amma ixracda qalır ki, mühasib/risk işçisi öz faylı ilə tutuşdura bilsin.
+        string[] basliqlar = { "№", "Ad Soyad Ata adı", "VÖEN", "FİN", "Növü",
+                               "Tapıldı", "Mənbə", "Uyğun ad", "Uyğun regnom", "Uyğun sahə" };
         for (int c = 0; c < basliqlar.Length; c++) hdr.CreateCell(c).SetCellValue(basliqlar[c]);
 
+        // Sətrin SOL hissəsi (Excel-dən gələn 5 sütun) hər iki qolda eynidir —
+        // nüsxə saxlamırıq ki, sütun əlavə olunanda biri köhnə qalmasın.
         int r = 1;
+        NPOI.SS.UserModel.IRow YeniSetir(AxtarisSetriDto a)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(a.Sira);
+            row.CreateCell(1).SetCellValue(a.AdSoyadAta ?? "");
+            row.CreateCell(2).SetCellValue(a.Voen ?? "");
+            row.CreateCell(3).SetCellValue(a.Fin ?? "");
+            row.CreateCell(4).SetCellValue(a.Novu ?? "");
+            return row;
+        }
+
         foreach (var setir in netice.Setirler)
         {
             if (setir.Uygunluqlar.Count == 0)
             {
-                var row = sh.CreateRow(r++);
-                row.CreateCell(0).SetCellValue(setir.Axtarilan.Sira);
-                row.CreateCell(1).SetCellValue(setir.Axtarilan.AdSoyadAta ?? "");
-                row.CreateCell(2).SetCellValue(setir.Axtarilan.Voen ?? "");
-                row.CreateCell(3).SetCellValue(setir.Axtarilan.Fin ?? "");
-                row.CreateCell(4).SetCellValue("Xeyr");
+                YeniSetir(setir.Axtarilan).CreateCell(5).SetCellValue("Xeyr");
             }
             else
             {
                 foreach (var u in setir.Uygunluqlar)
                 {
-                    var row = sh.CreateRow(r++);
-                    row.CreateCell(0).SetCellValue(setir.Axtarilan.Sira);
-                    row.CreateCell(1).SetCellValue(setir.Axtarilan.AdSoyadAta ?? "");
-                    row.CreateCell(2).SetCellValue(setir.Axtarilan.Voen ?? "");
-                    row.CreateCell(3).SetCellValue(setir.Axtarilan.Fin ?? "");
-                    row.CreateCell(4).SetCellValue("Bəli");
-                    row.CreateCell(5).SetCellValue(u.Menbe);
-                    row.CreateCell(6).SetCellValue(u.AdSoyad ?? "");
-                    row.CreateCell(7).SetCellValue(u.Regnom ?? "");
-                    row.CreateCell(8).SetCellValue(u.UygunSahe ?? "");
+                    var row = YeniSetir(setir.Axtarilan);
+                    row.CreateCell(5).SetCellValue("Bəli");
+                    row.CreateCell(6).SetCellValue(u.Menbe);
+                    row.CreateCell(7).SetCellValue(u.AdSoyad ?? "");
+                    row.CreateCell(8).SetCellValue(u.Regnom ?? "");
+                    row.CreateCell(9).SetCellValue(u.UygunSahe ?? "");
                 }
             }
         }

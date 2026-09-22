@@ -11,6 +11,9 @@
     var netice    = siyahiVar && Model.AxtarisEdildi;
     var onizleme  = siyahiVar && !Model.AxtarisEdildi;
 
+    // «Növü» sütunu YALNIZ faylda varsa göstərilir — boş sütun cədvəli yükləməsin.
+    var novuVar = Model.Setirler.Any(s => !string.IsNullOrWhiteSpace(s.Axtarilan.Novu));
+
     // Şərtli mətn markup ortasında qurulmur — hazır dəyişən kimi yazılır (CLAUDE.md).
     var altBaslik = netice   ? $"{Model.UmumiSay} sətir yoxlanıldı — {Model.TapilanSay} uyğunluq"
                   : onizleme ? $"{Model.UmumiSay} sətir oxundu — hələ yoxlanılmayıb"
@@ -64,9 +67,12 @@
                     bazası ilə tutuşdurulur (<b>ad</b>, <b>VÖEN</b>, <b>FİN</b> üzrə tam uyğunluq).
                 </div>
                 <ul class="mb-note-l">
-                    <li><b>Sütunlar</b> — başlıqda «Ad Soyad», «VÖEN», «FİN» sözləri olsa avtomatik tanınır.
-                        Başlıq yoxdursa <b>A</b> = ad, <b>B</b> = VÖEN, <b>C</b> = FİN sayılır və
+                    <li><b>Sütunlar</b> — başlıqda «Adlar»/«Ad Soyad», «VÖEN», «FİN», «Növü» sözləri
+                        olsa avtomatik tanınır, sıraları dəyişik olsa da. Başlıq yoxdursa
+                        <b>A</b> = ad, <b>B</b> = VÖEN, <b>C</b> = FİN sayılır və
                         <b>heç bir sətir atılmır</b>.</li>
+                    <li><b>«Növü» axtarışda iştirak etmir</b> — oxunur, cədvəldə və Excel ixracında
+                        görünür. Uyğunluq yalnız ad/VÖEN/FİN üzrədir.</li>
                     <li><b>Mənbələr</b> — müştəri qeydiyyatı, imza səlahiyyətli şəxslər, nümayəndələr.</li>
                     <li><b>Heç nə yazılmır</b> — BMI bazasına yalnız sorğu göndərilir, qeyd dəyişmir.</li>
                 </ul>
@@ -129,6 +135,10 @@
                     <thead>
                         <tr>
                             <th>№</th><th>Ad Soyad Ata adı</th><th>VÖEN</th><th>FİN</th>
+                            @if (novuVar)
+                            {
+                                <th>Növü</th>
+                            }
                             @if (netice)
                             {
                                 <th>Status</th><th>Uyğunluq detalı</th>
@@ -143,6 +153,10 @@
                                 <td>@s.Axtarilan.AdSoyadAta</td>
                                 <td>@s.Axtarilan.Voen</td>
                                 <td>@s.Axtarilan.Fin</td>
+                                @if (novuVar)
+                                {
+                                    <td>@s.Axtarilan.Novu</td>
+                                }
                                 @if (netice)
                                 {
                                     <td>
