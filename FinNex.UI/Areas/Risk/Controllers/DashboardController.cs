@@ -1,10 +1,12 @@
 using System.Text.Json;
 using ClosedXML.Excel;
 using FinNex.Application.DTOs.Risk;
+using FinNex.Application.Interfaces.Aml;
 using FinNex.Application.Interfaces.Risk;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NPOI.HSSF.UserModel;
+using NPOI.XSSF.UserModel;
 
 namespace FinNex.UI.Areas.Risk.Controllers;
 
@@ -13,10 +15,12 @@ namespace FinNex.UI.Areas.Risk.Controllers;
 public class DashboardController : Controller
 {
     private readonly IRiskService _service;
+    private readonly IMelumatBazasiService _mb;
 
-    public DashboardController(IRiskService service)
+    public DashboardController(IRiskService service, IMelumatBazasiService mb)
     {
         _service = service;
+        _mb = mb;
     }
 
     // Risk dashboard: KPI kartları + qrafiklər + hesabat kartları
@@ -82,22 +86,131 @@ public class DashboardController : Controller
         return File(ms.ToArray(), "application/vnd.ms-excel", ad);
     }
 
-    // ── Məlumat Bazası — "Axtarılanlar" siyahısının bank müştəriləri ilə yoxlanması ──
+    // ── Məlumat Bazası — dövr üzrə AML paketi ────────────────────────────────
+    //    BMI mənbəyi: `BMI/AML/Sorgular/MelumatBazasi.cs` → `excelDoldur()`.
+    //    İki tarix + «Ümumi sorğu» → 11 Oracle SELECT → 11 vərəqli Excel.
+
+    // GET: iki tarix seçimi. Defolt — keçən ayın son günü → bu ayın son günü
+    // (BMI-də dəyərlər Designer-də SABİT yazılmışdı: 31-01-2025 / 28-02-2025,
+    //  yəni heç bir «iş günü» hesablaması yox idi — operator əl ilə seçirdi).
+    public IActionResult MelumatBazasi()
+    {
+        var bugun = DateTime.Today;
+        var ayBasi = new DateTime(bugun.Year, bugun.Month, 1);
+        ViewBag.Vereqler = _mb.Vereqler;
+        return View(new FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto
+        {
+            BasTarix = ayBasi.AddDays(-1),                                  // keçən ayın son günü
+            SonTarix = ayBasi.AddMonths(1).AddDays(-1)                      // bu ayın son günü
+        });
+    }
+
+    // POST: «Ümumi sorğu» — paketi hazırlayıb .xlsx kimi verir.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MelumatBazasiPaket(DateTime basTarix, DateTime sonTarix, CancellationToken ct)
+    {
+        var netice = await _mb.HazirlaAsync(basTarix, sonTarix, ct);
+
+        if (netice.Xeta != null)
+        {
+            TempData["Error"] = netice.Xeta;
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        // Heç bir vərəq alınmadısa fayl vermək mənasızdır — səbəbi ekranda göstər.
+        if (netice.Vereqler.All(v => v.Xeta != null))
+        {
+            TempData["Error"] = "Heç bir vərəq hazırlanmadı. " +
+                                string.Join(" | ", netice.XetaliVereqler.Take(3).Select(v => $"{v.Ad}: {v.Xeta}"));
+            return RedirectToAction(nameof(MelumatBazasi));
+        }
+
+        // ⚠️ XSSF (.xlsx) — HSSF (.xls) DEYİL: köhnə formatda vərəqdə 65 536 sətir
+        // həddi var, `arh_dd` üzrə aylıq köçürmələr bunu rahat keçə bilər və
+        // sətirlər SƏSSİZCƏ itərdi. BMI də `.xlsx` yazırdı (EPPlus).
+        var wb = new XSSFWorkbook();
+
+        foreach (var v in netice.Vereqler)
+        {
+            // NPOI vərəq adında `[ ] * / \ ? :` qəbul etmir; «3-cu shexs» təhlükəsizdir,
+            // amma gələcək vərəq adı üçün təmizləyirik.
+            var sh = wb.CreateSheet(NPOI.SS.Util.WorkbookUtil.CreateSafeSheetName(v.Ad));
+
+            if (v.Xeta != null)
+            {
+                sh.CreateRow(0).CreateCell(0).SetCellValue("XƏTA: " + v.Xeta);
+                continue;
+            }
+
+            // 1-ci sətir: dövr və hazırlanma vaxtı (BMI-də bu, Aktiv_hesablar
+            // vərəqinin B4/E4 xanalarında idi — burada HƏR vərəqdə var ki,
+            // vərəq tək-tək göndəriləndə də dövrü bilinsin).
+            var bas = sh.CreateRow(0);
+            bas.CreateCell(0).SetCellValue($"{v.Baslik} · dövr: " +
+                (v.Dovrlu ? $"{netice.BasTarix:dd.MM.yyyy} – {netice.SonTarix:dd.MM.yyyy}" : "dövrsüz (cari vəziyyət)"));
+            bas.CreateCell(5).SetCellValue($"Hazırlandı: {DateTime.Now:dd.MM.yyyy HH:mm}");
+
+            var hdr = sh.CreateRow(1);
+            hdr.CreateCell(0).SetCellValue("№");
+            for (int c = 0; c < v.Sutunlar.Count; c++)
+                hdr.CreateCell(c + 1).SetCellValue(v.Sutunlar[c]);
+
+            for (int i = 0; i < v.Setirler.Count; i++)
+            {
+                var r = sh.CreateRow(i + 2);
+                r.CreateCell(0).SetCellValue(i + 1);
+                var sətir = v.Setirler[i];
+                for (int c = 0; c < sətir.Length; c++)
+                {
+                    var cell = r.CreateCell(c + 1);
+                    // ⚠️ Rəqəmi `ToString()` ilə YAZMA — az-AZ vergülü Excel-də
+                    // mətnə çevirər və sütun toplanmaz (CLAUDE.md, `x:num` hadisəsi).
+                    switch (sətir[c])
+                    {
+                        case null:        cell.SetCellValue(""); break;
+                        case decimal d:   cell.SetCellValue((double)d); break;
+                        case double db:   cell.SetCellValue(db); break;
+                        case float f:     cell.SetCellValue(f); break;
+                        case int i32:     cell.SetCellValue(i32); break;
+                        case long i64:    cell.SetCellValue(i64); break;
+                        case DateTime dt: cell.SetCellValue(dt.ToString("dd.MM.yyyy")); break;
+                        default:          cell.SetCellValue(sətir[c]!.ToString()); break;
+                    }
+                }
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        var ad = $"Melumat_bazasi_{netice.SonTarix:MM-yyyy}.xlsx";
+        return File(ms.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ad);
+    }
+
+    // ── Axtarılanlar — Excel siyahısının bank müştəriləri ilə yoxlanması ──────
+    //    BMI mənbəyi: `BMI/AML/AMLexcel.cs`.
+    //
+    //    ⚠️ 22.09.2026-ya qədər bu səhifə səhvən «Məlumat Bazası» adlanırdı.
+    //    BMI-də «Məlumat Bazası» TAMAMİLƏ BAŞQA formadır
+    //    (`BMI/AML/Sorgular/MelumatBazasi.cs` — iki tarix + «Ümumi sorğu»,
+    //    11 sorğuluq Excel paketi). O, indi aşağıda ayrıca qurulub.
+    //    Ad düzəldildi, funksiya SİLİNMƏDİ — işlək modul idi (CLAUDE.md).
 
     // GET: boş forma (fayl yükləmə)
-    public IActionResult MelumatBazasi() => View(new AxtarisNeticeDto());
+    public IActionResult Axtarilanlar() => View(new AxtarisNeticeDto());
 
     // POST 1-ci ADDIM: .xlsx oxunur və cədvəldə GÖSTƏRİLİR. BMI-yə sorğu GETMİR.
     // (22.09.2026, istifadəçi qərarı: «həmin exceli tabledə göstərsin və sonra
     //  bazada axtarmaq işlərinə getsin buton ilə».)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult MelumatBazasiYukle(IFormFile fayl)
+    public IActionResult AxtarilanlarYukle(IFormFile fayl)
     {
         if (fayl == null || fayl.Length == 0)
         {
             TempData["Error"] = "Excel faylı seçilməyib.";
-            return RedirectToAction(nameof(MelumatBazasi));
+            return RedirectToAction(nameof(Axtarilanlar));
         }
 
         // ⚠️ KÖHNƏ .xls (OLE2) ClosedXML ilə AÇILMIR — OpenXML yalnız .xlsx oxuyur.
@@ -108,7 +221,7 @@ public class DashboardController : Controller
         {
             TempData["Error"] = $"Yalnız .xlsx faylı oxunur (seçilən: «{fayl.FileName}»). " +
                                 "Köhnə .xls faylını Excel-də açıb «Farklı kaydet → Excel Workbook (.xlsx)» edin.";
-            return RedirectToAction(nameof(MelumatBazasi));
+            return RedirectToAction(nameof(Axtarilanlar));
         }
 
         ExcelOxunus oxunus;
@@ -124,17 +237,17 @@ public class DashboardController : Controller
             var kok = ex; while (kok.InnerException != null) kok = kok.InnerException;
             var metn = ReferenceEquals(kok, ex) ? ex.Message : $"{ex.Message} → {kok.Message}";
             TempData["Error"] = "Excel faylı oxuna bilmədi: " + metn;
-            return RedirectToAction(nameof(MelumatBazasi));
+            return RedirectToAction(nameof(Axtarilanlar));
         }
 
         if (oxunus.Xeta != null)
         {
             TempData["Error"] = oxunus.Xeta;
-            return RedirectToAction(nameof(MelumatBazasi));
+            return RedirectToAction(nameof(Axtarilanlar));
         }
 
         // Yalnız GÖSTƏRİŞ — `Uygunluqlar` boşdur, `AxtarisEdildi` false.
-        return View("MelumatBazasi", new AxtarisNeticeDto
+        return View("Axtarilanlar", new AxtarisNeticeDto
         {
             Setirler      = oxunus.Setirler.Select(s => new AxtarisNeticeSetriDto { Axtarilan = s }).ToList(),
             UmumiSay      = oxunus.Setirler.Count,
@@ -148,7 +261,7 @@ public class DashboardController : Controller
     // doldurula bilmir, TempData isə belə həcmi saxlamır).
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> MelumatBazasiAxtar(string setirlerJson, string? menbe)
+    public async Task<IActionResult> AxtarilanlarAxtar(string setirlerJson, string? menbe)
     {
         List<AxtarisSetriDto>? setirler;
         try { setirler = JsonSerializer.Deserialize<List<AxtarisSetriDto>>(setirlerJson); }
@@ -157,13 +270,13 @@ public class DashboardController : Controller
         if (setirler == null || setirler.Count == 0)
         {
             TempData["Error"] = "Axtarılacaq siyahı itdi — Excel faylını yenidən yükləyin.";
-            return RedirectToAction(nameof(MelumatBazasi));
+            return RedirectToAction(nameof(Axtarilanlar));
         }
 
         var netice = await _service.AxtarilanlariYoxlaAsync(setirler);
         netice.AxtarisEdildi = true;
         netice.Menbe = menbe;
-        return View("MelumatBazasi", netice);
+        return View("Axtarilanlar", netice);
     }
 
     // ── Excel oxunuşu ────────────────────────────────────────────────────────
@@ -300,7 +413,7 @@ public class DashboardController : Controller
     // artıq göstərilən nəticəni JSON-dan bərpa edir).
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult MelumatBazasiExcel(string neticeJson)
+    public IActionResult AxtarilanlarExcel(string neticeJson)
     {
         AxtarisNeticeDto? netice;
         try { netice = JsonSerializer.Deserialize<AxtarisNeticeDto>(neticeJson); }
@@ -308,7 +421,7 @@ public class DashboardController : Controller
         if (netice == null || netice.Setirler.Count == 0)
         {
             TempData["Error"] = "İxrac ediləcək nəticə tapılmadı.";
-            return RedirectToAction(nameof(MelumatBazasi));
+            return RedirectToAction(nameof(Axtarilanlar));
         }
 
         var wb = new HSSFWorkbook();
