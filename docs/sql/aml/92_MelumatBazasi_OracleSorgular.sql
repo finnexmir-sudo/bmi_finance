@@ -137,14 +137,16 @@ DECLARE @Ad NVARCHAR(200), @Mahiyyet NVARCHAR(MAX), @Sql NVARCHAR(MAX);
 
 /* ---------------------------------------------------------------- 1/11 */
 SET @Ad       = N'AML_MB_OPEN_ACCOUNTS';
-SET @Mahiyyet = N'Məlumat Bazası → Open_Accounts. Dövrdə açılmış hesablar (3x/4x) + hesabı açan icraçı. Uyğunluq: hesabın adı.';
+SET @Mahiyyet = N'Məlumat Bazası → Open_Accounts. Dövrdə açılmış hesablar (3x/4x) + hesabı açan icraçı. Uyğunluq: hesabın adı + sahibinin FİN/VÖEN-i (regnom join).';
 SET @Sql      = N'select l.date_open_licsch                              ac_tar,
        nvl(n.icra, ''OLD_REGNOM'')                       icra,
        l.licsch                                        hn,
        odb.func_utf8_to_latin(l.name_licsch)           adi,
        y.a_s_a                                         axtarilan,
-       ''Ad'' uygunluq
-  from odb.licsch l,
+       case when trim(r.pincode)    = y.fin  then ''FİN''
+            when trim(r.inn_regnom) = y.voen then ''VÖEN''
+            else ''Ad'' end                              uygunluq
+  from odb.licsch l, odb.regnom r,
        ( select trim(f.qn) qn, trim(f.icraci) icra
            from odb.qey_nezaret f
           where f.tarix between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
@@ -157,7 +159,10 @@ SET @Sql      = N'select l.date_open_licsch                              ac_tar,
                               and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
    and substr(l.licsch,1,1) in (''3'',''4'')
    and substr(l.licsch,10,6) = n.qn(+)
-   and odb.func_utf8_to_latin(upper(l.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+   and l.registrac_nomer     = r.regnom(+)
+   and ( odb.func_utf8_to_latin(upper(l.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+      or trim(r.pincode)    = y.fin
+      or trim(r.inn_regnom) = y.voen )
  order by l.date_open_licsch, l.licsch';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
@@ -171,21 +176,29 @@ ELSE
 
 /* ---------------------------------------------------------------- 2/11 */
 SET @Ad       = N'AML_MB_KOCURME_DAXILI';
-SET @Mahiyyet = N'Məlumat Bazası → Kochurme_Daxili_hes. Daxili hesablar arası köçürmələr. Uyğunluq: hesab sahibinin adı (arh_dd.name_licsch).';
+SET @Mahiyyet = N'Məlumat Bazası → Kochurme_Daxili_hes. Daxili hesablar arası köçürmələr. Uyğunluq: hesab sahibinin adı + FİN (pincode_or_passport) + hesab sahibinin FİN/VÖEN-i (regnom join).';
 SET @Sql      = N'select t.date_oper                                     tarix,
        t.debet, t.kredit,
        t.summa_v_nacval                                mebleg,
        odb.func_utf8_to_latin(t.primechanie)           qeyd,
        y.a_s_a                                         axtarilan,
-       ''Ad (hesab sahibi)'' uygunluq
-  from odb.arh_dd t, ( {SIYAHI} ) y
+       case when t.pincode_or_passport = y.fin                       then ''FİN''
+            when trim(rd.pincode)    = y.fin or trim(rk.pincode)    = y.fin  then ''FİN (hesab sahibi)''
+            when trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen then ''VÖEN (hesab sahibi)''
+            else ''Ad (hesab sahibi)'' end                              uygunluq
+  from odb.arh_dd t, odb.regnom rd, odb.regnom rk, ( {SIYAHI} ) y
  where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                        and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and substr(t.debet,10,6)  = rd.regnom(+)
+   and substr(t.kredit,10,6) = rk.regnom(+)
    and ( (substr(t.debet,1,5)  in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
           and substr(t.kredit,1,5) in (''45021'',''45023'',''45029'',''45089''))
       or (substr(t.debet,1,5)  in (''45021'',''45023'',''45029'',''45089'')
           and substr(t.kredit,1,5) in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')) )
-   and odb.func_utf8_to_latin(upper(t.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+   and ( odb.func_utf8_to_latin(upper(t.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+      or t.pincode_or_passport = y.fin
+      or trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin
+      or trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen )
  order by t.recnum';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
@@ -207,12 +220,16 @@ SET @Sql      = N'select t.date_oper                                     tarix,
        odb.func_utf8_to_latin(t.primechanie)           qeyd,
        y.a_s_a                                         axtarilan,
        case when t.pincode_or_passport = y.fin then ''FİN''
+            when trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin  then ''FİN (hesab sahibi)''
+            when trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen then ''VÖEN (hesab sahibi)''
             when odb.func_utf8_to_latin(upper(t.name_licsch))
                  like ''%'' || upper(y.a_s_a) || ''%''     then ''Ad (hesab sahibi)''
             else ''Ad (qeyd mətnində)'' end              uygunluq
-  from odb.arh_dd t, ( {SIYAHI} ) y
+  from odb.arh_dd t, odb.regnom rd, odb.regnom rk, ( {SIYAHI} ) y
  where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                        and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
+   and substr(t.debet,10,6)  = rd.regnom(+)
+   and substr(t.kredit,10,6) = rk.regnom(+)
    and ( (substr(t.debet,1,5)  in (''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
           and (substr(t.kredit,1,2) in (''38'',''39'',''40'',''41'')
             or substr(t.kredit,1,5) in (''35090'',''35100'')))
@@ -222,7 +239,9 @@ SET @Sql      = N'select t.date_oper                                     tarix,
    and (t.vid_operacii < 96 or t.vid_operacii is null)
    and ( odb.func_utf8_to_latin(upper(t.primechanie))  like ''%'' || upper(y.a_s_a) || ''%''
       or odb.func_utf8_to_latin(upper(t.name_licsch))  like ''%'' || upper(y.a_s_a) || ''%''
-      or t.pincode_or_passport = y.fin )';
+      or t.pincode_or_passport = y.fin
+      or trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin
+      or trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen )';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
     UPDATE OracleSorgular
@@ -335,7 +354,7 @@ ELSE
 
 /* ---------------------------------------------------------------- 7/11 */
 SET @Ad       = N'AML_MB_UCUNCU_SEXS';
-SET @Mahiyyet = N'Məlumat Bazası → 3-cu shexs. docfio üzrə 3-cü şəxs əməliyyatları. Uyğunluq: YALNIZ ad (docfio-da FİN sütunu yoxdur — SSN/PASPORT boşdur).';
+SET @Mahiyyet = N'Məlumat Bazası → 3-cu shexs. docfio üzrə 3-cü şəxs əməliyyatları. Uyğunluq: 3-cü şəxsin adı + HESAB SAHİBİNİN FİN/VÖEN-i (regnom join). docfio-nun ÖZ SSN/PASPORT sütunları boşdur.';
 SET @Sql      = N'select t.date_oper                                     tarix,
        t.debet, t.kredit,
        t.summa_v_inval                                 valuta,
@@ -344,14 +363,20 @@ SET @Sql      = N'select t.date_oper                                     tarix,
        odb.func_utf8_to_latin(t.primechanie)           qeyd,
        odb.func_utf8_to_latin(t.fio)                   fio22,
        y.a_s_a                                         axtarilan,
-       ''Ad (3-cü şəxs)'' uygunluq
-  from odb.docfio t, ( {SIYAHI} ) y
+       case when trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin  then ''FİN (hesab sahibi)''
+            when trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen then ''VÖEN (hesab sahibi)''
+            else ''Ad (3-cü şəxs)'' end                       uygunluq
+  from odb.docfio t, odb.regnom rd, odb.regnom rk, ( {SIYAHI} ) y
  where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                        and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
    and t.recnum is not null
+   and substr(t.debet,10,6)  = rd.regnom(+)
+   and substr(t.kredit,10,6) = rk.regnom(+)
    and ( odb.func_utf8_to_latin(upper(t.fio)) like ''%'' || upper(y.a_s_a) || ''%''
       or ( length(trim(t.fio)) >= 8
-           and upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(upper(trim(t.fio))) || ''%'' ) )';
+           and upper(y.a_s_a) like ''%'' || odb.func_utf8_to_latin(upper(trim(t.fio))) || ''%'' )
+      or trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin
+      or trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen )';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
     UPDATE OracleSorgular

@@ -1115,24 +1115,40 @@ olar, bazada isə `MALAHAT`-dır: **heç vaxt tapılmaz və heç bir xəta verm�
 ikiləşdirilir) — mətn istifadəçinin Excel faylından gəlir və birbaşa SQL-ə
 yapışdırılır (`IOracleService` bind parametri qəbul etmir).
 
-### Mənbələrdə HANSI AÇAR VAR — «FİN üzrə axtaraq» hər yerdə işləmir
+### Mənbələrdə HANSI AÇAR VAR — «sütun yoxdur» ≠ «FİN tapılmır»
 
-BMI datası ilə yoxlanıb (22.09.2026):
+🔴 **BU, MƏNİM SƏHVİM OLDU.** Əvvəlcə 4 vərəq üçün «FİN sütunu yoxdur, o
+vərəqlər həmişə boş gələcək» yazılmışdı. İstifadəçi düzəltdi: *«həmin hesabın
+regnomda fini varda, bu müştəridir axı»*. Doğrudur — **hesab nömrəsi olan hər
+sətirdə şəxs `regnom` üzərindən tapılır**:
 
-| Vərəq | Ad | FİN | VÖEN |
+```
+licsch.registrac_nomer          → regnom.regnom   (hesab cədvəli)
+substr(hesab_nömrəsi, 10, 6)    → regnom.regnom   (əməliyyat sətri: debet / kredit)
+                                → regnom.pincode (FİN) , regnom.inn_regnom (VÖEN)
+```
+
+**Qayda: sorğuda hesab nömrəsi varsa, FİN/VÖEN DƏ VAR.** «Bu cədvəldə FİN
+sütunu yoxdur» deyib dayanma — bir join uzaqdadır.
+
+| Vərəq | FİN | VÖEN | Açar |
 |---|---|---|---|
-| Aktiv_hesablar | `name_regnom` | `pincode` | **`inn_regnom`** |
-| Owner | `owner_name` | `pincode` | `inn_licsch` |
-| A_M_L | `a_s_a` | `fin` | 3-cü qolda `fin` sütunu **VÖEN saxlayır** |
-| Kochurme_Mushteri | `primechanie`, `name_licsch` | `pincode_or_passport` | — |
-| Exchange | `primechanie` | `pincode_or_passport` | — |
-| Emit_benef | e/b adı | `e_pincode` (**`b_pincode` BOŞ**) | — |
-| Kred_zamin | `guarantee_name` | `pincode` — **BOŞ** | — |
-| Open_Accounts, Kochurme_Daxili, 3-cu shexs | ad | **yoxdur** | — |
-| Transfer | ad | `regnom` join ilə | `regnom` join ilə |
+| Aktiv_hesablar | ✓ | ✓ | `regnom` (hesab) |
+| Open_Accounts | ✓ | ✓ | `regnom` (hesab) |
+| Kochurme_Daxili | ✓ | ✓ | `pincode_or_passport` + `regnom` (debet/kredit) |
+| Kochurme_Mushteri | ✓ | ✓ | `pincode_or_passport` + `regnom` (debet/kredit) |
+| 3-cu shexs | ✓ | ✓ | `regnom` (debet/kredit) — **hesab sahibi**, 3-cü şəxs YOX |
+| Transfer | ✓ | ✓ | `regnom` (4 mənbənin hər birində ayrı düstur) |
+| Owner | ✓ | ✓ | `pincode` + `inn_licsch` |
+| A_M_L | ✓ | ✓ | `fin` (3-cü qolda həmin sütun **VÖEN saxlayır** — `kod_novu` ilə ayrılıb) |
+| **Exchange** | ✓ | **—** | `pincode_or_passport`; hər iki tərəf **kassadır** (`1005`/`1006`), hesab sahibi yoxdur |
+| **Emit_benef** | ✓ | **—** | `e_pincode` / `b_pincode`; cədvəldə VÖEN sütunu yoxdur |
+| **Kred_zamin** | ✓ | **—** | `g.pincode`; cədvəldə VÖEN sütunu yoxdur |
 
-**«Yalnız FİN/VÖEN» rejimində 4 vərəq həmişə boş gəlir** — səhv deyil, o
-mənbələrdə sütun yoxdur. Ekranda bu, açıq yazılıb.
+⚠️ **`3-cu shexs`-də diqqət:** `regnom` join HESAB SAHİBİNİN FİN-ini verir,
+əməliyyatı aparan 3-cü şəxsin yox. Yəni «bu adamın hesabında 3-cü şəxs
+əməliyyat aparıb» deməkdir — `uygunluq` sütunu bunu açıq yazır
+(`FİN (hesab sahibi)`).
 
 Boş çıxan sütunlar (`b_pincode`, `creditinfoguarantee.pincode`/`telefon`,
 `docfio.ssn`/`pasport`) — şərtlər **silinməyib**, doldurulsa işə düşəcək.
