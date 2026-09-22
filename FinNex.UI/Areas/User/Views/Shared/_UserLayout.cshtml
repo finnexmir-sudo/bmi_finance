@@ -1423,6 +1423,10 @@
                        class="fn-nav-item @(currentAction == "Index" ? "active" : "")">
                         <i class="bi bi-grid"></i> Hesabatlar
                     </a>
+                    <a asp-area="Risk" asp-controller="Dashboard" asp-action="MelumatBazasi"
+                       class="fn-nav-item @(currentAction == "MelumatBazasi" || currentAction == "MelumatBazasiYukle" ? "active" : "")">
+                        <i class="bi bi-search"></i> Məlumat Bazası
+                    </a>
                 }
                 break;
 

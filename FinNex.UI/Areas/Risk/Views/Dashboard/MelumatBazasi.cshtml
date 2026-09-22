@@ -1,0 +1,146 @@
+@using System.Text.Json
+@model AxtarisNeticeDto
+@{
+    ViewData["Title"] = "Məlumat Bazası — Axtarılanlar";
+    var neticeVar = Model.Setirler.Count > 0;
+}
+
+<div class="rk-dash">
+    <div class="rk-hero">
+        <div class="rk-hero-l">
+            <div class="rk-hero-badge"><i class="bi bi-search"></i> Risk / AML / Sorğular</div>
+            <h1 class="rk-hero-title">Məlumat Bazası</h1>
+            <div class="rk-hero-sub"><i class="bi bi-file-earmark-excel"></i> Axtarılanlar siyahısını (Excel) bank müştəriləri ilə yoxla</div>
+        </div>
+        <div class="rk-hero-r">
+            <a asp-action="Index" class="rk-refresh"><i class="bi bi-arrow-left"></i> Sorğulara qayıt</a>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rk-alert rk-alert--err"><i class="bi bi-x-octagon"></i> @TempData["Error"]</div>
+    }
+    @if (Model.Xeta != null)
+    {
+        <div class="rk-alert rk-alert--err"><i class="bi bi-x-octagon"></i> Sorğu xətası: @Model.Xeta</div>
+    }
+
+    @* ---- Yükləmə forması ---- *@
+    <div class="rk-panel rk-mb-upload">
+        <form asp-action="MelumatBazasiYukle" method="post" enctype="multipart/form-data" class="rk-mb-form">
+            @Html.AntiForgeryToken()
+            <div class="rk-mb-field">
+                <label>Excel faylı (.xlsx)</label>
+                <input type="file" name="fayl" accept=".xlsx" required class="rk-mb-file" />
+                <div class="rk-mb-hint">
+                    <i class="bi bi-info-circle"></i> 1-ci sətir başlıq olmalıdır. Sütunlar:
+                    <b>A</b> = Ad Soyad Ata adı, <b>B</b> = VÖEN, <b>C</b> = FİN.
+                </div>
+            </div>
+            <button type="submit" class="rk-mb-btn"><i class="bi bi-upload"></i> Yüklə və yoxla</button>
+        </form>
+    </div>
+
+    @if (neticeVar)
+    {
+        @* ---- Nəticə KPI-ları ---- *@
+        <div class="rk-kpis" style="margin-top:16px;">
+            <div class="rk-kpi rk-kpi--2">
+                <div class="rk-kpi-top"><div class="rk-kpi-ic"><i class="bi bi-list-ol"></i></div></div>
+                <div class="rk-kpi-val">@Model.UmumiSay</div>
+                <div class="rk-kpi-lbl">Yoxlanılan sətir</div>
+            </div>
+            <div class="rk-kpi @(Model.TapilanSay > 0 ? "rk-kpi--0" : "rk-kpi--4")">
+                <div class="rk-kpi-top"><div class="rk-kpi-ic"><i class="bi bi-exclamation-triangle-fill"></i></div></div>
+                <div class="rk-kpi-val">@Model.TapilanSay</div>
+                <div class="rk-kpi-lbl">Uyğunluq tapıldı</div>
+            </div>
+        </div>
+
+        @* ---- Excel-ə ixrac ---- *@
+        <form asp-action="MelumatBazasiExcel" method="post" style="margin:12px 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="neticeJson" value="@JsonSerializer.Serialize(Model)" />
+            <button type="submit" class="rk-mb-btn rk-mb-btn--ghost"><i class="bi bi-file-earmark-excel"></i> Excel-ə ixrac et</button>
+        </form>
+
+        @* ---- Nəticə cədvəli ---- *@
+        <div class="rk-sec"><span class="rk-sec-bar"></span> Nəticə</div>
+        <div class="rk-panel" style="overflow-x:auto;">
+            <table class="rk-mb-table">
+                <thead>
+                    <tr>
+                        <th>№</th><th>Ad Soyad Ata adı</th><th>VÖEN</th><th>FİN</th>
+                        <th>Status</th><th>Uyğunluq detalı</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Setirler)
+                    {
+                        <tr class="@(s.Tapildi ? "rk-mb-row--hit" : "")">
+                            <td>@s.Axtarilan.Sira</td>
+                            <td>@s.Axtarilan.AdSoyadAta</td>
+                            <td>@s.Axtarilan.Voen</td>
+                            <td>@s.Axtarilan.Fin</td>
+                            <td>
+                                @if (s.Tapildi)
+                                {
+                                    <span class="rk-mb-badge rk-mb-badge--hit"><i class="bi bi-exclamation-triangle-fill"></i> Tapıldı</span>
+                                }
+                                else
+                                {
+                                    <span class="rk-mb-badge rk-mb-badge--miss">Tapılmadı</span>
+                                }
+                            </td>
+                            <td>
+                                @if (s.Tapildi)
+                                {
+                                    <ul class="rk-mb-hits">
+                                        @foreach (var u in s.Uygunluqlar)
+                                        {
+                                            <li><b>@u.Menbe</b> — @u.AdSoyad (@u.Regnom) <span class="rk-mb-tag">@u.UygunSahe</span></li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .rk-mb-upload { padding:18px 20px; margin-top:6px; }
+        .rk-mb-form { display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap; }
+        .rk-mb-field { flex:1; min-width:260px; }
+        .rk-mb-field label { display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:6px; }
+        .rk-mb-file { display:block; width:100%; padding:9px 12px; border:1.5px dashed #cbd5e1; border-radius:10px; font-size:13px; background:#f8fafc; }
+        .rk-mb-hint { font-size:11.5px; color:#94a3b8; margin-top:7px; line-height:1.6; }
+        .rk-mb-hint b { color:#475569; }
+        .rk-mb-btn { display:inline-flex; align-items:center; gap:7px; background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff;
+            border:none; padding:10px 18px; border-radius:11px; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap; transition:.15s; }
+        .rk-mb-btn:hover { filter:brightness(1.08); }
+        .rk-mb-btn--ghost { background:#fff; color:#0f172a; border:1.5px solid #e2e8f0; }
+        .rk-mb-btn--ghost:hover { border-color:#dc2626; color:#dc2626; filter:none; }
+
+        .rk-mb-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .rk-mb-table th { text-align:left; padding:11px 14px; background:#f8fafc; color:#475569; font-weight:700; font-size:11.5px;
+            text-transform:uppercase; letter-spacing:.3px; border-bottom:1px solid #eef2f7; white-space:nowrap; }
+        .rk-mb-table td { padding:11px 14px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+        .rk-mb-row--hit { background:#fef2f2; }
+        .rk-mb-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:700; white-space:nowrap; }
+        .rk-mb-badge--hit { background:#fee2e2; color:#b91c1c; }
+        .rk-mb-badge--miss { background:#f1f5f9; color:#94a3b8; }
+        .rk-mb-hits { margin:0; padding-left:16px; }
+        .rk-mb-hits li { margin-bottom:3px; }
+        .rk-mb-tag { display:inline-block; margin-left:5px; padding:1px 7px; border-radius:6px; background:#fef3c7; color:#92400e; font-size:10.5px; font-weight:700; }
+    </style>
+}
