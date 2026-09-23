@@ -10,6 +10,14 @@ public interface IMelumatBazasiService
     IReadOnlyList<MelumatBazasiVereqDto> Vereqler { get; }
 
     /// <summary>
+    /// Ümumilikdə axtarıla bilən maksimum şəxs sayı (bir neçə {SIYAHI} batch-inə
+    /// bölünərək) — yükləmə ekranındakı «yalnız ilk N sətir axtarılacaq»
+    /// xəbərdarlığı bu ədədi göstərsin deyə (`BmiLatin.MaxSetir`-dən FƏRQLİDİR —
+    /// o, TƏK batch-in ölçüsüdür).
+    /// </summary>
+    int MaxUmumiSetir { get; }
+
+    /// <summary>
     /// Dövr və axtarılanlar siyahısı üzrə 11 sorğunu icra edib paketi qaytarır.
     /// Oracle-a yalnız SELECT gedir. Bir vərəq alınmasa paket dayanmır —
     /// həmin vərəqin `Xeta`-sı doldurulur.

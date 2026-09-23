@@ -1075,6 +1075,36 @@ iki format paralel dəstəklənir, biri o birini əvəz etmir.
 sütunlu köhnə fayllarda xananın məzmunu **olduğu kimi** öz sahəsinə yazılır —
 orada format yoxlaması yoxdur (istifadəçi onsuz da düzgün sütuna yazıb).
 
+### BÖYÜK SİYAHI — Batch-lərə Bölünmə (23.09.2026, KRİTİK)
+
+`BmiLatin.SiyahiQur` axtarılan şəxsləri `{SIYAHI}` blokuna (`union all select …`)
+yapışdırır və bu blokun ölçüsü test edilmiş bir hədlə (`BmiLatin.MaxSetir = 5000`)
+məhduddur — ondan çoxu Oracle-a göndərilən SQL mətnini təhlükəli dərəcədə
+böyüdür. Real hadisə: 17554 sətirlik siyahının yalnız **ilk 5000-i** axtarılırdı,
+qalan **12554 sətir səssizcə (xəbərdarlıqla, amma icrasız) atılırdı**.
+
+**Həll — `MelumatBazasiService.HazirlaAsync` siyahını avtomatik BÖLÜR:**
+`BmiLatin.MaxSetir`-lik hissələrə ayrılır, hər hissə üçün AYRI `{SIYAHI}` bloku
+qurulur, 11 sorğunun HƏR BİRİ hər batch üçün AYRICA icra olunur (vərəq × batch
+tapşırıq), nəticələr sonda vərəq üzrə **birləşdirilir**. Yeni ümumi hədd:
+**`MelumatBazasiService.MaxUmumiSetir = 50000`** (10 batch) — bundan çoxu hələ
+də kəsilir və istifadəçiyə açıq bildirilir.
+
+**Paralellik dəyişmir** — `SemaphoreSlim(MaxParalel=4)` batch sayından asılı
+olmayaraq Oracle-a eyni anda ən çox 4 sorğu buraxır; batch sayı artanda YALNIZ
+növbə uzanır, Oracle-a düşən yük eyni qalır. Nəticə isə batch sayı qədər çox
+vaxt aparır (17554 sətir = 4 batch → təxminən 4× vaxt).
+
+⚠️ **Nəticə birbaşa `vereq.Setirler`-ə yazılmır** — eyni vərəqin bir neçə
+batch-i paralel bitə bilər və `List<T>.Add` thread-safe deyil (Bildirişlər —
+Paralel Yazı hadisəsi ilə EYNİ tələ). Hər batch öz nəticəsini ayrı `BatchIsi`
+obyektində saxlayır, `Task.WhenAll`-dan **SONRA** (artıq ardıcıl mərhələdə)
+vərəq üzrə birləşdirilir. Yeni yazma yolu əlavə edəndə bu sıraya riayət et.
+
+Yükləmə ekranındakı kəsilmə xəbərdarlığı (`DashboardController.MelumatBazasiYukle`)
+indi `_mb.MaxUmumiSetir`-i oxuyur, `BmiLatin.MaxSetir`-i YOX — ikisi fərqli
+kəmiyyətdir (tək batch ölçüsü vs ümumi hədd), qarışdırma.
+
 ## İcazə — «Plan Üzrə Sayım» vs Real Ölçmə (23.09.2026, KRİTİK)
 
 İşçi icazə yazıb, amma pəncərədə cihaza vurmayıbsa (getməyibsə) sistem nə edir?

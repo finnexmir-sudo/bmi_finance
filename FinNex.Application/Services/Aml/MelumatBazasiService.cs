@@ -58,9 +58,24 @@ public class MelumatBazasiService : IMelumatBazasiService
     /// <summary>
     /// Eyni anda icra olunan Oracle sorğusunun sayı. 11-i birdən buraxmaq
     /// Oracle-ı yükləyər və bağlantı hovuzunu boşaldar; 1 isə BMI-dəki
-    /// ardıcıl (yavaş) davranışa qayıtmaqdır.
+    /// ardıcıl (yavaş) davranışa qayıtmaqdır. Batch-lərə bölünəndən sonra
+    /// tapşırıq sayı (vərəq × batch) artır, amma paralellik dərəcəsi EYNİ
+    /// qalır — Oracle-a yük dəyişmir, sadəcə növbə uzanır.
     /// </summary>
     private const int MaxParalel = 4;
+
+    /// <summary>
+    /// Ümumilikdə axtarıla bilən maksimum şəxs sayı — 23.09.2026-da real bir
+    /// siyahı (17554 sətir) `BmiLatin.MaxSetir` (5000) həddinə ilişdi, ilk 5000-dən
+    /// sonrakı sətirlər axtarılmırdı. İndi siyahı `BmiLatin.MaxSetir`-lik
+    /// hissələrə bölünür (hər biri ayrı, tək-özü test edilmiş ölçüdə {SIYAHI}
+    /// bloku) və nəticələr vərəq üzrə birləşdirilir — 10 batch = 50 000 şəxsə
+    /// qədər tam axtarılır. Bundan yuxarısı hələ də kəsilir (Oracle-a həddindən
+    /// artıq round-trip getməsin deyə) və istifadəçiyə açıq bildirilir.
+    /// </summary>
+    public const int MaxUmumiSetir = 50000;
+
+    int IMelumatBazasiService.MaxUmumiSetir => MaxUmumiSetir;
 
     public MelumatBazasiService(IOracleService oracle, IOracleSorguService sorgu)
     {
@@ -130,19 +145,35 @@ public class MelumatBazasiService : IMelumatBazasiService
             return netice;
         }
 
-        var siyahi = BmiLatin.SiyahiQur(axtarilanlar, yalnizFinVoen);
-        if (string.IsNullOrWhiteSpace(siyahi))
+        // ── Böyük siyahını Oracle-a yapışdırıla bilən (test edilmiş) ölçüdə
+        // hissələrə böl. Hər hissə ayrı, TAM MÜSTƏQİL {SIYAHI} blokudur —
+        // nəticələr aşağıda vərəq üzrə birləşdirilir (23.09.2026, real hadisə:
+        // 17554 sətirlik siyahının 12554-ü tək bloka sığmadığı üçün axtarılmırdı).
+        var axtarilacaqSay = Math.Min(axtarilanlar.Count, MaxUmumiSetir);
+        netice.AxtarilanSay = axtarilacaqSay;
+        if (axtarilanlar.Count > MaxUmumiSetir)
+            netice.Xeberdarliq = $"Siyahıda {axtarilanlar.Count} sətir var, " +
+                                 $"yalnız ilk {MaxUmumiSetir} sətir axtarıldı.";
+
+        var axtarilacaqlar = axtarilanlar.Count > axtarilacaqSay
+            ? axtarilanlar.Take(axtarilacaqSay).ToList()
+            : axtarilanlar;
+
+        var siyahiBatchlari = new List<string>();
+        for (var i = 0; i < axtarilacaqlar.Count; i += BmiLatin.MaxSetir)
+        {
+            var parca = axtarilacaqlar.Skip(i).Take(BmiLatin.MaxSetir).ToList();
+            var bloku = BmiLatin.SiyahiQur(parca, yalnizFinVoen);
+            if (!string.IsNullOrWhiteSpace(bloku)) siyahiBatchlari.Add(bloku);
+        }
+
+        if (siyahiBatchlari.Count == 0)
         {
             netice.Xeta = yalnizFinVoen
                 ? "Siyahıda heç bir FİN və ya VÖEN yoxdur — «yalnız FİN/VÖEN» rejimində axtarılacaq heç nə qalmır."
                 : "Siyahıdakı sətirlərin heç birində ad, FİN və ya VÖEN tapılmadı.";
             return netice;
         }
-
-        netice.AxtarilanSay = Math.Min(axtarilanlar.Count, BmiLatin.MaxSetir);
-        if (axtarilanlar.Count > BmiLatin.MaxSetir)
-            netice.Xeberdarliq = $"Siyahıda {axtarilanlar.Count} sətir var, " +
-                                 $"yalnız ilk {BmiLatin.MaxSetir} sətir axtarıldı.";
 
         // ⚠️ FORMAT `dd-MM-yyyy` OLMALIDIR — sorğularda `TO_DATE(…,'DD-MM-YYYY')`
         // yazılıb (BMI-dən olduğu kimi). Başqa format versək Oracle ORA-01861
@@ -164,7 +195,13 @@ public class MelumatBazasiService : IMelumatBazasiService
         // ── 1-ci addım: SQL mətnlərini əvvəlcədən həll et ───────────────────
         // Paralel hissədən ƏVVƏL, çünki `_cache` yazılır — paralel yazı yarışdır
         // (CLAUDE.md «Bildirişlər — Paralel Yazı» hadisəsi ilə eyni mexanizm).
-        var isler = new List<(MelumatBazasiVereqDto Vereq, string? Sql)>();
+        //
+        // Hər vərəq üçün BATCH sayı qədər tapşırıq yaranır (vərəq × siyahiBatchlari).
+        // Nəticə birbaşa `vereq.Setirler`-ə YAZILMIR — eyni vərəqin bir neçə batch-i
+        // paralel bitə bilər və `List<T>.Add` thread-safe deyil (CLAUDE.md «Paralel
+        // Yazı» hadisəsi ilə eyni tələ). Hər tapşırıq öz nəticəsini ayrıca saxlayır,
+        // `Task.WhenAll`-dan SONRA (artıq ardıcıl) vərəq üzrə birləşdirilir.
+        var isler = new List<BatchIsi>();
         foreach (var sablon in Tertib)
         {
             var vereq = new MelumatBazasiVereqDto
@@ -179,7 +216,6 @@ public class MelumatBazasiService : IMelumatBazasiService
             {
                 vereq.Xeta = $"OracleSorgular-da «{sablon.SorguAdi}» tapılmadı (və ya aktiv deyil). " +
                              "docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql işlədilməlidir.";
-                isler.Add((vereq, null));
                 continue;
             }
 
@@ -190,48 +226,85 @@ public class MelumatBazasiService : IMelumatBazasiService
             {
                 vereq.Xeta = $"«{sablon.SorguAdi}» köhnə (süzgəcsiz) variantdır — mətnində {{SIYAHI}} tokeni yoxdur. " +
                              "docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql yenidən işlədilməlidir.";
-                isler.Add((vereq, null));
                 continue;
             }
 
             // Dövrsüz sorğuda tarix tokeni yoxdur — `Replace` sadəcə heç nə etmir.
-            isler.Add((vereq, sql.Replace("{DOVREVVEL}", d1)
-                                 .Replace("{DOVRSON}", d2)
-                                 .Replace("{SIYAHI}", siyahi)));
+            var sqlTemel = sql.Replace("{DOVREVVEL}", d1).Replace("{DOVRSON}", d2);
+            for (var b = 0; b < siyahiBatchlari.Count; b++)
+                isler.Add(new BatchIsi
+                {
+                    Vereq     = vereq,
+                    BatchNo   = b + 1,
+                    BatchSayi = siyahiBatchlari.Count,
+                    Sql       = sqlTemel.Replace("{SIYAHI}", siyahiBatchlari[b])
+                });
         }
 
         // ── 2-ci addım: Oracle sorğuları PARALEL ────────────────────────────
         // BMI-də 11 sorğu BİR-BİR gedirdi (`excelDoldur` ardıcıl çağırışlar) —
         // paketin vaxtı hamısının CƏMİ qədərdir, ona görə «Hazırlanır gözləyin...»
-        // uzun çəkirdi. Burada vaxt ən uzun sorğunun özü qədərdir.
+        // uzun çəkirdi. Burada vaxt ən uzun sorğunun özü qədərdir (batch sayı qədər
+        // uzanır, çünki eyni vərəqin batch-ləri arasında MaxParalel bölüşülür).
         //
         // TƏHLÜKƏSİZDİR: `OracleService` hər çağırışda ÖZ bağlantısını açır
         // (`new OracleConnection` + `OpenAsync`), ortaq vəziyyət yoxdur.
         // ⚠️ EF tərəfi (`_sorgu`) bu blokda ÇAĞIRILMIR — `DbContext` thread-safe
         // deyil; bütün SQL mətnləri yuxarıda oxunub.
         //
-        // Paralellik QƏSDƏN MƏHDUDDUR: 11 ağır sorğunu eyni anda buraxmaq
-        // Oracle-ı yükləyər və bağlantı hovuzunu boşaldar.
+        // Paralellik QƏSDƏN MƏHDUDDUR — batch sayı artsa da (vərəq × batch) eyni
+        // anda ən çox `MaxParalel` sorğu Oracle-a gedir, yükü ARTIRMIR.
         using var qapi = new SemaphoreSlim(MaxParalel);
-        await Task.WhenAll(isler.Where(i => i.Sql != null).Select(async i =>
+        await Task.WhenAll(isler.Select(async i =>
         {
             await qapi.WaitAsync(ct);
             try
             {
-                var xam = await _oracle.SelectXamAsync(i.Sql!, MaxSetir, ct);
-                i.Vereq.Sutunlar = xam.Sutunlar;
-                i.Vereq.Setirler = xam.Setirler;
+                var xam = await _oracle.SelectXamAsync(i.Sql, MaxSetir, ct);
+                i.Sutunlar = xam.Sutunlar;
+                i.Setirler = xam.Setirler;
             }
             catch (Exception ex)
             {
-                // BİR vərəqin xətası paketi DAYANDIRMIR — qalanı yenə hazırlanır.
-                // Əks halda bir sorğudakı sxem dəyişikliyi bütün aylıq paketi bloklayardı.
+                // BİR batch-in xətası paketi DAYANDIRMIR — qalanı (o cümlədən eyni
+                // vərəqin digər batch-ləri) yenə hazırlanır.
                 var kok = ex; while (kok.InnerException != null) kok = kok.InnerException;
-                i.Vereq.Xeta = ReferenceEquals(kok, ex) ? ex.Message : $"{ex.Message} → {kok.Message}";
+                i.Xeta = ReferenceEquals(kok, ex) ? ex.Message : $"{ex.Message} → {kok.Message}";
+                if (i.BatchSayi > 1) i.Xeta += $" (batch {i.BatchNo}/{i.BatchSayi})";
             }
             finally { qapi.Release(); }
         }));
 
+        // ── 3-cü addım: batch nəticələrini vərəq üzrə BİRLƏŞDİR (ardıcıl, indi
+        // paralellik bitib — `List<T>.Add` təhlükəsizdir). Sütunlar bütün batch-
+        // lərdə eyni sxemdən gəlir, ona görə sadəcə ilk uğurlu olandan götürülür.
+        foreach (var qrup in isler.GroupBy(i => i.Vereq))
+        {
+            var vereq = qrup.Key;
+            var xetalar = new List<string>();
+            foreach (var i in qrup.OrderBy(i => i.BatchNo))
+            {
+                if (i.Xeta != null) { xetalar.Add(i.Xeta); continue; }
+                if (vereq.Sutunlar.Count == 0 && i.Sutunlar != null) vereq.Sutunlar = i.Sutunlar;
+                if (i.Setirler != null) vereq.Setirler.AddRange(i.Setirler);
+            }
+            if (xetalar.Count > 0)
+                vereq.Xeta = (vereq.Xeta != null ? vereq.Xeta + " " : "") + string.Join(" ", xetalar);
+        }
+
         return netice;
+    }
+
+    /// <summary>Bir vərəqin BİR batch-inə aid tapşırıq — nəticə paralel mərhələdə
+    /// buraya yazılır, vərəqə YAZILMIR (bax yuxarıdakı "3-cü addım" izahı).</summary>
+    private sealed class BatchIsi
+    {
+        public required MelumatBazasiVereqDto Vereq { get; init; }
+        public required string Sql { get; init; }
+        public int BatchNo { get; init; }
+        public int BatchSayi { get; init; }
+        public List<string>? Sutunlar { get; set; }
+        public List<object?[]>? Setirler { get; set; }
+        public string? Xeta { get; set; }
     }
 }

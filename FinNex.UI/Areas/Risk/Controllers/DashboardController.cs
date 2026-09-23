@@ -161,9 +161,11 @@ public class DashboardController : Controller
 
         // Kəsilmə xəbərdarlığı MƏHZ BURADA verilir: «Ümumi sorğu» addımı fayl
         // qaytarır, səhifə render olunmur — orada yazılan mesaj heç yerə düşməzdi.
-        if (oxunus.Setirler.Count > FinNex.Application.Helpers.Aml.BmiLatin.MaxSetir)
+        // ⚠️ `_mb.MaxUmumiSetir` (ÜMUMİ hədd, batch-lərə bölünərək) — `BmiLatin.MaxSetir`
+        // DEYİL, o, tək batch-in ölçüsüdür (23.09.2026-dan HazirlaAsync avtomatik bölür).
+        if (oxunus.Setirler.Count > _mb.MaxUmumiSetir)
             TempData["Error"] = $"Siyahıda {oxunus.Setirler.Count} sətir var — " +
-                                $"yalnız ilk {FinNex.Application.Helpers.Aml.BmiLatin.MaxSetir} sətir axtarılacaq.";
+                                $"yalnız ilk {_mb.MaxUmumiSetir} sətir axtarılacaq.";
 
         ViewBag.Vereqler   = _mb.Vereqler;
         ViewBag.Siyahi     = oxunus.Setirler;

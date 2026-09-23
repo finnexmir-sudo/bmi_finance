@@ -34,7 +34,8 @@ public sealed class MelumatBazasiNeticeDto
     public DateTime SonTarix { get; set; }
     public List<MelumatBazasiVereqDto> Vereqler { get; set; } = new();
 
-    /// <summary>Exceldən neçə şəxs axtarıldı (hədd: <c>BmiLatin.MaxSetir</c>).</summary>
+    /// <summary>Exceldən neçə şəxs axtarıldı (ümumi hədd: <c>MelumatBazasiService.MaxUmumiSetir</c> —
+    /// bundan çoxu batch-lərə bölünmür, sadəcə kəsilir).</summary>
     public int AxtarilanSay { get; set; }
 
     /// <summary>`true` — ad şərti söndürülüb, yalnız FİN/VÖEN üzrə axtarılıb.</summary>
