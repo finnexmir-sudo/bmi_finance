@@ -1388,6 +1388,40 @@ hesablamır, yalnız mətnini saxlayır. Bunsuz «Nəticə sayı» və vərəql�
 ⚠️ Stilləri (`CreateCellStyle`) **bir dəfə** yarat — hər xana üçün çağırsan
 NPOI-nin 64 000 stil həddinə dəyər və fayl açılmaz olar.
 
+### İlk Real İcrada Tapılan 2 SQL Bug (23.09.2026, KRİTİK — DÜZƏLDİLDİ)
+
+11 sorğu yazılandan sonra İLK DƏFƏ real Oracle-a qarşı işlədilib və çıxan
+Excel-in `Esas_Sehife`-si `A6`-da xəta mətni göstərdi (servis xətanı vərəqin
+özünə yazır, paketi dayandırmır — CLAUDE.md-də sənədləşmiş davranış).
+
+**`KOCURME_DAXILI`, `KOCURME_MUSTERI` — `ORA-00904: "T"."NAME_LICSCH":
+invalid identifier`.** `t` = `odb.arh_dd` (əməliyyat sətri) — bu cədvəldə
+`name_licsch` YOXDUR, o, `odb.licsch`-dədir. Sorğu FİN/VÖEN üçün `regnom`-a
+(`rd`/`rk`) join edirdi, amma **ad üzrə axtarış üçün `licsch`-ə join etməyi
+unutmuşdu** — `WHERE`-də isə `t.name_licsch` yazılmışdı, sanki `arh_dd`-də
+varmış kimi. Düzəliş: `90_AML_OracleSorgular.sql`-də ARTIQ SINANMIŞ `p`/`s`
+naxışı köçürüldü — `odb.licsch ld, odb.licsch lk` əlavə edildi,
+`t.debet = ld.licsch(+)`, `t.kredit = lk.licsch(+)`. Ad uyğunluğu indi
+**hər iki hesabın (debet VƏ kredit) sahibinin adına** baxır — FİN/VÖEN-də
+`rd`/`rk` üçün olduğu kimi, bir tərəf uyğun gəlsə kifayətdir.
+
+**`AKTIV_HESABLAR` — `ORA-00979: not a GROUP BY expression`.** `SELECT`-dəki
+`uygunluq` (`CASE`) `y.fin`/`y.voen`/`y.tel`-ə istinad edirdi, `GROUP BY`-da
+isə yalnız `y.a_s_a` var idi. `{SIYAHI}`-nin hər sətri (a_s_a, fin, voen,
+tel) sabit dördlük olduğu üçün bu sütunları `GROUP BY`-a əlavə etmək
+qruplaşma dənəviliyini DƏYİŞMİR, sadəcə Oracle-un tələbini ödəyir.
+
+**`A_M_L`, `Kred_zamin` — `ORA-01013: user requested cancel of current
+operation`** eyni faylda görünürdü, amma bu BUG DEYİL — böyük siyahı (17554
+sətir, 4 batch) ilə 60 saniyəlik `CommandTimeout`-a çatma (bax "BÖYÜK SİYAHI
+— Batch-lərə Bölünmə"). Bu ikisi dövrsüzdür, siyahı ölçüsündən başqa heç nə
+onları yavaşlada bilməz — kiçik (~1000-lik) fayllarla təkrarlanmamalıdır.
+
+⚠️ **Düzəliş `docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql`-dədir —
+`OracleSorgular` cədvəlinə düşməsi üçün faylı yenidən SQL Server-də
+işlətmək lazımdır.** Fayl "TƏKRAR İŞLƏDİLƏ BİLƏR" olaraq yazılıb (mövcud
+`AML_MB_*` sətirləri yenilənir, Id qorunur) — sadəcə yenidən icra kifayətdir.
+
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
 Toplu Maaş ekranının aşağı zolağında `Gross`, `Cəmi tutulma` və `NET` **bir-birini

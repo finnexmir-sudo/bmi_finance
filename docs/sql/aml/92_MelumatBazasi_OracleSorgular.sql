@@ -68,6 +68,25 @@
       sətrə uyğun gəlsə sətir İKİ dəfə çıxır. QƏSDƏN SAXLANILIB — indi
       «Axtarılan şəxs» sütunu var, yəni iki sətir DÜZGÜNDÜR.
 
+   ── 23.09.2026 DÜZƏLİŞLƏRİ (real Oracle icrasında tapılan 3 xəta) ───────────
+   #8 KOCURME_DAXILI, KOCURME_MUSTERI — `ORA-00904: "T"."NAME_LICSCH": invalid
+      identifier`. `t` = `odb.arh_dd` (əməliyyat sətri) — bu cədvəldə
+      `name_licsch` sütunu YOXDUR, o, `odb.licsch`-dədir. FROM-a debet/kredit
+      hesabları üçün `odb.licsch ld, odb.licsch lk` (outer join, `90_AML_
+      OracleSorgular.sql`-dəki `p`/`s` aliası ilə EYNİ, sınanmış naxış:
+      `t.debet = ld.licsch(+)`, `t.kredit = lk.licsch(+)`) əlavə edildi.
+      Ad uyğunluğu indi HƏR İKİ hesabın (debet VƏ kredit) sahibinin adına
+      baxır — `rd`/`rk` FİN/VÖEN cütü ilə EYNİ məntiq (bir tərəf uyğun
+      gəlsə kifayətdir, müştəri gözdən qaçmasın deyə).
+   #9 AKTIV_HESABLAR — `ORA-00979: not a GROUP BY expression`. `SELECT`
+      siyahısındakı `uygunluq` (CASE) `y.fin`, `y.voen`, `y.tel`-ə istinad
+      edirdi, `GROUP BY`-da isə yalnız `y.a_s_a` var idi. Hər `{SIYAHI}`
+      sətri (a_s_a, fin, voen, tel) sabit dördlükdür, ona görə `y.fin,
+      y.voen, y.tel`-i `GROUP BY`-a əlavə etmək qruplaşma dənəviliyini
+      DƏYİŞMİR — sadəcə Oracle-un tələbini ödəyir.
+      (A_M_L, Kred_zamin-dəki `ORA-01013` isə bug deyil — böyük siyahı ilə
+      60 saniyəlik `CommandTimeout`-a çatma, `CLAUDE.md`-də sənədləşib.)
+
    ── FinNex ƏLAVƏLƏRİ (BMI-də yox idi) ──────────────────────────────────────
    * Hər vərəqdə 2 yeni sütun: `axtarilan` (Exceldən hansı sətir tutdu) və
      `uygunluq` (FİN / VÖEN / Telefon / Ad — hansı kriteriya işlədi).
@@ -186,16 +205,19 @@ SET @Sql      = N'select t.date_oper                                     tarix,
             when trim(rd.pincode)    = y.fin or trim(rk.pincode)    = y.fin  then ''FİN (hesab sahibi)''
             when trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen then ''VÖEN (hesab sahibi)''
             else ''Ad (hesab sahibi)'' end                              uygunluq
-  from odb.arh_dd t, odb.regnom rd, odb.regnom rk, ( {SIYAHI} ) y
+  from odb.arh_dd t, odb.regnom rd, odb.regnom rk, odb.licsch ld, odb.licsch lk, ( {SIYAHI} ) y
  where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                        and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
    and substr(t.debet,10,6)  = rd.regnom(+)
    and substr(t.kredit,10,6) = rk.regnom(+)
+   and t.debet  = ld.licsch(+)
+   and t.kredit = lk.licsch(+)
    and ( (substr(t.debet,1,5)  in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
           and substr(t.kredit,1,5) in (''45021'',''45023'',''45029'',''45089''))
       or (substr(t.debet,1,5)  in (''45021'',''45023'',''45029'',''45089'')
           and substr(t.kredit,1,5) in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')) )
-   and ( odb.func_utf8_to_latin(upper(t.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+   and ( odb.func_utf8_to_latin(upper(ld.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+      or odb.func_utf8_to_latin(upper(lk.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
       or t.pincode_or_passport = y.fin
       or trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin
       or trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen )
@@ -222,14 +244,17 @@ SET @Sql      = N'select t.date_oper                                     tarix,
        case when t.pincode_or_passport = y.fin then ''FİN''
             when trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin  then ''FİN (hesab sahibi)''
             when trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen then ''VÖEN (hesab sahibi)''
-            when odb.func_utf8_to_latin(upper(t.name_licsch))
-                 like ''%'' || upper(y.a_s_a) || ''%''     then ''Ad (hesab sahibi)''
+            when odb.func_utf8_to_latin(upper(ld.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+              or odb.func_utf8_to_latin(upper(lk.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+                 then ''Ad (hesab sahibi)''
             else ''Ad (qeyd mətnində)'' end              uygunluq
-  from odb.arh_dd t, odb.regnom rd, odb.regnom rk, ( {SIYAHI} ) y
+  from odb.arh_dd t, odb.regnom rd, odb.regnom rk, odb.licsch ld, odb.licsch lk, ( {SIYAHI} ) y
  where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                        and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
    and substr(t.debet,10,6)  = rd.regnom(+)
    and substr(t.kredit,10,6) = rk.regnom(+)
+   and t.debet  = ld.licsch(+)
+   and t.kredit = lk.licsch(+)
    and ( (substr(t.debet,1,5)  in (''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')
           and (substr(t.kredit,1,2) in (''38'',''39'',''40'',''41'')
             or substr(t.kredit,1,5) in (''35090'',''35100'')))
@@ -238,7 +263,8 @@ SET @Sql      = N'select t.date_oper                                     tarix,
             or substr(t.debet,1,5)  in (''35090'',''35100''))) )
    and (t.vid_operacii < 96 or t.vid_operacii is null)
    and ( odb.func_utf8_to_latin(upper(t.primechanie))  like ''%'' || upper(y.a_s_a) || ''%''
-      or odb.func_utf8_to_latin(upper(t.name_licsch))  like ''%'' || upper(y.a_s_a) || ''%''
+      or odb.func_utf8_to_latin(upper(ld.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
+      or odb.func_utf8_to_latin(upper(lk.name_licsch)) like ''%'' || upper(y.a_s_a) || ''%''
       or t.pincode_or_passport = y.fin
       or trim(rd.pincode)    = y.fin  or trim(rk.pincode)    = y.fin
       or trim(rd.inn_regnom) = y.voen or trim(rk.inn_regnom) = y.voen )';
@@ -557,7 +583,7 @@ SET @Sql      = N'select min(t.date_open_licsch)                         ac_tar,
       or trim(r.inn_regnom) = y.voen
       or trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
              like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%'' )
- group by r.regnom, r.name_regnom, r.pincode, r.inn_regnom, r.mobilniy, y.a_s_a
+ group by r.regnom, r.name_regnom, r.pincode, r.inn_regnom, r.mobilniy, y.a_s_a, y.fin, y.voen, y.tel
  order by r.regnom';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
