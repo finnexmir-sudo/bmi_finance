@@ -154,10 +154,69 @@
    DƏYİŞMİR. Semantik olaraq 1-ci dalğa ilə eynidir, sadəcə Oracle-a "bunu bir
    dəfə hesabla" deməyin ETİBARLI yoludur (subquery-nin özü bunu təmin ETMİR).
 
-   ⚠️ **Yoxlanmamış qalan hissə:** bu dəyişiklik hələ real Oracle-a qarşı
-   YENİDƏN test edilməyib (yalnız məntiq və alias tutuşdurması yoxlanıb).
-   İstifadəçi bu faylı yenidən SQL Server-də işlətdikdən sonra eyni ~1000
-   nəfərlik siyahı ilə Aktiv_hesablar/Kred_zamin/A_M_L-i təkrar test etməlidir.
+   ⚠️ **`MATERIALIZE` DƏ TƏK BAŞINA KİFAYƏT ETMƏDİ** — bax aşağı, ÜÇÜNCÜ DALĞA.
+   İstifadəçi skripti yenidən işlətdi və eyni ~1000 nəfərlik siyahı ilə A_M_L-i
+   PL/SQL Developer-də təcrid olunmuş (paralel sorğu olmadan) test etdi:
+   `MATERIALIZE`-lə birgə **40 saniyə** — timeout-a düşmür, amma 1132 sətir ×
+   1000 nəfər üçün hələ də mənasız dərəcədə yavaş idi.
+
+   ── 23.09.2026, ÜÇÜNCÜ DALĞA (LIKE + `=` eyni `OR`-da = indeks YOX) ──────────
+   **Kök səbəb tapıldı.** `LIKE` (ad üzrə) ilə `=` (FİN/VÖEN dəqiq bərabərlik)
+   şərtlərini EYNİ `OR`-da qarışdırmaq Oracle-u bütün predikatı "indeksləşdirilə
+   bilməyən" saymağa vadar edir — hətta bərabərlik hissəsi belə HASH/INDEX JOIN
+   ala bilmir, hər şey NESTED LOOPS/cartesian ilə gedir. Sübut: A_M_L-in FİN/VÖEN
+   şərtini ayrı `UNION ALL` qoluna (təmiz `t.fin = y.fin` join-i, heç bir `OR`
+   olmadan) çıxarıb Ad-LIKE-ı ayrıca qol saxlayanda: **40 san → 1,575 san**
+   (≈25×). Eyni texnika Aktiv_hesablar-a tətbiq olunanda: **83 san → 4,7 san**
+   (≈17×).
+
+   ⚠️ **Bu hər yerdə eyni dərəcədə lazım deyil** — Owner (1,3 san) və Kred_zamin
+   (0,3 san) EYNİ qarışıq-`OR` strukturuna baxmayaraq artıq sürətlidir (yalnız
+   `MATERIALIZE` kifayət edib) və TOXUNULMAYIB. Fərq dəqiq bilinmir (ehtimal:
+   A_M_L-in FİN/VÖEN şərti sadə `= y.fin` yox, `(t.kod_novu=''FIN'' and
+   t.fin=y.fin)` kimi əlavə `AND`-lə bağlıdır — bu, Oracle-un onu tanımasını
+   çətinləşdirə bilər) — hər sorğunu FƏRDİ test etmədən universal "hamısını
+   dekomponuz et" qərarı VERİLMƏDİ, məhz ölçülmüş nəticəyə görə seçim edildi.
+
+   **HƏLL (yalnız A_M_L və Aktiv_hesablar-da tətbiq olundu):** hər uyğunluq
+   kriteriyası (FİN, VÖEN, Telefon, Ad) ayrı `union all` qoluna çıxarıldı —
+   FİN/VÖEN qolları TƏMİZ `join ... on sütun = sütun` (heç bir `OR` yoxdur,
+   Oracle HASH JOIN seçə bilir), Ad (və Aktiv_hesablar-da Telefon) qolu isə
+   LIKE-lı cartesian olaraq QALIR (bundan qaçış yoxdur — sərbəst mətn axtarışı
+   təbiətən belədir), amma ARTIQ YALNIZ o hissə bahalıdır, hamısı yox.
+
+   ⚠️ **PRİORİTET QORUNMALIDIR.** Orijinalda bir (müştəri, axtarılan şəxs) cütü
+   həm ada, həm FİN-ə uyğun gəlsə, YALNIZ BİR sətir çıxırdı — "FİN" etiketi ilə
+   (CASE-in sırası: FİN > VÖEN > Telefon > Ad). Sadəcə `union all` ilə ayırsan
+   EYNİ cüt İKİ (fərqli etiketli) sətir kimi çıxardı. Həll: aşağı prioritetli
+   qollara `and not (yuxarı prioritetli şərtlər)` istisnası əlavə edildi —
+   məs. Ad qolunda `and not ((kod_novu=''FIN'' and fin=y.fin) or (kod_novu=
+   ''VOEN'' and fin=y.voen))`. Bu, WHERE-i bir az çoxaldır, amma cartesian-ın
+   ÖZÜNÜ deyil, yalnız artıq mövcud olan sətir-səviyyəli yoxlamanı genişləndirir
+   — mürəkkəblik sinfini dəyişmir.
+
+   ⚠️ **`{SIYAHI}` TƏKRARLANMADI.** Hər uyğunluq qolu üçün `( {SIYAHI} ) y`
+   yazsaydıq, böyük siyahı literalı sorğu mətnində 3-4 dəfə təkrarlanardı (SQL
+   mətni şişər, limitlərə yaxınlaşardı). Bunun əvəzinə `{SIYAHI}` bir dəfə
+   `y as ( {SIYAHI} )` WITH bloku kimi yazıldı, bütün qollar sadəcə `y`-ni
+   çağırır. `{SIYAHI}`-nin sorğu mətnində DƏQİQ BİR DƏFƏ keçdiyi yoxlanıldı
+   (əvvəllər servis bunun HƏMİŞƏ mövcud olduğunu yoxlayır, sayını yox — say
+   dəyişməsi problemsizdir, amma yenə də yoxlandı).
+
+   ⚠️ **Yoxlanmamış qalan hissə:** bu ÜÇÜNCÜ DALĞA hələ real Oracle-a qarşı
+   PRODUCTION mətni ilə YENİDƏN test edilməyib — yalnız oxşar (sadələşdirilmiş,
+   prioritetsiz) test versiyaları PL/SQL Developer-də sınanıb. Fayl yenidən SQL
+   Server-də işlədildikdən sonra eyni ~1000 nəfərlik siyahı ilə Aktiv_hesablar
+   və A_M_L-i tətbiqin ÖZÜNDƏ (Risk → Məlumat Bazası) tam axınla test etmək
+   lazımdır — həm sürətə, həm nəticələrin düzgünlüyünə (xüsusən prioritet
+   etiketlərinə) baxaraq.
+
+   ⚠️ **Qalan 7 dövrlü sorğu (Open_Accounts, Kochurme_Daxili, Kochurme_Mushteri,
+   Exchange, Emit_benef, 3-cu shexs, Transfer) HƏLƏ TEST OLUNMAYIB** — onlarda da
+   eyni qarışıq-`OR` strukturu var, amma vaxtları tarix aralığındakı əməliyyat
+   sayından asılıdır, ona görə test real tarix aralığı ilə aparılmalıdır. Owner/
+   Kred_zamin-in gözlənilməz sürəti göstərir ki, hər sorğunu FƏRDİ ölçmədən
+   "hamısı yavaşdır" fərz etmək SƏHV OLARDI.
 
    ⚠️ Sorğunu yenidən yoxlamaq lazım gələndə: outer SELECT/WHERE/ORDER BY-dakı
    hər sütun adı `WITH` bloku daxilindəki alias ilə DƏQİQ uyğun olmalıdır
@@ -663,21 +722,39 @@ SET @Sql      = N'with t as (
            null,
            ''ELA_HUQUQ''
       from odb.elaqeli_huquqi_shexsler t
+),
+y as ( {SIYAHI} )
+select distinct * from (
+    select t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
+           y.a_s_a                                         axtarilan,
+           ''FİN''                                          uygunluq
+      from t join y
+        on t.kod_novu = ''FIN'' and t.fin = y.fin
+     where length(trim(t.a_s_a)) > 0
+
+    union all
+
+    select t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
+           y.a_s_a                                         axtarilan,
+           ''VÖEN''                                         uygunluq
+      from t join y
+        on t.kod_novu = ''VOEN'' and t.fin = y.voen
+     where length(trim(t.a_s_a)) > 0
+
+    union all
+
+    select t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
+           y.a_s_a                                         axtarilan,
+           ''Ad''                                           uygunluq
+      from t, y
+     where length(trim(t.a_s_a)) > 0
+       and ( upper(t.a_s_a) like ''%'' || upper(y.a_s_a) || ''%''
+          or ( length(trim(t.a_s_a)) >= 8
+               and upper(y.a_s_a) like ''%'' || upper(trim(t.a_s_a)) || ''%'' ) )
+       and not ( (t.kod_novu = ''FIN''  and t.fin = y.fin)
+              or (t.kod_novu = ''VOEN'' and t.fin = y.voen) )
 )
-select distinct
-       t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
-       y.a_s_a                                         axtarilan,
-       case when t.kod_novu = ''FIN''  and t.fin = y.fin  then ''FİN''
-            when t.kod_novu = ''VOEN'' and t.fin = y.voen then ''VÖEN''
-            else ''Ad'' end                              uygunluq
-  from t, ( {SIYAHI} ) y
- where length(trim(t.a_s_a)) > 0
-   and ( upper(t.a_s_a) like ''%'' || upper(y.a_s_a) || ''%''
-      or ( length(trim(t.a_s_a)) >= 8
-           and upper(y.a_s_a) like ''%'' || upper(trim(t.a_s_a)) || ''%'' )
-      or (t.kod_novu = ''FIN''  and t.fin = y.fin)
-      or (t.kod_novu = ''VOEN'' and t.fin = y.voen) )
- order by t.regnom';
+ order by regnom';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
     UPDATE OracleSorgular
@@ -741,25 +818,44 @@ SET @Sql      = N'with r as (
           where t.registrac_nomer = r.regnom
             and length(t.licsch) = 20
             and t.date_close_licsch is null
-)
-select min(r.date_open_licsch)                         ac_tar,
-       r.regnom                                        rn,
-       r.name_disp                                     adi,
-       y.a_s_a                                         axtarilan,
-       case when trim(r.pincode)    = y.fin  then ''FİN''
-            when trim(r.inn_regnom) = y.voen then ''VÖEN''
-            when trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
-                 like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%''
-                 then ''Telefon''
-            else ''Ad'' end                              uygunluq
-  from r, ( {SIYAHI} ) y
- where ( r.name_match like ''%'' || trim(upper(y.a_s_a)) || ''%''
-      or trim(r.pincode)    = y.fin
-      or trim(r.inn_regnom) = y.voen
-      or trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
-             like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%'' )
- group by r.regnom, r.name_disp, r.pincode, r.inn_regnom, r.mobilniy, y.a_s_a, y.fin, y.voen, y.tel
- order by r.regnom';
+),
+y as ( {SIYAHI} )
+select min(ac_tar) ac_tar, rn, name_disp adi, axtarilan, uygunluq
+  from (
+    select r.date_open_licsch ac_tar, r.regnom rn, r.name_disp, r.pincode, r.inn_regnom, r.mobilniy,
+           y.a_s_a axtarilan, y.fin, y.voen, y.tel, ''FİN'' uygunluq
+      from r join y
+        on trim(r.pincode) = y.fin
+
+    union all
+
+    select r.date_open_licsch, r.regnom, r.name_disp, r.pincode, r.inn_regnom, r.mobilniy,
+           y.a_s_a, y.fin, y.voen, y.tel, ''VÖEN''
+      from r join y
+        on trim(r.inn_regnom) = y.voen
+     where not ( trim(r.pincode) = y.fin )
+
+    union all
+
+    select r.date_open_licsch, r.regnom, r.name_disp, r.pincode, r.inn_regnom, r.mobilniy,
+           y.a_s_a, y.fin, y.voen, y.tel, ''Telefon''
+      from r, y
+     where trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
+             like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%''
+       and not ( trim(r.pincode) = y.fin or trim(r.inn_regnom) = y.voen )
+
+    union all
+
+    select r.date_open_licsch, r.regnom, r.name_disp, r.pincode, r.inn_regnom, r.mobilniy,
+           y.a_s_a, y.fin, y.voen, y.tel, ''Ad''
+      from r, y
+     where r.name_match like ''%'' || trim(upper(y.a_s_a)) || ''%''
+       and not ( trim(r.pincode) = y.fin or trim(r.inn_regnom) = y.voen
+              or trim(translate(nvl(r.mobilniy,''0''),''(-)'','' ''))
+                     like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%'' )
+  )
+ group by rn, name_disp, pincode, inn_regnom, mobilniy, axtarilan, fin, voen, tel, uygunluq
+ order by rn';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
     UPDATE OracleSorgular

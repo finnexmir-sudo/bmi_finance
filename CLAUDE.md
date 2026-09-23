@@ -1502,11 +1502,59 @@ subquery-ni təkrar-təkrar icra etmə riski YÜKSƏKDİR. Bu hinti YAZMADAN "co
 once" pattern-inə güvənmə — icra planına ({{EXPLAIN PLAN}} və ya real vaxt
 ölçümü ilə) yoxlanmadan "düzəldi" demə.
 
-⚠️ **Yoxlanmamış qalan hissə (bu sənəd yazılan an):** bu ikinci dalğa hələ real
-Oracle-a qarşı YENİDƏN test edilməyib — yalnız SQL mətninin məntiqi və alias
-tutuşdurması yoxlanılıb. Fayl yenidən SQL Server-də işlədilib, sonra eyni
-~1000 nəfərlik siyahı ilə Aktiv_hesablar/Kred_zamin/A_M_L təkrar test
-olunmalıdır.
+⚠️ **`MATERIALIZE` DƏ TƏK BAŞINA KİFAYƏT ETMƏDİ** — bax aşağıdakı bölmə.
+İstifadəçi skripti yenidən işlədib eyni ~1000 nəfərlik siyahı ilə A_M_L-i
+tətbiqdən KƏNAR (paralel sorğu olmadan) test etdi: **40 saniyə** — timeout-a
+düşmür, amma 1132 sətir × 1000 nəfər üçün hələ də mənasız yavaş.
+
+### Əsl Kök Səbəb — `LIKE` + `=` Eyni `OR`-da = İndeks İtir (23.09.2026, ÜÇÜNCÜ DALĞA, KRİTİK)
+
+`LIKE` (ad üzrə) ilə `=` (FİN/VÖEN dəqiq bərabərlik) şərtlərini **EYNİ `OR`-da**
+yazmaq Oracle-u bütün predikatı indeksləşdirilə bilməyən sayır — bərabərlik
+hissəsi belə HASH/INDEX JOIN ala bilmir, hər şey NESTED LOOPS/cartesian ilə
+gedir. Sübut: A_M_L-in FİN/VÖEN şərti ayrı `union all` qoluna (TƏMİZ
+`t.fin = y.fin` join-i, `OR` yoxdur) çıxarılıb Ad-LIKE-ı ayrıca qol
+saxlananda: **40 saniyə → 1,575 saniyə** (≈25×). Eyni texnika Aktiv_hesablar-a
+tətbiq olunanda: **83 saniyə → 4,7 saniyə** (≈17×).
+
+⚠️ **Bu, hər sorğuya eyni dərəcədə aid deyil.** Owner (1,3 san) və Kred_zamin
+(0,3 san) EYNİ qarışıq-`OR` strukturuna baxmayaraq artıq sürətlidir — yalnız
+`MATERIALIZE` kifayət edib, TOXUNULMAYIB. Fərqin dəqiq səbəbi bilinmir (ehtimal:
+A_M_L/Aktiv_hesablar-ın FİN/VÖEN şərti sadə `= y.fin` yox, əlavə şərtlə
+(`kod_novu=''FIN''`) bağlıdır). **Qayda: "hamısı yavaşdır" fərz edib universal
+dekompozisiya tətbiq etmə — hər sorğunu FƏRDİ ölçüb, yalnız real yavaş çıxanı
+dəyiş.**
+
+**HƏLL (yalnız A_M_L və Aktiv_hesablar-da tətbiq olundu):** hər uyğunluq
+kriteriyası (FİN, VÖEN, Telefon, Ad) ayrı `union all` qoluna çıxarıldı. FİN/VÖEN
+qolları TƏMİZ `join ... on sütun = sütun` (heç bir `OR` yoxdur), Ad/Telefon
+qolu isə LIKE-lı cartesian olaraq qalır (sərbəst mətn axtarışından qaçış yoxdur),
+amma ARTIQ YALNIZ o hissə bahalıdır.
+
+⚠️ **PRİORİTET QORUNMALIDIR.** Orijinalda bir (müştəri, axtarılan şəxs) cütü
+həm ada, həm FİN-ə uyğun gəlsə, YALNIZ BİR sətir çıxırdı ("FİN" etiketi ilə —
+CASE sırası FİN > VÖEN > Telefon > Ad). Sadəcə `union all` ilə ayırsan EYNİ
+cüt İKİ (fərqli etiketli) sətir kimi çıxardı. Həll: aşağı prioritetli qollara
+`and not (yuxarı prioritetli şərtlər)` istisnası əlavə edildi — bu, WHERE-i
+bir az çoxaldır, amma cartesian-ın ÖZÜNÜ yox, artıq mövcud sətir-səviyyəli
+yoxlamanı genişləndirir, mürəkkəblik sinfini dəyişmir.
+
+⚠️ **`{SIYAHI}` təkrarlanmadı.** Hər uyğunluq qolu üçün ayrıca `( {SIYAHI} ) y`
+yazmaq əvəzinə, `{SIYAHI}` bir dəfə `y as ( {SIYAHI} )` WITH bloku kimi yazıldı,
+bütün qollar `y`-ni çağırır — böyük siyahı literalının sorğu mətnində 3-4 dəfə
+təkrarlanıb şişməsinin qarşısı alındı.
+
+⚠️ **Yoxlanmamış qalan hissə:** bu ÜÇÜNCÜ DALĞA hələ real Oracle-a qarşı
+PRODUCTION mətni ilə yenidən test edilməyib — yalnız oxşar (sadələşdirilmiş,
+prioritetsiz) test versiyaları PL/SQL Developer-də sınanıb. Fayl yenidən SQL
+Server-də işlədildikdən sonra Aktiv_hesablar və A_M_L tətbiqin ÖZÜNDƏ (Risk →
+Məlumat Bazası) tam axınla test olunmalıdır — həm sürətə, həm nəticələrin
+düzgünlüyünə (xüsusən prioritet etiketlərinə) baxaraq.
+
+⚠️ **Qalan 7 dövrlü sorğu (Open_Accounts, Kochurme_Daxili, Kochurme_Mushteri,
+Exchange, Emit_benef, 3-cu shexs, Transfer) HƏLƏ TEST OLUNMAYIB** — onlarda da
+eyni qarışıq-`OR` strukturu var, amma vaxtları tarix aralığındakı əməliyyat
+sayından asılıdır, ona görə real tarix aralığı ilə test edilməlidir.
 
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
