@@ -1115,6 +1115,17 @@ sorğusu gedir (əvvəl 11 idi). Uzun müddət `MelumatBazasiPaket` sinxron POST
 default sorğu vaxt aşımına (adətən 100-230 san) dəyə bilər; bu hələ REAL
 hadisə ilə görülməyib, yalnız nəzəri risk kimi qeyd olunur.
 
+**İstifadəçi qərarı (23.09.2026): `MaxParalel` ARTIRILMIR.** 17554 sətirlik real
+siyahı 4 batch-də ≈10 dəqiqə çəkdi (60 saniyəlik `CommandTimeout` × ~11 dövr
+riyaziyyatına uyğun gəlir — bax yuxarı). İstifadəçi Oracle-a yükü artırmaq
+əvəzinə **əməliyyat qaydasını** seçdi: böyük siyahılar operatorlar tərəfindən
+**əl ilə ~1000 sətirlik fayllara bölünüb ayrı-ayrı yüklənəcək**. 1000 sətir
+`BmiLatin.MaxSetir` (5000) həddindən çox aşağı olduğu üçün TƏK batch kimi işə
+düşür — yəni əvvəlki (batch-siz) 11-sorğuluq sürətlə işləyir, kodda dəyişiklik
+tələb etmir. Batch-ləmə məntiqi (yuxarıda) TOXUNULMAYIB — böyük siyahı YENƏ DƏ
+yüklənərsə (məs. kimsə qaydaya əməl etməsə), avtomatik bölünüb axtarılacaq,
+sadəcə uzun çəkəcək.
+
 ### Defolt Tarix — `SonTarix` GƏLƏCƏYƏ DÜŞMƏMƏLİDİR (23.09.2026)
 
 `VarsayilanNetice()` əvvəl `SonTarix`-i **cari ayın son GÜNÜNƏ** (məs. 23.09-da
