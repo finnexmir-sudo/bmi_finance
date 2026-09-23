@@ -1134,6 +1134,15 @@ və o günə qədər data onsuz da yoxdur — istifadəçi «niyə 30 verir, bug
 deyil axı» sualı verdi. İndi sadəcə `DateTime.Today`. `BasTarix` (keçən ayın son
 günü) toxunulmadı — o, artıq BİTMİŞ bir ay olduğu üçün problemsizdir.
 
+⚠️ **23.09.2026, İKİNCİ DÜZƏLİŞ — hər iki xana EYNİ GÜNƏ sabitləndi.** İstifadəçi
+qərarı: operator adətən TƏK GÜNLÜK aralıq seçir (test axtarışları belə idi),
+ona görə `BasTarix` artıq keçən ayın son gününə YOX, `SonTarix` ilə EYNİ günə
+(`DateTime.Today`) sabitlənir — operator lazım gəldikcə aralığı əl ilə açır.
+Eyni zamanda ekrandakı etiketlər dəyişdi: **"Əvvəlki ay son iş günü"** →
+**"Dövr əvvəl"**, **"Cari ay son iş günü"** → **"Dövr son"**
+(`MelumatBazasi.cshtml`) — köhnə adlar artıq həqiqətə uyğun deyildi, çünki
+`BasTarix` artıq «əvvəlki ay» demək deyil.
+
 ## İcazə — «Plan Üzrə Sayım» vs Real Ölçmə (23.09.2026, KRİTİK)
 
 İşçi icazə yazıb, amma pəncərədə cihaza vurmayıbsa (getməyibsə) sistem nə edir?

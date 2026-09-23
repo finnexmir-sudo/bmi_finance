@@ -105,17 +105,18 @@ public class DashboardController : Controller
 
     private static FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto VarsayilanNetice()
     {
-        // Defolt dövr — keçən ayın son günü → BU GÜN.
+        // Defolt dövr — hər ikisi BU GÜN (istifadəçi qərarı, 23.09.2026).
         // (BMI-də dəyərlər Designer-də SABİT idi: 31-01-2025 / 28-02-2025,
         //  yəni heç bir «iş günü» hesablaması yox idi — operator əl ilə seçirdi.)
         //
-        // ⚠️ 23.09.2026-da düzəldildi: SonTarix əvvəl CARİ AYIN SON GÜNÜNƏ
-        // (məs. 30-09-2026) sabitlənmişdi — ay hələ bitməyibsə bu, GƏLƏCƏK
-        // tarixdir və o günə qədər data onsuz da yoxdur. İndi sadəcə BU GÜN.
-        var ayBasi = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        // ⚠️ Əvvəl BasTarix keçən ayın son gününə, SonTarix bu günə sabitlənirdi
+        // (əsas fərqi: SonTarix bir zamanlar CARİ AYIN SON GÜNÜNƏ, yəni GƏLƏCƏYƏ
+        // düşürdü — 23.09.2026-da düzəldilib). İstifadəçi tələbi: operator adətən
+        // TƏK GÜNLÜK aralıq seçir, ona görə hər iki xana açılışda EYNİ günə
+        // (bu günə) sabitlənir — operator lazım gəldikcə əl ilə genişləndirir.
         return new FinNex.Application.DTOs.Aml.MelumatBazasiNeticeDto
         {
-            BasTarix = ayBasi.AddDays(-1),
+            BasTarix = DateTime.Today,
             SonTarix = DateTime.Today
         };
     }
