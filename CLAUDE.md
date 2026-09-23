@@ -1412,15 +1412,59 @@ tel) sabit dördlük olduğu üçün bu sütunları `GROUP BY`-a əlavə etmək
 qruplaşma dənəviliyini DƏYİŞMİR, sadəcə Oracle-un tələbini ödəyir.
 
 **`A_M_L`, `Kred_zamin` — `ORA-01013: user requested cancel of current
-operation`** eyni faylda görünürdü, amma bu BUG DEYİL — böyük siyahı (17554
-sətir, 4 batch) ilə 60 saniyəlik `CommandTimeout`-a çatma (bax "BÖYÜK SİYAHI
-— Batch-lərə Bölünmə"). Bu ikisi dövrsüzdür, siyahı ölçüsündən başqa heç nə
-onları yavaşlada bilməz — kiçik (~1000-lik) fayllarla təkrarlanmamalıdır.
+operation`** eyni faylda görünürdü. ⚠️ **BU SƏTRİN ƏVVƏLKİ VARİANTI SƏHV İDİ**
+— «böyük siyahı ilə 60 saniyəlik `CommandTimeout`-a çatma» deyilmişdi. İstifadəçi
+bunu 1000 nəfərlik (TƏK batch) siyahı ilə yenidən yoxladı və eyni xəta yenə
+çıxdı — əsl səbəb aşağıdakı bölmədədir ("`func_utf8_to_latin` — PL/SQL Çağırış
+Partlayışı"). Siyahı ölçüsü ilə heç bir əlaqəsi yox idi.
 
 ⚠️ **Düzəliş `docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql`-dədir —
 `OracleSorgular` cədvəlinə düşməsi üçün faylı yenidən SQL Server-də
 işlətmək lazımdır.** Fayl "TƏKRAR İŞLƏDİLƏ BİLƏR" olaraq yazılıb (mövcud
 `AML_MB_*` sətirləri yenilənir, Id qorunur) — sadəcə yenidən icra kifayətdir.
+
+### `func_utf8_to_latin` — PL/SQL Çağırış Partlayışı (23.09.2026, KRİTİK)
+
+Yuxarıdakı `ORA-01013` fərziyyəsi ("böyük siyahı = timeout") **YANLIŞ** çıxdı.
+İstifadəçi 1000 nəfərlik TƏK batch siyahı ilə eyni xətanı aldı. Diaqnoz addım-
+addım: (1) 3 mənbə cədvəli `COUNT(*)` ilə ölçüldü — 5965 / ~1132 / 177 sətir,
+kiçikdir; (2) hər 3 sorğu 2 test adı ilə PL/SQL Developer-də birbaşa işlədildi —
+hamısı <1 saniyə, deməli nə data həcmi, nə pis icra planı (Owner-dəki köhnə
+dekart hasili bugu kimi) səbəb deyildi.
+
+**Əsl səbəb:** `odb.func_utf8_to_latin` Oracle-un daxili funksiyası DEYİL,
+**custom PL/SQL funksiyasıdır**. `WHERE` daxilində, `{SIYAHI}` (`y`) ilə CARTESIAN
+olaraq YOXLANANDA, hər (baza sətri × y sətri) CÜTÜ üçün AYRICA çağırılır — SQL↔
+PL/SQL keçidinin öz overhead-i var və cüzi bir funksiyanı milyonlarla çağırışa
+çevirir: Aktiv_hesablar 5965×1000 ≈ **6 milyon** çağırış, Kred_zamin 177×1000×2
+(iki ayrı LIKE qolu) ≈ **354 min**. Bazalar kiçik olsa da, funksiya HƏR CÜT üçün
+təkrar-təkrar çağırılanda saniyələr dəqiqələrə çevrilir.
+
+`AML_MB_ELAQELI_SEXS` (A_M_L) və `AML_MB_TRANSFER` bu tələyə HEÇ VAXT düşməyib —
+hər ikisi `func_utf8_to_latin`-i öz alt sorğusunda (union all daxilində) BAZA
+SƏTRİ başına BİR DƏFƏ hesablayır, `y` ilə çarpazlaşan xarici `WHERE` isə yalnız
+hazır ASCII mətni müqayisə edir. Bu, düzəlişdən sonra 9 sorğunun (Open_Accounts,
+Kochurme_Daxili, Kochurme_Mushteri, Exchange, Owner, Emit_benef, 3-cu shexs,
+Kred_zamin, Aktiv_hesablar) hamısına tətbiq olunan naxışdır.
+
+**Qayda:** Oracle-da custom PL/SQL funksiyası (`odb.func_*`) `{SIYAHI}` və ya
+hər hansı böyük çarpaz-birləşmə (`cross join` / `union all` sonrası çoxlu sətirlə
+kəsişən `WHERE`) daxilindəki bir sütuna tətbiq olunursa, funksiyanı **əvvəlcə
+bir alt sorğuda, baza sətri başına BİR DƏFƏ hesabla**, sonra həmin hazır sütunu
+xarici `WHERE`-də adi `like`/`=` ilə müqayisə et. Yoxlama: sorğu mətnində
+`{SIYAHI}`-nin son keçdiyi yerdən (cross join nöqtəsi) sonra `func_utf8_to_latin`
+(və ya bənzər custom funksiya) görünməməlidir — görünürsə, hələ də hər cüt üçün
+təkrar hesablanır.
+
+⚠️ **Eyni ifadənin iki fərqli forması** (`upper(ad)` vs `upper(trim(ad))`) bir-
+birinə bərabər SAYILMAMALIDIR — boşluq fərqi bilinmirsə hər ikisi AYRI
+precompute-lənmiş sütun kimi saxlanılmalıdır (`Kred_zamin`, `3-cu shexs`-də
+belə edildi: `name_match_a`/`name_match_b`, `fio_match_a`/`fio_match_b`).
+
+⚠️ **Düzəlişdən sonra hər sorğunu sütun adı üzrə yenidən tutuşdur** — outer
+`SELECT`/`WHERE`/`ORDER BY`-dakı hər istinad daxili alt sorğunun verdiyi aliasla
+DƏQİQ eyni olmalıdır. Səhv yazılmış alias `ORA-00904` verər — bu, artıq
+performans səhvi deyil, sadə səhv yazılışdır, amma eyni cəldliklə yoxlanmalıdır.
 
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
