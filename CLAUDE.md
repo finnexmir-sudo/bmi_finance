@@ -1105,6 +1105,24 @@ Yükləmə ekranındakı kəsilmə xəbərdarlığı (`DashboardController.Melum
 indi `_mb.MaxUmumiSetir`-i oxuyur, `BmiLatin.MaxSetir`-i YOX — ikisi fərqli
 kəmiyyətdir (tək batch ölçüsü vs ümumi hədd), qarışdırma.
 
+⚠️ **Batch sayı = daha çox Oracle round-trip = daha uzun sorğu vaxtı.**
+4 dövrsüz sorğu (Owner, A_M_L, Kred_zamin, Aktiv_hesablar) tarix aralığından
+ASILI DEYİL — vaxtları YALNIZ siyahının ölçüsündən (`{SIYAHI}` bloku) asılıdır.
+Yəni «1 günlük tarix seçdim, niyə hələ sürünür» sualının cavabı çox vaxt
+**siyahının ölçüsüdür**, dövr deyil — 17554 sətir 4 batch-ə bölünür, 44 Oracle
+sorğusu gedir (əvvəl 11 idi). Uzun müddət `MelumatBazasiPaket` sinxron POST-dur
+(progress-bar/websocket yoxdur) — çox böyük siyahılarda IIS/ASP.NET Core-un
+default sorğu vaxt aşımına (adətən 100-230 san) dəyə bilər; bu hələ REAL
+hadisə ilə görülməyib, yalnız nəzəri risk kimi qeyd olunur.
+
+### Defolt Tarix — `SonTarix` GƏLƏCƏYƏ DÜŞMƏMƏLİDİR (23.09.2026)
+
+`VarsayilanNetice()` əvvəl `SonTarix`-i **cari ayın son GÜNÜNƏ** (məs. 23.09-da
+açılsa belə → 30.09.2026) sabitləyirdi. Ay hələ bitməyibsə bu, GƏLƏCƏK tarixdir
+və o günə qədər data onsuz da yoxdur — istifadəçi «niyə 30 verir, bugünkü tarix
+deyil axı» sualı verdi. İndi sadəcə `DateTime.Today`. `BasTarix` (keçən ayın son
+günü) toxunulmadı — o, artıq BİTMİŞ bir ay olduğu üçün problemsizdir.
+
 ## İcazə — «Plan Üzrə Sayım» vs Real Ölçmə (23.09.2026, KRİTİK)
 
 İşçi icazə yazıb, amma pəncərədə cihaza vurmayıbsa (getməyibsə) sistem nə edir?
