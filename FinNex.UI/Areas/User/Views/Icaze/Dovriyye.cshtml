@@ -205,6 +205,34 @@
                                     <span style="font-weight:600;color:@farkColor">
                                         @item.FaktikiSaat.Value.ToString("0.##") saat
                                     </span>
+                                    @if (item.PlanSayimiLegvEdildi)
+                                    {
+                                        @* HR bu qeydin plan-sayımını artıq ləğv edib — işçinin üzürlü
+                                           səbəbi olub, balansdan HEÇ NƏ düşmür (23.09.2026). *@
+                                        <span style="margin-left:4px;padding:1px 6px;border-radius:8px;background:#dcfce7;color:#166534;font-size:10px;font-weight:600;cursor:help"
+                                              title="HR ləğv edib: @item.PlanSayimiLegvSebebi">
+                                            ləğv edilib
+                                        </span>
+                                    }
+                                    else if (item.SayilanPlanUzredir)
+                                    {
+                                        @* 23.09.2026, istifadəçi qərarı: cihazdan ölçülməyib (punch
+                                           yoxdur/mənasızdır), plan üzrə sayılıb — balansla (Dashboard)
+                                           EYNİ ədəddir, amma real ölçmə ilə QARIŞDIRILMASIN. *@
+                                        <span style="margin-left:4px;padding:1px 6px;border-radius:8px;background:#e2e8f0;color:#475569;font-size:10px;font-weight:600;cursor:help"
+                                              title="Cihazdan ölçülmədi — işçi icazə pəncərəsində çıxmayıb. Plan üzrə sayılıb (balansdan bu qədər düşür).">
+                                            plan üzrə
+                                        </span>
+                                        @if (User.IsInRole(FinNex.Domain.RoleNames.HR) || User.IsInRole(FinNex.Domain.RoleNames.Admin))
+                                        {
+                                            @* İşçinin üzürlü səbəbi ola bilər — HR bu KONKRET qeydin
+                                               plan-sayımını ləğv edə bilsin (icazənin özü toxunulmaz qalır). *@
+                                            <a href="javascript:void(0)" onclick="planSayimiLegvEt(@item.IcazeId, this)"
+                                               style="margin-left:4px;font-size:10px;color:#b91c1c;text-decoration:underline;cursor:pointer">
+                                                ləğv et
+                                            </a>
+                                        }
+                                    }
                                 }
                                 else
                                 {
@@ -318,5 +346,31 @@
             document.getElementById('dovEditCancel').addEventListener('click', function () { modal.style.display = 'none'; });
             modal.addEventListener('click', function (e) { if (e.target === modal) modal.style.display = 'none'; });
         })();
+
+        // "Plan üzrə" sayılan qeydin HR tərəfindən ləğvi (23.09.2026) —
+        // RehberHrLegv ilə EYNİ üsul (prompt + fetch), CixisGirisDuzelt kimi
+        // antiforgery token ötürmür (server tərəfdə bu action da qəsdən yoxlamır).
+        async function planSayimiLegvEt(icazeId, linkEl) {
+            var sebeb = prompt("Ləğv səbəbini yazın (məcburi) — məs: \"işçi rəhbər tərəfindən saxlanılıb\":");
+            if (sebeb === null) return;
+            sebeb = sebeb.trim();
+            if (!sebeb) { alert("Səbəb mütləqdir."); return; }
+            linkEl.style.pointerEvents = 'none';
+            linkEl.textContent = 'gözləyin...';
+            try {
+                var resp = await fetch('@Url.Action("PlanSayimiLegv", "Icaze")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ icazeId: icazeId, sebeb: sebeb })
+                });
+                var data = await resp.json();
+                alert(data.message);
+                if (data.success) location.reload();
+                else { linkEl.style.pointerEvents = ''; linkEl.textContent = 'ləğv et'; }
+            } catch (e) {
+                alert("Xəta: " + e);
+                linkEl.style.pointerEvents = ''; linkEl.textContent = 'ləğv et';
+            }
+        }
     </script>
 }

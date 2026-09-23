@@ -1058,6 +1058,84 @@ soruş — özbaşına fərz etmə.
 Boş sətir şərti: `ad`, `VÖEN`, `FİN` **üçü də** boşdursa sətir atılır. Yalnız
 «Növü» dolu olması sətri saxlatmır — axtarılacaq heç nə yoxdur.
 
+## İcazə — «Plan Üzrə Sayım» vs Real Ölçmə (23.09.2026, KRİTİK)
+
+İşçi icazə yazıb, amma pəncərədə cihaza vurmayıbsa (getməyibsə) sistem nə edir?
+**İstifadəçi qərarı: «bu onun problemidir, sistem plan qədər hesablasın».** Bu
+qərar özü düz idi, amma tətbiqi **iki yerdə ziddiyyətli** idi — Dövriyyə səhifəsi
+«0 saat» göstərirdi, Dashboard isə eyni qeyd üçün **3 saat** balansdan düşürdü.
+
+### Kök səbəb — ÜÇ QATLI mexanizm
+
+**1-ci qat (canlı, `ADMSController.ProcessIcazeCixisGirisAsync:602`):** işçi
+pəncərədə çıxmayıbsa, sistem **YUXARI HƏDD OLMADAN** növbəti istənilən punch-u
+icazə çıxışı sayır:
+```csharp
+else if (vaxt >= icazeBaslamaDateTime.AddMinutes(-15))
+    cg.CixisVaxt = vaxt;   // ⚠️ heç bir yuxarı sərhəd yoxdur
+```
+İşçi pəncərədə (09:00–12:45) heç yerə çıxmayıb, günün sonunda **normal iş günü
+çıxışı** edibsə (17:03) — bu, səhvən icazə çıxışı kimi tutulur.
+
+**2-ci qat (gecə, `PlanUzreBaglamaBackgroundService.cs:164`, 23:00-dən sonra):**
+çatışmayan yarını (adətən qayıdışı) **PLAN üzrə** doldurur və qeydi **şərtsiz**
+`Tamamlandı` edir — çıxış/qayıdış sırasının məntiqli olduğunu yoxlamadan:
+```csharp
+cg.Status = IcazeCixisGirisStatus.Tamamlandi;   // sağlamlıq yoxlaması yoxdur
+```
+Nəticə: çıxış (17:03, canlı, YANLIŞ bağlanmış) > qayıdış (12:45, plan, sintetik) —
+məntiqsiz cüt, amma «Tamamlandı».
+
+**3-cü qat (oxuma zamanı, İKİ AYRI YERDƏ FƏRQLİ):**
+- `IcazeCixisGiris.FaktikiSaat` (Domain, DÜZƏLDİLDİ): əvvəl `QayidisVaxt −
+  CixisVaxt`-ı **şərtsiz** qaytarırdı → mənfi (−4,3 saat). Bu, Dövriyyə
+  səhifəsinin nahar-düzəlişindəki `Math.Max(0, …)`-a düşəndə **təsadüfən 0-a**
+  sıxılırdı — «0 saat» real ölçmə DEYİL, gizli səhvin nəticəsi idi.
+- `DashboardService.IcazeIstifade` — **statik** `IcazeService.IcazeFaktikiSaat`
+  köməkçisini çağırır, o, `qayidis <= cixis` olanda düzgün `null` qaytarır, amma
+  sonra `null`-u **«hələ baş verməyib»** ilə **«baş verib, data qırıqdır»**
+  eyni cür oxuyub hər ikisində **PLANI** kreditə yazır.
+
+### Həll (23.09.2026)
+
+- `IcazeCixisGiris.FaktikiSaat` artıq `QayidisVaxt > CixisVaxt` şərtini yoxlayır —
+  mənasız cüt üçün **`null`** qaytarır, mənfi ədəd bir daha görünmür.
+- `IcazeService.GetDovriyyeAsync` (`PlanUzreSayGorEhtiyacOlsa`): qeyd bağlıdır
+  (Tamamlandı), amma `FaktikiSaat` ölçülə bilmirsə — Dövriyyə də **eyni planı**
+  göstərir (`dto.EffektivPlanSaat`) və `SayilanPlanUzredir=true` bayrağı ilə
+  «plan üzrə» nişanı çıxır. **Artıq Dövriyyə və Dashboard EYNİ ədədi göstərir.**
+- `IcazeListDto.IstifadeSaati` və `DashboardService.IcazeIstifade` — dəyişməyib
+  (onsuz da planı sayırdı, istifadəçi qərarına uyğundur).
+
+### HR ləğv imkanı (istifadəçi tələbi: «belə müraciətlər ola bilər»)
+
+İşçinin ÜZÜRLÜ səbəbi ola bilər (təcili çağırılıb, rəhbər saxlayıb) — HR bu
+KONKRET qeydin **yalnız plan-sayımını** ləğv edə bilər, icazənin özünə
+(Status/Silinib/jeton) TOXUNULMUR:
+
+- Sahələr: `IcazeCixisGiris.PlanSayimiLegvEdildi/Sebebi/Tarixi/EdenIsciId`
+  (migration: `20260923090000_IcazePlanSayimLegvi`).
+- Servis: `IcazeService.PlanUzreSayimiLegvEtAsync` — yalnız `FaktikiSaat == null`
+  olan qeydə tətbiq olunur (real ölçülmüş qeydi HR «ləğv» edə bilməz).
+- `DashboardService.IcazeIstifade` və `IcazeListDto.IstifadeSaati` bu bayrağı
+  yoxlayır → ləğv edilmiş qeyd balansdan **0** düşür.
+- Endpoint: `POST /User/Icaze/PlanSayimiLegv` (yalnız **HR/Admin** — istifadəçi
+  qərarı, Rəhbər/ŞöbəReisi bura daxil deyil). `RehberHrLegvEtAsync`-dən FƏRQLİDİR
+  — o, bütöv icazəni ləğv edir; bu, YALNIZ balansdan düşən saatı.
+- **`RehberHrLegv`-lə EYNİ konvensiya**: `[ValidateAntiForgeryToken]` QƏSDƏN
+  yoxdur (JS `fetch`+`prompt()` üsulu, token ötürmür) — əlavə etsək token
+  uyğunsuzluğu POST-u səssizcə 400 ilə sındırardı.
+
+⚠️ **Sintetik (CixisGiris qeydi olmayan) icazələrdə bu düymə yoxdur** — ləğv
+ediləcək qeydin özü mövcud deyil. HR əvvəlcə `CixisGirisDuzelt` ilə qeyd
+yaratmalıdır, sonra plan-sayımı ləğv edə bilər.
+
+⚠️ **1 və 2-ci qat (ADMS-in yuxarı həddi, gecə xidmətinin sağlamlıq yoxlaması)
+QƏSDƏN TOXUNULMADI** — istifadəçi bunları dizaynın qəbul edilmiş hissəsi kimi
+saxlamağı seçdi («cihaza baxmayan işçini HR-a əl ilə həvalə etməmək»). Yalnız
+**göstərmə/balans uyğunsuzluğu** və **HR-ın konkret hal üçün istisna etmə
+imkanı** düzəldildi.
+
 ## AML → «Məlumat Bazası» — BMI-nin İKİ NÜSXƏSİ VAR (22.09.2026, KRİTİK)
 
 BMI-də bu hesabatın **iki** implementasiyası mövcuddur və onlar **eyni deyil**:

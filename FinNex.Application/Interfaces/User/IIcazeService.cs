@@ -41,5 +41,10 @@ namespace FinNex.Application.Interfaces
 
         // HR əl ilə düzəliş — cihaz çıxış/qayıdış vaxtlarını yeniləyir (insan faktoru halları)
         Task<Result> CixisGirisDuzeltAsync(int icazeId, DateTime? cixisVaxt, DateTime? qayidisVaxt);
+
+        // HR — "plan üzrə sayım"ı ləğv edir (23.09.2026). Yalnız FaktikiSaat cihazdan
+        // ölçülə BİLMƏYƏN (null) qeydlərə tətbiq olunur — real ölçülmüş qeydə toxunmur.
+        // İcazənin ÖZÜNƏ (Status/Silinib) toxunmur, YALNIZ balansdan düşən saatı ləğv edir.
+        Task<Result> PlanUzreSayimiLegvEtAsync(int icazeId, int hrIsciId, string sebeb);
     }
 }

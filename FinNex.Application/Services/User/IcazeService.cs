@@ -402,6 +402,7 @@ namespace FinNex.Application.Services
                     CixisGirisStatus = icaze.CixisGiris?.Status,
                     FaktikiSaat = IcazeFaktikiSaat(icaze.CixisGiris?.CixisVaxt, icaze.CixisGiris?.QayidisVaxt,
                                                    icaze.Birdefelik, icaze.IcazeTarixi, icaze.BitisSaati),
+                    PlanSayimiLegvEdildi = icaze.CixisGiris?.PlanSayimiLegvEdildi ?? false,
                 };
 
                 return Result<IcazeDetailDto>.Ok(dto);
@@ -955,6 +956,7 @@ namespace FinNex.Application.Services
             CixisGirisStatus = icaze.CixisGiris?.Status,
             FaktikiSaat = IcazeFaktikiSaat(icaze.CixisGiris?.CixisVaxt, icaze.CixisGiris?.QayidisVaxt,
                                            icaze.Birdefelik, icaze.IcazeTarixi, icaze.BitisSaati),
+            PlanSayimiLegvEdildi = icaze.CixisGiris?.PlanSayimiLegvEdildi ?? false,
         };
 
         // ── Cihaz oxuma bərpası üçün batch xəritələr ─────────
@@ -1124,6 +1126,38 @@ namespace FinNex.Application.Services
             if (pencere <= 0) return 0;
             var cixilan = naharDeq / 60.0;
             return cixilan < pencere ? cixilan : pencere;
+        }
+
+        // Dövriyyə səhifəsi ilə balans (Dashboard, IcazeListDto.IstifadeSaati) EYNİ
+        // ƏDƏDİ göstərsin (23.09.2026, KRİTİK).
+        //
+        // Qeyd BAĞLANIB (Tamamlandı), amma FaktikiSaat ölçülə bilmirsə (punch yoxdur,
+        // yaxud cüt mənasızdır — adətən icazə pəncərəsindən kənar bir punch-un səhvən
+        // bağlanması, bax IcazeCixisGiris.FaktikiSaat) — bu, DashboardService.IcazeIstifade
+        // ilə EYNİ halda artıq PLANI kreditə yazır (istifadəçi qərarı: «işçi yazıb
+        // getməyibsə, bu onun problemidir»). Dövriyyə bunadək fərqli davranırdı: «0»
+        // (mənfi ədədin nahar-düzəlişində təsadüfən sıfıra sıxılması) və ya «—»
+        // göstərirdi — HR iki fərqli rəqəm görürdü. İndi ikisi tutuşur.
+        //
+        // GÖZLƏNİR statuslu (hələ baş verməməmiş) qeydlərə TOXUNULMUR — bu səhifə
+        // cihaz izləməsidir, «hələ olmayıb»ı «plan üzrə sayıldı» kimi göstərmək
+        // status sütununu yalan danışdırardı.
+        private static void PlanUzreSayGorEhtiyacOlsa(IcazeDovriyyeDto dto)
+        {
+            if (dto.FaktikiSaat.HasValue) return;
+            if (dto.CixisStatus != IcazeCixisGirisStatus.Tamamlandi) return;
+
+            // HR bu qeydin plan-sayımını ləğv edibsə (23.09.2026, işçinin üzürlü
+            // səbəbi) — nə real ölçmə var, nə plan sayılır. IcazeListDto.IstifadeSaati
+            // ilə EYNİ qayda (PlanSayimiLegvEdildi → 0).
+            if (dto.PlanSayimiLegvEdildi)
+            {
+                dto.FaktikiSaat = 0;
+                return;
+            }
+
+            dto.FaktikiSaat = dto.EffektivPlanSaat;
+            dto.SayilanPlanUzredir = true;
         }
 
         // ════════════════════════════════════════════════════════
@@ -1416,7 +1450,7 @@ namespace FinNex.Application.Services
                             faktiki = Math.Max(0, faktiki.Value
                                 - NaharCixilmaSaat(effCixis.Value.TimeOfDay, dnBit, dnDeq));
                         }
-                        return new IcazeDovriyyeDto
+                        var dto = new IcazeDovriyyeDto
                         {
                             IcazeId = c.IcazeId,
                             IsciAdSoyad = c.Icaze.Isci.TamAd,
@@ -1438,7 +1472,11 @@ namespace FinNex.Application.Services
                             CixisStatus = fcx != null
                                 ? (fqy != null ? IcazeCixisGirisStatus.Tamamlandi : IcazeCixisGirisStatus.Cixdi)
                                 : c.Status,
+                            PlanSayimiLegvEdildi = c.PlanSayimiLegvEdildi,
+                            PlanSayimiLegvSebebi = c.PlanSayimiLegvSebebi,
                         };
+                        PlanUzreSayGorEhtiyacOlsa(dto);
+                        return dto;
                     }).ToList();
 
                 // Sintetik sətirlər — qeydi olmayan icazələr (eyni bərpa məntiqi ilə)
@@ -1455,7 +1493,7 @@ namespace FinNex.Application.Services
                         faktiki = Math.Max(0, faktiki.Value
                             - NaharCixilmaSaat(fcx.Value.TimeOfDay, dnBit, dnDeq));
                     }
-                    return new IcazeDovriyyeDto
+                    var dto = new IcazeDovriyyeDto
                     {
                         IcazeId = i.Id,
                         IsciAdSoyad = i.Isci.TamAd,
@@ -1478,6 +1516,8 @@ namespace FinNex.Application.Services
                             ? (fqy != null ? IcazeCixisGirisStatus.Tamamlandi : IcazeCixisGirisStatus.Cixdi)
                             : IcazeCixisGirisStatus.Gozlenir,
                     };
+                    PlanUzreSayGorEhtiyacOlsa(dto);
+                    return dto;
                 }).ToList();
 
                 // ── SIRALAMA — TƏK YER, ÜÇ AÇAR (02.09.2026) ─────────────────────
@@ -1549,6 +1589,66 @@ namespace FinNex.Application.Services
             catch (Exception ex)
             {
                 return Result.Fail($"Düzəliş xətası: {ex.Message}");
+            }
+        }
+
+        // ── HR: "plan üzrə sayım"ı ləğv edir (23.09.2026) ────────────────────
+        //
+        // Kontekst: `IcazeCixisGiris.FaktikiSaat` cihazdan ölçülə bilmirsə (punch
+        // yoxdur, ya da qayıdış çıxışdan əvvəldir — adətən icazə pəncərəsindən
+        // KƏNAR bir punch-un səhvən bu qeydə bağlanması), balans (Dashboard,
+        // İcazə İndex → IstifadeSaati) qeydi PLAN qədər sayır — istifadəçi qərarı:
+        // «işçi icazə yazıb getməyibsə, bu onun problemidir, sistem plan qədər
+        // hesablasın». Amma işçinin ÜZÜRLÜ səbəbi ola bilər (təcili çağırılıb,
+        // rəhbər saxlayıb və s.) — bu metod HR-a həmin KONKRET qeydin plan-sayımını
+        // ləğv etmə imkanı verir.
+        //
+        // ⚠️ İcazənin ÖZÜNƏ (Status, Silinib, jeton) TOXUNMUR — bu, `RehberHrLegvEtAsync`-dən
+        // FƏRQLİDİR (o, bütöv icazəni ləğv edir). Burada icazə təsdiqlənmiş və
+        // tarixçədə qalır, YALNIZ balansdan düşən saat sıfırlanır.
+        //
+        // ⚠️ Yalnız FaktikiSaat ölçülə BİLMƏYƏN qeydə tətbiq olunur — real cihaz
+        // ölçməsi olan qeydi HR "ləğv" edə bilməz (bu, real datanı gizlədərdi).
+        public async Task<Result> PlanUzreSayimiLegvEtAsync(int icazeId, int hrIsciId, string sebeb)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sebeb))
+                    return Result.Fail("Ləğv səbəbi mütləqdir.");
+
+                var icaze = await _unitOfWork.Repository<Icaze>()
+                    .GetirAsync(x => x.Id == icazeId, include: q => q.Include(i => i.CixisGiris));
+                if (icaze == null)
+                    return Result.Fail("İcazə tapılmadı.");
+
+                var cg = icaze.CixisGiris;
+                if (cg == null)
+                    return Result.Fail("Bu icazənin çıxış/qayıdış qeydi yoxdur — ləğv ediləcək plan-sayım yoxdur.");
+
+                if (cg.FaktikiSaat.HasValue)
+                    return Result.Fail("Bu qeyd cihazdan REAL ölçülüb — ləğv ediləcək plan-sayım yoxdur.");
+
+                if (cg.PlanSayimiLegvEdildi)
+                    return Result.Fail("Bu qeydin plan-sayımı artıq ləğv edilib.");
+
+                cg.PlanSayimiLegvEdildi     = true;
+                cg.PlanSayimiLegvSebebi     = sebeb.Trim();
+                cg.PlanSayimiLegvTarixi     = DateTime.Now;
+                cg.PlanSayimiLegvEdenIsciId = hrIsciId;
+                cg.YenilenmeTarixi          = DateTime.Now;
+
+                await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Result.Ok("Plan üzrə sayım ləğv edildi — bu icazə artıq balansdan düşmür.");
+            }
+            catch (Exception ex)
+            {
+                var kok = ex;
+                while (kok.InnerException != null) kok = kok.InnerException;
+                return Result.Fail(ReferenceEquals(kok, ex)
+                    ? $"Ləğv xətası: {ex.Message}"
+                    : $"Ləğv xətası: {ex.Message} → {kok.Message}");
             }
         }
 

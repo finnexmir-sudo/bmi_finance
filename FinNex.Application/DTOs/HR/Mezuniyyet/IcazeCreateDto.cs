@@ -110,9 +110,13 @@ namespace FinNex.Application.DTOs.HR.Icaze
         // Faktiki istifadə (cihaz çıxış/qayıdışından): adi icazə → qayıdış−çıxış;
         // birdəfəlik → çıxışdan icazə sonuna. Punch yoxdursa null. Servis doldurur.
         public double? FaktikiSaat { get; set; }
-        // İstifadə olunan (sayılan) saat = effektiv faktiki varsa o, yoxdursa effektiv plan.
-        // Hər ikisi sabit nahar fasiləsi çıxılmaqla.
-        public double IstifadeSaati => EffektivFaktikiSaat ?? EffektivSaat;
+        // HR bu icazənin "plan üzrə sayılması"nı ləğv edibsə (23.09.2026, işçinin
+        // üzürlü səbəbi olan hal) — balansdan HEÇ NƏ düşmür. Servis doldurur.
+        public bool PlanSayimiLegvEdildi { get; set; }
+
+        // İstifadə olunan (sayılan) saat = effektiv faktiki varsa o, yoxdursa effektiv plan
+        // (HR ləğv etməyibsə). Hər ikisi sabit nahar fasiləsi çıxılmaqla.
+        public double IstifadeSaati => PlanSayimiLegvEdildi ? 0 : (EffektivFaktikiSaat ?? EffektivSaat);
 
         public string? Sebeb { get; set; }
         public IcazeStatus Status { get; set; }
@@ -210,6 +214,24 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public DateTime? QayidisVaxt { get; set; }
         public double? FaktikiSaat { get; set; }
         public IcazeCixisGirisStatus CixisStatus { get; set; }
+
+        /// <summary>
+        /// `true` — <see cref="FaktikiSaat"/> real cihaz ölçməsi DEYİL, planlaşdırılmış
+        /// (effektiv) müddətdir. Qeyd bağlanıb (Tamamlandı), amma çıxış/qayıdış cütü
+        /// ölçmə üçün yararsızdır (punch yoxdur, yaxud qayıdış çıxışdan əvvəldir —
+        /// adətən icazə pəncərəsindən kənar bir punch-un səhvən bağlanması nəticəsi).
+        ///
+        /// İstifadəçi qərarı (23.09.2026): «işçi icazə yazıb getməyibsə, bu onun
+        /// problemidir — sistem plan qədər hesablasın». Balans tərəfi (Dashboard,
+        /// `IcazeListDto.IstifadeSaati`) bunu onsuz da edir; bu bayraq YALNIZ bu
+        /// səhifədə (Dövriyyə) göstəriləni balansla EYNİ ədədə gətirir və HR-a
+        /// «bu, ölçülməyib, plan üzrə sayılıb» olduğunu açıq bildirir.
+        /// </summary>
+        public bool SayilanPlanUzredir { get; set; }
+
+        /// <summary>HR bu qeydin plan-sayımını artıq ləğv edib (işçinin üzürlü səbəbi olub).</summary>
+        public bool PlanSayimiLegvEdildi { get; set; }
+        public string? PlanSayimiLegvSebebi { get; set; }
 
         /// <summary>
         /// İcazə qeydinin YARANMA anı (`Icaze.YaradilmaTarixi`) — sıralama açarı.

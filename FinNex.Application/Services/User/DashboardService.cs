@@ -280,6 +280,11 @@ namespace FinNex.Application.Services
                 // (İcazə səhifəsindəki IstifadeSaati ilə eyni məntiq.)
                 double IcazeIstifade(Icaze x)
                 {
+                    // HR bu qeydin plan-sayımını ləğv edibsə (23.09.2026, işçinin
+                    // üzürlü səbəbi) — balansdan HEÇ NƏ düşmür. IcazeListDto.IstifadeSaati
+                    // və Dövriyyə səhifəsi ilə EYNİ qayda.
+                    if (x.CixisGiris?.PlanSayimiLegvEdildi == true) return 0;
+
                     var cixis = x.CixisGiris?.CixisVaxt;
                     var qayidis = x.CixisGiris?.QayidisVaxt;
                     var faktiki = IcazeService.IcazeFaktikiSaat(cixis, qayidis, x.Birdefelik,

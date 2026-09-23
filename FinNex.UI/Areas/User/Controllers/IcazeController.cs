@@ -309,6 +309,28 @@ namespace FinNex.UI.Areas.User.Controllers
             return Json(new { success = result.Success, message = result.Message });
         }
 
+        // ── POST /User/Icaze/PlanSayimiLegv — HR: "plan üzrə" sayılan saatı ləğv edir ──
+        // (23.09.2026, istifadəçi tələbi: «belə işlərdə sonradan ləğv etmək imkanı
+        //  da ver, çünki belə müraciətlər ola bilər» — işçinin üzürlü səbəbi olan
+        //  hallar üçün. Bütöv icazəni YOX, YALNIZ balansdan düşən saatı ləğv edir —
+        //  `RehberHrLegv`-dən fərqli olaraq icazənin özü təsdiqlənmiş qalır.)
+        // Yalnız HR/Admin — istifadəçi qərarı, Rəhbər/ŞöbəReisi bura daxil deyil.
+        // ⚠️ `[ValidateAntiForgeryToken]` QƏSDƏN YOXDUR — `RehberHrLegv` (yuxarıda,
+        // eyni JS `fetch` üsulu) ilə EYNİ konvensiya. Token yalnız form-POST-larda
+        // (`CixisGirisDuzelt`) yoxlanır; fetch+prompt() üsulunda əlavə etsək,
+        // header/token uyğunsuzluğu POST-u səssizcə 400 ilə sındırardı.
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Admin}")]
+        public async Task<IActionResult> PlanSayimiLegv(int icazeId, string? sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return Json(new { success = false, message = "Ləğv səbəbi mütləqdir." });
+
+            var hrIsciId = await GetCurrentIsciIdAsync();
+            var result = await _icazeService.PlanUzreSayimiLegvEtAsync(icazeId, hrIsciId ?? 0, sebeb);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
         // ══ Köməkçi metodlar ══════════════════════════════════
 
         private async Task<int?> GetCurrentIsciIdAsync()
