@@ -1130,11 +1130,41 @@ KONKRET qeydin **yalnız plan-sayımını** ləğv edə bilər, icazənin özün
 ediləcək qeydin özü mövcud deyil. HR əvvəlcə `CixisGirisDuzelt` ilə qeyd
 yaratmalıdır, sonra plan-sayımı ləğv edə bilər.
 
-⚠️ **1 və 2-ci qat (ADMS-in yuxarı həddi, gecə xidmətinin sağlamlıq yoxlaması)
-QƏSDƏN TOXUNULMADI** — istifadəçi bunları dizaynın qəbul edilmiş hissəsi kimi
-saxlamağı seçdi («cihaza baxmayan işçini HR-a əl ilə həvalə etməmək»). Yalnız
-**göstərmə/balans uyğunsuzluğu** və **HR-ın konkret hal üçün istisna etmə
-imkanı** düzəldildi.
+### Kök səbəb düzəlişi — ADMSController-ə YUXARI HƏDD (23.09.2026, İKİNCİ DALĞA)
+
+İlk düzəlişdə (yuxarı) **1-ci qat (ADMSController) qəsdən toxunulmamışdı** —
+göstərmə/balans tərəfi düzəldilmişdi, amma kök səbəb qalırdı: canlı proses
+`vaxt >= icazeBaslamaDateTime.AddMinutes(-15)` kimi YALNIZ **aşağı** hədd
+yoxlayırdı, yuxarı hədd yox idi. Nəticədə icazə pəncərəsində (məs. 09:00–12:45)
+heç bir punch olmayanda, günün sonunda gələn **istənilən** növbəti punch (adi
+işdən çıxış, 17:03) icazənin çıxışı/qayıdışı kimi yazılırdı.
+
+İstifadəçi bunu təsdiqlədi və konkret həll təklif etdi: *«cihaza baxanda sistem
+yoxlasın ki, bu aralıqda onun icazəsi varmı? varsa bu icazənin başlanğıcıdır,
+yoxdursa artıq işdən çıxışdır»*. Bu, məhz `PlanUzreBaglamaBackgroundService`-in
+(gecə xidməti) onsuz da işlətdiyi pəncərə məntiqi idi (`BaslamaSaati−30dəq …
+BitisSaati+30dəq`, xam punch varsa götür, yoxdursa PLAN yaz) — sadəcə CANLI
+proses həmin pəncərəni tətbiq etmirdi.
+
+**Düzəliş:** `ADMSController.ProcessIcazeCixisGirisAsync`-da HƏR ÜÇ budağa
+(səhər-icazəli qayıdış, gün-ortası çıxış, ikinci-skan qayıdış) eyni yuxarı hədd
+əlavə edildi: `IcazePunchToleransDeq = 30` (gecə xidməti ilə **EYNİ ədəd** —
+sinxron qalmalıdır). Punch bu həddən (`BitisSaati + 30 dəq`) sonradırsa,
+icazəyə **TOXUNULMUR** — CixisGiris sahəsi boş qalır, adi davamiyyətə öz yolu
+ilə yazılır, gecə xidməti sonra düzgün bağlayır (ya real pəncərə-daxili punch,
+ya da yoxdursa plan).
+
+**Əlavə (display qatı):** `CixisQayidisAnomaliya` (`IcazeListDto` və
+`IcazeDovriyyeDto`, hər ikisi) əvvəl yalnız "çıxış çox erkən" və "qayıdış çox
+gec" yoxlayırdı — "çıxış çox gec" (bu bugun tapılan hal) və "qayıdış ≤ çıxış"
+(tərs cüt) heç yoxlanmırdı, ona görə "⚠ yoxla" işarəsi Nigarın 21.09 sətrində
+çıxmırdı. İndi dördü də yoxlanır — köhnə (bu düzəlişdən ƏVVƏL yazılmış)
+korrupt qeydlər HR-a görünəcək, `CixisGirisDuzelt` ilə əl ilə düzəldilə bilər.
+
+⚠️ **Yalnız gecə xidmətinin "sağlamlıq yoxlaması" (şərtsiz `Tamamlandı`
+yazması) TOXUNULMADI** — istifadəçi qərarına görə cihaza baxmayan işçi HR-a əl
+ilə həvalə edilmir, plan üzrə bağlanması dizaynın qəbul edilmiş hissəsidir.
+Dəyişən yalnız CANLI prosesin bir punch-u "icazəyə aiddir" sayma qaydasıdır.
 
 ## AML → «Məlumat Bazası» — BMI-nin İKİ NÜSXƏSİ VAR (22.09.2026, KRİTİK)
 

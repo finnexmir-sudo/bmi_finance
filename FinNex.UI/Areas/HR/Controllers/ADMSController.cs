@@ -544,8 +544,27 @@ public class ADMSController : Controller
         }
     }
 
+    // Bir cihaz həm gündəlik davamiyyəti, həm icazə çıxış/qayıdışını EYNİ punch
+    // axınından oxuyur — punch-un "niyyətini" bilmir. Bu tolerans, icazə pəncərəsinə
+    // (BitisSaati) görə bir punch-un HƏLƏ icazəyə aid sayıla biləcəyi yuxarı həddir.
+    // PlanUzreBaglamaBackgroundService (gecə xidməti) İLƏ EYNİ ədəd olmalıdır — o da
+    // pəncərəni "BitisSaati + 30 dəq" kimi qurur; ikisi fərqli olsa, canlı proses hələ
+    // "aid" saydığı punch-u gecə xidməti artıq "kənar" sayar (yaxud əksinə).
+    private const int IcazePunchToleransDeq = 30;
+
     // İşçinin aktiv təsdiqlənmiş icazəsi varsa çıxış/qayıdış vaxtını qeyd edir.
     // Davamiyyət məntiqi ilə toqquşmur — həmin skan paralel olaraq hər iki cədvələ yazılır.
+    //
+    // 23.09.2026, KRİTİK DÜZƏLİŞ: hər üç budaqda əvvəl YALNIZ aşağı hədd (icazə hələ
+    // başlamayıb) yoxlanırdı, YUXARI hədd yox idi. Nəticədə icazə pəncərəsində heç bir
+    // punch olmayanda (işçi cihaza vurmadan gedib) növbəti İSTƏNİLƏN punch — məsələn,
+    // günün sonunda adi işdən çıxış (17:03) — səhvən icazənin çıxışı/qayıdışı kimi
+    // yazılırdı (real hadisə: 21.09.2026, Nigar N. — icazə 09:00–12:45, amma "Çıxış
+    // vaxtı" 17:03 oldu, gecə xidməti Qayıdışı planla (12:45) bağlayanda tərs cüt —
+    // çıxış > qayıdış — yarandı). İndi punch `BitisSaati + tolerans`-dan gecdirsə,
+    // icazəyə heç TOXUNULMUR — adi davamiyyətə öz yolu ilə yazılır, CixisGiris sahəsi
+    // boş qalır və gecə xidməti (yuxarıdakı eyni tolerans ilə) onu ya real punch-dan,
+    // ya da PLAN-dan düzgün bağlayır.
     private async Task ProcessIcazeCixisGirisAsync(int isciId, DateTime vaxt)
     {
         try
@@ -570,6 +589,9 @@ public class ADMSController : Controller
                 cg.Status == IcazeCixisGirisStatus.Tamamlandi)
                 return;
 
+            var icazeBitmeDateTime = tarix + icaze.BitisSaati;
+            var icazePunchUstHeddi = icazeBitmeDateTime.AddMinutes(IcazePunchToleransDeq);
+
             if (cg.CixisVaxt == null)
             {
                 var icazeBaslamaDateTime = tarix + icaze.BaslamaSaati;
@@ -588,18 +610,25 @@ public class ADMSController : Controller
                     // Səhər icazəli: çıxış = icazə başlanğıcı (o vaxtdan yoxdur),
                     // ilk oxuma = qayıdış. CixisGiris tamamlanır ki, günün sonu
                     // oxuması (işdən getmə) icazə qayıdışı kimi sayılmasın.
-                    cg.CixisVaxt = icazeBaslamaDateTime;
-                    cg.QayidisVaxt = vaxt;
-                    cg.Status = IcazeCixisGirisStatus.Tamamlandi;
+                    //
+                    // Bu oxuma icazə pəncərəsindən (BitisSaati + tolerans) çox kənardırsa,
+                    // demək icazə boyu heç bir cihaz oxuması olmayıb və bu, sadəcə adi
+                    // işdən çıxışdır — CixisGiris-ə TOXUNMA, gecə xidməti plan üzrə bağlasın.
+                    if (vaxt <= icazePunchUstHeddi)
+                    {
+                        cg.CixisVaxt = icazeBaslamaDateTime;
+                        cg.QayidisVaxt = vaxt;
+                        cg.Status = IcazeCixisGirisStatus.Tamamlandi;
 
-                    _db.Update(cg);
-                    await _db.SaveChangesAsync();
+                        _db.Update(cg);
+                        await _db.SaveChangesAsync();
 
-                    _logger.LogInformation(
-                        "İcazə qayıdışı (səhər icazəli) qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
-                        isciId, icaze.Id, vaxt);
+                        _logger.LogInformation(
+                            "İcazə qayıdışı (səhər icazəli) qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
+                            isciId, icaze.Id, vaxt);
+                    }
                 }
-                else if (vaxt >= icazeBaslamaDateTime.AddMinutes(-15))
+                else if (vaxt >= icazeBaslamaDateTime.AddMinutes(-15) && vaxt <= icazePunchUstHeddi)
                 {
                     // Günün ortasında icazə — işçi gəlib, indi çıxır
                     cg.CixisVaxt = vaxt;
@@ -614,12 +643,16 @@ public class ADMSController : Controller
                         "İcazə çıxışı qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
                         isciId, icaze.Id, vaxt);
                 }
+                // else: punch nə "icazədən 15 dəq əvvəl", nə də icazə pəncərəsi daxilindədir
+                // (çox gecdir) — adi davamiyyət hərəkətidir, icazəyə bağlanmır.
             }
             else if (cg.QayidisVaxt == null && !cg.Birdefelik)
             {
                 // İkinci skan — qayıdış
-                // Çıxışdan ən az 5 dəqiqə sonra olmalıdır ki, duplikat skan sayılmasın
-                if (vaxt > cg.CixisVaxt.Value.AddMinutes(5))
+                // Çıxışdan ən az 5 dəqiqə sonra olmalıdır ki, duplikat skan sayılmasın,
+                // VƏ icazə pəncərəsindən (BitisSaati + tolerans) çox gec olmamalıdır —
+                // yoxsa bu, işçinin adi günün sonu çıxışıdır, icazə qayıdışı deyil.
+                if (vaxt > cg.CixisVaxt.Value.AddMinutes(5) && vaxt <= icazePunchUstHeddi)
                 {
                     cg.QayidisVaxt = vaxt;
                     cg.Status = IcazeCixisGirisStatus.Tamamlandi;
@@ -631,6 +664,8 @@ public class ADMSController : Controller
                         "İcazə qayıdışı qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
                         isciId, icaze.Id, vaxt);
                 }
+                // else (vaxt çox gecdir): QayidisVaxt boş qalır, Status Cixdi-də qalır —
+                // gecə xidməti pəncərəni yenidən yoxlayıb ya real punch, ya plan yazacaq.
             }
         }
         catch (Exception ex)

@@ -171,6 +171,11 @@ namespace FinNex.Application.DTOs.HR.Icaze
 
         // Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmirsə şübhəlidir (insan
         // faktoru — təsadüfi tanınma və s.). HR yoxlamalıdır.
+        //
+        // 23.09.2026 əlavə edildi: əvvəl yalnız "çıxış ÇOX ERKƏN" və "qayıdış ÇOX GEC"
+        // yoxlanırdı — "çıxış ÇOX GEC" (adi gün sonu çıxışının səhvən icazəyə bağlanması)
+        // və "qayıdış çıxışdan ƏVVƏL/EYNİ" (tərs cüt) heç yoxlanmırdı. Real hadisə:
+        // 21.09.2026, Çıxış 17:03 / Qayıdış 12:45 — bu iki şərtin heç biri işə düşmürdü.
         public bool CixisQayidisAnomaliya
         {
             get
@@ -178,7 +183,9 @@ namespace FinNex.Application.DTOs.HR.Icaze
                 var basDt = IcazeTarixi.Date + BaslamaSaati;
                 var bitDt = IcazeTarixi.Date + BitisSaati;
                 if (CixisVaxt.HasValue && CixisVaxt.Value < basDt.AddMinutes(-30)) return true;
+                if (!Birdefelik && CixisVaxt.HasValue && CixisVaxt.Value > bitDt.AddMinutes(60)) return true;
                 if (!Birdefelik && QayidisVaxt.HasValue && QayidisVaxt.Value > bitDt.AddMinutes(60)) return true;
+                if (!Birdefelik && CixisVaxt.HasValue && QayidisVaxt.HasValue && QayidisVaxt.Value <= CixisVaxt.Value) return true;
                 return false;
             }
         }
@@ -271,6 +278,11 @@ namespace FinNex.Application.DTOs.HR.Icaze
 
         // Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmirsə şübhəlidir (insan
         // faktoru — təsadüfi tanınma və s.). HR yoxlamalıdır.
+        //
+        // 23.09.2026 əlavə edildi: əvvəl yalnız "çıxış ÇOX ERKƏN" və "qayıdış ÇOX GEC"
+        // yoxlanırdı — "çıxış ÇOX GEC" (adi gün sonu çıxışının səhvən icazəyə bağlanması)
+        // və "qayıdış çıxışdan ƏVVƏL/EYNİ" (tərs cüt) heç yoxlanmırdı. Real hadisə:
+        // 21.09.2026, Çıxış 17:03 / Qayıdış 12:45 — bu iki şərtin heç biri işə düşmürdü.
         public bool CixisQayidisAnomaliya
         {
             get
@@ -278,7 +290,9 @@ namespace FinNex.Application.DTOs.HR.Icaze
                 var basDt = IcazeTarixi.Date + BaslamaSaati;
                 var bitDt = IcazeTarixi.Date + BitisSaati;
                 if (CixisVaxt.HasValue && CixisVaxt.Value < basDt.AddMinutes(-30)) return true;
+                if (!Birdefelik && CixisVaxt.HasValue && CixisVaxt.Value > bitDt.AddMinutes(60)) return true;
                 if (!Birdefelik && QayidisVaxt.HasValue && QayidisVaxt.Value > bitDt.AddMinutes(60)) return true;
+                if (!Birdefelik && CixisVaxt.HasValue && QayidisVaxt.HasValue && QayidisVaxt.Value <= CixisVaxt.Value) return true;
                 return false;
             }
         }
