@@ -473,6 +473,21 @@ public class DashboardController : Controller
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Birləşmiş FİN/VÖEN sütunundakı bir xananı formatına görə ayırd edir.
+    /// VÖEN — Azərbaycanda YALNIZ rəqəm, 9-10 xanə. FİN — 7 simvol (adətən hərf+rəqəm
+    /// qarışığı). Uzunluq fərqi kəskin olduğu üçün format-əsaslı ayırma etibarlıdır;
+    /// istifadəçi (operator) FİN/VÖEN fərqini özü bilməli deyil, sistem ayırır.
+    /// </summary>
+    private static (string fin, string voen) SinifleFinVoen(string deyer)
+    {
+        if (string.IsNullOrWhiteSpace(deyer)) return ("", "");
+        var t = deyer.Trim();
+        var reqemSay = t.Count(char.IsDigit);
+        if ((t.Length == 9 || t.Length == 10) && reqemSay == t.Length) return ("", t);
+        return (t, "");
+    }
+
     /// <summary>Sütun nömrəsi → hərf (1→A). İstifadəçiyə «hansı sütunu oxudum» demək üçün.</summary>
     private static string SutunHerfi(int n)
     {
@@ -502,22 +517,29 @@ public class DashboardController : Controller
         var baxilacaq   = Math.Min(sonSutun, 30);
 
         // Başlıq sətrini ilk 10 sətirdə axtar (fayl başında boş/başlıq mətni ola bilər).
-        // Real şablon (22.09.2026): A=«Adlar», B=«VOEN», C=«fin», D=«novu».
-        int basliqIdx = -1, adC = 0, voenC = 0, finC = 0, novC = 0;
+        // Əvvəlki şablon: A=«Adlar», B=«VOEN», C=«fin», D=«novu» (ayrı sütunlar).
+        // 23.09.2026: istifadəçi FİN və VÖEN-i TƏK sütunda saxlamağı seçdi (məs.
+        // «FİN/VOEN» başlığı) — operator adamın FİN, yoxsa VÖEN olduğunu bilməli
+        // deyil, sistem formatına görə (uzunluq/rəqəm) özü ayırd edir (bax `SinifleFinVoen`).
+        // Ayrı sütunlu KÖHNƏ fayllar da işləməyə davam edir — birləşmiş sütun
+        // yalnız başlıqda HƏM «fin», HƏM «voen» sözü birlikdə tapılanda seçilir.
+        int basliqIdx = -1, adC = 0, voenC = 0, finC = 0, finVoenC = 0, novC = 0;
         for (var i = 0; i < Math.Min(10, hamSetirler.Count); i++)
         {
-            int a = 0, v = 0, f = 0, n = 0;
+            int a = 0, v = 0, f = 0, fv = 0, n = 0;
             for (var c = 1; c <= baxilacaq; c++)
             {
                 var h = Sadeles(hamSetirler[i].Cell(c).GetString());
                 if (h.Length == 0) continue;
-                if (f == 0 && h.Contains("fin")) f = c;
+                if (fv == 0 && h.Contains("fin") && h.Contains("voen")) fv = c;   // BİRLƏŞMİŞ sütun
+                else if (f == 0 && h.Contains("fin")) f = c;
                 else if (v == 0 && h.Contains("voen")) v = c;
                 else if (a == 0 && (h.Contains("soyad") || h.Contains("saa")
                                  || h.Contains("sexs")  || h.StartsWith("ad"))) a = c;
                 else if (n == 0 && h.StartsWith("nov")) n = c;   // «novu» / «Növü»
             }
-            if (a > 0 || v > 0 || f > 0) { basliqIdx = i; adC = a; voenC = v; finC = f; novC = n; break; }
+            if (a > 0 || v > 0 || f > 0 || fv > 0)
+            { basliqIdx = i; adC = a; voenC = v; finC = f; finVoenC = fv; novC = n; break; }
         }
 
         var diaq = new System.Text.StringBuilder($"vərəq «{ws.Name}»");
@@ -527,7 +549,10 @@ public class DashboardController : Controller
         {
             data = hamSetirler.Skip(basliqIdx + 1);
             diaq.Append($" · başlıq {hamSetirler[basliqIdx].RowNumber()}-ci sətir · sütunlar: ")
-                .Append($"Ad={SutunHerfi(adC)}, VÖEN={SutunHerfi(voenC)}, FİN={SutunHerfi(finC)}");
+                .Append($"Ad={SutunHerfi(adC)}, ");
+            diaq.Append(finVoenC > 0
+                ? $"FİN/VÖEN={SutunHerfi(finVoenC)}"
+                : $"VÖEN={SutunHerfi(voenC)}, FİN={SutunHerfi(finC)}");
             if (novC > 0) diaq.Append($", Növü={SutunHerfi(novC)}");
         }
         else
@@ -543,10 +568,18 @@ public class DashboardController : Controller
         var sira = 1;
         foreach (var row in data)
         {
-            var ad   = adC   > 0 ? row.Cell(adC).GetString().Trim()   : "";
-            var voen = voenC > 0 ? row.Cell(voenC).GetString().Trim() : "";
-            var fin  = finC  > 0 ? row.Cell(finC).GetString().Trim()  : "";
-            var novu = novC  > 0 ? row.Cell(novC).GetString().Trim()  : "";
+            var ad = adC > 0 ? row.Cell(adC).GetString().Trim() : "";
+
+            string voen, fin;
+            if (finVoenC > 0)
+                (fin, voen) = SinifleFinVoen(row.Cell(finVoenC).GetString().Trim());
+            else
+            {
+                voen = voenC > 0 ? row.Cell(voenC).GetString().Trim() : "";
+                fin  = finC  > 0 ? row.Cell(finC).GetString().Trim()  : "";
+            }
+
+            var novu = novC > 0 ? row.Cell(novC).GetString().Trim() : "";
 
             // «Növü» TƏK BAŞINA sətri saxlatmır — axtarılacaq heç nə yoxdursa sətir boşdur.
             if (ad.Length == 0 && voen.Length == 0 && fin.Length == 0) continue;

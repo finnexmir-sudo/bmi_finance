@@ -1058,6 +1058,23 @@ soruş — özbaşına fərz etmə.
 Boş sətir şərti: `ad`, `VÖEN`, `FİN` **üçü də** boşdursa sətir atılır. Yalnız
 «Növü» dolu olması sətri saxlatmır — axtarılacaq heç nə yoxdur.
 
+### FİN/VÖEN BİR SÜTUNDA DA OLA BİLƏR (23.09.2026)
+
+İstifadəçi qərarı: operator adamın FİN, yoxsa VÖEN olduğunu bilməli deyil —
+Exceldə **tək sütun** («FİN/VOEN» kimi başlıq) kifayətdir, sistem hər xananı
+**formatına görə** ayırd edir (`DashboardController.SinifleFinVoen`):
+VÖEN = yalnız rəqəm, 9-10 xanə; əks halda (7 simvol, hərf+rəqəm) FİN sayılır.
+
+Sütun aşkarlanması (`ExceldenOxu`) əvvəlcə **birləşmiş** başlığı yoxlayır —
+başlıqda HƏM «fin», HƏM «voen» sözü birlikdə varsa (`h.Contains("fin") &&
+h.Contains("voen")`) tək sütun kimi oxunur. Yalnız «fin» VƏ YA yalnız «voen»
+olan **ayrı** başlıqlı köhnə fayllar da eyni məntiqlə işləməyə davam edir —
+iki format paralel dəstəklənir, biri o birini əvəz etmir.
+
+⚠️ Bu klassifikasiya YALNIZ birləşmiş sütunda tətbiq olunur. Ayrı «VOEN»/«fin»
+sütunlu köhnə fayllarda xananın məzmunu **olduğu kimi** öz sahəsinə yazılır —
+orada format yoxlaması yoxdur (istifadəçi onsuz da düzgün sütuna yazıb).
+
 ## İcazə — «Plan Üzrə Sayım» vs Real Ölçmə (23.09.2026, KRİTİK)
 
 İşçi icazə yazıb, amma pəncərədə cihaza vurmayıbsa (getməyibsə) sistem nə edir?
