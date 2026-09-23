@@ -1440,12 +1440,10 @@ PL/SQL keçidinin öz overhead-i var və cüzi bir funksiyanı milyonlarla çağ
 (iki ayrı LIKE qolu) ≈ **354 min**. Bazalar kiçik olsa da, funksiya HƏR CÜT üçün
 təkrar-təkrar çağırılanda saniyələr dəqiqələrə çevrilir.
 
-`AML_MB_ELAQELI_SEXS` (A_M_L) və `AML_MB_TRANSFER` bu tələyə HEÇ VAXT düşməyib —
-hər ikisi `func_utf8_to_latin`-i öz alt sorğusunda (union all daxilində) BAZA
-SƏTRİ başına BİR DƏFƏ hesablayır, `y` ilə çarpazlaşan xarici `WHERE` isə yalnız
-hazır ASCII mətni müqayisə edir. Bu, düzəlişdən sonra 9 sorğunun (Open_Accounts,
-Kochurme_Daxili, Kochurme_Mushteri, Exchange, Owner, Emit_benef, 3-cu shexs,
-Kred_zamin, Aktiv_hesablar) hamısına tətbiq olunan naxışdır.
+⚠️ **BU FƏRZİYYƏNİN "A_M_L/Transfer HEÇ VAXT düşməyib" hissəsi DƏ YANLIŞ
+ÇIXDI** — bax aşağıdakı bölmə. Hər ikisinin `union all` alt sorğusu da eyni
+`{SIYAHI}`-ilə cross-join strukturunu daşıyır, sadəcə A_M_L-in baza cədvəlləri
+kiçik olduğu üçün adətən 60 saniyəyə çatmırdı.
 
 **Qayda:** Oracle-da custom PL/SQL funksiyası (`odb.func_*`) `{SIYAHI}` və ya
 hər hansı böyük çarpaz-birləşmə (`cross join` / `union all` sonrası çoxlu sətirlə
@@ -1453,8 +1451,7 @@ kəsişən `WHERE`) daxilindəki bir sütuna tətbiq olunursa, funksiyanı **əv
 bir alt sorğuda, baza sətri başına BİR DƏFƏ hesabla**, sonra həmin hazır sütunu
 xarici `WHERE`-də adi `like`/`=` ilə müqayisə et. Yoxlama: sorğu mətnində
 `{SIYAHI}`-nin son keçdiyi yerdən (cross join nöqtəsi) sonra `func_utf8_to_latin`
-(və ya bənzər custom funksiya) görünməməlidir — görünürsə, hələ də hər cüt üçün
-təkrar hesablanır.
+(və ya bənzər custom funksiya) görünməməlidir.
 
 ⚠️ **Eyni ifadənin iki fərqli forması** (`upper(ad)` vs `upper(trim(ad))`) bir-
 birinə bərabər SAYILMAMALIDIR — boşluq fərqi bilinmirsə hər ikisi AYRI
@@ -1465,6 +1462,51 @@ belə edildi: `name_match_a`/`name_match_b`, `fio_match_a`/`fio_match_b`).
 `SELECT`/`WHERE`/`ORDER BY`-dakı hər istinad daxili alt sorğunun verdiyi aliasla
 DƏQİQ eyni olmalıdır. Səhv yazılmış alias `ORA-00904` verər — bu, artıq
 performans səhvi deyil, sadə səhv yazılışdır, amma eyni cəldliklə yoxlanmalıdır.
+
+### Yuxarıdakı Düzəliş TƏK BAŞINA KİFAYƏT ETMƏDİ — Oracle "View Merging" (23.09.2026, İKİNCİ DALĞA, KRİTİK)
+
+Yuxarıdakı "baza sətri başına bir dəfə hesabla" düzəlişi tətbiq ediləndən sonra
+istifadəçi EYNİ ~1000 nəfərlik siyahı ilə YENƏ eyni 3 vərəqdə (Aktiv_hesablar,
+Kred_zamin, A_M_L) `ORA-01013` aldı. Əvvəlcə SQL Server-də `OracleSorgular`
+cədvəlindəki `SorguMetni` yoxlanıldı — düzəliş HƏQİQƏTƏN yenilənmişdi, problem
+tətbiqin köhnə mətn işlətməsi deyildi.
+
+Sonra Aktiv_hesablar-ın YENİ (düzəlişli) mətni, sintetik 1000 sətirlik
+`{SIYAHI}` ilə (heç kimə uyğun gəlməyən test adları — `connect by level`),
+PL/SQL Developer-də birbaşa işlədildi: **83 saniyə** (tətbiqin 60 saniyəlik
+`CommandTimeout`-unu keçir). Yəni "subquery bir dəfə hesablanır" fərziyyəsi
+DÜZ idi, amma Oracle-un OPTİMİZATOR DAVRANIŞI bunu səssizcə pozurdu.
+
+**Əsl səbəb:** Oracle-un cost-based optimizer-i sadə inline view-ları default
+olaraq **birləşdirməyə (view merging)** meyllidir. Alt sorğu (`r`/`b`/`q`/`t`)
+ilə `{SIYAHI}` (`y`) arasında heç bir indeksli join açarı yoxdur — yalnız
+`OR`-lu `LIKE`/`=` şərtləri. Belə halda Oracle NESTED LOOPS seçə bilər: `y`-nin
+HƏR sətri üçün alt sorğunu YENİDƏN başdan icra edir (o cümlədən içindəki
+`func_utf8_to_latin` çağırışlarını) — yəni "baza sətri başına bir dəfə" hesabı
+əslində "baza sətri × `{SIYAHI}` sətri başına bir dəfə" olur, eyni partlayış
+gizli şəkildə geri qayıdır. Bu, A_M_L-in niyə HEÇ VAXT tam etibarlı olmadığını
+da izah edir.
+
+**HƏLL:** `from ( select … ) alias` forması `with alias as ( select /*+
+MATERIALIZE */ … )` ilə əvəz olundu (bütün 11 sorğuda). `MATERIALIZE` hinti
+Oracle-a bu alt sorğunu **müstəqil addım kimi, bir dəfə** hesablayıb müvəqqəti
+seqmentə yazmağı əmr edir — view merging yolu bağlanır. `union all` olan
+sorğularda (Transfer, A_M_L) hint yalnız BİRİNCİ qolun `select`-indən sonra
+yazılır.
+
+**Qayda:** Bir alt sorğunu "baza sətri başına bir dəfə hesablanmalıdır" deyə
+yazmaq KİFAYƏT ETMİR — Oracle-a bunu MƏCBUR ET (`MATERIALIZE` və ya `NO_MERGE`
+hinti). Xüsusilə alt sorğu ilə xarici cədvəl arasında indeksli join açarı
+YOXDURSA (yalnız `LIKE`/`OR` şərtləri varsa), optimizatorun NESTED LOOPS seçib
+subquery-ni təkrar-təkrar icra etmə riski YÜKSƏKDİR. Bu hinti YAZMADAN "compute
+once" pattern-inə güvənmə — icra planına ({{EXPLAIN PLAN}} və ya real vaxt
+ölçümü ilə) yoxlanmadan "düzəldi" demə.
+
+⚠️ **Yoxlanmamış qalan hissə (bu sənəd yazılan an):** bu ikinci dalğa hələ real
+Oracle-a qarşı YENİDƏN test edilməyib — yalnız SQL mətninin məntiqi və alias
+tutuşdurması yoxlanılıb. Fayl yenidən SQL Server-də işlədilib, sonra eyni
+~1000 nəfərlik siyahı ilə Aktiv_hesablar/Kred_zamin/A_M_L təkrar test
+olunmalıdır.
 
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 

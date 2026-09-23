@@ -103,23 +103,64 @@
      • Aktiv_hesablar: 5965 sətir × 1000 nəfər  ≈ 6 000 000 çağırış
      • Kred_zamin:       177 sətir × 1000 nəfər × 2 (iki ayrı LIKE qolu) ≈ 354 000
 
-   `AML_MB_ELAQELI_SEXS` (A_M_L) və `AML_MB_TRANSFER` bu tələyə HEÇ VAXT
-   düşməyib — hər ikisi `func_utf8_to_latin`-i öz `union all` alt sorğusunda,
-   BAZA SƏTRİ başına BİR DƏFƏ hesablayır, sonra `y` ilə çarpazlaşan WHERE
-   yalnız hazır mətni müqayisə edir. Bu, indi HAMI üçün tətbiq olunan naxışdır.
+   `AML_MB_ELAQELI_SEXS` (A_M_L) və `AML_MB_TRANSFER`-in öz `union all` alt
+   sorğuları da eyni struktura (`from ( … ) alias, ( {SIYAHI} ) y`) malikdir —
+   bu, aşağıdakı İKİNCİ DALĞA-da üzə çıxdı.
 
-   DÜZƏLİŞ — 9 sorğunun (Open_Accounts, Kochurme_Daxili, Kochurme_Mushteri,
-   Exchange, Owner, Emit_benef, 3-cu shexs, Kred_zamin, Aktiv_hesablar)
-   HAMISI eyni struktura keçirildi: `func_utf8_to_latin` indi bir daxili alt
-   sorğuda (`from ( select … ) b, ( {SIYAHI} ) y`) BAZA SƏTRİ başına BİR DƏFƏ
-   hesablanır, xarici `where` isə yalnız hazır ASCII sütunu üzərində `like`
-   aparır. Nəticə EYNİDİR (eyni sətirlər tapılır) — dəyişən yalnız NEÇƏ DƏFƏ
-   hesablanmasıdır. `upper(ad)` və `upper(trim(ad))` İKİSİ eyni ola bilməyəcəyi
-   üçün (boşluq fərqi bilinmir) hər ikisi AYRI sütun kimi saxlanıldı, biri
-   digərini əvəz ETMƏDİ — bu, "sehvsiz" tələbinə görə qəsdən qorunan detaldır.
+   DÜZƏLİŞ (1-ci dalğa) — 9 sorğunun (Open_Accounts, Kochurme_Daxili,
+   Kochurme_Mushteri, Exchange, Owner, Emit_benef, 3-cu shexs, Kred_zamin,
+   Aktiv_hesablar) HAMISI eyni struktura keçirildi: `func_utf8_to_latin` indi
+   bir daxili alt sorğuda (`from ( select … ) b, ( {SIYAHI} ) y`) BAZA SƏTRİ
+   başına BİR DƏFƏ hesablanır, xarici `where` isə yalnız hazır ASCII sütunu
+   üzərində `like` aparır. `upper(ad)` və `upper(trim(ad))` İKİSİ eyni ola
+   bilməyəcəyi üçün (boşluq fərqi bilinmir) hər ikisi AYRI sütun kimi
+   saxlanıldı, biri digərini əvəz ETMƏDİ — "sehvsiz" tələbinə görə qəsdən
+   qorunan detaldır.
 
-   ⚠️ Bu düzəlişdən sonra HƏR sorğunu yenidən yoxla: outer SELECT/WHERE/ORDER BY-
-   dakı hər sütun adı daxili alt sorğunun verdiyi alias ilə DƏQİQ uyğun olmalıdır
+   ⚠️ **BU TƏK BAŞINA KİFAYƏT ETMƏDİ** — bax aşağı, İKİNCİ DALĞA.
+
+   ── 23.09.2026, İKİNCİ DALĞA (Oracle "view merging" — subquery YENƏ TƏKRAR İCRA
+   OLUNURDU) ────────────────────────────────────────────────────────────────
+   1-ci dalğadan sonra istifadəçi eyni ~1000 nəfərlik siyahı ilə YENƏ eyni
+   3 vərəqdə (Aktiv_hesablar, Kred_zamin, A_M_L) `ORA-01013` aldı. SQL Server-də
+   düzəlişin HƏQİQƏTƏN yeniləndiyi yoxlanıldı (`SorguMetni` sütunu yeni struktur
+   göstərdi) — problem kodda deyildi. Sintetik 1000 sətirlik `{SIYAHI}` ilə
+   Aktiv_hesablar PL/SQL Developer-də birbaşa **83 saniyəyə** işlədi (60 san.
+   `CommandTimeout`-u aşır) — deməli 1-ci dalğanın fərziyyəsi ("subquery bir dəfə
+   hesablanır") DÜZ İDİ, amma Oracle-un optimizator DAVRANIŞI bunu POZURDU.
+
+   **Səbəb:** Oracle-un cost-based optimizer-i sadə inline view-ları default
+   olaraq **birləşdirməyə (view merging)** çalışır. `r`/`b`/`q`/`t` alt sorğusu
+   ilə `{SIYAHI}` (`y`) arasında HEÇ BİR indeksli join açarı yoxdur (yalnız
+   `OR`-lu `LIKE`/`=` şərtləri) — Oracle bunu NESTED LOOPS kimi icra etməyə
+   qərar verə bilər: `y`-nin HƏR sətri üçün `r` alt sorğusunu YENİDƏN başdan
+   icra edir (o cümlədən içindəki `func_utf8_to_latin` çağırışlarını). Nəticə —
+   1-ci dalğanın "baza sətri başına BİR DƏFƏ" hesabı əslində "baza sətri ×
+   `{SIYAHI}` sətri başına BİR DƏFƏ" olur, yəni **eyni partlayış gizli şəkildə
+   geri qayıdır**. Bu, A_M_L-in NİYƏ HEÇ VAXT düzgün olmadığını da izah edir —
+   onun `union all` alt sorğusu da eyni riski daşıyırdı, sadəcə kiçik baza
+   cədvəlləri (≈1132 sətir) sayəsində adətən 60 saniyəyə çatmırdı.
+
+   **HƏLL — `WITH … AS ( SELECT /*+ MATERIALIZE */ … )`.** Bütün 11 sorğuda
+   `from ( select … ) alias` forması `with alias as ( select /*+ MATERIALIZE */
+   … )` amma NƏTİCƏ EYNİ qalmaqla dəyişdirildi. `MATERIALIZE` hinti Oracle-a
+   bu alt sorğunu **müstəqil addım kimi, bir dəfə** hesablayıb müvəqqəti seqmentə
+   yazmağı, sonra `y` ilə həmin hazır nəticəni join etməyi əmr edir — view
+   merging YOLU BAĞLANIR. `union all` olan sorğularda (Transfer, A_M_L) hint
+   yalnız BİRİNCİ qolun `select`-indən sonra yazılır (Oracle-un qəbul etdiyi
+   standart yerdir).
+
+   ⚠️ Bu, XALİS performans hinti-dir — heç bir sətir, sütun və ya filtr məntiqi
+   DƏYİŞMİR. Semantik olaraq 1-ci dalğa ilə eynidir, sadəcə Oracle-a "bunu bir
+   dəfə hesabla" deməyin ETİBARLI yoludur (subquery-nin özü bunu təmin ETMİR).
+
+   ⚠️ **Yoxlanmamış qalan hissə:** bu dəyişiklik hələ real Oracle-a qarşı
+   YENİDƏN test edilməyib (yalnız məntiq və alias tutuşdurması yoxlanıb).
+   İstifadəçi bu faylı yenidən SQL Server-də işlətdikdən sonra eyni ~1000
+   nəfərlik siyahı ilə Aktiv_hesablar/Kred_zamin/A_M_L-i təkrar test etməlidir.
+
+   ⚠️ Sorğunu yenidən yoxlamaq lazım gələndə: outer SELECT/WHERE/ORDER BY-dakı
+   hər sütun adı `WITH` bloku daxilindəki alias ilə DƏQİQ uyğun olmalıdır
    (məs. `b.ld_match`, `q.own_match`, `r.name_match`) — adı səhv yazsan
    `ORA-00904` bütün sorğunu sındırar, artıq performans səhvi deyil, sintaksis
    səhvi olar.
@@ -194,13 +235,9 @@ DECLARE @Ad NVARCHAR(200), @Mahiyyet NVARCHAR(MAX), @Sql NVARCHAR(MAX);
 /* ---------------------------------------------------------------- 1/11 */
 SET @Ad       = N'AML_MB_OPEN_ACCOUNTS';
 SET @Mahiyyet = N'Məlumat Bazası → Open_Accounts. Dövrdə açılmış hesablar (3x/4x) + hesabı açan icraçı. Uyğunluq: hesabın adı + sahibinin FİN/VÖEN-i (regnom join).';
-SET @Sql      = N'select b.ac_tar, b.icra, b.hn,
-       b.name_disp                                     adi,
-       y.a_s_a                                         axtarilan,
-       case when trim(b.pincode)    = y.fin  then ''FİN''
-            when trim(b.inn_regnom) = y.voen then ''VÖEN''
-            else ''Ad'' end                              uygunluq
-  from ( select l.date_open_licsch                        ac_tar,
+SET @Sql      = N'with b as (
+  select /*+ MATERIALIZE */
+                l.date_open_licsch                        ac_tar,
                 nvl(n.icra, ''OLD_REGNOM'')                  icra,
                 l.licsch                                   hn,
                 r.pincode, r.inn_regnom,
@@ -219,7 +256,14 @@ SET @Sql      = N'select b.ac_tar, b.icra, b.hn,
             and substr(l.licsch,1,1) in (''3'',''4'')
             and substr(l.licsch,10,6) = n.qn(+)
             and l.registrac_nomer     = r.regnom(+)
-       ) b, ( {SIYAHI} ) y
+)
+select b.ac_tar, b.icra, b.hn,
+       b.name_disp                                     adi,
+       y.a_s_a                                         axtarilan,
+       case when trim(b.pincode)    = y.fin  then ''FİN''
+            when trim(b.inn_regnom) = y.voen then ''VÖEN''
+            else ''Ad'' end                              uygunluq
+  from b, ( {SIYAHI} ) y
  where ( b.name_match like ''%'' || upper(y.a_s_a) || ''%''
       or trim(b.pincode)    = y.fin
       or trim(b.inn_regnom) = y.voen )
@@ -237,15 +281,9 @@ ELSE
 /* ---------------------------------------------------------------- 2/11 */
 SET @Ad       = N'AML_MB_KOCURME_DAXILI';
 SET @Mahiyyet = N'Məlumat Bazası → Kochurme_Daxili_hes. Daxili hesablar arası köçürmələr. Uyğunluq: hesab sahibinin adı + FİN (pincode_or_passport) + hesab sahibinin FİN/VÖEN-i (regnom join).';
-SET @Sql      = N'select b.tarix, b.debet, b.kredit,
-       b.mebleg,
-       b.qeyd,
-       y.a_s_a                                         axtarilan,
-       case when b.pincode_or_passport = y.fin                       then ''FİN''
-            when trim(b.rd_pincode)    = y.fin or trim(b.rk_pincode)    = y.fin  then ''FİN (hesab sahibi)''
-            when trim(b.rd_inn)        = y.voen or trim(b.rk_inn)       = y.voen then ''VÖEN (hesab sahibi)''
-            else ''Ad (hesab sahibi)'' end                              uygunluq
-  from ( select t.recnum, t.date_oper                                     tarix,
+SET @Sql      = N'with b as (
+  select /*+ MATERIALIZE */
+                t.recnum, t.date_oper                                     tarix,
                 t.debet, t.kredit,
                 t.summa_v_nacval                                mebleg,
                 odb.func_utf8_to_latin(t.primechanie)           qeyd,
@@ -265,7 +303,16 @@ SET @Sql      = N'select b.tarix, b.debet, b.kredit,
                    and substr(t.kredit,1,5) in (''45021'',''45023'',''45029'',''45089''))
                or (substr(t.debet,1,5)  in (''45021'',''45023'',''45029'',''45089'')
                    and substr(t.kredit,1,5) in (''10020'',''15025'',''35025'',''45021'',''45023'',''45029'',''45089'')) )
-       ) b, ( {SIYAHI} ) y
+)
+select b.tarix, b.debet, b.kredit,
+       b.mebleg,
+       b.qeyd,
+       y.a_s_a                                         axtarilan,
+       case when b.pincode_or_passport = y.fin                       then ''FİN''
+            when trim(b.rd_pincode)    = y.fin or trim(b.rk_pincode)    = y.fin  then ''FİN (hesab sahibi)''
+            when trim(b.rd_inn)        = y.voen or trim(b.rk_inn)       = y.voen then ''VÖEN (hesab sahibi)''
+            else ''Ad (hesab sahibi)'' end                              uygunluq
+  from b, ( {SIYAHI} ) y
  where ( b.ld_match like ''%'' || upper(y.a_s_a) || ''%''
       or b.lk_match like ''%'' || upper(y.a_s_a) || ''%''
       or b.pincode_or_passport = y.fin
@@ -285,18 +332,9 @@ ELSE
 /* ---------------------------------------------------------------- 3/11 */
 SET @Ad       = N'AML_MB_KOCURME_MUSTERI';
 SET @Mahiyyet = N'Məlumat Bazası → Kochurme_Mushteri_hes. Müştəri hesabları üzrə köçürmələr. Uyğunluq: FİN (pincode_or_passport), hesab sahibinin adı, qeyd mətni.';
-SET @Sql      = N'select b.tarix, b.debet, b.kredit,
-       b.valuta, b.manat,
-       b.qeyd,
-       y.a_s_a                                         axtarilan,
-       case when b.pincode_or_passport = y.fin then ''FİN''
-            when trim(b.rd_pincode)    = y.fin  or trim(b.rk_pincode)    = y.fin  then ''FİN (hesab sahibi)''
-            when trim(b.rd_inn)        = y.voen or trim(b.rk_inn)       = y.voen then ''VÖEN (hesab sahibi)''
-            when b.ld_match like ''%'' || upper(y.a_s_a) || ''%''
-              or b.lk_match like ''%'' || upper(y.a_s_a) || ''%''
-                 then ''Ad (hesab sahibi)''
-            else ''Ad (qeyd mətnində)'' end              uygunluq
-  from ( select t.date_oper                                     tarix,
+SET @Sql      = N'with b as (
+  select /*+ MATERIALIZE */
+                t.date_oper                                     tarix,
                 t.debet, t.kredit,
                 t.summa_v_inval                                 valuta,
                 t.summa_v_nacval                                manat,
@@ -321,7 +359,19 @@ SET @Sql      = N'select b.tarix, b.debet, b.kredit,
                    and (substr(t.debet,1,2)  in (''38'',''39'',''40'',''41'')
                      or substr(t.debet,1,5)  in (''35090'',''35100''))) )
             and (t.vid_operacii < 96 or t.vid_operacii is null)
-       ) b, ( {SIYAHI} ) y
+)
+select b.tarix, b.debet, b.kredit,
+       b.valuta, b.manat,
+       b.qeyd,
+       y.a_s_a                                         axtarilan,
+       case when b.pincode_or_passport = y.fin then ''FİN''
+            when trim(b.rd_pincode)    = y.fin  or trim(b.rk_pincode)    = y.fin  then ''FİN (hesab sahibi)''
+            when trim(b.rd_inn)        = y.voen or trim(b.rk_inn)       = y.voen then ''VÖEN (hesab sahibi)''
+            when b.ld_match like ''%'' || upper(y.a_s_a) || ''%''
+              or b.lk_match like ''%'' || upper(y.a_s_a) || ''%''
+                 then ''Ad (hesab sahibi)''
+            else ''Ad (qeyd mətnində)'' end              uygunluq
+  from b, ( {SIYAHI} ) y
  where ( b.primechanie_match like ''%'' || upper(y.a_s_a) || ''%''
       or b.ld_match           like ''%'' || upper(y.a_s_a) || ''%''
       or b.lk_match           like ''%'' || upper(y.a_s_a) || ''%''
@@ -341,13 +391,9 @@ ELSE
 /* ---------------------------------------------------------------- 4/11 */
 SET @Ad       = N'AML_MB_EXCHANGE';
 SET @Mahiyyet = N'Məlumat Bazası → Exchange. Valyuta alqı-satqısı (kassa 1005 <-> 1006). Uyğunluq: FİN (pincode_or_passport) və qeyd mətni.';
-SET @Sql      = N'select b.tarix, b.debet, b.kredit,
-       b.valuta, b.manat,
-       b.qeyd,
-       y.a_s_a                                         axtarilan,
-       case when b.pincode_or_passport = y.fin then ''FİN''
-            else ''Ad (qeyd mətnində)'' end              uygunluq
-  from ( select t.recnum, t.date_oper                                     tarix,
+SET @Sql      = N'with b as (
+  select /*+ MATERIALIZE */
+                t.recnum, t.date_oper                                     tarix,
                 t.debet, t.kredit,
                 t.summa_v_inval                                 valuta,
                 t.summa_v_nacval                                manat,
@@ -359,7 +405,14 @@ SET @Sql      = N'select b.tarix, b.debet, b.kredit,
                                 and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
             and ( (substr(t.debet,1,4) = ''1005'' and substr(t.kredit,1,4) = ''1006'')
                or (substr(t.debet,1,4) = ''1006'' and substr(t.kredit,1,4) = ''1005'') )
-       ) b, ( {SIYAHI} ) y
+)
+select b.tarix, b.debet, b.kredit,
+       b.valuta, b.manat,
+       b.qeyd,
+       y.a_s_a                                         axtarilan,
+       case when b.pincode_or_passport = y.fin then ''FİN''
+            else ''Ad (qeyd mətnində)'' end              uygunluq
+  from b, ( {SIYAHI} ) y
  where ( b.primechanie_match like ''%'' || trim(upper(y.a_s_a)) || ''%''
       or b.pincode_or_passport = y.fin )
  order by b.recnum';
@@ -376,19 +429,8 @@ ELSE
 /* ---------------------------------------------------------------- 5/11 */
 SET @Ad       = N'AML_MB_OWNER';
 SET @Mahiyyet = N'Məlumat Bazası → Owner. Hüquqi şəxs / sahibkar hesablarının təsisçiləri. Uyğunluq: təsisçinin FİN-i, şirkətin VÖEN-i, təsisçinin adı. DÖVRSÜZ.';
-SET @Sql      = N'select q.rn, q.inn_licsch,
-       q.name_disp                                     ad,
-       q.olke, q.licsch,
-       q.own_disp                                       own,
-       q.owner_id, q.pincode,
-       q.pay,
-       q.vatan_disp                                     vatan,
-       q.nov,
-       y.a_s_a                                         axtarilan,
-       case when trim(q.pincode)     = y.fin  then ''FİN''
-            when trim(q.inn_licsch)  = y.voen then ''VÖEN''
-            else ''Ad (təsisçi)'' end                    uygunluq
-  from ( select distinct
+SET @Sql      = N'with q as (
+  select /*+ MATERIALIZE */ distinct
                 t.registrac_nomer                               rn,
                 t.inn_licsch,
                 odb.func_utf8_to_latin(g.name_regnom)           name_disp,
@@ -405,7 +447,20 @@ SET @Sql      = N'select q.rn, q.inn_licsch,
             and t.registrac_nomer = g.regnom
             and (g.yurik = 1 or g.predprinimatel = 1)
             and substr(t.licsch,1,5) in (b.balsch)
-       ) q, ( {SIYAHI} ) y
+)
+select q.rn, q.inn_licsch,
+       q.name_disp                                     ad,
+       q.olke, q.licsch,
+       q.own_disp                                       own,
+       q.owner_id, q.pincode,
+       q.pay,
+       q.vatan_disp                                     vatan,
+       q.nov,
+       y.a_s_a                                         axtarilan,
+       case when trim(q.pincode)     = y.fin  then ''FİN''
+            when trim(q.inn_licsch)  = y.voen then ''VÖEN''
+            else ''Ad (təsisçi)'' end                    uygunluq
+  from q, ( {SIYAHI} ) y
  where ( q.own_match like ''%'' || upper(y.a_s_a) || ''%''
       or trim(q.pincode)    = y.fin
       or trim(q.inn_licsch) = y.voen )
@@ -423,18 +478,9 @@ ELSE
 /* ---------------------------------------------------------------- 6/11 */
 SET @Ad       = N'AML_MB_EMIT_BENEF';
 SET @Mahiyyet = N'Məlumat Bazası → Emit_benef. Əməliyyatın emitenti və benefisiarı. Uyğunluq: FİN (e_pincode/b_pincode) və ad (TƏRS LIKE — bazada 2 hissəli ad saxlanılır).';
-SET @Sql      = N'select b.tarix,
-       b.emi_ad,
-       b.em_dog_tar,
-       b.emi_sened,
-       b.ben_ad,
-       b.ben_sened,
-       b.qeyd,
-       y.a_s_a                                         axtarilan,
-       case when y.fin in (b.e_pincode, b.b_pincode) then ''FİN''
-            when upper(y.a_s_a) like ''%'' || b.e_match || ''%'' then ''Ad (emitent)''
-            else ''Ad (benefisiar)'' end                 uygunluq
-  from ( select t.date_oper                                 tarix,
+SET @Sql      = N'with b as (
+  select /*+ MATERIALIZE */
+                t.date_oper                                 tarix,
                 odb.func_utf8_to_latin(trim(k.e_soyadi) || '' '' || trim(k.e_adi))  emi_ad,
                 k.e_tevellud                                em_dog_tar,
                 trim(k.e_senedin_seriya_ve_nomresi)         emi_sened,
@@ -448,7 +494,19 @@ SET @Sql      = N'select b.tarix,
           where t.recnum = k.doc_id
             and t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                                 and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
-       ) b, ( {SIYAHI} ) y
+)
+select b.tarix,
+       b.emi_ad,
+       b.em_dog_tar,
+       b.emi_sened,
+       b.ben_ad,
+       b.ben_sened,
+       b.qeyd,
+       y.a_s_a                                         axtarilan,
+       case when y.fin in (b.e_pincode, b.b_pincode) then ''FİN''
+            when upper(y.a_s_a) like ''%'' || b.e_match || ''%'' then ''Ad (emitent)''
+            else ''Ad (benefisiar)'' end                 uygunluq
+  from b, ( {SIYAHI} ) y
  where ( upper(y.a_s_a) like ''%'' || b.e_match || ''%''
       or upper(y.a_s_a) like ''%'' || b.b_match || ''%''
       or y.fin in (b.e_pincode, b.b_pincode) )';
@@ -465,15 +523,9 @@ ELSE
 /* ---------------------------------------------------------------- 7/11 */
 SET @Ad       = N'AML_MB_UCUNCU_SEXS';
 SET @Mahiyyet = N'Məlumat Bazası → 3-cu shexs. docfio üzrə 3-cü şəxs əməliyyatları. Uyğunluq: 3-cü şəxsin adı + HESAB SAHİBİNİN FİN/VÖEN-i (regnom join). docfio-nun ÖZ SSN/PASPORT sütunları boşdur.';
-SET @Sql      = N'select b.tarix, b.debet, b.kredit,
-       b.valuta, b.manat, b.kurs,
-       b.qeyd,
-       b.fio22,
-       y.a_s_a                                         axtarilan,
-       case when trim(b.rd_pincode)    = y.fin  or trim(b.rk_pincode)    = y.fin  then ''FİN (hesab sahibi)''
-            when trim(b.rd_inn)        = y.voen or trim(b.rk_inn)        = y.voen then ''VÖEN (hesab sahibi)''
-            else ''Ad (3-cü şəxs)'' end                       uygunluq
-  from ( select t.date_oper                                     tarix,
+SET @Sql      = N'with b as (
+  select /*+ MATERIALIZE */
+                t.date_oper                                     tarix,
                 t.debet, t.kredit,
                 t.summa_v_inval                                 valuta,
                 t.summa_v_nacval                                manat,
@@ -491,7 +543,16 @@ SET @Sql      = N'select b.tarix, b.debet, b.kredit,
             and t.recnum is not null
             and substr(t.debet,10,6)  = rd.regnom(+)
             and substr(t.kredit,10,6) = rk.regnom(+)
-       ) b, ( {SIYAHI} ) y
+)
+select b.tarix, b.debet, b.kredit,
+       b.valuta, b.manat, b.kurs,
+       b.qeyd,
+       b.fio22,
+       y.a_s_a                                         axtarilan,
+       case when trim(b.rd_pincode)    = y.fin  or trim(b.rk_pincode)    = y.fin  then ''FİN (hesab sahibi)''
+            when trim(b.rd_inn)        = y.voen or trim(b.rk_inn)        = y.voen then ''VÖEN (hesab sahibi)''
+            else ''Ad (3-cü şəxs)'' end                       uygunluq
+  from b, ( {SIYAHI} ) y
  where ( b.fio_match_a like ''%'' || upper(y.a_s_a) || ''%''
       or ( length(trim(b.fio)) >= 8
            and upper(y.a_s_a) like ''%'' || b.fio_match_b || ''%'' )
@@ -510,14 +571,9 @@ ELSE
 /* ---------------------------------------------------------------- 8/11 */
 SET @Ad       = N'AML_MB_TRANSFER';
 SET @Mahiyyet = N'Məlumat Bazası → Transfer. 4 mənbəli ödəmə/mədaxil. Uyğunluq: FİN və VÖEN (regnom join — FinNex ƏLAVƏSİ) + göndərən/alan adı.';
-SET @Sql      = N'select t.tarix, t.emit_name, t.ben_name, t.amount, t.valuta, t.cmnt, t.voen, t.fin,
-       y.a_s_a                                         axtarilan,
-       case when trim(t.fin)  = y.fin  then ''FİN''
-            when trim(t.voen) = y.voen then ''VÖEN''
-            when upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%'' then ''Ad (göndərən)''
-            else ''Ad (alan)'' end                       uygunluq
-  from (
-    select v.date_oper                                 tarix,
+SET @Sql      = N'with t as (
+    select /*+ MATERIALIZE */
+           v.date_oper                                 tarix,
            odb.func_utf8_to_latin(v.account_name)      emit_name,
            odb.func_utf8_to_latin(v.beneficiary_name)  ben_name,
            v.amount, v.currency valuta,
@@ -557,7 +613,14 @@ SET @Sql      = N'select t.tarix, t.emit_name, t.ben_name, t.amount, t.valuta, t
      where v.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                            and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
        and substr(lpad(v.kredit,28,''0''),18,6) = r.regnom(+)
-  ) t, ( {SIYAHI} ) y
+)
+select t.tarix, t.emit_name, t.ben_name, t.amount, t.valuta, t.cmnt, t.voen, t.fin,
+       y.a_s_a                                         axtarilan,
+       case when trim(t.fin)  = y.fin  then ''FİN''
+            when trim(t.voen) = y.voen then ''VÖEN''
+            when upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%'' then ''Ad (göndərən)''
+            else ''Ad (alan)'' end                       uygunluq
+  from t, ( {SIYAHI} ) y
  where ( upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%''
       or upper(trim(t.ben_name))  like ''%'' || upper(y.a_s_a) || ''%''
       or trim(t.fin)  = y.fin
@@ -576,14 +639,9 @@ ELSE
 /* ---------------------------------------------------------------- 9/11 */
 SET @Ad       = N'AML_MB_ELAQELI_SEXS';
 SET @Mahiyyet = N'Məlumat Bazası → A_M_L. Əlaqəli şəxslər / nümayəndələr / əlaqəli hüquqi şəxslər. 3-cü qolda fin sütunu VÖEN saxlayır — kod_novu ilə ayrılır. DÖVRSÜZ.';
-SET @Sql      = N'select distinct
-       t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
-       y.a_s_a                                         axtarilan,
-       case when t.kod_novu = ''FIN''  and t.fin = y.fin  then ''FİN''
-            when t.kod_novu = ''VOEN'' and t.fin = y.voen then ''VÖEN''
-            else ''Ad'' end                              uygunluq
-  from (
-    select t.regnom,
+SET @Sql      = N'with t as (
+    select /*+ MATERIALIZE */
+           t.regnom,
            odb.func_utf8_to_latin(upper(t.soyadi || '' '' || t.adi || '' '' || t.ata_adi)) a_s_a,
            odb.func_utf8_to_latin(t.fin) fin, ''FIN'' kod_novu,
            case when regexp_like(trim(t.doguldugu_tarix), ''^[0-9]{2}-[0-9]{2}-[0-9]{4}$'')
@@ -605,7 +663,14 @@ SET @Sql      = N'select distinct
            null,
            ''ELA_HUQUQ''
       from odb.elaqeli_huquqi_shexsler t
-  ) t, ( {SIYAHI} ) y
+)
+select distinct
+       t.regnom, t.a_s_a, t.fin, t.dog_tar, t.tip,
+       y.a_s_a                                         axtarilan,
+       case when t.kod_novu = ''FIN''  and t.fin = y.fin  then ''FİN''
+            when t.kod_novu = ''VOEN'' and t.fin = y.voen then ''VÖEN''
+            else ''Ad'' end                              uygunluq
+  from t, ( {SIYAHI} ) y
  where length(trim(t.a_s_a)) > 0
    and ( upper(t.a_s_a) like ''%'' || upper(y.a_s_a) || ''%''
       or ( length(trim(t.a_s_a)) >= 8
@@ -626,14 +691,9 @@ ELSE
 /* ---------------------------------------------------------------- 10/11 */
 SET @Ad       = N'AML_MB_KREDIT_ZAMIN';
 SET @Mahiyyet = N'Məlumat Bazası → Kred_zamin. Açıq kreditlərin zaminləri. DİQQƏT: creditinfoguarantee.pincode və telefon əsasən BOŞDUR — praktikada yalnız ad işləyir. DÖVRSÜZ.';
-SET @Sql      = N'select r.licschkre, r.subschkre                     sk,
-       r.guarantee_id                                  id,
-       r.name_disp                                     zamin,
-       r.summakre                                      mabl,
-       r.pincode,
-       y.a_s_a                                         axtarilan,
-       case when trim(r.pincode) = y.fin then ''FİN'' else ''Ad (zamin)'' end  uygunluq
-  from ( select t.licschkre, t.subschkre, t.summakre,
+SET @Sql      = N'with r as (
+  select /*+ MATERIALIZE */
+                t.licschkre, t.subschkre, t.summakre,
                 g.guarantee_id, g.pincode, g.telefon, g.guarantee_name,
                 odb.func_utf8_to_latin(g.guarantee_name)               name_disp,
                 odb.func_utf8_to_latin(upper(g.guarantee_name))        name_match_a,
@@ -644,7 +704,15 @@ SET @Sql      = N'select r.licschkre, r.subschkre                     sk,
             and t.date_close is null
             and t.bs_vbs is not null
             and g.guarantee_id is not null
-       ) r, ( {SIYAHI} ) y
+)
+select r.licschkre, r.subschkre                     sk,
+       r.guarantee_id                                  id,
+       r.name_disp                                     zamin,
+       r.summakre                                      mabl,
+       r.pincode,
+       y.a_s_a                                         axtarilan,
+       case when trim(r.pincode) = y.fin then ''FİN'' else ''Ad (zamin)'' end  uygunluq
+  from r, ( {SIYAHI} ) y
  where ( r.name_match_a like ''%'' || trim(upper(y.a_s_a)) || ''%''
       or ( length(trim(r.guarantee_name)) >= 8
            and upper(y.a_s_a) like ''%'' || r.name_match_b || ''%'' )
@@ -664,7 +732,17 @@ ELSE
 /* ---------------------------------------------------------------- 11/11 */
 SET @Ad       = N'AML_MB_AKTIV_HESABLAR';
 SET @Mahiyyet = N'Məlumat Bazası → Aktiv_hesablar. Açıq hesabı olan müştərilər (müştəri başına 1 sətir). Dörd kriteriya: ad + FİN + VÖEN + telefon. DÖVRSÜZ.';
-SET @Sql      = N'select min(r.date_open_licsch)                         ac_tar,
+SET @Sql      = N'with r as (
+  select /*+ MATERIALIZE */
+                t.date_open_licsch, r.regnom, r.pincode, r.inn_regnom, r.mobilniy,
+                odb.func_utf8_to_latin(r.name_regnom)          name_disp,
+                odb.func_utf8_to_latin(upper(r.name_regnom))   name_match
+           from odb.licsch t, odb.regnom r
+          where t.registrac_nomer = r.regnom
+            and length(t.licsch) = 20
+            and t.date_close_licsch is null
+)
+select min(r.date_open_licsch)                         ac_tar,
        r.regnom                                        rn,
        r.name_disp                                     adi,
        y.a_s_a                                         axtarilan,
@@ -674,14 +752,7 @@ SET @Sql      = N'select min(r.date_open_licsch)                         ac_tar,
                  like ''%'' || trim(translate(nvl(y.tel,''Telefon yoxdur''),''(-)'','' '')) || ''%''
                  then ''Telefon''
             else ''Ad'' end                              uygunluq
-  from ( select t.date_open_licsch, r.regnom, r.pincode, r.inn_regnom, r.mobilniy,
-                odb.func_utf8_to_latin(r.name_regnom)          name_disp,
-                odb.func_utf8_to_latin(upper(r.name_regnom))   name_match
-           from odb.licsch t, odb.regnom r
-          where t.registrac_nomer = r.regnom
-            and length(t.licsch) = 20
-            and t.date_close_licsch is null
-       ) r, ( {SIYAHI} ) y
+  from r, ( {SIYAHI} ) y
  where ( r.name_match like ''%'' || trim(upper(y.a_s_a)) || ''%''
       or trim(r.pincode)    = y.fin
       or trim(r.inn_regnom) = y.voen
