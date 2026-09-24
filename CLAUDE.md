@@ -851,6 +851,35 @@ Diaqnozu çətinləşdirən: bayraq 0 olduğu üçün heç bir səhifədə "naha
 - checkbox-un yanına `<input type="hidden" name="eyniAd" value="false" />` qoy ki,
   işarəsiz hal da açıq şəkildə göndərilsin.
 
+### Nümunə — VM-də sahə var, view-da input yoxdur (24.09.2026)
+
+Yuxarıdakı qaydanın eyni sinifdən başqa forması: sahə view-dan **ümumiyyətlə
+göndərilmirsə** (checkbox belə yoxdur, bütöv `<input>` yoxdur), ModelBinder onu
+`null`/default alır və servis bunu **şərtsiz yazır** — nəticə eynidir: səssiz itki.
+
+`TeyinatRedakteVM.BitmeTarixi` (`DateTime?`) servis qatında (`IsciService.
+TeyinatRedakteEtAsync`) tam dəstəklənirdi və controller-in GET action-ı onu
+mövcud təyinatdan düzgün doldururdu (`TeyinatRedakte` GET, `IsciController.cs`),
+amma `TeyinatRedakte.cshtml` view-da bu sahə üçün **heç bir `<input>` yox idi** —
+yalnız Departament/Vəzifə seçimi var idi. Nəticədə formanı göndərən istifadəçi
+mövcud bitmə tarixini bilmədən **silərdi** (POST-da sahə heç gəlmədiyi üçün
+ModelBinder `null` bağlayır, servis `entity.BitmeTarixi = null` yazır).
+
+Tapılma səbəbi: işçinin müqaviləsinin bitmə tarixi yaradılış zamanı səhvən boş
+qalmışdı və HR onu "Tayinat Redaktə"də axtarırdı — sahə heç görünmürdü.
+**Düzgün yol bu vaxta qədər yalnız "Müqavilə Yenilə" idi**
+(`MuqavileYenilemeController`, `YeniBitmeTarixi` `[Required]`) — o, ayrı
+tarixçə sətri yaradan fərqli bir axındır.
+
+**Düzəliş (24.09.2026):** `TeyinatRedakte.cshtml`-ə `asp-for="BitmeTarixi"
+type="date"` sahəsi əlavə edildi — GET action onsuz da dəyəri doldururdu, indi
+istifadəçi onu görür və dəyişdirmədən göndərsə eyni dəyər geri yazılır (silinmir).
+
+**Qayda: VM-də sahə + servisdə yazma varsa, view-da onun inputu da olmalıdır.**
+Yeni sahə əlavə edəndə "backend hazırdır" demək kifayət etmir — formanın
+özündə görünüb-görünmədiyini yoxla. Əks halda sahə mövcuddur, işləyir,
+sadəcə heç kim ona toxuna bilmir (və naməlum halda POST edilsə səssizcə silinər).
+
 ## ViewModel Non-Nullable String — Gizli Required Tələsi (KRİTİK)
 
 .NET 8 MVC-də ViewModel-dəki **non-nullable** string (`string X = null!`) avtomatik
