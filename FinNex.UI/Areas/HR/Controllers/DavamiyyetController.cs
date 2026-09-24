@@ -218,6 +218,34 @@ namespace FinNex.UI.Areas.HR.Controllers
                         rGec.Status = DavamiyyetStatus.Ezamiyyet;
                 }
 
+                // Təsdiqlənmiş XƏSTƏLİK BÜLLETENLƏRİ — tarix aralığını örtən. Xəstəlik
+                // 24.09.2026-a qədər ayrıca cədvələ (Xestelik) köçürülüb, amma Davamiyyətə
+                // heç vaxt əks olunmayıb (bax CLAUDE.md) — bu, Ezamiyyət ilə EYNİ göstərmə
+                // qatı naxışı ilə düzəldilir, bazaya toxunmadan.
+                var xestelikList = new List<(int IsciId, DateTime Bas, DateTime Bit)>();
+                try
+                {
+                    var xB = (baslangic ?? tarix ?? DateTime.Today).Date;
+                    var xS = (son ?? tarix ?? DateTime.Today).Date;
+                    var xls = await _unitOfWork.Repository<Xestelik>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Status == XestelikStatus.Tesdiqlenib &&
+                                    x.BaslamaTarixi.Date <= xS && x.BitmeTarixi.Date >= xB)
+                        .Select(x => new { x.IsciId, x.BaslamaTarixi, x.BitmeTarixi })
+                        .ToListAsync();
+                    foreach (var xz in xls)
+                        xestelikList.Add((xz.IsciId, xz.BaslamaTarixi.Date, xz.BitmeTarixi.Date));
+                }
+                catch { }
+
+                // Xəstəlik günü "Gecikmə" GÖSTƏRİLMİR — Ezamiyyət ilə eyni məntiq (yuxarı).
+                foreach (var rGecX in umumi.Where(x => x.Status == DavamiyyetStatus.Gecikme))
+                {
+                    if (xestelikList.Any(xz => xz.IsciId == rGecX.IsciId &&
+                                               xz.Bas <= rGecX.Tarix.Date && xz.Bit >= rGecX.Tarix.Date))
+                        rGecX.Status = DavamiyyetStatus.Xestelik;
+                }
+
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
@@ -268,6 +296,16 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Where(i => i.Tarix == hedefTarixKpi && !qeydliIdsKpi.Contains(i.IsciId) && !mezuniyyetIsciIds.Contains(i.IsciId))
                     .Select(i => i.IsciId).Distinct().ToList();
 
+                // Xəstəlik — EYNİ prinsip (say = siyahı): təsdiqlənmiş bülleteni hədəf tarixi
+                // örtən, amma həmin gün cihaz qeydi OLMAYAN işçilər (xəstə işçi cihaza vurmur).
+                // Əvvəllər onlar "Gözlənilir"ə düşürdü, Xəstəlik KPI həmişə 0 idi.
+                var xestelikGozleyenIds = xestelikList
+                    .Where(xz => xz.Bas <= hedefTarixKpi && xz.Bit >= hedefTarixKpi
+                             && !qeydliIdsKpi.Contains(xz.IsciId)
+                             && !mezuniyyetIsciIds.Contains(xz.IsciId)
+                             && !icazeGozleyenIds.Contains(xz.IsciId))
+                    .Select(xz => xz.IsciId).Distinct().ToList();
+
                 // Ezamiyyət — EYNİ prinsip (say = siyahı): təsdiqlənmiş ezamiyyəti hədəf tarixi
                 // örtən, amma həmin gün cihaz qeydi OLMAYAN işçilər (tam günlük ezamiyyətdə
                 // işçi cihaza vurmur). Əvvəllər onlar "Gözlənilir"ə düşürdü, Ezamiyyət KPI 0 idi.
@@ -275,7 +313,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Where(e => e.Bas <= hedefTarixKpi && e.Bit >= hedefTarixKpi
                              && !qeydliIdsKpi.Contains(e.IsciId)
                              && !mezuniyyetIsciIds.Contains(e.IsciId)
-                             && !icazeGozleyenIds.Contains(e.IsciId))
+                             && !icazeGozleyenIds.Contains(e.IsciId)
+                             && !xestelikGozleyenIds.Contains(e.IsciId))
                     .Select(e => e.IsciId).Distinct().ToList();
 
                 // İcazəli filtri seçiləndə icazeGozleyen işçilər üçün sintetik sətir hazırla
@@ -301,6 +340,36 @@ namespace FinNex.UI.Areas.HR.Controllers
                             GirisVaxti = null,
                             CixisVaxti = null,
                             Status = DavamiyyetStatus.Icazeli,
+                            DepartamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                            MaasdanKes = false,
+                            QayibSebebi = null
+                        };
+                    }).ToList();
+                }
+
+                // Xəstəlik filtri seçiləndə xestelikGozleyen işçilər üçün sintetik sətir (İcazəli pattern-i)
+                var xestelikGozleyenRows = new List<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto>();
+                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Xestelik && xestelikGozleyenIds.Count > 0)
+                {
+                    var xestelikGozleyenIsciler = await _unitOfWork.Repository<Isci>()
+                        .Query().AsNoTracking()
+                        .Where(x => xestelikGozleyenIds.Contains(x.Id))
+                        .Include(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                            .ThenInclude(t => t.Departament)
+                        .ToListAsync();
+                    xestelikGozleyenRows = xestelikGozleyenIsciler.Select(i =>
+                    {
+                        var esasTeyinat = i.IsciTeyinatlari.FirstOrDefault(t => t.Esasdir && !t.Silinib)
+                                          ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                        return new Application.DTOs.HR.Davamiyyet.DavamiyyetListDto
+                        {
+                            Id = 0,
+                            IsciId = i.Id,
+                            IsciTamAd = i.Ad + " " + i.Soyad,
+                            Tarix = hedefTarixKpi,
+                            GirisVaxti = null,
+                            CixisVaxti = null,
+                            Status = DavamiyyetStatus.Xestelik,
                             DepartamentAd = esasTeyinat?.Departament?.Ad ?? "-",
                             MaasdanKes = false,
                             QayibSebebi = null
@@ -339,17 +408,21 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
 
                 // status=4 (İcazəli) → "indi icazədə" + "icazə gözləyən" (sintetik);
+                // status=5 (Xəstəlik) → qeydli xəstəlik + cihaz qeydi olmayan xəstələr (sintetik);
                 // status=6 (Ezamiyyət) → qeydli ezamiyyət + cihaz qeydi olmayan ezamiyyətlilər (sintetik);
                 // digər statuslar adi filtr
                 var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
                     ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId))
                            .Concat(icazeGozleyenRows).ToList()
-                    : (status.HasValue && status.Value == (int)DavamiyyetStatus.Ezamiyyet)
-                        ? umumi.Where(x => x.Status == DavamiyyetStatus.Ezamiyyet)
-                               .Concat(ezamiyyetGozleyenRows).ToList()
-                        : status.HasValue
-                            ? umumi.Where(x => (int)x.Status == status.Value && !TedbirBagislanir(x)).ToList()
-                            : umumi;
+                    : (status.HasValue && status.Value == (int)DavamiyyetStatus.Xestelik)
+                        ? umumi.Where(x => x.Status == DavamiyyetStatus.Xestelik)
+                               .Concat(xestelikGozleyenRows).ToList()
+                        : (status.HasValue && status.Value == (int)DavamiyyetStatus.Ezamiyyet)
+                            ? umumi.Where(x => x.Status == DavamiyyetStatus.Ezamiyyet)
+                                   .Concat(ezamiyyetGozleyenRows).ToList()
+                            : status.HasValue
+                                ? umumi.Where(x => (int)x.Status == status.Value && !TedbirBagislanir(x)).ToList()
+                                : umumi;
 
                 // Nəticədəki bütün tarixlər üçün BayramGunu xüsusi bitmə vaxtlarını toplu çək
                 var hedefTarixler = result.Select(x => x.Tarix.Date).Distinct().ToList();
@@ -433,6 +506,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         && x.CixisVaxti.Value.TimeOfDay < gunHedd
                         && x.Status != DavamiyyetStatus.Ezamiyyet
                         && x.Status != DavamiyyetStatus.Icazeli
+                        && x.Status != DavamiyyetStatus.Xestelik
                         && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date))
                         && !icazeOrtuyur
                         && !ezamiyyetOrtuyur
@@ -480,6 +554,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                         isSaatiSebeb = "Təsdiqlənmiş ezamiyyət var — erkən çıxış sayılmır.";
                     else if (icazeOrtuyur || x.Status == DavamiyyetStatus.Icazeli)
                         isSaatiSebeb = "Təsdiqlənmiş icazə var — çıxış icazə daxilindədir.";
+                    else if (x.Status == DavamiyyetStatus.Xestelik)
+                        isSaatiSebeb = "Təsdiqlənmiş xəstəlik bülleteni var — erkən çıxış sayılmır.";
                     else if (gorushOrtuyur)
                         isSaatiSebeb = "Tədbirdə (offline görüş) olub — çıxış tədbir pəncərəsindədir.";
                     else if (elilCumeBagisla)
@@ -540,7 +616,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // icazeGozleyenIds yuxarıda (result-dan əvvəl) hesablanıb — say ilə siyahı EYNİ mənbədən.
                 var icazeGozleyenSayi = icazeGozleyenIds.Count;
                 var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)) + icazeGozleyenSayi;
-                var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+                // Xəstəlik = qeydli xəstəlik + cihaz qeydi olmayan xəstələr (say = siyahı,
+                // xestelikGozleyenIds ilə EYNİ mənbədən — İcazəli KPI qaydasının eynisi).
+                var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik) + xestelikGozleyenIds.Count;
                 // Ezamiyyət = qeydli ezamiyyət + cihaz qeydi olmayan ezamiyyətlilər (say = siyahı,
                 // ezamiyyetGozleyenIds ilə EYNİ mənbədən — İcazəli KPI qaydasının eynisi).
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet) + ezamiyyetGozleyenIds.Count;
@@ -836,6 +914,20 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Select(x => x.IsciId)
                     .ToListAsync());
 
+            // Həmin günü örtən təsdiqlənmiş xəstəlik bülleteni olan işçilər — onlar
+            // "Gözlənilir"/"Qayıb" deyil, Xəstəlik statusunda göstərilir (cihaz qeydi
+            // olmaması normaldır — xəstə işçi cihaza vurmur). Xəstəlik 24.09.2026-a qədər
+            // ayrıca cədvələ (Xestelik) köçürülüb, amma Davamiyyətə heç vaxt əks olunmayıb.
+            var xestelikIsciIds = new HashSet<int>(
+                await _unitOfWork.Repository<Xestelik>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib
+                             && x.Status == XestelikStatus.Tesdiqlenib
+                             && x.BaslamaTarixi.Date <= hedef
+                             && x.BitmeTarixi.Date >= hedef)
+                    .Select(x => x.IsciId)
+                    .ToListAsync());
+
             // Həmin günü örtən təsdiqlənmiş ezamiyyəti olan işçilər — onlar "Gözlənilir"/
             // "Qayıb" deyil, Ezamiyyət statusunda göstərilir (cihaz qeydi olmaması normaldır).
             var ezamiyyetdeIsciIds = new HashSet<int>(
@@ -882,10 +974,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .Where(t => t.Esasdir && !t.Silinib)
                         .FirstOrDefault()
                         ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
-                    // İcazəli > Ezamiyyət > Tədbirdə > (Qayib/Gözlənilir). Tədbirdə = sintetik status 100.
+                    // İcazəli > Xəstəlik > Ezamiyyət > Tədbirdə > (Qayib/Gözlənilir). Tədbirdə = sintetik status 100.
                     int st;
                     string? tedAd = null, tedSaat = null;
                     if (icazeliIsciIds.Contains(i.Id)) st = 4;                    // İcazəli
+                    else if (xestelikIsciIds.Contains(i.Id)) st = 5;              // Xəstəlik
                     else if (ezamiyyetdeIsciIds.Contains(i.Id)) st = 6;           // Ezamiyyət
                     else if (tedbirDict.TryGetValue(i.Id, out var ted))           // Tədbirdə
                     {
@@ -911,8 +1004,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .OrderBy(x => x.isciTamAd)
                 .ToList();
 
-            // İcazəli (4) və Ezamiyyət (6) "gözlənilir" sayılmır — öz KPI-lərində sayılırlar.
-            var yalnizGozleyen = gozlenilenler.Where(x => x.status != 4 && x.status != 6).ToList();
+            // İcazəli (4), Xəstəlik (5) və Ezamiyyət (6) "gözlənilir" sayılmır — öz KPI-lərində sayılırlar.
+            var yalnizGozleyen = gozlenilenler.Where(x => x.status != 4 && x.status != 5 && x.status != 6).ToList();
 
             return Json(new
             {

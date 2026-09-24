@@ -724,6 +724,46 @@ Statusun mənbəyi **bazadakı `Davamiyyet.Status`-dur** (ADMS yazır); controll
 düzəlişlər köhnə qeydlər üçün göstərmə qatıdır — bazanı dəyişməz. Diaqnozda əvvəl qeydin
 nə vaxt yazıldığını yoxla: düzəlişdən əvvəl yazılmış qeyd yeni build-lə özbaşına dəyişməz.
 
+### Xəstəlik — EYNİ boşluq, HEÇ VAXT DÜZƏLDİLMƏMİŞDİ (24.09.2026, KRİTİK)
+
+Xəstəlik vaxtilə `Mezuniyyet`-in bir növü idi (`MezuniyyetNovu.Xestelik`) və o axın
+Davamiyyətə real sətir yazırdı. Sonra Xəstəlik **ayrı cədvələ/modula köçürüldü**
+(`Xestelik` entity, `/HR/Xestelik`) — kodda bunu təsdiqləyən açıq şərh var
+(`XestelikEzamiyyetController`): *"Xəstəlik artıq ayrıca cədvəldədir. Bu səhifə
+yalnız ezamiyyət göstərir."* Amma köçürmə zamanı Davamiyyətlə əlaqə **heç yaradılmadı**
+— nə yazma tərəfi (köhnə `Mezuniyyet` axını kimi), nə göstərmə tərəfi (Ezamiyyət kimi).
+`DavamiyyetStatus.Xestelik = 5` enum dəyəri mövcuddur, KPI kartı onu sayır, amma heç
+yerdə yazılmır → sayğac həmişə 0, təsdiqli bülleteni olan işçi isə "Gözlənilir"/"Qayıb"
+düşürdü (real hadisə: Nərminə Q., 23–25.09.2026 xəstəlik, 24.09-da "Gözlənilir").
+
+**Həll — Ezamiyyət ilə EYNİ göstərmə qatı naxışı, YALNIZ göstərmə** (istifadəçi
+qərarı: bazaya yazma yoxdur, unikal-indeks/yumşaq-silmə tələsinə düşmə riski qalmır):
+
+1. `HR/DavamiyyetController.GetByTarix` — `xestelikList` (təsdiqlənmiş bülletenlər),
+   Gecikmə örtüyü (ezamiyyət kimi), `xestelikGozleyenIds`/`xestelikGozleyenRows`
+   (cihaz qeydi olmayan xəstələr üçün sintetik sətir), KPI sayğacı
+   `umumi.Count(...) + xestelikGozleyenIds.Count` (əvvəl yalnız `umumi.Count(...)` idi,
+   həmişə 0 qalırdı), `tezCixanFlag`/`isSaatiSebeb` istisnası.
+2. `HR/DavamiyyetController.GetGozlenilen` — `xestelikIsciIds` sorğusu, prioritet
+   zənciri **İcazəli > Xəstəlik > Ezamiyyət > Tədbirdə**, `yalnizGozleyen` filtrinə
+   `status != 5` əlavəsi.
+3. Frontend (`hr-davamiyyet.js`, `Views/Davamiyyet/Index.cshtml`) artıq **hazır idi**
+   — `status=5` badge, `kpiXestelik` elementi, KPI kartının `data-status="5"` klikləməsi
+   hamısı mövcud idi, sadəcə backend heç vaxt düzgün rəqəm/sətir göndərmirdi.
+
+**`User/Areas/User/Controllers/DavamiyyetController.cs`-ə TOXUNULMADI** — bu səhifə
+memarlıq olaraq fərqlidir: yalnız işçinin **real** Davamiyyet sətirlərini göstərir,
+HR-ın `GetGozlenilen`-i kimi "qeydi olmayan gün üçün sintetik sətir" mexanizmi
+ÜMUMİYYƏTLƏ yoxdur (Qayıb üçün də yoxdur). Ona görə Xəstəlik günü orada sadəcə
+**görünmür** (səhv status yox, sətir yox) — HR-dakı "Gözlənilir" yalanı ilə eyni
+simptom deyil. Düzəltmək sintetik sətir mexanizmini oraya köçürməyi tələb edir —
+ayrıca qərardır, bu sessiyada edilmədi.
+
+**Qayda:** bir davamiyyət-təsiri olan modul (icazə növü, xəstəlik, ezamiyyət) başqa
+cədvələ/modula köçürülürsə, köhnə modulun Davamiyyətə təsiri (yazma VƏ ya göstərmə)
+YENİ modula da köçürülməlidir — "ayrıca cədvələdir" şərhi təkbaşına kifayət etmir,
+əlaqə əl ilə yenidən qurulmalıdır.
+
 ## Balans — Bağlı Hesab (date_close_licsch) Filtri (KRİTİK)
 
 Oracle GL balans sorğularında hesab adı/dep_tip üçün `licsch` cədvəlinə join edilir.
