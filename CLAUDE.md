@@ -1699,6 +1699,50 @@ Exchange, Emit_benef, 3-cu shexs, Transfer) HƏLƏ TEST OLUNMAYIB** — onlarda 
 eyni qarışıq-`OR` strukturu var, amma vaxtları tarix aralığındakı əməliyyat
 sayından asılıdır, ona görə real tarix aralığı ilə test edilməlidir.
 
+### Transfer — FİN/VÖEN `regnom` Zənciri ETİBARSIZDIR, MƏTNDƏ Yazıla Bilər (25.09.2026, KRİTİK)
+
+`AML_MB_TRANSFER` (`doc_vnesh_inval`/`nacval`/`swift`/`postupl`, 4 mənbə) FİN/VÖEN-i
+`account_no → regnom → pincode/inn_regnom` zənciri ilə tapırdı. Real hadisə: 1 nəfərlik
+FİN siyahısı ilə axtarış **heç nə** tapmadı, halbuki **eyni** şəxs "Ad" rejimində 7 sətir
+tapdı. Diaqnoz addım-addım:
+
+1. `doc_vnesh_swift.sender_account` — mənbədə 8 sətirdən 5-i **boş**, qalanları 10-16
+   rəqəm arası, sabit format YOXDUR. Bu, BMI-nin daxili hesab nömrəsi deyil — SWIFT-in
+   **xarici** tərəfidir (gələn köçürmədə göndərən xaricdədir), `regnom`-da ola bilməz.
+2. İstifadəçi `doc_vnesh_inval.account_no`-nun konkret dəyərini (`4502304002000400000`)
+   yoxladı: **bu, müştərinin öz hesabı deyil** — "adi köçürmə hesabı" (bankın ümumi/
+   keçid hesabı, çoxlu fərqli müştərinin əməliyyatı elə bu bir hesab üzərindən keçir).
+   Yəni `substr(account_no,10,6)=regnom` zənciri bu halda kimin FİN-inə baxırsa baxsın
+   — **fərdi müştəriyə YOX**, ümumi hesabın öz qeydinə bağlanır.
+3. **Əsl həll tapıldı:** `ACCOUNT_NAME` sütununun özünə baxanda FİN mətnin İÇİNDƏ
+   yazılıb: `"RANQAMİZ MƏLEYKƏ ELDAR QIZI AB0325826 65GPNXJ"` — ad + sənəd № + FİN,
+   boşluqla ayrılmış, tək VARCHAR sahədə. Fərdi hesabı olmayan (ümumi hesabdan keçən)
+   əməliyyatlarda identifikasiya MƏHZ belə aparılıb — struktur sahə deyil, sərbəst mətn.
+
+**Düzəliş:** WHERE-ə VƏ CASE-ə FİN/VÖEN-i **ad sahəsinin özündə** axtaran şərt əlavə
+olundu (`upper(emit_name/ben_name) like '%'||upper(y.fin)||'%'`), `length >= 7`
+(FİN) / `>= 9` (VÖEN) qoruyucusu ilə (qısa/sentinel dəyərlərin — "Ad" rejimindəki
+`Bos="~"` kimi — səhvən uyğun gəlməsinin qarşısını almaq üçün). Etiket: **"FİN
+(mətndə)"** / **"VÖEN (mətndə)"** — `regnom`-dan gələn dəqiq "FİN"/"VÖEN"-dən fərqli,
+ki, operator mənbəni ayırd edə bilsin. Köhnə `regnom`-əsaslı yoxlama **silinmədi**
+(ola bilər başqa əməliyyat növlərində düzgün işləyir), yeni şərt ona **əlavədir**.
+
+⚠️ **AÇIQ QALAN, YOXLANMAMIŞ RİSK — ƏKS İSTİQAMƏTDƏ YALANÇI MÜSBƏT.** `regnom`
+zənciri silinmədiyi üçün sual qalır: əgər ümumi köçürmə hesabının (`4502304002000400000`
+və bənzərləri) `regnom`-da **öz** FİN/VÖEN-i varsa (kimə aid olursa olsun), kimsə
+məhz **o** FİN/VÖEN ilə axtaranda sistem `doc_vnesh_inval`-dakı **BÜTÜN** əməliyyatları
+(yəni yüzlərlə əlaqəsiz müştərinin köçürməsini) "FİN uyğun gəldi" deyə göstərəcək —
+bu, Emit_benef-in `NULL||' '` bugundan da təhlükəli ola bilər, çünki konkret (səhv)
+bir şəxsi göstərir. Yoxlama üçün SELECT verilib istifadəçiyə (`select regnom, pincode,
+inn_regnom from odb.regnom where regnom = substr('4502304002000400000',10,6)`),
+**nəticə hələ gəlməyib**. Növbəti dəfə bu sorğuya toxunanda əvvəlcə bunu yoxla —
+əgər real FİN çıxırsa, `doc_vnesh_inval`/`nacval`/`postupl`-ın ümumi/keçid hesab
+kimi işlədilən sətirlərində `regnom`-əsaslı FİN/VÖEN yoxlaması **çıxarılmalıdır**
+(yalnız "mətndə" və "ad" yoxlamaları qalmalıdır).
+
+⚠️ **Yoxlanmamış qalıb:** bu düzəliş SQL Server-də yenidən işlədilib `OracleSorgular`-a
+yazılmayıb və tətbiqin özündə test olunmayıb.
+
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 
 Toplu Maaş ekranının aşağı zolağında `Gross`, `Cəmi tutulma` və `NET` **bir-birini

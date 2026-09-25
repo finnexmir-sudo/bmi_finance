@@ -632,7 +632,7 @@ ELSE
 
 /* ---------------------------------------------------------------- 8/11 */
 SET @Ad       = N'AML_MB_TRANSFER';
-SET @Mahiyyet = N'Məlumat Bazası → Transfer. 4 mənbəli ödəmə/mədaxil. Uyğunluq: FİN və VÖEN (regnom join — FinNex ƏLAVƏSİ) + göndərən/alan adı.';
+SET @Mahiyyet = N'Məlumat Bazası → Transfer. 4 mənbəli ödəmə/mədaxil. Uyğunluq: FİN/VÖEN (regnom join — hesab sahibinə görə, HƏMİŞƏ etibarlı deyil), FİN/VÖEN mətndə (ad sahəsinin öz içində yazıla bilər — 25.09.2026 real hadisə) + göndərən/alan adı.';
 SET @Sql      = N'with t as (
     select /*+ MATERIALIZE */
            v.date_oper                                 tarix,
@@ -680,13 +680,27 @@ select t.tarix, t.emit_name, t.ben_name, t.amount, t.valuta, t.cmnt, t.voen, t.f
        y.a_s_a                                         axtarilan,
        case when trim(t.fin)  = y.fin  then ''FİN''
             when trim(t.voen) = y.voen then ''VÖEN''
+            when length(trim(y.fin)) >= 7
+                 and ( upper(trim(t.emit_name)) like ''%'' || upper(y.fin) || ''%''
+                    or upper(trim(t.ben_name))  like ''%'' || upper(y.fin) || ''%'' )
+                 then ''FİN (mətndə)''
+            when length(trim(y.voen)) >= 9
+                 and ( upper(trim(t.emit_name)) like ''%'' || upper(y.voen) || ''%''
+                    or upper(trim(t.ben_name))  like ''%'' || upper(y.voen) || ''%'' )
+                 then ''VÖEN (mətndə)''
             when upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%'' then ''Ad (göndərən)''
             else ''Ad (alan)'' end                       uygunluq
   from t, ( {SIYAHI} ) y
  where ( upper(trim(t.emit_name)) like ''%'' || upper(y.a_s_a) || ''%''
       or upper(trim(t.ben_name))  like ''%'' || upper(y.a_s_a) || ''%''
       or trim(t.fin)  = y.fin
-      or trim(t.voen) = y.voen )
+      or trim(t.voen) = y.voen
+      or ( length(trim(y.fin)) >= 7
+           and ( upper(trim(t.emit_name)) like ''%'' || upper(y.fin) || ''%''
+              or upper(trim(t.ben_name))  like ''%'' || upper(y.fin) || ''%'' ) )
+      or ( length(trim(y.voen)) >= 9
+           and ( upper(trim(t.emit_name)) like ''%'' || upper(y.voen) || ''%''
+              or upper(trim(t.ben_name))  like ''%'' || upper(y.voen) || ''%'' ) ) )
  order by t.tarix, t.cmnt';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
