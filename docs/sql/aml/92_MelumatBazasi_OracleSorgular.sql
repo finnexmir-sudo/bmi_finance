@@ -536,7 +536,7 @@ ELSE
 
 /* ---------------------------------------------------------------- 6/11 */
 SET @Ad       = N'AML_MB_EMIT_BENEF';
-SET @Mahiyyet = N'Məlumat Bazası → Emit_benef. Əməliyyatın emitenti və benefisiarı. Uyğunluq: FİN (e_pincode/b_pincode) və ad (TƏRS LIKE — bazada 2 hissəli ad saxlanılır).';
+SET @Mahiyyet = N'Məlumat Bazası → Emit_benef. Əməliyyatın emitenti və benefisiarı. Uyğunluq: FİN (e_pincode/b_pincode) və ad (TƏRS LIKE — bazada 2 hissəli ad saxlanılır, boş/qısa ad >=8 qoruyucusu ilə — 25.09.2026).';
 SET @Sql      = N'with b as (
   select /*+ MATERIALIZE */
                 t.date_oper                                 tarix,
@@ -563,11 +563,14 @@ select b.tarix,
        b.qeyd,
        y.a_s_a                                         axtarilan,
        case when y.fin in (b.e_pincode, b.b_pincode) then ''FİN''
-            when upper(y.a_s_a) like ''%'' || b.e_match || ''%'' then ''Ad (emitent)''
+            when length(trim(b.e_match)) >= 8
+                 and upper(y.a_s_a) like ''%'' || b.e_match || ''%'' then ''Ad (emitent)''
             else ''Ad (benefisiar)'' end                 uygunluq
   from b, ( {SIYAHI} ) y
- where ( upper(y.a_s_a) like ''%'' || b.e_match || ''%''
-      or upper(y.a_s_a) like ''%'' || b.b_match || ''%''
+ where ( ( length(trim(b.e_match)) >= 8
+           and upper(y.a_s_a) like ''%'' || b.e_match || ''%'' )
+      or ( length(trim(b.b_match)) >= 8
+           and upper(y.a_s_a) like ''%'' || b.b_match || ''%'' )
       or y.fin in (b.e_pincode, b.b_pincode) )';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)

@@ -1456,6 +1456,48 @@ or ( length(trim(<ad_sütunu>)) >= 8
 ⚠️ **`length >= 8` qoruyucusu MƏCBURİDİR** — qısa/zibil ad (`A`, `-`) tərs qolda
 **HƏR adama** uyğun gələr və vərəq minlərlə yalançı sətirlə dolar.
 
+### Emit_benef-ə Qoruyucu ƏLAVƏ EDİLMƏMİŞDİ — Oracle `NULL || ' '` Boşluğa Çevrilir (25.09.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı sətir (22.09.2026) "tərs qol `Emit_benef`-ə əlavə olunub" deyirdi —
+bu **YANLIŞ** idi. Real sorğuda (`AML_MB_EMIT_BENEF`) `length >= 8` qoruyucusu
+heç vaxt yazılmamışdı, yalnız `3-cu shexs`/`A_M_L`/`Kred_zamin`-ə əlavə edilmişdi.
+
+Real hadisə: 1 nəfərlik ad-siyahısı ilə axtarış `Emit_benef` vərəqində **11851
+sətir** qaytardı. Səbəb `NULL` cəmləmə deyil — **Oracle-un `||` operatoru**:
+
+```
+e_match = func_utf8_to_latin(upper(trim(k.e_soyadi) || ' ' || trim(k.e_adi)))
+```
+
+Emitent/benefisiar adı boş olan əməliyyatlarda (məs. birtərəfli "Alınmış
+valyuta" kassa əməliyyatı — benefisiar sahəsi ümumiyyətlə doldurulmur)
+`k.b_soyadi` və `k.b_adi` hər ikisi `NULL`-dur. Oracle-da `NULL || ' ' || NULL`
+**`NULL` DEYİL, `' '` (bir boşluq) qaytarır** — Oracle `||`-də `NULL`-u boş
+sətir kimi rəftar edir (digər verilənlər bazalarından fərqli). Yəni
+`b.b_match = ' '`.
+
+Sonra tərs qol: `upper(y.a_s_a) like '%' || b.b_match || '%'` → `like '% %'`
+— **"axtarılan adda hardasa bir boşluq varmı?"** İki sözdən çox olan HƏR ad
+(demək olar ki, bütün real adlar) bunu keçir → benefisiar adı boş olan bütün
+əməliyyat sətirləri "tapılmış" sayılır, "Ad (benefisiar)" etiketi ilə.
+
+**Fərq yuxarıdakı `A_M_L` qoruyucusundan:** orada `where length(trim(t.a_s_a))
+> 0` XARİCİ sorğu səviyyəsində, BÜTÜN qollara tətbiq olunur. `Emit_benef`-də
+belə ümumi filtr yox idi — hər tərəf (`e_match`/`b_match`) ÖZ LIKE qoluna
+bağlıdır, ona görə qoruyucu da **hər qola ayrıca** yazılmalıdır.
+
+**Həll:** `docs/sql/aml/92_MelumatBazasi_OracleSorgular.sql`, `AML_MB_EMIT_BENEF`
+— `WHERE`-in hər iki qoluna VƏ `CASE`-in "Ad (emitent)" budağına
+`length(trim(b.e_match)) >= 8` / `length(trim(b.b_match)) >= 8` qoruyucusu
+əlavə edildi (yuxarıdakı ümumi qaydaya uyğun `>= 8`, sadəcə `> 0` yox — qısa
+ad da zibil ola bilər).
+
+**Qayda: "tərs LIKE" istifadə edən HƏR qol öz `length >= 8` qoruyucusuna
+sahib olmalıdır** — XARİCİ `WHERE`-də ÜMUMİ filtr varsa (A_M_L kimi) bu
+kifayətdir, YOXDURSA (Emit_benef kimi) hər qol ayrıca qorunmalıdır. Bu
+sorğu SQL Server-də yenidən işlədilməlidir ki, `OracleSorgular` cədvəlinə
+düşsün; tətbiqin özündə (Risk → Məlumat Bazası) hələ TEST OLUNMAYIB.
+
 ### BMI-də tapılan və düzəldilən səhvlər
 
 | # | Harada | Nə |
