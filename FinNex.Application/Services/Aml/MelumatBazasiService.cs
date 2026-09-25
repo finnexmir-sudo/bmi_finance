@@ -118,14 +118,14 @@ public class MelumatBazasiService : IMelumatBazasiService
         DateTime basTarix,
         DateTime sonTarix,
         IReadOnlyList<AxtarisSetriDto> axtarilanlar,
-        bool yalnizFinVoen = false,
+        AxtarisRejimi rejim = AxtarisRejimi.HerIkisi,
         CancellationToken ct = default)
     {
         var netice = new MelumatBazasiNeticeDto
         {
-            BasTarix      = basTarix.Date,
-            SonTarix      = sonTarix.Date,
-            YalnizFinVoen = yalnizFinVoen
+            BasTarix = basTarix.Date,
+            SonTarix = sonTarix.Date,
+            Rejim    = rejim
         };
 
         if (netice.SonTarix < netice.BasTarix)
@@ -163,15 +163,18 @@ public class MelumatBazasiService : IMelumatBazasiService
         for (var i = 0; i < axtarilacaqlar.Count; i += BmiLatin.MaxSetir)
         {
             var parca = axtarilacaqlar.Skip(i).Take(BmiLatin.MaxSetir).ToList();
-            var bloku = BmiLatin.SiyahiQur(parca, yalnizFinVoen);
+            var bloku = BmiLatin.SiyahiQur(parca, rejim);
             if (!string.IsNullOrWhiteSpace(bloku)) siyahiBatchlari.Add(bloku);
         }
 
         if (siyahiBatchlari.Count == 0)
         {
-            netice.Xeta = yalnizFinVoen
-                ? "Siyahıda heç bir FİN və ya VÖEN yoxdur — «yalnız FİN/VÖEN» rejimində axtarılacaq heç nə qalmır."
-                : "Siyahıdakı sətirlərin heç birində ad, FİN və ya VÖEN tapılmadı.";
+            netice.Xeta = rejim switch
+            {
+                AxtarisRejimi.FinVoen => "Siyahıda heç bir FİN və ya VÖEN yoxdur — «yalnız FİN/VÖEN» rejimində axtarılacaq heç nə qalmır.",
+                AxtarisRejimi.Ad      => "Siyahıda heç bir ad yoxdur — «yalnız ad» rejimində axtarılacaq heç nə qalmır.",
+                _                     => "Siyahıdakı sətirlərin heç birində ad, FİN və ya VÖEN tapılmadı."
+            };
             return netice;
         }
 

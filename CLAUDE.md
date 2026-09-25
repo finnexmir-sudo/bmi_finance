@@ -1112,6 +1112,29 @@ yenidən doldurula bilmir, `TempData` isə bu həcmi saxlamır). Hədd:
 «tapılmadı» ilə «hələ axtarılmayıb» halını ayırd edə bilmir — ikisi də boş
 `Uygunluqlar` deməkdir.
 
+### Axtarış Rejimi — Ad / FİN-VÖEN / Hər ikisi (25.09.2026)
+
+«Məlumat Bazası» (Risk → Dashboard, 2-ci addım) əvvəl tək `bool yalnizFinVoen`
+checkbox-u idi (işarəli — yalnız FİN/VÖEN, işarəsiz — hər ikisi). İstifadəçi
+tələbi ilə **üçüncü rejim** ("yalnız Ad") əlavə olundu, `bool` **enum**-a
+çevrildi: `FinNex.Application.DTOs.Aml.AxtarisRejimi { HerIkisi, Ad, FinVoen }`.
+
+Sentinel məntiqi eynidir, sadəcə istiqamət artıb — `BmiLatin.SiyahiQur`:
+- `FinVoen` → `a_s_a` = `AdYoxdur` (ad şərti söndürülür, mövcud idi);
+- `Ad` → `fin`/`voen` = `Bos` ("~") (FİN/VÖEN şərti söndürülür, YENİ);
+- `HerIkisi` → heç biri toxunulmur (default).
+
+View-da checkbox+gizli-sahə cütü **`<select name="rejim">`** ilə əvəz olundu —
+radio qrupu YOX, çünki radio-da heç biri seçilməsə POST-da sahə ümumiyyətlə
+getməz (checkbox tələsinin eyni forması); `<select>`-də həmişə seçili dəyər
+var, səssiz itki riski yoxdur. ASP.NET Core `enum`-u `<option value="Ad">` kimi
+adına görə avtomatik bağlayır — əlavə çevirmə lazım deyil.
+
+**Dəyişən üç qat:** `IMelumatBazasiService.HazirlaAsync` (parametr),
+`MelumatBazasiService.HazirlaAsync` (implementasiya + boş-nəticə mesajı),
+`DashboardController.MelumatBazasiPaket` (action parametri) — imza dəyişikliyi
+qaydasına (yuxarıda) uyğun **üçü də eyni anda** yeniləndi.
+
 ### Real şablon: `AMLexcel.xlsx`, vərəq «Axtarilanlar»
 
 İşçinin doldurduğu fayl **dörd sütunludur**: `A=Adlar`, `B=VOEN`, `C=fin`,

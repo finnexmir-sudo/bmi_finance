@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClosedXML.Excel;
+using FinNex.Application.DTOs.Aml;
 using FinNex.Application.DTOs.Risk;
 using FinNex.Application.Interfaces.Aml;
 using FinNex.Application.Interfaces.Risk;
@@ -186,7 +187,7 @@ public class DashboardController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> MelumatBazasiPaket(
         string setirlerJson, DateTime basTarix, DateTime sonTarix,
-        bool yalnizFinVoen, CancellationToken ct)
+        AxtarisRejimi rejim, CancellationToken ct)
     {
         List<AxtarisSetriDto>? setirler;
         try { setirler = JsonSerializer.Deserialize<List<AxtarisSetriDto>>(setirlerJson); }
@@ -198,7 +199,7 @@ public class DashboardController : Controller
             return RedirectToAction(nameof(MelumatBazasi));
         }
 
-        var netice = await _mb.HazirlaAsync(basTarix, sonTarix, setirler, yalnizFinVoen, ct);
+        var netice = await _mb.HazirlaAsync(basTarix, sonTarix, setirler, rejim, ct);
 
         if (netice.Xeta != null)
         {

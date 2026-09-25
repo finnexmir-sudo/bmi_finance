@@ -26,14 +26,15 @@ public interface IMelumatBazasiService
     /// Exceldən oxunan şəxslər. <b>BOŞ OLA BİLMƏZ</b> — siyahı olmadan sorğular
     /// bütün dövrü qaytarardı (BMI-də bu, `odb.aml_yoxlama` cədvəli idi).
     /// </param>
-    /// <param name="yalnizFinVoen">
-    /// `true` — yalnız FİN/VÖEN üzrə axtarılır, ad şərti söndürülür.
-    /// SQL mətni dəyişmir; `a_s_a` xanasına tutmayan sentinel göndərilir.
+    /// <param name="rejim">
+    /// Ad / FinVoen / HerIkisi (default) — hansı sütunlar uyğunluq üçün nəzərə
+    /// alınsın. SQL mətni dəyişmir; nəzərə alınmayan xanaya tutmayan sentinel
+    /// (`a_s_a` üçün `AdYoxdur`, FİN/VÖEN üçün `Bos`) göndərilir.
     /// </param>
     Task<MelumatBazasiNeticeDto> HazirlaAsync(
         DateTime basTarix,
         DateTime sonTarix,
         IReadOnlyList<AxtarisSetriDto> axtarilanlar,
-        bool yalnizFinVoen = false,
+        AxtarisRejimi rejim = AxtarisRejimi.HerIkisi,
         CancellationToken ct = default);
 }

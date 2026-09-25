@@ -141,12 +141,16 @@
                 </div>
 
                 <div class="mb-rejim">
-                    @* Gizli sahə MƏCBURİDİR: işarələnməyən checkbox POST-da ÜMUMİYYƏTLƏ
-                       getmir və server dəyəri səssizcə `false` sayar (CLAUDE.md). *@
-                    <input type="hidden" name="yalnizFinVoen" value="false" />
-                    <label class="mb-check">
-                        <input type="checkbox" name="yalnizFinVoen" value="true" />
-                        <span>Yalnız <b>FİN və VÖEN</b> üzrə axtar (ad nəzərə alınmasın)</span>
+                    @* `<select>` MƏCBURİDİR (radio YOX) — radio qrupunda heç biri işarələnməsə
+                       POST-da sahə ÜMUMİYYƏTLƏ getmir, `<select>`-də isə həmişə seçili dəyər var,
+                       səssiz itki riski yoxdur (CLAUDE.md). *@
+                    <label class="mb-check" style="gap:8px;">
+                        <span>Axtarış rejimi:</span>
+                        <select name="rejim" class="mb-date" style="width:auto;">
+                            <option value="HerIkisi" selected>Ad + FİN/VÖEN (hər ikisi)</option>
+                            <option value="Ad">Yalnız Ad</option>
+                            <option value="FinVoen">Yalnız FİN/VÖEN</option>
+                        </select>
                     </label>
                     <div class="mb-rejim-t">
                         <b>FİN hər 11 vərəqdə işləyir.</b> Hesab nömrəsi olan mənbələrdə şəxs

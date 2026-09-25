@@ -1,4 +1,5 @@
 using System.Text;
+using FinNex.Application.DTOs.Aml;
 using FinNex.Application.DTOs.Risk;
 
 namespace FinNex.Application.Helpers.Aml;
@@ -125,11 +126,14 @@ public static class BmiLatin
     /// uzadır (sorğu mətninin uzunluğu real məhdudiyyətdir).
     /// </summary>
     /// <param name="setirler">Excel sətirləri (boş sətirlər oxuma mərhələsində atılıb).</param>
-    /// <param name="yalnizFinVoen">
-    /// `true` — ad şərti söndürülür (`a_s_a` = <see cref="AdYoxdur"/>).
-    /// SQL mətni dəyişmir, yalnız göndərilən dəyər dəyişir.
+    /// <param name="rejim">
+    /// <see cref="AxtarisRejimi.FinVoen"/> — ad şərti söndürülür (`a_s_a` =
+    /// <see cref="AdYoxdur"/>). <see cref="AxtarisRejimi.Ad"/> — FİN/VÖEN
+    /// şərti söndürülür (hər ikisi = <see cref="Bos"/>), Excel-də dolu olsalar
+    /// belə. <see cref="AxtarisRejimi.HerIkisi"/> — dəyişiklik yoxdur (default).
+    /// SQL mətni heç bir halda dəyişmir, yalnız göndərilən dəyər dəyişir.
     /// </param>
-    public static string SiyahiQur(IReadOnlyList<AxtarisSetriDto> setirler, bool yalnizFinVoen)
+    public static string SiyahiQur(IReadOnlyList<AxtarisSetriDto> setirler, AxtarisRejimi rejim)
     {
         var sb = new StringBuilder(1024);
         var say = 0;
@@ -138,9 +142,9 @@ public static class BmiLatin
         {
             if (say >= MaxSetir) break;
 
-            var ad   = yalnizFinVoen ? AdYoxdur : Tehlukesiz(s.AdSoyadAta);
-            var fin  = Tehlukesiz(s.Fin);
-            var voen = Tehlukesiz(s.Voen);
+            var ad   = rejim == AxtarisRejimi.FinVoen ? AdYoxdur : Tehlukesiz(s.AdSoyadAta);
+            var fin  = rejim == AxtarisRejimi.Ad ? Bos : Tehlukesiz(s.Fin);
+            var voen = rejim == AxtarisRejimi.Ad ? Bos : Tehlukesiz(s.Voen);
             var tel  = Bos;   // Excel şablonunda telefon sütunu YOXDUR (22.09.2026).
                               // Şərtlər sorğularda saxlanılıb — sütun əlavə olunsa
                               // burada bir sətir dəyişmək kifayətdir.
