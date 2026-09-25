@@ -224,6 +224,12 @@ public class DashboardController : Controller
         }
 
         var ad = $"Melumat bazasi {netice.SonTarix:MMyyyy}.xlsx";   // BMI ilə eyni ad qaydası
+
+        // Adi <form method="post"> ilə fayl endirmədə brauzer heç bir JS hadisəsi
+        // vermir — "sorğu bitdi" anını bilmək üçün klassik üsul: faylı göndərməzdən
+        // ƏVVƏL kiçik bir cookie qoy, JS onu poll edib tapanda düyməni aç. Beləliklə
+        // düymə HƏMİŞƏ real bitmə vaxtına bağlıdır (3 saniyə də, 10 dəqiqə də olsa).
+        Response.Cookies.Append("mbHazir", "1", new CookieOptions { Path = "/" });
         return File(fayl, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ad);
     }
 

@@ -252,21 +252,54 @@
 @section Scripts {
     <script>
         // Fayl endirmə ilə bitir — səhifə yenilənmir, ona görə düymə öz-özünə
-        // bərpa OLUNMUR. Təkrar basılmanın qarşısını alırıq, sonra geri açırıq
-        // ki, istifadəçi ikinci dövr üçün yenidən işlədə bilsin.
+        // bərpa OLUNMUR. Sabit taymerlə açmaq YANLIŞDIR: kiçik axtarışda (3-5 san)
+        // düymə lazımsız yerə 2 dəqiqə "Hazırlanır" qalır, böyük siyahıda (~10 dəq,
+        // bax CLAUDE.md "BÖYÜK SİYAHI") isə əksinə HƏLƏ server işləyərkən açılıb
+        // ikinci klikə (paralel sorğu) icazə verir. Ona görə server faylı
+        // göndərməzdən ƏVVƏL `mbHazir` cookie-si qoyur, JS onu poll edir — düymə
+        // REAL bitmə anına bağlanır, nə qədər çəkməsindən asılı olmayaraq.
         (function () {
             var f = document.getElementById('mbForm');
             var b = document.getElementById('mbBtn');
             var h = document.getElementById('mbHint');
             if (!f || !b) return;
+
+            function cookieVar(ad) {
+                var m = document.cookie.match(new RegExp('(?:^|; )' + ad + '=([^;]*)'));
+                return m ? m[1] : null;
+            }
+            function cookieSil(ad) {
+                document.cookie = ad + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            }
+            function bitir() {
+                b.disabled = false;
+                b.innerHTML = '<i class="bi bi-search"></i> Ümumi sorğu';
+                if (h) h.textContent = 'Paket böyükdür — bir neçə dəqiqə çəkə bilər.';
+            }
+
             f.addEventListener('submit', function () {
+                cookieSil('mbHazir');
                 b.disabled = true;
                 b.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır gözləyin...';
                 if (h) h.textContent = 'Fayl hazır olanda endirmə özü başlayacaq.';
-                setTimeout(function () {
-                    b.disabled = false;
-                    b.innerHTML = '<i class="bi bi-search"></i> Ümumi sorğu';
-                }, 120000);
+
+                var basladi = Date.now();
+                // Təhlükəsizlik həddi: 20 dəqiqə (çox böyük siyahı + yavaş Oracle
+                // ehtimalına görə) — bundan sonra cookie tapılmasa da düymə açılır,
+                // yoxsa xəta (redirect) halında düymə əbədi kilidli qalardı (cookie
+                // yazılmır, çünki o yalnız uğurlu File() cavabından əvvəl qoyulur).
+                var polling = setInterval(function () {
+                    if (cookieVar('mbHazir') === '1') {
+                        cookieSil('mbHazir');
+                        clearInterval(polling);
+                        bitir();
+                        return;
+                    }
+                    if (Date.now() - basladi > 20 * 60 * 1000) {
+                        clearInterval(polling);
+                        bitir();
+                    }
+                }, 500);
             });
         })();
     </script>
