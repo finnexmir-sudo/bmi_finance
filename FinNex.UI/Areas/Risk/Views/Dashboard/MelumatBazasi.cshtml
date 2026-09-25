@@ -88,7 +88,7 @@
                 <table class="mb-table">
                     <thead>
                         <tr>
-                            <th>#</th><th>Ad Soyad Ata adı</th><th>VÖEN</th><th>FİN</th>
+                            <th>#</th><th>Ad Soyad Ata adı</th><th>VÖEN/FİN</th>
                             @if (novVar)
                             {
                                 <th>Növü</th>
@@ -101,8 +101,10 @@
                             <tr>
                                 <td>@s.Sira</td>
                                 <td>@s.AdSoyadAta</td>
-                                <td>@s.Voen</td>
-                                <td>@s.Fin</td>
+                                @* Excel-də mənbə TƏK sütundur (VÖEN/FİN) — sistem daxildə formatına görə
+                                   ayırd edir (SinifleFinVoen), amma ekranda İKİ sütun kimi göstərmək
+                                   istifadəçini çaşdırırdı (25.09.2026). Hansı doluysa onu göstər. *@
+                                <td>@(string.IsNullOrWhiteSpace(s.Voen) ? s.Fin : s.Voen)</td>
                                 @if (novVar)
                                 {
                                     <td>@s.Novu</td>

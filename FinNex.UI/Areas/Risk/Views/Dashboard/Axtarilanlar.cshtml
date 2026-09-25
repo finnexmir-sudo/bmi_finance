@@ -139,7 +139,7 @@
                 <table class="mb-table">
                     <thead>
                         <tr>
-                            <th>№</th><th>Ad Soyad Ata adı</th><th>VÖEN</th><th>FİN</th>
+                            <th>№</th><th>Ad Soyad Ata adı</th><th>VÖEN/FİN</th>
                             @if (novuVar)
                             {
                                 <th>Növü</th>
@@ -156,8 +156,9 @@
                             <tr class="@(netice && s.Tapildi ? "mb-row--hit" : "")">
                                 <td>@s.Axtarilan.Sira</td>
                                 <td>@s.Axtarilan.AdSoyadAta</td>
-                                <td>@s.Axtarilan.Voen</td>
-                                <td>@s.Axtarilan.Fin</td>
+                                @* Excel-də mənbə TƏK sütundur (VÖEN/FİN) — ekranda da bir sütun kimi
+                                   göstər, ayrı sütunlar istifadəçini çaşdırırdı (25.09.2026). *@
+                                <td>@(string.IsNullOrWhiteSpace(s.Axtarilan.Voen) ? s.Axtarilan.Fin : s.Axtarilan.Voen)</td>
                                 @if (novuVar)
                                 {
                                     <td>@s.Axtarilan.Novu</td>
