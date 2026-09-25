@@ -1163,9 +1163,32 @@ h.Contains("voen")`) tək sütun kimi oxunur. Yalnız «fin» VƏ YA yalnız «v
 olan **ayrı** başlıqlı köhnə fayllar da eyni məntiqlə işləməyə davam edir —
 iki format paralel dəstəklənir, biri o birini əvəz etmir.
 
-⚠️ Bu klassifikasiya YALNIZ birləşmiş sütunda tətbiq olunur. Ayrı «VOEN»/«fin»
-sütunlu köhnə fayllarda xananın məzmunu **olduğu kimi** öz sahəsinə yazılır —
-orada format yoxlaması yoxdur (istifadəçi onsuz da düzgün sütuna yazıb).
+⚠️ **BU SƏTR (yuxarıdakı, 23.09.2026) YANLIŞ ÇIXDI — 25.09.2026-da DÜZƏLDİLDİ.**
+«İstifadəçi onsuz da düzgün sütuna yazıb» fərziyyəsi real data ilə pozuldu.
+
+### Ayrı «VÖEN» Sütununda da FİN-formatlı Dəyər Ola Bilər (25.09.2026, KRİTİK)
+
+Real hadisə: Excel faylında yalnız «VÖEN» başlıqlı sütun var idi (ayrıca «FİN»
+sütunu yoxdur, `finC` = 0), operator həmin sütuna **FİN-formatlı dəyər**
+(`65GPNXJ`, 7 simvol) yazmışdı. Köhnə kod bunu **olduğu kimi** `Voen` sahəsinə
+yazırdı, `Fin` boş qalırdı. Nəticə: «Hər ikisi» rejimində axtarış **ad** üzrə
+tapırdı (`Ad (göndərən)`) və bu, FİN-in də işlədiyi təsürini yaradırdı; «Yalnız
+FİN/VÖEN» rejimində isə heç nə tapılmadı — çünki VÖEN-mətndə şərti
+`length(trim(y.voen)) >= 9` tələb edir, 7 simvollu dəyər bu həddi keçmir, FİN
+isə boş (`~`) olduğu üçün öz şərtinə heç girmirdi. Diaqnoz saatlarla çəkdi,
+çünki SQL-in özü (Oracle-da əl ilə test edilib) **tam düzgün** idi — səbəb heç
+Oracle-da deyildi, Excel oxuma mərhələsində idi.
+
+**Həll — `ExceldenOxu`, ayrı-sütun budağı:** `voen`/`fin` oxunandan sonra hər
+ikisi `SinifleFinVoen` ilə **yenidən yoxlanır** (əvvəl yalnız BİRLƏŞMİŞ sütunda
+tətbiq olunurdu). VÖEN sahəsindəki dəyər 9-10 rəqəmli deyilsə və FİN sahəsi
+boşdursa → FİN-ə köçür, VÖEN boşalır (və əksinə, FİN sahəsində 9-10 rəqəmli
+dəyər tapılsa VÖEN-ə köçür). Yalnız **qarşı sahə boş olanda** köçürülür ki, hər
+iki sütunu düzgün dolduran köhnə fayllara toxunmasın.
+
+**Qayda: bir sütunun başlığı onun MƏZMUNUNU zəmanət etmir.** Operator «VÖEN»
+yazılmış sütuna səhvən FİN yaza bilər (əksinə də) — sistem hər hansı FİN/VÖEN
+xanasını **HƏMİŞƏ** formatına görə yoxlamalıdır, təkcə birləşmiş sütunda yox.
 
 ### BÖYÜK SİYAHI — Batch-lərə Bölünmə (23.09.2026, KRİTİK)
 
@@ -1740,8 +1763,23 @@ inn_regnom from odb.regnom where regnom = substr('4502304002000400000',10,6)`),
 kimi işlədilən sətirlərində `regnom`-əsaslı FİN/VÖEN yoxlaması **çıxarılmalıdır**
 (yalnız "mətndə" və "ad" yoxlamaları qalmalıdır).
 
-⚠️ **Yoxlanmamış qalıb:** bu düzəliş SQL Server-də yenidən işlədilib `OracleSorgular`-a
-yazılmayıb və tətbiqin özündə test olunmayıb.
+✅ **YOXLANDI (25.09.2026).** SQL Server-də işlədilib, `OracleSorgular`-a yazılıb
+(istifadəçi `SELECT SorguMetni FROM OracleSorgular WHERE SorguAdi='AML_MB_TRANSFER'`
+ilə mətni özü təsdiqlədi) və Oracle-da təcrid olunmuş test (`func_utf8_to_latin(...)
+like '%65GPNXJ%'`) 7/7 sətirdə `TAPDI` verdi — **bu sorğunun SQL məntiqi düzgündür**.
+
+Buna baxmayaraq tətbiqdə "Yalnız FİN/VÖEN" axtarışı yenə heç nə tapmadı. Səbəb bu
+sorğuda DEYİLDİ — Excel oxuma mərhələsində idi: yuxarıdakı **"Ayrı «VÖEN» Sütununda
+da FİN-formatlı Dəyər Ola Bilər (25.09.2026)"** bölməsinə bax. Operator FİN dəyərini
+«VÖEN» başlıqlı sütuna yazmışdı, sistem onu format yoxlamadan olduğu kimi qəbul
+edirdi, ona görə `y.fin` boş, `y.voen` isə 7 simvollu (uzunluq şərtini keçməyən)
+dəyər idi. `ExceldenOxu` düzəldildikdən sonra bu konkret hal işə düşdü.
+
+**Dərs:** bir axtarış zənciri bir neçə mərhələdən keçirsə (Excel oxuma → siyahı
+qurma → SQL), hər mərhələni AYRI-AYRI təsdiqləmək kifayət etmir — SQL-in özünün
+düzgün olması ötürülən DƏYƏRİN düzgün olduğunu sübut etmir. "SQL-də TAPDI çıxdı,
+niyə tətbiqdə yox" sualında əvvəlki mərhələni (bu halda: `{SIYAHI}` blokuna nə
+DƏQİQ göndərildiyini) yoxlamaq lazımdır, sorğunu təkrar-təkrar oxumaq yox.
 
 ## Yekun Zolaq (Footer) BAĞLI SİSTEMDİR — Gross − Tutulma = NET
 

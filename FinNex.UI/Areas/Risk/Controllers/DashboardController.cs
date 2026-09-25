@@ -591,6 +591,26 @@ public class DashboardController : Controller
             {
                 voen = voenC > 0 ? row.Cell(voenC).GetString().Trim() : "";
                 fin  = finC  > 0 ? row.Cell(finC).GetString().Trim()  : "";
+
+                // ⚠️ 25.09.2026, real hadisə: AYRI "VÖEN" sütunu tək başına
+                // olanda (FİN sütunu heç tapılmayıb, `finC=0`) operator ora
+                // FİN-formatlı dəyər yazmışdı ("65GPNXJ") — sistem onu olduğu
+                // kimi VÖEN saydı, FİN boş qaldı, «Yalnız FİN/VÖEN» axtarışı
+                // heç nə tapmadı. Format uyğunsuzluğunu SinifleFinVoen ilə
+                // düzəlt — VÖEN yalnız 9-10 rəqəmdirsə doğrudur, əks halda
+                // dəyər FİN-dir (və əksinə). Yalnız qarşı sahə BOŞ olanda
+                // köçür ki, hər ikisi artıq düzgün doldurulmuş sətirlərə
+                // toxunmasın.
+                if (voen.Length > 0)
+                {
+                    var (v2f, _) = SinifleFinVoen(voen);
+                    if (v2f.Length > 0 && fin.Length == 0) { fin = v2f; voen = ""; }
+                }
+                if (fin.Length > 0)
+                {
+                    var (_, f2v) = SinifleFinVoen(fin);
+                    if (f2v.Length > 0 && voen.Length == 0) { voen = f2v; fin = ""; }
+                }
             }
 
             var novu = novC > 0 ? row.Cell(novC).GetString().Trim() : "";
