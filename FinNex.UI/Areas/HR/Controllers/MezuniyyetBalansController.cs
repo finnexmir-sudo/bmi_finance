@@ -1,3 +1,5 @@
+using ClosedXML.Excel;
+using FinNex.Application.Common.Extensions;
 using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
@@ -440,5 +442,161 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return Json(new { success = false, message = $"Xəta: {ex.Message}" });
             }
         }
+
+        // GET /HR/MezuniyyetBalans/IsciExcel?isciId=5
+        // İşçinin öz məzuniyyət tarixçəsi — mühasibin əl ilə saxladığı şəxsi
+        // vərəqin (əmr-əmr tarixçə + illər üzrə qalıq) FinNex qarşılığı.
+        // Yalnız SİSTEMDƏ olan qeydləri göstərir — köhnə (sistemə qədərki)
+        // əmrlər idxal edilməyibsə burada görünməyəcək (ayrıca məsələdir).
+        public async Task<IActionResult> IsciExcel(int isciId)
+        {
+            var isci = await _unitOfWork.Repository<Isci>()
+                .Query()
+                .AsNoTracking()
+                .Include(x => x.IsciTeyinatlari.Where(t => t.Aktivdir && !t.Silinib))
+                    .ThenInclude(t => t.Departament)
+                .FirstOrDefaultAsync(x => x.Id == isciId);
+
+            if (isci == null) return NotFound("İşçi tapılmadı.");
+
+            var deptAd = isci.IsciTeyinatlari.FirstOrDefault()?.Departament?.Ad ?? "—";
+
+            var mezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .AsNoTracking()
+                .Where(m => !m.Silinib && m.IsciId == isciId)
+                .OrderBy(m => m.BaslamaTarixi)
+                .Select(m => new
+                {
+                    m.EmrRegem,
+                    m.EmrSuffiks,
+                    m.EmrIl,
+                    m.Nov,
+                    m.Status,
+                    m.BaslamaTarixi,
+                    m.BitmeTarixi,
+                    m.IsGunlerininSayi,
+                    m.IsGunlerininSayiManual,
+                    m.JetonIleOdendi,
+                    m.OdenisTipi
+                })
+                .ToListAsync();
+
+            var balanslar = await _unitOfWork.Repository<MezuniyyetBalans>()
+                .Query()
+                .AsNoTracking()
+                .Where(b => !b.Silinib && b.IsciId == isciId)
+                .OrderByDescending(b => b.Il)
+                .ThenBy(b => b.Nov)
+                .ToListAsync();
+
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Tarixçə");
+
+            ws.Cell(1, 1).Value = "İşçi:";
+            ws.Cell(1, 2).Value = $"{isci.Ad} {isci.Soyad}";
+            ws.Cell(1, 4).Value = "FİN:";
+            ws.Cell(1, 5).Value = isci.FIN ?? "";
+            ws.Cell(2, 1).Value = "Departament:";
+            ws.Cell(2, 2).Value = deptAd;
+            ws.Cell(2, 4).Value = "İşə qəbul:";
+            ws.Cell(2, 5).Value = isci.IsheQebulTarixi;
+            ws.Cell(2, 5).Style.DateFormat.Format = "dd.MM.yyyy";
+            ws.Range(1, 1, 2, 1).Style.Font.Bold = true;
+            ws.Range(1, 4, 2, 4).Style.Font.Bold = true;
+
+            const int emrBaslikSetri = 4;
+            var emrBasliqlari = new[]
+            {
+                "№", "Əmr №-si", "Növü", "Başlama", "Bitmə", "Gün sayı",
+                "Status", "Ödəniş tipi", "Jeton ilə"
+            };
+            for (int i = 0; i < emrBasliqlari.Length; i++)
+                ws.Cell(emrBaslikSetri, i + 1).Value = emrBasliqlari[i];
+
+            var emrBaslikRange = ws.Range(emrBaslikSetri, 1, emrBaslikSetri, emrBasliqlari.Length);
+            emrBaslikRange.Style.Font.Bold = true;
+            emrBaslikRange.Style.Fill.BackgroundColor = XLColor.LightSteelBlue;
+            emrBaslikRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+            int setir = emrBaslikSetri + 1;
+            foreach (var m in mezuniyyetler)
+            {
+                var emrNo = m.EmrRegem.HasValue ? $"K/M {m.EmrRegem}{m.EmrSuffiks ?? ""}" : "—";
+                var gun = m.IsGunlerininSayiManual ?? m.IsGunlerininSayi;
+
+                int c = 1;
+                ws.Cell(setir, c++).Value = setir - emrBaslikSetri;
+                ws.Cell(setir, c++).Value = emrNo;
+                ws.Cell(setir, c++).Value = m.Nov.Adi();
+                ws.Cell(setir, c).Value = m.BaslamaTarixi;
+                ws.Cell(setir, c++).Style.DateFormat.Format = "dd.MM.yyyy";
+                ws.Cell(setir, c).Value = m.BitmeTarixi;
+                ws.Cell(setir, c++).Style.DateFormat.Format = "dd.MM.yyyy";
+                ws.Cell(setir, c++).Value = gun;
+                ws.Cell(setir, c++).Value = StatusAdi(m.Status);
+                ws.Cell(setir, c++).Value = m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis ? "Qabaqcadan" : "Ay sonu";
+                ws.Cell(setir, c++).Value = m.JetonIleOdendi ? "Bəli" : "";
+                setir++;
+            }
+
+            if (mezuniyyetler.Count == 0)
+            {
+                ws.Cell(setir, 1).Value = "Sistemdə bu işçi üçün qeyd tapılmadı.";
+                setir++;
+            }
+
+            // ── İllər üzrə balans xülasəsi ───────────────────────────────
+            setir += 2;
+            int balansBaslikSetri = setir;
+            var balansBasliqlari = new[] { "İş ili", "Növ", "Toplam gün", "İstifadə", "Qalıq" };
+            for (int i = 0; i < balansBasliqlari.Length; i++)
+                ws.Cell(balansBaslikSetri, i + 1).Value = balansBasliqlari[i];
+
+            var balansBaslikRange = ws.Range(balansBaslikSetri, 1, balansBaslikSetri, balansBasliqlari.Length);
+            balansBaslikRange.Style.Font.Bold = true;
+            balansBaslikRange.Style.Fill.BackgroundColor = XLColor.LightSteelBlue;
+            balansBaslikRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+            setir = balansBaslikSetri + 1;
+            foreach (var b in balanslar)
+            {
+                ws.Cell(setir, 1).Value = IlAralik(b.Il);
+                ws.Cell(setir, 2).Value = b.Nov.Adi();
+                ws.Cell(setir, 3).Value = b.ToplamGun;
+                ws.Cell(setir, 4).Value = b.IstifadeOlunanGun;
+                ws.Cell(setir, 5).Value = b.ToplamGun - b.IstifadeOlunanGun;
+                setir++;
+            }
+
+            ws.Columns().AdjustToContents();
+            ws.SheetView.FreezeRows(emrBaslikSetri);
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+
+            var temizAd = $"{isci.Ad}_{isci.Soyad}".Replace(" ", "_");
+            var fileName = $"Mezuniyyet_Tarixce_{temizAd}_{DateTime.Today:yyyy-MM-dd}.xlsx";
+            return File(
+                ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+
+        /// <summary>Məzuniyyət statusunun Azərbaycan adı — bu export-a məxsus, yerli istifadə.</summary>
+        private static string StatusAdi(MezuniyyetStatus status) => status switch
+        {
+            MezuniyyetStatus.Gozlemede => "Gözləmədə",
+            MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
+            MezuniyyetStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
+            MezuniyyetStatus.HrTesdiqinde => "HR təsdiqində",
+            MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
+            MezuniyyetStatus.ImtinaEdildi => "İmtina edildi",
+            MezuniyyetStatus.LegvEdildi => "Ləğv edildi",
+            _ => status.ToString()
+        };
+
+        /// <summary>İş ilini "2026–2027" formatında göstərir — Index.cshtml-dəki `IlAralik` ilə EYNİ qayda.</summary>
+        private static string IlAralik(int il) => $"{il}–{il + 1}";
     }
 }

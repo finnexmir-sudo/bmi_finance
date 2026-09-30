@@ -120,6 +120,14 @@
         }
         .mbk-duzelt:hover { background: #f1f5f9; border-color: #94a3b8 }
 
+        .mbk-excel {
+            display: inline-flex; align-items: center; gap: 5px; margin-left: 6px;
+            padding: 5px 11px; background: #fff; border: 1px solid #bbf7d0;
+            border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+            color: #15803d; vertical-align: middle; text-decoration: none;
+        }
+        .mbk-excel:hover { background: #f0fdf4; border-color: #86efac; color: #15803d }
+
         /* ── Detal sətri ────────────────────────────────────────────── */
         .mbk-detal > td { padding: 0; border-bottom: 1px solid #e2e8f0; background: #f8fafc }
         .mbk-detal-ic {
@@ -342,6 +350,10 @@
                                     <button type="button" class="mbk-detal-btn" title="İllər üzrə detalı aç">
                                         <i class="bi bi-chevron-down"></i>
                                     </button>
+                                    <a class="mbk-excel" href="@Url.Action("IsciExcel", new { isciId = isci.Id })"
+                                       title="İşçinin əmr-əmr məzuniyyət tarixçəsini Excel-ə köçür">
+                                        <i class="bi bi-file-earmark-excel"></i> Excel
+                                    </a>
                                     <button type="button" class="mbk-duzelt mb-btn-edit"
                                             data-isci-id="@isci.Id"
                                             data-isci-ad="@isci.Ad @isci.Soyad"
