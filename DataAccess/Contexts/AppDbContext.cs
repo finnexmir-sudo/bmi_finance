@@ -8,6 +8,7 @@ using FinNex.Domain.Entities.Mektub;
 using FinNex.Domain.Entities.Hevale;
 using FinNex.Domain.Entities.Emeliyyat;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
+using FinNex.Domain.Entities.Risk;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Sorgular;
 using FinNex.Domain.Entities.Structure;
@@ -73,6 +74,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<VezifeIsStatusu> VezifeIsStatuslari { get; set; }
     public DbSet<MezuniyyetHuquqParametrleri> MezuniyyetHuquqParametrleri { get; set; }
+    public DbSet<EmeliyyatRiskiHadisesi> EmeliyyatRiskiHadiseleri { get; set; }
+    public DbSet<EmeliyyatRiskiHadisesiTarixce> EmeliyyatRiskiHadisesiTarixceler { get; set; }
+    public DbSet<EmeliyyatRiskiParametrleri> EmeliyyatRiskiParametrleri { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
     public DbSet<Davamiyyet> Davamiyyetler { get; set; }

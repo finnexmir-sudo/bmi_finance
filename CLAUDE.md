@@ -2231,6 +2231,95 @@ işləyir). **Qayda: avtomatik review tapıntısını da kor-koranə tətbiq etm
 layihənin öz konvensiyasına (bu halda `_ViewStart.cshtml` zənciri) baxıb
 təsdiqlə, sonra qərar ver.**
 
+## Əməliyyat Riski Hadisələri Jurnalı — MB Qərar 04/1, Əlavə 4 (30.09.2026)
+
+İstifadəçi tələbi: *"biz bu bazanı qurmalıyıq. Risk departamentində buna uyğun
+səhifələr olmalı. işçi müşahidə etdiyi an bazaya əlavə etməli."* — MB-nin
+"Banklarda əməliyyat risklərinin idarə edilməsi Qaydası"nın (28.01.2025,
+Qərar 04/1) Əlavə 4-ündəki daxili insident jurnalı quruldu.
+
+**Əsas qərarlar (bu sessiyada, istifadəçi ilə birbaşa müzakirə olunub):**
+- **Təsdiq zənciri YOXDUR** — qaydanın öz mətni (9.6-cı bənd) işçi→koordinator→
+  şöbə rəisi→Risk departamenti zənciri təsvir edir, amma istifadəçi: *"risk
+  və aml şöbədəki işçilər özləri təsdiq edə biləcək səviyyədədir"* — Risk/AML
+  işçisi yaratdığı an qeyd rəsmidir.
+- **Redaktə sərbəstdir, amma tam tarixçə saxlanılır** — hər redaktədən ƏVVƏL
+  köhnə qeydin tam JSON snapshotu `EmeliyyatRiskiHadisesiTarixce`-yə yazılır
+  (`Isci.EvvelkiStajPeriodlari` kimi "JSON-da struktur" naxışının bir forması,
+  fərqi: burada AYRI cədvəldə, hər redaktə üçün bir sətir).
+- **Əlavə 4-ün 23-26-cı sahələri (tədbirlər planı) YALNIZ bankın ÖZ təyin
+  etdiyi zərər həddindən yuxarı MƏCBURİDİR** (Əlavənin öz qeydi) — bu hədd
+  qanunda YAZILMIR, `EmeliyyatRiskiParametrleri` (TƏK sətirli, HR-in
+  `MezuniyyetHuquqParametrleri` ilə EYNİ naxış) ilə Risk departamentinin özü
+  sazlayır. **Bu, MB-nin 9.9-cu bənddəki hesabat həddi (100 000 AZN, qanunla
+  SABİT) İLƏ EYNİ ŞEY DEYİL** — qarışdırma, o hədd hələ kodlanmayıb (Faza 2,
+  Əlavə 5 hesabatı ilə birlikdə).
+- **Faza 1 əhatəsi**: yalnız jurnal (yaratma/siyahı/detal/redaktə). Mərkəzi
+  Banka rüblük hesabat (Əlavə 5, ≥100 000 AZN / 12 ayda 10+ təkrar / potensial
+  ≥100 000 AZN threshold-ları) və İstilik xəritəsi (Əlavə 1) — HƏLƏ QURULMAYIB.
+- **Biznes sahələri (Əlavə 2) və risk kateqoriyaları (Əlavə 3)** — sabit enum
+  + seed (rəsmi normativ mətndir), yalnız 3-cü səviyyə (nümunə) sərbəst mətn,
+  çünki Əlavə 3-ün öz qeydi: "nümunələr bank tərəfindən artırıla bilər".
+
+**Struktur:** `EmeliyyatRiskiHadisesi` (Əlavə 4-ün 27 sahəsi — bəziləri
+`BaseEntity`-dən gəlir, təkrar yazılmayıb: sahə 1=`YaradilmaTarixi`,
+sahə 3=`YaradanIcraciId`, sahə 27-nin tarixi=`YenilenmeTarixi`),
+`EmeliyyatRiskiHadisesiTarixce` (redaktə tarixçəsi), `EmeliyyatRiskiParametrleri`
+(tək sətirli hədd). `QeydiyyatKodu` ("BS5R5.1" formatında, Əlavə 4 sahə 2-nin
+öz nümunəsi) avtomatik hesablanır (`EmeliyyatRiskiAdlari.QeydiyyatKoduHesabla`)
+— `RiskKateqoriyasi2` enum-un qiymətləri QƏSDƏN "onlar rəqəmi=1-ci səviyyə"
+sxemi ilə seçilib (məs. 51=R5.1) ki, ikinci enum/lookup cədvəli saxlamağa
+ehtiyac qalmasın.
+
+⚠️ **"Kim etdi" İKİ FƏRQLİ CƏDVƏLDƏN gəlir, qarışdırma:**
+`YaradanIcraciId`/`YenileyenIcraciId` (`BaseEntity`) **AppUser.Id**-dir (sistemə
+login edən), `MueyyenlesdirenIsciId` isə **Isci.Id**-dir (istənilən əməkdaş,
+sistem istifadəçisi olmaya bilər). Ad üçün birincidə `UserManager<AppUser>`
+(canonik nümunə: `ReytingService.cs`), ikincidə `IUnitOfWork.Repository<Isci>()`
+lazımdır — bir servisdə ikisini qarışdırmaq səssiz `NullReferenceException`
+yox, sadəcə **boş ad** göstərər (dictionary-də tapılmır), diaqnozu çətinləşdirər.
+
+### `code-review` Tapdığı 3 Real Bug (30.09.2026)
+
+İstifadəçinin əvvəlki sessiyada qoyduğu qaydaya görə (*"öz yazdığın koda da
+yoxlatdır"*) bu modul da `code-review --level high` ilə yoxlanıldı, 4 tapıntıdan
+3-ü təsdiqləndi:
+
+1. **Uzunluq validasiyası yox idi** — migration sütunları `nvarchar(200-2000)`
+   ilə məhduddur, amma servis heç bir maksimum uzunluq yoxlamırdı. Nəticə:
+   uzun mətn `SaveChangesAsync`-də *"String or binary data would be truncated"*
+   ilə BÜTÖV formanı sındırardı — bu, BMI-nin dar sütun tələsi ("Bir Jurnala
+   İKİ Yazıcı" bölməsindəki `Kes()` helper-i) ilə EYNİ kateqoriyadır. Düzəliş:
+   `SahelərYoxla`-ya hər mətn sahəsi üçün `.Length >` yoxlaması əlavə edildi,
+   formaya uyğun `maxlength` atributları qoyuldu.
+2. **Tədbir mütləqliyi CANLI hədd ilə yoxlanılırdı, DONDURULMUŞ YOX** — hədd
+   sonradan aşağı salınsa, köhnə (o vaxt qanuni şəkildə tədbirsiz qalmış)
+   qeydlər növbəti redaktədə (hətta orfoqrafik düzəlişdə belə) birdən-birə
+   "tədbirlər planı məcburidir" xətası ilə bloklanardı. **Eyni "dondurma"
+   prinsipi layihədə artıq var** — Pul Köçürməsi limitindəki `UsdEkvivalent`
+   (əməliyyat anında dondurulur, sonra kurs dəyişsə də keçmiş aylıq cəm
+   dəyişmir). Düzəliş: `EmeliyyatRiskiHadisesi.TedbirZererHeddiYaradilmaAninda`
+   sahəsi əlavə edildi — qeyd yaradılanda bir dəfə yazılır, redaktədə TOXUNULMUR,
+   həm görüntü (`TedbirlerMecburidir`), həm validasiya bundan oxuyur.
+3. **Sidebar "Hesabatlar" linki AML səhifəsini "aktiv" saymırdı** — narıqlaşdırma
+   (`currentAction=="Index"` → `currentController=="Dashboard"`) yeni jurnal
+   linklərini düzgün ayırd etsə də, `Risk/Aml/Index`-in öz sidebar sətri
+   olmadığı üçün (Dashboard-dakı kartdan açılır) həmin səhifədə heç bir link
+   "aktiv" görünmürdü. Düzəliş: şərtə `|| currentController == "Aml"` əlavə
+   edildi.
+
+Dördüncü tapıntı (RiskKateqoriyasi2 `<select>`-in JS uğursuz olanda boş
+qalması) real idi, amma bu layihədə partial-larda `@@section` işlədilmədiyi
+üçün skript birbaşa `<script>` kimi hər halda işə düşür — yenə də, "JS-ə
+görə POST-da düzgün dəyər getməsi" prinsipini (bax "Şərtli Render Olunan
+Form Sahəsi" bölməsi) gücləndirmək üçün `RiskKateqoriyasi2` seçimi indi
+BÜTÜN variantlarla SERVERDƏ render olunur, JS yalnız `data-ust1` görə
+görünməyəni gizlədir (silmir) — JS işə düşməsə belə düzgün seçilmiş dəyər
+formadan gedər.
+
+**Hələ tətbiq edilməyib (Faza 2, ayrıca iş):** MB-yə rüblük hesabat (Əlavə 5),
+istilik xəritəsi (Əlavə 1), Əsas Risk/Fəaliyyət Göstəriciləri (ƏRG/ƏFG).
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

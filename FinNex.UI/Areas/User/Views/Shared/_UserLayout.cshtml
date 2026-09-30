@@ -1422,9 +1422,23 @@
                     @* «Məlumat Bazası» QƏSDƏN burada DEYİL (22.09.2026, istifadəçi qərarı) —
                        girişi Risk panelindəki «AML hesabatları» kartıdır, «Hesab üzrə sorğu»
                        ilə yanaşı. Sidebar yalnız bölmənin kökünü saxlayır. *@
+                    @* AML (Risk/Aml/*) öz sidebar sətri YOXDUR — Dashboard-dakı
+                       "AML hesabatları" kartından açılır, ona görə "Hesabatlar"
+                       linki Aml controller-ini də aktiv saymalıdır (əvvəlki
+                       currentAction=="Index" şərti bunu təsadüfən əhatə edirdi,
+                       currentController=="Dashboard"-a keçəndə itməsin). *@
                     <a asp-area="Risk" asp-controller="Dashboard" asp-action="Index"
-                       class="fn-nav-item @(currentAction == "Index" ? "active" : "")">
+                       class="fn-nav-item @(currentController == "Dashboard" || currentController == "Aml" ? "active" : "")">
                         <i class="bi bi-grid"></i> Hesabatlar
+                    </a>
+                    @* MB Qərar 04/1, Əlavə 4 — əməliyyat riski hadisələri jurnalı (30.09.2026). *@
+                    <a asp-area="Risk" asp-controller="EmeliyyatRiski" asp-action="Index"
+                       class="fn-nav-item @(currentController == "EmeliyyatRiski" ? "active" : "")">
+                        <i class="bi bi-exclamation-triangle"></i> Əməliyyat Riski Hadisələri
+                    </a>
+                    <a asp-area="Risk" asp-controller="EmeliyyatRiskiParametrleri" asp-action="Index"
+                       class="fn-nav-item @(currentController == "EmeliyyatRiskiParametrleri" ? "active" : "")">
+                        <i class="bi bi-sliders"></i> Əməliyyat Riski — Parametrlər
                     </a>
                 }
                 break;

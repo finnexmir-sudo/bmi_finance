@@ -1,0 +1,231 @@
+@model EmeliyyatRiskiFormVM
+@{
+    var d = Model.Dto;
+    string V(DateTime? dt) => dt.HasValue ? dt.Value.ToString("yyyy-MM-dd") : "";
+    string N(decimal? v) => v.HasValue ? v.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "";
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="fn-alert fn-alert--error isci-val-summary" style="margin-bottom:14px">
+        <ul style="margin:0;padding-left:18px">
+            @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@err.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="fn-note" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;
+     border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px">
+    Ümumi zərər <b>@Model.TedbirZererHeddi.ToString("N2") AZN</b> və ya yuxarı olanda
+    aşağıdakı "Tədbirlər planı" bölməsi <b>məcburi</b> olur (bank daxili qaydası, MB Qərar 04/1 Əlavə 4-ün qeydi).
+</div>
+
+@if (Model.RedaktedirMi)
+{
+    <div class="fn-card" style="margin-bottom:16px;border-color:#f59e0b">
+        <div class="fn-sec-title" style="font-weight:700;margin-bottom:8px">Dəyişikliyin qısa təsviri</div>
+        <textarea name="DeyisiklikTesviri" class="fn-input" rows="2" maxlength="500" required
+                  placeholder="Nə dəyişdirildi, niyə? (Əlavə 4, sahə 27 — tarixçəyə yazılır)"></textarea>
+    </div>
+}
+
+<div class="fn-card" style="margin-bottom:16px">
+    <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Hadisənin haradan gəldiyi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+            <label>Struktur bölmə *</label>
+            <input name="StrukturBolme" class="fn-input" value="@d.StrukturBolme" maxlength="200" required />
+        </div>
+        <div>
+            <label>Məlumatı verən şəxs (koordinator, ola bilər boş)</label>
+            <input name="MelumatiVerenSexs" class="fn-input" value="@d.MelumatiVerenSexs" maxlength="200" />
+        </div>
+    </div>
+</div>
+
+<div class="fn-card" style="margin-bottom:16px">
+    <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Vaxt və müəyyənləşdirmə</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div>
+            <label>Hadisənin baş verdiyi tarix *</label>
+            <input type="date" name="HadiseninBasVerdiyiTarix" class="fn-input" value="@V(d.HadiseninBasVerdiyiTarix)" required />
+        </div>
+        <div>
+            <label>Müəyyənləşdirilmə tarixi *</label>
+            <input type="date" name="HadiseninMueyyenlesdirilmeTarixi" class="fn-input" value="@V(d.HadiseninMueyyenlesdirilmeTarixi)" required />
+        </div>
+        <div>
+            <label>Müəyyənləşdirən əməkdaş</label>
+            <select name="MueyyenlesdirenIsciId" class="fn-select" asp-items="Model.Isciler">
+                <option value="">— seçilməyib —</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="fn-card" style="margin-bottom:16px">
+    <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Təsvir</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:12px">
+        <div>
+            <label>Hadisənin təsviri *</label>
+            <textarea name="Tesvir" class="fn-input" rows="3" maxlength="2000" required>@d.Tesvir</textarea>
+        </div>
+        <div>
+            <label>Hadisənin səbəbi *</label>
+            <textarea name="Sebeb" class="fn-input" rows="2" maxlength="1000" required>@d.Sebeb</textarea>
+        </div>
+    </div>
+</div>
+
+<div class="fn-card" style="margin-bottom:16px">
+    <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Təsnifat</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div>
+            <label>Tezlik dərəcəsi</label>
+            <select name="TezlikDerecesi" class="fn-select" asp-items="Model.TezlikDereceleri"></select>
+        </div>
+        <div>
+            <label>Təsir dərəcəsi</label>
+            <select name="TesirDerecesi" class="fn-select" asp-items="Model.TesirDereceleri"></select>
+        </div>
+        <div>
+            <label>Biznes sahəsi *</label>
+            <select name="BiznesSahesi" class="fn-select" asp-items="Model.BiznesSaheleri"></select>
+        </div>
+        <div>
+            <label>Bank məhsulu</label>
+            <input name="BankMehsulu" class="fn-input" value="@d.BankMehsulu" maxlength="200" />
+        </div>
+        <div>
+            <label>Risk kateqoriyası (1-ci səviyyə) *</label>
+            <select id="riskKat1" name="RiskKateqoriyasi1" class="fn-select" asp-items="Model.RiskKateqoriyalari1"></select>
+        </div>
+        <div>
+            <label>Risk kateqoriyası (2-ci səviyyə) *</label>
+            @* Bütün variantlar SERVERDƏ render olunur (JS uğursuz olsa da doğru
+               dəyər POST-a getsin — code-review, 30.09.2026); JS yalnız
+               data-ust1-ə görə görünən altmajmusunu daraldır. *@
+            <select id="riskKat2" name="RiskKateqoriyasi2" class="fn-select">
+                @foreach (var k in Model.RiskKateqoriyalari2)
+                {
+                    <option value="@k.Deyer" data-ust1="@k.Ust1" selected="@(k.Deyer == (int)d.RiskKateqoriyasi2)">@k.Ad</option>
+                }
+            </select>
+        </div>
+        <div style="grid-column:1 / -1">
+            <label>Risk hadisəsi (3-cü səviyyə — sərbəst nümunə, Əlavə 3-ün öz qeydi: siyahı artırıla bilər)</label>
+            <input name="RiskHadisesiNumune" class="fn-input" value="@d.RiskHadisesiNumune" maxlength="500" />
+        </div>
+    </div>
+</div>
+
+<div class="fn-card" style="margin-bottom:16px">
+    <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Maliyyə təsiri</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div>
+            <label>Zərərin təsir kateqoriyası (Əlavə 6)</label>
+            <select name="ZererTesirKateqoriyasi" class="fn-select" asp-items="Model.ZererTesirKateqoriyalari"></select>
+        </div>
+        <div>
+            <label>Ümumi zərər (AZN) *</label>
+            <input id="umumiZerer" type="number" step="any" min="0" name="UmumiZererMebleg" class="fn-input" value="@N(d.UmumiZererMebleg)" required />
+        </div>
+        <div>
+            <label>Potensial zərər (AZN)</label>
+            <input type="number" step="any" min="0" name="PotensialZererMebleg" class="fn-input" value="@N(d.PotensialZererMebleg)" />
+        </div>
+        <div>
+            <label>Bərpa tarixi</label>
+            <input type="date" name="BerpaTarixi" class="fn-input" value="@V(d.BerpaTarixi)" />
+        </div>
+        <div>
+            <label>Bərpa olunan məbləğ (AZN)</label>
+            <input type="number" step="any" min="0" name="BerpaOlunanMebleg" class="fn-input" value="@N(d.BerpaOlunanMebleg)" />
+        </div>
+        <div>
+            <label>Sığorta ilə bərpa olunan hissə (AZN)</label>
+            <input type="number" step="any" min="0" name="SigortaIleBerpaOlunanHisse" class="fn-input" value="@N(d.SigortaIleBerpaOlunanHisse)" />
+        </div>
+    </div>
+</div>
+
+<div id="tedbirlerKart" class="fn-card" style="margin-bottom:16px">
+    <div class="fn-sec-title" style="font-weight:700;margin-bottom:4px">
+        Tədbirlər planı <span id="tedbirMecburiEtiket" class="isci-badge isci-badge--warn" style="display:none">məcburidir</span>
+    </div>
+    <div class="fn-hint" style="color:#64748b;font-size:12px;margin-bottom:10px">
+        Yalnız ümumi zərər bankın öz həddindən yuxarı olanda doldurulur (Əlavə 4-ün qeydi).
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div>
+            <label>Tədbirlərin tarixi</label>
+            <input type="date" name="TedbirlerinTarixi" class="fn-input" value="@V(d.TedbirlerinTarixi)" />
+        </div>
+        <div>
+            <label>Məsul struktur bölmə</label>
+            <input name="TedbirlereMesulBolme" class="fn-input" value="@d.TedbirlereMesulBolme" maxlength="200" />
+        </div>
+        <div style="grid-column:1 / -1">
+            <label>Tədbirlərin təsviri</label>
+            <textarea name="TedbirlerinTesviri" class="fn-input" rows="2" maxlength="1000">@d.TedbirlerinTesviri</textarea>
+        </div>
+        <div>
+            <label>İcra statusu</label>
+            <select name="TedbirlerinIcraStatusu" class="fn-select" asp-items="Model.TedbirIcraStatuslari">
+                <option value="">— seçilməyib —</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
+
+@* Digər partial formlarda (Kocurme/_Form.cshtml) olduğu kimi birbaşa
+   <script> — bu layihədə partial-larda @@section İŞLƏDİLMİR. *@
+<script>
+        (function () {
+            // #riskKat2 BÜTÜN variantlarla artıq serverdə doldurulub (JS
+            // olmadan da düzgün dəyər POST olunsun deyə) — bura yalnız
+            // seçilən 1-ci səviyyəyə uyğun olmayanları GİZLƏDİR, silmir.
+            var kat1Select = document.getElementById('riskKat1');
+            var kat2Select = document.getElementById('riskKat2');
+            var kat2Options = Array.prototype.slice.call(kat2Select.options);
+
+            function kat2DaraltTur() {
+                var ust1 = kat1Select.value;
+                var uygunVarMi = false;
+                kat2Options.forEach(function (opt) {
+                    var uygundur = opt.getAttribute('data-ust1') === ust1;
+                    opt.hidden = !uygundur;
+                    if (uygundur) uygunVarMi = true;
+                });
+                // Cari seçim yeni 1-ci səviyyəyə aid deyilsə (istifadəçi
+                // dəyişdi) — ilk uyğun variantı seç.
+                if (kat2Select.selectedOptions.length === 0 || kat2Select.selectedOptions[0].hidden) {
+                    var ilkUygun = kat2Options.find(function (opt) { return opt.getAttribute('data-ust1') === ust1; });
+                    if (ilkUygun) ilkUygun.selected = true;
+                }
+                if (!uygunVarMi) kat2Select.value = '';
+            }
+            kat1Select.addEventListener('change', kat2DaraltTur);
+            kat2DaraltTur();
+
+            // Tədbirlər planı — məcburilik nişanı (server yenə də yoxlayır,
+            // bu YALNIZ görüntüdür — CLAUDE.md: "Şərtli Render + Default Parametr" tələsi).
+            var hedd = @Model.TedbirZererHeddi.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var umumiZererInput = document.getElementById('umumiZerer');
+            var etiket = document.getElementById('tedbirMecburiEtiket');
+            var kart = document.getElementById('tedbirlerKart');
+            function mecburiluguYoxla() {
+                var deyer = parseFloat(umumiZererInput.value || '0');
+                var mecburidir = deyer >= hedd;
+                etiket.style.display = mecburidir ? 'inline-block' : 'none';
+                kart.style.borderColor = mecburidir ? '#f59e0b' : '';
+            }
+            umumiZererInput.addEventListener('input', mecburiluguYoxla);
+            mecburiluguYoxla();
+        })();
+</script>

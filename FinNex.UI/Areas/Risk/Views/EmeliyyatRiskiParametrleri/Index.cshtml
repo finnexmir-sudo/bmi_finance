@@ -1,0 +1,41 @@
+@model EmeliyyatRiskiParametrleriDto
+@{
+    ViewData["Title"] = "Əməliyyat Riski — Parametrlər";
+}
+
+@functions {
+    // decimal → input[type=number] value, HƏMİŞƏ InvariantCulture (bax
+    // CLAUDE.md: "Razor → CSS/JS Rəqəm — Mədəniyyət" tələsi).
+    static string N(decimal d) => d.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Əməliyyat Riski — Parametrlər</div>
+            <div class="fn-page-sub">
+                MB Qərar 04/1, Əlavə 4-ün qeydi: "23-26-cı hissələri bankın daxili
+                qaydaları ilə müəyyən edilmiş limitdən yuxarı həddə olan zərərlər
+                üzrə doldurulur" — bu hədd budur.
+            </div>
+        </div>
+        <a asp-controller="EmeliyyatRiski" asp-action="Index" class="fn-btn fn-btn--outline">Hadisələrə qayıt</a>
+    </div>
+
+    <div class="fn-note" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;
+         border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px">
+        <b>⚠️ Diqqət:</b> bu, Mərkəzi Banka hesabat həddi (100 000 AZN, qanunla sabit) İLƏ
+        EYNİ ŞEY DEYİL. Bu — yalnız hadisə jurnalında "tədbirlər planı" sahələrinin
+        nə vaxt məcburi olacağını təyin edən, bankın ÖZ təyin etdiyi daxili hədddir.
+    </div>
+
+    <form asp-action="Index" method="post">
+        @Html.AntiForgeryToken()
+        <div class="fn-card" style="margin-bottom:16px">
+            <label>Tədbirlər planı zərər həddi (AZN)</label>
+            <input type="number" step="any" min="0" name="TedbirZererHeddi" class="fn-input"
+                   value="@N(Model.TedbirZererHeddi)" style="max-width:260px" />
+        </div>
+        <button type="submit" class="fn-btn fn-btn--primary">Saxla</button>
+    </form>
+</div>

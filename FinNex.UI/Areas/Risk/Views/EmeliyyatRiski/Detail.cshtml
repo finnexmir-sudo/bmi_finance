@@ -1,0 +1,109 @@
+@model EmeliyyatRiskiHadisesiDto
+@{
+    ViewData["Title"] = $"Hadisə — {Model.QeydiyyatKodu}";
+    var tarixce = (IList<EmeliyyatRiskiHadisesiTarixceDto>)ViewBag.Tarixce;
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@Model.QeydiyyatKodu</div>
+            <div class="fn-page-sub">
+                @EmeliyyatRiskiAdlari.BiznesSahesiAdi(Model.BiznesSahesi) ·
+                @EmeliyyatRiskiAdlari.RiskKateqoriyasi1Adi(Model.RiskKateqoriyasi1) /
+                @EmeliyyatRiskiAdlari.RiskKateqoriyasi2Adi(Model.RiskKateqoriyasi2)
+            </div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <a asp-action="Index" class="fn-btn fn-btn--outline">Siyahıya qayıt</a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="fn-btn fn-btn--primary">Redaktə et</a>
+        </div>
+    </div>
+
+    @if (Model.TedbirlerMecburidir)
+    {
+        <div class="fn-note" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;
+             border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px">
+            Ümumi zərər bankın öz həddindən yuxarıdır — tədbirlər planı məcburidir.
+        </div>
+    }
+
+    <div class="fn-card" style="margin-bottom:16px">
+        <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Ümumi</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:14px">
+            <div><b>Struktur bölmə:</b><br />@Model.StrukturBolme</div>
+            <div><b>Məlumatı verən şəxs:</b><br />@(Model.MelumatiVerenSexs ?? "—")</div>
+            <div><b>Qeydiyyata daxil edən:</b><br />@(Model.YaradanIsciAdi ?? "—") (@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm"))</div>
+            <div><b>Hadisənin baş verdiyi tarix:</b><br />@Model.HadiseninBasVerdiyiTarix.ToString("dd.MM.yyyy")</div>
+            <div><b>Müəyyənləşdirilmə tarixi:</b><br />@Model.HadiseninMueyyenlesdirilmeTarixi.ToString("dd.MM.yyyy")</div>
+            <div><b>Müəyyənləşdirən əməkdaş:</b><br />@(Model.MueyyenlesdirenIsciAdi ?? "—")</div>
+        </div>
+    </div>
+
+    <div class="fn-card" style="margin-bottom:16px">
+        <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Təsvir</div>
+        <p style="white-space:pre-wrap"><b>Təsvir:</b> @Model.Tesvir</p>
+        <p style="white-space:pre-wrap"><b>Səbəb:</b> @Model.Sebeb</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:14px">
+            <div><b>Tezlik dərəcəsi:</b> @EmeliyyatRiskiAdlari.RiskDerecesiAdi(Model.TezlikDerecesi)</div>
+            <div><b>Təsir dərəcəsi:</b> @EmeliyyatRiskiAdlari.RiskDerecesiAdi(Model.TesirDerecesi)</div>
+            <div><b>Bank məhsulu:</b> @(Model.BankMehsulu ?? "—")</div>
+            @if (!string.IsNullOrWhiteSpace(Model.RiskHadisesiNumune))
+            {
+                <div style="grid-column:1 / -1"><b>Nümunə (3-cü səviyyə):</b> @Model.RiskHadisesiNumune</div>
+            }
+        </div>
+    </div>
+
+    <div class="fn-card" style="margin-bottom:16px">
+        <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Maliyyə təsiri</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:14px">
+            <div><b>Zərərin təsir kateqoriyası:</b><br />@EmeliyyatRiskiAdlari.ZererTesirKateqoriyasiAdi(Model.ZererTesirKateqoriyasi)</div>
+            <div><b>Ümumi zərər:</b><br />@Model.UmumiZererMebleg.ToString("N2") AZN</div>
+            <div><b>Potensial zərər:</b><br />@(Model.PotensialZererMebleg?.ToString("N2") ?? "—") AZN</div>
+            <div><b>Bərpa tarixi:</b><br />@(Model.BerpaTarixi?.ToString("dd.MM.yyyy") ?? "—")</div>
+            <div><b>Bərpa olunan məbləğ:</b><br />@(Model.BerpaOlunanMebleg?.ToString("N2") ?? "—") AZN</div>
+            <div><b>Sığorta ilə bərpa olunan hissə:</b><br />@(Model.SigortaIleBerpaOlunanHisse?.ToString("N2") ?? "—") AZN</div>
+        </div>
+    </div>
+
+    @if (Model.TedbirlerinTarixi.HasValue || Model.TedbirlerinTesviri != null || Model.TedbirlereMesulBolme != null || Model.TedbirlerinIcraStatusu.HasValue)
+    {
+        <div class="fn-card" style="margin-bottom:16px">
+            <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Tədbirlər planı</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:14px">
+                <div><b>Tarix:</b><br />@(Model.TedbirlerinTarixi?.ToString("dd.MM.yyyy") ?? "—")</div>
+                <div><b>Məsul bölmə:</b><br />@(Model.TedbirlereMesulBolme ?? "—")</div>
+                <div><b>İcra statusu:</b><br />@(Model.TedbirlerinIcraStatusu.HasValue ? EmeliyyatRiskiAdlari.TedbirIcraStatusuAdi(Model.TedbirlerinIcraStatusu.Value) : "—")</div>
+                <div style="grid-column:1 / -1"><b>Təsvir:</b><br />@(Model.TedbirlerinTesviri ?? "—")</div>
+            </div>
+        </div>
+    }
+
+    <div class="fn-card" style="padding:0;overflow:auto">
+        <div class="fn-sec-title" style="font-weight:700;padding:14px 16px 0">Tarixçə (@tarixce.Count dəyişiklik)</div>
+        <table class="isci-table">
+            <thead>
+                <tr>
+                    <th>Tarix</th>
+                    <th>Kim</th>
+                    <th>Dəyişikliyin təsviri</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in tarixce)
+                {
+                    <tr>
+                        <td>@t.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>@(t.DeyisdirenIsciAdi ?? "—")</td>
+                        <td>@t.DeyisiklikTesviri</td>
+                    </tr>
+                }
+                @if (tarixce.Count == 0)
+                {
+                    <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px">Hələ redaktə edilməyib.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

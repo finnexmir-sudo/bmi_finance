@@ -1,0 +1,19 @@
+@model EmeliyyatRiskiFormVM
+@{
+    ViewData["Title"] = $"Redaktə — {Model.Dto.Id}";
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Hadisəni Redaktə Et</div>
+            <div class="fn-page-sub">Köhnə vəziyyət tarixçəyə yazılacaq — "Dəyişikliyin qısa təsviri" məcburidir.</div>
+        </div>
+        <a asp-action="Detail" asp-route-id="@Model.Dto.Id" class="fn-btn fn-btn--outline">Detala qayıt</a>
+    </div>
+
+    <form asp-action="Edit" asp-route-id="@Model.Dto.Id" method="post">
+        @Html.AntiForgeryToken()
+        <partial name="_Form" model="Model" />
+    </form>
+</div>

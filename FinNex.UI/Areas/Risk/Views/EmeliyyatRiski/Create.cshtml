@@ -1,0 +1,19 @@
+@model EmeliyyatRiskiFormVM
+@{
+    ViewData["Title"] = "Yeni Əməliyyat Riski Hadisəsi";
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni Əməliyyat Riski Hadisəsi</div>
+            <div class="fn-page-sub">Müşahidə etdiyiniz kimi doldurun — təsdiq addımı yoxdur, yadda saxlayan kimi rəsmi qeyddir.</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">Siyahıya qayıt</a>
+    </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <partial name="_Form" model="Model" />
+    </form>
+</div>

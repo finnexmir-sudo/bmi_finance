@@ -1,0 +1,99 @@
+@model IList<EmeliyyatRiskiHadisesiDto>
+@{
+    ViewData["Title"] = "Əməliyyat Riski Hadisələri";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Əməliyyat Riski Hadisələri</div>
+            <div class="fn-page-sub">
+                MB Qərar 04/1, Əlavə 4 — daxili insident jurnalı. Risk/AML işçisi
+                hadisəni müşahidə edən kimi qeyd edir, təsdiq addımı yoxdur.
+            </div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <a asp-controller="EmeliyyatRiskiParametrleri" asp-action="Index" class="fn-btn fn-btn--outline">Parametrlər</a>
+            <a asp-action="Create" class="fn-btn fn-btn--primary">+ Yeni Hadisə</a>
+        </div>
+    </div>
+
+    <form method="get" class="fn-card" style="padding:14px 16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:end">
+            <div>
+                <label>Biznes sahəsi</label>
+                <select name="biznesSahesi" class="fn-select" asp-items="(List<SelectListItem>)ViewBag.BiznesSaheleri">
+                    <option value="">— hamısı —</option>
+                </select>
+            </div>
+            <div>
+                <label>Risk kateqoriyası (1-ci səviyyə)</label>
+                <select name="riskKateqoriyasi1" class="fn-select" asp-items="(List<SelectListItem>)ViewBag.RiskKateqoriyalari1">
+                    <option value="">— hamısı —</option>
+                </select>
+            </div>
+            <div>
+                <label>Tarix (başlanğıc)</label>
+                <input type="date" name="basTarix" class="fn-input" value="@ViewBag.BasTarix" />
+            </div>
+            <div>
+                <label>Tarix (son)</label>
+                <input type="date" name="sonTarix" class="fn-input" value="@ViewBag.SonTarix" />
+            </div>
+            <button type="submit" class="fn-btn fn-btn--outline">Filtrlə</button>
+        </div>
+    </form>
+
+    <div class="fn-card" style="padding:0;overflow:auto">
+        <table class="isci-table">
+            <thead>
+                <tr>
+                    <th>Qeydiyyat kodu</th>
+                    <th>Hadisə tarixi</th>
+                    <th>Struktur bölmə</th>
+                    <th>Biznes sahəsi</th>
+                    <th>Risk kateqoriyası</th>
+                    <th style="text-align:right">Ümumi zərər (AZN)</th>
+                    <th>Tədbir planı</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var h in Model)
+                {
+                    <tr>
+                        <td><b>@h.QeydiyyatKodu</b></td>
+                        <td>@h.HadiseninBasVerdiyiTarix.ToString("dd.MM.yyyy")</td>
+                        <td>@h.StrukturBolme</td>
+                        <td>@EmeliyyatRiskiAdlari.BiznesSahesiAdi(h.BiznesSahesi)</td>
+                        <td>
+                            @EmeliyyatRiskiAdlari.RiskKateqoriyasi1Adi(h.RiskKateqoriyasi1)
+                            <div style="color:#64748b;font-size:12px">@EmeliyyatRiskiAdlari.RiskKateqoriyasi2Adi(h.RiskKateqoriyasi2)</div>
+                        </td>
+                        <td style="text-align:right">@h.UmumiZererMebleg.ToString("N2")</td>
+                        <td>
+                            @if (h.TedbirlerMecburidir)
+                            {
+                                <span class="isci-badge isci-badge--warn">
+                                    @(h.TedbirlerinIcraStatusu.HasValue ? EmeliyyatRiskiAdlari.TedbirIcraStatusuAdi(h.TedbirlerinIcraStatusu.Value) : "tələb olunur")
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:#94a3b8">—</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="Detail" asp-route-id="@h.Id" class="fn-btn fn-btn--outline" style="padding:4px 10px">Detal</a>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px">Filtrə uyğun hadisə tapılmadı.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
