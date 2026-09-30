@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Services.HR;
 using FinNex.Domain;
@@ -44,7 +45,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             int? icraciId = int.TryParse(
-                User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var id) ? id : null;
+                User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
             var result = await _service.SaxlaAsync(model, icraciId);
             if (!result.Success)

@@ -1,4 +1,5 @@
 ﻿// Areas/HR/Controllers/VezifeController.cs
+using System.Security.Claims;
 using FinNex.Domain;
 using FinNex.Application.DTOs.HR.Vezife;
 using FinNex.Application.DTOs.HR.VezifeIsStatusu;
@@ -46,7 +47,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> IsStatuslariSaxla(List<VezifeIsStatusuSetDto> setirler)
         {
             int? icraciId = int.TryParse(
-                User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var id) ? id : null;
+                User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
             await _isStatusuService.SaxlaAsync(setirler ?? new List<VezifeIsStatusuSetDto>(), icraciId);
             TempData["Success"] = "İşdə statusları yadda saxlanıldı.";

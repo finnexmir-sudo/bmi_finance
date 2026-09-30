@@ -267,6 +267,45 @@ göstərdi.
 - View/servisdə naviqasiyadan oxuyanda filtri **bir daha** tətbiq et
   (məs. `b.Il == secilmisIl`) — yalnız Include filtrinə güvənmə.
 
+## `FindFirstValue` CS1061 — Tam Ad Yazmaq `using`-i ƏVƏZ ETMİR (30.09.2026, KRİTİK)
+
+Real hadisə: bu sessiyada `dotnet build` əlçatan olmadığı üçün (sandbox mühiti)
+kod yalnız mötərizə/parentez balansı ilə əl ilə yoxlanıldı — "build yoxlandı"
+DEYİL, "sintaksis səviyyəsində iflasa uğramır" demək idi. İstifadəçi Visual
+Studio-da **real** `Rebuild All` işlədəndə 2 × **CS1061** çıxdı:
+
+```
+'ClaimsPrincipal' does not contain a definition for 'FindFirstValue'
+```
+
+**Səbəb:** iki yeni controllerdə (`VezifeController.IsStatuslariSaxla`,
+`MezuniyyetHuquqParametrleriController.Index` POST) `User.FindFirstValue(...)`
+çağırılırdı, amma arqument **tam adla** yazılmışdı:
+`User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)`.
+
+Bu, `ClaimTypes`-ı tanıdır, amma `FindFirstValue`-nun ÖZÜ **uzatma
+(extension) metoddur** — C#-da extension metod yalnız onu daşıyan namespace
+**`using` ilə fayl başına idxal olunanda** görünür. Arqumentin tipini tam adla
+yazmaq bunu əvəz etmir, çünki compiler extension metod axtarışını yalnız
+`using`-lərə görə aparır, ifadədəki tam adlara görə yox.
+
+**Düzəliş:** hər iki fayla `using System.Security.Claims;` əlavə edildi,
+çağırış `User.FindFirstValue(ClaimTypes.NameIdentifier)`-ə sadələşdirildi —
+mövcud işləyən nümunə (`KreditFaizDerecesiController.cs`) məhz bu formanı
+işlədir, əvvəlcədən yoxlanmalı idi.
+
+**Qayda:**
+- Extension metod çağırışında (`.FindFirstValue`, `.Select`, `.Where`, hər
+  hansı `static class`-dakı `this` parametrli metod) arqumentin tipini tam
+  adla yazmaq **kifayət etmir** — metodun öz namespace-i `using` ilə idxal
+  olunmalıdır.
+- `dotnet build` əlçatan olmayan mühitdə "mötərizə balanslıdır" **build
+  sübutu DEYİL** — yalnız kobud bir yoxlamadır. Bunu istifadəçiyə açıq de
+  ("build mümkün deyil, əl ilə yoxladım") və REAL build nəticəsini soruş,
+  onsuz "işləyir" demə (bax aşağıdakı "Metod İmzası Dəyişikliyi" bölməsi).
+- Yeni bir `using` əlavə edəndə, artıq işləyən oxşar bir fayldan (`grep`)
+  köçürmək təxmin etməkdən daha etibarlıdır.
+
 ## Metod İmzası Dəyişikliyi — İnterfeys + İmplementasiya + Çağırış (KRİTİK)
 
 Bir servis metodunun imzasına parametr əlavə edəndə **üç yeri eyni anda** yenilə:
