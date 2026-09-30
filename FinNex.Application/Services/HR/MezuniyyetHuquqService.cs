@@ -10,15 +10,23 @@ namespace FinNex.Application.Services.HR
     public class MezuniyyetHuquqService : IMezuniyyetHuquqService
     {
         private readonly IUnitOfWork _uow;
+        private readonly IMezuniyyetHuquqParametrleriService _parametrleriService;
 
-        public MezuniyyetHuquqService(IUnitOfWork uow)
+        public MezuniyyetHuquqService(IUnitOfWork uow, IMezuniyyetHuquqParametrleriService parametrleriService)
         {
             _uow = uow;
+            _parametrleriService = parametrleriService;
         }
 
         public async Task<IList<MezuniyyetHuquqDto>> HesablaAsync(DateTime? tarix = null)
         {
             var refTarix = (tarix ?? DateTime.Today).Date;
+
+            // Qanuni ədədlər (yaş həddi, əlavə gün, staj pilləsi) — əvvəllər
+            // burada HARDCODE idi, indi HR-in bir dəfə qurduğu parametrdən
+            // gəlir (30.09.2026, istifadəçi tələbi). Sətir tapılmasa servis
+            // koddakı köhnə dəyərlərlə EYNİ default qaytarır.
+            var p = await _parametrleriService.AlAsync();
 
             // Aktiv işçilər + aktiv təyinat (vəzifə + şöbə). Yalnız oxuma.
             var isciler = await _uow.Repository<Isci>()
@@ -55,32 +63,41 @@ namespace FinNex.Application.Services.HR
                 int vezifeGun = teyinat?.Vezife?.EsasMezuniyyetGunu ?? 0;
                 bool elil = elilIds.Contains(isci.Id);
 
-                // Əsas: əlil → 42 (M.119); yoxsa vəzifə 30 → 30; başqa hər şey (0 daxil) → 21.
-                int esas = elil ? 42 : (vezifeGun == 30 ? 30 : 21);
+                // Əsas: əlil → p.EsasGunElil (M.119); yoxsa vəzifə 30 → 30; başqa hər şey → p.EsasGunAdi.
+                int esas = elil ? p.EsasGunElil : (vezifeGun == 30 ? 30 : p.EsasGunAdi);
 
                 // Staj (ümumi — bütün iş yerləri). Əlildə staj əlavəsi verilmir (M.116.3).
+                // 3 pilləli, ƏN YÜKSƏK həddən aşağı yoxlanır (p.SaxlaAsync həddlərin
+                // artan sırada olduğunu təmin edir — bax MezuniyyetHuquqParametrleriService).
                 double stajIl = UmumiStajIl(isci, refTarix);
                 int stajGun = elil ? 0
-                            : (stajIl >= 15 ? 6 : stajIl >= 10 ? 4 : stajIl >= 5 ? 2 : 0);
+                            : stajIl >= (double)p.StajHedd3Il ? p.StajHedd3Gun
+                            : stajIl >= (double)p.StajHedd2Il ? p.StajHedd2Gun
+                            : stajIl >= (double)p.StajHedd1Il ? p.StajHedd1Gun
+                            : 0;
 
                 // Uşaq (M.117): uşaqlar doğum tarixi ilə (IsciUsaq). Yaş avtomatik.
-                // İl-sonu qoruma (M.117.3): uşaq il ərzində 14 (əlildə 18) yaşayanda,
-                // 14/18 yaş günü cari ilin 1 yanvarından ≥ olarsa hələ də sayılır.
+                // İl-sonu qoruma (M.117.3): uşaq il ərzində yaş həddinə (əlildə ayrıca
+                // həddə) çatanda, doğum ili + hədd cari ilin 1 yanvarından ≥ olarsa
+                // hələ də sayılır.
                 var ilBasi = new DateTime(refTarix.Year, 1, 1);
                 int under14 = isci.Usaqlar.Count(u => !u.Silinib
                     && u.DogumTarixi.Date <= refTarix
-                    && u.DogumTarixi.AddYears(14) >= ilBasi);
+                    && u.DogumTarixi.AddYears(p.UsaqYasHeddi) >= ilBasi);
                 bool engelliUsaq = isci.Usaqlar.Any(u => !u.Silinib
                     && u.Elillidir
                     && u.DogumTarixi.Date <= refTarix
-                    && u.DogumTarixi.AddYears(18) >= ilBasi);
+                    && u.DogumTarixi.AddYears(p.EngelliUsaqYasHeddi) >= ilBasi);
 
                 // Yalnız QADIN, ya da TƏK VALİDEYN ata alır (M.117.1–2).
                 // Əlil işçi (119) uşaq əlavəsini də ALMIR (M.117.4).
+                // ƏN YÜKSƏK hədd əvvəl yoxlanır (defolt dəyərlərdə əvvəlki
+                // hardcode "under14==2 → 2" ilə tam eynidir, çünki >=3 qolu
+                // artıq üstündə tutulur; hədd dəyişsə də məntiqli qalır).
                 bool uygunSexs = isci.Cins != Cins.Kisi || isci.TekValideyn;
                 int usaqGun = (elil || !uygunSexs) ? 0
-                            : (under14 >= 3 || engelliUsaq) ? 5
-                            : (under14 == 2 ? 2 : 0);
+                            : (under14 >= p.UsaqSayi5GunHeddi || engelliUsaq) ? p.UsaqGun5
+                            : (under14 >= p.UsaqSayi2GunHeddi ? p.UsaqGun2 : 0);
 
                 netice.Add(new MezuniyyetHuquqDto
                 {

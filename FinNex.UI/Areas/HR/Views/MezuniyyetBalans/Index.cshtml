@@ -178,6 +178,10 @@
             <a asp-action="Yoxlama" class="fn-btn fn-btn--outline" title="Sistemin avtomatik hesabladığı illik hüquq (yalnız oxuma)">
                 <i class="bi bi-calculator"></i> Avtomatik hesablama (yoxlama)
             </a>
+            <a asp-action="Index" asp-controller="MezuniyyetHuquqParametrleri" class="fn-btn fn-btn--outline"
+               title="Yaş həddi, əlavə gün, staj pilləsi — qanuni ədədləri idarə et">
+                <i class="bi bi-sliders"></i> Hüquq parametrləri
+            </a>
             <select id="mbYearSelect" class="mb-year-select">
                 @foreach (var il in iller)
                 {

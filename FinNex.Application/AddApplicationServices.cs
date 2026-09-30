@@ -110,6 +110,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         // Məzuniyyət Modulu Servisləri
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
         services.AddScoped<IMezuniyyetHuquqService, MezuniyyetHuquqService>();
+        services.AddScoped<IMezuniyyetHuquqParametrleriService, MezuniyyetHuquqParametrleriService>();
         services.AddScoped<IVezifeIsStatusuService, VezifeIsStatusuService>();
         services.AddScoped<IIcazeService, IcazeService>();
         services.AddScoped<IEmrService, EmrService>();

@@ -18,11 +18,6 @@
         <a asp-action="Index" class="fn-btn fn-btn--outline">Vəzifələrə qayıt</a>
     </div>
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
-    }
-
     <form asp-action="IsStatuslariSaxla" method="post">
         @Html.AntiForgeryToken()
         <div class="fn-card" style="padding:0;overflow:hidden;">

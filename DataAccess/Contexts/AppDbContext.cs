@@ -72,6 +72,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<TelebeKocurme> TelebeKocurmeler { get; set; }
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<VezifeIsStatusu> VezifeIsStatuslari { get; set; }
+    public DbSet<MezuniyyetHuquqParametrleri> MezuniyyetHuquqParametrleri { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
     public DbSet<Davamiyyet> Davamiyyetler { get; set; }

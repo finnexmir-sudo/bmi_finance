@@ -1,0 +1,110 @@
+@using FinNex.Application.DTOs.HR.Mezuniyyet
+@model MezuniyyetHuquqParametrleriDto
+@{
+    ViewData["Title"] = "Məzuniyyət Hüququ Parametrləri";
+}
+
+@functions {
+    // decimal → input[type=number] value. HƏMİŞƏ InvariantCulture (nöqtə) —
+    // server az-Latn-AZ mədəniyyətindədir, defolt ToString() vergül yazardı və
+    // brauzer onu səssizcə boş göstərərdi (CLAUDE.md: "Razor → CSS/JS Rəqəm").
+    static string Il(decimal d) => d.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Məzuniyyət Hüququ Parametrləri</div>
+            <div class="fn-page-sub">
+                Əmək Məcəlləsinin (M.114/116/117/119) yaş həddi, əlavə gün və staj
+                pilləsi ədədləri — qanun dəyişsə buradan yenilənir, kod dəyişdirmək
+                lazım olmur.
+            </div>
+        </div>
+        <a asp-action="Yoxlama" asp-controller="MezuniyyetBalans" class="fn-btn fn-btn--outline">
+            Hüquq yoxlaması səhifəsinə keç
+        </a>
+    </div>
+
+    <div class="fn-note" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;
+         border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;line-height:1.6">
+        <b>⚠️ Diqqət:</b> bu ədədlər BÜTÜN işçilərin məzuniyyət balans hesablamasına
+        təsir edir. Dəyişiklikdən sonra <b>Hüquq yoxlaması</b> səhifəsində ən azı
+        bir neçə işçinin nəticəsini yoxlayın — həddi yanlış qursanız, HEÇ BİR XƏTA
+        ÇIXMADAN səhv rəqəm hesablanar.
+    </div>
+
+    <form asp-action="Index" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="fn-card" style="margin-bottom:16px">
+            <div class="fn-sec-title" style="font-weight:700;margin-bottom:10px">Əsas gün (M.114 / M.119)</div>
+            <div class="fn-form-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+                <div>
+                    <label>Adi işçi (vəzifə 30 gün təyin etməyəndə)</label>
+                    <input asp-for="EsasGunAdi" type="number" min="1" class="fn-input" />
+                </div>
+                <div>
+                    <label>Əlil işçi (M.119)</label>
+                    <input asp-for="EsasGunElil" type="number" min="1" class="fn-input" />
+                </div>
+            </div>
+        </div>
+
+        <div class="fn-card" style="margin-bottom:16px">
+            <div class="fn-sec-title" style="font-weight:700;margin-bottom:6px">Staj əlavəsi (M.116.3) — 3 pillə, artan sırada</div>
+            <div class="fn-hint" style="color:#64748b;font-size:12px;margin-bottom:10px">Əlil işçidə tətbiq olunmur.</div>
+            <div class="fn-form-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                @* ⚠️ `decimal` sahələr `asp-for` ilə YAZILMIR — server az-Latn-AZ
+                   mədəniyyətindədir, default formatlayıcı vergüllə yazar (məs.
+                   "5,00"), <input type="number"> isə YALNIZ nöqtə qəbul edir və
+                   səhv formatı SƏSSİZCƏ BOŞ göstərər. Dəyər həmişə InvariantCulture
+                   ilə, `step="any"` ilə (Ə.M. üçün "0,5" kimi kəsr həddi ola bilər). *@
+                <div><label>1-ci hədd (il)</label><input type="number" name="StajHedd1Il" step="any" min="0" value="@Il(Model.StajHedd1Il)" class="fn-input" /></div>
+                <div><label>1-ci hədd → gün</label><input asp-for="StajHedd1Gun" type="number" min="0" class="fn-input" /></div>
+                <div></div>
+                <div><label>2-ci hədd (il)</label><input type="number" name="StajHedd2Il" step="any" min="0" value="@Il(Model.StajHedd2Il)" class="fn-input" /></div>
+                <div><label>2-ci hədd → gün</label><input asp-for="StajHedd2Gun" type="number" min="0" class="fn-input" /></div>
+                <div></div>
+                <div><label>3-cü hədd (il)</label><input type="number" name="StajHedd3Il" step="any" min="0" value="@Il(Model.StajHedd3Il)" class="fn-input" /></div>
+                <div><label>3-cü hədd → gün</label><input asp-for="StajHedd3Gun" type="number" min="0" class="fn-input" /></div>
+            </div>
+        </div>
+
+        <div class="fn-card" style="margin-bottom:16px">
+            <div class="fn-sec-title" style="font-weight:700;margin-bottom:6px">Uşaq əlavəsi (M.117)</div>
+            <div class="fn-hint" style="color:#64748b;font-size:12px;margin-bottom:10px">
+                Yalnız qadın və ya tək valideyn ata alır. Əlil işçi almır (M.117.4).
+            </div>
+            <div class="fn-form-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+                <div>
+                    <label>Adi uşaq — yaş həddi (bu yaşınadək)</label>
+                    <input asp-for="UsaqYasHeddi" type="number" min="1" class="fn-input" />
+                </div>
+                <div>
+                    <label>Əlil uşaq — yaş həddi</label>
+                    <input asp-for="EngelliUsaqYasHeddi" type="number" min="1" class="fn-input" />
+                </div>
+                <div>
+                    <label>Bu sayda (və çox) uşaqda → gün</label>
+                    <input asp-for="UsaqSayi2GunHeddi" type="number" min="1" class="fn-input" />
+                </div>
+                <div>
+                    <label>Verilən gün</label>
+                    <input asp-for="UsaqGun2" type="number" min="0" class="fn-input" />
+                </div>
+                <div>
+                    <label>Bu sayda (və çox) uşaqda (və ya əlil uşaqda) → gün</label>
+                    <input asp-for="UsaqSayi5GunHeddi" type="number" min="1" class="fn-input" />
+                </div>
+                <div>
+                    <label>Verilən gün</label>
+                    <input asp-for="UsaqGun5" type="number" min="0" class="fn-input" />
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="fn-btn fn-btn--primary">Saxla</button>
+    </form>
+</div>
