@@ -571,13 +571,24 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(u => u.DogumTarixi.ToString("dd.MM.yyyy"));
             ws.Cell(5, 1).Value = "Uşaqların təvəllüdü:";
             ws.Cell(5, 2).Value = string.Join(", ", usaqTevellud);
+            ws.Range(5, 2, 5, 7).Merge();
             ws.Cell(6, 1).Value = "Çap olunma tarixi:";
             ws.Cell(6, 2).Value = DateTime.Today;
             ws.Cell(6, 2).Style.DateFormat.Format = "dd.MM.yyyy";
+            ws.Range(6, 2, 6, 7).Merge();
 
             ws.Range(1, 1, 6, 1).Style.Font.Bold = true;
             ws.Range(1, 4, 4, 4).Style.Font.Bold = true;
             ws.Range(1, 6, 2, 6).Style.Font.Bold = true;
+
+            // ── "Çərçivə" — istifadəçi tələbi (30.09.2026): başlıq bloku aydın
+            // kart kimi görünsün, cədvəl xətləri (inside + outside) hər xananı
+            // əhatə etsin. Mühasib faylı ilə eyni "səliqəli" görünüş.
+            var basliqBlokRange = ws.Range(1, 1, 6, 7);
+            basliqBlokRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            basliqBlokRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            basliqBlokRange.Style.Fill.BackgroundColor = XLColor.FromArgb(245, 247, 250);
+            ws.Range(1, 1, 6, 7).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
             // ── Əmr-əmr tarixçə — Ödənişli (Illik) / Ödənişsiz (OzHesabina) ayrı
             //    sütun qrupunda, sonda illər üzrə DƏYIŞƏN qalıq matrisi ──
@@ -614,7 +625,10 @@ namespace FinNex.UI.Areas.HR.Controllers
             basliqRange.Style.Font.Bold = true;
             basliqRange.Style.Fill.BackgroundColor = XLColor.LightSteelBlue;
             basliqRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            basliqRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
             basliqRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            basliqRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            basliqRange.Style.Alignment.WrapText = true;
             ws.Range(qrupBaslikSetri, 1, qrupBaslikSetri, 1).Merge();
             ws.Cell(qrupBaslikSetri, 1).Value = "";
 
@@ -666,6 +680,16 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 ws.Cell(setir, 1).Value = "Sistemdə təsdiqlənmiş Ə.M. / öz hesabına əmri tapılmadı.";
                 setir++;
+            }
+
+            // ── Cədvəl çərçivəsi — başlıq (8-9) + bütün data sətirləri bir
+            // grid kimi, mühasib faylındaki "səliqəli" görünüşlə eyni.
+            var cedvelSonSetir = setir - 1;
+            if (cedvelSonSetir >= qrupBaslikSetri)
+            {
+                var cedvelRange = ws.Range(qrupBaslikSetri, 1, cedvelSonSetir, sonSutun);
+                cedvelRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                cedvelRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
             }
 
             ws.Columns().AdjustToContents();

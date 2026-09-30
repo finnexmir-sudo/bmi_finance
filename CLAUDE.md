@@ -1072,6 +1072,34 @@ yəni səhv YALNIZ onluqlu sütunlarda idi.
 - Yeni Oracle sahəsi əlavə edəndə **ondalıqlı bir dəyəri əl ilə tutuşdur** —
   tam ədədlər səhvi gizlədir.
 
+## Məzuniyyət Tarixçə Excel-i (ClosedXML) — Çərçivə (30.09.2026)
+
+`MezuniyyetBalansController.IsciExcel` (işçinin şəxsi məzuniyyət tarixçəsi,
+mühasibin "İşçilərin məzuniyyətləri.xlsx" şəxsi vərəqinin qarşılığı) —
+**HTML-trick YOX**, real `ClosedXML.XLWorkbook` ilə `.xlsx` yaradır (bu
+səbəbdən yuxarıdakı `x:num` qaydası bura aid deyil — ClosedXML rəqəmi
+birbaşa hüceyrə tipində yazır, mətnə çevirmir).
+
+İlk versiyada başlıq bloku (1-6 sətir) və data cədvəli **çərçivəsiz** idi —
+yalnız qrup/sütun başlıqları (8-9 sətir) `OutsideBorder`la örtülmüşdü, daxili
+xətlər yox idi. İstifadəçi real Excel-də açıb gördü: "exceli çərçivəyə sal,
+səliqəli görünsün". Düzəliş:
+
+- Başlıq bloku (sətir 1-6, sütun 1-7) — `OutsideBorder` + `InsideBorder`
+  (tam grid) + açıq boz fon (`XLColor.FromArgb(245,247,250)`), 5/6-cı sətrin
+  uzun mətnli xanaları (`Uşaqların təvəllüdü`, `Çap tarixi`) 2-7 sütuna
+  **birləşdirilib** (`Merge()`) ki, boş bordürlü xanalar sağda qalmasın.
+- Qrup/sütun başlığı (8-9) — `InsideBorder` əlavə edildi (əvvəl yalnız
+  bayıra idi), `WrapText` + şaquli mərkəz — uzun başlıq mətni sütun enini
+  şişirtmədən yerləşsin.
+- Data cədvəli (8-cü sətirdən son yazılan sətrə qədər, bütün sütunlar) —
+  loop bitəndən sonra (boş nəticə mesajı da daxil olmaqla) bir dəfə
+  `OutsideBorder` + `InsideBorder` tətbiq olunur.
+
+`XLColor.FromArgb` naxışı yeni deyil — `TabelController.cs` onsuz da
+istifadə edir (rəng sabitləri), ona görə bu API-nin işlək olduğu əvvəlcədən
+təsdiqlənmişdi.
+
 ## HTML-dən Excel İxracı — `x:num` Olmasa Sütun TOPLANMIR (KRİTİK)
 
 Layihədə «Excel» ixracı əslində **HTML cədvəlidir** (`.xls` adı ilə, `xmlns:x=
