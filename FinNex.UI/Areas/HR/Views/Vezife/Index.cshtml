@@ -17,12 +17,17 @@
             <div class="fn-page-title">Vəzifələr</div>
             <div class="fn-page-sub">Bütün vəzifələrin idarəsi</div>
         </div>
-        <a asp-action="Create" class="fn-btn fn-btn--primary">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-            Yeni Vəzifə
-        </a>
+        <div style="display:flex;gap:8px">
+            <a asp-action="IsStatuslari" class="fn-btn fn-btn--outline" title="Vəzifə adına görə icraçı/məsul şəxs statusu">
+                İşdə statusları
+            </a>
+            <a asp-action="Create" class="fn-btn fn-btn--primary">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                Yeni Vəzifə
+            </a>
+        </div>
     </div>
 
     <div class="fn-card" style="padding:0;overflow:hidden;">

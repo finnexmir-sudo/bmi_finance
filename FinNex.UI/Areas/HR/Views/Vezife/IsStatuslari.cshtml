@@ -1,0 +1,75 @@
+@using FinNex.Application.DTOs.HR.VezifeIsStatusu
+@using FinNex.Domain.Entities.HR
+@model IList<VezifeIsStatusuDto>
+@{
+    ViewData["Title"] = "Vəzifələr — İşdə statusları";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İşdə statusları</div>
+            <div class="fn-page-sub">
+                Hər vəzifə adı üçün "İcraçı" / "Məsul şəxs" statusu — bir dəfə qurulur,
+                Məzuniyyət tarixçə Excel-ində istifadə olunur.
+            </div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">Vəzifələrə qayıt</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+
+    <form asp-action="IsStatuslariSaxla" method="post">
+        @Html.AntiForgeryToken()
+        <div class="fn-card" style="padding:0;overflow:hidden;">
+            <table class="isci-table">
+                <thead>
+                    <tr>
+                        <th>Vəzifə Adı</th>
+                        <th>İşdə statusu</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Count; i++)
+                    {
+                        var s = Model[i];
+                        <tr>
+                            <td>
+                                @s.VezifeAdi
+                                <input type="hidden" name="setirler[@i].VezifeAdi" value="@s.VezifeAdi" />
+                            </td>
+                            <td>
+                                <select name="setirler[@i].Status" class="fn-select">
+                                    <option value="@((int)VezifeIsStatusuTipi.Icrachi)" selected="@(s.Status == VezifeIsStatusuTipi.Icrachi)">İcraçı</option>
+                                    <option value="@((int)VezifeIsStatusuTipi.MesulSexs)" selected="@(s.Status == VezifeIsStatusuTipi.MesulSexs)">Məsul şəxs</option>
+                                </select>
+                            </td>
+                            <td>
+                                @if (!s.Qurulub)
+                                {
+                                    <span class="isci-badge isci-badge--warn">qurulmayıb — default</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:20px">Aktiv vəzifə tapılmadı.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Count > 0)
+        {
+            <div style="margin-top:14px">
+                <button type="submit" class="fn-btn fn-btn--primary">Saxla</button>
+            </div>
+        }
+    </form>
+</div>

@@ -16,11 +16,16 @@ namespace FinNex.UI.Areas.HR.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMezuniyyetHuquqService _huquqService;
+        private readonly IVezifeIsStatusuService _isStatusuService;
 
-        public MezuniyyetBalansController(IUnitOfWork unitOfWork, IMezuniyyetHuquqService huquqService)
+        public MezuniyyetBalansController(
+            IUnitOfWork unitOfWork,
+            IMezuniyyetHuquqService huquqService,
+            IVezifeIsStatusuService isStatusuService)
         {
             _unitOfWork = unitOfWork;
             _huquqService = huquqService;
+            _isStatusuService = isStatusuService;
         }
 
         // GET /HR/MezuniyyetBalans/Yoxlama?tarix=2026-07-03
@@ -459,6 +464,10 @@ namespace FinNex.UI.Areas.HR.Controllers
         // entitisi ayrılan işçinin son ödənişi üçündür, mühasib faylındakı kiçik
         // (1-2 günlük, hələ işləyən işçidə) kompensasiya ilə eyni konsepsiya olub-
         // olmadığı TƏSDİQLƏNMƏYİB. Səhv məbləğ göstərməkdənsə boş saxlanılır.
+        //
+        // "İşdə statusu" (icraçı/məsul şəxs) HƏLL OLUNDU (30.09.2026) —
+        // `IVezifeIsStatusuService` ilə, HR-in "HR → Vəzifələr → İşdə statusları"
+        // səhifəsində Vəzifə ADINA görə qurduğu təsnifatdan oxunur.
         public async Task<IActionResult> IsciExcel(int isciId)
         {
             var isci = await _unitOfWork.Repository<Isci>()
@@ -540,13 +549,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(2, 6).Value = "Cari iş ili:";
             ws.Cell(2, 7).Value = IlAralik(IsIliniTap(isci.IsheQebulTarixi, DateTime.Today));
 
-            // ⚠️ Mühasib faylında "İşdə statusu" sahəsi "icraçı" / "məsul şəxs" kimi
-            // AYRICA bir təsnifatdır (görünür, imza səlahiyyəti ilə bağlıdır) —
-            // sistemdə bunun dəqiq qarşılığı (StrukturRolu?) TƏSDİQLƏNMƏYİB. Səhv
-            // təsnifat yazmaqdansa Vəzifə adı göstərilir — bu, YALNIŞ ola bilər,
-            // istifadəçi təsdiq etməlidir.
-            ws.Cell(3, 1).Value = "İşdə statusu (Vəzifə):";
-            ws.Cell(3, 2).Value = huquq?.VezifeAdi ?? "—";
+            // "İşdə statusu" (icraçı/məsul şəxs) — Vəzifə ADINA görə, HR-in
+            // "HR → Vəzifələr → İşdə statusları" səhifəsində qurduğu təsnifat
+            // (30.09.2026, istifadəçi təklifi). Qurulmayıb sa default İcraçıdır.
+            var isStatusu = await _isStatusuService.TapAsync(huquq?.VezifeAdi);
+            ws.Cell(3, 1).Value = "İşdə statusu:";
+            ws.Cell(3, 2).Value = isStatusu == VezifeIsStatusuTipi.MesulSexs ? "məsul şəxs" : "icraçı";
             ws.Cell(3, 4).Value = "Ümumi iş stajı:";
             ws.Cell(3, 5).Value = Math.Round(huquq?.StajIl ?? 0, 2);
             ws.Cell(3, 6).Value = "Əvvəlki iş stajı:";

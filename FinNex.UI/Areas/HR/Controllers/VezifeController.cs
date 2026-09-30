@@ -1,7 +1,9 @@
 ﻿// Areas/HR/Controllers/VezifeController.cs
 using FinNex.Domain;
 using FinNex.Application.DTOs.HR.Vezife;
+using FinNex.Application.DTOs.HR.VezifeIsStatusu;
 using FinNex.Application.Interfaces.Structur;
+using FinNex.Application.Services.HR;
 using FinNex.UI.Areas.HR.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +17,40 @@ namespace FinNex.UI.Areas.HR.Controllers
     {
         private readonly IVezifeService _vezifeService;
         private readonly IDepartmentService _departmentService;
+        private readonly IVezifeIsStatusuService _isStatusuService;
 
-        public VezifeController(IVezifeService vezifeService, IDepartmentService departmentService)
+        public VezifeController(
+            IVezifeService vezifeService,
+            IDepartmentService departmentService,
+            IVezifeIsStatusuService isStatusuService)
         {
             _vezifeService = vezifeService;
             _departmentService = departmentService;
+            _isStatusuService = isStatusuService;
+        }
+
+        // ── GET: /HR/Vezife/IsStatuslari ──────────────────
+        // Vəzifə adına görə "İşdə statusu" (icraçı/məsul şəxs) — HR bunu bir
+        // dəfə qurur, Məzuniyyət tarixçə Excel-i (IsciExcel) bunu oxuyur.
+        [HttpGet]
+        public async Task<IActionResult> IsStatuslari()
+        {
+            var siyahi = await _isStatusuService.SiyahiAsync();
+            ViewData["Title"] = "Vəzifələr — İşdə statusları";
+            return View(siyahi);
+        }
+
+        // ── POST: /HR/Vezife/IsStatuslariSaxla ────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IsStatuslariSaxla(List<VezifeIsStatusuSetDto> setirler)
+        {
+            int? icraciId = int.TryParse(
+                User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var id) ? id : null;
+
+            await _isStatusuService.SaxlaAsync(setirler ?? new List<VezifeIsStatusuSetDto>(), icraciId);
+            TempData["Success"] = "İşdə statusları yadda saxlanıldı.";
+            return RedirectToAction(nameof(IsStatuslari));
         }
 
         // ── GET: /HR/Vezife ──────────────────────────────
