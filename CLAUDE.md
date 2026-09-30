@@ -2115,6 +2115,55 @@ Risk panelinin KPI kartları və hesabat kartları `OracleSorgular` cədvəlind�
 «Pull-dan sonra rəqəm dəyişdi» şikayətində əvvəlcə **hansı bazaya baxdığını**
 müəyyənləşdir; kodda səbəb axtarmaq vaxt itkisi ola bilər.
 
+## Məzuniyyət Hüququ Qanuni Ədədləri — Artıq HARDCODE DEYİL (30.09.2026)
+
+İstifadəçi sualı: *"qanunda yaş və ya əlavə gün dəyişdirilsə biz kodda dəyişməli
+olacağıq, düz deyilmi? Qanun dəyişə bilməzki?"* — cavab bəli idi. Əvvəllər
+`MezuniyyetHuquqService`-də yaş həddi (14/18), uşaq əlavə günü (2/5) və staj
+pilləsi (5/10/15 il → 2/4/6 gün) ədədləri **kodda sabit** yazılmışdı.
+
+**Həll:** `MezuniyyetHuquqParametrleri` TƏK sətirli cədvəl + `HR → Məzuniyyət
+Balansı → Hüquq parametrləri` səhifəsi (yalnız HR/Admin — Rehber daxil deyil).
+Sətir yoxdursa (`MezuniyyetHuquqParametrleri.Defolt`) köhnə hardcode ilə EYNİ
+dəyərlər işə düşür — hesablama heç vaxt boş qalmır. `SaxlaAsync` həddlərin
+ARTAN sırada olduğunu (staj: 1<2<3-cü hədd, uşaq: 2-günlük hədd < 5-günlük
+hədd) yoxlayır, pozulsa **heç nə yazılmır**.
+
+⚠️ **Vəzifəyə görə 21/30 seçimi bura DAXİL DEYİL** — o, əvvəldən
+`Vezife.EsasMezuniyyetGunu` sütunundadır, ayrıca DB-dən idarə olunurdu.
+
+### Code Review Tapdığı Real Bug — `double` Staj Həddi (KRİTİK)
+
+İstifadəçi açıq tələb etdi: *"öz yazdığın koda da yoxlatdır"*. `code-review`
+skili işə salınanda staj həddi sahələrinin (`StajHedd1/2/3Il`) `double` yazıldığını
+tapdı — bu, **"Razor → CSS/JS Rəqəm — Mədəniyyət" bölməsindəki eyni tələdir**,
+sadəcə əks istiqamətdə: server az-Latn-AZ mədəniyyətindədir, `<input
+type="number">` isə yalnız NÖQTƏ qəbul edir. `FlexibleDecimalModelBinder`
+(`FinNex.UI/Configurations/`) bu boşluğu **yalnız `decimal`/`decimal?` üçün**
+bağlayır — `double` sahədə HR "5.5" (il) yazsa, mədəniyyət "." işarəsini minlik
+ayırıcı sayıb **55** kimi oxuya bilərdi, heç bir xəta çıxmadan, və bu rəqəm
+bütün işçilərin illik hüququna səssizcə təsir edərdi.
+
+**Düzəliş:** üç sahə də (`StajHedd1Il/2Il/3Il`) `decimal`-a çevrildi (entity +
+migration sütunu `decimal(5,2)` + DTO + servis müqayisəsi). View-da dəyər
+**InvariantCulture** ilə yazılır (`Il()` funksiyası), `step="any"` verilir —
+`asp-for` İŞLƏDİLMİR (default formatlayıcı vergüllə yazardı, brauzer onu
+səssizcə boş göstərərdi). `MezuniyyetHuquqService`-də `stajIl` (double) ilə
+müqayisədə `(double)p.StajHeddXIl` açıq cast edilir.
+
+**Qayda:** hesablamada işlənən, formda əl ilə daxil edilə bilən **kəsrli**
+(tam ədəd olmayan) hər sahə `decimal` olmalıdır, `double` YOX — az-AZ
+mədəniyyətli layihədə bu, avtomatik qorunmayan tələdir.
+
+**Review-un yalançı müsbət tapıntıları (yoxlanıb, düzəldilmədi):** eyni review
+"TempData Success/Error görünməyəcək" iddiası ilə iki sahəyə toxunmağı təklif
+etdi. Yoxlanıldı: `Areas/HR/Views/_ViewStart.cshtml` bütün HR səhifələrini
+`_UserLayout.cshtml`-ə bağlayır, o isə TempData-nı `@RenderBody()`-dən ƏVVƏL
+QLOBAL göstərir (`Vezife/Index.cshtml` də bunu sübut edir — öz bloku yoxdur,
+işləyir). **Qayda: avtomatik review tapıntısını da kor-koranə tətbiq etmə —
+layihənin öz konvensiyasına (bu halda `_ViewStart.cshtml` zənciri) baxıb
+təsdiqlə, sonra qərar ver.**
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
