@@ -89,10 +89,10 @@
         </label>
     </div>
     @* İstifadəçi qərarı (01.10.2026): dropdown-lar DEFAULT olaraq qısa
-       (kod+ad) görünür; checkbox işarələnəndə HƏR İKİ dropdown-un bütün
-       seçimlərinin mətninə Əlavə 2/3-ün İzah/Anlayışı əlavə olunur ki,
-       seçərkən görünsün — əvvəlki "seçilmişin yanında ⓘ" naxışından fərqli
-       olaraq seçim ANINDA bütün siyahı izahlı görünür. *@
+       (kod+ad) görünür. Checkbox işarələnəndə Əlavə 2/3-ün İzah/Anlayışı
+       dropdown-un ALTINDA, ayrıca sərbəst-qırılan sətirdə görünür — native
+       <select>-in öz option-larının içinə yazmaq sınandı, amma uzun mətn
+       tək sətirdə sığmayıb kəsilirdi (istifadəçi qeydi: "tam yazı yerləşmir"). *@
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
         <div>
             <label>Tezlik dərəcəsi</label>
@@ -105,6 +105,10 @@
         <div>
             <label>Biznes sahəsi *</label>
             <select id="biznesSahesiSelect" name="BiznesSahesi" class="fn-select" asp-items="Model.BiznesSaheleri"></select>
+            @* Dropdown HƏMİŞƏ qısa qalır (native <select> uzun mətni "wrap"
+               edə bilmir, kəsilirdi — istifadəçi qeydi: "tam yazı yerləşmir").
+               İzah checkbox işarələnəndə BURADA, ayrıca sətirdə görünür. *@
+            <div id="biznesIzahMetni" style="display:none;color:#64748b;font-size:12px;margin-top:6px;line-height:1.5"></div>
         </div>
         <div>
             <label>Bank məhsulu</label>
@@ -113,6 +117,7 @@
         <div>
             <label>Risk kateqoriyası (1-ci səviyyə) *</label>
             <select id="riskKat1" name="RiskKateqoriyasi1" class="fn-select" asp-items="Model.RiskKateqoriyalari1"></select>
+            <div id="riskKat1IzahMetni" style="display:none;color:#64748b;font-size:12px;margin-top:6px;line-height:1.5"></div>
         </div>
         <div>
             <label>Risk kateqoriyası (2-ci səviyyə) *</label>
@@ -224,31 +229,33 @@
             kat1Select.addEventListener('change', kat2DaraltTur);
             kat2DaraltTur();
 
-            // ── "İzahlı göstər" checkbox — Əlavə 2/3-ün İzah/Anlayışı mətni
-            // işarələnəndə HƏR İKİ dropdown-un BÜTÜN seçimlərinə əlavə olunur
-            // (istifadəçi qərarı, 01.10.2026: default qısa gəlsin, checkbox
-            // ilə seçim ANINDA izahlı görünsün — tək seçilmişin yanında yox).
+            // ── "İzahlı göstər" checkbox — native <select> uzun mətni
+            // "wrap" edə bilmir (option-un içinə yazmaq cırılmış mətn verirdi,
+            // istifadəçi qeydi: "tam yazı yerləşmir") — ona görə izah dropdown-un
+            // İÇİNDƏ yox, ALTINDA, ayrıca (sərbəst qırılan) sətirdə göstərilir.
+            // Checkbox işarələnəndə hər iki panel görünür və seçili dəyərin
+            // izahını göstərir; seçim dəyişəndə mətn yenilənir.
             var biznesIzahlari = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BiznesSahesiIzahlari));
             var riskKat1Izahlari = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RiskKateqoriyasi1Izahlari));
             var izahliGosterCheckbox = document.getElementById('izahliGosterCheckbox');
             var biznesSahesiSelect = document.getElementById('biznesSahesiSelect');
+            var biznesIzahMetni = document.getElementById('biznesIzahMetni');
+            var riskKat1IzahMetni = document.getElementById('riskKat1IzahMetni');
 
-            function orijinalMetnleriSaxla(selectEl) {
-                Array.prototype.slice.call(selectEl.options).forEach(function (opt) {
-                    if (opt.dataset.orijinal === undefined) opt.dataset.orijinal = opt.textContent;
+            function izahPaneliQur(selectEl, panelEl, izahlar) {
+                function yenile() {
+                    panelEl.textContent = izahlar[selectEl.value] || '';
+                }
+                selectEl.addEventListener('change', function () {
+                    if (izahliGosterCheckbox.checked) yenile();
+                });
+                izahliGosterCheckbox.addEventListener('change', function () {
+                    panelEl.style.display = izahliGosterCheckbox.checked ? 'block' : 'none';
+                    if (izahliGosterCheckbox.checked) yenile();
                 });
             }
-            function izahliYenile(selectEl, izahlar, izahliGoster) {
-                orijinalMetnleriSaxla(selectEl);
-                Array.prototype.slice.call(selectEl.options).forEach(function (opt) {
-                    var izah = izahlar[opt.value];
-                    opt.textContent = (izahliGoster && izah) ? (opt.dataset.orijinal + ' — ' + izah) : opt.dataset.orijinal;
-                });
-            }
-            izahliGosterCheckbox.addEventListener('change', function () {
-                izahliYenile(biznesSahesiSelect, biznesIzahlari, izahliGosterCheckbox.checked);
-                izahliYenile(kat1Select, riskKat1Izahlari, izahliGosterCheckbox.checked);
-            });
+            izahPaneliQur(biznesSahesiSelect, biznesIzahMetni, biznesIzahlari);
+            izahPaneliQur(kat1Select, riskKat1IzahMetni, riskKat1Izahlari);
 
             // Tədbirlər planı — məcburilik nişanı (server yenə də yoxlayır,
             // bu YALNIZ görüntüdür — CLAUDE.md: "Şərtli Render + Default Parametr" tələsi).
