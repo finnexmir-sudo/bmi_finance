@@ -171,7 +171,7 @@ public class EmeliyyatRiskiController : Controller
             BiznesSaheleri = BiznesSaheleriSelect(dto.BiznesSahesi),
             RiskKateqoriyalari1 = RiskKateqoriyalari1Select(dto.RiskKateqoriyasi1),
             RiskKateqoriyalari2 = Enum.GetValues<RiskKateqoriyasi2>()
-                .Select(k => (Deyer: (int)k, Ad: EmeliyyatRiskiAdlari.RiskKateqoriyasi2Adi(k), Ust1: (int)k / 10))
+                .Select(k => (Deyer: (int)k, Ad: EmeliyyatRiskiAdlari.RiskKateqoriyasi2AdiKodlu(k), Ust1: (int)k / 10))
                 .ToList(),
             TezlikDereceleri = EnumSelect<RiskDerecesi>(EmeliyyatRiskiAdlari.RiskDerecesiAdi, dto.TezlikDerecesi),
             TesirDereceleri = EnumSelect<RiskDerecesi>(EmeliyyatRiskiAdlari.RiskDerecesiAdi, dto.TesirDerecesi),
@@ -190,12 +190,12 @@ public class EmeliyyatRiskiController : Controller
 
     private static List<SelectListItem> BiznesSaheleriSelect(BiznesSahesi? secili) =>
         Enum.GetValues<BiznesSahesi>()
-            .Select(s => new SelectListItem(EmeliyyatRiskiAdlari.BiznesSahesiAdi(s), ((int)s).ToString(), s == secili))
+            .Select(s => new SelectListItem(EmeliyyatRiskiAdlari.BiznesSahesiAdiKodlu(s), ((int)s).ToString(), s == secili))
             .ToList();
 
     private static List<SelectListItem> RiskKateqoriyalari1Select(RiskKateqoriyasi1? secili) =>
         Enum.GetValues<RiskKateqoriyasi1>()
-            .Select(k => new SelectListItem(EmeliyyatRiskiAdlari.RiskKateqoriyasi1Adi(k), ((int)k).ToString(), k == secili))
+            .Select(k => new SelectListItem(EmeliyyatRiskiAdlari.RiskKateqoriyasi1AdiKodlu(k), ((int)k).ToString(), k == secili))
             .ToList();
 
     private static List<SelectListItem> EnumSelect<TEnum>(Func<TEnum, string> adFunc, TEnum? secili)

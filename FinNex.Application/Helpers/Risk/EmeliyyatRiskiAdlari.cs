@@ -11,6 +11,18 @@ namespace FinNex.Application.Helpers.Risk
     /// </summary>
     public static class EmeliyyatRiskiAdlari
     {
+        // ── Rəsmi kodlar (Əlavə 2/3-ün "Təsnifat kodu" sütunu) ──────────
+        // İstifadəçi qərarı (01.10.2026): dropdown/siyahılarda ad TƏK BAŞINA
+        // yox, kodla birlikdə göstərilsin ("BS1 — Korporativ maliyyə") ki,
+        // Risk/AML işçisi seçimi rəsmi qərarın öz koduna görə yoxlaya bilsin.
+        public static string BiznesSahesiKod(BiznesSahesi s) => $"BS{(int)s}";
+        public static string RiskKateqoriyasi1Kod(RiskKateqoriyasi1 k) => $"R{(int)k}";
+        public static string RiskKateqoriyasi2Kod(RiskKateqoriyasi2 k) => $"R{(int)k / 10}.{(int)k % 10}";
+
+        public static string BiznesSahesiAdiKodlu(BiznesSahesi s) => $"{BiznesSahesiKod(s)} — {BiznesSahesiAdi(s)}";
+        public static string RiskKateqoriyasi1AdiKodlu(RiskKateqoriyasi1 k) => $"{RiskKateqoriyasi1Kod(k)} — {RiskKateqoriyasi1Adi(k)}";
+        public static string RiskKateqoriyasi2AdiKodlu(RiskKateqoriyasi2 k) => $"{RiskKateqoriyasi2Kod(k)} — {RiskKateqoriyasi2Adi(k)}";
+
         public static string BiznesSahesiAdi(BiznesSahesi s) => s switch
         {
             BiznesSahesi.KorporativMaliyye => "Korporativ maliyyə",

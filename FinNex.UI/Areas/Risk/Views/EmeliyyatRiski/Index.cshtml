@@ -66,10 +66,10 @@
                         <td><b>@h.QeydiyyatKodu</b></td>
                         <td>@h.HadiseninBasVerdiyiTarix.ToString("dd.MM.yyyy")</td>
                         <td>@h.StrukturBolme</td>
-                        <td>@EmeliyyatRiskiAdlari.BiznesSahesiAdi(h.BiznesSahesi)</td>
+                        <td>@EmeliyyatRiskiAdlari.BiznesSahesiAdiKodlu(h.BiznesSahesi)</td>
                         <td>
-                            @EmeliyyatRiskiAdlari.RiskKateqoriyasi1Adi(h.RiskKateqoriyasi1)
-                            <div style="color:#64748b;font-size:12px">@EmeliyyatRiskiAdlari.RiskKateqoriyasi2Adi(h.RiskKateqoriyasi2)</div>
+                            @EmeliyyatRiskiAdlari.RiskKateqoriyasi1AdiKodlu(h.RiskKateqoriyasi1)
+                            <div style="color:#64748b;font-size:12px">@EmeliyyatRiskiAdlari.RiskKateqoriyasi2AdiKodlu(h.RiskKateqoriyasi2)</div>
                         </td>
                         <td style="text-align:right">@h.UmumiZererMebleg.ToString("N2")</td>
                         <td>
