@@ -102,28 +102,19 @@
             <label>Təsir dərəcəsi</label>
             <select name="TesirDerecesi" class="fn-select" asp-items="Model.TesirDereceleri"></select>
         </div>
-        <div style="grid-column:1 / -1">
+        <div>
             <label>Biznes sahəsi *</label>
-            @* Dropdown HƏMİŞƏ qısa qalır (native <select> uzun mətni "wrap"
-               edə bilmir, tək sətirdə kəsilirdi). İstifadəçi qərarı: izah
-               SAĞINDA, eyni sətirdə görünsün — tam eni sərf etmək üçün bu
-               sətir bütöv kart enini tutur (grid-column:1/-1), izah mətni
-               öz sütununda SƏRBƏST QIRILIR (flex, sabit en deyil). *@
-            <div style="display:flex;gap:14px;align-items:flex-start">
-                <select id="biznesSahesiSelect" name="BiznesSahesi" class="fn-select" asp-items="Model.BiznesSaheleri" style="flex:0 0 260px"></select>
-                <div id="biznesIzahMetni" style="display:none;flex:1;min-width:0;color:#64748b;font-size:12px;line-height:1.5;padding-top:8px"></div>
-            </div>
+            <select id="biznesSahesiSelect" name="BiznesSahesi" class="fn-select" asp-items="Model.BiznesSaheleri"></select>
+            <div id="biznesIzahMetni" style="display:none;color:#64748b;font-size:12px;margin-top:6px;line-height:1.5"></div>
         </div>
         <div>
             <label>Bank məhsulu</label>
             <input name="BankMehsulu" class="fn-input" value="@d.BankMehsulu" maxlength="200" />
         </div>
-        <div style="grid-column:1 / -1">
+        <div>
             <label>Risk kateqoriyası (1-ci səviyyə) *</label>
-            <div style="display:flex;gap:14px;align-items:flex-start">
-                <select id="riskKat1" name="RiskKateqoriyasi1" class="fn-select" asp-items="Model.RiskKateqoriyalari1" style="flex:0 0 260px"></select>
-                <div id="riskKat1IzahMetni" style="display:none;flex:1;min-width:0;color:#64748b;font-size:12px;line-height:1.5;padding-top:8px"></div>
-            </div>
+            <select id="riskKat1" name="RiskKateqoriyasi1" class="fn-select" asp-items="Model.RiskKateqoriyalari1"></select>
+            <div id="riskKat1IzahMetni" style="display:none;color:#64748b;font-size:12px;margin-top:6px;line-height:1.5"></div>
         </div>
         <div>
             <label>Risk kateqoriyası (2-ci səviyyə) *</label>
