@@ -1418,6 +1418,7 @@
 
             case "risk":
                 {
+                    var riskEmeliyyatActive = currentController is "EmeliyyatRiski" or "EmeliyyatRiskiParametrleri";
                     <div class="fn-nav-label">Risk Departamenti</div>
                     @* «Məlumat Bazası» QƏSDƏN burada DEYİL (22.09.2026, istifadəçi qərarı) —
                        girişi Risk panelindəki «AML hesabatları» kartıdır, «Hesab üzrə sorğu»
@@ -1431,15 +1432,26 @@
                        class="fn-nav-item @(currentController == "Dashboard" || currentController == "Aml" ? "active" : "")">
                         <i class="bi bi-grid"></i> Hesabatlar
                     </a>
-                    @* MB Qərar 04/1, Əlavə 4 — əməliyyat riski hadisələri jurnalı (30.09.2026). *@
-                    <a asp-area="Risk" asp-controller="EmeliyyatRiski" asp-action="Index"
-                       class="fn-nav-item @(currentController == "EmeliyyatRiski" ? "active" : "")">
-                        <i class="bi bi-exclamation-triangle"></i> Əməliyyat Riski Hadisələri
-                    </a>
-                    <a asp-area="Risk" asp-controller="EmeliyyatRiskiParametrleri" asp-action="Index"
-                       class="fn-nav-item @(currentController == "EmeliyyatRiskiParametrleri" ? "active" : "")">
-                        <i class="bi bi-sliders"></i> Əməliyyat Riski — Parametrlər
-                    </a>
+                    @* MB Qərar 04/1, Əlavə 4 — əməliyyat riski hadisələri jurnalı (30.09.2026).
+                       Qrup altında saxlanılır (01.10.2026, istifadəçi qərarı) — gələcəkdə
+                       bu kateqoriyaya aid olan oxşar səhifələr (Faza 2: Əlavə 5 hesabatı,
+                       İstilik xəritəsi, ƏRG/ƏFG) elə bu qrupa əlavə olunacaq, yeni qrup YOX. *@
+                    <div class="fn-nav-g @(riskEmeliyyatActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Əməliyyat Riski</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="Risk" asp-controller="EmeliyyatRiski" asp-action="Index"
+                               class="fn-nav-item @(currentController == "EmeliyyatRiski" ? "active" : "")">
+                                <i class="bi bi-exclamation-triangle"></i> Hadisələr
+                            </a>
+                            <a asp-area="Risk" asp-controller="EmeliyyatRiskiParametrleri" asp-action="Index"
+                               class="fn-nav-item @(currentController == "EmeliyyatRiskiParametrleri" ? "active" : "")">
+                                <i class="bi bi-sliders"></i> Parametrlər
+                            </a>
+                        </div>
+                    </div>
                 }
                 break;
 
