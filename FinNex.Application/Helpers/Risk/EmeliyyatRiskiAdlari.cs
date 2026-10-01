@@ -46,6 +46,65 @@ namespace FinNex.Application.Helpers.Risk
             _ => k.ToString()
         };
 
+        // ── İzah / Anlayışı mətnləri (Əlavə 2-nin "İzah" sütunu, Əlavə 3-ün
+        // "Anlayışı" sütunu) — istifadəçi qərarı (01.10.2026): formada
+        // DAİMİ görünmür, yer tutmasın deyə "ⓘ" düyməsi ilə klikləndə açılır.
+        // Mətnlər qaydanın öz sözləridir, dəyişdirilməyib.
+        public static string BiznesSahesiIzahi(BiznesSahesi s) => s switch
+        {
+            BiznesSahesi.KorporativMaliyye =>
+                "Biznesə uzunmüddətli və strateji fəaliyyət, həmçinin likvidliyinin artırılması " +
+                "istiqamətində maliyyə məsləhətlərinin verilməsi, habelə \"Qiymətli kağızlar bazarı " +
+                "haqqında\" Azərbaycan Respublikasının Qanununda nəzərdə tutulan həcmdə və qaydada " +
+                "qiymətli kağızlar və törəmə maliyyə alətləri ilə investisiya xidmətlərinin " +
+                "(əməliyyatlarının) həyata keçirilməsi xidmətlərinin göstərilməsi",
+            BiznesSahesi.AktivlerinIdareEdilmesi =>
+                "Fiziki şəxslərə \"Qiymətli kağızlar bazarı haqqında\" Azərbaycan Respublikasının " +
+                "Qanununda nəzərdə tutulan həcmdə və qaydada qiymətli kağızlar və törəmə maliyyə " +
+                "alətləri ilə investisiya xidmətlərinin (əməliyyatlarının) həyata keçirilməsi " +
+                "xidmətlərinin göstərilməsi",
+            BiznesSahesi.IstehlakBankciligi =>
+                "Sahibkarlıq və ya peşə fəaliyyəti ilə bağlı olmayan məqsədlər üçün fiziki şəxslərə " +
+                "kreditlərin, o cümlədən daşınmaz əmlak kreditlərinin verilməsi, fiziki şəxslərdən " +
+                "əmanətlərin cəlb edilməsi, ödəniş alətlərinin emissiyası və digər xidmətlərin göstərilməsi",
+            BiznesSahesi.KommersiyaBankciligi =>
+                "Biznesin maliyyələşdirilməsi, o cümlədən layihə maliyyələşməsi, ixracın maliyyələşməsi, " +
+                "faktorinq, lizinq, qarantiya və digər biznes sahələrinə aid olmayan xidmətlərin göstərilməsi",
+            BiznesSahesi.OdenisSistemleriVeHesablasmalar =>
+                "Ödənişlər, pul köçürmələri, klirinq və hesablaşmalar",
+            BiznesSahesi.AgentlikXidmetleri =>
+                "Maliyyə agenti xidmətləri",
+            _ => ""
+        };
+
+        public static string RiskKateqoriyasi1Izahi(RiskKateqoriyasi1 k) => k switch
+        {
+            RiskKateqoriyasi1.IsMunasibetleriVeIsYeriTehlukesizliyi =>
+                "Əmək, sağlamlıq və ya təhlükəsizliklə bağlı qanunlara və (və ya) qaydalara, habelə " +
+                "müqavilələrə zidd hərəkətlərdən, sağlamlığa dəyən zərər üzrə müavinətin ödənilməsindən " +
+                "və ya işçilərə qanunvericiliyəzidd davranış və ayrı-seçkilik hərəkətlərindən yaranan zərər.",
+            RiskKateqoriyasi1.MusterilerMehsullarVeBiznesMunasibetleri =>
+                "Müəyyən müştərilər qarşısında götürülmüş peşəkar öhdəliklərin (etibarlılıq və uyğunluq " +
+                "tələbləri daxil olmaqla) qeyri-ixtiyari və ya səhlənkarlıq nəticəsində yerinə " +
+                "yetirilməməsindən, habelə bank məhsulunun təbiətindən və tərtibatından yaranan zərər.",
+            RiskKateqoriyasi1.IcraCatdirilmaVeProseslerinIdareEdilmesi =>
+                "Əməliyyatların səhv həyata keçirilməsindən və ya proseslərin idarə edilməsinin " +
+                "qeyri-adekvatlığından və ya ticarət tərəfdaşları və satıcılarla münasibətlərdən yaranan zərər.",
+            RiskKateqoriyasi1.DaxiliDelelduzluq =>
+                "Bankın azı bir əməkdaşının iştirak etdiyi dələduzluq, bank əmlakının mənimsənilməsi " +
+                "və ya qanunverciliyin, habelə bankın daxili siyasət və qaydalarının pozulması ilə " +
+                "yaranan zərər.",
+            RiskKateqoriyasi1.KenarDelelduzluq =>
+                "Kənar şəxs tərəfindən törədilmiş dələduzluq, bank əmlakının mənimsənilməsi və ya " +
+                "digər hüquqazidd əməl nəticəsində yaranan zərər.",
+            RiskKateqoriyasi1.FealiyyetinPozulmasiVeSistemXetalari =>
+                "Fəaliyyətin pozulması və ya sistemdəki xətalar nəticəsində yaranan zərər.",
+            RiskKateqoriyasi1.FizikiAktivlereDeyenZerer =>
+                "Təbii fəlakət və ya digər hadisələr nəticəsində fiziki aktivlərin itirilməsi və ya " +
+                "zədələnməsi nəticəsində yaranan zərər.",
+            _ => ""
+        };
+
         public static string RiskKateqoriyasi2Adi(RiskKateqoriyasi2 k) => k switch
         {
             RiskKateqoriyasi2.IscilerleMunasibetler => "İşçilərlə münasibətlər",

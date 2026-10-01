@@ -92,16 +92,18 @@
             <select name="TesirDerecesi" class="fn-select" asp-items="Model.TesirDereceleri"></select>
         </div>
         <div>
-            <label>Biznes sahəsi *</label>
-            <select name="BiznesSahesi" class="fn-select" asp-items="Model.BiznesSaheleri"></select>
+            <label>Biznes sahəsi * <a href="#" id="biznesIzahToggle" style="font-weight:400;font-size:12px">ⓘ izah</a></label>
+            <select id="biznesSahesiSelect" name="BiznesSahesi" class="fn-select" asp-items="Model.BiznesSaheleri"></select>
+            <div id="biznesIzahMetni" style="display:none;color:#64748b;font-size:12px;margin-top:4px"></div>
         </div>
         <div>
             <label>Bank məhsulu</label>
             <input name="BankMehsulu" class="fn-input" value="@d.BankMehsulu" maxlength="200" />
         </div>
         <div>
-            <label>Risk kateqoriyası (1-ci səviyyə) *</label>
+            <label>Risk kateqoriyası (1-ci səviyyə) * <a href="#" id="riskKat1IzahToggle" style="font-weight:400;font-size:12px">ⓘ izah</a></label>
             <select id="riskKat1" name="RiskKateqoriyasi1" class="fn-select" asp-items="Model.RiskKateqoriyalari1"></select>
+            <div id="riskKat1IzahMetni" style="display:none;color:#64748b;font-size:12px;margin-top:4px"></div>
         </div>
         <div>
             <label>Risk kateqoriyası (2-ci səviyyə) *</label>
@@ -212,6 +214,30 @@
             }
             kat1Select.addEventListener('change', kat2DaraltTur);
             kat2DaraltTur();
+
+            // ── "ⓘ izah" — Əlavə 2/3-ün İzah/Anlayışı mətni, yalnız
+            // klikləndə açılır (istifadəçi qərarı: "yer tutmasın") ──
+            var biznesIzahlari = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BiznesSahesiIzahlari));
+            var riskKat1Izahlari = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RiskKateqoriyasi1Izahlari));
+
+            function izahToggleQur(toggleId, metnId, selectEl, izahlar) {
+                var toggle = document.getElementById(toggleId);
+                var metn = document.getElementById(metnId);
+                function metniYenile() {
+                    metn.textContent = izahlar[selectEl.value] || '';
+                }
+                toggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var acilsin = metn.style.display === 'none';
+                    if (acilsin) metniYenile();
+                    metn.style.display = acilsin ? 'block' : 'none';
+                });
+                selectEl.addEventListener('change', function () {
+                    if (metn.style.display !== 'none') metniYenile();
+                });
+            }
+            izahToggleQur('biznesIzahToggle', 'biznesIzahMetni', document.getElementById('biznesSahesiSelect'), biznesIzahlari);
+            izahToggleQur('riskKat1IzahToggle', 'riskKat1IzahMetni', kat1Select, riskKat1Izahlari);
 
             // Tədbirlər planı — məcburilik nişanı (server yenə də yoxlayır,
             // bu YALNIZ görüntüdür — CLAUDE.md: "Şərtli Render + Default Parametr" tələsi).

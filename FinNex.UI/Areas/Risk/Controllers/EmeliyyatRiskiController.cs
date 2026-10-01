@@ -184,7 +184,11 @@ public class EmeliyyatRiskiController : Controller
                     .Select(i => new SelectListItem(i.TamAd, i.Id.ToString(), i.Id == dto.MueyyenlesdirenIsciId))
                     .ToList()
                 : new List<SelectListItem>(),
-            TedbirZererHeddi = parametr.TedbirZererHeddi
+            TedbirZererHeddi = parametr.TedbirZererHeddi,
+            BiznesSahesiIzahlari = Enum.GetValues<BiznesSahesi>()
+                .ToDictionary(s => (int)s, EmeliyyatRiskiAdlari.BiznesSahesiIzahi),
+            RiskKateqoriyasi1Izahlari = Enum.GetValues<RiskKateqoriyasi1>()
+                .ToDictionary(k => (int)k, EmeliyyatRiskiAdlari.RiskKateqoriyasi1Izahi)
         };
     }
 

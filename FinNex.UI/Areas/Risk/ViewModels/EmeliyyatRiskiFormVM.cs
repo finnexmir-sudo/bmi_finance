@@ -11,6 +11,10 @@ public class EmeliyyatRiskiFormVM
 
     public List<SelectListItem> BiznesSaheleri { get; set; } = new();
     public List<SelectListItem> RiskKateqoriyalari1 { get; set; } = new();
+    /// <summary>Əlavə 2/3-ün İzah/Anlayışı mətnləri (enum dəyəri → mətn) —
+    /// formada daimi görünmür, "ⓘ" düyməsi ilə klikləndə JS bununla doldurur.</summary>
+    public Dictionary<int, string> BiznesSahesiIzahlari { get; set; } = new();
+    public Dictionary<int, string> RiskKateqoriyasi1Izahlari { get; set; } = new();
     /// <summary>value=RiskKateqoriyasi2 kodu, data-ust1=aid olduğu 1-ci
     /// səviyyə kodu — JS bununla kaskad filtr edir (bax _Form.cshtml).</summary>
     public List<(int Deyer, string Ad, int Ust1)> RiskKateqoriyalari2 { get; set; } = new();
