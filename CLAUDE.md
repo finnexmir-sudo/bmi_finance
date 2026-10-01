@@ -763,6 +763,35 @@ Statusun mənbəyi **bazadakı `Davamiyyet.Status`-dur** (ADMS yazır); controll
 düzəlişlər köhnə qeydlər üçün göstərmə qatıdır — bazanı dəyişməz. Diaqnozda əvvəl qeydin
 nə vaxt yazıldığını yoxla: düzəlişdən əvvəl yazılmış qeyd yeni build-lə özbaşına dəyişməz.
 
+### Ezamiyyətdən QAYIDIŞ → Səhv "Erkən Çıxış" Bildirişi (01.10.2026, KRİTİK)
+
+`ADMSController.ProcessAttLogLineAsync`-da "Erkən çıxış qeydə alındı" bildirişini göndərən
+qapı yalnız `ezamiyyetCixisi` dəyişəninə baxırdı — bu dəyişən ezamiyyətin **BaslamaSaati**-nə
+±30 dəqiqə yaxın olan punch-ı (yəni ÇIXIŞI) tanıyır. Eyni funksiyada 11.08.2026-da əlavə
+edilmiş "Qayıdış" bloku (yuxarıda) ezamiyyətdən QAYIDIŞ punch-ını tanıyıb `Davamiyyet.Status`-u
+düzgün "İşdə"-yə qaytarırdı, AMMA bu status düzəlişindən dərhal sonra gələn bildiriş qapısı
+eyni köhnə `ezamiyyetCixisi`-ə baxmağa davam edirdi — qayıdış demək olar HƏMİŞƏ başlama
+saatından 30 dəqiqədən çox sonra olduğu üçün `ezamiyyetCixisi = false` qalır və sistem
+qayıdışı sıravi "erkən çıxış" kimi qiymətləndirib bildiriş göndərirdi.
+
+Real hadisə: işçi Gürşad B. eyni günə iki ezamiyyət yazmışdı (biri təsdiqlənmiş, biri
+gözləyən) və 11:15–17:45 ezamiyyətindən 14:31-də qayıdanda "Erkən çıxış qeydə alındı"
+bildirişi aldı — halbuki `Davamiyyet.Status` düzgün "İşdə" idi. İkinci (gözləyən) ezamiyyətin
+bununla **əlaqəsi yox idi** — sorğu `Status == Tesdiqlendi` filtri ilə `bugunEzamiyyet`-i
+tapdığı üçün gözləyən qeyd bu məntiqdə ümumiyyətlə görünmür. Səhv faktiki olaraq **başlama
+saatından 30 dəqiqədən çox sonra ezamiyyətdən qayıdan İSTƏNİLƏN işçidə** baş verə bilirdi —
+yəni demək olar bütün real ezamiyyətlərdə; sadəcə Davamiyyet statusu düzgün qaldığı üçün
+indiyədək fərq olunmamışdı. Həmin gün daha iki işçiyə eyni səhv bildiriş getdi.
+
+**Düzəliş:** "Qayıdış" şərti ayrıca `ezamiyyetQayidisi` bayrağına çıxarıldı və bildiriş
+qapısının HƏR İKİ yoxlamasına (`gorushCixisi` hesablanmasından əvvəl və əsas `if`-də)
+`!ezamiyyetQayidisi` əlavə edildi — eynilə çıxışın özü (`ezamiyyetCixisi`) necə istisna
+edilibsə.
+
+**Qayda:** bir statusu/datanı düzəldən şərt əlavə edəndə, həmin KOD BLOKUNUN İÇİNDƏ ondan
+dərhal sonra gələn, AMMA ayrı dəyişənə görə qərar verən digər şərtləri (bildiriş, log,
+hesablama) də yoxla — status düzəlib deyə yanındakı kodun da avtomatik düzəldiyini fərz etmə.
+
 ### Xəstəlik — EYNİ boşluq, HEÇ VAXT DÜZƏLDİLMƏMİŞDİ (24.09.2026, KRİTİK)
 
 Xəstəlik vaxtilə `Mezuniyyet`-in bir növü idi (`MezuniyyetNovu.Xestelik`) və o axın

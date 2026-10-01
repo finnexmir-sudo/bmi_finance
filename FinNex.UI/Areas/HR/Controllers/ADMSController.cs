@@ -347,12 +347,21 @@ public class ADMSController : Controller
                             (bugunEzamiyyet.BaslamaSaati == null ||
                              Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes) <= 30);
 
+                        // SAATLIQ ezamiyyətdən QAYIDIŞ (şərtlər aşağıdakı else-if bloku ilə EYNİ,
+                        // ayrıca bayrağa çıxarılıb ki, bildiriş qapısı da bunu tanısın — 01.10.2026).
+                        bool ezamiyyetQayidisi = bugunEzamiyyet != null
+                              && movcud.Status == DavamiyyetStatus.Ezamiyyet
+                              && bugunEzamiyyet.BaslamaSaati != null
+                              && bugunEzamiyyet.BitisSaati != null
+                              && movcud.GirisVaxti.HasValue
+                              && movcud.GirisVaxti.Value.TimeOfDay < bugunEzamiyyet.BaslamaSaati.Value
+                              && vaxt.TimeOfDay > bugunEzamiyyet.BaslamaSaati.Value.Add(TimeSpan.FromMinutes(30));
+
                         if (ezamiyyetCixisi && bugunEzamiyyet != null)
                         {
                             movcud.Status = DavamiyyetStatus.Ezamiyyet;
                             await _db.SaveChangesAsync();
                         }
-                        // SAATLIQ ezamiyyətdən QAYIDIŞ → status "İşdə"yə qayıdır.
                         // Yuxarıdakı blok ezamiyyətə çıxanda günü Ezamiyyət işarələyir (tez çıxma
                         // yazılmasın deyə), amma işçi qayıdıb işini davam etdirəndə geri qaytaran
                         // kod yox idi: səhər 06:58-də gələn, 10:15-də ezamiyyətə çıxıb 11:44-də
@@ -369,27 +378,29 @@ public class ADMSController : Controller
                         // Tez çıxma qoruması İTMİR: hesablamalarda status yoxlaması ilə yanaşı
                         // müraciətin özünə baxan `ezamiyyetOrtuyur` şərti də var
                         // (HR/DavamiyyetController:416, User/DavamiyyetController:292).
-                        else if (bugunEzamiyyet != null
-                              && movcud.Status == DavamiyyetStatus.Ezamiyyet
-                              && bugunEzamiyyet.BaslamaSaati != null
-                              && bugunEzamiyyet.BitisSaati != null
-                              && movcud.GirisVaxti.HasValue
-                              && movcud.GirisVaxti.Value.TimeOfDay < bugunEzamiyyet.BaslamaSaati.Value
-                              && vaxt.TimeOfDay > bugunEzamiyyet.BaslamaSaati.Value.Add(TimeSpan.FromMinutes(30)))
+                        else if (ezamiyyetQayidisi)
                         {
-                            movcud.Status = HesablaStatus(movcud.GirisVaxti.Value, bugunIcaze,
+                            movcud.Status = HesablaStatus(movcud.GirisVaxti!.Value, bugunIcaze,
                                 bugunEzamiyyet, standartGiris, gecikTolerans, bugunGorushBitis);
                             await _db.SaveChangesAsync();
                         }
 
+                        // ⚠️ 01.10.2026, real hadisə: iki işçiyə ezamiyyətdən QAYIDIŞ punch-ında
+                        // səhvən "Erkən çıxış qeydə alındı" bildirişi getdi. Səbəb: yuxarıdakı
+                        // "Qayıdış" bloku Status-u düzəldirdi, amma bu bildiriş qapısı yalnız
+                        // `ezamiyyetCixisi`-ə (±30 dəq, YALNIZ ÇIXIŞ pəncərəsi) baxırdı — qayıdış
+                        // demək olar HƏR ZAMAN bu pəncərədən kənarda olur (başlama saatından
+                        // saatlarla sonra), ona görə qayıdış öz-özlüyündə "erkən çıxış" sayılırdı.
+                        // İndi `ezamiyyetQayidisi` də eyni qapıya əlavə olunub.
+
                         // Görüş çıxışı? — offline görüşün başlama saatı ±30 dəq.
                         bool gorushCixisi = false;
-                        if (!ezamiyyetCixisi && vaxt.TimeOfDay < tezCixmaHeddi)
+                        if (!ezamiyyetCixisi && !ezamiyyetQayidisi && vaxt.TimeOfDay < tezCixmaHeddi)
                         {
                             gorushCixisi = await QeydGorushCixisiAsync(isciId, vaxt, tarix);
                         }
 
-                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi)
+                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !ezamiyyetQayidisi && !gorushCixisi)
                         {
                             // Əlavə örtüklər (rəhbər davamiyyət səhifəsi ilə eyni məntiq):
                             //  • Təsdiqlənmiş saatlıq icazə — çıxış icazə başlanğıcından gecdirsə
