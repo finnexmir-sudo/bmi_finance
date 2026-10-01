@@ -1,5 +1,5 @@
 /* ============================================================================
-   SƏHİFƏ TƏLİMATLARI — HAMISI BİR FAYLDA  (58 səhifə)
+   SƏHİFƏ TƏLİMATLARI — HAMISI BİR FAYLDA  (63 səhifə)
    ----------------------------------------------------------------------------
    Bu fayl 01, 02, 03 və 04 nömrəli skriptlərin BİRLƏŞMİŞ variantıdır.
    Onları ayrıca işlətməyə ehtiyac yoxdur — YALNIZ BUNU işlədin.
@@ -11,7 +11,8 @@
      Avtopark ...................   6 səhifə
      Sənəd dövriyyəsi ...........   8 səhifə
      Əməliyyat ..................   3 səhifə
-                                   ── 58
+     Risk (Əməliyyat Riski) .....   5 səhifə  (01.10.2026 əlavə)
+                                   ── 63
 
    ŞƏRT: `SehifeYardimlari` cədvəli mövcud olmalıdır. O, migration ilə
    yaranır (20260827100000_SehifeYardimiCedveli) və tətbiq startup-da
@@ -1189,6 +1190,89 @@ Bankın tutduğu haqq ayrıca sütunda göstərilir və köçürülən məbləğ
 
 # Sənəd
 Köçürmə üçün ərizə çıxarıla bilər; fayl yükləndiyi andakı məlumatı daşıyır.',
+0, 0, 0, GETDATE(), 0);
+
+
+/* ══ RİSK — ƏMƏLİYYAT RİSKİ HADİSƏLƏRİ  (5)  ═══════════════════════════ */
+
+IF NOT EXISTS (SELECT 1 FROM SehifeYardimlari WHERE Acar = N'risk/emeliyyatriski/index')
+INSERT INTO SehifeYardimlari (Acar, Slug, Basliq, Modul, Xulase, Metn, Hazirlanir, YalnizAdmin, BaxisSayi, YaradilmaTarixi, Silinib)
+VALUES (N'risk/emeliyyatriski/index', N'emeliyyat-riski-hadiseleri', N'Əməliyyat Riski Hadisələri', N'Risk',
+N'MB Qərar 04/1, Əlavə 4 — bank daxilində müşahidə olunan əməliyyat riski hadisələrinin jurnalı.',
+N'Bu, Mərkəzi Bankın 04/1 saylı Qərarının (28.01.2025) Əlavə 4-ündəki "Əməliyyat riski hadisələri barədə məlumat bazası"nın FinNex-dəki qarşılığıdır. Hər hadisəni müşahidə edən işçi onu burada qeydə alır.
+
+# Təsdiq yoxdur
+Qeyd yaradılan kimi rəsmi sayılır — işçi→koordinator→şöbə rəisi→Risk departamenti zənciri (qaydanın bənd 9.6-sı) tətbiq olunmur. Bu, texniki tətbiq üçün BİZİM qərarımızdır: Risk/AML şöbəsindəki işçi özü bu səviyyədə təsdiq edə bilən sayılır, qaydanın mətnində bu seçim yazılmayıb.
+
+# Qeydiyyat kodu
+"BS3R4.1" formatı Əlavə 4-ün öz nümunəsidir (Biznes sahəsi + Risk kateqoriyası). Kodun avtomatik hesablanması bizim əlavəmizdir.
+
+# Filtrlər
+Biznes sahəsi, Risk kateqoriyası (1-ci səviyyə) və tarix aralığı üzrə süzgəc — siyahı və say eyni mənbədən gəlir.',
+0, 0, 0, GETDATE(), 0);
+
+IF NOT EXISTS (SELECT 1 FROM SehifeYardimlari WHERE Acar = N'risk/emeliyyatriski/create')
+INSERT INTO SehifeYardimlari (Acar, Slug, Basliq, Modul, Xulase, Metn, Hazirlanir, YalnizAdmin, BaxisSayi, YaradilmaTarixi, Silinib)
+VALUES (N'risk/emeliyyatriski/create', N'yeni-emeliyyat-riski-hadisesi', N'Yeni Əməliyyat Riski Hadisəsi', N'Risk',
+N'Əlavə 4-ün 27 sahəli formu — hadisəni müşahidə etdiyiniz an doldurun.',
+N'Forma Əlavə 4-ün öz cədvəlini əks etdirir. Yadda saxladığınız kimi hadisə rəsmi qeyd sayılır, əlavə təsdiq addımı yoxdur.
+
+# Qaydadan BİRBAŞA gələnlər
+- 27 sahənin strukturu — struktur bölmə, tarixlər, təsvir, səbəb, təsnifat, maliyyə təsiri, tədbirlər planı (Əlavə 4-ün öz cədvəli).
+- Biznes sahələri (BS1-BS6) və izahı — Əlavə 2-nin öz mətni.
+- Risk kateqoriyaları (R1-R7 və alt-kateqoriyalar) və "Anlayışı" izahı — Əlavə 3-ün öz mətni.
+- Zərərin təsir kateqoriyaları — Əlavə 6-nın öz siyahısı.
+- *Tədbirlər planı yalnız limitdən yuxarı zərərdə məcburidir* — bu şərtin özü Əlavə 4-ün qeydində yazılıb ("bankın daxili qaydaları ilə müəyyən edilmiş limitdən yuxarı həddə olan zərərlər üzrə doldurulur").
+
+# Qaydada VAR, amma YANAŞMASI bizim qərarımızdır
+- *Təsdiq zənciri yoxdur* — qayda zənciri təsvir edir, texniki tətbiqini demir. Qərar: Risk/AML işçisi yaradan kimi qeyd rəsmidir.
+- *Limit ədədi* — qayda yalnız "bankın daxili qaydası ilə müəyyən edilmiş limit"dən bəhs edir, rəqəm vermir. Rəqəm "Əməliyyat Riski — Parametrlər" səhifəsindən sazlanır (defolt 1000 AZN) — bu, bizim qurduğumuz mexanizmdir.
+- *Qeydiyyat kodunun avtomatik hesablanması* — kodun özü Əlavə 4-ün nümunəsidir, hesablama məntiqi bizimdir.
+- *Tezlik dərəcəsi, Təsir dərəcəsi, İcra statusu* sahələri Əlavə 4-ün 27 sahəsində YOXDUR — daxili prioritetləşdirmə üçün bizim əlavəmizdir.
+
+# Diqqət — hələ edilməyib
+"Hadisənin baş verdiyi tarix" və "Müəyyənləşdirilmə tarixi" hazırda yalnız GÜN səviyyəsindədir. Əlavə 4-ün 6-7-ci sahələri "tarix VƏ saat" tələb edir — saat sahəsi hələ əlavə olunmayıb.',
+0, 0, 0, GETDATE(), 0);
+
+IF NOT EXISTS (SELECT 1 FROM SehifeYardimlari WHERE Acar = N'risk/emeliyyatriski/edit')
+INSERT INTO SehifeYardimlari (Acar, Slug, Basliq, Modul, Xulase, Metn, Hazirlanir, YalnizAdmin, BaxisSayi, YaradilmaTarixi, Silinib)
+VALUES (N'risk/emeliyyatriski/edit', N'emeliyyat-riski-redakte', N'Əməliyyat Riski Hadisəsi — Redaktə', N'Risk',
+N'Redaktə sərbəstdir, amma hər dəyişiklik tam tarixçəyə yazılır.',
+N'Sahələr Yarat formu ilə eynidir (bax "Yeni Əməliyyat Riski Hadisəsi" təlimatı — qaydadan gələnlər və bizim qərarlarımız orada izah olunub).
+
+# Tarixçə — bizim qərarımız
+Qayda məlumat bazasının yenilənə bilməsini nəzərdə tutur, amma NECƏ sənədləşdirilməli olduğunu demir. Qərar: redaktə sərbəstdir, amma hər dəyişiklikdən ƏVVƏL köhnə qeydin tam vəziyyəti ayrıca tarixçə cədvəlinə yazılır — heç nə itmir, Detal səhifəsində görünür. Ona görə bu səhifədə "Dəyişikliyin qısa təsviri" sahəsi MƏCBURİDİR.
+
+# Dondurulmuş limit
+Tədbirlər planının məcburiliyi bu qeydin YARADILDIĞI andakı limitlə yoxlanılır, cari (bəlkə sonradan dəyişmiş) limitlə yox — limit sonradan aşağı salınsa, köhnə qeydlər növbəti redaktədə gözlənilməz şəkildə bloklanmasın deyə.',
+0, 0, 0, GETDATE(), 0);
+
+IF NOT EXISTS (SELECT 1 FROM SehifeYardimlari WHERE Acar = N'risk/emeliyyatriski/detail')
+INSERT INTO SehifeYardimlari (Acar, Slug, Basliq, Modul, Xulase, Metn, Hazirlanir, YalnizAdmin, BaxisSayi, YaradilmaTarixi, Silinib)
+VALUES (N'risk/emeliyyatriski/detail', N'emeliyyat-riski-hadisesi-detal', N'Əməliyyat Riski Hadisəsi — Detal', N'Risk',
+N'Hadisənin bütün sahələri və redaktə tarixçəsi.',
+N'Qeydin bütün sahələrini və (varsa) keçmiş redaktələrin tarixçəsini göstərir.
+
+# "Kim etdi" iki fərqli mənbədən gəlir
+- *Yaradan/Yeniləyən* — sistemə daxil olan istifadəçi (login).
+- *Müəyyənləşdirən əməkdaş* — hadisəni faktiki aşkar edən əməkdaş; sistem istifadəçisi olmaya da bilər.
+Bu ikisi QARIŞDIRILMAMALIDIR — fərqli siyahılardan gəlir.
+
+# Tarixçə bölməsi — bizim qərarımız
+Qaydada tarixçə formatı yoxdur. Hər redaktədən əvvəlki tam vəziyyət burada, redaktə tarixi və "Dəyişikliyin qısa təsviri" ilə birlikdə göstərilir.',
+0, 0, 0, GETDATE(), 0);
+
+IF NOT EXISTS (SELECT 1 FROM SehifeYardimlari WHERE Acar = N'risk/emeliyyatriskiparametrleri/index')
+INSERT INTO SehifeYardimlari (Acar, Slug, Basliq, Modul, Xulase, Metn, Hazirlanir, YalnizAdmin, BaxisSayi, YaradilmaTarixi, Silinib)
+VALUES (N'risk/emeliyyatriskiparametrleri/index', N'emeliyyat-riski-parametrler', N'Əməliyyat Riski — Parametrlər', N'Risk',
+N'Tədbirlər planının məcburi olduğu zərər həddi — tamamilə bizim qurduğumuz mexanizm.',
+N'Bu səhifə Əlavə 4-ün qeydindəki "bankın daxili qaydaları ilə müəyyən edilmiş limit"i sazlamaq üçündür.
+
+# Qaydada VAR, ədəd YOXDUR
+Əlavə 4-ün öz mətni yalnız "...bankın daxili qaydaları ilə müəyyən edilmiş limitdən yuxarı həddə olan zərərlər üzrə doldurulur" deyir — hansı ədəd olduğunu demir. Bu ədədi Risk departamenti burada özü təyin edir (defolt 1000 AZN).
+
+# Dondurulmuş dəyər
+Buradakı dəyəri dəyişmək artıq YARADILMIŞ qeydlərə təsir ETMİR — hər qeyd öz yaradılma anındakı həddi "yadda saxlayır". Yalnız bundan sonra yaradılacaq qeydlər yeni həddə görə yoxlanılır. Bu da qaydada yazılmayıb, köhnə qeydlərin gözlənilmədən bloklanmaması üçün bizim qərarımızdır.',
 0, 0, 0, GETDATE(), 0);
 
 
