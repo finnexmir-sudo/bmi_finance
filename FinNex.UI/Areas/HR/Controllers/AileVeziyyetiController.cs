@@ -124,5 +124,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             TempData["Success"] = "Uşaq silindi.";
             return RedirectToAction(nameof(Detay), new { id = isciId });
         }
+
+        // POST /HR/AileVeziyyeti/UsaqRedakte — əvvəl yalnız Əlavə/Sil var idi,
+        // səhv doğum tarixi/ad daxil edildikdə sil+yenidən yaz lazım gəlirdi.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UsaqRedakte(int id, int isciId, string? ad, DateTime dogumTarixi, bool elillidir)
+        {
+            if (dogumTarixi == default || dogumTarixi.Date > DateTime.Today)
+            {
+                TempData["Error"] = "Doğum tarixi düzgün deyil (gələcək ola bilməz).";
+                return RedirectToAction(nameof(Detay), new { id = isciId });
+            }
+
+            var usaq = await _uow.Repository<IsciUsaq>().IdIleGetirAsync(id);
+            if (usaq == null || usaq.IsciId != isciId)
+            {
+                TempData["Error"] = "Uşaq qeydi tapılmadı.";
+                return RedirectToAction(nameof(Detay), new { id = isciId });
+            }
+
+            usaq.Ad          = string.IsNullOrWhiteSpace(ad) ? null : ad.Trim();
+            usaq.DogumTarixi = dogumTarixi.Date;
+            usaq.Elillidir   = elillidir;
+            await _uow.Repository<IsciUsaq>().YenileAsync(usaq);
+            await _uow.YaddaSaxlaAsync();
+
+            TempData["Success"] = "Uşaq məlumatı yeniləndi.";
+            return RedirectToAction(nameof(Detay), new { id = isciId });
+        }
     }
 }

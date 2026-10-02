@@ -95,6 +95,13 @@
                             <td style="text-align:center">@yas</td>
                             <td style="text-align:center">@(u.Elillidir ? "Bəli" : "")</td>
                             <td class="isci-td-actions">
+                                <button type="button" class="fn-btn fn-btn--outline usaq-duzelt-btn"
+                                        data-bs-toggle="modal" data-bs-target="#usaqRedakteModal"
+                                        data-id="@u.Id" data-ad="@u.Ad"
+                                        data-dogum-tarixi="@u.DogumTarixi.ToString("yyyy-MM-dd")"
+                                        data-elillidir="@(u.Elillidir ? "1" : "0")">
+                                    Düzəlt
+                                </button>
                                 <form asp-action="UsaqSil" method="post" onsubmit="return confirm('Uşaq silinsin?');" style="display:inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@u.Id" />
@@ -134,3 +141,55 @@
     </div>
 
 </div>
+
+@* ── Uşaq düzəliş modalı — bir dənə, paylaşılan; "Düzəlt" düyməsi klikləndə
+   JS data-* atributlarından dəyərləri formaya köçürür (Mezuniyyet/_DeleteModal.cshtml
+   ilə eyni data-bs-toggle naxışı). Əvvəl yalnız Sil+Yenidən Yaz yolu var idi. *@
+<div class="modal fade" id="usaqRedakteModal" tabindex="-1" aria-labelledby="usaqRedakteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="UsaqRedakte" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="isciId" value="@Model.Id" />
+                <input type="hidden" name="id" id="usaqRedakteId" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="usaqRedakteModalLabel">Uşaq məlumatını düzəlt</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bağla"></button>
+                </div>
+                <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+                    <div class="isci-field">
+                        <label class="isci-label">Ad (opsional)</label>
+                        <input type="text" name="ad" id="usaqRedakteAd" class="isci-input" placeholder="Uşağın adı" />
+                    </div>
+                    <div class="isci-field">
+                        <label class="isci-label">Doğum tarixi <span class="isci-required">*</span></label>
+                        <input type="date" name="dogumTarixi" id="usaqRedakteDogumTarixi" class="isci-input" required />
+                    </div>
+                    <div class="isci-field">
+                        <label class="isci-label" style="display:flex;align-items:center;gap:8px">
+                            <input type="checkbox" name="elillidir" id="usaqRedakteElillidir" value="true" style="width:16px;height:16px" />
+                            Əlil uşaq
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="fn-btn fn-btn--outline" data-bs-dismiss="modal">Ləğv et</button>
+                    <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.usaq-duzelt-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('usaqRedakteId').value = btn.getAttribute('data-id');
+                document.getElementById('usaqRedakteAd').value = btn.getAttribute('data-ad') || '';
+                document.getElementById('usaqRedakteDogumTarixi').value = btn.getAttribute('data-dogum-tarixi');
+                document.getElementById('usaqRedakteElillidir').checked = btn.getAttribute('data-elillidir') === '1';
+            });
+        });
+    </script>
+}
