@@ -5,6 +5,15 @@
     ViewData["Title"] = "Vəzifələr — İşdə statusları";
 }
 
+@* `isci-table`/`fn-badge` stilləri bu faylda yüklənməlidir — sibling
+   view-lardan (Vezife/Index, AileVeziyyeti/Index) fərqli olaraq bura
+   unudulmuşdu və səhifə birbaşa açılanda (Index-dən keçmədən) cədvəl
+   TAMAMİLƏ stilsiz (brauzer default) görünürdü — "səliqəsiz" şikayətinin
+   kök səbəbi elə budur, markup-un özü deyil. *@
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
 <div class="fn-page">
 
     <div class="fn-page-head">
@@ -18,10 +27,17 @@
         <a asp-action="Index" class="fn-btn fn-btn--outline">Vəzifələrə qayıt</a>
     </div>
 
-    <form asp-action="IsStatuslariSaxla" method="post">
+    <form asp-action="IsStatuslariSaxla" method="post" style="max-width:760px">
         @Html.AntiForgeryToken()
         <div class="fn-card" style="padding:0;overflow:hidden;">
+            @* Sütun enləri sabitlənib — yoxsa 2-3 dar sütunlu cədvəl bütün səhifə
+               enini tutub sağ tərəfi boş, qeyri-mütənasib görünürdü. *@
             <table class="isci-table">
+                <colgroup>
+                    <col />
+                    <col style="width:200px" />
+                    <col style="width:220px" />
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Vəzifə Adı</th>
@@ -47,7 +63,12 @@
                             <td>
                                 @if (!s.Qurulub)
                                 {
-                                    <span class="isci-badge isci-badge--warn">qurulmayıb — default</span>
+                                    @* `isci-badge`/`--warn` heç vaxt mövcud olmayıb (yalnız
+                                       `isci-badge-yes`/`-no` var) — bu yazı stilsiz, çılpaq
+                                       mətn kimi görünürdü. Eyni mənaya uyğun, artıq işlək
+                                       `fn-badge fn-badge--wait` (kəhrəba, "gözləmə/default"
+                                       semantikası, `Vezife/Index.cshtml`-də sübut olunub). *@
+                                    <span class="fn-badge fn-badge--wait">qurulmayıb — default</span>
                                 }
                             </td>
                         </tr>
