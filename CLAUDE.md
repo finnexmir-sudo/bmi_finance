@@ -2199,6 +2199,28 @@ kod köhnə idi.
 - Tarixçəni birləşdirmək (`--allow-unrelated-histories` və ya `replace --graft`)
   **ayrıca qərardır** — özbaşına etmə.
 
+### Köhnə tarixçəyə aid ~90 QALIQ BUDAQ VAR — İSTİFADƏÇİ QƏRARI: TOXUNULMASIN (02.10.2026)
+
+Yuxarıdakı `claude/…-xge7j5` təkcə NÜMUNƏ idi — real yoxlama (`git merge-base origin/main origin/<budaq>`,
+hər biri üçün) göstərdi ki, `origin`-dəki demək olar **bütün digər `claude/*` budaqları** (təxminən
+90 ədəd, o cümlədən `samir/local-isleri`, `fix/qa-btn-hover`) `main` ilə **heç bir ortaq əcdada
+malik deyil** — hamısının kökü `ec607b70` "first clean commit" (19.03.2026), yəni 01.09.2026-dakı
+reset-dən ƏVVƏLKİ bütöv köhnə tarixçəyə aiddirlər. Son aktivlik tarixləri fevral–iyul 2026 arası
+(reset-dən sonra demək olar heç biri toxunulmayıb, `…xge7j5` istisna olmaqla — o, 22.09-a qədər
+bixəbər davam etdirilib). Adların çoxu avtomatik generasiya olunmuş görünür (`happy-shannon-x7fgsu`,
+`friendly-turing-6aUYy`, `festive-mayer-6ef50n` və s.).
+
+**İstifadəçi qərarı (02.10.2026): bu budaqlar SAXLANILIR, silinmir.** Onlar `main`-ə heç cür
+birləşə bilmədiyi üçün (unrelated histories), heç bir funksional/build/performans ziyanı yoxdur —
+yalnız GitHub-un budaq siyahısında vizual qarışıqlıqdır.
+
+**Qayda — sessiya başlanğıcı yoxlamasına dair:** `git log --oneline --remotes ^main --no-walk=unsorted`
+əmri bu səbəbdən HƏR sessiyada boş olmayan nəticə qaytaracaq (109 "behind" ədədi sadəcə `main`-in
+cəmi commit sayıdır — unrelated history-də gözlənilən normal nəticədir). Bu, yeni/naməlum problem
+DEYİL — yuxarıdakı məlum vəziyyətdir. Yoxlamanı işlət, amma nəticədə YALNIZ bu siyahıdakı köhnə
+budaqlar çıxırsa (yeni, tanımadığın bir budaq adı YOXDURSA), istifadəçiyə sual vermədən davam et.
+Tanımadığın/yeni bir budaq adı görsən (bu siyahıda olmayan), o ayrıca araşdırmağa dəyər — ONDA sual ver.
+
 ### `OracleSorgular` DATA-dır, KOD DEYİL
 
 Risk panelinin KPI kartları və hesabat kartları `OracleSorgular` cədvəlindən
