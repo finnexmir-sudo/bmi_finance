@@ -41,6 +41,22 @@ namespace FinNex.UI.Areas.HR.Controllers
             _logger = logger;
         }
 
+        // Təsdiqlənmiş ezamiyyət "canlı" sayılırmı — tarix aralığı TƏK BAŞINA kifayət
+        // deyil. Bugünkü (hədəf = bu gün) ezamiyyətin BİRİNCİ günündə, BaslamaSaati
+        // veriləndə, həmin saat keçənə qədər işçi hələ yoladüşməyib — "Gözlənilir"
+        // olmalıdır, "Ezamiyyət" yox (07.10.2026, real hadisə: IsciId=16, axşam 16:00
+        // ezamiyyəti saat 10:45-də artıq "Ezamiyyət" göstərildi — istifadəçi qərarı:
+        // "hal hazırda ezamiyyətdə deyil axı"). Keçmiş/gələcək tarixə baxışda (hədəf ≠
+        // bu gün), çoxgünlük ezamiyyətin sonrakı günlərində, yaxud saat verilməyibsə
+        // (tam günlük ezamiyyət) — tarix aralığı kifayətdir, "canlı" sayılır.
+        private static bool EzamiyyetCanliMi(DateTime basTarix, TimeSpan? basSaat, DateTime hedefGun)
+        {
+            if (hedefGun.Date != DateTime.Today) return true;
+            if (hedefGun.Date != basTarix.Date) return true;
+            if (!basSaat.HasValue) return true;
+            return DateTime.Now.TimeOfDay >= basSaat.Value;
+        }
+
         // Cari istifadəçinin işçi qeydi (AppUser → Isci.AppUserId).
         // Tapılmasa null — admin hesabı işçiyə bağlı olmaya bilər və bu,
         // əməliyyatı BLOKLAMAMALIDIR (audit sahəsi 0 qalır).
@@ -211,10 +227,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // KPI-lardan və filtrlərdən ƏVVƏL tətbiq olunur ki, say = siyahı qalsın
                 // (CLAUDE.md qaydası). Köhnə (ADMS düzəlişindən əvvəl yazılmış) qeydləri də
                 // örtür — bazaya toxunmur, yalnız göstərmə səviyyəsindədir.
+                //
+                // ⚠️ "örtən" YALNIZ TARİX ARALIĞI ilə yoxlanmır — EzamiyyetCanliMi əlavə
+                // şərtdir: bugünkü (hələ başlamamış) ezamiyyət BaslamaSaati keçənə qədər
+                // "canlı" sayılmır (07.10.2026, real hadisə — bax aşağıdakı ezamiyyetGozleyenIds).
                 foreach (var rGec in umumi.Where(x => x.Status == DavamiyyetStatus.Gecikme))
                 {
                     if (ezamiyyetList.Any(e => e.IsciId == rGec.IsciId &&
-                                               e.Bas <= rGec.Tarix.Date && e.Bit >= rGec.Tarix.Date))
+                                               e.Bas <= rGec.Tarix.Date && e.Bit >= rGec.Tarix.Date &&
+                                               EzamiyyetCanliMi(e.Bas, e.BasSaat, rGec.Tarix.Date)))
                         rGec.Status = DavamiyyetStatus.Ezamiyyet;
                 }
 
@@ -309,8 +330,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // Ezamiyyət — EYNİ prinsip (say = siyahı): təsdiqlənmiş ezamiyyəti hədəf tarixi
                 // örtən, amma həmin gün cihaz qeydi OLMAYAN işçilər (tam günlük ezamiyyətdə
                 // işçi cihaza vurmur). Əvvəllər onlar "Gözlənilir"ə düşürdü, Ezamiyyət KPI 0 idi.
+                //
+                // ⚠️ 07.10.2026, real hadisə (IsciId=16): tarix aralığı TƏK BAŞINA kifayət
+                // deyil — ezamiyyəti bu gün başlayan, amma BaslamaSaati hələ gəlməmiş işçi
+                // "hələ getməyib", "Ezamiyyət"ə yox "Gözlənilir"ə aid olmalıdır. İstifadəçi
+                // qərarı: "hal hazırda ezamiyyətdə deyil axı, ezamiyyəti 16:00-dadır" —
+                // EzamiyyetCanliMi bu şərti yoxlayır (bax metod şərhi).
                 var ezamiyyetGozleyenIds = ezamiyyetList
                     .Where(e => e.Bas <= hedefTarixKpi && e.Bit >= hedefTarixKpi
+                             && EzamiyyetCanliMi(e.Bas, e.BasSaat, hedefTarixKpi)
                              && !qeydliIdsKpi.Contains(e.IsciId)
                              && !mezuniyyetIsciIds.Contains(e.IsciId)
                              && !icazeGozleyenIds.Contains(e.IsciId)
@@ -930,15 +958,21 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // Həmin günü örtən təsdiqlənmiş ezamiyyəti olan işçilər — onlar "Gözlənilir"/
             // "Qayıb" deyil, Ezamiyyət statusunda göstərilir (cihaz qeydi olmaması normaldır).
+            //
+            // ⚠️ 07.10.2026: tarix aralığı TƏK BAŞINA kifayət deyil — EzamiyyetCanliMi
+            // (bax metod şərhi) bugünkü ezamiyyətin BaslamaSaati hələ gəlməyibsə işçini
+            // bu siyahıdan çıxarır, o, "Gözlənilir"ə düşsün (real hadisə: IsciId=16).
             var ezamiyyetdeIsciIds = new HashSet<int>(
-                await _unitOfWork.Repository<EzamiyyetMuraciet>()
+                (await _unitOfWork.Repository<EzamiyyetMuraciet>()
                     .Query().AsNoTracking()
                     .Where(x => !x.Silinib
                              && x.Status == EzamiyyetStatus.Tesdiqlendi
                              && x.BaslamaTarixi.Date <= hedef
                              && x.BitmeTarixi.Date >= hedef)
-                    .Select(x => x.IsciId)
-                    .ToListAsync());
+                    .Select(x => new { x.IsciId, x.BaslamaTarixi, x.BaslamaSaati })
+                    .ToListAsync())
+                    .Where(x => EzamiyyetCanliMi(x.BaslamaTarixi.Date, x.BaslamaSaati, hedef))
+                    .Select(x => x.IsciId));
 
             // Həmin gün offline tədbirdə (görüşdə) olan işçilər → "Tədbirdə" göstərilir.
             // (QayibMarkerBackgroundService ilə eyni məntiq: offline, ləğv olunmamış,

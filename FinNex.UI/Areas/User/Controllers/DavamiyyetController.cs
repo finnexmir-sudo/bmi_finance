@@ -29,6 +29,18 @@ namespace FinNex.UI.Areas.User.Controllers
             _unitOfWork = unitOfWork;
         }
 
+        // Təsdiqlənmiş ezamiyyət "canlı" sayılırmı — tarix aralığı TƏK BAŞINA kifayət
+        // deyil. Bugünkü ezamiyyətin BİRİNCİ günündə, BaslamaSaati veriləndə, həmin saat
+        // keçənə qədər işçi hələ yoladüşməyib (HR/DavamiyyetController ilə EYNİ qayda,
+        // 07.10.2026, real hadisə: IsciId=16).
+        private static bool EzamiyyetCanliMi(DateTime basTarix, TimeSpan? basSaat, DateTime hedefGun)
+        {
+            if (hedefGun.Date != DateTime.Today) return true;
+            if (hedefGun.Date != basTarix.Date) return true;
+            if (!basSaat.HasValue) return true;
+            return DateTime.Now.TimeOfDay >= basSaat.Value;
+        }
+
         public async Task<IActionResult> Index()
         {
             var isciId = await GetCurrentIsciIdAsync();
@@ -246,9 +258,11 @@ namespace FinNex.UI.Areas.User.Controllers
             // Ezamiyyət günü "Gecikmə" GÖSTƏRİLMİR (HR Davamiyyət ilə eyni qayda):
             // təsdiqlənmiş ezamiyyət həmin günü örtürsə, gec giriş ezamiyyətdən qayıdışdır →
             // Ezamiyyət. Statistikadan və filtrlərdən əvvəl tətbiq olunur; bazaya toxunmur.
+            // EzamiyyetCanliMi — bugünkü, hələ başlamamış ezamiyyət bunu etmir (07.10.2026).
             foreach (var rGec in records.Where(x => x.Status == DavamiyyetStatus.Gecikme))
             {
-                if (ezamiyyetList.Any(e => e.Bas <= rGec.Tarix.Date && e.Bit >= rGec.Tarix.Date))
+                if (ezamiyyetList.Any(e => e.Bas <= rGec.Tarix.Date && e.Bit >= rGec.Tarix.Date &&
+                                           EzamiyyetCanliMi(e.Bas, e.BasSaat, rGec.Tarix.Date)))
                     rGec.Status = DavamiyyetStatus.Ezamiyyet;
             }
 

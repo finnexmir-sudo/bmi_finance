@@ -267,16 +267,35 @@ indeksi pozardı), `DavamiyyetUpsertAsync`-dəki "aktiv → silinmiş (dirilt) �
 sırası təkrarlanır: sətir dirildilir (`Silinib=false`, köhnə status/vaxtlar
 təmizlənir), sonra normal giriş/çıxış axını davam edir.
 
-**İkinci qat (`ezamiyyetGozleyenIds`-in saata baxmaması) BİLƏRƏKDƏN TOXUNULMADI** —
-bu, İcazəli/Xəstəlik üçün də eyni olan, günlük (saatdan asılı olmayan) KPI dizaynının
-bir hissəsidir; bu bölmədəki düzəlişdən sonra işçinin real gəlişi yenidən görünəcəyi
-üçün bu konkret hadisə təkrarlanmayacaq, amma "ezamiyyəti günün hər saatında əvvəlcədən
-göstərmək" davranışının özü ayrıca qərar tələb edir — özbaşına dəyişilmədi.
+**İkinci qat (`ezamiyyetGozleyenIds`-in saata baxmaması) EYNİ GÜN DÜZƏLDİLDİ** —
+ilk cavabda "günlük KPI dizaynının qəsdən bir hissəsidir, özbaşına toxunmuram"
+deyə qeyd edilmişdi. İstifadəçi bunu rədd etdi: *"hal hazırda ezamiyyətdə deyil
+axı, bu səhv yanaşmadır, ezamiyyəti 16:00-dadır"*. Haqlı idi — "tarix aralığı
+örtür" ilə "hazırda ezamiyyətdədir" eyni şey deyil. Həll: `EzamiyyetCanliMi(basTarix,
+basSaat, hedefGun)` helper-i (`HR/DavamiyyetController.cs` və eyni adla
+`User/DavamiyyetController.cs` — iki ayrı controller, eyni qayda) — YALNIZ
+bugünkü (hədəf = bu gün) ezamiyyətin BİRİNCİ günündə, `BaslamaSaati` veriləndə,
+həmin saat keçməyibsə "canlı deyil" qaytarır. Keçmiş/gələcək tarixə baxışda,
+çoxgünlük ezamiyyətin sonrakı günlərində, ya da saat verilməyibsə (tam günlük
+ezamiyyət) — əvvəlki kimi tarix aralığı kifayətdir. Tətbiq olunan 4 yer:
+`HR/DavamiyyetController` — Gecikmə→Ezamiyyət örtmə, `ezamiyyetGozleyenIds`,
+`GetGozlenilen`-dəki `ezamiyyetdeIsciIds`; `User/DavamiyyetController` —
+Gecikmə→Ezamiyyət örtmə (öz portalı).
+
+⚠️ **`ADMSController.HesablaStatus`-a TOXUNULMADI** — eyni fərziyyə (tarix
+örtürsə "ezamiyyət günüdür") orada da var (bax yuxarı "Davamiyyət — Ezamiyyət
+Statusa toxunan bütün yerlər"), amma risk fərqlidir: bu, HƏR punch-da, HƏR
+işçi üçün işləyən canlı giriş-hesablama yoludur — vaxt yoxlaması əlavə etmək
+indi düzgün görünən ssenarini (səhər ezamiyyətdən qayıdış) poza bilər, təsdiq
+olunmamış dəyişiklik. Əgər gələcəkdə "axşam ezamiyyəti olan işçinin səhər gecikməsi
+səhvən bağışlanır" şikayəti gələrsə, bura bax.
 
 **Qayda:** "filtrsiz sorğu silinmiş sətri tapır, deməli risk yoxdur" qənaəti
 **natamamdır** — sualı "tapandansa, onun ÜZƏRİNƏ yeni data yazılırmı, və yazılırsa
 `Silinib` geri `false` olurmu?" şəklində tamamla. Tapıb sadəcə oxumaq fərqlidir,
-tapıb **yazmaq** fərqlidir.
+tapıb **yazmaq** fərqlidir. Eynilə, "tarix aralığını örtür" ilə "hazırda baş
+verir" arasındakı fərqi də unutma — ezamiyyət/icazə/xəstəlik kimi saatlı
+hadisələrdə TARİX kifayət etmir, SAAT da yoxlanmalıdır.
 
 ### `ex.Message` TƏK BAŞINA HEÇ NƏ DEMİR
 
