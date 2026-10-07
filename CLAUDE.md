@@ -1059,6 +1059,17 @@ seçimi qəsdən — `EnsureIllikHuquqJetonuAsync`-in özünün işlətdiyi İL�
 (`JetonVerAsync` → `DateTime.Today.Year`), ayrıca "cari il" sahəsi saxlanmır.
 Sırf mətn dəyişikliyi, DTO/servis toxunulmayıb.
 
+**Sadə "(il)" mötərizəsi → jeton görünüşlü badge (07.10.2026, eyni gün, ikinci
+tələb).** İstifadəçi: *"bunu jeton adlı falan biraz fərqli görüntü ilə edə
+bilərdik?"* — sadə mətn mötərizəsi əvəzinə, başlığın yanına kiçik, qızılı
+(`#fef3c7`/`#92400e`, mövcud "gözləyir" amber rəngi — `uj-status--gozlenilir`
+ilə eyni ton) bir pill qoyuldu: `<i class="bi bi-award-fill"></i> 2026`,
+`title="36 Saat Hüququ 2026"` tooltip-i ilə. Yenə sırf markup — `fn-card-title`
+class-ı saxlanıldı (yalnız `display:flex` inline əlavə edildi), `fn-card-link`
+("Hamısı →") toxunulmadı. Heç bir yeni CSS class/fayl əlavə olunmadı, mövcud
+`bi-award-fill` ikonu (digər jeton kartlarında onsuz da işlənir) təkrar
+istifadə edildi.
+
 ### Borcun ödənməsi — `JetonVerAsync`-in Musbat qolu
 
 Növbəti dəfə işçiyə MÜSBƏT jeton veriləndə (`JetonService.QaraJetonBorcunuOdeAsync`),
