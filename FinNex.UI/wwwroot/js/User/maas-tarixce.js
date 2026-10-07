@@ -74,8 +74,10 @@
                         '<button class="mt-detay-close" id="detayClose"><i class="bi bi-x-lg"></i></button>' +
                     '</div>' +
 
-                    section('Gəlirlər', 'bi-plus-circle-fill', gelirlər, '+', 'mt-val-green', 'mt-section-green') +
-                    section('Tutulmalar (işçidən)', 'bi-dash-circle-fill', kesintilər, '−', 'mt-val-red', 'mt-section-red') +
+                    '<div class="mt-detay-cols">' +
+                        section('Gəlirlər', 'bi-plus-circle-fill', gelirlər, '+', 'mt-val-green', 'mt-section-green') +
+                        section('Tutulmalar (işçidən)', 'bi-dash-circle-fill', kesintilər, '−', 'mt-val-red', 'mt-section-red') +
+                    '</div>' +
                     section('İşəgötürən xərcləri', 'bi-building', sirket, '', 'mt-val-gray', 'mt-section-gray') +
                     section('Məlumat üçün', 'bi-info-circle', melumat, '', 'mt-val-blue', 'mt-section-blue', true) +
 
@@ -166,10 +168,12 @@
                             {
                                 label: 'Gross Maaş (AZN)',
                                 data: brutData,
-                                backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                                borderColor: '#667eea',
-                                borderWidth: 1,
-                                borderRadius: 4,
+                                backgroundColor: 'rgba(79, 70, 229, 0.65)',
+                                hoverBackgroundColor: 'rgba(79, 70, 229, 0.85)',
+                                borderColor: 'rgba(79, 70, 229, 0)',
+                                borderWidth: 0,
+                                borderRadius: 6,
+                                maxBarThickness: 34,
                                 order: 2
                             },
                             {
@@ -177,13 +181,15 @@
                                 data: netData,
                                 type: 'line',
                                 borderColor: '#16a34a',
-                                backgroundColor: 'rgba(22, 163, 106, 0.1)',
-                                borderWidth: 2,
-                                pointBackgroundColor: '#16a34a',
+                                backgroundColor: 'rgba(22, 163, 106, 0.12)',
+                                borderWidth: 2.5,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: '#16a34a',
+                                pointBorderWidth: 2,
                                 pointRadius: 4,
                                 pointHoverRadius: 6,
                                 fill: true,
-                                tension: 0.3,
+                                tension: 0.35,
                                 order: 1
                             }
                         ]
@@ -201,13 +207,27 @@
                         plugins: {
                             legend: {
                                 position: 'top',
+                                align: 'end',
                                 labels: {
-                                    font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
+                                    font: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '600' },
+                                    color: '#475569',
                                     usePointStyle: true,
-                                    padding: 20
+                                    pointStyle: 'circle',
+                                    boxWidth: 8,
+                                    boxHeight: 8,
+                                    padding: 18
                                 }
                             },
                             tooltip: {
+                                backgroundColor: 'rgba(26, 29, 33, 0.92)',
+                                titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12.5, weight: '700' },
+                                bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
+                                footerFont: { family: "'Plus Jakarta Sans', sans-serif", size: 11, style: 'italic' },
+                                footerColor: '#cbd5e1',
+                                padding: 12,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                boxPadding: 4,
                                 callbacks: {
                                     label: function (context) {
                                         return context.dataset.label + ': ' +
@@ -226,13 +246,16 @@
                                     callback: function (value) {
                                         return value.toLocaleString('az-AZ') + ' ₼';
                                     },
-                                    font: { size: 11 }
+                                    font: { size: 11 },
+                                    color: '#94a3b8'
                                 },
-                                grid: { color: 'rgba(0,0,0,0.05)' }
+                                grid: { color: 'rgba(15, 23, 42, 0.05)' },
+                                border: { display: false }
                             },
                             x: {
-                                ticks: { font: { size: 11 } },
-                                grid: { display: false }
+                                ticks: { font: { size: 11 }, color: '#94a3b8' },
+                                grid: { display: false },
+                                border: { display: false }
                             }
                         }
                     }

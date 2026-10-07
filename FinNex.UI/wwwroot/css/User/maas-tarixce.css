@@ -25,13 +25,39 @@
 /* ── Card ────────────────────────────────────────────── */
 .mt-card {
     background: #fff;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    border: 1px solid #e9ecf2;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
     padding: 24px;
     margin-bottom: 20px;
 }
 
 /* ── Chart ───────────────────────────────────────────── */
+.mt-chart-card {
+    padding: 20px 24px 24px;
+}
+
+.mt-chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.mt-chart-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a1d21;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mt-chart-title i {
+    color: #4f46e5;
+    font-size: 1rem;
+}
+
 .mt-chart-wrap {
     min-height: 350px;
     display: flex;
@@ -81,34 +107,60 @@
     margin: 0;
 }
 
-/* ── Summary Card ────────────────────────────────────── */
+/* ── Summary / Stat kartları ───────────────────────────── */
 .mt-summary-card {
-    padding: 20px 24px;
+    margin-bottom: 20px;
 }
 
 .mt-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: 16px;
 }
 
-.mt-summary-item {
-    text-align: center;
+.mt-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid #e9ecf2;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
+
+.mt-stat-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+
+.mt-stat-card--indigo .mt-stat-icon { background: #eef2ff; color: #4f46e5; }
+.mt-stat-card--teal   .mt-stat-icon { background: #e6fbf6; color: #0d9488; }
+.mt-stat-card--green  .mt-stat-icon { background: #ecfdf3; color: #16a34a; }
+.mt-stat-card--red    .mt-stat-icon { background: #fef2f2; color: #dc2626; }
+
+.mt-stat-body { min-width: 0; }
 
 .mt-summary-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .mt-summary-value {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #1a1d21;
+    white-space: nowrap;
 }
 
 .mt-summary-value--green {
@@ -231,6 +283,27 @@
     padding: 0 20px 12px;
 }
 .mt-detay-section:last-of-type { border-bottom: none; }
+
+/* Gəlirlər / Tutulmalar — yan-yana iki sütun (desktop) */
+.mt-detay-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+.mt-detay-cols .mt-detay-section {
+    border-bottom: none;
+}
+.mt-detay-cols .mt-detay-section:first-child {
+    border-right: 1px solid #f1f5f9;
+}
+@media (max-width: 700px) {
+    .mt-detay-cols {
+        grid-template-columns: 1fr;
+    }
+    .mt-detay-cols .mt-detay-section:first-child {
+        border-right: none;
+        border-bottom: 1px solid #f1f5f9;
+    }
+}
 
 .mt-section-green { background: #f0fdf4; }
 .mt-section-red   { background: #fff5f5; }
