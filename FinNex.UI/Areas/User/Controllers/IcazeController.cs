@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using FinNex.Application.Services.HR;
+using DocumentFormat.OpenXml.Drawing.Charts;
 
 namespace FinNex.UI.Areas.User.Controllers
 {
@@ -21,9 +23,11 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IDepartmentService _departamentService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IJetonService _jetonService;
+        private readonly IIsciStrukturRoluService _isciStrukturRoluService;
 
         public IcazeController(
             IIcazeService icazeService,
+            IIsciStrukturRoluService isciStrukturRoluService,
             IIsciService isciService,
             IDepartmentService departamentService,
             UserManager<AppUser> userManager,
@@ -34,6 +38,7 @@ namespace FinNex.UI.Areas.User.Controllers
             _departamentService = departamentService;
             _userManager = userManager;
             _jetonService = jetonService;
+            _isciStrukturRoluService = isciStrukturRoluService;
         }
 
         // ── GET /User/Icaze ────────────────────────────────────
@@ -48,6 +53,7 @@ namespace FinNex.UI.Areas.User.Controllers
             var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
             var hrdirmi = User.IsInRole(RoleNames.HR);
             var icazeList = result.Success ? result.Data!.ToList() : new();
+
             foreach (var ic in icazeList)
             {
                 ic.MuracietSahibiRehberdirmi = rehberdirmi;
@@ -93,8 +99,20 @@ namespace FinNex.UI.Areas.User.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(IcazeCreateVM vm)
         {
+
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null) return RedirectToLogin();
+
+            var iscirolulist = await _isciStrukturRoluService.GetByIsciIdAsync(isciId.Value);
+
+            var aktivIsciRollari = iscirolulist.Data?.Where(a => a.Aktivdir && (!a.BitmeTarixi.HasValue || a.BitmeTarixi.Value.Date >= DateTime.Today))
+                .Select(r => r.RolTipi
+                ).ToList() ?? new List<StrukturRolTipi>();
+
+            bool rehber = aktivIsciRollari.Contains(StrukturRolTipi.Rehber);
+            bool sobeReisi = aktivIsciRollari.Contains(StrukturRolTipi.SobeReisi);
+            bool hr = aktivIsciRollari.Contains(StrukturRolTipi.Hr);
+
 
             vm.IsciId = isciId.Value;
 
@@ -127,6 +145,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 return View(vm);
             }
 
+
+
             var createDto = new IcazeCreateDto
             {
                 IsciId = isciId.Value,
@@ -139,10 +159,10 @@ namespace FinNex.UI.Areas.User.Controllers
                 // Uzatma seçimi hər işçi üçün açıqdır — tutulacaq miqdar formada
                 // yazılmır, servisdə pəncərədən hesablanır (IcazeService.MecburiJetonSaat).
                 JetonlaUzat = vm.JetonlaUzat,
-                MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
-                MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
-                MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),
-                JetonOdenenSaat = User.IsInRole(RoleNames.Rehber) ? vm.JetonOdenenSaat : 0,
+                MuracietSahibiRehberdirmi = rehber,
+                MuracietSahibiSobeReisidirmi = sobeReisi,
+                MuracietSahibiHrdirmi = hr,
+                JetonOdenenSaat = rehber ? vm.JetonOdenenSaat : 0,
             };
 
             var result = await _icazeService.YaratAsync(createDto);
@@ -215,11 +235,11 @@ namespace FinNex.UI.Areas.User.Controllers
             var isciler = result.Success ? result.Data!.ToList() : new();
             isciler = sirala switch
             {
-                "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
-                "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
-                "faktiki"=> isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
+                "cemi" => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+                "saat" => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
+                "faktiki" => isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
                 "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
-                _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+                _ => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
             };
 
             var vm = new IcazeIzlemeVM
