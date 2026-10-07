@@ -1112,6 +1112,54 @@ bilmir. **`hr-jeton.js` HƏLƏ bu sahəni OXUMUR** (yalnız `User/user-jeton.js`
 də tətbiq olundu, istifadəçi konkret "Cüzdanım" səhifəsini göstərmişdi) —
 data artıq göndərilir, HR tərəfə əlavə etmək ayrıca kiçik iş qalır.
 
+### Qara Jeton "Xərcləmə" Pəncərəsində Seçilə Bilən Göstərilirdi (07.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Blok silindikdən sonra istifadəçi ekran-görüntüsü ilə göstərdi: "Jeton Xərclə"
+pəncərəsində Qara Jeton (Menfi) digər mükafat jetonları (Bürünc, Qızıl) ilə
+YANAŞI checkbox kimi seçilə bilən görünürdü. Səbəb: həm kartların əsas
+siyahısı (`ujLoadJetonlar`), həm xərcləmə pəncərəsinin seçim siyahısı
+(`ujRenderSelectList`) **eyni `ujJetonlar` keşini** oxuyur
+(`IsciAktivJetonlariniGetirAsync` — yalnız `Sistemli`-ni çıxarır, `Menfi`-ni YOX,
+çünki kart siyahısında Qara Jetonun görünməsi düzgündür/lazımdır). Server
+tərəfi (`RedimTelebiYaratAsync`) onsuz da `Nov == JetonNovu.Musbat` şərti ilə
+qorunur — real itki yox idi, amma seçim ekranı cəza jetonunu "xərclənəsi"
+kimi göstərməsi yanıldıcı idi.
+
+**Düzəliş** — `ujRenderSelectList`-in əvvəlində `ujJetonlar.filter(j =>
+j.jetonNovu !== 2)` ilə seçilə bilən siyahı ayrıca hazırlanır, yalnız o render
+olunur. Əsas kart siyahısı (`ujLoadJetonlar`) **toxunulmadı** — orada Qara
+Jetonun görünməsi məqsədli idi.
+
+**Qayda:** eyni keş massivi (`ujJetonlar`) iki fərqli UI məqsədi üçün
+(「göstər」 vs 「seç」) işlədilirsə, hər yazıcı öz filtrini tətbiq etməlidir —
+keşin "hamısını göstərir" olması "hamısı seçilə bilər" demək deyil.
+
+### "Cəza" Hələ Görünür — BUG DEYİL, TEYİNATIN CARİ DƏYƏRİ 0-DIR (07.10.2026)
+
+İstifadəçi "nə dəyişdi?" sualı ilə göndərdiyi ekran-görüntüsündə Qara Jeton
+kartı hələ "Cəza" yazırdı (yeni "X saat kəsildi" yox). Kodun özü düzgündür —
+`ujDeyerGoster`-də Menfi qol **birinci** `j.jetonSaatDeyeri <= 0` yoxlamasına
+baxır və yalnız bundan SONRA `qaraJetonKesilenSaat`-ı oxuyur. `JetonSaatDeyeri`
+isə digər bütün jeton kartları ilə EYNİ qaydaya tabedir (yuxarı, "Bir Elementə
+İKİ YAZICI" bölməsinin əksi deyil, elə öz qaydasıdır) — `x.JetonTeyinati.SaatDeyeri`
+**CANLI** oxunur, verilmə anına dondurulmur.
+
+Yəni "Cəza" göstərilməsinin yeganə səbəbi: bu konkret Qara Jetonun bağlı olduğu
+`JetonTeyinati` sətrinin HAZIRKI `SaatDeyeri`-si **0**-dır. Bu, köhnə sistemin
+defolt vəziyyətidir (bax yuxarı "Qara Jeton — Dəyərli Kəsinti Mexanizmi": "əvvəllər
+… `SaatDeyeri=0` — YALNIZ bayraq idi") — yeni kaskad mexanizmi dəyəri HƏR ZAMAN
+`teyinat.SaatDeyeri`-dən oxuyur, amma HR həmin konkret növün dəyərini `HR → Jeton
+Növləri` idarəetməsindən **müsbət ədədə** dəyişməyibsə, kəsinti də 0 olur, kart da
+"Cəza" göstərir — bu, iki fərqli yerin (əvvəlki uğurlu test, 1.25 saat kəsinti)
+göstərdiyi nəticədən FƏRQLİ BİR Qara Jeton NÖVÜ/sətri ola bilər, əgər kataloqda
+birdən çox Menfi tipli sətir varsa.
+
+**Yoxlama addımı istifadəçi üçün:** `HR → Jeton Növləri` (və ya bənzər idarəetmə
+səhifəsi) açılıb bu konkret Qara Jetonun növünün "Saat dəyəri" sahəsinə baxılmalıdır.
+0-dırsa, "Cəza" **gözlənilən düzgün nəticədir** (digər 0-dəyərli mükafat jetonları
+da eyni cür "Cəza" göstərir, sətir 20) — dəyər HR tərəfindən təyin ediləndə kart
+avtomatik "X saat kəsildi"yə keçəcək, kodda əlavə dəyişiklik lazım deyil.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK

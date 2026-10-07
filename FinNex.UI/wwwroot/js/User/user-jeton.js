@@ -135,11 +135,15 @@ function ujCloseRedimModal() {
 
 function ujRenderSelectList() {
     const container = document.getElementById('ujJetonSelectList');
-    if (!ujJetonlar.length) {
+    // Qara (Menfi) jeton cəzadır — "xərcləmə" siyahısında seçilə bilməz, yalnız
+    // mükafat (Musbat) jetonlar görünür. Server tərəfi onsuz da Musbat filtri
+    // edir (RedimTelebiYaratAsync); bura həmin qaydanın ekran tərəfidir.
+    const secilebilen = ujJetonlar.filter(j => j.jetonNovu !== 2);
+    if (!secilebilen.length) {
         container.innerHTML = '<p style="color:#6b7280;font-size:13px">Aktiv jeton yoxdur.</p>';
         return;
     }
-    container.innerHTML = ujJetonlar.map(j => `
+    container.innerHTML = secilebilen.map(j => `
         <div class="uj-jeton-select-item ${ujSelectedIds.has(j.id) ? 'uj-jeton-select-item--selected' : ''}"
              style="--jc:${j.jetonRengKodu ?? '#9ca3af'}"
              onclick="ujToggleJeton(${j.id}, ${j.qalanSaat ?? j.jetonSaatDeyeri})">
