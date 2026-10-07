@@ -1208,6 +1208,50 @@ BUNDAN SONRA verilən Qara Jetonlara təsir edir — 07.10.2026-dakı "test" qey
 edib (əgər ləğv imkanı varsa) yenidən versin, ya da ayrıca SQL/əl düzəlişi
 tələb olunur — bu sessiyada edilmədi, istifadəçi tələb etməyib.
 
+### "Kəsilən Saat" CANLI Kataloq Dəyərindən Asılı İdi — Dondurulmalı İdi (07.10.2026, ÜÇÜNCÜ DALĞA, KRİTİK)
+
+İstifadəçi "30 saat kəsildi" göstərişini (HR kataloqu `-30`-a düzəldəndən sonra)
+doğru qəbul edib soruşdu: "filan vaxtı azalma olub?" Cavab araşdırılanda üzə
+çıxdı: **bu rəqəm YALANÇI İDİ.** Real tarixçə: 07.10.2026-dakı "test" Qara
+Jetonu YARADILAN ANDA kataloqun dəyəri **1,25** idi (hələ `-30`-a
+dəyişdirilməmişdi) — kaskad O ANDA düzgün işlədi və Qızıldan **1,25 saat**
+(4-dən 2,75-ə) kəsdi, FIFO-da Bürüncə çatmadı. Sonra HR kataloqu test məqsədilə
+`-30`-a dəyişdi. `MapJeton`-da `JetonSaatDeyeri = x.JetonTeyinati.SaatDeyeri`
+**CANLI** oxunduğu üçün (digər jeton növləri ilə eyni, qəsdən belə yazılmış
+qayda) kartın "kəsilən saat" hesabı da avtomatik yenidən hesablandı: əvvəl
+"Cəza" (kataloq 0 olanda), sonra "30 saat kəsildi" (kataloq -30 olanda) —
+HƏR İKİSİ SƏHV, çünki HƏQİQƏTƏN kəsilən məbləğ (1,25) heç vaxt dəyişməmişdi.
+
+**Kök səbəb:** Musbat jetonlar üçün "canlı dəyər" qaydası DÜZGÜNDÜR (hələ
+xərclənməmiş mükafatın CARİ dəyəridir, HR artırsa dərhal əks olunmalıdır).
+Qara Jeton üçün isə "kəsilən saat" KEÇMİŞ bir HADİSƏNİN ölçüsüdür — tarixi
+fakt, kataloqun gələcək redaktəsindən TƏSİRLƏNMƏMƏLİDİR. Eyni "dondurma"
+prinsipi layihədə artıq var (`Kocurme.UsdEkvivalent`, `EmeliyyatRiskiHadisesi.
+TedbirZererHeddiYaradilmaAninda`) — Qara Jetona da tətbiq edilməli idi, amma
+ilk tətbiqdə unudulmuşdu.
+
+**Həll — `IsciJetonu.MenfiMiqdar`** (yeni sütun, migration
+`20261007110000_QaraJetonMenfiMiqdar.cs`, yalnız `AddColumn`, `InsertData`
+yoxdur): Menfi növ jeton **VERİLMƏ ANINDA** `Math.Abs(teyinat.SaatDeyeri)`
+bu sahəyə yazılır (`JetonVerAsync`), kaskad (`QaraJetonKesintisiTetbiqEtAsync`)
+bu dondurulmuş dəyəri işlədir (artıq canlı `teyinat.SaatDeyeri`-ni yox),
+`MapJeton` da Menfi növdə `MenfiMiqdar` varsa onu üstün tutur (yoxdursa canlı
+dəyərə geri düşür — aşağı bax).
+
+⚠️ **Köhnə (bu migrasiyadan ƏVVƏL yaradılmış) Qara Jetonlar DÜZƏLMİR.**
+`MenfiMiqdar` onlarda NULL-dur, kod canlı dəyərə geri düşür — 07.10.2026-dakı
+"test" qeydi bu fix-dən SONRA da "30 saat kəsildi" göstərməyə davam edəcək
+(indi kataloq `-30`-da qaldığı müddətcə), çünki onun həqiqi tarixi miqdarını
+(1,25) geriyə bərpa edən ayrıca ledger/audit jurnalı yoxdur. Bu, "test" qeydi
+olduğu üçün zərərsizdir — real nəticəsi istifadəçiyə açıq bildirilib: lazım
+olsa HR onu ləğv edib yenidən versin, bundan sonrakı HƏR Qara Jeton isə düzgün
+dondurulmuş rəqəmi göstərəcək.
+
+**Qayda: "kataloqun canlı dəyərini göstər" qaydası YALNIZ hələ XƏRCLƏNMƏMİŞ
+mükafatlar üçün düzgündür.** Artıq BAŞ VERMİŞ bir hadisəni (kəsinti, ödəniş,
+tətbiq olunmuş cəza) göstərən HƏR sahə VERİLMƏ/BAŞ VERMƏ ANINDA dondurulmalıdır
+— əks halda kataloqun sonrakı redaktəsi tarixi səssizcə təhrif edir.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK

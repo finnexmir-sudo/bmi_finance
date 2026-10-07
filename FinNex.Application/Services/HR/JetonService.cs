@@ -82,7 +82,11 @@ namespace FinNex.Application.Services.HR
                         Sebeb = dto.Sebeb,
                         VerenUserId = verenUserId,
                         QazanmaTarixi = DateTime.Now,
-                        Status = IsciJetonuStatus.Aktiv
+                        Status = IsciJetonuStatus.Aktiv,
+                        // Menfi növdə kəsinti miqdarı VERİLMƏ ANINDA dondurulur —
+                        // kataloq sonradan dəyişsə də bu Qara Jetonun tarixi
+                        // "kəsilən saat"i dəyişməməlidir (07.10.2026, KRİTİK).
+                        MenfiMiqdar = teyinat.Nov == JetonNovu.Menfi ? Math.Abs(teyinat.SaatDeyeri) : (decimal?)null
                     };
                     await _unitOfWork.Repository<IsciJetonu>().YaratAsync(jeton);
                     yaradilanlar.Add(jeton);
@@ -98,7 +102,7 @@ namespace FinNex.Application.Services.HR
                 // borc yazılır (il sonuna qədər, növbəti müsbət jetondan ödənilir).
                 if (isQara)
                 {
-                    await QaraJetonKesintisiTetbiqEtAsync(dto.IsciId, yaradilanlar[0].Id, teyinat.SaatDeyeri);
+                    await QaraJetonKesintisiTetbiqEtAsync(dto.IsciId, yaradilanlar[0].Id, yaradilanlar[0].MenfiMiqdar ?? 0);
                 }
                 else
                 {
@@ -1326,7 +1330,13 @@ namespace FinNex.Application.Services.HR
             JetonRengi = x.JetonTeyinati.Rengi,
             JetonIkon = x.JetonTeyinati.Ikon,
             JetonRengKodu = x.JetonTeyinati.RengKodu,
-            JetonSaatDeyeri = x.JetonTeyinati.SaatDeyeri,
+            // Menfi növdə dondurulmuş miqdar (MenfiMiqdar) üstünlük təşkil edir —
+            // kataloqun sonradan dəyişən cari dəyəri tarixi "kəsilən saat"i
+            // dəyişməsin (07.10.2026, KRİTİK). Köhnə (migrationdan əvvəlki)
+            // sətirlərdə MenfiMiqdar NULL-dur, canlı dəyərə geri düşür.
+            JetonSaatDeyeri = x.JetonTeyinati.Nov == JetonNovu.Menfi && x.MenfiMiqdar.HasValue
+                ? x.MenfiMiqdar.Value
+                : x.JetonTeyinati.SaatDeyeri,
             JetonVahid      = x.JetonTeyinati.Vahid,
             QalanSaat       = x.QalanSaat,
             QazanmaTarixi   = x.QazanmaTarixi,

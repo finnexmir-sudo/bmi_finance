@@ -31,5 +31,11 @@ namespace FinNex.Domain.Entities.HR
         // göstərir — audit üçün. FK YOXDUR (qəsdən) — IsciJetonu.Id-yə özünə
         // istinaddır, CLAUDE.md-dəki "sadə int, əlaqə qurma" qaydasına uyğun.
         public int? QaraJetonId { get; set; }
+
+        // YALNIZ Menfi (Qara) jetonlar üçün — kəsinti miqdarı VERİLMƏ ANINDA
+        // (mütləq qiymətlə) dondurulur. JetonTeyinati.SaatDeyeri sonradan
+        // dəyişsə belə bu sahə dəyişmir — "kəsilən saat" tarixi bir hadisədir,
+        // kataloqun cari dəyərindən asılı olmamalıdır (07.10.2026, KRİTİK).
+        public decimal? MenfiMiqdar { get; set; }
     }
 }
