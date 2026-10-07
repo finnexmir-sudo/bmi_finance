@@ -31,5 +31,10 @@ namespace FinNex.Application.DTOs.HR.Jeton
 
         // Xərclənmə tarixi
         public DateTime? XerclenmeTarixi { get; set; }
+
+        // Yalnız Qara (Menfi) jetonlar üçün doldurulur — bu jetonun həqiqətən
+        // kəsdiyi saat (JetonSaatDeyeri − hələ "Gözləyir"/bağışlanmış qalıq).
+        // Null = Menfi deyil / hələ hesablanmayıb.
+        public decimal? QaraJetonKesilenSaat { get; set; }
     }
 }

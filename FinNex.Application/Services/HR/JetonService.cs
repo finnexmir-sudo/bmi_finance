@@ -179,7 +179,35 @@ namespace FinNex.Application.Services.HR
                 .OrderByDescending(x => x.QazanmaTarixi)
                 .ToListAsync();
 
-            return list.Select(MapJeton).ToList();
+            var dtos = list.Select(MapJeton).ToList();
+            await QaraJetonKesilenSaatDoldurAsync(dtos);
+            return dtos;
+        }
+
+        // Menfi (Qara) jetonlar üçün "həqiqətən kəsilən saat"i doldurur —
+        // istifadəçi tələbi (07.10.2026): "verildi və çıxıldı" tarixçə kimi
+        // görünsün. Düstur: JetonSaatDeyeri − (bu Qara Jetona bağlı QaraJetonBorcu
+        // sətirlərinin QalanSaat cəmi). Odenildi sətirlərdə QalanSaat=0 olduğu
+        // üçün cəmə təsir etmir; MuddetiBitib (bağışlanmış) sətirlərdə QalanSaat
+        // hələ qalır — o hissə "kəsilən" sayılmır (həqiqətən yığılmayıb).
+        private async Task QaraJetonKesilenSaatDoldurAsync(IList<IsciJetonuListDto> dtos)
+        {
+            var qaraIds = dtos.Where(d => d.JetonNovu == JetonNovu.Menfi).Select(d => d.Id).ToList();
+            if (qaraIds.Count == 0) return;
+
+            var borclar = await _unitOfWork.Repository<QaraJetonBorcu>()
+                .Query()
+                .Where(x => qaraIds.Contains(x.QaraJetonId))
+                .GroupBy(x => x.QaraJetonId)
+                .Select(g => new { QaraJetonId = g.Key, Cemi = g.Sum(x => x.QalanSaat) })
+                .ToListAsync();
+            var borcDict = borclar.ToDictionary(x => x.QaraJetonId, x => x.Cemi);
+
+            foreach (var dto in dtos.Where(d => d.JetonNovu == JetonNovu.Menfi))
+            {
+                var gozleyen = borcDict.TryGetValue(dto.Id, out var c) ? c : 0m;
+                dto.QaraJetonKesilenSaat = Math.Max(0, dto.JetonSaatDeyeri - gozleyen);
+            }
         }
 
         public async Task<IList<IsciJetonuListDto>> JetonEmeliyyatlariGetirAsync(int? isciId = null)
@@ -198,7 +226,9 @@ namespace FinNex.Application.Services.HR
                 .OrderByDescending(x => x.QazanmaTarixi)
                 .ToListAsync();
 
-            return list.Select(MapJeton).ToList();
+            var dtos = list.Select(MapJeton).ToList();
+            await QaraJetonKesilenSaatDoldurAsync(dtos);
+            return dtos;
         }
 
         public async Task<bool> AktivQaraJetonuVarmiAsync(int isciId)

@@ -1083,6 +1083,35 @@ qapı). **`AktivQaraJetonuVarmiAsync` metodu ÖZÜ silinmədi** — HR-in
 `GetIsciJetonlar` JSON cavabında hələ informativ sahə kimi qalır (heç nəyi
 bloklamır, UI onu oxumur), gələcəkdə lazım olsa deyə saxlanıldı.
 
+### Qara Jeton Kartında "Verildi və Çıxıldı" Tarixçəsi (07.10.2026)
+
+İstifadəçi tələbi: *"indi burda qara jeton işini gördüsə, bildirmək yaxşı
+olmaz? tarixçə kimi qalsın amma verildi və çıxıldı"*. İşçinin "Cüzdanım"
+səhifəsindəki Qara Jeton kartı əvvəl yalnız "Cəza" yazırdı (dəyərdən asılı
+olmayaraq, `ujDeyerGoster`-in köhnə şərti) — nə qədər kəsildiyi görünmürdü.
+
+**Düstur `IsciJetonuListDto.QaraJetonKesilenSaat`** (`JetonSaatDeyeri`
+TEYİNATIN cari dəyəri, tarixə dondurulmur — digər jeton kartları ilə eyni
+qayda): `JetonSaatDeyeri − (bu Qara Jetona bağlı QaraJetonBorcu sətirlərinin
+QalanSaat CƏMİ)`. Niyə bu işləyir:
+- Heç bir borc yaranmayıbsa (tam müsbət/illik-hüquqdan ödənilib) → cəm=0 →
+  **tam dəyər "kəsildi" göstərilir**.
+- Borc **Gözləyir**dirsə → `QalanSaat` hələ qalır → fərq qədər "kəsildi",
+  qalanı "(X saat gözləyir)" qeydi ilə göstərilir.
+- Borc **Odenildi**dirsə → ödəmə zamanı `QalanSaat` artıq 0-a düşür →
+  cəmə təsir etmir, tam dəyər "kəsildi" sayılır (son nəticədə yığılıb).
+- Borc **MuddetiBitib** (bağışlanıb) olsa → `QalanSaat` HEÇ VAXT sıfırlanmır
+  (bax `QaraJetonBorcunuOdeAsync`-dəki `kohneBorclar` dövrü) → o hissə
+  **"kəsildi"yə DAXİL EDİLMİR** — düzgündür, çünki həqiqətən yığılmayıb.
+
+**`QaraJetonKesilenSaatDoldurAsync`** həm `IsciAktivJetonlariniGetirAsync`
+(işçinin Cüzdanı), həm `JetonEmeliyyatlariGetirAsync` (HR-in tam tarixçəsi)
+tərəfindən çağırılır — DTO-ya mapping-dən SONRA, ayrıca toplu sorğu ilə
+(`GroupBy(QaraJetonId)`), çünki `MapJeton` statik metoddur, DB sorğusu apara
+bilmir. **`hr-jeton.js` HƏLƏ bu sahəni OXUMUR** (yalnız `User/user-jeton.js`-
+də tətbiq olundu, istifadəçi konkret "Cüzdanım" səhifəsini göstərmişdi) —
+data artıq göndərilir, HR tərəfə əlavə etmək ayrıca kiçik iş qalır.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK
