@@ -73,6 +73,31 @@
 
     <!-- ── Redim tarixçəsi panel ──────────────────────── -->
     <div id="ujTabRedimler" class="uj-panel" style="display:none">
+        <!-- Qara Jeton kəsintiləri — Redim sorğularından AYRI bölmə (07.10.2026,
+             istifadəçi qərarı): kəsinti işçinin öz seçimi deyil, avtomatik
+             cəzadır, ona görə eyni cədvəldə qarışdırılmır. -->
+        <div class="uj-kesinti-wrap" id="ujKesintiWrap" style="display:none;margin-bottom:22px">
+            <h4 style="margin:0 0 10px;font-size:14px;color:#374151">
+                <i class="bi bi-exclamation-octagon"></i> Qara Jeton Kəsintiləri
+            </h4>
+            <div class="uj-table-wrap">
+                <table class="uj-table">
+                    <thead>
+                        <tr>
+                            <th>Tarix</th>
+                            <th>Səbəb</th>
+                            <th>Kəsilən</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ujKesintiList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <h4 style="margin:0 0 10px;font-size:14px;color:#374151">
+            <i class="bi bi-send"></i> Jeton Xərcləmə Sorğuları
+        </h4>
         <div class="uj-table-wrap">
             <table class="uj-table">
                 <thead>

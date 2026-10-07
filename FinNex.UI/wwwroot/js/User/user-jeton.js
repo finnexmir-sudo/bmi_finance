@@ -41,7 +41,7 @@ function ujSwitchTab(btn, tab) {
     btn.classList.add('uj-tab--active');
     document.querySelectorAll('.uj-panel').forEach(p => p.style.display = 'none');
     document.getElementById('ujTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = '';
-    if (tab === 'redimler') ujLoadRedimler();
+    if (tab === 'redimler') { ujLoadRedimler(); ujRenderKesintiler(); }
 }
 
 // ── Jetonlarım ───────────────────────────────────────────
@@ -53,6 +53,7 @@ async function ujLoadJetonlar() {
         const res = await fetch('/User/Jeton/GetJetonlarim');
         const json = await res.json();
         ujJetonlar = json.data || [];
+        ujRenderKesintiler();
 
         if (!ujJetonlar.length) {
             container.innerHTML = '<div class="uj-empty">Aktiv jetonunuz yoxdur.</div>';
@@ -97,6 +98,39 @@ async function ujLoadRedimler() {
     } catch {
         tbody.innerHTML = '<tr><td colspan="6" class="uj-empty">Xəta baş verdi.</td></tr>';
     }
+}
+
+// Qara Jeton kəsintiləri — ujJetonlar keşindən (yeni fetch lazım deyil, eyni
+// GetJetonlarim cavabı istifadə olunur). "Jetonlarım" tabının kartı ilə eyni
+// qiymətləndirmə (ujDeyerGoster) işlədilir ki, iki yer fərqli rəqəm verməsin.
+function ujRenderKesintiler() {
+    const wrap = document.getElementById('ujKesintiWrap');
+    const tbody = document.getElementById('ujKesintiList');
+    if (!wrap || !tbody) return;
+
+    const qaralar = ujJetonlar.filter(j => j.jetonNovu === 2);
+    if (!qaralar.length) {
+        wrap.style.display = 'none';
+        tbody.innerHTML = '';
+        return;
+    }
+
+    wrap.style.display = '';
+    tbody.innerHTML = qaralar.map(j => {
+        const deyer = Math.abs(j.jetonSaatDeyeri || 0);
+        const kesilen = j.qaraJetonKesilenSaat != null ? j.qaraJetonKesilenSaat : deyer;
+        const tamTedbiq = deyer <= 0 || kesilen >= deyer;
+        const status = tamTedbiq
+            ? '<span class="uj-status uj-status--tesdiqlendi">Tədbiq edilib</span>'
+            : '<span class="uj-status uj-status--gozlenilir">Qismən gözləyir</span>';
+        return `
+            <tr>
+                <td>${ujDate(j.qazanmaTarixi)}</td>
+                <td>${j.sebeb ?? '—'}</td>
+                <td><strong>${ujDeyerGoster(j)}</strong></td>
+                <td>${status}</td>
+            </tr>`;
+    }).join('');
 }
 
 // İşçi öz sorğusunu təsdiqdən əvvəl ləğv edir

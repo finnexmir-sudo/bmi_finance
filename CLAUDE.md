@@ -1252,6 +1252,30 @@ mükafatlar üçün düzgündür.** Artıq BAŞ VERMİŞ bir hadisəni (kəsinti
 tətbiq olunmuş cəza) göstərən HƏR sahə VERİLMƏ/BAŞ VERMƏ ANINDA dondurulmalıdır
 — əks halda kataloqun sonrakı redaktəsi tarixi səssizcə təhrif edir.
 
+### Qara Jeton Kəsintiləri "Xərcləmə Tarixçəsi" Sekmesində (07.10.2026)
+
+İstifadəçi tələbi: artıq tədbiq edilmiş Qara Jeton kəsintiləri "tədbiq edildi"
+kimi qeyd olunsun və Cüzdanımın "Xərcləmə Tarixçəsi" sekmesində görünsün.
+Seçilən variant (3 seçimdən): **AYRICA bölmə** — Qara Jeton kəsintisi işçinin
+öz seçimi olan Redim sorğusu ilə EYNİ cədvəldə qarışdırılmır (konseptual
+fərqli hadisələrdir: biri işçinin iradəsi, digəri avtomatik cəza).
+
+**Tətbiq:** `Areas/User/Views/Jeton/Index.cshtml` — "Xərcləmə Tarixçəsi"
+panelinin yuxarısına `ujKesintiWrap` bloku (yalnız Qara Jeton varsa görünür),
+"Jeton Xərcləmə Sorğuları" cədvəli ilə yanaşı, ayrıca başlıq altında.
+`user-jeton.js` — `ujRenderKesintiler()` **yeni AJAX çağırışı APARMIR**, artıq
+"Jetonlarım" tabı üçün yüklənmiş `ujJetonlar` keşini (`GetJetonlarim`) filtrləyir
+(`jetonNovu === 2`) — iki yer (kart + bu cədvəl) EYNİ `ujDeyerGoster()`
+funksiyasından oxuduğu üçün rəqəm heç vaxt uyğunsuzlaşa bilməz (bax "Bir
+Elementə İKİ YAZICI" qaydası — burada əksinə, İKİ OXUYUCU bir mənbədən oxuyur,
+bu, təhlükəsiz formadır). Çağırılma nöqtələri: `ujLoadJetonlar()` (hər dəfə
+keş yenilənəndə) və `ujSwitchTab('redimler')` (tab açılanda, ehtiyat üçün).
+
+Status sütunu: `kəsilən >= dəyər` olanda "Tədbiq edilib" (yaşıl,
+`uj-status--tesdiqlendi`), qismən qalıbsa "Qismən gözləyir" (sarı,
+`uj-status--gozlenilir`) — hər ikisi mövcud CSS klasları, yeni stil əlavə
+olunmayıb.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK
