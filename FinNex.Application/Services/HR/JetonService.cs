@@ -486,10 +486,13 @@ namespace FinNex.Application.Services.HR
                         return Result.Fail("Bitmə saatı başlama saatından sonra olmalıdır.");
                 }
 
-                // Qara jeton blok yoxlaması
-                var qaraVar = await AktivQaraJetonuVarmiAsync(isciId);
-                if (qaraVar)
-                    return Result.Fail("Aktiv Qara jetonunuz olduğu üçün jeton xərcləyə bilməzsiniz.");
+                // ⚠️ 07.10.2026: Qara Jeton blok yoxlaması BURADAN SİLİNDİ — istifadəçi qərarı.
+                // Əvvəl aktiv Qara Jeton varkən bütün jeton-redim sorğuları bloklanırdı
+                // ("mükafat dondurulur"). Qara Jeton indi verilən AN dəyərini özü kəsdiyi
+                // üçün (bax QaraJetonKesintisiTetbiqEtAsync) əlavə blok artıq mənasızdır —
+                // işçi eyni cəzanı İKİ DƏFƏ (həm saat itkisi, həm redim qadağası) çəkməməlidir.
+                // `AktivQaraJetonuVarmiAsync` metodu özü SİLİNMƏDİ (başqa yerlərdə/gələcəkdə
+                // işlənə bilər), yalnız bu çağırış götürüldü.
 
                 // Seçilmiş jetonları yoxla
                 var jetonlar = await _unitOfWork.Repository<IsciJetonu>()

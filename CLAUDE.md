@@ -1063,6 +1063,26 @@ Qara Jeton borcu varsa (nadir hal), hər biri ayrıca müsbət jeton tələb edi
 `Eded>1` olan təklifdə hər sətir öz növbəsində işləyir, ona görə çox saylı
 jeton verməklə bir neçə borc ardıcıl ödənə bilər.
 
+### Qara Jeton "Xərcləmə Bloku" SİLİNDİ (07.10.2026, istifadəçi qərarı)
+
+Əvvəl aktiv Qara Jeton varkən `AktivQaraJetonuVarmiAsync` bütün jeton-redim
+sorğularını bloklayırdı (`RedimTelebiYaratAsync`, + `User/Jeton/Index`-dəki
+"Qara jeton mövcuddur — xərcləmə bloklanıb" qırmızı xəbərdarlıq, + JS-dəki
+`ujOpenRedimModal` qapısı). İstifadəçi: *"verilən qara jeton işini gördüsə,
+yəni müsbətdən və ya illik saatdan çıxdısa vəssalamda, niyə blokda qalır ki"*.
+
+Haqlı idi — bu blok Qara Jetonun dəyərsiz (SaatDeyeri=0) olduğu **köhnə**
+dövrdən qalmışdı, o vaxt yeganə "cəza" elə bu blok idi. İndi dəyər kəsintisi
+(yuxarı) əsl cəzanı verir — blok saxlansaydı işçi **İKİ DƏFƏ** cəzalanardı
+(saat itkisi + redim qadağası).
+
+**Silinən yerlər:** `JetonService.RedimTelebiYaratAsync` (funksional blok),
+`User/JetonController.Index` (`ViewBag.QaraVar`), `Views/Jeton/Index.cshtml`
+(qırmızı banner + bağlı CSS şərti), `user-jeton.js` (`ujOpenRedimModal`-dakı
+qapı). **`AktivQaraJetonuVarmiAsync` metodu ÖZÜ silinmədi** — HR-in
+`GetIsciJetonlar` JSON cavabında hələ informativ sahə kimi qalır (heç nəyi
+bloklamır, UI onu oxumur), gələcəkdə lazım olsa deyə saxlanıldı.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK

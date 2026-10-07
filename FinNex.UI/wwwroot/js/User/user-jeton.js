@@ -110,10 +110,6 @@ async function ujLegvEtRedim(redimId) {
 
 // ── Redim Modal ───────────────────────────────────────────
 function ujOpenRedimModal() {
-    if (window.ujQaraVar) {
-        ujToast('Qara jeton mövcuddur — jeton xərcləmək mümkün deyil.', 'error');
-        return;
-    }
     ujSelectedIds.clear();
     ujRenderSelectList();
     ujApplyGunToken();

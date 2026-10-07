@@ -2,7 +2,6 @@
     ViewData["Title"] = "Cüzdanım";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var balans = (decimal)(ViewBag.Balans ?? 0m);
-    var qaraVar = (bool)(ViewBag.QaraVar ?? false);
     var isGiris = (string)(ViewBag.IsGiris ?? "09:00");
     var isCixis = (string)(ViewBag.IsCixis ?? "17:45");
     var musbetTeyinatlar = ViewBag.MusbetTeyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>
@@ -14,29 +13,15 @@
 <div class="uj-page">
 
     <!-- ── Balans kartı ────────────────────────────────── -->
-    <div class="uj-balance-card @(qaraVar ? "uj-balance-card--blocked" : "")">
+    <div class="uj-balance-card">
         <div class="uj-balance-icon">
-            @if (qaraVar)
-            {
-                <i class="bi bi-slash-circle-fill"></i>
-            }
-            else
-            {
-                <i class="bi bi-award-fill"></i>
-            }
+            <i class="bi bi-award-fill"></i>
         </div>
         <div class="uj-balance-info">
             <div class="uj-balance-label">Aktiv saat balansı</div>
             <div class="uj-balance-val">@balans.ToString("0.##") saat</div>
-            @if (qaraVar)
-            {
-                <div class="uj-balance-warn">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    Qara jeton mövcuddur — xərcləmə bloklanıb
-                </div>
-            }
         </div>
-        @if (!qaraVar && balans > 0)
+        @if (balans > 0)
         {
             <button class="uj-btn uj-btn--primary" onclick="ujOpenRedimModal()">
                 <i class="bi bi-send"></i> Jeton xərclə
@@ -179,7 +164,6 @@
 @section Scripts {
 <script>
 window.ujBalans = @balans;
-window.ujQaraVar = @(qaraVar ? "true" : "false");
 window.ujIsGiris = '@isGiris';
 window.ujIsCixis = '@isCixis';
 </script>
