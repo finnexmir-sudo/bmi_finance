@@ -1298,6 +1298,33 @@ Status sütunu: `kəsilən >= dəyər` olanda "Tədbiq edilib" (yaşıl,
 `uj-status--gozlenilir`) — hər ikisi mövcud CSS klasları, yeni stil əlavə
 olunmayıb.
 
+### `JetonAnalitikaController` — "Maliyyə Öhdəliyi" Qismən Xərclənmiş Jetonu Tam Dəyərdə Sayırdı (07.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi "HR → Jeton Analitika" kartındakı "52,5 saat / 52,5 ₼" rəqəmini
+soruşanda üzə çıxdı: `JetonAnalitikaController.GetData()`-dakı `toplamSaat`
+(KPI kartı **və** "Maliyyə Öhdəliyi" donut qrafiki) və `deptData.aktivSaat`
+(Departament Müqayisəsi) `aktiveMusbetler.Sum(x => x.JetonTeyinati.
+SaatDeyeri)` yazırdı — jetonun **tam nominal dəyərini**, `x.QalanSaat` isə
+heç nəzərə alınmırdı.
+
+Problem: bir müsbət jeton **qismən** xərclənsə (Qara Jeton kəsintisi və ya
+redim) belə, `QalanSaat` azalsa da, `Status` **Aktiv** qalır (yalnız tam
+sıfırlananda `IstifadeOlunub` olur — bax `QaraJetonKesintisiTetbiqEtAsync`).
+Bu analitika sorğusu `Status==Aktiv` filtrindən sonra `QalanSaat`-a
+baxmadığı üçün, belə bir jetonu **hələ də tam dəyərində** sayırdı — "Bank
+üzrə gələcək xərc" kimi təqdim olunan rəqəm real öhdəlikdən **BÖYÜK** çıxa
+bilərdi.
+
+Kanonik düstur onsuz da layihədə var idi — `JetonService.AktivSaatBalansiAsync`
+(Dashboard/Cüzdanımın işlətdiyi, düzgün yer): `x.QalanSaat ?? x.JetonTeyinati.
+SaatDeyeri`. Analitika kontrolleri bunu təkrarlamaq əvəzinə öz (natamam)
+sorğusunu yazmışdı — **Düzəliş: hər iki yerdə eyni `?? ` fallback-i əlavə
+edildi.**
+
+**Qayda:** "aktiv jeton balansı" hesablayan HƏR yeni sorğu/kontroller
+`AktivSaatBalansiAsync`-in düsturunu təkrarlamalıdır (`QalanSaat ?? SaatDeyeri`),
+`Status==Aktiv` filtri TƏK BAŞINA kifayət etmir — Aktiv ≠ tam dəyərli.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK

@@ -58,7 +58,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Where(x => x.Status == IsciJetonuStatus.Aktiv && x.JetonTeyinati.Nov == JetonNovu.Menfi)
                 .ToList();
 
-            var toplamSaat = aktiveMusbetler.Sum(x => x.JetonTeyinati.SaatDeyeri);
+            // QalanSaat ?? tam dəyər — AktivSaatBalansiAsync ilə EYNİ düstur (07.10.2026
+            // düzəliş): qismən xərclənmiş (redim/Qara Jeton) jeton Aktiv qalsa belə,
+            // tam nominal dəyər yox, real qalıq sayılmalıdır.
+            var toplamSaat = aktiveMusbetler.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
             var toplamAzn = toplamSaat; // 1 saat = 1 AZN
 
             // ── Gözləyən xərcləmə sorğuları ──────────────────────────
@@ -98,7 +101,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     menfi = g.Count(x => x.JetonTeyinati.Nov == JetonNovu.Menfi),
                     aktivSaat = g
                         .Where(x => x.JetonTeyinati.Nov == JetonNovu.Musbat && x.Status == IsciJetonuStatus.Aktiv)
-                        .Sum(x => x.JetonTeyinati.SaatDeyeri)
+                        .Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri)
                 })
                 .OrderByDescending(x => x.musbat + x.menfi)
                 .Take(10)
