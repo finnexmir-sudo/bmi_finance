@@ -100,7 +100,7 @@
             @* ── İcazə saatı (bu il) — yuxarıda, gözə girən ── *@
             <div class="fn-card" style="border-left:4px solid @(Model.IcazeAsib ? "#dc2626" : "#2d6cdf")">
                 <div class="fn-card-head">
-                    <div class="fn-card-title">İcazə saatı — bu il</div>
+                    <div class="fn-card-title">İcazə saatı — bu il (@DateTime.Today.Year)</div>
                     <a asp-area="User" asp-controller="Icaze" asp-action="Index" class="fn-card-link">Hamısı →</a>
                 </div>
                 <div style="display:flex;align-items:baseline;gap:8px;margin:8px 0 12px">

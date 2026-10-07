@@ -1048,6 +1048,17 @@ jetonu YALNIZ `QalanSaat=36`-dan başlayır (artıq yığılmış icazə istifad
 jetondan ÇIXILMIR, `DashboardService`-in öz formülü — `limit − istifadə` —
 bunu ayrıca hesablayır, elə əvvəldən belə idi).
 
+**İl Dashboard kartında da görünür (07.10.2026, istifadəçi istəyi).** İstifadəçi
+sualı aydınlaşdı: "36 Saat Hüququ {il}" adı sırf daxili baza sətridir deyə
+izah edildikdən sonra — *"mənim əslində istəyim elə bir şey idi... heç olmasa
+səhifədə görüntü olaraq elə qeyd edə bilmərik?"*. Yəni hesablama məntiqinə
+TOXUNULMADAN (düz, dəyişməyib), yalnız görüntüyə il əlavə edildi:
+`User/Dashboard/Index.cshtml` → kart başlığı **"İcazə saatı — bu il"** →
+**"İcazə saatı — bu il (@DateTime.Today.Year)"**. `DateTime.Today.Year`
+seçimi qəsdən — `EnsureIllikHuquqJetonuAsync`-in özünün işlətdiyi İLƏ eynidir
+(`JetonVerAsync` → `DateTime.Today.Year`), ayrıca "cari il" sahəsi saxlanmır.
+Sırf mətn dəyişikliyi, DTO/servis toxunulmayıb.
+
 ### Borcun ödənməsi — `JetonVerAsync`-in Musbat qolu
 
 Növbəti dəfə işçiyə MÜSBƏT jeton veriləndə (`JetonService.QaraJetonBorcunuOdeAsync`),
