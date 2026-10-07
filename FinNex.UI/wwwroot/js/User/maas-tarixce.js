@@ -174,7 +174,7 @@
                                 borderWidth: 0,
                                 borderRadius: 6,
                                 maxBarThickness: 34,
-                                order: 2
+                                order: 1
                             },
                             {
                                 label: 'Net Maaş (AZN)',
@@ -190,7 +190,7 @@
                                 pointHoverRadius: 6,
                                 fill: true,
                                 tension: 0.35,
-                                order: 1
+                                order: 2
                             }
                         ]
                     },
