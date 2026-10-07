@@ -54,6 +54,7 @@ namespace FinNex.UI.Areas.User.Models
         public List<DashboardMezuniyyetDto> AktivMuracietler { get; set; } = new();
         public List<DashboardIcazeDto> AktivIcazeler { get; set; } = new();
         public List<BildiriVM> Bildiriler { get; set; } = new();
+        public List<DashboardImtiyazDto> AktivImtiyazlar { get; set; } = new();
 
         // ── DTO-dan map et ──────────────────────────────────────
         public static UserDashboardViewModel FromDto(UserDashboardDto dto) => new()
@@ -132,6 +133,8 @@ namespace FinNex.UI.Areas.User.Models
                     NovText = b.Nov.ToString(),
                 })
                 .ToList(),
+
+            AktivImtiyazlar = dto.AktivImtiyazlar,
         };
     }
 

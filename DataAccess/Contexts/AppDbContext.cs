@@ -130,6 +130,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<XestelikOdenis> XestelikOdenisleri { get; set; }
     public DbSet<Guzest> Guzestler { get; set; }
     public DbSet<IsciGuzest> IsciGuzestler { get; set; }
+    public DbSet<IsciImtiyaz> IsciImtiyazlar { get; set; }
     public DbSet<IsciUsaq> IsciUsaqlari { get; set; }
     public DbSet<IsciHYS> IsciHYSler { get; set; }
     public DbSet<Avans> Avanslar { get; set; }
@@ -1116,6 +1117,20 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .Property(x => x.Qeyd)
             .HasMaxLength(500);
 
+        builder.Entity<IsciImtiyaz>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<IsciImtiyaz>()
+            .Property(x => x.Baslik)
+            .HasMaxLength(200);
+        builder.Entity<IsciImtiyaz>()
+            .Property(x => x.Aciqlama)
+            .HasMaxLength(1000);
+        builder.Entity<IsciImtiyaz>()
+            .HasIndex(x => x.IsciId);
+
         // Avans — MuhasibId FK (NoAction — multi-cascade path)
         builder.Entity<Avans>()
             .HasOne(x => x.Isci)
@@ -1891,6 +1906,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         { "Maas",                 "Maaş Hesablaması" },
         { "Xestelik",             "Xəstəlik" },
         { "IsciGuzest",           "İşçi Güzəşti" },
+        { "IsciImtiyaz",          "İşçi İmtiyazı" },
         { "IsciTeyinat",          "İşçi Təyinat" },
         { "Teklif",               "Teklif/Boşluq/Şikayət" },
     };

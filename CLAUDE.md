@@ -1341,6 +1341,52 @@ bax "`FindFirstValue` CS1061" bölməsindəki xəbərdarlıq. İstifadəçi Visu
 ver → balans azalsın → müsbət jeton ver → borc ödənsin) — "Maliyyəyə/balansa
 toxunan hər dəyişiklik" qaydasına görə.
 
+## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
+
+İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.
+əlil işçi qaydamıza həftənin 5-ci günü nahardan sonra gedə bilər."* Müzakirədən
+sonra qərarlar:
+
+- **YALNIZ GÖSTƏRİŞ** (istifadəçi qərarı: "Yalnız görüntü") — Davamiyyət
+  statusuna, hesablamaya, heç bir avtomatik qaydaya TƏSİR ETMİR. Rəhbər/HR
+  qeydi oxuyub öz qərarını özü verir. Bu, "Davamiyyət — Ezamiyyət Statusa
+  TOXUNAN BÜTÜN YERLƏR" kimi hesablama zənciri YARATMIR — qəsdən.
+- **Strukturlu sahələr**, sərbəst mətn YOX — `IsciImtiyaz` entity-si: `Baslik`,
+  `HeftaGunu` (nullable `DayOfWeek`, null = hər gün), `BaslamaSaati`/`BitisSaati`
+  (nullable `TimeSpan`, hər ikisi null = bütün gün), `Aciqlama`, `BaslamaTarixi`,
+  `BitmeTarixi` (null = müddətsiz), `Aktivdir`. Bir işçinin bir neçə sətri ola
+  bilər — mürəkkəb çox-günlü seçim widget-i YOXDUR ("üç oxşar sətir premature
+  abstraction-dan yaxşıdır").
+- **HR idarəetməsi**: İşçi Profili (`/HR/Isci/Detail/{id}`) səhifəsinə YENİ
+  sekmə ("İmtiyazlar") — ayrıca səhifə YOX, mövcud tab pattern-ə (`isci-detail-tab`
+  / `isci-tab-panel`, `Views/Isci/Detail.cshtml`-dəki skript) uyğun.
+- **İşçi görüntüsü**: Dashboard-da kiçik kart (`Areas/User/Views/Dashboard/Index.cshtml`)
+  — YALNIZ aktiv (bugün qüvvədə) imtiyazı olan işçidə görünür, heç kimdə yoxdursa
+  kart ümumiyyətlə çıxmır.
+
+**Fayllar:** `IsciImtiyaz` entity (`FinNex.Domain/Entities/HR/`), migration
+`20261007120000_IsciImtiyaz.cs` (yalnız `CreateTable` — `InsertData` YOXDUR, seed
+lazım deyil, siyahı boş başlayır), `IIsciImtiyazService`/`IsciImtiyazService`
+(Clean Architecture: Controller yalnız servisi inject edir), DTO-lar
+`FinNex.Application/DTOs/HR/Imtiyaz/`.
+
+**İki oxuyucu, TƏK mənbə:** `IsciUzreHamisiniGetirAsync` (HR tab — hamısı,
+aktiv/deaktiv) və `AktivImtiyazlarAsync` (Dashboard kartı — yalnız
+`Aktivdir && BaslamaTarixi<=bugün && (BitmeTarixi==null || BitmeTarixi>=bugün)`)
+eyni entity-ni fərqli filtrlə oxuyur — iki ayrı yazıcı yoxdur, səssiz uyğunsuzluq
+riski yoxdur (bax "Bir Elementə İKİ YAZICI" qaydası — burada əksinə, təhlükəsiz
+"iki oxuyucu bir mənbədən" formasıdır).
+
+`DashboardService` üçüncü asılılıq kimi `IIsciImtiyazService` inject edir —
+`IJetonService`-in "36 Saat Hüququ" üçün etdiyi ("başqa servisdən DTO-ya bir
+sahə doldur") naxışın təkrarıdır.
+
+⚠️ **Silinmir, deaktiv edilir** (`Aktivdir=false`) — `MasinMuddetService`/
+`IsciGuzest` ilə eyni konvensiya, tarixçə qalsın. Server tərəfdə validasiya:
+başlıq mütləq, saat aralığında bitiş > başlanğıc, bitmə tarixi başlamadan əvvəl
+ola bilməz — "nə yazılacağını əvvəlcədən göstər" (SQL) qaydasına bənzər, yarımçıq
+qeyd bazaya düşmür.
+
 ## Şərtli Render Olunan Form Sahəsi + Default Parametr = Səssiz Data İtkisi (KRİTİK)
 
 Bir checkbox/input `@if (...)` şərti ilə render olunursa və POST-u qəbul edən metod həmin

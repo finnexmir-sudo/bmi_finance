@@ -68,6 +68,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         services.AddScoped<IIsciService, IsciService>();
+        services.AddScoped<FinNex.Application.Interfaces.HR.IIsciImtiyazService, FinNex.Application.Services.HR.IsciImtiyazService>();
         services.AddScoped<FinNex.Application.Interfaces.HR.IIcraciNoService, FinNex.Application.Services.HR.IcraciNoService>();
         services.AddScoped<FinNex.Application.Interfaces.Mektub.IDaxilMektubService, FinNex.Application.Services.Mektub.DaxilMektubService>();
         services.AddScoped<FinNex.Application.Interfaces.Mektub.IXaricMektubService, FinNex.Application.Services.Mektub.XaricMektubService>();

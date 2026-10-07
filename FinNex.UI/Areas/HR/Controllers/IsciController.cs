@@ -1,5 +1,7 @@
+using FinNex.Application.DTOs.HR.Imtiyaz;
 using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
@@ -10,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -23,6 +26,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IDepartmentService _departmentService;
         private readonly IVezifeService _vezifeService;
         private readonly IIsciTeyinatService _teyinatService;
+        private readonly IIsciImtiyazService _imtiyazService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -31,6 +35,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             IDepartmentService departmentService,
             IVezifeService vezifeService,
             IIsciTeyinatService teyinatService,
+            IIsciImtiyazService imtiyazService,
             UserManager<AppUser> userManager,
             IUnitOfWork unitOfWork)
         {
@@ -38,6 +43,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _departmentService = departmentService;
             _vezifeService = vezifeService;
             _teyinatService = teyinatService;
+            _imtiyazService = imtiyazService;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
         }
@@ -88,6 +94,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
 
             var cariMaas = await _isciService.GetCariMaasAsync(id);
+            var imtiyazlar = await _imtiyazService.IsciUzreHamisiniGetirAsync(id);
 
             var vm = new IsciDetailVM
             {
@@ -113,10 +120,44 @@ namespace FinNex.UI.Areas.HR.Controllers
                 CariMaas = cariMaas,
                 Iban = isci.BankHesabNo,
                 TeyinatTarixcesi = teyinatResult.Success ? teyinatResult.Data ?? new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>() : new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>(),
-                MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>()
+                MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>(),
+                Imtiyazlar = imtiyazlar
             };
 
             return View(vm);
+        }
+
+        private int GetUserId() => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
+
+        // ─────────── İMTİYAZ ───────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> ImtiyazYarat(IsciImtiyazCreateDto dto)
+        {
+            var res = await _imtiyazService.YaratAsync(dto, GetUserId());
+            TempData[res.Success ? "Success" : "Error"] = res.Message;
+            return RedirectToAction(nameof(Detail), new { id = dto.IsciId, tab = "imtiyaz" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> ImtiyazAktivlikDeyis(int id, int isciId, bool aktivdir)
+        {
+            var res = await _imtiyazService.AktivlikDeyisAsync(id, aktivdir, GetUserId());
+            TempData[res.Success ? "Success" : "Error"] = res.Message;
+            return RedirectToAction(nameof(Detail), new { id = isciId, tab = "imtiyaz" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> ImtiyazSil(int id, int isciId)
+        {
+            var res = await _imtiyazService.SilAsync(id, GetUserId());
+            TempData[res.Success ? "Success" : "Error"] = res.Message;
+            return RedirectToAction(nameof(Detail), new { id = isciId, tab = "imtiyaz" });
         }
 
         // ─────────── CREATE GET ───────────

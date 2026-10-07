@@ -66,6 +66,9 @@ namespace FinNex.Application.DTOs.HR.Dashboard
 
         // ── Bildirişlər ───────────────────────────────────────
         public List<DashboardBildiriDto> Bildiriler { get; set; } = new();
+
+        // ── Aktiv imtiyazlar (07.10.2026) — YALNIZ GÖSTƏRİŞ ──
+        public List<DashboardImtiyazDto> AktivImtiyazlar { get; set; } = new();
     }
 
     // ── Davamiyyət təqvim günü ────────────────────────────────
@@ -164,5 +167,15 @@ namespace FinNex.Application.DTOs.HR.Dashboard
             IcazeStatus.ImtinaEdildi => "İmtina edildi",
             _ => "Naməlum"
         };
+    }
+
+    // ── İmtiyaz sətri (dashboard üçün, 07.10.2026) ───────────
+    // YALNIZ GÖSTƏRİŞ — Davamiyyət/hesablamaya təsir etmir.
+    public class DashboardImtiyazDto
+    {
+        public string Baslik { get; set; } = "";
+        public string? Aciqlama { get; set; }
+        public string GunMetni { get; set; } = "";   // "Hər gün" / "Cümə"
+        public string? SaatMetni { get; set; }         // "13:00 – 17:00" / null = bütün gün
     }
 }

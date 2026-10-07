@@ -1,3 +1,4 @@
+using FinNex.Application.DTOs.HR.Imtiyaz;
 using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.DTOs.HR.IsciTeyinat;
 using FinNex.Domain.Entities.HR;
@@ -35,5 +36,8 @@ namespace FinNex.UI.Areas.HR.ViewModels
         // Tarixçə
         public IList<IsciTeyinatDto> TeyinatTarixcesi { get; set; } = new List<IsciTeyinatDto>();
         public IList<IsciMaasTarixcesiDto> MaasTarixcesi { get; set; } = new List<IsciMaasTarixcesiDto>();
+
+        // İmtiyazlar (07.10.2026) — yalnız göstəriş, HR bu sekmedən idarə edir
+        public IList<IsciImtiyazDto> Imtiyazlar { get; set; } = new List<IsciImtiyazDto>();
     }
 }

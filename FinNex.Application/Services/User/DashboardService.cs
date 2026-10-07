@@ -1,6 +1,7 @@
 ﻿using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Dashboard;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -15,12 +16,18 @@ namespace FinNex.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
         private readonly IJetonService _jetonService;
+        private readonly IIsciImtiyazService _imtiyazService;
 
-        public DashboardService(IUnitOfWork unitOfWork, UserManager<AppUser> userManager, IJetonService jetonService)
+        public DashboardService(
+            IUnitOfWork unitOfWork,
+            UserManager<AppUser> userManager,
+            IJetonService jetonService,
+            IIsciImtiyazService imtiyazService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _jetonService = jetonService;
+            _imtiyazService = imtiyazService;
         }
 
         public async Task<Result<UserDashboardDto>> GetDashboardAsync(string username)
@@ -371,6 +378,19 @@ namespace FinNex.Application.Services
                 dto.GecikmeSonTarix = realGecikmeler.Count > 0
                     ? realGecikmeler.Max(x => x.Tarix)
                     : (DateTime?)null;
+
+                // ── 6e. Aktiv imtiyazlar (07.10.2026) — YALNIZ GÖSTƏRİŞ ─
+                // Davamiyyət/hesablamaya TƏSİR ETMİR (bax IIsciImtiyazService sənədi).
+                var aktivImtiyazlar = await _imtiyazService.AktivImtiyazlarAsync(isci.Id);
+                dto.AktivImtiyazlar = aktivImtiyazlar.Select(im => new DashboardImtiyazDto
+                {
+                    Baslik = im.Baslik,
+                    Aciqlama = im.Aciqlama,
+                    GunMetni = im.HeftaGunuAdi,
+                    SaatMetni = im.BaslamaSaati.HasValue || im.BitisSaati.HasValue
+                        ? $"{im.BaslamaSaati?.ToString(@"hh\:mm") ?? "…"} – {im.BitisSaati?.ToString(@"hh\:mm") ?? "…"}"
+                        : null
+                }).ToList();
 
                 // ── 7. Bildirişlər ────────────────────────────────────────
                 // Sadə qaydalar: son maaş, imtina, workflow dəyişikliyi
