@@ -172,7 +172,10 @@ namespace FinNex.Application.Services.HR
                 .Query()
                 .Include(x => x.JetonTeyinati)
                 .Include(x => x.Isci)
-                .Where(x => x.IsciId == isciId && x.Status == IsciJetonuStatus.Aktiv)
+                // "36 Saat Hüququ" işçinin "Cüzdanım" kart siyahısında (User/Jeton/GetJetonlarim)
+                // mükafat kimi görünməsin — bu, ayrıca (Dashboard-dakı) illik hüquqdur, jeton
+                // yalnız daxili uçot üçündür. AktivSaatBalansiAsync-dəki eyni istisnaya uyğun.
+                .Where(x => x.IsciId == isciId && x.Status == IsciJetonuStatus.Aktiv && !x.JetonTeyinati.Sistemli)
                 .OrderByDescending(x => x.QazanmaTarixi)
                 .ToListAsync();
 
