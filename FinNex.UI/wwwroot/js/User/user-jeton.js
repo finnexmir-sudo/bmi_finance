@@ -9,7 +9,9 @@ let ujSelectedIds = new Set();
 // tarixçəsi göstərilir (istifadəçi tələbi, 07.10.2026), adi qalıq göstərimi yox.
 function ujDeyerGoster(j) {
     if (j.jetonNovu === 2) {
-        const deyer = j.jetonSaatDeyeri || 0;
+        // Menfi növdə SaatDeyeri mənfi ədədlə yazılır (HR kataloqunda "-30 saat"
+        // kimi göstərilir) — kəsinti miqdarı üçün mütləq qiymət lazımdır.
+        const deyer = Math.abs(j.jetonSaatDeyeri || 0);
         if (deyer <= 0) return 'Cəza';
         const kesilen = j.qaraJetonKesilenSaat != null ? j.qaraJetonKesilenSaat : deyer;
         const fmt = v => v.toFixed(2).replace(/\.?0+$/, '');

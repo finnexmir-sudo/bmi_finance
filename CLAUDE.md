@@ -1160,6 +1160,44 @@ səhifəsi) açılıb bu konkret Qara Jetonun növünün "Saat dəyəri" sahəsi
 da eyni cür "Cəza" göstərir, sətir 20) — dəyər HR tərəfindən təyin ediləndə kart
 avtomatik "X saat kəsildi"yə keçəcək, kodda əlavə dəyişiklik lazım deyil.
 
+⚠️ **BU QEYD NATAMAM ÇIXDI — əsl səbəb "0" DEYİL, "MƏNFİ" İDİ (07.10.2026,
+İKİNCİ DALĞA, KRİTİK).** İstifadəçinin göndərdiyi `HR → Jeton Kataloqu`
+ekran-görüntüsü göstərdi ki, Qara Jetonun "Dəyər" sütunu **`-30 saat`**-dır —
+HR dəyəri `-30` kimi yazıb, "Menfi" sözünü "mənfi ədəd" kimi başa düşərək
+(məntiqli görünən konvensiya: Musbat jetonlar müsbət, Menfi mənfi). Kataloq
+formasında (`hjtSaat`/`hjtcSaat` input-ları) heç bir `min="0"` məhdudiyyəti
+yoxdur — mənfi yazmağa HEÇ NƏ mane olmur.
+
+**Bu, yuxarıdakı qeyddən qat-qat ciddi idi.** `QaraJetonKesintisiTetbiqEtAsync`-də
+`if (deyer <= 0) return;` yazılmışdı — mənfi dəyəri "təyin edilməyib" (0) ilə
+EYNİ rəftar edirdi və **bütün kəsinti kaskadını səssizcə ləğv edirdi**: FIFO
+kəsinti yox, "36 Saat Hüququ"ndan kəsinti yox, `QaraJetonBorcu` sətri belə
+yaranmır. 07.10.2026-da verilmiş "test" Qara Jetonu buna görə HEÇ NƏYƏ təsir
+etmədi — bu, "Qara Jeton — Dəyərli Kəsinti Mexanizmi" bölməsinin bütün
+məqsədini (köhnə sırf-bayraq davranışına) geri qaytarırdı, HEÇ BİR XƏTA
+vermədən.
+
+**Düzəliş — `Math.Abs` ÜÇ yerdə:**
+1. `QaraJetonKesintisiTetbiqEtAsync` — `miqdar = Math.Abs(deyer)`, kəsinti
+   bundan hesablanır (işarədən asılı olmayaraq eyni nəticə: HR `-30` da,
+   `30` da yazsa fərq etmir).
+2. `QaraJetonKesilenSaatDoldurAsync` — `Math.Abs(dto.JetonSaatDeyeri) − gozleyen`.
+3. `ujDeyerGoster` (`user-jeton.js`) — `Math.abs(j.jetonSaatDeyeri)`.
+
+**Qayda: "Menfi" enum dəyəri VERGİ/İŞARƏ semantikası ilə DATA SAHƏSİNİN işarəsini
+eyniləşdirmə.** `JetonNovu.Menfi` konseptual təsnifatdır (bu jeton MÜKAFAT deyil,
+CƏZADIR); `SaatDeyeri`-nin özü isə HƏR YERDƏ "kəsiləcək MİQDAR"dır — işarəsi
+NECƏ YAZILIRSA YAZILSIN (HR-ın intuitiv seçimi, forma məhdudiyyəti yoxdur),
+miqdarı işlədən kod `Math.Abs` ilə qoruncaqlı olmalıdır. Eyni tələ başqa bir
+"Menfi/Müsbət" tipli sahə əlavə olunanda da yoxlanmalıdır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR.** Kaskad yalnız Qara Jeton **verilmə ANINDA** bir
+dəfə işləyir (`JetonVerAsync` → `QaraJetonKesintisiTetbiqEtAsync`). Fix yalnız
+BUNDAN SONRA verilən Qara Jetonlara təsir edir — 07.10.2026-dakı "test" qeydi
+(artıq effektsiz yaradılıb) **retroaktiv düzəlmir**. Lazım olsa, HR onu ləğv
+edib (əgər ləğv imkanı varsa) yenidən versin, ya da ayrıca SQL/əl düzəlişi
+tələb olunur — bu sessiyada edilmədi, istifadəçi tələb etməyib.
+
 ### Fayllar
 
 `JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK

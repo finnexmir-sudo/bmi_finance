@@ -206,7 +206,9 @@ namespace FinNex.Application.Services.HR
             foreach (var dto in dtos.Where(d => d.JetonNovu == JetonNovu.Menfi))
             {
                 var gozleyen = borcDict.TryGetValue(dto.Id, out var c) ? c : 0m;
-                dto.QaraJetonKesilenSaat = Math.Max(0, dto.JetonSaatDeyeri - gozleyen);
+                // JetonSaatDeyeri Menfi növdə mənfi yazıla bilər (bax yuxarı
+                // QaraJetonKesintisiTetbiqEtAsync-dəki qeyd) — miqdar üçün Abs.
+                dto.QaraJetonKesilenSaat = Math.Max(0, Math.Abs(dto.JetonSaatDeyeri) - gozleyen);
             }
         }
 
@@ -336,10 +338,20 @@ namespace FinNex.Application.Services.HR
         // Qara Jeton verilən AN dəyərini kəsir: (1) müsbət (Sistemli olmayan)
         // jetonlardan FIFO, (2) qalıbsa cari ilin "36 Saat Hüququ" jetonundan,
         // (3) yenə qalıbsa QaraJetonBorcu "Gözləyir" yazılır.
+        //
+        // `deyer` (JetonTeyinati.SaatDeyeri) Menfi növdə HR tərəfindən TƏBİİ
+        // olaraq MƏNFİ ədədlə yazılır (kataloq ekranında "-30 saat" göstərilir —
+        // 07.10.2026, real hadisə: HR Qara Jetonun dəyərini "-30" yazdı, işarəni
+        // "Menfi"ni əks etdirən DÜZGÜN konvensiya kimi gördü). Kəsinti MİQDARI isə
+        // HƏMİŞƏ müsbətdir — ona görə `Math.Abs` ilə oxunur. Fix-dən əvvəl
+        // `if (deyer <= 0) return;` mənfi dəyəri "təyin edilməyib" ilə qarışdırıb
+        // BÜTÜN kəsintini səssizcə ləğv edirdi (07.10.2026-da verilmiş "test"
+        // Qara Jetonu heç nəyi kəsmədi, balans dəyişmədi).
         private async Task QaraJetonKesintisiTetbiqEtAsync(int isciId, int qaraJetonuId, decimal deyer)
         {
-            if (deyer <= 0) return;
-            decimal qalan = deyer;
+            var miqdar = Math.Abs(deyer);
+            if (miqdar <= 0) return;
+            decimal qalan = miqdar;
 
             var musbetJetonlar = await _unitOfWork.Repository<IsciJetonu>()
                 .Query()
