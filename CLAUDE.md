@@ -220,7 +220,7 @@ ki, çağıran tərəf sayğac saxlaya bilsin.
 | `MezuniyyetService.HrTarixDeyisAsync` | ✅ elə həmin metodu işlədir |
 | `JetonService` (jeton redim, tam iş günü) | ✅ inline dirildilmə (metod `private`-dır) |
 | `QayibMarkerBackgroundService` | ✅ `silinmisDict` ilə öz toplu axınında |
-| `ADMSController` | ✅ risk yoxdur — `_db.Davamiyyetler`-ə **filtrsiz** baxır, silinmiş sətri onsuz da tapır |
+| `ADMSController` | ⚠️ **BU SƏTR SƏHV ÇIXDI — bax aşağıdakı 07.10.2026 bölməsi.** "Risk yoxdur, filtrsiz baxır, onsuz da tapır" qənaəti natamam idi: tapmaq kifayət deyil, silinmiş sətri AŞKARDAN SONRA nə etdiyi vacibdir — ADMS onu `Silinib=true` olaraq saxlayıb üzərinə real giriş/çıxış yazırdı, bu da real datanı əbədi görünməz edirdi. 07.10.2026-da `!x.Silinib` filtri + dirilt-məntiqi əlavə edildi. |
 
 ⚠️ **`DavamiyyetUpsertAsync` `private`-dır** — `JetonService` onu çağıra bilmir və
 qaydanın nüsxəsini saxlayır. Qaydaya toxunanda **ikisini birlikdə** dəyiş.
@@ -231,6 +231,52 @@ qaydanın nüsxəsini saxlayır. Qaydaya toxunanda **ikisini birlikdə** dəyiş
 üst-üstə düşmə yoxlaması tutur. İSTİSNA: **dövlət vəzifəsi korreksiyası** mövcud
 əmək məzuniyyətini əvəz etdiyi üçün `İcazəli`-ni də üstələyir (`ustelenenStatuslar`
 parametri ilə açıq verilir).
+
+### ADMSController-in "Risk Yoxdur" Qənaəti SƏHV ÇIXDI — Real Gəliş Görünməz Qaldı (07.10.2026, KRİTİK)
+
+Yuxarıdakı cədvəldə (10.09.2026) `ADMSController` üçün "risk yoxdur, filtrsiz baxır,
+silinmiş sətri onsuz da tapır" yazılmışdı. Bu qənaət **natamam** idi — yalnız "tapırmı"
+sualına cavab verirdi, "tapandan sonra nə yazırmı" sualına yox.
+
+Real hadisə (IsciId=16, Gürşad B.): işçinin bugünkü məzuniyyəti **təsdiqlənib, sonra
+ləğv edilmişdi** → `MezuniyyetService.DavamiyyetIzleriniSilAsync` günün `Davamiyyet`
+sətrini yumşaq sildi (`Silinib=true`). İşçi sonra HƏQİQƏTƏN işə gəldi (08:12 giriş,
+09:36 çıxış — axşama planlaşdırılmış ezamiyyətdən əvvəl). ADMS-in
+
+```csharp
+var movcud = await _db.Davamiyyetler
+    .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
+```
+
+sorğusu `!Silinib` filtri olmadığı üçün elə həmin silinmiş sətri tapdı, real
+giriş/çıxış vaxtlarını **onun üzərinə yazdı**, amma `Silinib`-i heç vaxt `false`
+etmədi. Nəticə: baza sətri (Id=4600) real data ilə dolu idi (`GirisVaxti=08:12:39,
+CixisVaxti=09:36:55, Status=İşdə`), amma `Silinib=1` olduğu üçün **bütün** `!Silinib`
+filtri tətbiq edən sorğulara (HR/Davamiyyət, hesabat, maaş) görünməz qaldı.
+
+**İkinci qatda olan simptom:** gün üçün heç bir görünən qeyd olmadığı üçün işçi
+`DavamiyyetController.GetByTarix`-dəki `ezamiyyetGozleyenIds` sintetik-sətir
+məntiqinə düşdü (həmin yoxlama yalnız ezamiyyətin TARİX aralığına baxır, saata yox)
+və saat 10:45-də, axşamkı 16:00 ezamiyyəti hələ başlamamış, ekranda boş Giriş/Çıxışla
+"Ezamiyyət" statusu göstərildi. İstifadəçinin sualı — *"niyə? heleki getmeyib axi?"* —
+məhz bu idi.
+
+**Düzəliş (yalnız birinci qatda, `ADMSController.cs`):** `movcud` sorğusuna `&&
+!x.Silinib` əlavə edildi. Silinmiş sətir tapılarsa (yeni sətir yaratmaq unikal
+indeksi pozardı), `DavamiyyetUpsertAsync`-dəki "aktiv → silinmiş (dirilt) → yeni"
+sırası təkrarlanır: sətir dirildilir (`Silinib=false`, köhnə status/vaxtlar
+təmizlənir), sonra normal giriş/çıxış axını davam edir.
+
+**İkinci qat (`ezamiyyetGozleyenIds`-in saata baxmaması) BİLƏRƏKDƏN TOXUNULMADI** —
+bu, İcazəli/Xəstəlik üçün də eyni olan, günlük (saatdan asılı olmayan) KPI dizaynının
+bir hissəsidir; bu bölmədəki düzəlişdən sonra işçinin real gəlişi yenidən görünəcəyi
+üçün bu konkret hadisə təkrarlanmayacaq, amma "ezamiyyəti günün hər saatında əvvəlcədən
+göstərmək" davranışının özü ayrıca qərar tələb edir — özbaşına dəyişilmədi.
+
+**Qayda:** "filtrsiz sorğu silinmiş sətri tapır, deməli risk yoxdur" qənaəti
+**natamamdır** — sualı "tapandansa, onun ÜZƏRİNƏ yeni data yazılırmı, və yazılırsa
+`Silinib` geri `false` olurmu?" şəklində tamamla. Tapıb sadəcə oxumaq fərqlidir,
+tapıb **yazmaq** fərqlidir.
 
 ### `ex.Message` TƏK BAŞINA HEÇ NƏ DEMİR
 

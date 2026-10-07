@@ -220,9 +220,36 @@ public class ADMSController : Controller
                              x.BitmeTarixi.Date   >= tarix)
                 .FirstOrDefaultAsync();
 
-            // Həmin işçi+tarix üçün mövcud davamiyyət qeydini tap
+            // Həmin işçi+tarix üçün mövcud davamiyyət qeydini tap — YALNIZ AKTİV sətir.
+            // ⚠️ 07.10.2026, real hadisə (IsciId=16): bu sorğu əvvəl !Silinib filtrsiz idi.
+            // İşçinin bugünkü məzuniyyəti təsdiqlənib sonra ləğv edilmişdi —
+            // MezuniyyetService.DavamiyyetIzleriniSilAsync həmin günün sətrini yumşaq silmişdi
+            // (Silinib=true). Filtrsiz sorğu elə həmin silinmiş sətri tapıb real giriş/çıxışı
+            // ONUN ÜSTÜNƏ yazırdı, Silinib isə heç vaxt false olmurdu — işçinin bugünkü real
+            // gəlişi bütün HR/Davamiyyət sorğularına (hamısı !Silinib tətbiq edir) görünməz
+            // qaldı. Unikal indeks (IsciId, Tarix) ucbatından silinmiş sətri sadəcə görməzdən
+            // gəlib yeni INSERT etmək də olmaz (CLAUDE.md "Yumşaq Silinmiş Sətir" tələsi) —
+            // DavamiyyetUpsertAsync-dəki "aktiv → silinmiş (dirilt) → yeni" sırası təkrarlanır.
             var movcud = await _db.Davamiyyetler
-                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
+                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix && !x.Silinib);
+
+            if (movcud == null)
+            {
+                var silinmisMovcud = await _db.Davamiyyetler
+                    .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix && x.Silinib);
+                if (silinmisMovcud != null)
+                {
+                    silinmisMovcud.Silinib = false;
+                    silinmisMovcud.SilinmeTarixi = null;
+                    silinmisMovcud.GirisVaxti = null;
+                    silinmisMovcud.CixisVaxti = null;
+                    silinmisMovcud.Status = DavamiyyetStatus.Isde;
+                    silinmisMovcud.MaasdanKes = false;
+                    silinmisMovcud.QayibSebebi = null;
+                    await _db.SaveChangesAsync();
+                    movcud = silinmisMovcud;
+                }
+            }
 
             // Məzuniyyət günündə cihaz oxuması davamiyyətə təsir etməməlidir.
             // (Xam punch yuxarıda CihazOxuma cədvəlində saxlanılıb — audit üçün qalır.)
