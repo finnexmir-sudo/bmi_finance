@@ -37,7 +37,9 @@ namespace FinNex.Application.Services.HR
             // KİÇİYƏ (Platin 8 → Qızıl 4 → Gümüş 1 → Bürünc 0.5), sonda mənfi (Qara cəza).
             var list = await _unitOfWork.Repository<JetonTeyinati>()
                 .Query()
-                .Where(x => x.Aktivdir)
+                // Sistemli (məs. "36 Saat Hüququ {il}") HR-in adi kataloqunda
+                // görünmür — avtomatik yaradılır, əl ilə verilmir/redaktə olunmur.
+                .Where(x => x.Aktivdir && !x.Sistemli)
                 .OrderBy(x => x.Nov)
                 .ThenByDescending(x => x.SaatDeyeri)
                 .ThenBy(x => x.Rengi)
@@ -62,11 +64,15 @@ namespace FinNex.Application.Services.HR
                 if (teyinat == null)
                     return Result.Fail("Jeton növü tapılmadı.");
 
+                if (teyinat.Sistemli)
+                    return Result.Fail("Bu jeton növü sistem tərəfindən idarə olunur, əl ilə verilə bilməz.");
+
                 var eded = dto.Eded < 1 ? 1 : (dto.Eded > 50 ? 50 : dto.Eded);
 
                 // Qara jeton üçün eded həmişə 1 — intizam xəbərdarlığı dublicate edilməsin
                 if (teyinat.Nov == JetonNovu.Menfi) eded = 1;
 
+                var yaradilanlar = new List<IsciJetonu>();
                 for (int i = 0; i < eded; i++)
                 {
                     var jeton = new IsciJetonu
@@ -79,11 +85,30 @@ namespace FinNex.Application.Services.HR
                         Status = IsciJetonuStatus.Aktiv
                     };
                     await _unitOfWork.Repository<IsciJetonu>().YaratAsync(jeton);
+                    yaradilanlar.Add(jeton);
                 }
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 // Bildiriş — bir bildiriş çoxsaylı jetonu əhatə edir
                 var isQara = teyinat.Nov == JetonNovu.Menfi;
+
+                // ── Qara Jeton dəyərli kəsinti (07.10.2026, istifadəçi qərarı) ──────
+                // Qara Jeton verilən AN dəyəri kəsilir: (1) müsbət balansdan FIFO,
+                // (2) qalıbsa illik "36 Saat Hüququ"ndan, (3) yenə qalıbsa gözləyən
+                // borc yazılır (il sonuna qədər, növbəti müsbət jetondan ödənilir).
+                if (isQara)
+                {
+                    await QaraJetonKesintisiTetbiqEtAsync(dto.IsciId, yaradilanlar[0].Id, teyinat.SaatDeyeri);
+                }
+                else
+                {
+                    // Növbəti müsbət jeton — əvvəlcə gözləyən Qara Jeton borcunu ödə.
+                    // Hər yaradılan sətir (eded>1 ola bilər) öz növbəsində borcu azaldır;
+                    // tam yeyərsə sıfır qalıqlı (görünən) qalır, qismən yesə qalan hissə
+                    // normal istifadə oluna bilən qalır (istifadəçi qərarı).
+                    foreach (var yeni in yaradilanlar)
+                        await QaraJetonBorcunuOdeAsync(yeni, teyinat);
+                }
                 var nov = isQara ? BildirisNovu.QaraJetonVerildi : BildirisNovu.JetonVerildi;
                 var edSuffix = eded > 1 ? $" × {eded}" : "";
                 var bashliq = isQara
@@ -118,6 +143,9 @@ namespace FinNex.Application.Services.HR
 
                 if (jeton == null)
                     return Result.Fail("Jeton tapılmadı.");
+
+                if (jeton.JetonTeyinati.Sistemli)
+                    return Result.Fail("Bu, işçinin qanuni illik hüququdur — ləğv edilə bilməz.");
 
                 if (jeton.Status != IsciJetonuStatus.Aktiv)
                     return Result.Fail("Yalnız aktiv jetonlar ləğv edilə bilər.");
@@ -187,10 +215,208 @@ namespace FinNex.Application.Services.HR
                 .Include(x => x.JetonTeyinati)
                 .Where(x => x.IsciId == isciId
                     && x.Status == IsciJetonuStatus.Aktiv
-                    && x.JetonTeyinati.Nov == JetonNovu.Musbat)
+                    && x.JetonTeyinati.Nov == JetonNovu.Musbat
+                    && !x.JetonTeyinati.Sistemli)
                 .ToListAsync();
 
             return jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
+        }
+
+        // ── Qara Jeton — dəyərli kəsinti (07.10.2026) ───────────────────────────
+
+        private const decimal IllikHuquqSaat = 36m;
+
+        // Göstərilən ilin "36 Saat Hüququ {il}" JetonTeyinati-sini tapır, yoxdursa
+        // yaradır. Bütün işçilər üçün ORTAQ şablondur (IsciJetonu sətri hər işçiyə
+        // ayrıdır — bax EnsureIllikHuquqJetonuAsync).
+        private async Task<JetonTeyinati> EnsureIllikHuquqTeyinatiAsync(int il)
+        {
+            var ad = $"36 Saat Hüququ {il}";
+            var teyinat = await _unitOfWork.Repository<JetonTeyinati>()
+                .Query().FirstOrDefaultAsync(x => x.Ad == ad && x.Sistemli);
+            if (teyinat != null) return teyinat;
+
+            teyinat = new JetonTeyinati
+            {
+                Ad = ad,
+                Nov = JetonNovu.Musbat,
+                Rengi = JetonRengi.Gumus,
+                SaatDeyeri = IllikHuquqSaat,
+                Vahid = JetonVahid.Saat,
+                Ikon = "bi bi-calendar-check-fill",
+                RengKodu = "#64748b",
+                Tesvir = $"{il}-ci il üçün qanuni illik icazə hüququ (avtomatik yaradılıb) — " +
+                         "Qara Jeton bu hüququn qalığından kəsilə bilər.",
+                BirbasaOdenishli = false,
+                Sistemli = true,
+                Aktivdir = true
+            };
+            await _unitOfWork.Repository<JetonTeyinati>().YaratAsync(teyinat);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return teyinat;
+        }
+
+        // İşçinin göstərilən ilin "36 Saat Hüququ" sətrini (IsciJetonu) tapır,
+        // yoxdursa tam dəyərlə (QalanSaat=null → SaatDeyeri) yaradır.
+        private async Task<IsciJetonu> EnsureIllikHuquqJetonuAsync(int isciId, int il)
+        {
+            var teyinat = await EnsureIllikHuquqTeyinatiAsync(il);
+
+            var jeton = await _unitOfWork.Repository<IsciJetonu>()
+                .Query()
+                .Include(x => x.JetonTeyinati)
+                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.JetonTeyinatiId == teyinat.Id);
+            if (jeton != null) return jeton;
+
+            jeton = new IsciJetonu
+            {
+                IsciId = isciId,
+                JetonTeyinatiId = teyinat.Id,
+                Sebeb = $"{il}-ci il üçün qanuni illik icazə hüququ (avtomatik)",
+                VerenUserId = 0,
+                QazanmaTarixi = new DateTime(il, 1, 1),
+                Status = IsciJetonuStatus.Aktiv
+            };
+            await _unitOfWork.Repository<IsciJetonu>().YaratAsync(jeton);
+            await _unitOfWork.YaddaSaxlaAsync();
+            jeton.JetonTeyinati = teyinat;
+            return jeton;
+        }
+
+        public async Task<decimal> IllikHuquqQalanSaatAsync(int isciId, int? il = null)
+        {
+            var jeton = await EnsureIllikHuquqJetonuAsync(isciId, il ?? DateTime.Today.Year);
+            return jeton.QalanSaat ?? jeton.JetonTeyinati.SaatDeyeri;
+        }
+
+        public async Task<decimal> GozleyenQaraJetonBorcuSaatAsync(int isciId)
+        {
+            var cariIl = DateTime.Today.Year;
+            return await _unitOfWork.Repository<QaraJetonBorcu>()
+                .Query()
+                .Where(x => x.IsciId == isciId
+                    && x.Status == QaraJetonBorcuStatus.Gozleyir
+                    && x.Il == cariIl)
+                .SumAsync(x => x.QalanSaat);
+        }
+
+        // Qara Jeton verilən AN dəyərini kəsir: (1) müsbət (Sistemli olmayan)
+        // jetonlardan FIFO, (2) qalıbsa cari ilin "36 Saat Hüququ" jetonundan,
+        // (3) yenə qalıbsa QaraJetonBorcu "Gözləyir" yazılır.
+        private async Task QaraJetonKesintisiTetbiqEtAsync(int isciId, int qaraJetonuId, decimal deyer)
+        {
+            if (deyer <= 0) return;
+            decimal qalan = deyer;
+
+            var musbetJetonlar = await _unitOfWork.Repository<IsciJetonu>()
+                .Query()
+                .Include(x => x.JetonTeyinati)
+                .Where(x => x.IsciId == isciId
+                    && x.Status == IsciJetonuStatus.Aktiv
+                    && x.JetonTeyinati.Nov == JetonNovu.Musbat
+                    && !x.JetonTeyinati.Sistemli
+                    && x.RedimTelebiId == null)
+                .OrderBy(x => x.QazanmaTarixi)
+                .ToListAsync();
+
+            foreach (var j in musbetJetonlar)
+            {
+                if (qalan <= 0) break;
+                var movcut = j.QalanSaat ?? j.JetonTeyinati.SaatDeyeri;
+                if (movcut <= 0) continue;
+
+                var kesilen = Math.Min(movcut, qalan);
+                var yeniQalan = movcut - kesilen;
+                j.QalanSaat = yeniQalan;
+                if (yeniQalan <= 0) j.Status = IsciJetonuStatus.IstifadeOlunub;
+                j.QaraJetonId = qaraJetonuId;
+                j.XerclenmeTarixi = DateTime.Now;
+                await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
+                qalan -= kesilen;
+            }
+
+            if (qalan > 0)
+            {
+                var illikJeton = await EnsureIllikHuquqJetonuAsync(isciId, DateTime.Today.Year);
+                var illikMovcut = illikJeton.QalanSaat ?? illikJeton.JetonTeyinati.SaatDeyeri;
+                if (illikMovcut > 0)
+                {
+                    var kesilen = Math.Min(illikMovcut, qalan);
+                    illikJeton.QalanSaat = illikMovcut - kesilen;
+                    illikJeton.QaraJetonId = qaraJetonuId;
+                    illikJeton.XerclenmeTarixi = DateTime.Now;
+                    await _unitOfWork.Repository<IsciJetonu>().YenileAsync(illikJeton);
+                    qalan -= kesilen;
+                }
+            }
+
+            if (qalan > 0)
+            {
+                await _unitOfWork.Repository<QaraJetonBorcu>().YaratAsync(new QaraJetonBorcu
+                {
+                    IsciId = isciId,
+                    Il = DateTime.Today.Year,
+                    QalanSaat = qalan,
+                    QaraJetonId = qaraJetonuId,
+                    Status = QaraJetonBorcuStatus.Gozleyir
+                });
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+        }
+
+        // Yeni verilən müsbət jetondan əvvəlcə işçinin gözləyən Qara Jeton
+        // borcunu ödəyir. Keçən illərin ödənməmiş borcu bu çağırışda bağışlanır
+        // (Status=MuddetiBitib) — "qara jeton cari ilin sonuna qədər qüvvədədir".
+        // Yalnız BİR (ən köhnə) gözləyən borcu ödəyir — eyni anda bir neçə borc
+        // varsa, bir yaradılan jeton bunlardan birini ödəyir (eded>1 olanda
+        // hər sətir öz növbəsində işləyir).
+        private async Task QaraJetonBorcunuOdeAsync(IsciJetonu yeniJeton, JetonTeyinati yeniTeyinat)
+        {
+            var cariIl = DateTime.Today.Year;
+
+            var kohneBorclar = await _unitOfWork.Repository<QaraJetonBorcu>()
+                .Query()
+                .Where(x => x.IsciId == yeniJeton.IsciId
+                    && x.Status == QaraJetonBorcuStatus.Gozleyir
+                    && x.Il < cariIl)
+                .ToListAsync();
+            foreach (var kb in kohneBorclar)
+            {
+                kb.Status = QaraJetonBorcuStatus.MuddetiBitib;
+                await _unitOfWork.Repository<QaraJetonBorcu>().YenileAsync(kb);
+            }
+
+            var borc = await _unitOfWork.Repository<QaraJetonBorcu>()
+                .Query()
+                .Where(x => x.IsciId == yeniJeton.IsciId
+                    && x.Status == QaraJetonBorcuStatus.Gozleyir
+                    && x.Il == cariIl)
+                .OrderBy(x => x.YaradilmaTarixi)
+                .FirstOrDefaultAsync();
+
+            if (borc == null)
+            {
+                await _unitOfWork.YaddaSaxlaAsync();
+                return;
+            }
+
+            var deyer = yeniTeyinat.SaatDeyeri;
+            var kesilen = Math.Min(deyer, borc.QalanSaat);
+            borc.QalanSaat -= kesilen;
+            if (borc.QalanSaat <= 0) borc.Status = QaraJetonBorcuStatus.Odenildi;
+            await _unitOfWork.Repository<QaraJetonBorcu>().YenileAsync(borc);
+
+            // Yeni jeton borc qədər "yeyilir" — şəffaflıq üçün sıfır/azalmış
+            // qalıqla, amma GÖRÜNƏN sətir olaraq saxlanır (istifadəçi qərarı).
+            var qalanDeyer = deyer - kesilen;
+            yeniJeton.QalanSaat = qalanDeyer;
+            if (qalanDeyer <= 0) yeniJeton.Status = IsciJetonuStatus.IstifadeOlunub;
+            yeniJeton.QaraJetonId = borc.QaraJetonId;
+            yeniJeton.XerclenmeTarixi = DateTime.Now;
+            await _unitOfWork.Repository<IsciJetonu>().YenileAsync(yeniJeton);
+
+            await _unitOfWork.YaddaSaxlaAsync();
         }
 
         // İcazə ləğv olunanda jetonu geri qaytarır (reverse-FIFO: ən son qazanılandan).
@@ -204,6 +430,7 @@ namespace FinNex.Application.Services.HR
                 .Include(x => x.JetonTeyinati)
                 .Where(x => x.IsciId == isciId
                     && x.JetonTeyinati.Nov == JetonNovu.Musbat
+                    && !x.JetonTeyinati.Sistemli
                     && x.RedimTelebiId == null
                     && (x.Status == IsciJetonuStatus.IstifadeOlunub || x.Status == IsciJetonuStatus.Aktiv))
                 .OrderByDescending(x => x.QazanmaTarixi)
@@ -269,7 +496,8 @@ namespace FinNex.Application.Services.HR
                         && x.IsciId == isciId
                         && x.Status == IsciJetonuStatus.Aktiv
                         && x.RedimTelebiId == null   // başqa gözləyən sorğuya bağlı olmasın (ikiqat rezerv qarşısı)
-                        && x.JetonTeyinati.Nov == JetonNovu.Musbat)
+                        && x.JetonTeyinati.Nov == JetonNovu.Musbat
+                        && !x.JetonTeyinati.Sistemli)
                     .ToListAsync();
 
                 if (jetonlar.Count != dto.JetonIds.Count)
@@ -660,6 +888,7 @@ namespace FinNex.Application.Services.HR
                     .Where(x => x.IsciId == isciId
                         && x.Status == IsciJetonuStatus.Aktiv
                         && x.JetonTeyinati.Nov == JetonNovu.Musbat
+                        && !x.JetonTeyinati.Sistemli // "36 Saat Hüququ" bura daxil deyil — yalnız Qara Jeton ona toxunur
                         && x.RedimTelebiId == null) // başqa sorğuya bağlı jetonları toxunma
                     .OrderBy(x => x.QazanmaTarixi)
                     .ToListAsync();
@@ -953,6 +1182,10 @@ namespace FinNex.Application.Services.HR
                 if (teyinat == null)
                     return Result.Fail("Jeton növü tapılmadı.");
 
+                // Kataloqda görünmür, amma Id ilə birbaşa URL cəhdinə qarşı ikinci qat.
+                if (teyinat.Sistemli)
+                    return Result.Fail("Bu jeton növü sistem tərəfindən idarə olunur, redaktə edilə bilməz.");
+
                 if (string.IsNullOrWhiteSpace(dto.Ad))
                     return Result.Fail("Ad boş ola bilməz.");
 
@@ -1030,7 +1263,8 @@ namespace FinNex.Application.Services.HR
             RengKodu         = x.RengKodu,
             Tesvir           = x.Tesvir,
             BirbasaOdenishli = x.BirbasaOdenishli,
-            Aktivdir         = x.Aktivdir
+            Aktivdir         = x.Aktivdir,
+            Sistemli         = x.Sistemli
         };
 
         private static IsciJetonuListDto MapJeton(IsciJetonu x) => new()

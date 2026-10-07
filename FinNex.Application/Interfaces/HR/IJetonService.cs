@@ -77,4 +77,13 @@ public interface IJetonService
 
     // HR: bütün redim tarixçəsi (audit üçün)
     Task<IList<JetonRedimTelebiListDto>> ButunRedimlerTarixcesiAsync();
+
+    // İşçinin cari (və ya göstərilən) ilin "36 Saat Hüququ" jetonunun qalan
+    // saatı — Dashboard-un illik icazə həddi buradan oxunur (əvvəlki sabit
+    // "36" əvəzinə). Jeton mövcud deyilsə, avtomatik tam dəyərlə yaradılır.
+    Task<decimal> IllikHuquqQalanSaatAsync(int isciId, int? il = null);
+
+    // İşçinin ödənilməmiş (Gözləyir statusunda, cari ilin) Qara Jeton borcunun
+    // cəmi — HR şəffaflıq üçün göstərə bilər.
+    Task<decimal> GozleyenQaraJetonBorcuSaatAsync(int isciId);
 }

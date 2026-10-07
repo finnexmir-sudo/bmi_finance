@@ -15,5 +15,6 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public string? Tesvir { get; set; }
         public bool BirbasaOdenishli { get; set; }
         public bool Aktivdir { get; set; }
+        public bool Sistemli { get; set; }
     }
 }

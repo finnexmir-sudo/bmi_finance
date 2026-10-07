@@ -26,5 +26,10 @@ namespace FinNex.Domain.Entities.HR
 
         // Xərclənmə tarixi (FIFO və ya redim anı)
         public DateTime? XerclenmeTarixi { get; set; }
+
+        // Bu (müsbət) jetonun hansı Qara Jetona görə (tam/qismən) xərcləndiyini
+        // göstərir — audit üçün. FK YOXDUR (qəsdən) — IsciJetonu.Id-yə özünə
+        // istinaddır, CLAUDE.md-dəki "sadə int, əlaqə qurma" qaydasına uyğun.
+        public int? QaraJetonId { get; set; }
     }
 }

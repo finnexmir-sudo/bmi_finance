@@ -14,11 +14,13 @@ namespace FinNex.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IJetonService _jetonService;
 
-        public DashboardService(IUnitOfWork unitOfWork, UserManager<AppUser> userManager)
+        public DashboardService(IUnitOfWork unitOfWork, UserManager<AppUser> userManager, IJetonService jetonService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
+            _jetonService = jetonService;
         }
 
         public async Task<Result<UserDashboardDto>> GetDashboardAsync(string username)
@@ -310,6 +312,12 @@ namespace FinNex.Application.Services
                 }
 
                 dto.IcazeIstifadeSaat = Math.Round(ilinIcazeleri.Sum(IcazeIstifade), 2);
+
+                // "36" sabiti əvəzinə işçinin cari ilin "36 Saat Hüququ" jetonunun
+                // qalan dəyəri oxunur — Qara Jeton bu jetondan kəsirsə limit özü
+                // azalır. İcazənin öz hesablama məntiqi (yuxarıda) DƏYİŞMİR —
+                // sadəcə "36" artıq sabit deyil, jeton-mənbəlidir (07.10.2026).
+                dto.IcazeSaatLimiti = (double)await _jetonService.IllikHuquqQalanSaatAsync(isci.Id, cariIl);
 
                 // ── 6d. Gecikmə balansı (cari il) ────────────────────────
                 // Gün = Status==Gecikme; toplam saat = (faktiki giriş − standart giriş) cəmi.

@@ -13,6 +13,13 @@ namespace FinNex.Domain.Entities.HR
         public bool BirbasaOdenishli { get; set; } = false;
         public bool Aktivdir { get; set; } = true;
 
+        // Sistem tərəfindən idarə olunan tip (məs. "36 Saat Hüququ {il}") —
+        // JetonService.EnsureIllikHuquqTeyinatiAsync özü yaradır. HR-in adi
+        // jeton-növü kataloqunda GÖRÜNMÜR (JetonTeyinatlariGetirAsync bunu süzür)
+        // və normal FIFO-xərcləmə/redim axınları bunu görməzdən gəlir — yalnız
+        // Qara Jeton kəsintisi və Dashboard-un illik limiti ona toxunur.
+        public bool Sistemli { get; set; } = false;
+
         public ICollection<IsciJetonu> IsciJetonlari { get; set; } = new List<IsciJetonu>();
     }
 }

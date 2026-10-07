@@ -1005,6 +1005,80 @@ günü `jTamIsGunu` ilə ayrıca idarə olunur (işçi ümumiyyətlə gəlmir, c
 qalmalıdır. Sistemin özü hesablaya bildiyi və ya işçinin onsuz da bildirdiyi şeyi
 təkrar soruşma — unudulanda səssizcə səhv dəyər yazılır.
 
+## Qara Jeton — Dəyərli Kəsinti Mexanizmi (07.10.2026)
+
+İstifadəçi tapşırığı: Qara Jeton (əvvəllər `JetonTeyinati.Id=4`, `Nov=Menfi`,
+`SaatDeyeri=0` — YALNIZ bayraq idi, `AktivQaraJetonuVarmiAsync` ilə jeton-redim
+sorğularını bloklayırdı) **dəyərli** oldu. Verilən AN kaskad işləyir:
+
+1. İşçinin müsbət (mükafat) jeton balansından **FIFO** (köhnədən) çıxılır.
+2. Qalıbsa — işçinin **cari ilin "36 Saat Hüququ" jetonunun** `QalanSaat`-ından çıxılır.
+3. Yenə qalıbsa — `QaraJetonBorcu` "Gözləyir" statusunda yazılır. Növbəti müsbət
+   jeton veriləndə əvvəlcə bu borc ödənilir (bax aşağı). İl sonunda ödənməmiş
+   qalıq **bağışlanır** (Status=MuddetiBitib) — istifadəçi qərarı: "qara jeton
+   cari ilin sonuna kimi qüvvədədir".
+
+### "36 Saat Hüququ" — illik limit artıq JETONDUR, amma İCAZƏ MƏNTİQİ DƏYİŞMİR
+
+Rəhbərliklə razılaşma: illik 36 saatlıq icazə hüququ artıq `DashboardService`-də
+sabit `36` kimi yox, hər işçinin öz **"36 Saat Hüququ {il}"** adlı `IsciJetonu`
+sətrinin `QalanSaat`-ı kimi təqdim olunur (`JetonService.IllikHuquqQalanSaatAsync`,
+`EnsureIllikHuquqJetonuAsync` — yoxdursa avtomatik, tam dəyərlə yaradılır).
+
+**İstifadəçinin öz sözü: "yenə eyni məntiqnən gedəcək, sadəcə görüntü və
+adlandırma dəyişir — icazə yenədə 3 saat + müsbət jeton".** Yəni:
+- İcazənin özünün hesablanması (3 saat pulsuz + `JetonOdenenSaat` ilə əlavə)
+  **BİR SƏTİR BELƏ DƏYİŞMƏDİ** — `DashboardService`-də YALNIZ `dto.IcazeSaatLimiti`
+  sabit `36` əvəzinə `IllikHuquqQalanSaatAsync`-dən oxunur, `IcazeIstifadeSaat`-ın
+  öz hesablama düsturuna (yuxarıdakı `IcazeIstifade` funksiyası) **TOXUNULMADI**.
+- Bu jeton sətri **adi icazə-jeton-ödənişi (`JetonOdenenSaat`) FIFO-sundan
+  QƏSDƏN kənardadır** (`JetonTeyinati.Sistemli=true` bayrağı) — əks halda
+  `IcazeUcunFifoJetonXercleAsync` (ən köhnə tarixli jetonu seçdiyi üçün, "36 Saat
+  Hüququ" 1 yanvar tarixli olduğundan HƏR ZAMAN birinci seçilərdi) icazənin adi
+  jeton-ödənişini bu hüquqdan yeyərdi — YALNIZ Qara Jeton kəsintisi ona toxunur.
+  `Sistemli=true` olan tiplər həmçinin: HR-in adi jeton kataloqunda (`JetonTeyinatlariGetirAsync`)
+  görünmür, əl ilə verilə/redaktə edilə/ləğv edilə bilmir (`JetonVerAsync`,
+  `JetonTeyinatiYenileAsync`, `JetonLegvetAsync` — üçündə də açıq blok var),
+  `AktivSaatBalansiAsync`-a (işçinin göstərilən mükafat balansı) daxil deyil,
+  jeton-redim (`RedimTelebiYaratAsync`) seçimində görünmür.
+
+**2026-cı il üçün də dərhal tətbiq olundu** (ayrıca keçid ili YOXDUR) — bu,
+tam təhlükəsizdir, çünki icazə hesablaması dəyişmədiyi üçün "36 Saat Hüququ"
+jetonu YALNIZ `QalanSaat=36`-dan başlayır (artıq yığılmış icazə istifadəsi bu
+jetondan ÇIXILMIR, `DashboardService`-in öz formülü — `limit − istifadə` —
+bunu ayrıca hesablayır, elə əvvəldən belə idi).
+
+### Borcun ödənməsi — `JetonVerAsync`-in Musbat qolu
+
+Növbəti dəfə işçiyə MÜSBƏT jeton veriləndə (`JetonService.QaraJetonBorcunuOdeAsync`),
+əvvəlcə cari ilin "Gözləyir" borcu (əgər varsa, ən köhnəsi) ödənilir: yeni jetonun
+dəyəri qədər borc azalır. **Tam yeyərsə — yeni jeton SIFIR qalıqla, amma GÖRÜNƏN
+sətir** olaraq saxlanır (status=İstifadəOlunub) — HR/işçi "mükafat verilib, dərhal
+borcu ödəyib" kimi görür (istifadəçi qərarı). Qismən yeyərsə, qalan hissə normal
+istifadə oluna bilən qalır. Keçən illərin ödənməmiş "Gözləyir" borcu bu çağırışda
+bağışlanır (eyni an aşkarlanır və bağlanır).
+
+⚠️ **Bir yeni jeton yalnız BİR (ən köhnə) borcu ödəyir** — eyni anda bir neçə
+Qara Jeton borcu varsa (nadir hal), hər biri ayrıca müsbət jeton tələb edir.
+`Eded>1` olan təklifdə hər sətir öz növbəsində işləyir, ona görə çox saylı
+jeton verməklə bir neçə borc ardıcıl ödənə bilər.
+
+### Fayllar
+
+`JetonTeyinati.Sistemli` (yeni sütun), `IsciJetonu.QaraJetonId` (yeni, FK
+YOXDUR — sadə audit üçün int), `QaraJetonBorcu` (yeni cədvəl) —
+migration `20261007100000_QaraJeton.cs` (yalnız sütun/cədvəl, **INSERT yoxdur** —
+"36 Saat Hüququ" tipi runtime-da `EnsureIllikHuquqTeyinatiAsync` ilə öz-özünə
+yaranır, CLAUDE.md-dəki `InsertData` tələsinə düşməmək üçün qəsdən belə).
+`DashboardService` `IJetonService` inject edir (yeni asılılıq).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, metod imzaları, DTO sahələri, namespace-lər bir-bir tutuşduruldu) —
+bax "`FindFirstValue` CS1061" bölməsindəki xəbərdarlıq. İstifadəçi Visual Studio-da
+**Rebuild All** ilə yoxlamalı, həm də real ssenari ilə test etməlidir (qara jeton
+ver → balans azalsın → müsbət jeton ver → borc ödənsin) — "Maliyyəyə/balansa
+toxunan hər dəyişiklik" qaydasına görə.
+
 ## Şərtli Render Olunan Form Sahəsi + Default Parametr = Səssiz Data İtkisi (KRİTİK)
 
 Bir checkbox/input `@if (...)` şərti ilə render olunursa və POST-u qəbul edən metod həmin

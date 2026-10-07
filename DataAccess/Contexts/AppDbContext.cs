@@ -186,6 +186,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<JetonTeyinati> JetonTeyinatlari { get; set; }
     public DbSet<IsciJetonu> IsciJetonlari { get; set; }
     public DbSet<JetonRedimTelebi> JetonRedimTelebieri { get; set; }
+    public DbSet<QaraJetonBorcu> QaraJetonBorclari { get; set; }
 
     public DbSet<ReytingKateqoriyasi> ReytingKateqoriyalari { get; set; }
     public DbSet<ReytingParametri> ReytingParametrleri { get; set; }
