@@ -1191,6 +1191,16 @@ NECƏ YAZILIRSA YAZILSIN (HR-ın intuitiv seçimi, forma məhdudiyyəti yoxdur),
 miqdarı işlədən kod `Math.Abs` ilə qoruncaqlı olmalıdır. Eyni tələ başqa bir
 "Menfi/Müsbət" tipli sahə əlavə olunanda da yoxlanmalıdır.
 
+**HR üçün tövsiyə (istifadəçi sualı, 07.10.2026: "bundan sonra jetonu − ilə
+qeyd edək yoxsa mənfisiz?"): MÜSBƏT yazılsın (`30`, `-30` YOX).** `Math.Abs`
+hər ikisini eyni işlədir, ona görə texniki məcburiyyət yoxdur — amma müsbət
+daha təhlükəsizdir: digər bütün jeton növləri (Qızıl, Gümüş, Bürünc, Platin)
+müsbət yazılır, "Menfi" artıq `JetonNovu` enum-unda var (təkrar işarə lazım
+deyil), və gələcəkdə `SaatDeyeri`-ni işlədən yeni bir yer `Math.Abs`-ı unudarsa
+(bu, məhz bu bugun səbəbi idi) mənfi saxlanmış dəyər səssizcə yenə səhv verər.
+Mövcud Qara Jeton növünün kataloqdakı dəyəri `-30`-dan `30`-a HR tərəfindən
+əl ilə dəyişilə bilər (DB sətridir, kod dəyişikliyi deyil).
+
 ⚠️ **GERİYƏ TƏTBİQ OLUNMUR.** Kaskad yalnız Qara Jeton **verilmə ANINDA** bir
 dəfə işləyir (`JetonVerAsync` → `QaraJetonKesintisiTetbiqEtAsync`). Fix yalnız
 BUNDAN SONRA verilən Qara Jetonlara təsir edir — 07.10.2026-dakı "test" qeydi
