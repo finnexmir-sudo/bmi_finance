@@ -2459,6 +2459,52 @@ aylar düzgün göstərəcək. Keçmişi düzəltmək maaşı YENİDƏN HESABLAM
 saxlanmış JSON-u əl ilə patch etməyi) tələb edir — bu sessiyada edilmədi,
 istifadəçi tələb etməyib.
 
+### Detal Panelində "Net" Qabaqcadan Məzuniyyət Pulunu Göstərmirdi (08.10.2026)
+
+İstifadəçi eyni "Əmək haqqı tarixçəsi" səhifəsində ikinci bir uyğunsuzluq
+tapdı: "İyl 2026" üçün qrafikdəki "Net Maaş" **2 359,57** idi, amma həmin aya
+klikləyəndə açılan detal panelinin footer-indəki "Net (ələ keçən)" **1 111,29**
+göstərirdi — sual: *"aldığı məzuniyyət pulunu nəzərə almırsan detalda?"*
+
+Araşdırma göstərdi ki, bu **hesablama səhvi deyil, İKİ EKRANIN qəsdən fərqli
+əhatəsi idi** — "Qabaqcadan Məzuniyyət" bölməsindəki dual-attribution dizaynının
+təbii nəticəsi:
+
+- `GetTarixceData` (qrafik) — `MezQabaqAylikMapAsync` ilə qabaqcadan ödənilmiş
+  məzuniyyətin brüt/net-ini **ÖDƏNİLMƏ ayına** əlavə edir ki, "başlıqda ayın TAM
+  gross/net-i görünsün" (bu, kodda əvvəldən şərh olunub).
+  **1 321,30 + 1 477,25 = 2 798,55** (Gross), **1 111,29 + 1 248,28 = 2 359,57** (Net).
+- `GetDetay` (klik → detal paneli) **HƏMİN ƏLAVƏNİ ETMİRDİ** — `maas.BrutMebleg`/
+  `NetMebleg` yalnız BU AYIN ÖZ hesablama nüvəsini qaytarırdı; qabaqcadan
+  ödənilmiş məzuniyyət yalnız "Məlumat üçün" bölməsində mətnlə görünürdü
+  (`Tip="melumati"`, CƏMİyə düşmür — `MaasHesablamaService.cs:616/638/661/673`-dəki
+  4 sətirdən biri, "Mezuniyyet (qabaqcadan ödənildi)").
+
+**Niyə sadəcə `GetDetay`-ə mez-məbləğini əlavə etmək KİFAYƏT ETMƏZDİ:** panelin
+"Tutulmalar" sətri `res.brut - res.net` kimi TƏYİN OLUNUR (müstəqil cəmlənmir),
+ona görə Gross/Net-ə birgə əlavə etsək "Yekun Zolaq"ın özü bağlanardı — AMMA
+itemized "Gəlirlər"/"Tutulmalar" bölmələrinin öz "Cəmi"si (bu ayın addımlarından
+hesablanır) yeni Net ilə bağlanmazdı, çünki mezin öz vergi sətirləri BAŞQA ayın
+`HesablamaIzahi`-sində qalıb — **yeni, daha gizli bir "Yekun Zolaq" uyğunsuzluğu
+yaradardı**, VM9821-in elə indi düzəldilmiş növündən.
+
+**Həll — birləşdirmədən, AYRICA sətir kimi göstər:** `GetDetay` indi `brut`/`net`-i
+TOXUNULMADAN qaytarır (itemized bölmələrlə bağlı qalır) və **əlavə sahə**
+qaytarır: `mezuniyyetBrut`/`mezuniyyetNet` (mənbə — eyni `MezQabaqAylikMapAsync`,
+bu dəfə tək (il,ay) açarı üçün). `maas-tarixce.js` bu sahə `>0`-dırsa footer-ə
+bağlanmır — ÜSTÜNDƏN **iki yeni sətir** əlavə edir: "+ Məzuniyyət pulu (bu ay
+ayrıca ödənilib)" və aşağısında **ayrıca, vurğulanmış** "CƏMİ bu ay əldə edilən"
+sətri (`res.net + mezNet` — elə qrafikin göstərdiyi rəqəm). Mez olmadıqda
+("Net (ələ keçən)" etiketi dəyişmir) panel köhnə kimi qalır — yalnız qabaqcadan
+məzuniyyəti olan aylarda yeni sətirlər görünür.
+
+**Qayda:** eyni ayın müxtəlif KPI-ları (qrafik başlığı vs detal paneli) müxtəlif
+MƏQSƏD üçün fərqli əhatə seçə bilər (burada: "tam ayın pulu" vs "bu hesablama
+nüvəsinin öz rəqəmi") — bu özü səhv deyil, AMMA iki ekran arasında rəqəm fərqi
+varsa, böyük ekran kiçiyə **görünən, etiketli bir körpü** ilə bağlanmalıdır.
+Sadəcə kiçik ədədi böyüyə "sükutla" tərəziləmək (mezi birbaşa Net-ə qatmaq)
+yeni bir gizli "Yekun Zolaq" tələsinə aparar — bax yuxarıdakı VM9821 bölməsi.
+
 ## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
 
 Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur

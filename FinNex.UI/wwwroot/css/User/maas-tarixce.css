@@ -399,6 +399,16 @@
     padding-top: 10px;
     margin-top: 2px;
 }
+.mt-detay-sum-row--total {
+    font-size: 15px;
+    font-weight: 700;
+    color: #15803d;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 4px;
+}
 
 /* Loading / error states */
 .mt-detay-loading,
@@ -441,4 +451,5 @@
     .mt-detay-row { flex-wrap: wrap; }
     .mt-detay-sum-row { font-size: 12px; }
     .mt-detay-sum-row--net { font-size: 14px; }
+    .mt-detay-sum-row--total { font-size: 14px; }
 }

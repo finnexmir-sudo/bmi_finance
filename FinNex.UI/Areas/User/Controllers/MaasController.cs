@@ -151,7 +151,26 @@ namespace FinNex.UI.Areas.User.Controllers
                 .Select(x => (object)new { addim = x.Addim, izah = x.Izah, mebleg = x.Mebleg, tip = x.Tip })
                 .ToList();
 
-            return Json(new { success = true, il, ay, brut = maas.BrutMebleg, net = maas.NetMebleg + avansMebleg, addimlar });
+            // Qabaqcadan ödənilmiş məzuniyyət bu təqvim ayında ödənilibsə (GetTarixceData-dakı
+            // eyni mənbə) — "melumati" sətirdə yalnız mətnlə göstərilir, brut/net-ə DAXİL
+            // EDİLMİR (bu ayın öz hesablama nüvəsi ilə bağlanır). İşçinin real əlinə keçən
+            // məbləğ isə bunu DA ehtiva edir — ayrıca sahə kimi qaytarırıq ki, UI "bu ay
+            // əldə edilən CƏMİ"ni Net-dən ayrı, aydın göstərə bilsin (08.10.2026, istifadəçi
+            // sualı: "aldığı məzuniyyət pulunu nəzərə almırsan detalda?").
+            var mezQabaqMap = await MezQabaqAylikMapAsync(appUser.IsciId.Value, il, ay);
+            var mezQabaq = mezQabaqMap.TryGetValue((il, ay), out var mv) ? mv : (Brut: 0m, Net: 0m);
+
+            return Json(new
+            {
+                success = true,
+                il,
+                ay,
+                brut = maas.BrutMebleg,
+                net = maas.NetMebleg + avansMebleg,
+                mezuniyyetBrut = mezQabaq.Brut,
+                mezuniyyetNet = mezQabaq.Net,
+                addimlar
+            });
         }
 
         // ── GET /User/Maas/HYS ─────────────────────────────────

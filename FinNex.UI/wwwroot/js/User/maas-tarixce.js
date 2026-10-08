@@ -66,6 +66,12 @@
                 }
 
                 var tutulma = res.brut - res.net;
+                var mezNet = res.mezuniyyetNet || 0;
+                // Məzuniyyət pulu bu ay (ayrıca) ödənilibsə, "Net (ələ keçən)" yalnız bu ayın
+                // ÖZ hesablamasıdır — işçinin əlinə keçən həqiqi cəm bundan böyükdür. Qrafikdəki
+                // "Net Maaş" elə bu CƏMİni göstərir (GetTarixceData) — detalda da aydın göstərilir
+                // ki, iki ekran arasında rəqəm fərqi çaşdırıcı olmasın.
+                var netLabel = mezNet > 0 ? 'Net (bu ayın öz hesablaması)' : 'Net (ələ keçən)';
                 var html =
                     '<div class="mt-detay-header">' +
                         '<div class="mt-detay-title">' +
@@ -91,9 +97,19 @@
                             '<span class="mt-val-red">− ' + formatMoney(tutulma) + ' ₼</span>' +
                         '</div>' +
                         '<div class="mt-detay-sum-row mt-detay-sum-row--net">' +
-                            '<span>Net (ələ keçən)</span>' +
+                            '<span>' + netLabel + '</span>' +
                             '<span class="mt-val-green">' + formatMoney(res.net) + ' ₼</span>' +
                         '</div>' +
+                        (mezNet > 0 ?
+                            '<div class="mt-detay-sum-row">' +
+                                '<span>+ Məzuniyyət pulu (bu ay ayrıca ödənilib)</span>' +
+                                '<span class="mt-val-green">+ ' + formatMoney(mezNet) + ' ₼</span>' +
+                            '</div>' +
+                            '<div class="mt-detay-sum-row mt-detay-sum-row--total">' +
+                                '<span>CƏMİ bu ay əldə edilən</span>' +
+                                '<span class="mt-val-green">' + formatMoney(res.net + mezNet) + ' ₼</span>' +
+                            '</div>'
+                        : '') +
                     '</div>';
 
                 detayPanel.innerHTML = html;
