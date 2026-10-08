@@ -2410,6 +2410,55 @@ məlumat üçün qalıb və etiketində «(məlumat)» yazılır.
 **Qayda:** ekran ilə Excel ixracı **eyni təqdimatda** olmalıdır. İkisi fərqli
 «gross» tərifi işlədirsə, sual gec-tez qayıdır.
 
+### Eyni Tələ, Fərqli Ekran — "Əmək Haqqı Tarixçəsi" Panelində VM 98.2.1 (08.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi "Əmək haqqı tarixçəsi" (User) səhifəsindəki "Hesablama detalı"
+panelini göstərib soruşdu: *"soldaki rəqəmlər çaşdırıcıdır axı, sən gəlir
+2181.36 yazmısan, məzuniyyət gəlirsən çıxıntısız, bu çaşdırıcı deyil?"*
+
+Riyaziyyatı yoxlandı: `Gəlirlər CƏMİ (2181,36) − Tutulmalar CƏMİ (394,57) =
+1786,79`, amma real Net **1773,51** idi — fərq **dəqiq 13,28** idi, yəni elə
+"VM 98.2.1 Gəlirləri" sətrinin məbləği. Kök səbəb tapıldı:
+`MaasHesablamaService.FerdiHesabla`-nın 7.2-ci addımında bu sətir
+`Tip = "gelir"` yazılmışdı, halbuki **öz Izah mətni** açıq deyir: "brüt/net-ə
+DAXİL DEYİL". `maas-tarixce.js`-dəki `section()` funksiyası `tip === 'gelir'`
+olan HƏR sətri "GƏLİRLƏR" panelinin CƏMİsinə toplayır — kodun özü ilə mətnin
+dediyi ZİDDİYYƏT İDİ, eynilə yuxarıdakı "Yekun Zolaq" bölməsindəki tələ, sadəcə
+**fərqli ekranda** (Toplu Maaş footerı yox, fərdi işçinin öz tarixçə paneli).
+
+**Niyə bu, "Məzuniyyət Ödənişi" / "Məzuniyyət Kəsintisi" cütlüyündən FƏRQLİDİR:**
+o ikisi (Gəlirlərdə +268,08, Tutulmalarda −90,48) riyazi cəhətdən DÜZGÜN idi —
+`Gross = Əsas Əməkhaqqı + Məzuniyyət Ödənişi − Məzuniyyət Kəsintisi` və bu,
+qrafikdəki real "Gross Maaş" rəqəmi (2 077,60) ilə tam tutuşur (1900+268,08−90,48).
+Yəni "gəlir bir sütunda, onun kəsintisi başqa sütunda" özü **problem deyil** —
+problem YALNIZ VM 98.2.1-in **özü** nağdsız olduğu halda "gelir" tipinə
+yazılıb CƏMİyə düşməsi idi, ona uyğun heç bir "kəsinti" cütü yoxdur.
+
+**Düzəliş:** `Tip = "gelir"` → `Tip = "melumati"` (bir sətir). Eyni fayldakı
+OXŞAR nağdsız/informativ addımların (VM 98.2.1-in digər 4 bazaya təsiri,
+7 fərqli yerdə) artıq hamısı `"melumati"` yazılıb — 7.2-ci addım elə bu
+konvensiyanın özündə unudulmuş istisna idi. `melumati` tipli sətirlər
+`maas-tarixce.js`-də `hideTotal=true` olan ayrıca "Məlumat üçün" bölməsinə
+düşür (CƏMİ göstərilmir) — HR-ın `Maas/Detal.cshtml` audit cədvəlindəki
+rəng/işarə (`TipBadge`/`MeblegPrefix`) də eyni dəyişiklikdən avtomatik
+düzəldi (ikisi də eyni `HesablamaIzahi` JSON-undan, eyni `Tip` sahəsini oxuyur).
+
+⚠️ **Yalnız GÖSTƏRİŞ düzəlişidir — real hesablamaya SIFIR təsir.** `BrutMebleg`/
+`NetMebleg` heç vaxt bu `izahatlar` siyahısından (və ya onun `Tip`-indən)
+hesablanmır — ayrıca dəyişənlərlə hesablanıb entity-yə yazılır,
+`HesablamaIzahi` sadəcə audit/göstəriş üçün JSON-dur. Yoxlandı: kodda
+`izahatlar.Where(x => x.Tip == ...)`-dan brüt/net çıxaran HEÇ BİR yer yoxdur.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — `HesablamaIzahi` hər ay `FerdiHesabla`
+çağırılanda JSON kimi DONDURULUB yazılır (bax "Kəsilən Saat CANLI Kataloq
+Dəyərindən Asılı İdi" bölməsindəki eyni "dondurma" prinsipi). Keçmiş aylarda
+VM 98.2.1 olan qeydlər hələ köhnə `"Tip":"gelir"` ilə saxlanılıb və "Əmək
+haqqı tarixçəsi" panelində həmin aylar üçün CƏMİ YENƏ DƏ bir az yüksək
+görünəcək (fərq VM9821 məbləği qədərdir) — yalnız BUNDAN SONRA hesablanan
+aylar düzgün göstərəcək. Keçmişi düzəltmək maaşı YENİDƏN HESABLAMAĞI (və ya
+saxlanmış JSON-u əl ilə patch etməyi) tələb edir — bu sessiyada edilmədi,
+istifadəçi tələb etməyib.
+
 ## Razor → CSS/JS Rəqəm — Mədəniyyət (az-AZ vergül) Tələsi (KRİTİK)
 
 Server mədəniyyəti az-AZ-dır: Razor-da `@decimal` **vergüllə** render olunur

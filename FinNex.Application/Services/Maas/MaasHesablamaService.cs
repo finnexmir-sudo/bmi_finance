@@ -904,6 +904,11 @@ namespace FinNex.Application.Services.HR
                 });
 
             // 7.2 VM 98.2.1 — vergiyə cəlb olunan gəlirlər
+            // ⚠️ Tip = "melumati" — "gelir" YOX. Bu sətir brüt/net-ə daxil olmayan
+            // nağdsız (hesabi) gəlirdir (bax Izah mətni) — "gelir" tipli yazılsa
+            // Əmək haqqı tarixçəsi (User) səhifəsindəki "Gəlirlər CƏMİ" bu məbləği
+            // də toplayır, nəticədə Gəlirlər−Tutulmalar ≠ Net olur (08.10.2026,
+            // istifadəçi tapdı — "Yekun Zolaq" bölməsindəki eyni tələ, fərqli ekran).
             if (input.VM9821Meblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
                 {
@@ -911,7 +916,7 @@ namespace FinNex.Application.Services.HR
                     Izah = "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan hesabi gəlir — " +
                            "4 vergi/ayırma bazasına ƏLAVƏ OLUNUR, brüt/net-ə DAXİL DEYİL (nağd ödənmir; tutulmalar artır)",
                     Mebleg = input.VM9821Meblegi,
-                    Tip = "gelir"
+                    Tip = "melumati"
                 });
 
             // 8. Cerime
