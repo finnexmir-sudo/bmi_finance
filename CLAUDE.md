@@ -1341,6 +1341,67 @@ bax "`FindFirstValue` CS1061" bölməsindəki xəbərdarlıq. İstifadəçi Visu
 ver → balans azalsın → müsbət jeton ver → borc ödənsin) — "Maliyyəyə/balansa
 toxunan hər dəyişiklik" qaydasına görə.
 
+## Qara Jeton Ləğvi İndi Kəsintini TAM GERİ QAYTARIR (08.10.2026)
+
+İstifadəçi sualı: *"qara jeton verdim və müsbətdən çıxıldı, sonra o qara jetonu
+silmək olurmu? əgər olursa silinmişi geri qaytaracaqmı?"* — ikinci sual üçün
+cavab əvvəlcə **XEYR** idi (kodu oxuyub tapıldı): `JetonLegvetAsync` yalnız
+Qara Jetonun ÖZ statusunu "Ləğv edildi" edirdi, kaskadın (FIFO müsbətdən çıxma,
+"36 Saat Hüququ"ndan çıxma, `QaraJetonBorcu` sətri) heç bir izinə TOXUNMURDU —
+HR səhvən Qara Jeton versə, ləğv etsə belə zərər işçidə qalırdı. İstifadəçi
+qərarı: *"bəli, çünki səhvən verilmə ehtimalı var axı"* — düzəldildi.
+
+**Yeni ledger — `QaraJetonKesinti`** (hər kaskad addımını AYRI sətirdə saxlayır):
+`QaraJetonId`, `Tur` (`MusbetKesinti`/`IllikHuquqKesinti`/`BorcYarandi`/`BorcOdenisi`),
+`HedefJetonId` (`MusbetKesinti`/`IllikHuquqKesinti`/`BorcOdenisi` üçün — təsirlənən
+`IsciJetonu.Id`), `BorcId` (`BorcYarandi`/`BorcOdenisi` üçün), `Miqdar`,
+`GeriQaytarilib`.
+
+**Niyə sadəcə `IsciJetonu.QaraJetonId`-yə güvənmək KİFAYƏT ETMİRDİ:** o, TƏK
+int sahədir — eyni müsbət jeton gələcəkdə BAŞQA bir Qara Jetondan da kəsilsə,
+üzərinə yazılıb köhnə əlaqəni itirər. Ledger isə hər addımı ayrı saxladığı üçün
+ləğv ediləndə DƏQİQ "bu Qara Jeton bu jetondan NƏ QƏDƏR götürüb" bilinir.
+
+**`QaraJetonKesintisiniGeriQaytarAsync`** (`JetonLegvetAsync`-dən Menfi jeton
+üçün çağırılır) hər `GeriQaytarilib=false` addımı tərsinə çevirir:
+- `MusbetKesinti`/`IllikHuquqKesinti`/`BorcOdenisi` → hədəf jetonun `QalanSaat`-ı
+  `Miqdar` qədər artırılır (`JetonTeyinati.SaatDeyeri`-dən yuxarı keçmir —
+  qoruyucu clamp), `İstifadəOlunub` idisə yenidən `Aktiv` olur. **`BorcOdenisi`
+  xüsusilə vacibdir** — Qara Jetonun yaratdığı borcu SONRADAN verilmiş TAMAMİLƏ
+  AYRI (mükafat) bir jeton ödəmiş ola bilər (`QaraJetonBorcunuOdeAsync`); əsas
+  Qara Jeton ləğv ediləndə bu YENİ jetonun yediyi hissə də geri qayıtmalıdır —
+  əks halda işçi haqsız yerə iki dəfə (əvvəlki kəsinti + sonrakı mükafatın
+  yeyilməsi) zərər çəkmiş olardı.
+- `BorcYarandi` → `QaraJetonBorcu.Status = LegvEdildi` (yeni status dəyəri,
+  `MuddetiBitib`-lə QARIŞDIRMA — səbəb fərqlidir: biri "il bitdi, bağışlandı",
+  o biri "əsas cəza səhv idi, ləğv edildi").
+
+**Mesajdakı rəqəm İKİ DƏFƏ SAYILMAMALIDIR:** `BorcYarandi` addımının ÖZ
+`Miqdar`-ı (borcun YARANDIĞI andakı TAM dəyəri) yox, borcun **CARİ** `QalanSaat`-ı
+istifadə olunur — çünki bu borc artıq qismən `BorcOdenisi` ilə ödənmiş ola bilər
+və həmin hissə onsuz da `berpaSaat` tərəfində sayılıb. İki ayrı cəm (`berpaSaat`
++ `legvBorcSaat`) saxlanılıb, sonda toplanıb — bu, `JetonKesilenSaatDoldurAsync`-
+dəki "ikiqat sayılma" tələsinin (bax Payroll bölməsi) eyni növüdür, fərqli yerdə.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — ledger yalnız BUNDAN SONRA verilən Qara Jetonlar
+üçün yazılır. Köhnə Qara Jeton ləğv edilsə, `QaraJetonKesintisiniGeriQaytarAsync`
+0 addım tapır və `JetonLegvetAsync` açıq xəbərdarlıq qaytarır: *"Bu jeton köhnə
+(jurnal yaradılmazdan əvvəlki) kəsintidir — kəsilən saat avtomatik geri
+qaytarıla bilmədi, əl ilə yoxlayın."* — səssiz "uğurlu" mesaj YAZILMIR, HR
+yanlış əmin olmasın.
+
+**UI tərəfdə heç bir dəyişiklik lazım olmadı** — `IsciAktivJetonlariniGetirAsync`
+(Cüzdanım) və `AktivSaatBalansiAsync` onsuz da `Status == Aktiv` filtri işlədir;
+`jeton.Status = Legvedildi` olan kimi Qara Jeton özbaşına kart siyahısından
+yoxa çıxır (eynilə müsbət jeton ləğvi kimi), HR-ın tam tarixçə cədvəlində isə
+mövcud `hjStatusBadge(3)="Ləğv edildi"` badge-i avtomatik düzgün görünür.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı.**
+İstifadəçi Visual Studio-da **Rebuild All** ilə yoxlamalı, həm də real ssenari
+ilə test etməlidir (qara jeton ver → müsbətdən çıxılsın → ləğv et → müsbətin
+`QalanSaat`-ı dəqiq geri qayıtsın, "36 Saat Hüququ" və gözləyən borc varsa onlar
+da düzəlsin) — "Maliyyəyə/balansa toxunan hər dəyişiklik" qaydasına görə.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.

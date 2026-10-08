@@ -188,6 +188,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciJetonu> IsciJetonlari { get; set; }
     public DbSet<JetonRedimTelebi> JetonRedimTelebieri { get; set; }
     public DbSet<QaraJetonBorcu> QaraJetonBorclari { get; set; }
+    public DbSet<QaraJetonKesinti> QaraJetonKesintileri { get; set; }
 
     public DbSet<ReytingKateqoriyasi> ReytingKateqoriyalari { get; set; }
     public DbSet<ReytingParametri> ReytingParametrleri { get; set; }
@@ -1649,6 +1650,11 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
         builder.Entity<JetonRedimTelebi>()
             .Property(x => x.CemiSaat).HasPrecision(8, 2);
+
+        builder.Entity<QaraJetonKesinti>()
+            .Property(x => x.Miqdar).HasPrecision(18, 2);
+        builder.Entity<QaraJetonKesinti>()
+            .HasIndex(x => x.QaraJetonId);
 
         builder.Entity<JetonRedimTelebi>()
             .HasOne(x => x.Isci)

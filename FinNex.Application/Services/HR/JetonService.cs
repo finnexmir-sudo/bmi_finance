@@ -154,18 +154,111 @@ namespace FinNex.Application.Services.HR
                 if (jeton.Status != IsciJetonuStatus.Aktiv)
                     return Result.Fail("Yalnız aktiv jetonlar ləğv edilə bilər.");
 
+                var isQara = jeton.JetonTeyinati.Nov == JetonNovu.Menfi;
+                var geriQaytarilanSaat = 0m;
+                var geriQaytarilanAdim = 0;
+
+                if (isQara)
+                    (geriQaytarilanSaat, geriQaytarilanAdim) = await QaraJetonKesintisiniGeriQaytarAsync(jeton.Id);
+
                 jeton.Status = IsciJetonuStatus.Legvedildi;
                 jeton.Sebeb = jeton.Sebeb + $" [Ləğvetmə: {sebeb}]";
 
                 await _unitOfWork.Repository<IsciJetonu>().YenileAsync(jeton);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                return Result.Ok("Jeton ləğv edildi.");
+                if (!isQara)
+                    return Result.Ok("Jeton ləğv edildi.");
+
+                var tamDeyer = jeton.MenfiMiqdar ?? Math.Abs(jeton.JetonTeyinati.SaatDeyeri);
+                if (geriQaytarilanAdim == 0 && tamDeyer > 0)
+                    return Result.Ok(
+                        "Qara Jeton ləğv edildi. ⚠️ Bu jeton köhnə (jurnal yaradılmazdan əvvəlki) " +
+                        "kəsintidir — kəsilən saat avtomatik geri qaytarıla bilmədi, əl ilə yoxlayın.");
+
+                return Result.Ok(
+                    $"Qara Jeton ləğv edildi — {geriQaytarilanSaat:0.##} saat ({geriQaytarilanAdim} addımda) geri qaytarıldı.");
             }
             catch (Exception ex)
             {
                 return Result.Fail($"Xəta: {ex.Message}");
             }
+        }
+
+        // Qara Jeton ləğv edilərkən onun kaskadının (bax QaraJetonKesintisiTetbiqEtAsync,
+        // QaraJetonBorcunuOdeAsync) HƏR addımını jurnaldan (QaraJetonKesinti) oxuyub,
+        // tam tərsinə çevirir: hədəf jetonun QalanSaat-ını geri artırır (lazımdırsa
+        // Status-u yenidən Aktiv edir), borcu "LegvEdildi" edir. Qaytarır: (cəmi saat,
+        // addım sayı) — addım sayı 0-dırsa bu jeton bu jurnaldan ƏVVƏL yaradılıb deməkdir
+        // (geriyə tətbiq olunmur, CLAUDE.md-dəki eyni prinsip).
+        private async Task<(decimal Saat, int Adim)> QaraJetonKesintisiniGeriQaytarAsync(int qaraJetonuId)
+        {
+            var addimlar = await _unitOfWork.Repository<QaraJetonKesinti>()
+                .Query()
+                .Where(x => x.QaraJetonId == qaraJetonuId && !x.GeriQaytarilib)
+                .ToListAsync();
+
+            if (addimlar.Count == 0) return (0m, 0);
+
+            // İki ayrı cəm saxlanır ki, mesaj dəqiq olsun:
+            // - berpaSaat: real jetona (və ya 36 saat hüququna) geri yazılan dəyər;
+            // - legvBorcSaat: heç vaxt real jetona çevrilməmiş, sadəcə SİLİNƏN borc.
+            // İkisini bir yerə cəmləsək, qismən ödənmiş borcda məbləğ İKİ DƏFƏ
+            // sayılmış olardı (BorcYarandi-nin tam dəyəri + sonradan BorcOdenisi).
+            var berpaSaat = 0m;
+            var legvBorcSaat = 0m;
+
+            foreach (var addim in addimlar)
+            {
+                switch (addim.Tur)
+                {
+                    case QaraJetonKesintiTuru.MusbetKesinti:
+                    case QaraJetonKesintiTuru.IllikHuquqKesinti:
+                    case QaraJetonKesintiTuru.BorcOdenisi:
+                        if (addim.HedefJetonId is int hedefId)
+                        {
+                            var hedef = await _unitOfWork.Repository<IsciJetonu>()
+                                .Query()
+                                .Include(x => x.JetonTeyinati)
+                                .FirstOrDefaultAsync(x => x.Id == hedefId);
+                            if (hedef != null)
+                            {
+                                var tamDeyer = hedef.JetonTeyinati.SaatDeyeri;
+                                var movcut = hedef.QalanSaat ?? tamDeyer;
+                                var yeni = Math.Min(tamDeyer, movcut + addim.Miqdar);
+                                hedef.QalanSaat = yeni;
+                                if (hedef.Status == IsciJetonuStatus.IstifadeOlunub && yeni > 0)
+                                    hedef.Status = IsciJetonuStatus.Aktiv;
+                                await _unitOfWork.Repository<IsciJetonu>().YenileAsync(hedef);
+                                berpaSaat += addim.Miqdar;
+                            }
+                        }
+                        break;
+
+                    case QaraJetonKesintiTuru.BorcYarandi:
+                        if (addim.BorcId is int borcId)
+                        {
+                            var borc = await _unitOfWork.Repository<QaraJetonBorcu>()
+                                .Query().FirstOrDefaultAsync(x => x.Id == borcId);
+                            if (borc != null)
+                            {
+                                // Hələ ödənilməmiş (BorcOdenisi ilə azalmamış) hissə — bax
+                                // yuxarı qeyd, iki dəfə sayılmasın deyə BorcYarandi-nin
+                                // ÖZ miqdarı yox, borcun CARİ qalan hissəsi götürülür.
+                                legvBorcSaat += borc.QalanSaat;
+                                borc.Status = QaraJetonBorcuStatus.LegvEdildi;
+                                await _unitOfWork.Repository<QaraJetonBorcu>().YenileAsync(borc);
+                            }
+                        }
+                        break;
+                }
+
+                addim.GeriQaytarilib = true;
+                await _unitOfWork.Repository<QaraJetonKesinti>().YenileAsync(addim);
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return (berpaSaat + legvBorcSaat, addimlar.Count);
         }
 
         // ── Sorğular ─────────────────────────────────────────────────────────
@@ -381,6 +474,17 @@ namespace FinNex.Application.Services.HR
                 j.QaraJetonId = qaraJetonuId;
                 j.XerclenmeTarixi = DateTime.Now;
                 await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
+
+                // Dəqiq miqdarı ayrıca jurnalla — ləğv edilsə DƏQİQ bu qədəri
+                // geri qaytarmaq üçün (bax JetonKesintisiniGeriQaytarAsync).
+                await _unitOfWork.Repository<QaraJetonKesinti>().YaratAsync(new QaraJetonKesinti
+                {
+                    QaraJetonId = qaraJetonuId,
+                    Tur = QaraJetonKesintiTuru.MusbetKesinti,
+                    HedefJetonId = j.Id,
+                    Miqdar = kesilen
+                });
+
                 qalan -= kesilen;
             }
 
@@ -395,19 +499,38 @@ namespace FinNex.Application.Services.HR
                     illikJeton.QaraJetonId = qaraJetonuId;
                     illikJeton.XerclenmeTarixi = DateTime.Now;
                     await _unitOfWork.Repository<IsciJetonu>().YenileAsync(illikJeton);
+
+                    await _unitOfWork.Repository<QaraJetonKesinti>().YaratAsync(new QaraJetonKesinti
+                    {
+                        QaraJetonId = qaraJetonuId,
+                        Tur = QaraJetonKesintiTuru.IllikHuquqKesinti,
+                        HedefJetonId = illikJeton.Id,
+                        Miqdar = kesilen
+                    });
+
                     qalan -= kesilen;
                 }
             }
 
             if (qalan > 0)
             {
-                await _unitOfWork.Repository<QaraJetonBorcu>().YaratAsync(new QaraJetonBorcu
+                var borc = new QaraJetonBorcu
                 {
                     IsciId = isciId,
                     Il = DateTime.Today.Year,
                     QalanSaat = qalan,
                     QaraJetonId = qaraJetonuId,
                     Status = QaraJetonBorcuStatus.Gozleyir
+                };
+                await _unitOfWork.Repository<QaraJetonBorcu>().YaratAsync(borc);
+                await _unitOfWork.YaddaSaxlaAsync(); // borc.Id lazımdır
+
+                await _unitOfWork.Repository<QaraJetonKesinti>().YaratAsync(new QaraJetonKesinti
+                {
+                    QaraJetonId = qaraJetonuId,
+                    Tur = QaraJetonKesintiTuru.BorcYarandi,
+                    BorcId = borc.Id,
+                    Miqdar = qalan
                 });
             }
 
@@ -464,6 +587,17 @@ namespace FinNex.Application.Services.HR
             yeniJeton.QaraJetonId = borc.QaraJetonId;
             yeniJeton.XerclenmeTarixi = DateTime.Now;
             await _unitOfWork.Repository<IsciJetonu>().YenileAsync(yeniJeton);
+
+            // Jurnal — əsas Qara Jeton sonradan ləğv edilsə, bu yeni jetonun
+            // borcu ödəmək üçün yediyi hissə də geri qaytarıla bilsin.
+            await _unitOfWork.Repository<QaraJetonKesinti>().YaratAsync(new QaraJetonKesinti
+            {
+                QaraJetonId = borc.QaraJetonId,
+                Tur = QaraJetonKesintiTuru.BorcOdenisi,
+                HedefJetonId = yeniJeton.Id,
+                BorcId = borc.Id,
+                Miqdar = kesilen
+            });
 
             await _unitOfWork.YaddaSaxlaAsync();
         }
