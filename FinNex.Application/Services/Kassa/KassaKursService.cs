@@ -75,16 +75,22 @@ namespace FinNex.Application.Services.Kassa
                 .OrderByDescending(x => x.Id)
                 .FirstOrDefaultAsync();
 
-            // BMI-dəki bug BURADA bağlanır: "Gözləyir"/"Təsdiqləndi" olan
-            // beyannamə ÜZƏRİNƏ yazmaq əvəzinə AÇIQ RƏDD edilir — səssiz
-            // no-op (0 sətir update + yalan "uğurlu" mesajı) ola bilməz.
-            if (movcud != null && movcud.Status != KassaKursStatus.Imtina)
+            // BMI-dəki bug BURADA bağlanır: "Gözləyir" olan beyannamə ÜZƏRİNƏ
+            // yazmaq əvəzinə AÇIQ RƏDD edilir — səssiz no-op (0 sətir update +
+            // yalan "uğurlu" mesajı) ola bilməz. Eyni anda İKİ təklifin
+            // gözləmədə qalmaması üçün yalnız bu hal bloklanır.
+            if (movcud != null && movcud.Status == KassaKursStatus.Gozleyir)
             {
-                var statusAdi = movcud.Status == KassaKursStatus.Gozleyir ? "gözləmədədir" : "artıq təsdiqlənib";
-                return Result.Fail($"Bu gün üçün kurs artıq göndərilib və {statusAdi} — yenidən yazıla bilməz.");
+                return Result.Fail("Bu gün üçün kurs artıq göndərilib və gözləmədədir — təsdiqlənənə/imtina olunana qədər yenidən yazıla bilməz.");
             }
 
-            if (movcud != null)
+            // "Təsdiqləndi" ÜZƏRİNƏ YAZILMIR — gün ərzində kurs dəyişə bilər
+            // (09.10.2026, istifadəçi tələbi), amma artıq təsdiqlənmiş sətir
+            // tarixçə üçün TOXUNULMADAN qalmalıdır. Bu halda "movcud == null"
+            // budağı kimi YENİ beyannamə yaradılır (aşağı) — yalnız "İmtina"
+            // halı mövcud sətri yerində yeniləyir (rədd olunan təklif hələ
+            // qüvvəyə minməyib, onu redaktə edib yenidən göndərmək məntiqlidir).
+            if (movcud != null && movcud.Status == KassaKursStatus.Imtina)
             {
                 // İmtina olunmuş beyannamə — yenidən yazılır, "Gözləyir"ə qayıdır
                 movcud.Status = KassaKursStatus.Gozleyir;
@@ -128,7 +134,9 @@ namespace FinNex.Application.Services.Kassa
                 return Result.Ok("Kurs yenidən göndərildi — təsdiq gözləyir.");
             }
 
-            // Yeni beyannamə
+            // Yeni beyannamə — ya günün ilk təklifidir, ya da artıq təsdiqlənmiş
+            // günə gün ərzində ƏLAVƏ edilən YENİ kurs (köhnə təsdiqlənmiş sətir
+            // tarixçədə olduğu kimi qalır, üzərinə yazılmır).
             var yeni = new KassaKursBeyannamesi
             {
                 Tarix = gun,
@@ -148,7 +156,9 @@ namespace FinNex.Application.Services.Kassa
 
             await repo.YaratAsync(yeni);
             await _uow.YaddaSaxlaAsync();
-            return Result.Ok("Kurs göndərildi — təsdiq gözləyir.");
+            return Result.Ok(movcud != null
+                ? "Yeni kurs göndərildi — təsdiq gözləyir. Əvvəlki təsdiqlənmiş kurs tarixçədə qalır."
+                : "Kurs göndərildi — təsdiq gözləyir.");
         }
 
         public async Task<IList<KassaKursSiyahiDto>> SonBeyannameleriGetirAsync(int gunSayi = 60)

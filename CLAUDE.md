@@ -3210,6 +3210,49 @@ sualı verir. Əvəzinə modulun TƏK giriş nöqtəsini (burada: "Kassa") rol-
 səhifələr arasında keçid saxla. Menyu sırasının sayı istifadəçinin rolundan
 asılı olaraq DƏYİŞMƏMƏLİDİR — arxada hara aparacağı dəyişə bilər.
 
+### "Gün Başına Bir Beyannamə" Qaydası Gün İçində Kurs Dəyişikliyini BLOKLAYIRDI (09.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı ekran göstərdi: günün kursu artıq təsdiqlənmişdi (status
+"Təsdiqləndi"), forma bütün xanaları **solğun/disabled** göstərirdi, heç bir
+göndər düyməsi yox idi — soruşdu: *"gun icinde kursu yeniden deyismek imkani
+yoxdur axi, daha dogrusu yeni kurs elave etmek imkani"*.
+
+**Kök səbəb:** `KassaKursService.SaxlaAsync`-də `movcud != null &&
+movcud.Status != KassaKursStatus.Imtina` şərti **"Gözləyir" VƏ "Təsdiqləndi"**-ni
+EYNİ cür bloklayırdı — "artıq göndərilib, yenidən yazıla bilməz". "Gözləyir"i
+bloklamaq doğrudur (iki təklif eyni anda gözləmədə qalmasın), amma
+"Təsdiqləndi"ni bloklamaq SƏHV idi — valyuta məzənnəsi gün ərzində bir neçə
+dəfə dəyişə bilər (BMI-dən köçürülmüş real tarixçə bunu göstərirdi — eyni
+günə bir neçə fərqli kurs). `KassaKursGunlukDto.YazaBiler` də eyni şərti
+güddüyü üçün forma tam kiliddə qalırdı.
+
+**Həll — üçüncü bir hal əlavə edildi, iki köhnəsi SAXLANILDI:**
+
+| Günün cari statusu | Yeni yazıla bilər? | Nə baş verir |
+|---|---|---|
+| Yoxdur | ✅ | yeni beyannamə |
+| **Gözləyir** | ❌ | *dəyişmədi* — iki təklif eyni anda gözləmədə qalmasın |
+| **Təsdiqləndi** | ✅ **(yeni)** | **YENİ** beyannamə yaradılır, köhnə təsdiqlənmiş sətir **TOXUNULMADAN tarixçədə qalır** |
+| İmtina | ✅ | *dəyişmədi* — mövcud sətir yerində redaktə olunur (rədd olunan təklif hələ qüvvəyə minməyib) |
+
+`KassaKursBeyannamesi.Tarix` üzərində **unikal indeks yoxdur** (`IX_
+KassaKursBeyannameleri_Tarix` adi indeksdir) — eyni günə birdən çox sətir
+yazmaq DB səviyyəsində əvvəldən icazəlidir, yalnız servis qaydası bunu
+bloklayırdı. Migration dəyişikliyi lazım olmadı.
+
+⚠️ **"Təsdiqləndi" üzərinə YAZILMIR, YENİ sətir açılır** — "İmtina"dan fərqli.
+Səbəb: təsdiqlənmiş kurs artıq **real istifadə olunmuş** bir qərardır (bəlkə
+onunla əməliyyat aparılıb) — üzərinə yazsaq audit tarixçəsi təhrif olunardı.
+Rədd olunan (İmtina) təklif isə HEÇ VAXT qüvvəyə minməyib, onu yerində
+düzəldib yenidən göndərmək məntiqlidir — bu fərq qəsdəndir.
+
+**Görüntü:** "Təsdiqləndi" info-box-una izah əlavə edildi ("gün ərzində kurs
+dəyişibsə aşağıda yeni dəyər yazıb göndərə bilərsiniz"), göndər düyməsinin
+mətni statusa görə dəyişir (`"İcra et"` / `"Yenidən göndər"` / `"Yeni kurs
+göndər"`). `GunlukGetirAsync` onsuz da **ən son (ID-yə görə)** beyannaməni
+göstərdiyi üçün yeni göndərilən kurs avtomatik "cari status" kimi görünür,
+əlavə dəyişiklik lazım olmadı.
+
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
 - Eyni tip səhvin bir daha olmaması üçün bu fayla əlavə et.

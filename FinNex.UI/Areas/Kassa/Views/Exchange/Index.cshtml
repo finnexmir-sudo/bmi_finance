@@ -86,7 +86,7 @@
         {
             <div class="fn-info-box mb-3">
                 <i class="bi bi-check-circle"></i>
-                <span>Bu günün kursu təsdiqlənib (@g.TesdiqEdenAdi, @g.TesdiqTarixi?.ToString("dd.MM.yyyy HH:mm")).</span>
+                <span>Bu günün kursu təsdiqlənib (@g.TesdiqEdenAdi, @g.TesdiqTarixi?.ToString("dd.MM.yyyy HH:mm")) — gün ərzində kurs dəyişibsə aşağıda yeni dəyər yazıb göndərə bilərsiniz, əvvəlki təsdiqlənmiş kurs "Son qeydlər"də qalır.</span>
             </div>
         }
 
@@ -128,8 +128,14 @@
 
             @if (g.YazaBiler)
             {
+                var gonderMetni = g.Status switch
+                {
+                    FinNex.Domain.Entities.Kassa.KassaKursStatus.Imtina => "Yenidən göndər",
+                    FinNex.Domain.Entities.Kassa.KassaKursStatus.Tesdiqlendi => "Yeni kurs göndər",
+                    _ => "İcra et"
+                };
                 <button type="submit" class="fn-btn fn-btn--primary mt-3">
-                    <i class="bi bi-send"></i> @(g.Status == FinNex.Domain.Entities.Kassa.KassaKursStatus.Imtina ? "Yenidən göndər" : "İcra et")
+                    <i class="bi bi-send"></i> @gonderMetni
                 </button>
             }
         </form>
