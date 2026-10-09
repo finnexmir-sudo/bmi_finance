@@ -68,64 +68,82 @@
     min-width: 160px;
 }
 
-/* MB (CBAR) kursu — kiçik, uzununa YOX, dik kart: böyük/qalın tarix üstdə,
-   valyutalar altda ALT-ALTA (09.10.2026, istifadəçi tələbi: "card
-   balacalasdir enine boyukdur", "tarixi iri ve qalin et", "kurslari alt
-   alta goster", təkrarlanan "MB kursu" sözü silindi — tarix özü kifayətdir). */
+/* Üstdəki başlıq/alt-başlıq mətni silindi (09.10.2026, istifadəçi tələbi) —
+   yalnız "Təsdiq ekranı" düyməsi sağda qalır, öz sətrində. */
+.kx-top-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+/* MB (CBAR) kursu — dik kart, böyük/qalın tarix üstdə, altda cədvəl
+   görünüşlü valyuta sıraları (09.10.2026, istifadəçi tələbi: "cardi
+   birazda boyut", "carda cedvel gorunusude qat"). */
 .kx-mb-card {
     position: relative;
     display: inline-flex;
     flex-direction: column;
-    width: 168px;
+    width: 220px;
     background: linear-gradient(165deg, #fffaf0 0%, #fff 55%);
     border: 1px solid #ecd9ab;
     border-radius: 14px;
-    padding: 14px 16px 12px;
+    padding: 16px 18px 14px;
     margin-bottom: 16px;
     box-shadow: 0 1px 3px rgba(26, 35, 50, .06);
 }
 
 .kx-mb-icon {
     position: absolute;
-    top: 12px;
-    right: 14px;
-    width: 26px;
-    height: 26px;
+    top: 14px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: #fdf3dc;
     color: #c8962f;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .kx-mb-date {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 800;
     color: #1a2332;
     letter-spacing: .2px;
-    padding-right: 28px;
+    padding-right: 30px;
 }
 
 .kx-mb-rows {
+    margin-top: 12px;
+    padding-top: 4px;
+    border-top: 1px solid #ecd9ab;
+}
+
+.kx-mb-row-head {
     display: flex;
-    flex-direction: column;
-    gap: 7px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #f0e6c8;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #b0a37e;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding: 6px 0 4px;
 }
 
 .kx-mb-row-item {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid #f0e6c8;
 }
 
 .kx-mb-cur {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: #8a93a8;
     letter-spacing: .3px;
