@@ -86,7 +86,7 @@
     position: relative;
     display: inline-flex;
     flex-direction: column;
-    width: 220px;
+    width: 300px;
     background: linear-gradient(165deg, #fffaf0 0%, #fff 60%);
     border: 1px solid #ecd9ab;
     border-radius: 16px;
