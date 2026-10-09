@@ -3170,21 +3170,45 @@ backend-in icazə verdiyi səhifəyə (`ExchangeTesdiq/Index`) heç çatmadan
 Access Denied-ə düşürdü — sidebar-ın "hamıya görünür" qaydası mənasız
 qalırdı, çünki onu göstərəcək səhifəyə girişin özü bloklanmışdı.
 
-**Düzəliş:** top-nav «Departamentlər» dropdown-una **İKİNCİ, ayrıca** giriş
-əlavə edildi — «Kurs təsdiqi» → `ExchangeTesdiq/Index`, **heç bir rol
-şərti olmadan**, sidebar-dakı linklə EYNİ siyasətlə (`_UserLayout.cshtml`,
-Kassa dropdown bloku). İndi Kassa rolu olmayan təsdiqedici bu ikinci
-linkdən birbaşa təsdiq ekranına girir, `Exchange/Index`-ə TOXUNMUR.
+**İlk düzəliş (TƏRK EDİLDİ):** top-nav «Departamentlər» dropdown-una
+**İKİNCİ, ayrıca** giriş əlavə edilmişdi — «Kurs təsdiqi» → `ExchangeTesdiq/Index`.
+İstifadəçi bunu rədd etdi: *"kurs tesdiqini departamentlerde niye saldin,
+kassaya girende orda tesdiq etsin"* — iki ayrı sıra (`Kassa` + `Kurs təsdiqi`)
+UI-da qarışıq göründü, halbuki istifadəçinin gözlədiyi **TƏK** "Kassa" girişi
+idi, rolu özü düzgün yerə aparmalı idi.
+
+**Son düzəliş — `KassaController.Index` (rolsuz, yönləndirici):**
+top-nav-dakı **TƏK** "Kassa" linki artıq `Exchange/Index`-ə YOX,
+`Kassa/Index`-ə (yeni, kiçik controller, `[Authorize]` yetər, heç bir rol
+şərti yoxdur) gedir. Bu controller giriş anında qərar verir:
+
+```csharp
+if (User.IsInRole(RoleNames.Kassa) || User.IsInRole(RoleNames.Admin))
+    return RedirectToAction("Index", "Exchange");
+
+var appUser = await _userManager.GetUserAsync(User);
+if (appUser?.IsciId is int isciId && await _tesdiqEdiciService.TesdiqEdeBilerMiAsync(isciId))
+    return RedirectToAction("Index", "ExchangeTesdiq");
+
+return RedirectToAction("Index", "Exchange");   // heç biri deyilsə — tanış "İcazə yoxdur"
+```
+
+Kassir üçün «Kassa»ya basmaq **eyni** nəticəni verir (Exchange/Index).
+Kassa rolu olmayan təsdiqedici üçün isə **eyni TƏK link** avtomatik
+`ExchangeTesdiq/Index`-ə aparır — iki ayrı menyu sırası görünmür, hər kəs
+«Kassa»ya girib öz səhifəsində çıxır. Sidebar-dakı «Exchange» + «Kurs
+təsdiqi» cütü (Area=Kassa daxilində, hamıya görünür) **TOXUNULMADI** —
+artıq içəridəsən deyə problemsizdir.
 
 **Qayda: «giriş icazəsi backend-də düzgündür» kifayət etmir — NAVİQASİYA
-YOLUNUN ÖZÜ də hər rol üçün mövcud olmalıdır.** Bir səhifəyə (A) giriş
-rol-sərbəstdirsə, amma ora yeganə yol başqa, rol-məhdud bir səhifədən (B)
-keçirsə (B-nin sidebar-ı/menyusu A-ya keçid verir), rolu olmayan istifadəçi
-B-yə çatmadığı üçün A-ya da HEÇ VAXT çata bilmir — backend-in özü düz olsa
-belə. Yeni bir "hamıya açıq, rol-məhdud modulun içində" səhifə (təsdiq
-ekranı, bildiriş paneli və s.) əlavə edəndə ONA GEDƏN BİRBAŞA giriş
-nöqtəsini də (top-nav, breadcrumb, email linki — modula görə) ayrıca yarat,
-rol-məhdud "əsas" səhifənin arxasında gizlətmə.
+YOLUNUN ÖZÜ də hər rol üçün mövcud olmalıdır, AMMA menyunu rol sayına görə
+ÇOXALTMA.** Bir modulun birdən çox daxili səhifəsi (A: kurs daxiletmə, B:
+təsdiq) fərqli rollara xidmət edirsə, **hər səhifə üçün ayrı top-level
+menyu sırası YARATMA** — bu, istifadəçiyə "bunlardan hansını seçim?"
+sualı verir. Əvəzinə modulun TƏK giriş nöqtəsini (burada: "Kassa") rol-
+şüurlu bir yönləndiriciyə çevir, modulun öz daxilində (sidebar/tab) həmin
+səhifələr arasında keçid saxla. Menyu sırasının sayı istifadəçinin rolundan
+asılı olaraq DƏYİŞMƏMƏLİDİR — arxada hara aparacağı dəyişə bilər.
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
