@@ -9,6 +9,10 @@
     var neticelenmisler = (List<KassaKursBeyannameOzetDto>)ViewBag.Neticelenmisler;
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/Kassa/exchange.css" asp-append-version="true" />
+}
+
 <div class="fn-page">
     <div class="fn-page-head">
         <div>
@@ -57,7 +61,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-sm mb-0">
+                <table class="kx-table mb-0">
                     <thead>
                         <tr>
                             <th>Valyuta</th><th>Nağd alış</th><th>Nağd satış</th>
@@ -68,7 +72,7 @@
                         @foreach (var s in b.Setirler)
                         {
                             <tr>
-                                <td class="fw-semibold">@s.Valyuta</td>
+                                <td class="kx-val">@s.Valyuta</td>
                                 <td>@V(s.NagdAlis)</td>
                                 <td>@V(s.NagdSatis)</td>
                                 <td>@V(s.QeyriNagdAlis)</td>
@@ -90,11 +94,11 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <textarea name="sebeb" class="form-control" rows="3" required placeholder="Səbəbi yazın..."></textarea>
+                        <textarea name="sebeb" class="fn-textarea" rows="3" required placeholder="Səbəbi yazın..."></textarea>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
-                        <button type="submit" class="btn btn-danger">İmtina et</button>
+                        <button type="button" class="fn-btn fn-btn--outline" data-bs-dismiss="modal">Bağla</button>
+                        <button type="submit" class="fn-btn fn-btn--primary">İmtina et</button>
                     </div>
                 </form>
             </div>
@@ -111,7 +115,7 @@
     <div class="fn-card mt-3">
         <div class="fn-card-title mb-2">Son nəticələnmiş qeydlər</div>
         <div class="table-responsive">
-            <table class="table table-sm align-middle">
+            <table class="kx-table">
                 <thead>
                     <tr>
                         <th>Tarix</th><th>İcraçı</th><th>Status</th><th>Təsdiq/İmtina edən</th>

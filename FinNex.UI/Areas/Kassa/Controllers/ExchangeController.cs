@@ -1,5 +1,6 @@
 using FinNex.Application.DTOs.Kassa;
 using FinNex.Application.Interfaces.Kassa;
+using FinNex.Application.Interfaces.Kurval;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.Kassa.ViewModels;
@@ -20,11 +21,20 @@ namespace FinNex.UI.Areas.Kassa.Controllers
     public class ExchangeController : Controller
     {
         private readonly IKassaKursService _kassaKursService;
+        private readonly IBmiValyutaService _bmiValyutaService;
         private readonly UserManager<AppUser> _userManager;
 
-        public ExchangeController(IKassaKursService kassaKursService, UserManager<AppUser> userManager)
+        // kurval kodları (IBmiValyutaService.Ehtiyat ilə eyni) — "01" USD, "02" AVRO.
+        private const string UsdKodu = "01";
+        private const string AvroKodu = "02";
+
+        public ExchangeController(
+            IKassaKursService kassaKursService,
+            IBmiValyutaService bmiValyutaService,
+            UserManager<AppUser> userManager)
         {
             _kassaKursService = kassaKursService;
+            _bmiValyutaService = bmiValyutaService;
             _userManager = userManager;
         }
 
@@ -34,10 +44,20 @@ namespace FinNex.UI.Areas.Kassa.Controllers
             ViewData["Title"] = "Exchange — Valyuta kursu";
 
             var secilenTarix = (tarix ?? DateTime.Today).Date;
+            var bugun = DateTime.Today;
+
+            // MB (CBAR) kursu HƏMİŞƏ bugünkü gün üçündür (istifadəçi tələbi:
+            // "cari günə") — seçilmiş tarixdən ASILI DEYİL, kassirə ancaq
+            // bugünkü rəsmi kursla müqayisə lazımdır.
+            var usdTask = _bmiValyutaService.KursAsync(UsdKodu, bugun);
+            var avroTask = _bmiValyutaService.KursAsync(AvroKodu, bugun);
+
             var vm = new ExchangeIndexVM
             {
                 Gunluk = await _kassaKursService.GunlukGetirAsync(secilenTarix),
-                SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync()
+                SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync(),
+                UsdMbKurs = await usdTask,
+                AvroMbKurs = await avroTask
             };
 
             return View(vm);

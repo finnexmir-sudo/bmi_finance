@@ -1,0 +1,102 @@
+/* Kassa — Exchange. Bootstrap-un default `table`/`form-control` görünüşü
+   FinNex-in `fn-` dizayn sisteminə (rəngli fokus halqası, 8px radius) uyğun
+   deyildi (istifadəçi qeydi, 09.10.2026) — bu fayl yalnız cədvəl daxilindəki
+   `fn-input`-ları sıxlaşdırır və cədvəl sətirlərini brend tonlarına uyğunlaşdırır.
+   `fn-input`-un özü user-area.css-dədir, təkrarlanmır. */
+
+.kx-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.kx-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e4e8f0;
+    white-space: nowrap;
+}
+
+.kx-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f2f6;
+    font-size: 13px;
+    color: #1a2332;
+    vertical-align: middle;
+}
+
+.kx-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.kx-table .kx-val {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.kx-table input.fn-input {
+    padding: 7px 10px;
+    font-size: 13px;
+    min-width: 110px;
+}
+
+.kx-table input.fn-input:disabled {
+    background: #f7f8fb;
+    color: #8a93a8;
+}
+
+.kx-date-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.kx-date-row label {
+    font-size: 11px;
+    color: #8a93a8;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.kx-date-row input.fn-input {
+    width: auto;
+    min-width: 160px;
+}
+
+/* MB (CBAR) kursu — kiçik, aydın görüntü, qalan "fn-stat" kartlarından
+   fərqləndirmək üçün sol kənarda qızılı zolaq. */
+.kx-mb-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.kx-mb-tile {
+    flex: 1;
+    min-width: 140px;
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-left: 3px solid #e8b84b;
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.kx-mb-lbl {
+    font-size: 10px;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.kx-mb-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a2332;
+    margin-top: 2px;
+}

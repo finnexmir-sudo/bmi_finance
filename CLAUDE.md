@@ -3057,13 +3057,41 @@ lazımdırsa, YALNIZ bura əlavə et.
 İkisi də BMI-də mövcud idi, FinNex-ə ilk keçiddə DAXİL EDİLMƏDİ (istifadəçi
 tələb etməyib) — lazım olsa ayrıca iş kimi əlavə edilə bilər.
 
-⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
-(mötərizə balansı, using-lər, DTO/entity sahələri, namespace-lər bir-bir
-tutuşduruldu) — bax "`FindFirstValue` CS1061" bölməsindəki xəbərdarlıq.
-İstifadəçi Visual Studio-da **Rebuild All** ilə yoxlamalı, həm də real ssenari
-ilə test etməlidir (kassir yazır → rəhbər (KassaTesdiqEdici siyahısında olan)
-təsdiqləyir/imtina edir → status düzgün dəyişir, icazəsiz adam nə yaza, nə
-təsdiqləyə bilir).
+✅ **Real Visual Studio Rebuild-də yoxlanıldı (09.10.2026).** İlk nəticə
+2 × CS0246 idi — `ExchangeTesdiqController.cs`-də `using FinNex.Domain;`
+unudulmuşdu (`AppUser` o namespace-dədir, `.Entities.HR` yox — bax "Qovluq
+Adı ≠ Namespace" bölməsindəki əlavə). Düzəldildi, bir sətir.
+
+### Görüntü — `fn-` Dizayn Sisteminə Uyğunlaşdırıldı (09.10.2026)
+
+İstifadəçi canlı ekran göstərib soruşdu: *"layoutu duz secmisen? diger
+sehifelerden ferqlenmirki?"* Haqlı idi — ilk versiya `fn-page`/`fn-card`/
+`fn-btn` ilə başlayırdı (düzgün), amma cədvəl və input-lar **xam Bootstrap**
+idi (`table`, `form-control`) — `user-area.css`-dəki brendli `.fn-input`
+(qızılı fokus halqası, 8px radius) və modul-xüsusi cədvəl stilinin (`pk-*`,
+Kocurme-də; `av-*`, Avtopark-da) heç birini işlətmirdi. Nəticə: mavi fokus
+halqalı, boz başlıqlı "yad" görünüş.
+
+**Düzəliş:** yeni, kiçik `wwwroot/css/Kassa/exchange.css` — `.kx-table`
+(brend tonlu başlıq/sərhəd) + `form-control` → `fn-input`/`fn-textarea`,
+`btn btn-*` → `fn-btn fn-btn--*`. Həm `Exchange/Index.cshtml`, həm
+`ExchangeTesdiq/Index.cshtml` yeniləndi.
+
+### MB (CBAR) Rəsmi Kursu — Bugünkü Gün, USD/AVRO (09.10.2026)
+
+İstifadəçi tələbi: *"basda cbar saytindan cari gune 2 kursu gostermeyivi
+isteyirem. USD ve avro, seliqeli sekilde."* Yeni Oracle sorğusu/cədvəl
+qurulmadı — mövcud **`IBmiValyutaService.KursAsync`** (BMI `kurval`,
+`VALYUTA_KURSU` saxlanmış sorğusu, Pul Köçürməsi 20k limitinin onsuz da
+istifadə etdiyi mənbə) tək buraxıldı, sadəcə `ExchangeController.Index`-dən
+`KursAsync("01", bugün)` (USD) və `KursAsync("02", bugün)` (AVRO) çağırılır.
+
+⚠️ **Seçilmiş `tarix` parametrindən ASILI DEYİL** — kassir keçmiş günə baxsa
+belə, yuxarıdakı MB kartı **həmişə bugünkü** rəsmi kursu göstərir (istifadəçi:
+"cari günə"). Oracle əlçatmaz olsa `KursAsync` `null` qaytarır (mövcud
+davranış, dəyişmədim) — kart sadəcə görünmür, forma bloklanmır (BMI özü-öz
+kursu daxil etdiyi üçün bu MB rəqəmi sırf məlumat üçündür, heç bir
+hesablamaya girmir).
 
 ## Xəta Etirafı
 
