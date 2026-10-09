@@ -35,7 +35,8 @@
     </div>
 
     <div class="kx-mb-card">
-        <div class="kx-mb-head"><i class="bi bi-bank"></i> MB rəsmi kursu <span class="kx-mb-date">@Model.MbTarix.ToString("dd.MM.yyyy")</span></div>
+        <div class="kx-mb-icon"><i class="bi bi-bank2"></i></div>
+        <div class="kx-mb-date">@Model.MbTarix.ToString("dd.MM.yyyy")</div>
         <div class="kx-mb-rows">
             <div class="kx-mb-row-item">
                 <span class="kx-mb-cur">USD</span>
@@ -48,7 +49,7 @@
         </div>
         @if (!Model.UsdMbKurs.HasValue || !Model.AvroMbKurs.HasValue)
         {
-            <div class="kx-mb-note">Bəzi kurslar tapılmadı — BMI-də hələ dərc olunmayıb və ya Oracle əlçatmazdır.</div>
+            <div class="kx-mb-note">Bəzi kurslar tapılmadı.</div>
         }
     </div>
 

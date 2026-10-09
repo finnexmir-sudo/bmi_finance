@@ -68,66 +68,78 @@
     min-width: 160px;
 }
 
-/* MB (CBAR) kursu — kompakt, tək kart: üstdə tarix, altda hər valyuta üçün
-   bir sətir. Qalan "fn-stat" kartlarından fərqləndirmək üçün sol kənarda
-   qızılı zolaq (09.10.2026, istifadəçi tələbi: "card halina sal, cox da
-   oyuk olmayan, tarix ve altda kurslar"). */
+/* MB (CBAR) kursu — kiçik, uzununa YOX, dik kart: böyük/qalın tarix üstdə,
+   valyutalar altda ALT-ALTA (09.10.2026, istifadəçi tələbi: "card
+   balacalasdir enine boyukdur", "tarixi iri ve qalin et", "kurslari alt
+   alta goster", təkrarlanan "MB kursu" sözü silindi — tarix özü kifayətdir). */
 .kx-mb-card {
-    display: inline-block;
-    background: #fff;
-    border: 1px solid #e4e8f0;
-    border-left: 3px solid #e8b84b;
-    border-radius: 10px;
-    padding: 10px 14px;
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    width: 168px;
+    background: linear-gradient(165deg, #fffaf0 0%, #fff 55%);
+    border: 1px solid #ecd9ab;
+    border-radius: 14px;
+    padding: 14px 16px 12px;
     margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(26, 35, 50, .06);
 }
 
-.kx-mb-head {
-    font-size: 11px;
-    font-weight: 600;
-    color: #8a93a8;
-    text-transform: uppercase;
-    letter-spacing: .4px;
+.kx-mb-icon {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fdf3dc;
+    color: #c8962f;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    font-size: 13px;
 }
 
 .kx-mb-date {
-    font-weight: 400;
-    text-transform: none;
-    letter-spacing: 0;
-    color: #b0875e;
+    font-size: 19px;
+    font-weight: 800;
+    color: #1a2332;
+    letter-spacing: .2px;
+    padding-right: 28px;
 }
 
 .kx-mb-rows {
     display: flex;
-    gap: 22px;
-    margin-top: 6px;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0e6c8;
 }
 
 .kx-mb-row-item {
     display: flex;
     align-items: baseline;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .kx-mb-cur {
-    font-size: 12px;
-    font-weight: 600;
-    color: #566;
-    min-width: 36px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a93a8;
+    letter-spacing: .3px;
 }
 
 .kx-mb-val {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: #1a2332;
 }
 
 .kx-mb-note {
-    font-size: 11px;
+    font-size: 10px;
     color: #b45309;
-    margin-top: 6px;
+    margin-top: 8px;
     line-height: 1.3;
 }
