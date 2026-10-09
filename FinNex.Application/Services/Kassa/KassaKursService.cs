@@ -15,6 +15,15 @@ namespace FinNex.Application.Services.Kassa
         // Yeni valyuta əlavə etmək lazımdırsa, YALNIZ bura əlavə et.
         public static readonly string[] Valyutalar = { "USD", "AVRO", "IRR", "AED", "RUB" };
 
+        // ⚠️ Word şablonunun ({v1}…{v25}) sırası BU EKRAN sırasından FƏRQLİDİR —
+        // qarışdırma. BMI-nin "Exchange.doc" şablonu `cl_Database.GetKassaKurs()`-un
+        // ORDER BY-ına (USD→AVRO→RUB→AED→IRR) bağlı yazılıb, "Valyutalar" massivi
+        // isə EKRANDAKI giriş cədvəlinin sırasıdır (USD→AVRO→IRR→AED→RUB). Word
+        // generasiyasında YALNIZ bu massiv işlədilməlidir — `Valyutalar` istifadə
+        // etsən IRR/AED/RUB dəyərləri şablonda YANLIŞ sətirlərə düşər (10.10.2026,
+        // BMI mənbə kodunun araşdırılması ilə təsdiqləndi).
+        public static readonly string[] WordSablonSirasi = { "USD", "AVRO", "RUB", "AED", "IRR" };
+
         public KassaKursService(IUnitOfWork uow)
         {
             _uow = uow;
@@ -40,6 +49,25 @@ namespace FinNex.Application.Services.Kassa
                 };
             }
 
+            return MapGunluk(beyanname);
+        }
+
+        public async Task<KassaKursGunlukDto?> BeyannameGetirAsync(int beyannameId)
+        {
+            var beyanname = await _uow.Repository<KassaKursBeyannamesi>().Query()
+                .Where(x => !x.Silinib && x.Id == beyannameId)
+                .Include(x => x.Setirler)
+                .Include(x => x.Icraci)
+                .Include(x => x.TesdiqEden)
+                .FirstOrDefaultAsync();
+
+            return beyanname == null ? null : MapGunluk(beyanname);
+        }
+
+        // GunlukGetirAsync və BeyannameGetirAsync EYNİ mapping-i paylaşır — ikisi də
+        // tək beyannaməni DTO-ya çevirir, fərq yalnız axtarış açarındadır (tarix vs Id).
+        private static KassaKursGunlukDto MapGunluk(KassaKursBeyannamesi beyanname)
+        {
             var setirlerByValyuta = beyanname.Setirler.ToDictionary(s => s.Valyuta);
 
             return new KassaKursGunlukDto

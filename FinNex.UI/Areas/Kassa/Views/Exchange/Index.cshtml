@@ -66,6 +66,13 @@
             {
                 <span class="fn-badge @statusBadge.Item2">@statusBadge.Item1</span>
             }
+
+            @if (g.BeyannameId.HasValue)
+            {
+                <a asp-action="Word" asp-route-beyannameId="@g.BeyannameId" class="fn-btn fn-btn--outline">
+                    <i class="bi bi-file-earmark-word"></i> Word sənədi
+                </a>
+            }
         </form>
 
         @if (g.Status == FinNex.Domain.Entities.Kassa.KassaKursStatus.Imtina && !string.IsNullOrWhiteSpace(g.ImtinaSebebi))
@@ -148,16 +155,22 @@
                 <thead>
                     <tr>
                         <th>Tarix</th><th>Valyuta</th><th>Nağd alış</th><th>Nağd satış</th>
-                        <th>Qeyri nağd alış</th><th>Qeyri nağd satış</th><th>İcraçı</th><th>Status</th>
+                        <th>Qeyri nağd alış</th><th>Qeyri nağd satış</th><th>İcraçı</th><th>Status</th><th>Sənəd</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.SonQeydler.Any())
                     {
-                        <tr><td colspan="8" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
                     }
                     else
                     {
+                        // Hər beyannamənin 5 valyuta sətri var — Word düyməsi (bütöv
+                        // günün sənədini yaradır) grup üzrə TƏKRARLANMASIN, yalnız
+                        // ilk görünən sətirdə göstərilir. (Artıq C# kontekstindəyik —
+                        // yeni kod bloku açmaq lazım deyil, birbaşa yaz; bax CLAUDE.md
+                        // "Razor — @if bloku içində kod bloku açma" bölməsi, RZ1010.)
+                        var gorunenBeyanname = new HashSet<int>();
                         @foreach (var r in Model.SonQeydler)
                         {
                             var (ad, cls) = r.Status switch
@@ -166,6 +179,7 @@
                                 FinNex.Domain.Entities.Kassa.KassaKursStatus.Tesdiqlendi => ("Təsdiqləndi", "fn-badge--approved"),
                                 _ => ("İmtina", "fn-badge--rejected")
                             };
+                            var ilkGorunus = gorunenBeyanname.Add(r.BeyannameId);
                             <tr>
                                 <td>@r.Tarix.ToString("dd.MM.yyyy")</td>
                                 <td>@r.Valyuta</td>
@@ -175,6 +189,14 @@
                                 <td>@V(r.QeyriNagdSatis)</td>
                                 <td>@r.IcraciAdi</td>
                                 <td><span class="fn-badge @cls">@ad</span></td>
+                                <td>
+                                    @if (ilkGorunus)
+                                    {
+                                        <a asp-action="Word" asp-route-beyannameId="@r.BeyannameId" title="Word sənədi">
+                                            <i class="bi bi-file-earmark-word"></i>
+                                        </a>
+                                    }
+                                </td>
                             </tr>
                         }
                     }

@@ -14,6 +14,11 @@ namespace FinNex.Application.Interfaces.Kassa
         /// Yoxdursa boş template (5 valyuta, Status=null) qaytarır.</summary>
         Task<KassaKursGunlukDto> GunlukGetirAsync(DateTime tarix);
 
+        /// <summary>Konkret beyannaməni Id ilə gətirir (Word sənədi generasiyası üçün —
+        /// gün ərzində bir neçə beyannamə ola bilər, "Son qeydlər"dəki hər sətir öz
+        /// Id-sini daşıyır). Tapılmasa/silinibsə `null` qaytarır.</summary>
+        Task<KassaKursGunlukDto?> BeyannameGetirAsync(int beyannameId);
+
         /// <summary>Kassir məzənnəni yazır/yenidən göndərir. Mövcud beyannamə
         /// "Gözləyir" və ya "Təsdiqləndi" statusundadırsa BLOKLANIR (yeni
         /// qeyd yazılmır) — BMI-dəki kimi səssiz no-op YOXDUR, Result.Fail

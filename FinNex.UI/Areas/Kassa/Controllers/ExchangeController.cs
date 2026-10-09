@@ -1,12 +1,16 @@
 using FinNex.Application.DTOs.Kassa;
+using FinNex.Application.Helpers.Kredit;
 using FinNex.Application.Interfaces.Kassa;
 using FinNex.Application.Interfaces.Kurval;
+using FinNex.Application.Services.Kassa;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.Kassa.ViewModels;
+using FinNex.UI.Services.Kredit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace FinNex.UI.Areas.Kassa.Controllers
 {
@@ -23,6 +27,7 @@ namespace FinNex.UI.Areas.Kassa.Controllers
         private readonly IKassaKursService _kassaKursService;
         private readonly IBmiValyutaService _bmiValyutaService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IConfiguration _config;
 
         // kurval kodları (IBmiValyutaService.Ehtiyat ilə eyni) — "01" USD, "02" AVRO.
         private const string UsdKodu = "01";
@@ -31,11 +36,13 @@ namespace FinNex.UI.Areas.Kassa.Controllers
         public ExchangeController(
             IKassaKursService kassaKursService,
             IBmiValyutaService bmiValyutaService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IConfiguration config)
         {
             _kassaKursService = kassaKursService;
             _bmiValyutaService = bmiValyutaService;
             _userManager = userManager;
+            _config = config;
         }
 
         // GET /Kassa/Exchange?tarix=2026-10-09
@@ -100,6 +107,74 @@ namespace FinNex.UI.Areas.Kassa.Controllers
 
             return RedirectToAction(nameof(Index), new { tarix = vm.Tarix });
         }
+
+        // GET /Kassa/Exchange/Word?beyannameId=5
+        //
+        // BMI "frmExchange"-in "WordPrint" düyməsinin köçürülməsi (10.10.2026).
+        // BMI lokal Word-ü Process.Start ilə açırdı — veb mühitdə qarşılığı
+        // brauzerə yükləmədir (digər bütün KreditWordService çağırışları ilə
+        // eyni naxış). "WordPrint" bazada heç bir sütun/bayraq deyil (yoxlanıldı:
+        // BMI-də belə bir sütun ümumiyyətlə yoxdur) — ona görə burada da
+        // "artıq yaradılıb" statusu saxlanmır, hər çağırışda yenidən yaradılır.
+        public async Task<IActionResult> Word(int beyannameId)
+        {
+            var gun = await _kassaKursService.BeyannameGetirAsync(beyannameId);
+            if (gun == null)
+            {
+                TempData["Error"] = "Beyannamə tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var sablon = SablonYolu();
+            if (!System.IO.File.Exists(sablon))
+            {
+                TempData["Error"] = $"Exchange Word şablonu tapılmadı: {sablon}";
+                return RedirectToAction(nameof(Index), new { tarix = gun.Tarix });
+            }
+
+            var tokenler = new Dictionary<string, string?>
+            {
+                // Şablonda İKİ dəfə keçir — ikisi də eyni mətni götürür (BMI-dəki kimi).
+                ["{tar}"] = KreditSozeCevir.TarixiSoze(gun.Tarix)
+            };
+
+            // ⚠️ `WordSablonSirasi` (USD→AVRO→RUB→AED→IRR) işlədilir, EKRANDAKI
+            // `Valyutalar` sırası (USD→AVRO→IRR→AED→RUB) YOX — şablonun {v1}…{v25}
+            // yer tutucuları BMI-nin öz sorğu sırasına bağlıdır (bax servisdəki şərh).
+            var setirlerByValyuta = gun.Setirler.ToDictionary(s => s.Valyuta);
+            var sayac = 1;
+            foreach (var v in KassaKursService.WordSablonSirasi)
+            {
+                var s = setirlerByValyuta.TryGetValue(v, out var setir) ? setir : new KassaKursSetriDto { Valyuta = v };
+                tokenler[$"{{v{sayac++}}}"] = v;
+                tokenler[$"{{v{sayac++}}}"] = Mezenne(s.NagdAlis);
+                tokenler[$"{{v{sayac++}}}"] = Mezenne(s.NagdSatis);
+                tokenler[$"{{v{sayac++}}}"] = Mezenne(s.QeyriNagdAlis);
+                tokenler[$"{{v{sayac++}}}"] = Mezenne(s.QeyriNagdSatis);
+            }
+
+            // Şablonda köhnə Azəri simvol-şriftləri (Azeri_Bookman_Lat, Times Latin)
+            // var — bunlar müasir Unicode Azəri hərflərini (ə/ı/ö/ü/ş/ç, məs. il
+            // sıra şəkilçisində: "-cı"/"-cü") qopuq göstərir. `unicodeSrift` yalnız
+            // ASCII-dən kənar hərf olan dəyərlərdə run şriftini əvəz edir (bax
+            // KreditWordService-in öz izahı) — rəqəmlər (ASCII) toxunulmur.
+            var bayt = KreditWordService.Doldur(sablon, tokenler, unicodeSrift: "Times New Roman");
+            var ad = $"Exchange_{gun.Tarix:yyyyMMdd}_{beyannameId}.docx";
+            return File(bayt, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ad);
+        }
+
+        // Şablon DMS-dədir (CLAUDE.md — fayllar wwwroot-a YAZILMIR/oxunmur).
+        // Repodakı nüsxə: docs/sablon/kassa/Exchange.docx
+        private string SablonYolu()
+        {
+            var dms = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+            return Path.Combine(dms, "hesabat-sablonlari", "kassa", "Exchange.docx");
+        }
+
+        // İnsan oxuyan Word sənədinə yazılır — server mədəniyyəti (az-AZ) ilə
+        // vergüllü format düzgündür (CLAUDE.md "Razor → CSS/JS Rəqəm" qaydası
+        // yalnız maşın-oxuyan CSS/JS üçündür, bura aid deyil).
+        private static string Mezenne(decimal? d) => (d ?? 0).ToString("0.0000");
 
         private async Task<int?> GetCurrentIsciIdAsync()
         {

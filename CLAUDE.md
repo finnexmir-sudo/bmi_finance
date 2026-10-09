@@ -3049,13 +3049,13 @@ Valyuta siyahısı (`USD/AVRO/IRR/AED/RUB`) **tək yerdə** —
 lazımdırsa, YALNIZ bura əlavə et.
 
 ⚠️ **Köçürülməyib (qapsam xaricində qaldı, BMI-də var idi):**
-- Word sənədi yaratma (`Exchange.doc` şablonu, "WordPrint" sütunu);
 - `odb.calendar` ilə "qeyri-iş günü" yoxlaması (BMI-nin monthCalendar-ı bunu
   edirdi) — FinNex-də tarix seçimi sadə `<input type="date">`-dir, iş günü
   yoxlaması yoxdur.
 
-İkisi də BMI-də mövcud idi, FinNex-ə ilk keçiddə DAXİL EDİLMƏDİ (istifadəçi
-tələb etməyib) — lazım olsa ayrıca iş kimi əlavə edilə bilər.
+BMI-də mövcud idi, FinNex-ə ilk keçiddə DAXİL EDİLMƏDİ (istifadəçi tələb
+etməyib) — lazım olsa ayrıca iş kimi əlavə edilə bilər. (Word sənədi yaratma
+aşağıda, 10.10.2026-da əlavə olundu — bura daxil deyil.)
 
 ✅ **Real Visual Studio Rebuild-də yoxlanıldı (09.10.2026).** İlk nəticə
 2 × CS0246 idi — `ExchangeTesdiqController.cs`-də `using FinNex.Domain;`
@@ -3252,6 +3252,93 @@ mətni statusa görə dəyişir (`"İcra et"` / `"Yenidən göndər"` / `"Yeni k
 göndər"`). `GunlukGetirAsync` onsuz da **ən son (ID-yə görə)** beyannaməni
 göstərdiyi üçün yeni göndərilən kurs avtomatik "cari status" kimi görünür,
 əlavə dəyişiklik lazım olmadı.
+
+### Word Sənədi Generasiyası — "WordPrint" Köçürülməsi Tamamlandı (10.10.2026)
+
+İstifadəçi: *"menim word sablonum var idi BMI de onudan duzeldek bitsin bu
+is"* — yuxarıda "qapsam xaricində" sayılan Word generasiyası indi əlavə
+olundu. BMI-nin `frmExchange.cs`-dəki `dtg_Exchange_CellContentClick` handler-i
+(grid-in "WordPrint" başlıqlı düymə sütunu) oxundu və tam köçürüldü.
+
+**Şablon faylı — ƏVVƏLCƏ KÖHNƏ BİNAR `.doc` İDİ.** İstifadəçinin göndərdiyi
+ilk fayl OLE2/CFB (Word 97-2003) formatında idi — bayt başlığı (`D0 CF 11 E0`)
+ilə yoxlanıldı. OpenXML (`KreditWordService`-in əsaslandığı
+`WordprocessingDocument`) yalnız `.docx` (zip/OPC) aça bilir — bu, artıq
+sənədləşmiş qayda ("Köhnə `.doc` (OLE2) faylları `KreditWordService` ilə
+AÇILMIR" — yuxarı, "Word Şablonu" bölməsi). İstifadəçiyə açıq bildirildi,
+Word-də "Fərqli saxla → .docx" ilə yenidən göndərildi — real `.docx` (OOXML
+zip) olduğu təsdiqləndi, kod yalnız bundan sonra yazıldı.
+
+**Tokenlər — BMI-nin öz kodundan dəqiqləşdirildi** (həm əl ilə OLE stream
+parsing, həm paralel işə salınmış araşdırma agent-i ilə İKİ MÜSTƏQİL üsulla
+təsdiqləndi, nəticələr tam üst-üstə düşdü):
+- `{tar}` — şablonda **İKİ dəfə** keçir, hər ikisi sözlə yazılmış tarixdir
+  (`KreditSozeCevir.TarixiSoze` — BMI-nin `Aletler.TarixiSozeCevir`-inin
+  FinNex qarşılığı, suffiks qaydası da daxil, nüsxə çıxarılmadı).
+- `{v1}`…`{v25}` — 5 valyuta × 5 sütun (Valyuta adı, Nağd alış, Nağd satış,
+  Qeyri nağd alış, Qeyri nağd satış).
+- İmzalayan adları ("Bank Melli İran Bakı filialının müdiri:
+  A.K.Najafimarganmaskan", "Əslini aldım … Axundov E.A") şablonda **SABİT
+  MƏTNDİR**, token DEYİL — BMI-nin `replacements` dictionary-sində heç vaxt
+  olmayıb. Dinamik etmək YENİ funksionallıq olardı, köçürmə deyil — əlavə
+  edilmədi, istifadəçi tələb etməyib.
+- "WordPrint" bazada heç bir sütun/bayraq deyilmiş (BMI-nin bütün
+  `bmi_kassa_kurs` sütunları və SQL-ləri yoxlanıldı) — sadəcə grid düyməsinin
+  başlıq mətni idi. Ona görə FinNex-də də "artıq yaradılıb" izi saxlanmır,
+  hər çağırışda sənəd yenidən yaradılır (BMI-dəki kimi).
+
+⚠️ **VALYUTA SIRASI EKRANDAN FƏRQLİDİR — bu, tapılan ən kritik fərqdir.**
+`{v1}…{v25}`-in sırası `KassaKursService.Valyutalar`-ın (ekran sırası:
+USD→AVRO→**IRR→AED→RUB**) YOX, BMI-nin `cl_Database.GetKassaKurs()`
+sorğusunun öz `ORDER BY CASE Valyuta`-sının (USD→AVRO→**RUB→AED→IRR**)
+sırasıdır. Bu səbəbdən **`KassaKursService.WordSablonSirasi`** adlı AYRI
+massiv əlavə edildi — Word generasiyası `Valyutalar`-ı işlətsəydi IRR/AED/RUB
+dəyərləri şablonda bir-birinin yerinə düşərdi, heç bir xəta vermədən (klassik
+"sütun adı məzmunu zəmanət etmir" sinfindən, fərqli formada: "ekran sırası
+BAŞQA bir sistemin sabit sırasını zəmanət etmir").
+
+**Köhnə Azəri şriftləri.** Şablonda (həm orijinal `.doc`-da, həm yenidən
+saxlanmış `.docx`-da) `Azeri_Bookman_Lat`/`Times Latin` run-ları var —
+`{tar}`/`{v1-25}` məhz bu run-ların İÇİNDƏdir. `KreditWordService.Doldur`-un
+`unicodeSrift: "Times New Roman"` parametri işə salındı (dəyərdə ASCII-dən
+kənar hərf olanda — məs. il sıra şəkilçisi "-cı"/"-cü" — run şriftini əvəz
+edir, rəqəmlər toxunulmur) — Kredit modulunda artıq sınanmış qoruyucu.
+
+**Çıxış — lokal Word AÇILMIR, BRAUZERƏ YÜKLƏNİR.** BMI `Process.Start` ilə
+sənədi kassirin öz kompüterindəki Word-də açırdı — veb mühitdə qarşılığı
+yoxdur, `KreditWordService`-in bütün digər çağırışları ilə EYNİ naxış:
+`File(bayt, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ad)`.
+
+**Giriş nöqtəsi — YALNIZ `ExchangeController` (kassir ekranı).**
+`ExchangeTesdiqController`-ə (təsdiq ekranı) ƏLAVƏ EDİLMƏDİ — BMI-nin
+`frmExchangeTesdiq.cs`-i Word/print-lə bağlı HEÇ BİR koda malik deyil (yoxlanıldı),
+bu, faydalı əlavə YOX, qapsamın xaricinə çıxmaq olardı.
+
+**İki giriş yeri, EYNİ action:**
+1. Günün öz formasında (`Exchange/Index`) — status nə olursa olsun (`g.BeyannameId`
+   varsa) "Word sənədi" düyməsi, status zolağının yanında.
+2. "Son qeydlər" tarixçə cədvəlində — hər beyannamə 5 valyuta sətri kimi göründüyü
+   üçün (`KassaKursSiyahiDto`, bir sətir = bir (gün×valyuta) cütü) düymə təkrarlanmasın
+   deyə `HashSet<int>` ilə **yalnız hər qrupun ilk sətrində** göstərilir.
+
+**Servis qatı:** `IKassaKursService.BeyannameGetirAsync(int beyannameId)` əlavə
+olundu (interfeys + implementasiya birlikdə — "Metod İmzası Dəyişikliyi"
+qaydasına uyğun). `GunlukGetirAsync` və bu metod EYNİ `MapGunluk` private
+helper-ini paylaşır — iki nüsxə saxlanmadı.
+
+⚠️ **Şablon fayl DMS-dədir, repoda DEYİL.** Runtime yolu:
+`C:\FinNex_DMS\hesabat-sablonlari\kassa\Exchange.docx` (`YolVereqesiController`-in
+Avtopark şablonu ilə EYNİ konvensiya). İstifadəçi faylı özü ora qoyacaq — bu
+sessiyada repoya kopyalanmadı (istifadəçi qərarı: "sen yerini de, men lazim
+olan yere fayli ataram ozum"). Fayl yoxdursa `Word` action-ı `TempData["Error"]`
+ilə dəqiq yolu göstərir, boş/xəta sənəd qaytarmır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(namespace-lər hər bir `using` üçün faylın öz `namespace` sətrindən təsdiqləndi,
+mötərizə balansı yoxlanıldı). İstifadəçi Visual Studio-da **Rebuild All** ilə
+yoxlamalı, həm real şablonla (DMS-ə qoyulandan sonra) sənəd yaradıb açmalıdır —
+xüsusilə valyuta sırasının (USD→AVRO→RUB→AED→IRR) düzgün göründüyünü və Azəri
+hərflərinin (il şəkilçisi) qopuq çıxmadığını.
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
