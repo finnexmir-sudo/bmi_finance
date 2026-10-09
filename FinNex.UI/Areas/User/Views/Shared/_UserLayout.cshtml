@@ -317,6 +317,23 @@
                             <div class="fn-topnav-dd-sub">Exchange — valyuta kursu</div>
                         </div>
                     </a>
+                    @* Exchange/Index RoleNames.Kassa+Admin ilə məhduddur — kassa işçisi
+                       OLMAYAN təsdiqedici (məs. Rəhbərlik, KassaTesdiqEdici siyahısında)
+                       yuxarıdakı linkə görə İcazə Yoxdur-a düşürdü və Kassa Area-ya heç
+                       girə bilmirdi ki, sidebar-dakı "Kurs təsdiqi" linkini görsün
+                       (09.10.2026, real hadisə — Anar İ., müdir müavini, Kassa rolu yoxdur).
+                       ExchangeTesdiqController rol tələb ETMİR (yalnız [Authorize] +
+                       roster yoxlaması), ona görə BURADA, hamıya görünən ayrıca giriş
+                       nöqtəsi kimi əlavə edilir — sidebar-dakı "hamıya görünür" qaydası
+                       ilə EYNİ. *@
+                    <a asp-area="Kassa" asp-controller="ExchangeTesdiq" asp-action="Index"
+                       class="fn-topnav-dd-item @(currentController == "ExchangeTesdiq" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-check2-circle"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">Kurs təsdiqi</div>
+                            <div class="fn-topnav-dd-sub">Kassa valyuta kursunu təsdiqlə</div>
+                        </div>
+                    </a>
                 </div>
             </div>
 
