@@ -3146,7 +3146,45 @@ tam 500 xətası (tutulmayan yerdə). Bir controller-də bir neçə servis
 `IOracleService`-in öz `CehdEtAsync` təkrar-cəhd məntiqi kimi) olmadığını
 bilmirsənsə, **ƏN TƏHLÜKƏSİZ DEFOLT ardıcıl `await`-dir**.
 
-## Xəta Etirafı
+### Təsdiqedicinin Kassa Rolu Yoxdursa Təsdiq Ekranına Yol TAPILMIRDI (09.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real ssenarini sınadı: Admin → Kassa → Təsdiqedicilər-dən Anar
+İ.-ni (müdir müavini, `RoleNames.Kassa` rolu YOXDUR) təsdiqedici təyin etdi,
+sonra soruşdu: *"anara tesdiq icazesi vermisem ama o departament kassaya
+gire bilmir, bunu nece tesdiqleyecek?"* Ekranda sübut da var idi — Anar
+top-nav-dakı «Departamentlər → Kassa» linkinə basanda `/Kassa/Exchange`-ə
+yönəlib **«İcazə yoxdur»** səhifəsinə düşürdü.
+
+**Kök səbəb — giriş nöqtəsi catch-22-dir, icazə sxemi yox.**
+`ExchangeTesdiqController` (təsdiq ekranı) heç bir rol tələb etmir —
+yalnız `[Authorize]` + `IKassaTesdiqEdiciService.TesdiqEdeBilerMiAsync`
+roster yoxlaması (bax yuxarı "BMI-də tapılan 3 bug" cədvəli, 3-cü sətir).
+Sidebar-dakı «Kurs təsdiqi» linki də **hamıya görünür** (kodda açıq şərh
+var: *"giriş yoxlaması ExchangeTesdiqController-in özündədir, linki
+gizlətmirik"*). Problem: sidebar YALNIZ artıq `Area=Kassa` daxilindəysən
+göstərilir (`DetectActiveModule`-da `currentArea=="Kassa"` şərti), top-nav
+dropdown-dakı **YEGANƏ** giriş nöqtəsi isə birbaşa `Exchange/Index`-ə
+gedirdi — o isə `[Authorize(Roles = RoleNames.Kassa + "," + RoleNames.Admin)]`
+ilə **məhduddur**. Yəni Kassa rolu olmayan təsdiqedici bu linkə basanda
+backend-in icazə verdiyi səhifəyə (`ExchangeTesdiq/Index`) heç çatmadan
+Access Denied-ə düşürdü — sidebar-ın "hamıya görünür" qaydası mənasız
+qalırdı, çünki onu göstərəcək səhifəyə girişin özü bloklanmışdı.
+
+**Düzəliş:** top-nav «Departamentlər» dropdown-una **İKİNCİ, ayrıca** giriş
+əlavə edildi — «Kurs təsdiqi» → `ExchangeTesdiq/Index`, **heç bir rol
+şərti olmadan**, sidebar-dakı linklə EYNİ siyasətlə (`_UserLayout.cshtml`,
+Kassa dropdown bloku). İndi Kassa rolu olmayan təsdiqedici bu ikinci
+linkdən birbaşa təsdiq ekranına girir, `Exchange/Index`-ə TOXUNMUR.
+
+**Qayda: «giriş icazəsi backend-də düzgündür» kifayət etmir — NAVİQASİYA
+YOLUNUN ÖZÜ də hər rol üçün mövcud olmalıdır.** Bir səhifəyə (A) giriş
+rol-sərbəstdirsə, amma ora yeganə yol başqa, rol-məhdud bir səhifədən (B)
+keçirsə (B-nin sidebar-ı/menyusu A-ya keçid verir), rolu olmayan istifadəçi
+B-yə çatmadığı üçün A-ya da HEÇ VAXT çata bilmir — backend-in özü düz olsa
+belə. Yeni bir "hamıya açıq, rol-məhdud modulun içində" səhifə (təsdiq
+ekranı, bildiriş paneli və s.) əlavə edəndə ONA GEDƏN BİRBAŞA giriş
+nöqtəsini də (top-nav, breadcrumb, email linki — modula görə) ayrıca yarat,
+rol-məhdud "əsas" səhifənin arxasında gizlətmə.
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
