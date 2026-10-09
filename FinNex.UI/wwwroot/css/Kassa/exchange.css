@@ -68,42 +68,66 @@
     min-width: 160px;
 }
 
-/* MB (CBAR) kursu — kiçik, aydın görüntü, qalan "fn-stat" kartlarından
-   fərqləndirmək üçün sol kənarda qızılı zolaq. */
-.kx-mb-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-
-.kx-mb-tile {
-    flex: 1;
-    min-width: 140px;
+/* MB (CBAR) kursu — kompakt, tək kart: üstdə tarix, altda hər valyuta üçün
+   bir sətir. Qalan "fn-stat" kartlarından fərqləndirmək üçün sol kənarda
+   qızılı zolaq (09.10.2026, istifadəçi tələbi: "card halina sal, cox da
+   oyuk olmayan, tarix ve altda kurslar"). */
+.kx-mb-card {
+    display: inline-block;
     background: #fff;
     border: 1px solid #e4e8f0;
     border-left: 3px solid #e8b84b;
     border-radius: 10px;
     padding: 10px 14px;
+    margin-bottom: 16px;
 }
 
-.kx-mb-lbl {
-    font-size: 10px;
+.kx-mb-head {
+    font-size: 11px;
+    font-weight: 600;
     color: #8a93a8;
     text-transform: uppercase;
     letter-spacing: .4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.kx-mb-date {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #b0875e;
+}
+
+.kx-mb-rows {
+    display: flex;
+    gap: 22px;
+    margin-top: 6px;
+}
+
+.kx-mb-row-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.kx-mb-cur {
+    font-size: 12px;
+    font-weight: 600;
+    color: #566;
+    min-width: 36px;
 }
 
 .kx-mb-val {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     color: #1a2332;
-    margin-top: 2px;
 }
 
 .kx-mb-note {
     font-size: 11px;
     color: #b45309;
-    margin-top: 4px;
+    margin-top: 6px;
     line-height: 1.3;
 }

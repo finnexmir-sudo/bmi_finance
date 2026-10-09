@@ -34,23 +34,22 @@
         </a>
     </div>
 
-    <div class="kx-mb-row">
-        <div class="kx-mb-tile">
-            <div class="kx-mb-lbl"><i class="bi bi-bank"></i> MB kursu — USD (@Model.MbTarix.ToString("dd.MM.yyyy"))</div>
-            <div class="kx-mb-val">@(Model.UsdMbKurs.HasValue ? Mb(Model.UsdMbKurs) + " ₼" : "—")</div>
-            @if (!Model.UsdMbKurs.HasValue)
-            {
-                <div class="kx-mb-note">Bugünkü kurs tapılmadı — BMI-də hələ dərc olunmayıb və ya Oracle əlçatmazdır.</div>
-            }
+    <div class="kx-mb-card">
+        <div class="kx-mb-head"><i class="bi bi-bank"></i> MB rəsmi kursu <span class="kx-mb-date">@Model.MbTarix.ToString("dd.MM.yyyy")</span></div>
+        <div class="kx-mb-rows">
+            <div class="kx-mb-row-item">
+                <span class="kx-mb-cur">USD</span>
+                <span class="kx-mb-val">@(Model.UsdMbKurs.HasValue ? Mb(Model.UsdMbKurs) + " ₼" : "—")</span>
+            </div>
+            <div class="kx-mb-row-item">
+                <span class="kx-mb-cur">AVRO</span>
+                <span class="kx-mb-val">@(Model.AvroMbKurs.HasValue ? Mb(Model.AvroMbKurs) + " ₼" : "—")</span>
+            </div>
         </div>
-        <div class="kx-mb-tile">
-            <div class="kx-mb-lbl"><i class="bi bi-bank"></i> MB kursu — AVRO (@Model.MbTarix.ToString("dd.MM.yyyy"))</div>
-            <div class="kx-mb-val">@(Model.AvroMbKurs.HasValue ? Mb(Model.AvroMbKurs) + " ₼" : "—")</div>
-            @if (!Model.AvroMbKurs.HasValue)
-            {
-                <div class="kx-mb-note">Bugünkü kurs tapılmadı — BMI-də hələ dərc olunmayıb və ya Oracle əlçatmazdır.</div>
-            }
-        </div>
+        @if (!Model.UsdMbKurs.HasValue || !Model.AvroMbKurs.HasValue)
+        {
+            <div class="kx-mb-note">Bəzi kurslar tapılmadı — BMI-də hələ dərc olunmayıb və ya Oracle əlçatmazdır.</div>
+        }
     </div>
 
     <div class="fn-card">
