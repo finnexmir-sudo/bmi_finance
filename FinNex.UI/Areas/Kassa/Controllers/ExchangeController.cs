@@ -46,18 +46,20 @@ namespace FinNex.UI.Areas.Kassa.Controllers
             var secilenTarix = (tarix ?? DateTime.Today).Date;
             var bugun = DateTime.Today;
 
+            // ⚠️ HAMISI ARDICIL ÇAĞIRILIR — paralel (Task başladıb sonra await
+            // etmək) bütün bu çağırışlar EYNİ scoped IUnitOfWork/DbContext-i
+            // paylaşdığı üçün "A second operation was started on this context
+            // instance…" ilə sındı (09.10.2026, real hadisə — bax CLAUDE.md
+            // "Bildirişlər — Paralel Yazı" ilə EYNİ tələ, bu dəfə oxumada).
             // MB (CBAR) kursu HƏMİŞƏ bugünkü gün üçündür (istifadəçi tələbi:
-            // "cari günə") — seçilmiş tarixdən ASILI DEYİL, kassirə ancaq
-            // bugünkü rəsmi kursla müqayisə lazımdır.
-            var usdTask = _bmiValyutaService.KursAsync(UsdKodu, bugun);
-            var avroTask = _bmiValyutaService.KursAsync(AvroKodu, bugun);
-
+            // "cari günə") — seçilmiş tarixdən ASILI DEYİL.
             var vm = new ExchangeIndexVM
             {
                 Gunluk = await _kassaKursService.GunlukGetirAsync(secilenTarix),
                 SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync(),
-                UsdMbKurs = await usdTask,
-                AvroMbKurs = await avroTask
+                UsdMbKurs = await _bmiValyutaService.KursAsync(UsdKodu, bugun),
+                AvroMbKurs = await _bmiValyutaService.KursAsync(AvroKodu, bugun),
+                MbTarix = bugun
             };
 
             return View(vm);

@@ -3088,10 +3088,63 @@ istifadə etdiyi mənbə) tək buraxıldı, sadəcə `ExchangeController.Index`-
 
 ⚠️ **Seçilmiş `tarix` parametrindən ASILI DEYİL** — kassir keçmiş günə baxsa
 belə, yuxarıdakı MB kartı **həmişə bugünkü** rəsmi kursu göstərir (istifadəçi:
-"cari günə"). Oracle əlçatmaz olsa `KursAsync` `null` qaytarır (mövcud
-davranış, dəyişmədim) — kart sadəcə görünmür, forma bloklanmır (BMI özü-öz
-kursu daxil etdiyi üçün bu MB rəqəmi sırf məlumat üçündür, heç bir
-hesablamaya girmir).
+"cari günə"). Oracle əlçatmaz olsa `KursAsync` `null` qaytarır — kart İNDİ DƏ
+GÖSTƏRİLİR («—» + izah mətni ilə, aşağı bax), gizlənmir (BMI özü-öz kursu
+daxil etdiyi üçün bu MB rəqəmi sırf məlumat üçündür, heç bir hesablamaya girmir).
+
+### İKİ BUG BİRLİKDƏ — Paralel `_uow` Çağırışı Həm AVRO-nu Gizlədirdi, Həm Səhifəni Sındırdı (09.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İlk versiyada `ExchangeController.Index` USD/AVRO kurslarını **paralel** çağırırdı
+(`var usdTask = _bmiValyutaService.KursAsync(...)`, `await` sonra, `GunlukGetirAsync`/
+`SonBeyannameleriGetirAsync`-dən SONRA). İstifadəçi əvvəlcə yalnız USD tilinin
+göründüyünü, AVRO-nun ÜMUMİYYƏTLƏ görünmədiyini bildirdi — sonra, bir az sonra,
+bütün `/Kassa/Exchange` səhifəsi **500 Internal Server Error** verməyə başladı:
+
+```
+InvalidOperationException: A second operation was started on this context
+instance before a previous operation completed. This is usually caused by
+different threads concurrently using the same instance of DbContext.
+```
+
+**Kök səbəb — EYNİ bug, İKİ fərqli simptom.** `IBmiValyutaService.KursAsync`
+`_uow.Repository<OracleSorgu>()` ilə (`OracleSorgular` cədvəlindən saxlanmış
+sorğunu oxumaq üçün) **scoped `DbContext`** işlədir — bu, `KassaKursService`-in
+`GunlukGetirAsync`/`SonBeyannameleriGetirAsync` metodlarının işlətdiyi **EYNİ**
+request-scoped `IUnitOfWork` nüsxəsidir. `usdTask`/`avroTask` `await` edilmədən
+başladıldığı üçün onlar İKİSİ BİR-BİRİ İLƏ, sonra da `GunlukGetirAsync` çağırışı
+İLƏ eyni anda həmin paylaşılan `DbContext`-ə müraciət edirdi:
+
+1. **AVRO görünməməsi** — `KursAsync`-in özündə `catch { return null; }` var
+   (Oracle əlçatmaz olanda "əlçatmazdır" sayıb null qaytarmaq üçün YAZILIB).
+   `usdTask`/`avroTask` bir-biri ilə toqquşanda İKİSİNDƏN BİRİ bu catch-ə
+   düşürdü — hansının uduzacağı qeyri-müəyyən idi, amma nəticə HƏR DƏFƏ
+   «AVRO null, USD dolu» (yaxud əksi) kimi görünürdü, heç bir Oracle data
+   boşluğu YOX idi.
+2. **500 xətası** — sonrakı bir çağırışda (`GunlukGetirAsync`) toqquşma
+   artıq `KassaKursService`-in İÇİNDƏ baş verdi, orada bu cür `catch` YOXDUR
+   — səhv tutulmadan bütün səhifəni sındırdı.
+
+Bu, CLAUDE.md-də artıq sənədləşmiş **"Bildirişlər — Paralel Yazı"** bölməsi
+ilə EYNİ tələdir (paylaşılan scoped `DbContext` üzərində `Task.WhenAll`/paralel
+çağırış) — fərq yalnız bunun burada **yazıda yox, OXUMADA** baş verməsidir.
+
+**Düzəliş:** `ExchangeController.Index`-də bütün dörd çağırış (`Gunluk`,
+`SonQeydler`, `UsdMbKurs`, `AvroMbKurs`) **ardıcıl `await`** edilir — heç biri
+`Task` dəyişəninə ayrıca saxlanıb sonra gözlənmir. MB tilləri də həmişə
+göstərilir (`Model.MbTarix` ilə tarix əlavə olundu) — dəyər `null`-dursa «—»
++ «Bugünkü kurs tapılmadı — BMI-də hələ dərc olunmayıb və ya Oracle
+əlçatmazdır» qeydi (`.kx-mb-note`, amber rəng).
+
+**Qayda: eyni request-scoped `IUnitOfWork`/`DbContext`-i işlədən İKİ servis
+metodunu `Task`/`await` ilə PARALEL başlatma** — bu, yalnız `Task.WhenAll`
+yazanda deyil, sadəcə `var t = service.MetodAsync(...)` yazıb AŞAĞIDA başqa
+bir `await` çağırışından sonra `await t` yazanda da baş verir, çünki `t`
+arxada DƏRHAL icraya başlayır. Nəticə hər dəfə EYNİ görünməyə bilər (race
+condition) — bəzən səssiz `null`/boş nəticə (catch-lə tutulan yerdə), bəzən
+tam 500 xətası (tutulmayan yerdə). Bir controller-də bir neçə servis
+çağırışı varsa və onların heç biri açıq-aydın paralel-təhlükəsiz (məs.
+`IOracleService`-in öz `CehdEtAsync` təkrar-cəhd məntiqi kimi) olmadığını
+bilmirsənsə, **ƏN TƏHLÜKƏSİZ DEFOLT ardıcıl `await`-dir**.
 
 ## Xəta Etirafı
 

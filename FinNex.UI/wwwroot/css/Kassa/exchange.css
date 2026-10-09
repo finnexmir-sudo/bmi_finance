@@ -100,3 +100,10 @@
     color: #1a2332;
     margin-top: 2px;
 }
+
+.kx-mb-note {
+    font-size: 11px;
+    color: #b45309;
+    margin-top: 4px;
+    line-height: 1.3;
+}
