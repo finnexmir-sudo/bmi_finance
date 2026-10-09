@@ -420,6 +420,23 @@ grep -m1 "^namespace" FinNex.Application/Interfaces/HR/IUserPermissionService.cs
 Yaxud layihədə həmin tipin mövcud istifadəsinə bax (nümunə: `_UserLayout.cshtml`
 onu tam adı ilə çağırır — `@inject FinNex.Application.Interfaces.IUserPermissionService _permSvc`).
 
+### Eyni Tələ İkinci Dəfə — `AppUser` `FinNex.Domain`-dədir, `.Entities.HR` YOX (09.10.2026)
+
+Real hadisə — Kassa modulu (yuxarı bax), real Visual Studio **Rebuild** 2 × **CS0246**
+verdi: `ExchangeTesdiqController.cs`-də `UserManager<AppUser>` sahəsi tanınmırdı.
+Fayl `using FinNex.Domain.Entities.HR;` yazmışdı (`Isci`, `IsciTeyinat`, `IsciStatus`
+elə oradandır) və `AppUser`-in də eyni qovluqda olacağı **güman edilmişdi** — amma
+`AppUser` əslində **`FinNex.Domain`** namespace-indədir (`RoleNames` ilə eyni yerdə).
+Eyni paketdəki digər iki controller (`ExchangeController`, admin
+`KassaTesdiqEdiciController`) `using FinNex.Domain;`-i **artıq yazmışdı** (mövcud
+`KreditBaxanIsciController`-dən köçürülüb) — unudulan TƏK fayl elə bu idi.
+
+**Qayda:** eyni `Isci`-əsaslı controller qrupunda belə, **hər fayl üçün ayrıca**
+yoxla ki, `AppUser` işlədirsə `using FinNex.Domain;` da var — "bu qrupdakı digər
+fayllar düzgündür" fərziyyəsi hər faylı tək-tək örtmür. Bu sessiyada `dotnet build`
+mümkün olmadığı üçün bu xəta yalnız istifadəçinin real Rebuild-ində üzə çıxdı —
+"`FindFirstValue` CS1061" bölməsindəki xəbərdarlığın elə növbəti nümunəsi.
+
 ## Namespace Adı Entity Adını Kölgələyir (CS0118) — Kaskad Build Xətası (KRİTİK)
 
 C#-da alt namespace adı, valideyn namespace-dəki **tip adı** ilə eyni olarsa, həmin

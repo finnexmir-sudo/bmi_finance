@@ -1,4 +1,5 @@
 using FinNex.Application.Interfaces.Kassa;
+using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
