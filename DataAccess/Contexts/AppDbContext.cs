@@ -199,6 +199,11 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Chat
     public DbSet<ChatMesaj> ChatMesajlar { get; set; }
 
+    // Kassa — BMI frmExchange köçürülməsi (09.10.2026)
+    public DbSet<FinNex.Domain.Entities.Kassa.KassaKursBeyannamesi> KassaKursBeyannameleri { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kassa.KassaKursSetri> KassaKursSetirleri { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kassa.KassaTesdiqEdici> KassaTesdiqEdiciler { get; set; }
+
     // Kredit
     public DbSet<FinNex.Domain.Entities.Kredit.KreditMuraciet> KreditMuracietler { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditBaxanIsci> KreditBaxanIsciler { get; set; }
@@ -1512,6 +1517,40 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.ToTable("KreditReddSebebleri");
             e.Property(x => x.Ad).IsRequired().HasMaxLength(200);
         });
+
+        // ── Kassa — Valyuta Mübadiləsi (BMI frmExchange köçürülməsi) ──
+        builder.Entity<FinNex.Domain.Entities.Kassa.KassaKursBeyannamesi>()
+            .HasOne(x => x.Icraci)
+            .WithMany()
+            .HasForeignKey(x => x.IcraciIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<FinNex.Domain.Entities.Kassa.KassaKursBeyannamesi>()
+            .HasOne(x => x.TesdiqEden)
+            .WithMany()
+            .HasForeignKey(x => x.TesdiqEdenIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<FinNex.Domain.Entities.Kassa.KassaKursSetri>()
+            .HasOne(x => x.Beyanname)
+            .WithMany(b => b.Setirler)
+            .HasForeignKey(x => x.BeyannameId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FinNex.Domain.Entities.Kassa.KassaKursSetri>(e =>
+        {
+            e.Property(x => x.Valyuta).IsRequired().HasMaxLength(10);
+            e.Property(x => x.NagdAlis).HasPrecision(18, 4);
+            e.Property(x => x.NagdSatis).HasPrecision(18, 4);
+            e.Property(x => x.QeyriNagdAlis).HasPrecision(18, 4);
+            e.Property(x => x.QeyriNagdSatis).HasPrecision(18, 4);
+        });
+
+        builder.Entity<FinNex.Domain.Entities.Kassa.KassaTesdiqEdici>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ── Kredit Baxan İşçilər ──────────────────────────────
         builder.Entity<FinNex.Domain.Entities.Kredit.KreditBaxanIsci>()

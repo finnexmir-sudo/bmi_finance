@@ -12,6 +12,8 @@ using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Application.Services;
 using FinNex.Application.Interfaces.Kredit;
+using FinNex.Application.Interfaces.Kassa;
+using FinNex.Application.Services.Kassa;
 using FinNex.Application.Services.Communication;
 using FinNex.Application.Services.HR;
 using FinNex.Application.Services.Kredit;
@@ -159,6 +161,10 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         // onları generik servis üzrindən belə qeydiyyatdan keçirə bilərsən:
         services.AddScoped(typeof(IServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>), typeof(ServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>));
         services.AddScoped(typeof(IServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>), typeof(ServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>));
+
+        // ── Kassa Modul Servisləri (BMI frmExchange köçürülməsi) ──
+        services.AddScoped<IKassaKursService, KassaKursService>();
+        services.AddScoped<IKassaTesdiqEdiciService, KassaTesdiqEdiciService>();
 
         // ── Kredit Modul Servisləri ─────────────────────────
         services.AddScoped<IKreditBaxanIsciService, KreditBaxanIsciService>();

@@ -88,6 +88,14 @@
                 Sistem İcazələri
             </a>
 
+            <div class="nav-section">Kassa</div>
+
+            <a class="nav-link @(currentController == "KassaTesdiqEdici" ? "active" : "")"
+               asp-area="Admin" asp-controller="KassaTesdiqEdici" asp-action="Index">
+                <i class="bi bi-currency-exchange"></i>
+                Kurs təsdiqediciləri
+            </a>
+
             <div class="nav-section">Kredit</div>
 
             <a class="nav-link @(currentController == "KreditBaxanIsci" ? "active" : "")"

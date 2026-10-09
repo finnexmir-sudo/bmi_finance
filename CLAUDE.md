@@ -2974,6 +2974,80 @@ formadan gedər.
 **Hələ tətbiq edilməyib (Faza 2, ayrıca iş):** MB-yə rüblük hesabat (Əlavə 5),
 istilik xəritəsi (Əlavə 1), Əsas Risk/Fəaliyyət Göstəriciləri (ƏRG/ƏFG).
 
+## Kassa — Valyuta Mübadiləsi (Exchange), BMI frmExchange Köçürülməsi (09.10.2026)
+
+BMI-nin (Visual Studio, legacy WinForms, `/home/user/BMI`) `Kassa/frmExchange` +
+`ManagerApproval/frmExchangeTesdiq` modulu FinNex-ə köçürüldü. Kassanın günlük
+nağd/qeyri-nağd USD/AVRO/IRR/AED/RUB alış-satış kursu + rəhbər təsdiqi.
+
+**Oracle-a YAZI qadağan olduğu üçün (yuxarı bax "Oracle Verilənlər Bazası —
+KRİTİK QAYDA") bu modul tamamilə FinNex-in öz SQL Server bazasındadır** —
+BMI-nin Oracle `bmi_kassa_kurs` cədvəli ilə heç bir əlaqəsi yoxdur, oxunmur da.
+
+### Qərarlar (istifadəçi ilə birbaşa müzakirə, 09.10.2026)
+
+- **Departament: Kassa** — yeni Area (`Emeliyyat`/`Avtopark` ilə eyni səviyyədə),
+  sidebar-da ayrıca bölmə, top-nav dropdown-da "Kassa" sətri.
+- **Giriş (kim yaza bilər):** mövcud **`RoleNames.Kassa`** Identity rolu —
+  Avtopark → Açar jurnalı (`Areas/Avtopark/Controllers/KassaController.cs`) ilə
+  **EYNİ rol**. İlk təklif `UserDepartment` idi, amma kodda artıq "kassa işçisi"
+  üçün işlənən rol tapıldıqdan sonra istifadəçi bunu seçdi — eyni insanlar iki
+  fərqli admin ekranından idarə olunmasın deyə.
+- **Təsdiq (kim təsdiqləyə bilər):** admin-idarəli siyahı, **`KreditBaxanIsci`**
+  ilə EYNİ naxış (rolsuz, sadə "aktiv dövr" siyahısı) — `KassaTesdiqEdici`.
+  İstifadəçi: *"kassa yazır, rəhbər təsdiqləyir və ya imtina verir — belə
+  işləyirdi sistem"* → **tək təsdiqedici kifayətdir**, Kredit Komitəsi
+  (`KomiteUzvu`) kimi kvorum/çoxluq YOXDUR.
+
+### BMI-də tapılan 3 bug — FinNex-də TƏKRARLANMIR
+
+1. **Təsdiq/imtina qlobal idi** — BMI-nin `UPDATE bmi_kassa_kurs SET APPROVAL=...
+   WHERE APPROVAL='gözləmədə'` sorğusu tarixə/qrupa bağlı deyildi, bütün
+   gözləyən sətirləri vururdu. FinNex-də status konkret `KassaKursBeyannamesi`
+   sətrinə bağlıdır (`TesdiqEtAsync(beyannameId, ...)`), qlobal UPDATE yoxdur.
+2. **Səssiz no-op + yalan "uğurlu" mesajı** — BMI-nin `UpdateExchange`-i yalnız
+   `APPROVAL='imtina'` olan sətri yeniləyirdi, "gözləmədə" olanda 0 sətir
+   dəyişirdi, amma yoxlamadan "uğurlu" mesajı göstərirdi. FinNex-də
+   `SaxlaAsync` əvvəlcə statusu yoxlayır, "gözləyir"/"təsdiqləndi" olanda
+   **açıq rədd** edir (`Result.Fail`), səssiz keçmir.
+3. **Heç bir giriş icazəsi yoxdur idi** — BMI-nin `frmExchangeTesdiq`-i
+   `GetUserManagmenet`-i (admin siyahısı) heç vaxt çağırmırdı, menyuya çıxışı
+   olan İSTƏNİLƏN adam təsdiqləyə bilirdi. FinNex-də hər təsdiq/imtina action-ı
+   `IKassaTesdiqEdiciService.TesdiqEdeBilerMiAsync` yoxlayır.
+
+### Struktur
+
+`FinNex.Domain/Entities/Kassa/` — `KassaKursBeyannamesi` (gün başına BİR sətir:
+Tarix, İcraçıIsciId, Status, TəsdiqEdənIsciId, TəsdiqTarixi, İmtinaSəbəbi),
+`KassaKursSetri` (beyannaməyə bağlı, valyuta başına BİR sətir — BMI-nin "yastı"
+dizaynından fərqli, beyannaməyə FK ilə bağlıdır), `KassaKursStatus` enum
+(Gözləyir/Təsdiqləndi/İmtina), `KassaTesdiqEdici`.
+
+Migration: `20261009070000_Kassa.cs` (əl ilə, `InsertData` YOXDUR — hər iki
+siyahı boş başlayır; "Kassa" departamenti də seed edilmir, adi Departament
+idarəetmə ekranından yaradılmalıdır).
+
+Valyuta siyahısı (`USD/AVRO/IRR/AED/RUB`) **tək yerdə** —
+`KassaKursService.Valyutalar` static massivi. Yeni valyuta əlavə etmək
+lazımdırsa, YALNIZ bura əlavə et.
+
+⚠️ **Köçürülməyib (qapsam xaricində qaldı, BMI-də var idi):**
+- Word sənədi yaratma (`Exchange.doc` şablonu, "WordPrint" sütunu);
+- `odb.calendar` ilə "qeyri-iş günü" yoxlaması (BMI-nin monthCalendar-ı bunu
+  edirdi) — FinNex-də tarix seçimi sadə `<input type="date">`-dir, iş günü
+  yoxlaması yoxdur.
+
+İkisi də BMI-də mövcud idi, FinNex-ə ilk keçiddə DAXİL EDİLMƏDİ (istifadəçi
+tələb etməyib) — lazım olsa ayrıca iş kimi əlavə edilə bilər.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, using-lər, DTO/entity sahələri, namespace-lər bir-bir
+tutuşduruldu) — bax "`FindFirstValue` CS1061" bölməsindəki xəbərdarlıq.
+İstifadəçi Visual Studio-da **Rebuild All** ilə yoxlamalı, həm də real ssenari
+ilə test etməlidir (kassir yazır → rəhbər (KassaTesdiqEdici siyahısında olan)
+təsdiqləyir/imtina edir → status düzgün dəyişir, icazəsiz adam nə yaza, nə
+təsdiqləyə bilir).
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

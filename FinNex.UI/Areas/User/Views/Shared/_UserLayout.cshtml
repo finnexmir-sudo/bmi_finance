@@ -125,6 +125,7 @@
         if (currentArea == "SenedDovriyyesi") return "umumi";
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentArea == "Emeliyyat") return "emeliyyat";
+        if (currentArea == "Kassa") return "kassa";
         if (currentArea == "Avtopark") return "avtopark";
         if (currentArea == "Risk") return "risk";
         if (currentArea == "Muhasibat") return "muhasibat";
@@ -306,6 +307,14 @@
                         <div>
                             <div class="fn-topnav-dd-title">Risk</div>
                             <div class="fn-topnav-dd-sub">Risk / AML hesabatları</div>
+                        </div>
+                    </a>
+                    <a asp-area="Kassa" asp-controller="Exchange" asp-action="Index"
+                       class="fn-topnav-dd-item @(activeModule == "kassa" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-currency-exchange"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">Kassa</div>
+                            <div class="fn-topnav-dd-sub">Exchange — valyuta kursu</div>
                         </div>
                     </a>
                 </div>
@@ -1350,6 +1359,22 @@
                     <a asp-area="Emeliyyat" asp-controller="TelebeKocurme" asp-action="Index"
                        class="fn-nav-item @(currentController == "TelebeKocurme" ? "active" : "")">
                         <i class="bi bi-mortarboard"></i> Tələbə köçürməsi
+                    </a>
+                }
+                break;
+
+            case "kassa":
+                {
+                    <a asp-area="Kassa" asp-controller="Exchange" asp-action="Index"
+                       class="fn-nav-item @(currentController == "Exchange" ? "active" : "")">
+                        <i class="bi bi-currency-exchange"></i> Exchange
+                    </a>
+                    @* Hamıya görünür — giriş yoxlaması ExchangeTesdiqController-in
+                       özündə (KassaTesdiqEdici siyahısı), icazəsiz adama aydın
+                       mesaj göstərir, linki gizlətmirik. *@
+                    <a asp-area="Kassa" asp-controller="ExchangeTesdiq" asp-action="Index"
+                       class="fn-nav-item @(currentController == "ExchangeTesdiq" ? "active" : "")">
+                        <i class="bi bi-check2-circle"></i> Kurs təsdiqi
                     </a>
                 }
                 break;

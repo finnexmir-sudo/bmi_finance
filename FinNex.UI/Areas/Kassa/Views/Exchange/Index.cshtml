@@ -1,0 +1,154 @@
+@model ExchangeIndexVM
+@using System.Globalization
+@{
+    ViewData["Title"] = "Exchange — Valyuta kursu";
+
+    var g = Model.Gunluk;
+    string V(decimal? d) => d?.ToString(CultureInfo.InvariantCulture) ?? "";
+    decimal? Pay(string valyuta, Func<FinNex.Application.DTOs.Kassa.KassaKursSetriDto, decimal?> sel)
+        => g.Setirler.FirstOrDefault(x => x.Valyuta == valyuta) is { } s ? sel(s) : null;
+
+    var statusBadge = g.Status switch
+    {
+        FinNex.Domain.Entities.Kassa.KassaKursStatus.Gozleyir => ("Gözləyir", "fn-badge--wait"),
+        FinNex.Domain.Entities.Kassa.KassaKursStatus.Tesdiqlendi => ("Təsdiqləndi", "fn-badge--approved"),
+        FinNex.Domain.Entities.Kassa.KassaKursStatus.Imtina => ("İmtina edilib", "fn-badge--rejected"),
+        _ => ((string?)null, "")
+    };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Exchange — Valyuta kursu</div>
+            <div class="fn-page-sub">Kassanın günlük nağd/qeyri-nağd alış-satış məzənnəsi.</div>
+        </div>
+        <a asp-action="Index" asp-controller="ExchangeTesdiq" class="fn-btn fn-btn--outline">
+            <i class="bi bi-check2-circle"></i> Təsdiq ekranı
+        </a>
+    </div>
+
+    <div class="fn-card">
+        <form method="get" asp-action="Index" class="d-flex align-items-end gap-2 mb-3">
+            <div>
+                <label class="form-label small mb-1">Tarix</label>
+                <input type="date" name="tarix" class="form-control" value="@g.Tarix.ToString("yyyy-MM-dd")"
+                       max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <button type="submit" class="fn-btn fn-btn--outline"><i class="bi bi-search"></i> Göstər</button>
+
+            @if (statusBadge.Item1 != null)
+            {
+                <span class="fn-badge @statusBadge.Item2 ms-2">@statusBadge.Item1</span>
+            }
+        </form>
+
+        @if (g.Status == FinNex.Domain.Entities.Kassa.KassaKursStatus.Imtina && !string.IsNullOrWhiteSpace(g.ImtinaSebebi))
+        {
+            <div class="fn-info-box mb-3">
+                <i class="bi bi-x-circle"></i>
+                <span><b>İmtina səbəbi (@g.TesdiqEdenAdi):</b> @g.ImtinaSebebi — düzəliş edib yenidən göndərə bilərsiniz.</span>
+            </div>
+        }
+        @if (g.Status == FinNex.Domain.Entities.Kassa.KassaKursStatus.Gozleyir)
+        {
+            <div class="fn-info-box mb-3">
+                <i class="bi bi-hourglass-split"></i>
+                <span>Bu günün kursu göndərilib, təsdiq gözləyir — təsdiqlənənə/imtina olunana qədər yenidən yazıla bilməz.</span>
+            </div>
+        }
+        @if (g.Status == FinNex.Domain.Entities.Kassa.KassaKursStatus.Tesdiqlendi)
+        {
+            <div class="fn-info-box mb-3">
+                <i class="bi bi-check-circle"></i>
+                <span>Bu günün kursu təsdiqlənib (@g.TesdiqEdenAdi, @g.TesdiqTarixi?.ToString("dd.MM.yyyy HH:mm")).</span>
+            </div>
+        }
+
+        <form method="post" asp-action="Saxla">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Tarix" value="@g.Tarix.ToString("yyyy-MM-dd")" />
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Valyuta</th>
+                            <th>Nağd Alış</th>
+                            <th>Nağd Satış</th>
+                            <th>Qeyri nağd Alış</th>
+                            <th>Qeyri nağd Satış</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var valyutalar = new (string Kod, string Ad)[]
+                            {
+                                ("USD", "USD"), ("AVRO", "AVRO"), ("IRR", "IRR"), ("AED", "AED"), ("RUB", "RUB")
+                            };
+                        }
+                        @foreach (var v in valyutalar)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@v.Ad</td>
+                                <td><input type="number" step="any" class="form-control" name="@(v.Kod)_NA" value="@V(Pay(v.Kod, x => x.NagdAlis))" disabled="@(!g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="form-control" name="@(v.Kod)_NS" value="@V(Pay(v.Kod, x => x.NagdSatis))" disabled="@(!g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="form-control" name="@(v.Kod)_QNA" value="@V(Pay(v.Kod, x => x.QeyriNagdAlis))" disabled="@(!g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="form-control" name="@(v.Kod)_QNS" value="@V(Pay(v.Kod, x => x.QeyriNagdSatis))" disabled="@(!g.YazaBiler)" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (g.YazaBiler)
+            {
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-send"></i> @(g.Status == FinNex.Domain.Entities.Kassa.KassaKursStatus.Imtina ? "Yenidən göndər" : "İcra et")
+                </button>
+            }
+        </form>
+    </div>
+
+    <div class="fn-card mt-3">
+        <div class="fn-card-title mb-2">Son qeydlər</div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Tarix</th><th>Valyuta</th><th>Nağd alış</th><th>Nağd satış</th>
+                        <th>Qeyri nağd alış</th><th>Qeyri nağd satış</th><th>İcraçı</th><th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.SonQeydler.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var r in Model.SonQeydler)
+                        {
+                            var (ad, cls) = r.Status switch
+                            {
+                                FinNex.Domain.Entities.Kassa.KassaKursStatus.Gozleyir => ("Gözləyir", "fn-badge--wait"),
+                                FinNex.Domain.Entities.Kassa.KassaKursStatus.Tesdiqlendi => ("Təsdiqləndi", "fn-badge--approved"),
+                                _ => ("İmtina", "fn-badge--rejected")
+                            };
+                            <tr>
+                                <td>@r.Tarix.ToString("dd.MM.yyyy")</td>
+                                <td>@r.Valyuta</td>
+                                <td>@V(r.NagdAlis)</td>
+                                <td>@V(r.NagdSatis)</td>
+                                <td>@V(r.QeyriNagdAlis)</td>
+                                <td>@V(r.QeyriNagdSatis)</td>
+                                <td>@r.IcraciAdi</td>
+                                <td><span class="fn-badge @cls">@ad</span></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

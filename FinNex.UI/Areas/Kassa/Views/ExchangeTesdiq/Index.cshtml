@@ -1,0 +1,149 @@
+@using System.Globalization
+@using FinNex.Application.DTOs.Kassa
+@{
+    ViewData["Title"] = "Kassa — Kurs təsdiqi";
+    string V(decimal? d) => d?.ToString(CultureInfo.InvariantCulture) ?? "—";
+
+    bool tesdiqEdeBiler = ViewBag.TesdiqEdeBiler;
+    var gozleyenler = (List<KassaKursBeyannameOzetDto>)ViewBag.Gozleyenler;
+    var neticelenmisler = (List<KassaKursBeyannameOzetDto>)ViewBag.Neticelenmisler;
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Kassa — Kurs təsdiqi</div>
+            <div class="fn-page-sub">Kassanın göndərdiyi günlük valyuta kursunu təsdiqləyin və ya imtina edin.</div>
+        </div>
+        <a asp-action="Index" asp-controller="Exchange" class="fn-btn fn-btn--outline">
+            <i class="bi bi-arrow-left"></i> Exchange-ə qayıt
+        </a>
+    </div>
+
+    @if (!tesdiqEdeBiler)
+    {
+        <div class="fn-card">
+            <div class="fn-info-box">
+                <i class="bi bi-lock"></i>
+                <span>Bu ekrana giriş icazəniz yoxdur — kassa kurslarını təsdiqləmə icazəsi Admin tərəfindən verilir.</span>
+            </div>
+        </div>
+        return;
+    }
+
+    @foreach (var b in gozleyenler)
+    {
+        <div class="fn-card mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <b>@b.Tarix.ToString("dd.MM.yyyy")</b>
+                    <span class="text-muted"> — @b.IcraciAdi</span>
+                    <span class="fn-badge fn-badge--wait ms-2">Gözləyir</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <form method="post" asp-action="Tesdiq" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@b.BeyannameId" />
+                        <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm"
+                                onclick="return confirm('Bu kursu təsdiqləmək istədiyinizə əminsiniz?');">
+                            <i class="bi bi-check2"></i> Təsdiq et
+                        </button>
+                    </form>
+                    <button type="button" class="fn-btn fn-btn--outline fn-btn--sm"
+                            data-bs-toggle="modal" data-bs-target="#imtinaModal_@b.BeyannameId">
+                        <i class="bi bi-x-lg"></i> İmtina et
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Valyuta</th><th>Nağd alış</th><th>Nağd satış</th>
+                            <th>Qeyri nağd alış</th><th>Qeyri nağd satış</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in b.Setirler)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@s.Valyuta</td>
+                                <td>@V(s.NagdAlis)</td>
+                                <td>@V(s.NagdSatis)</td>
+                                <td>@V(s.QeyriNagdAlis)</td>
+                                <td>@V(s.QeyriNagdSatis)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal fade" id="imtinaModal_@b.BeyannameId" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" asp-action="Imtina" class="modal-content">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@b.BeyannameId" />
+                    <div class="modal-header">
+                        <h5 class="modal-title">İmtina səbəbi — @b.Tarix.ToString("dd.MM.yyyy")</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea name="sebeb" class="form-control" rows="3" required placeholder="Səbəbi yazın..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                        <button type="submit" class="btn btn-danger">İmtina et</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    @if (!gozleyenler.Any())
+    {
+        <div class="fn-card">
+            <div class="text-center text-muted py-3">Təsdiq gözləyən kurs yoxdur.</div>
+        </div>
+    }
+
+    <div class="fn-card mt-3">
+        <div class="fn-card-title mb-2">Son nəticələnmiş qeydlər</div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Tarix</th><th>İcraçı</th><th>Status</th><th>Təsdiq/İmtina edən</th>
+                        <th>Tarix</th><th>Qeyd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!neticelenmisler.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var b in neticelenmisler)
+                        {
+                            var (ad, cls) = b.Status switch
+                            {
+                                FinNex.Domain.Entities.Kassa.KassaKursStatus.Tesdiqlendi => ("Təsdiqləndi", "fn-badge--approved"),
+                                _ => ("İmtina", "fn-badge--rejected")
+                            };
+                            <tr>
+                                <td>@b.Tarix.ToString("dd.MM.yyyy")</td>
+                                <td>@b.IcraciAdi</td>
+                                <td><span class="fn-badge @cls">@ad</span></td>
+                                <td>@b.TesdiqEdenAdi</td>
+                                <td>@b.TesdiqTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="text-muted small">@(b.ImtinaSebebi ?? "")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
