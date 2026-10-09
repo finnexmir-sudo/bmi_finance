@@ -42,10 +42,19 @@
     padding: 7px 10px;
     font-size: 13px;
     min-width: 110px;
+    /* Default fn-input sərhədi (#e4e8f0) açıq fondakı boş xanada solğun
+       görünürdü (istifadəçi qeydi, 09.10.2026) — burada tündləşdirildi. */
+    border-color: #c3cadf;
+    background: #fbfcfe;
+}
+
+.kx-table input.fn-input:focus {
+    background: #fff;
 }
 
 .kx-table input.fn-input:disabled {
     background: #f7f8fb;
+    border-color: #e4e8f0;
     color: #8a93a8;
 }
 
