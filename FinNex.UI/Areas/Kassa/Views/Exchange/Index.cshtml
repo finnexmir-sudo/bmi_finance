@@ -24,33 +24,33 @@
 }
 
 <div class="fn-page">
-    <div class="kx-top-actions">
+    <div class="kx-top-row">
+        <div class="kx-mb-card">
+            <div class="kx-mb-icon"><i class="bi bi-bank2"></i></div>
+            <div class="kx-mb-date">@Model.MbTarix.ToString("dd.MM.yyyy")</div>
+            <div class="kx-mb-rows">
+                <div class="kx-mb-row-head">
+                    <span>Valyuta</span>
+                    <span>Kurs</span>
+                </div>
+                <div class="kx-mb-row-item">
+                    <span class="kx-mb-cur">USD</span>
+                    <span class="kx-mb-val">@(Model.UsdMbKurs.HasValue ? Mb(Model.UsdMbKurs) + " ₼" : "—")</span>
+                </div>
+                <div class="kx-mb-row-item">
+                    <span class="kx-mb-cur">AVRO</span>
+                    <span class="kx-mb-val">@(Model.AvroMbKurs.HasValue ? Mb(Model.AvroMbKurs) + " ₼" : "—")</span>
+                </div>
+            </div>
+            @if (!Model.UsdMbKurs.HasValue || !Model.AvroMbKurs.HasValue)
+            {
+                <div class="kx-mb-note">Bəzi kurslar tapılmadı.</div>
+            }
+        </div>
+
         <a asp-action="Index" asp-controller="ExchangeTesdiq" class="fn-btn fn-btn--outline">
             <i class="bi bi-check2-circle"></i> Təsdiq ekranı
         </a>
-    </div>
-
-    <div class="kx-mb-card">
-        <div class="kx-mb-icon"><i class="bi bi-bank2"></i></div>
-        <div class="kx-mb-date">@Model.MbTarix.ToString("dd.MM.yyyy")</div>
-        <div class="kx-mb-rows">
-            <div class="kx-mb-row-head">
-                <span>Valyuta</span>
-                <span>Kurs</span>
-            </div>
-            <div class="kx-mb-row-item">
-                <span class="kx-mb-cur">USD</span>
-                <span class="kx-mb-val">@(Model.UsdMbKurs.HasValue ? Mb(Model.UsdMbKurs) + " ₼" : "—")</span>
-            </div>
-            <div class="kx-mb-row-item">
-                <span class="kx-mb-cur">AVRO</span>
-                <span class="kx-mb-val">@(Model.AvroMbKurs.HasValue ? Mb(Model.AvroMbKurs) + " ₼" : "—")</span>
-            </div>
-        </div>
-        @if (!Model.UsdMbKurs.HasValue || !Model.AvroMbKurs.HasValue)
-        {
-            <div class="kx-mb-note">Bəzi kurslar tapılmadı.</div>
-        }
     </div>
 
     <div class="fn-card">
