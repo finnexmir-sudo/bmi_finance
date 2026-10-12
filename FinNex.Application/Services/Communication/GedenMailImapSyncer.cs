@@ -94,7 +94,7 @@ public class GedenMailImapSyncer : IGedenMailImapSyncer
                 Movzu = msg.Subject ?? "",
                 MetinHtml = msg.HtmlBody ?? "",
                 MetinDuz = msg.TextBody ?? msg.HtmlBody ?? "",
-                GonderilmeTarixi = msg.Date.UtcDateTime,
+                GonderilmeTarixi = msg.Date.LocalDateTime,
                 YaradilmaTarixi = DateTime.Now,
                 Qosmalar = new List<GedenMailQosma>()
             };

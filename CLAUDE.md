@@ -4179,6 +4179,62 @@ işarələnir — bu, əksər cədvəl faylında düzgün nəticə verir, amma q
 banner-inin tünd-göy, başlıq sətrinin açıq-göy fonla göründüyünü, uzun mətnli
 xanaların artıq sətir keçdiyini (üfüqi sürüşmədən çıxdığını) təsdiqləməli.
 
+## Gələn/Göndərilən Mail Saatı — UTC Yazılır, Server Yerli Vaxtını Göstərir (12.10.2026, KRİTİK)
+
+İstifadəçi ekran-görüntüsü ilə göstərdi: Titan-da (poçt müştərisi) mail **15:44**-də
+gəlib, FinNex-in "Gələn Maillər" siyahısında isə **11:44** göstərilirdi — dəqiq
+**4 saat** fərq, Azərbaycanın UTC+4 ofsetinə bərabər.
+
+**Kök səbəb:** `GelenMailImapSyncer.cs:75` mail tarixini **`msg.Date.UtcDateTime`**
+ilə yazırdı (MailKit-in `DateTimeOffset`-ini UTC-yə çevirib saxlayırdı), **tam
+yanındakı sətir isə** (`YaradilmaTarixi = DateTime.Now`) server **YERLİ** vaxtını
+yazırdı — eyni entity-nin iki qonşu sahəsi iki fərqli konvensiyada idi.
+`GedenMailImapSyncer.cs:97` (`GonderilmeTarixi`) **eyni bugu güzgü kimi
+təkrarlayırdı** (bu modul `GelenMail`-in güzgüsüdür — bax yuxarı "Göndərilən
+Mail + Mail İzləmə" bölməsi). Göstərmə qatı (`GelenMail/Index.cshtml:273`,
+`@mail.AlinmaTarixi.ToString("dd MMM HH:mm")`) heç bir çevirmə aparmır — bazadakı
+dəyəri **olduğu kimi** çap edir.
+
+**Layihənin ümumi konvensiyası budur ki, serverin özü artıq Azərbaycan vaxt
+qurşağındadır** (`DateTime.Now`/`DateTime.Today` bütün digər modullarda —
+Payroll, Davamiyyət, Məzuniyyət və s. — HEÇ BİR tərcümə olmadan birbaşa işlədilir,
+layihədə `TimeZoneInfo` əsaslı heç bir çevirmə mexanizmi yoxdur). Yəni "yerli
+vaxt göstərmək" üçün UTC-dən geri çevirmək LAZIM DEYİL — sadəcə UTC-yə
+çevirməmək kifayətdir. IMAP sinxronu isə `msg.Date` (e-poçtun öz `Date:`
+başlığı, doğru ofsetli `DateTimeOffset`) üzərində **əlavə** `.UtcDateTime`
+çağırışı ilə bu konvensiyanı pozmuşdu.
+
+**Düzəliş — iki sətir, ikisi də `.UtcDateTime` → `.LocalDateTime`:**
+```csharp
+AlinmaTarixi = msg.Date.LocalDateTime,       // GelenMailImapSyncer.cs:75
+GonderilmeTarixi = msg.Date.LocalDateTime,   // GedenMailImapSyncer.cs:97
+```
+`DateTimeOffset.LocalDateTime` mesajın öz ofsetindən (göndərənin saatından,
+nəyi olursa olsun) **serverin sistem vaxt qurşağına** çevirir — nəticə `YaradilmaTarixi`
+ilə eyni konvensiyada olur, göstərmə qatına toxunmaq lazım deyil.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR.** Sinxron `knownSet.Contains(msgId)) continue;` ilə
+artıq bilinən `MessageId`-ləri **yenidən oxumur** — bu fix YALNIZ bundan sonra
+ilk dəfə sinxronlaşan (yeni gələn/göndərilən) mailləri düzəldir. Bazada onsuz da
+olan köhnə sətirlərin `AlinmaTarixi`/`GonderilmeTarixi`-si UTC-də qalıb (4 saat
+geri görünməyə davam edəcək) — geriyə düzəltmək tələb olunarsa ayrıca SQL
+lazımdır (bu sessiyada edilmədi, istifadəçi tələb etməyib).
+
+**Qayda:** eyni entity-nin iki QONŞU tarix sahəsi (burada: `AlinmaTarixi` və
+`YaradilmaTarixi`) fərqli mənbədən (xarici mesaj vs `DateTime.Now`) doldurulursa,
+HƏR İKİSİNİN **eyni saat qurşağı konvensiyasında** olduğunu yoxla — xarici
+kitabxananın (`MailKit`) "düzgün" göstərdiyi bir API (`.UtcDateTime`) layihənin
+ÖZ konvensiyasına (burada: "server = yerli vaxt, çevirmə yoxdur") zidd ola bilər.
+Bu, "Razor → CSS/JS Rəqəm — Mədəniyyət" bölməsindəki eyni prinsipin başqa bir
+formasıdır: iki qat arasında gizli bir fərziyyə fərqi (mədəniyyət/saat qurşağı)
+heç bir xəta vermədən rəqəmi/saatı səssizcə sürüşdürür.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+IMAP hesabı ilə (SMTP/IMAP qurulmuş istifadəçi) yoxlamalıdır: yeni gələn/göndərilən
+mailin saatının Titan-dakı real saatla (server Azərbaycan vaxt qurşağındadırsa)
+tam uyğun gəldiyini.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

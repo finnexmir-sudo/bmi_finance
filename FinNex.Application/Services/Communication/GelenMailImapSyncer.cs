@@ -72,7 +72,7 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
                 Movzu = msg.Subject ?? "",
                 MetinHtml = msg.HtmlBody ?? "",
                 MetinDuz = msg.TextBody ?? msg.HtmlBody ?? "",
-                AlinmaTarixi = msg.Date.UtcDateTime,
+                AlinmaTarixi = msg.Date.LocalDateTime,
                 YaradilmaTarixi = DateTime.Now,
                 Qosmalar = new List<GelenMailQosma>()
             };
