@@ -454,38 +454,39 @@
     border-bottom: 1px solid var(--gm-border);
 }
 .gm-mail-subject {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--gm-text);
-    margin: 0 0 16px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 14px;
+    letter-spacing: -.01em;
 }
 .gm-mail-from {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 .gm-mail-avatar {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
     color: #fff;
-    font-weight: 700;
-    font-size: 1rem;
+    font-weight: 600;
+    font-size: .8rem;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
-.gm-mail-from-name { font-weight: 600; font-size: .9rem; }
-.gm-mail-from-email { font-size: .8rem; color: var(--gm-text-muted); }
-.gm-mail-date { margin-left: auto; font-size: .8rem; color: var(--gm-text-muted); white-space: nowrap; }
+.gm-mail-from-name { font-weight: 500; font-size: .84rem; color: #334155; }
+.gm-mail-from-email { font-size: .74rem; color: #94a3b8; }
+.gm-mail-date { margin-left: auto; font-size: .74rem; color: #94a3b8; white-space: nowrap; }
 
 .gm-mail-body {
     padding: 24px;
     min-height: 200px;
 }
-.gm-mail-html { font-size: .9rem; line-height: 1.7; color: var(--gm-text); }
+.gm-mail-html { font-size: .87rem; line-height: 1.65; color: var(--gm-text); }
 .gm-mail-html img { max-width: 100%; height: auto; }
 /* Hide broken/cid images cleanly */
 .gm-mail-html img.gm-img-broken { display: none; }
@@ -502,32 +503,34 @@
     padding: 16px 24px 20px;
 }
 .gm-attachments-title {
-    font-size: .9rem;
-    font-weight: 700;
+    font-size: .78rem;
+    font-weight: 600;
     color: var(--gm-text-muted);
-    margin: 0 0 12px;
+    margin: 0 0 10px;
     display: flex;
     align-items: center;
     gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: .02em;
 }
 .gm-attachments-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 .gm-attachment-card {
     border: 1px solid var(--gm-border);
-    border-radius: 8px;
-    padding: 10px 14px;
+    border-radius: 10px;
+    padding: 8px 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
-.gm-attachment-icon { flex-shrink: 0; }
+.gm-attachment-icon { flex-shrink: 0; font-size: 1.15rem !important; }
 .gm-attachment-info { flex: 1; min-width: 0; }
-.gm-attachment-name { font-size: .85rem; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gm-attachment-size { font-size: .75rem; color: var(--gm-text-muted); }
+.gm-attachment-name { font-size: .8rem; font-weight: 500; color: #334155; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gm-attachment-size { font-size: .72rem; color: var(--gm-text-muted); }
 .gm-attachment-actions { display: flex; gap: 6px; align-items: center; }
 .gm-attachment-text {
     width: 100%;
@@ -1336,37 +1339,38 @@
     z-index: 10;
     background: #fff;
     border-bottom: 1px solid var(--gm-border);
-    padding: 12px 20px;
+    padding: 10px 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
 .gm-panel-from {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     flex: 1;
     min-width: 0;
 }
 
 .gm-panel-date {
     margin-left: auto;
-    font-size: .8rem;
+    font-size: .74rem;
     color: #94a3b8;
     white-space: nowrap;
 }
 
 .gm-panel-content {
-    padding: 20px;
+    padding: 18px 22px;
 }
 
 .gm-panel-subject {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: #1a2332;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: #1e293b;
+    letter-spacing: -.01em;
 }
 
 .gm-panel-assign {

@@ -124,4 +124,21 @@ public class GedenMailService : IGedenMailService
         mail.SilinmeTarixi = DateTime.Now;
         await _uow.YaddaSaxlaAsync();
     }
+
+    public async Task<(string FaylYolu, string FaylAdi, string ContentType)?> QosmaYukleAsync(int qosmaId, int sahibUserId)
+    {
+        var qosma = await _uow.Repository<GedenMailQosma>().Query()
+            .AsNoTracking()
+            .Include(x => x.GedenMail)
+            .Where(x => x.Id == qosmaId && !x.Silinib)
+            .FirstOrDefaultAsync();
+
+        if (qosma == null || !File.Exists(qosma.FaylYolu))
+            return null;
+
+        if (qosma.GedenMail.SahibUserId != sahibUserId || qosma.GedenMail.Silinib)
+            return null;
+
+        return (qosma.FaylYolu, qosma.FaylAdi, qosma.ContentType);
+    }
 }

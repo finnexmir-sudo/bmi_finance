@@ -24,4 +24,11 @@ public interface IGelenMailService
     /// İşçinin həmin maila tapşırılmış olması yoxlanılır; deyilsə null qaytarılır.
     /// </summary>
     Task<(string FaylYolu, string FaylAdi, string ContentType)?> QosmaGetirAsync(int qosmaId, int isciId);
+
+    /// <summary>
+    /// Qoşmanı yükləmək/açmaq üçün fayl məlumatlarını qaytarır — qutunun SAHİBİ
+    /// (12.10.2026) üçün (QosmaGetirAsync-dən fərqli: tapşırıq deyil, mülkiyyət yoxlanılır).
+    /// Sahib verilən mail-in sahibi deyilsə null qaytarılır.
+    /// </summary>
+    Task<(string FaylYolu, string FaylAdi, string ContentType)?> QosmaYukleAsync(int qosmaId, int sahibUserId);
 }

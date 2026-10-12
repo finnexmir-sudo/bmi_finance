@@ -23,8 +23,8 @@
     <div class="gm-panel-from">
         <div class="gm-mail-avatar">@(Model.KimdenAd.Length > 0 ? Model.KimdenAd[0].ToString().ToUpper() : "?")</div>
         <div>
-            <div style="font-weight:600;font-size:.9rem;color:#1a2332">@(string.IsNullOrWhiteSpace(Model.KimdenAd) ? Model.KimdenEmail : Model.KimdenAd)</div>
-            <div style="font-size:.78rem;color:#64748b">@Model.KimdenEmail</div>
+            <div class="gm-mail-from-name">@(string.IsNullOrWhiteSpace(Model.KimdenAd) ? Model.KimdenEmail : Model.KimdenAd)</div>
+            <div class="gm-mail-from-email">@Model.KimdenEmail</div>
         </div>
     </div>
     <span class="gm-panel-date">@Model.AlinmaTarixi.ToString("dd MMMM yyyy, HH:mm")</span>
@@ -137,6 +137,10 @@
                             <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
                         </div>
                         <div class="gm-attachment-actions">
+                            <a href="@Url.Action("QosmaYukle", "GelenMail", new { id = q.Id })"
+                               class="gm-btn gm-btn-sm gm-btn-outline" target="_blank" title="Aç / Yüklə">
+                                <i class="bi bi-download"></i>
+                            </a>
                             @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
                             {
                                 <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">

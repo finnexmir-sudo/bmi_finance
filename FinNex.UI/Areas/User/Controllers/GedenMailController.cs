@@ -86,6 +86,20 @@ public class GedenMailController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // ── GET /User/GedenMail/QosmaYukle/5 — qoşmanı aç/yüklə (12.10.2026) ──
+    [HttpGet]
+    public async Task<IActionResult> QosmaYukle(int id)
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var fayl = await _mailService.QosmaYukleAsync(id, appUser.Id);
+        if (fayl == null) return NotFound();
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(fayl.Value.FaylYolu);
+        return File(bytes, fayl.Value.ContentType, fayl.Value.FaylAdi);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ManualSync()

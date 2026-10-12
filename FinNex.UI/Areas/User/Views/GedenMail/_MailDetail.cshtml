@@ -5,8 +5,8 @@
     <div class="gm-panel-from">
         <div class="gm-mail-avatar">@(Model.KimeAd.Length > 0 ? Model.KimeAd[0].ToString().ToUpper() : (Model.KimeEmail.Length > 0 ? Model.KimeEmail[0].ToString().ToUpper() : "?"))</div>
         <div>
-            <div style="font-weight:600;font-size:.9rem;color:#1a2332">Kimə: @(string.IsNullOrWhiteSpace(Model.KimeAd) ? Model.KimeEmail : Model.KimeAd)</div>
-            <div style="font-size:.78rem;color:#64748b">@Model.KimeToplu</div>
+            <div class="gm-mail-from-name">Kimə: @(string.IsNullOrWhiteSpace(Model.KimeAd) ? Model.KimeEmail : Model.KimeAd)</div>
+            <div class="gm-mail-from-email">@Model.KimeToplu</div>
         </div>
     </div>
     <span class="gm-panel-date">@Model.GonderilmeTarixi.ToString("dd MMMM yyyy, HH:mm")</span>
@@ -56,6 +56,10 @@
                             <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
                         </div>
                         <div class="gm-attachment-actions">
+                            <a href="@Url.Action("QosmaYukle", "GedenMail", new { id = q.Id })"
+                               class="gm-btn gm-btn-sm gm-btn-outline" target="_blank" title="Aç / Yüklə">
+                                <i class="bi bi-download"></i>
+                            </a>
                             @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
                             {
                                 <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">

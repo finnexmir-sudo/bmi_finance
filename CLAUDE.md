@@ -3620,6 +3620,78 @@ ssenari ilə yoxlamalıdır: bildiriş gələndə balloon/popup-a klikləyəndə
 NƏ baş verməməlidir (əvvəlki kimi login səhifəsi açılmamalıdır) — Gələn
 Qutusundaki «Bax →» linki isə əvvəlki kimi işləməlidir.
 
+## Mail Qoşmalarını Açmaq/Yükləmək — Endpoint Yox İdi (12.10.2026)
+
+İstifadəçi tələbi: *"maillerde qosma fayllarida gormek mumkun olsun"*. Yoxlanıldı —
+`GelenMail`/`GedenMail` qoşma kartlarında yalnız **ad + ölçü + (varsa) çıxarılmış
+mətnin önizləməsi** var idi, faylın ÖZÜNÜ açan/yükləyən heç bir keçid YOXDU.
+`FaylYolu` (disk yolu) `GelenMailQosma`/`GedenMailQosma`-da onsuz da saxlanılırdı
+— sadəcə buna gedən GET endpoint unudulmuşdu.
+
+**Oxşar funksiya onsuz da mövcud idi, amma FƏRQLİ məqsəd üçün:**
+`IGelenMailService.QosmaGetirAsync` + `TapshiriqController.QosmaYukle` — bu,
+yalnız «həmin maila TAPŞIRILMIŞ işçi» üçündür (`GelenMailIsci` yoxlaması).
+Gələn/Göndərilən Mail isə **qutunun SAHİBİ** modelindədir (`SahibUserId`) — ona
+görə **yeni, ayrıca** `QosmaYukleAsync(qosmaId, sahibUserId)` metodu əlavə
+olundu (hər iki servisdə), köhnə `QosmaGetirAsync`-a toxunulmadı (başqa axının
+icazə qaydasını dəyişmək səhv olardı).
+
+**Endpoint:** `GET /User/GelenMail/QosmaYukle/{id}`, `GET /User/GedenMail/
+QosmaYukle/{id}` — `TapshiriqController.QosmaYukle`-dəki EYNİ naxış
+(`PhysicalFile`/`File(bytes, contentType, faylAdi)`), sadəcə icazə şərti fərqli
+(tapşırıq yox, mülkiyyət: `qosma.GelenMail.SahibUserId == appUser.Id`).
+
+**Dörd yerdə "Aç / Yüklə" düyməsi** — split-panel (`_MailDetail.cshtml`, həm
+Gələn, həm Göndərilən) VƏ tam səhifə (`Detail.cshtml`, həm Gələn, həm
+Göndərilən) eyni `gm-attachment-card`-ı TƏKRARLAYIR (iki ayrı layout, eyni
+markup) — dördündə də eyni `<a href="@Url.Action("QosmaYukle", ...)" target=
+"_blank">` əlavə edildi. Yeni bir attachment-göstərmə yolu əlavə olunsa, bu
+dörd yerin hamısını tutuşdur.
+
+⚠️ **Fayllar hələ `wwwroot/mail-qosmalar/`-dadır (DMS-də YOX)** — bu, CLAUDE.md-nin
+yuxarıdakı "Fayl Yükləmə — SƏNƏD SAXLAMA QAYDASI" bölməsinə görə köhnə qaydadır
+(`GelenMailImapSyncer`-in əvvəldən belə olan davranışı, `GedenMailImapSyncer`
+onu köçürərkən eyni naxışı təkrarlayıb — bax "Göndərilən Mail + Mail İzləmə"
+bölməsi). Bu sessiyada DƏYİŞDİRİLMƏDİ (qapsam xaricində) — yalnız mövcud
+yerdəki faylı açmaq üçün endpoint əlavə olundu. `wwwroot` static middleware-i
+bu faylları TEORİK olaraq icazəsiz də serve edə bilər (əgər konkret yol
+bilinərsə) — amma GUID adlı fayllar üçün bu, təcrübədə aşağı risklidir; əsl
+düzəliş (DMS-ə köçürmə + icazəli serve) ayrıca iş kimi qalır.
+
+## Göndərilən/Gələn Mail Detalı — Görüntü İncəlişdirmə (12.10.2026)
+
+İstifadəçi ekran-görüntüsü göstərib: *"burda bezi seyler cox iridir ve kobud
+gorsenir, biraz incelesdirek"*. Split-panel detalının başlıq zolağı (avatar,
+«Kimə:» adı, Mövzu) defolt ölçülərdə həddindən artıq **iri/qalın** görünürdü
+(40px avatar, 1.25rem/700 mövzu, 600 çəkili ad) — adi bir mail-client-dən
+gözlənildiyindən çox «kobud».
+
+**Düzəliş — `gelen-mail.css`, YALNIZ şriftlər/ölçülər, markup TOXUNULMADI:**
+- `.gm-mail-avatar`: 40px→32px, çəki 700→600, qradient bir az yumşaldıldı;
+- `.gm-mail-from-name`/`.gm-mail-from-email`/`.gm-panel-date`: çəki/ölçü
+  azaldıldı, rəng tündlükdən açıq boz-göyə (`#334155`/`#94a3b8`) keçirildi;
+- `.gm-mail-subject`/`.gm-panel-subject` (iki ayrı layout, eyni konsept):
+  1.2–1.25rem/700 → 1.05rem/600, `letter-spacing:-.01em` əlavə edildi;
+- `.gm-attachments-title`/`.gm-attachment-name`/`.gm-attachment-card`:
+  kiçik versal başlıq (uppercase, .78rem) + daha nazik kart padding-i.
+
+**İKİ `_MailDetail.cshtml`-dəki "Kimə:" sətirləri INLINE STYLE idi** (CSS
+class-ı deyil) — tam səhifə `Detail.cshtml`-lər artıq `.gm-mail-from-name`/
+`.gm-mail-from-email` class-larını işlədirdi, split-panel isə eyni görünüşü
+inline təkrarlayırdı. İnline-lar silinib class-lara keçirildi ki, bundan sonra
+ölçü dəyişikliyi **tək yerdən** (CSS) idarə olunsun — iki yerdə ayrı-ayrı
+"iri/kiçik" qalma riski aradan qalxdı.
+
+⚠️ **Mail MƏTNİNİN ÖZÜ (imza, göndərənin HTML-i) TOXUNULMADI** — ekranda görünən
+qalın göy imza mətni (məs. "T.Q.Məmmadov", "Bank Melli Iran Baku branch")
+bizim CSS-dən YOX, orijinal e-poçtun öz HTML/inline-style-ından gəlir
+(`Html.Raw(Model.MetinHtml)`). Onu "sadələşdirmək" inline `style="font-weight:
+bold;color:navy"` kimi atributları override etmək (yalnız `!important` ilə
+mümkündür) tələb edər — bu, başqa məktublardakı HƏQİQİ vurğulamanı da
+(məs. "TƏCİLİ" kimi sözləri) səssizcə söndürə bilər. Qəsdən toxunulmadı;
+istifadəçi konkret bunu da istəsə, ayrıca qərar və diqqətli əhatə (yalnız
+imza bloku, bütün HTML yox) lazımdır.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

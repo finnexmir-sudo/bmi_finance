@@ -496,4 +496,21 @@ public class GelenMailService : IGelenMailService
 
         return (qosma.FaylYolu, qosma.FaylAdi, qosma.ContentType);
     }
+
+    public async Task<(string FaylYolu, string FaylAdi, string ContentType)?> QosmaYukleAsync(int qosmaId, int sahibUserId)
+    {
+        var qosma = await _uow.Repository<GelenMailQosma>().Query()
+            .AsNoTracking()
+            .Include(x => x.GelenMail)
+            .Where(x => x.Id == qosmaId && !x.Silinib)
+            .FirstOrDefaultAsync();
+
+        if (qosma == null || !File.Exists(qosma.FaylYolu))
+            return null;
+
+        if (qosma.GelenMail.SahibUserId != sahibUserId || qosma.GelenMail.Silinib)
+            return null;
+
+        return (qosma.FaylYolu, qosma.FaylAdi, qosma.ContentType);
+    }
 }
