@@ -156,6 +156,38 @@
             });
     }
 
+    // SheetJS-in free versiyası (xlsx.full.min.js) oxuyanda mənbə faylın
+    // hüceyrə stilini (fon rəngi, şrift) SAXLAMIR — bu, yalnız pulsuz
+    // kitabxananın məhdudiyyətidir, kodun səhvi deyil. Əvəzində quruluşa
+    // (birləşdirilmiş xanalar, sətir sırası) baxaraq başlıq/sərlövhə
+    // sətirlərini TƏXMİN edib işarələyirik ki, Titan-a yaxın bir görüntü
+    // alınsın (bax CLAUDE.md "Qoşma Önizləməsi" bölməsi).
+    function polishXlsxTable(table) {
+        var rows = table.querySelectorAll('tr');
+        if (!rows.length) return;
+
+        var totalCols = 0;
+        rows[0].querySelectorAll('td,th').forEach(function (c) {
+            totalCols += parseInt(c.getAttribute('colspan') || '1', 10);
+        });
+
+        var headerRowIndex = 0;
+        var firstCells = rows[0].querySelectorAll('td,th');
+        if (firstCells.length === 1 && totalCols > 1) {
+            // tək, bütün eni örtən xana — sərlövhə zolağı (Titan-dakı tünd banner)
+            rows[0].classList.add('gm-xlsx-title-row');
+            headerRowIndex = 1;
+        }
+
+        if (rows[headerRowIndex]) {
+            rows[headerRowIndex].classList.add('gm-xlsx-header-row');
+        }
+
+        for (var i = headerRowIndex + 1; i < rows.length; i++) {
+            if ((i - headerRowIndex) % 2 === 0) rows[i].classList.add('gm-xlsx-row-alt');
+        }
+    }
+
     function renderXlsx(body, viewUrl, downloadUrl, name, text) {
         showLoading(body);
         ensureXlsx()
@@ -198,6 +230,8 @@
                     sheetDiv.setAttribute('data-sheet-index', i);
                     if (i !== 0) sheetDiv.style.display = 'none';
                     sheetDiv.innerHTML = window.XLSX.utils.sheet_to_html(wb.Sheets[sn], { id: 'gm-xlsx-' + i });
+                    var tbl = sheetDiv.querySelector('table');
+                    if (tbl) polishXlsxTable(tbl);
                     wrap.appendChild(sheetDiv);
                 });
 

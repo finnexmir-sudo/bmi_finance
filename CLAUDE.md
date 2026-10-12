@@ -4127,6 +4127,58 @@ brauzerdə yoxlamalıdır: "Mail" qrupu açılanda sol xəttin göründüyünü,
 "Hamısını oxundu et"in həqiqətən bütün maili oxunmuş etdiyini, son
 səhifədə "Əvvəlki" düyməsinin artıq görünməyə davam etdiyini.
 
+### Xlsx Qoşma Önizləməsi — SheetJS Pulsuz Versiyası Hüceyrə Stilini Saxlamır (12.10.2026)
+
+İstifadəçi Titan-ın (xarici poçt müştərisi) bir `.xlsx` qoşmasını necə göstərdiyini
+ekran-görüntüsü ilə göstərdi (tünd başlıq banner-i, açıq-göy başlıq sətri, nizamlı
+sərhədlər, uzun mətnli xanalarda sətir keçmə) və FinNex-in eyni faylı AÇIQ RƏNG-SİZ,
+büzülməmiş xam cədvəl kimi göstərdiyini müqayisə etdi: *"1- bu titandaki. 2- bizdeki.
+bizde bele seliqeli ede bilerik?"*
+
+**Kök səbəb:** `gm-attachment-preview.js`-in `renderXlsx` funksiyası
+`window.XLSX.utils.sheet_to_html(sheet, {...})` ilə birbaşa SheetJS-in ÇIXARDIĞI
+xam HTML-i göstərirdi. **SheetJS-in pulsuz (CDN-dən yüklənən `xlsx.full.min.js`)
+versiyası mənbə faylın hüceyrə STİLİNİ (fon rəngi, şrift qalınlığı, rəng) OXUMUR
+— bu, pullu (Pro) versiyaya məxsus xüsusiyyətdir.** Yəni Excel-in özündəki tünd
+banner/açıq-göy başlıq rəngləri kitabxananın çıxardığı datada ümumiyyətlə yoxdur,
+kodun səhvi deyil, kitabxananın məhdudiyyətidir.
+
+**Həll — rəng DEYİL, QURULUŞ üzrə TƏXMİN edilmiş görüntü:**
+`gm-attachment-preview.js`-ə `polishXlsxTable(table)` funksiyası əlavə olundu
+(`renderXlsx`-in hər vərəq döngəsində, `sheet_to_html`-dən sonra çağırılır):
+- Birinci sətir **tək, bütün sütunları örtən BİRLƏŞDİRİLMİŞ xanadırsa** (SheetJS
+  `!merges`-i `colspan`-a çevirdiyi üçün bu, strukturdan bilinir) —
+  `gm-xlsx-title-row` sinfi ilə tünd-göy, mərkəzləşdirilmiş banner kimi göstərilir;
+- Ondan sonrakı (və ya birləşmə yoxdursa, birinci) sətir `gm-xlsx-header-row`
+  sinfi ilə açıq-göy fon + qalın şrift + `position:sticky` (skrollda yuxarıda qalır);
+- Qalan sətirlərə bir-bir keçən `gm-xlsx-row-alt` zebra-zolağı.
+
+`gelen-mail.css`-də uyğun üç sinif + ümumi xana stili yeniləndi: sərhədlər
+`#dde3ea`-ya incələşdi, kölgəli ağ cədvəl fonu + boz səhifə arxa fonu (kart kimi
+görünüş), **`white-space: nowrap` → `white-space: normal` + `word-break` +
+`max-width:440px`** (Titan-ın uzun mətnli, sətir keçən izah xanalarını — "Status
+üzrə interpretasiya" kimi — indi FinNex də eyni cür göstərir, əvvəl bu mətnlər
+üfüqi sürüşmə ilə bir sətirdə qalırdı).
+
+**Qayda: "başqa proqram daha gözəl göstərir" şikayətində əvvəlcə işlədilən
+kitabxananın PULSUZ versiyasının MƏHDUDİYYƏTLƏRİNİ yoxla** — rəng/stil məlumatı
+mənbədə olsa belə, oxuyan kitabxana onu heç parsing mərhələsində saxlamırsa, CSS
+tərəfində "düzəltmək" mümkün deyil (məlumatın özü yoxdur). Bu halda **STRUKTURDAN
+(birləşmə, sətir sırası) çıxan heç still TƏXMİNİ** real rəngə ən yaxın, əldə
+oluna bilən alternativdir — istifadəçiyə bunun TƏXMİN olduğunu (yəni mənbədəki
+əsl rəng DEYİL) açıq demək lazımdır, "indi tam eynidir" demək yanlış olardı.
+
+⚠️ **Bu, HƏR Excel faylında dəqiq Titan kimi görünməyəcək** — tək-sətir
+birləşməsi olmayan, yaxud başlığı ikinci/üçüncü sətirdə olan fayllarda heuristika
+səhv təxmin edə bilər (məs. birləşmə yoxdursa, sadəcə BİRİNCİ sətir header kimi
+işarələnir — bu, əksər cədvəl faylında düzgün nəticə verir, amma qayda deyil).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(`node -c` ilə JS sintaksisi, CSS-də mötərizə balansı). İstifadəçi real brauzerdə
+"Özünüqiymətləndirmə cədvəli" faylını yenidən açıb göstərməlidir: sərlövhə
+banner-inin tünd-göy, başlıq sətrinin açıq-göy fonla göründüyünü, uzun mətnli
+xanaların artıq sətir keçdiyini (üfüqi sürüşmədən çıxdığını) təsdiqləməli.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
