@@ -4217,8 +4217,21 @@ ilə eyni konvensiyada olur, göstərmə qatına toxunmaq lazım deyil.
 artıq bilinən `MessageId`-ləri **yenidən oxumur** — bu fix YALNIZ bundan sonra
 ilk dəfə sinxronlaşan (yeni gələn/göndərilən) mailləri düzəldir. Bazada onsuz da
 olan köhnə sətirlərin `AlinmaTarixi`/`GonderilmeTarixi`-si UTC-də qalıb (4 saat
-geri görünməyə davam edəcək) — geriyə düzəltmək tələb olunarsa ayrıca SQL
-lazımdır (bu sessiyada edilmədi, istifadəçi tələb etməyib).
+geri görünməyə davam edəcək).
+
+**Real hadisə (eyni gün, DƏRHAL): istifadəçi kodu deploy etdi, eyni "11:44"
+sətrini yenidən göstərdi — "yenə 11:44-dür".** Bu, REQRESSIYA DEYİL, yuxarıdakı
+geriyə-tətbiq-olunmama qaydasının dəqiq gözlənilən nəticəsidir: göstərilən
+sətir ELƏ EYNİ mail idi (eyni mövzu, eyni göndərən) — fix-dən ƏVVƏL artıq
+sinxronlaşmış, deməli `MessageId` `knownSet`-ə düşmüş bir sətir. Yeni kod
+yalnız BUNDAN SONRA ilk dəfə gələn/göndərilən mailə təsir edir. Köhnə sətirləri
+düzəltmək üçün **`docs/sql/mail/02_Mail_Saat_UTC_Duzelis.sql`** yazıldı —
+diaqnostik SELECT-lər + şərh içində UPDATE şablonu (`DATEADD(HOUR, 4, …)`,
+yalnız deploy anından ƏVVƏLKİ sətirlərə, WHERE şərtinə öz deploy vaxtını
+yazmaq LAZIMDIR ki, düzəlişdən SONRA gələn, artıq doğru sətirlər TƏKRAR
+sürüşdürülməsin). Bu sessiyada İCRA EDİLMƏDİ — istifadəçi faylı SQL Server-də
+özü işlətməlidir (əvvəlcə yalnız SELECT hissəsini, nəticəni görüb qərar
+versin).
 
 **Qayda:** eyni entity-nin iki QONŞU tarix sahəsi (burada: `AlinmaTarixi` və
 `YaradilmaTarixi`) fərqli mənbədən (xarici mesaj vs `DateTime.Now`) doldurulursa,
