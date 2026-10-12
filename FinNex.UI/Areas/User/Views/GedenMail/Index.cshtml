@@ -20,6 +20,11 @@
 }
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+<script src="~/js/User/gm-attachment-preview.js" asp-append-version="true"></script>
+@* Qoşma önizləmə skripti BURADA (split-panel-in özündə, AJAX-la yüklənən
+   sağ paneldə YOX) yüklənir — paneldəki script-lər hər mail dəyişəndə
+   `executeScripts` ilə YENİDƏN icra olunur; faylı ora qoysaq document-ə
+   hər mail klikində bir click-listener ARTIQ əlavə olunardı. *@
 
 @* Mail İzləmə (12.10.2026) — eyni "yadda saxlama" qaydası GelenMail/Index.cshtml
    ilə EYNİ localStorage açarını (`gmIzlemeFilter`) paylaşır, çünki konseptual

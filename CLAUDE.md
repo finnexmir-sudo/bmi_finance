@@ -3770,6 +3770,77 @@ tutuşduruldu). İstifadəçi real brauzerdə yoxlamalıdır: yeni ünvan əlav�
 edib siyahıda avatar dairəsi + ad/email mətninin düzgün yan-yana
 göründüyünü təsdiqləməli.
 
+## Qoşma Önizləməsi — Titan-vari Modal (12.10.2026)
+
+İstifadəçi Titan (xarici poçt müştərisi) ilə FinNex-in qoşma önizləməsini
+müqayisə edib göndərdi: *"bizde bele gosterir. ama titanda gor nece
+seliqelidir. nece qeseng acilir. bizde bele bir sey ede bilerik?"* — Titan-da
+PDF qoşmaya klikləyəndə təmiz bir modal pəncərədə birbaşa render olunur
+(yüklə/çap et/bağla düymələri ilə), FinNex-də isə "göz" düyməsi sadəcə
+çıxarılmış **xam mətni** (`CixarilmisMetin`) kart altında açıb-bağlayırdı —
+PDF-in özü heç görünmürdü.
+
+**Həll — yeni, paylaşılan modal (`gm-preview-overlay`):**
+
+1. **Yeni endpoint — `QosmaBax`** (`GelenMailController`, `GedenMailController`,
+   hər ikisi). Mövcud `QosmaYukle`-dən fərqi: `File(bytes, contentType, faylAdi)`
+   əvəzinə **`File(bytes, contentType)`** — fayl adı verilmədiyi üçün ASP.NET Core
+   `Content-Disposition: attachment` başlığı YAZMIR, brauzer PDF/şəkli
+   `<iframe>`/`<img src>` daxilində **İNLINE** göstərə bilir. Hər ikisi mövcud
+   `QosmaYukleAsync(qosmaId, sahibUserId)` servis metodunu (eyni mülkiyyət
+   yoxlaması) çağırır — yeni icazə məntiqi YAZILMADI.
+2. **Yeni paylaşılan JS — `wwwroot/js/User/gm-attachment-preview.js`.**
+   Modal DOM-u lazımi anda JS-in özü qurur (Razor-da təkrarlanan modal
+   markup-u yoxdur) — `.gm-preview-btn` klikinin `data-*` atributlarını
+   (`name`, `ext`, `view`, `download`, `textid`) oxuyur: `.pdf` → `<iframe>`,
+   şəkil genişlənmələri → `<img>`, əks halda (varsa) çıxarılmış mətni
+   `<pre>`-də göstərir, heç biri yoxdursa "önizləmə dəstəklənmir + Yüklə"
+   mesajı. Klik `document`-ə delegasiya ilə tutulur ki, AJAX-la sonradan
+   əlavə olunan düymələr də işləsin.
+3. **CSS — `gelen-mail.css`-ə `.gm-preview-*` bloku əlavə edildi** (overlay,
+   dialoq, başlıq, iframe, şəkil çərçivəsi, boş-nəticə vəziyyəti) — mövcud
+   `--gm-border`/`--gm-text-muted` kimi dəyişənləri təkrar işlədir.
+4. **Dörd yer yeniləndi** (bu modulun artıq sənədləşmiş qaydasına uyğun —
+   bax "Mail Qoşmalarını Açmaq/Yükləmək" bölməsi): `GelenMail/_MailDetail.cshtml`,
+   `GelenMail/Detail.cshtml`, `GedenMail/_MailDetail.cshtml`,
+   `GedenMail/Detail.cshtml`. Köhnə `onclick="toggleText(...)"` + görünən/gizli
+   `.gm-attachment-text` blokları silindi, əvəzinə həmişə görünən "Önizlə"
+   düyməsi (əvvəl yalnız `CixarilmisMetin` varsa görünürdü — indi BÜTÜN
+   qoşmalarda, çünki PDF/şəkil önizləməsi çıxarılmış mətndən ASILI DEYİL).
+
+⚠️ **Script faylı AJAX-la YENİDƏN YÜKLƏNƏN split-panel-in İÇİNƏ YOX, panel-i
+daşıyan `Index.cshtml`-in ÖZÜNƏ qoyuldu.** `GelenMail/Index.cshtml` və
+`GedenMail/Index.cshtml`-in sağ paneli (`#gmRightPanel`) hər mail klikində
+`fetch` ilə `_MailDetail.cshtml`-i gətirir və `executeScripts()` ilə
+paneldəki HƏR `<script>` teqini YENİDƏN icra edir (əks halda `innerHTML`
+daxilindəki script işləməz). `gm-attachment-preview.js`-i panelin İÇİNƏ
+qoysaydıq, hər mail dəyişəndə fayl yenidən icra olunub `document`-ə TƏZƏ bir
+click-listener əlavə edərdi — funksional xəta yaratmazdı (listener-lər
+idempotentdir, sadəcə `open()` eyni modalı yenidən açardı), amma onlarla
+mail açıldıqca onlarla "ölü" listener yığılardı. Script `Index.cshtml`-in
+ÖZÜNDƏ (AJAX-la yenilənməyən hissədə) — bir dəfə yüklənir.
+
+**Qayda: paylaşılan JS-i AJAX-la dəfələrlə yenidən yüklənən bir partial-a
+YOX, onu əhatə edən, bir dəfə yüklənən səhifəyə qoy** — xüsusən faylın
+özü `document`-ə qlobal event listener qeydiyyatdan keçirirsə (bura: klik
+delegasiyası). Əks halda hər panel yeniləməsi görünməyən, yavaş-yavaş
+yığılan bir "listener sızması" yaradır.
+
+⚠️ **PDF/şəkil-dən BAŞQA fayl növləri (docx, xlsx və s.) hələ brauzerdə
+render olunmur** — yalnız (varsa) çıxarılmış mətni göstərir, olmadıqda
+"önizləmə dəstəklənmir, yüklə" mesajı verir. Bu, qəsdən MƏHDUD qapsamdır
+(Titan da əslində yalnız PDF-i belə göstərir, ekran-görüntüsündə xlsx/docx
+nümunəsi yox idi) — docx/xlsx-i brauzerdə render etmək ayrıca, ağır
+kitabxana (məs. SheetJS) tələb edər, bu sessiyada edilmədi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (JS Node ilə sintaksis yoxlamasından keçdi, hər dəyişən `.cshtml`/
+`.cs` faylında mötərizə sayı tutuşduruldu). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: PDF qoşmaya "Önizlə"
+basanda modal açılıb faylın iframe-də göründüyünü, şəkil qoşmasında
+`<img>`-in göründüyünü, "Yüklə" düyməsinin ayrıca işlədiyini və Çap
+düyməsinin (yalnız PDF-də görünür) işə düşdüyünü təsdiqləməli.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

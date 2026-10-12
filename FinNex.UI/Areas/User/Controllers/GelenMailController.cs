@@ -289,6 +289,22 @@ public class GelenMailController : Controller
         return File(bytes, fayl.Value.ContentType, fayl.Value.FaylAdi);
     }
 
+    // ── GET /User/GelenMail/QosmaBax/5 — modalda önizləmə üçün (12.10.2026) ──
+    // QosmaYukle-dən fərqli: fayl adı verilmir ki, Content-Disposition "attachment"
+    // yazılmasın — brauzer PDF/şəkili iframe/img src-də İNLINE göstərsin.
+    [HttpGet]
+    public async Task<IActionResult> QosmaBax(int id)
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var fayl = await _mailService.QosmaYukleAsync(id, appUser.Id);
+        if (fayl == null) return NotFound();
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(fayl.Value.FaylYolu);
+        return File(bytes, fayl.Value.ContentType);
+    }
+
     [HttpGet]
     public async Task<IActionResult> TapshirilanMailler()
     {

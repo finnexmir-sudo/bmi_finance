@@ -56,23 +56,20 @@
                             <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
                         </div>
                         <div class="gm-attachment-actions">
+                            <button type="button" class="gm-btn gm-btn-sm gm-btn-ghost gm-preview-btn"
+                                    data-name="@q.FaylAdi"
+                                    data-ext="@System.IO.Path.GetExtension(q.FaylAdi ?? "").ToLowerInvariant()"
+                                    data-view="@Url.Action("QosmaBax", "GedenMail", new { id = q.Id })"
+                                    data-download="@Url.Action("QosmaYukle", "GedenMail", new { id = q.Id })"
+                                    data-textid="text-@q.Id" title="Önizlə">
+                                <i class="bi bi-eye"></i>
+                            </button>
                             <a href="@Url.Action("QosmaYukle", "GedenMail", new { id = q.Id })"
-                               class="gm-btn gm-btn-sm gm-btn-outline" target="_blank" title="Aç / Yüklə">
+                               class="gm-btn gm-btn-sm gm-btn-outline" target="_blank" title="Yüklə">
                                 <i class="bi bi-download"></i>
                             </a>
-                            @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
-                            {
-                                <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            }
                         </div>
-                        @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
-                        {
-                            <div id="text-@q.Id" class="gm-attachment-text" style="display:none">
-                                <pre>@q.CixarilmisMetin.Substring(0, Math.Min(q.CixarilmisMetin.Length, 2000))@(q.CixarilmisMetin.Length > 2000 ? "\n[...]" : "")</pre>
-                            </div>
-                        }
+                        <div id="text-@q.Id" style="display:none">@q.CixarilmisMetin</div>
                     </div>
                 }
             </div>
@@ -96,11 +93,6 @@
 
 <script>
 (function () {
-    window.toggleText = function(id) {
-        var el = document.getElementById('text-' + id);
-        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    };
-
     // Email image cleanup
     var body = document.querySelector('.gm-mail-html');
     if (!body) return;

@@ -151,16 +151,18 @@
                                     <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
                                 </div>
                                 <div class="gm-attachment-actions">
+                                    <button type="button" class="gm-btn gm-btn-sm gm-btn-ghost gm-preview-btn"
+                                            data-name="@q.FaylAdi"
+                                            data-ext="@System.IO.Path.GetExtension(q.FaylAdi ?? "").ToLowerInvariant()"
+                                            data-view="@Url.Action("QosmaBax", "GelenMail", new { id = q.Id })"
+                                            data-download="@Url.Action("QosmaYukle", "GelenMail", new { id = q.Id })"
+                                            data-textid="text-@q.Id" title="Önizlə">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                     <a href="@Url.Action("QosmaYukle", "GelenMail", new { id = q.Id })"
-                                       class="gm-btn gm-btn-sm gm-btn-outline" target="_blank" title="Aç / Yüklə">
+                                       class="gm-btn gm-btn-sm gm-btn-outline" target="_blank" title="Yüklə">
                                         <i class="bi bi-download"></i>
                                     </a>
-                                    @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
-                                    {
-                                        <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    }
                                     @if (Model.SenedId.HasValue)
                                     {
                                         <span class="gm-btn gm-btn-sm gm-sened-badge">
@@ -180,12 +182,7 @@
                                     </form>
                                     }
                                 </div>
-                                @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
-                                {
-                                    <div id="text-@q.Id" class="gm-attachment-text" style="display:none">
-                                        <pre>@q.CixarilmisMetin.Substring(0, Math.Min(q.CixarilmisMetin.Length, 2000))@(q.CixarilmisMetin.Length > 2000 ? "\n[...]" : "")</pre>
-                                    </div>
-                                }
+                                <div id="text-@q.Id" style="display:none">@q.CixarilmisMetin</div>
                             </div>
                         }
                     </div>
@@ -297,14 +294,10 @@
 }
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="~/js/User/gm-attachment-preview.js" asp-append-version="true"></script>
 <script>
 var __mailId = @Model.Id;
 var __token  = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)?.[1] || '';
-
-function toggleText(id) {
-    var el = document.getElementById('text-' + id);
-    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
 
 function renderAI(text) {
     var el = document.getElementById('aiMarkdown');
