@@ -16,12 +16,22 @@ namespace FinNex.UI.Areas.Kassa.Controllers
 {
     /// <summary>
     /// Kassanın günlük valyuta alış-satış kursunu daxil etdiyi ekran — BMI
-    /// "frmExchange" modulunun köçürülməsi (09.10.2026). Yalnız RoleNames.Kassa
-    /// roluna sahib işçilər (+ Admin) buraya giriş yaza bilər — Avtopark →
-    /// Açar jurnalı ilə EYNİ rol, istifadəçinin öz qərarı (09.10.2026).
+    /// "frmExchange" modulunun köçürülməsi (09.10.2026).
+    ///
+    /// GİRİŞ (12.10.2026, istifadəçi tələbi: "oxumaq imkani ver, copy goture
+    /// bilsin kurslardan, basqa yerde istifade edirik, tam blok olmasin"):
+    /// `Index` (göstərmə) hər giriş etmiş işçiyə AÇIQDIR — kurs başqa yerdə
+    /// də istifadə olunur, oxumaq/kopyalamaq üçün bloklanmır. YAZMA (`Saxla`)
+    /// və sənəd generasiyası (`Word`) isə YALNIZ `RoleNames.Kassa` + Admin-dir
+    /// (əvvəlki qayda, dəyişmədi — Avtopark → Açar jurnalı ilə EYNİ rol).
+    /// Görüntü qatında (`Index.cshtml`) `canEdit` bayrağı ilə input-lar qeyri-
+    /// Kassa işçiyə `readonly` göstərilir (`disabled` YOX — disabled input-un
+    /// mətni kopyalana bilmir, məhz oxuma/kopyalama tələbi buna görə pozulardı),
+    /// düymələr (Göndər/Word) isə tamamilə gizlənir. Server tərəfi bu
+    /// attributlarla onsuz da qorunur, görüntü sadəcə uyğunlaşdırır.
     /// </summary>
     [Area("Kassa")]
-    [Authorize(Roles = RoleNames.Kassa + "," + RoleNames.Admin)]
+    [Authorize]
     public class ExchangeController : Controller
     {
         private readonly IKassaKursService _kassaKursService;
@@ -75,6 +85,7 @@ namespace FinNex.UI.Areas.Kassa.Controllers
         // POST /Kassa/Exchange/Saxla
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Kassa + "," + RoleNames.Admin)]
         public async Task<IActionResult> Saxla(ExchangeSaxlaVM vm)
         {
             var isciId = await GetCurrentIsciIdAsync();
@@ -116,6 +127,10 @@ namespace FinNex.UI.Areas.Kassa.Controllers
         // eyni naxış). "WordPrint" bazada heç bir sütun/bayraq deyil (yoxlanıldı:
         // BMI-də belə bir sütun ümumiyyətlə yoxdur) — ona görə burada da
         // "artıq yaradılıb" statusu saxlanmır, hər çağırışda yenidən yaradılır.
+        // Sənəd generasiyası YALNIZ Kassa/Admin-dir (12.10.2026) — oxuma icazəsi
+        // genişləndi, amma rəsmi bəyannamə sənədini yaratmaq kassa işinin öz
+        // hissəsi olaraq qalır. Görüntüdə düymə qeyri-Kassa işçiyə göstərilmir.
+        [Authorize(Roles = RoleNames.Kassa + "," + RoleNames.Admin)]
         public async Task<IActionResult> Word(int beyannameId)
         {
             var gun = await _kassaKursService.BeyannameGetirAsync(beyannameId);

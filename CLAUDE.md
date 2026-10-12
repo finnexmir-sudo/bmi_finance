@@ -3340,6 +3340,41 @@ yoxlamalı, həm real şablonla (DMS-ə qoyulandan sonra) sənəd yaradıb açma
 xüsusilə valyuta sırasının (USD→AVRO→RUB→AED→IRR) düzgün göründüyünü və Azəri
 hərflərinin (il şəkilçisi) qopuq çıxmadığını.
 
+### Oxuma İcazəsi Genişləndi — YAZMA Kassa/Admin-də QALIR (12.10.2026)
+
+İstifadəçi: *"men hemin exchangeni kimlerse oxumaq imkani vere bilim, copy
+goture bilsin kurslardan, cunki hemin kursu basqa yerde istifade edirik, tam
+blok olmasin sehife"* — qərar soruşuldu, cavab: **bütün giriş etmiş işçilər**
+(admin-idarəli ayrıca "oxuyucu" siyahısı YOX — sadə, əlavə idarəetmə lazım
+deyil).
+
+**Dəyişən YALNIZ `Index` (göstərmə).** `ExchangeController`-in sinif səviyyəli
+`[Authorize(Roles = Kassa+Admin)]`-i **`[Authorize]`**-ə (rolsuz) sadələşdi.
+Yazma (`Saxla`) və sənəd (`Word`) **hər biri ÖZ action-unda** eyni
+`[Authorize(Roles = Kassa+Admin)]`-i aldı — sinif səviyyəsindən enməklə itən
+qoruma geri qaytarıldı, YALNIZ başqa yerə köçürüldü.
+
+**Top-nav/sidebar linkləri ARTIQ dəyişiklik tələb etmədi** — yoxlanıldı,
+"Departamentlər → Kassa" (top-nav) və Area=Kassa sidebar-dakı "Exchange"/"Kurs
+təsdiqi" linkləri **əvvəldən** rolsuz idi (hamıya görünürdü), bloklayan yeganə
+qat elə `ExchangeController`-in sinif atributu idi.
+
+⚠️ **`disabled` YOX, `readonly` — kopyalama tələbi buna görə seçimi həll etdi.**
+İlk cəhddə qeyri-Kassa işçi üçün input-lar `disabled` edilmişdi (mövcud
+`g.YazaBiler` məntiqinin təbii uzantısı kimi) — AMMA `disabled` input-un mətni
+bir çox brauzerdə seçilə/kopyalana BİLMİR, elə istifadəçinin əsas tələbini
+(«copy götürə bilsin») pozardı. Həll: `canEdit` (`User.IsInRole(Kassa) ||
+IsInRole(Admin)`) bayrağı ilə input-lar `readonly="@(!canEdit || !g.YazaBiler)"`
+— redaktə bağlıdır, seçim/Ctrl+C açıqdır. Göndər düyməsi və "Word sənədi"
+düymələri (həm formada, həm "Son qeydlər" cədvəlində) `canEdit` olmayanda
+tamamilə GİZLƏDİLİR (server action-ı onsuz da rədd edəcək, dead-end klik
+yaratmamaq üçün).
+
+**Qayda: "oxumaq icazəsi ver" tələbini `disabled` ilə həll etmə** — əgər
+məqsəd dəyəri görmək/kopyalamaqdırsa (redaktəni YOX), `readonly` düzgün
+seçimdir. `disabled` yalnız "bu sahə HEÇ bir məna daşımır, görünməsin belə"
+hallarına uyğundur.
+
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
 - Eyni tip səhvin bir daha olmaması üçün bu fayla əlavə et.

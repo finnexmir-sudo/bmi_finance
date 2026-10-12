@@ -4,6 +4,13 @@
     ViewData["Title"] = "Exchange — Valyuta kursu";
 
     var g = Model.Gunluk;
+    // 12.10.2026 — "Index" (göstərmə) indi hər giriş etmiş işçiyə açıqdır
+    // (kurs başqa yerdə də istifadə olunur, oxumaq/kopyalamaq bloklanmır).
+    // Yazma (Saxla) və sənəd (Word) server tərəfdə hələ də Kassa/Admin-lədir
+    // ([Authorize(Roles=...)] birbaşa action-larda) — bu bayraq yalnız
+    // görüntünü uyğunlaşdırır ki, qeyri-Kassa işçi klikləyib Access Denied-ə
+    // düşməsin.
+    var canEdit = User.IsInRole(RoleNames.Kassa) || User.IsInRole(RoleNames.Admin);
     string V(decimal? d) => d?.ToString(CultureInfo.InvariantCulture) ?? "";
     // MB kursu insan oxuyan formatda — invariant, 4 onluq (BMI-nin F4 formatı ilə uyğun).
     string Mb(decimal? d) => d.HasValue ? d.Value.ToString("0.0000", CultureInfo.InvariantCulture) : "—";
@@ -67,7 +74,7 @@
                 <span class="fn-badge @statusBadge.Item2">@statusBadge.Item1</span>
             }
 
-            @if (g.BeyannameId.HasValue)
+            @if (canEdit && g.BeyannameId.HasValue)
             {
                 <a asp-action="Word" asp-route-beyannameId="@g.BeyannameId" class="fn-btn fn-btn--outline">
                     <i class="bi bi-file-earmark-word"></i> Word sənədi
@@ -122,18 +129,23 @@
                         @foreach (var v in valyutalar)
                         {
                             <tr>
+                                @* `readonly` İŞLƏDİLİR, `disabled` YOX (12.10.2026) — disabled input-un
+                                   mətni brauzerdə seçilə/kopyalana bilmir (bəzi brauzerlərdə kursor
+                                   belə düşmür), halbuki tələb elə BUDUR: qeyri-Kassa işçi rəqəmi
+                                   seçib köçürə bilsin. `readonly` input-u redaktəyə bağlayır, amma
+                                   seçim/Ctrl+C-ni sərbəst qoyur. *@
                                 <td class="kx-val">@v.Ad</td>
-                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_NA" value="@V(Pay(v.Kod, x => x.NagdAlis))" disabled="@(!g.YazaBiler)" /></td>
-                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_NS" value="@V(Pay(v.Kod, x => x.NagdSatis))" disabled="@(!g.YazaBiler)" /></td>
-                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_QNA" value="@V(Pay(v.Kod, x => x.QeyriNagdAlis))" disabled="@(!g.YazaBiler)" /></td>
-                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_QNS" value="@V(Pay(v.Kod, x => x.QeyriNagdSatis))" disabled="@(!g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_NA" value="@V(Pay(v.Kod, x => x.NagdAlis))" readonly="@(!canEdit || !g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_NS" value="@V(Pay(v.Kod, x => x.NagdSatis))" readonly="@(!canEdit || !g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_QNA" value="@V(Pay(v.Kod, x => x.QeyriNagdAlis))" readonly="@(!canEdit || !g.YazaBiler)" /></td>
+                                <td><input type="number" step="any" class="fn-input" name="@(v.Kod)_QNS" value="@V(Pay(v.Kod, x => x.QeyriNagdSatis))" readonly="@(!canEdit || !g.YazaBiler)" /></td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
 
-            @if (g.YazaBiler)
+            @if (canEdit && g.YazaBiler)
             {
                 var gonderMetni = g.Status switch
                 {
@@ -190,7 +202,7 @@
                                 <td>@r.IcraciAdi</td>
                                 <td><span class="fn-badge @cls">@ad</span></td>
                                 <td>
-                                    @if (ilkGorunus)
+                                    @if (canEdit && ilkGorunus)
                                     {
                                         <a asp-action="Word" asp-route-beyannameId="@r.BeyannameId" title="Word sənədi">
                                             <i class="bi bi-file-earmark-word"></i>
