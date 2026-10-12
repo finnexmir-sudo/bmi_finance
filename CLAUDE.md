@@ -3375,6 +3375,20 @@ məqsəd dəyəri görmək/kopyalamaqdırsa (redaktəni YOX), `readonly` düzgü
 seçimdir. `disabled` yalnız "bu sahə HEÇ bir məna daşımır, görünməsin belə"
 hallarına uyğundur.
 
+### "Son qeydlər" Cədvəlində Təsdiq Tarixi Göstərilmirdi (12.10.2026)
+
+İstifadəçi: *"ve birde tesdiqleme saatinida UI da goster"*. Yoxlanıldı —
+təsdiq saatı artıq **iki yerdə** göstərilirdi: `Exchange/Index.cshtml`-in öz
+günün info-box-unda (`g.TesdiqTarixi`) və `ExchangeTesdiq/Index.cshtml`-in
+"Son nəticələnmiş qeydlər" cədvəlində (`b.TesdiqTarixi`). **Yalnız**
+`Exchange/Index.cshtml`-in "Son qeydlər" tarixçə cədvəlində yox idi —
+`KassaKursSiyahiDto` (`Model.SonQeydler`) həmin sahələri (`TesdiqEdenAdi`,
+`TesdiqTarixi`) onsuz da daşıyırdı, sadəcə cədvələ çıxarılmamışdı.
+
+**Düzəliş:** cədvələ «Təsdiqləyən» və «Təsdiq tarixi» (`dd.MM.yyyy HH:mm` —
+`ExchangeTesdiq`-dəki formatla EYNİ) sütunları əlavə edildi, boş-nəticə
+sətrinin `colspan`-ı 9-dan 11-ə yeniləndi.
+
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
 - Eyni tip səhvin bir daha olmaması üçün bu fayla əlavə et.

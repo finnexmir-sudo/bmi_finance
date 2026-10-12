@@ -167,13 +167,14 @@
                 <thead>
                     <tr>
                         <th>Tarix</th><th>Valyuta</th><th>Nağd alış</th><th>Nağd satış</th>
-                        <th>Qeyri nağd alış</th><th>Qeyri nağd satış</th><th>İcraçı</th><th>Status</th><th>Sənəd</th>
+                        <th>Qeyri nağd alış</th><th>Qeyri nağd satış</th><th>İcraçı</th><th>Status</th>
+                        <th>Təsdiqləyən</th><th>Təsdiq tarixi</th><th>Sənəd</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.SonQeydler.Any())
                     {
-                        <tr><td colspan="9" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
+                        <tr><td colspan="11" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
                     }
                     else
                     {
@@ -201,6 +202,8 @@
                                 <td>@V(r.QeyriNagdSatis)</td>
                                 <td>@r.IcraciAdi</td>
                                 <td><span class="fn-badge @cls">@ad</span></td>
+                                <td>@r.TesdiqEdenAdi</td>
+                                <td>@r.TesdiqTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
                                 <td>
                                     @if (canEdit && ilkGorunus)
                                     {
