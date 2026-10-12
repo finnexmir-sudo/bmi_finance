@@ -3927,6 +3927,44 @@ başlıqlarla) açıldığını, çoxvərəqli .xlsx-də tab-ların işlədiyini
 binar `.doc` faylında səliqəli "açıla bilmədi" mesajının çıxdığını (sükutla
 sınmadığını).
 
+### Modal Genişləndirildi + Yüklə Düyməsi "Kölgə" Flikeri (12.10.2026)
+
+İstifadəçi Titan-ın PDF görüntüləyicisini (geniş, demək olar tam ekran) göstərib
+soruşdu: *"imkan varda bunu biraz enlede bilerikde, 2ci sekil kimi acila biler?"*
++ ikinci şikayət: *"birde yuklemek olmur onada baxa, klik edirem, nese birsey
+kolge kimi ekrana gelir gedir"*.
+
+**1. Genişlik.** `.gm-preview-dialog` əvvəl `width: min(920px, 100%)` idi —
+dar qalırdı. İndi `width: min(1440px, 97vw); height: 96vh` (əvvəl yalnız
+`max-height: 92vh` idi, sabit hündürlük yox idi) — overlay-in kənar boşluğu
+`24px`-dən `14px`-ə endirildi ki, pəncərə Titan-ın göstərdiyi kimi demək olar
+tam ekranı tutsun. `.gm-preview-iframe`-in `min-height`-ı 72vh→80vh.
+
+**2. "Kölgə kimi gəlir-gedir" — Yüklə düyməsindəki `target="_blank"`.**
+Kök səbəb: `gm-preview-download` linki `target="_blank"` ilə yeni tab açırdı.
+`QosmaYukle` cavabı `Content-Disposition: attachment` yazdığı üçün brauzer
+həmin yeni tabda HEÇ NƏ göstərmədən dərhal yükləməni başladır və tabı
+avtomatik bağlayır (Chrome-un bu davranışı) — istifadəçiyə bu, ekranda bir
+anlıq boş/qara "kölgə" kimi görünür. Fayl əslində yüklənirdi (funksional
+xəta yox idi), amma görüntü çaşdırıcı idi.
+
+**Düzəliş:** `target="_blank"` SİLİNDİ — Content-Disposition artıq "attachment"
+olduğu üçün brauzer naviqasiya etmədən, cari səhifədə qalaraq sadəcə faylı
+yükləyir (standart brauzer davranışı). Əlavə qoruyucu: `download="@fayl_adı"`
+atributu da JS-dən dinamik təyin olunur — Content-Disposition-un fayl adı
+hər hansı səbəbdən itərsə, brauzer local `download` atributundan adı götürür.
+
+**Qayda: server artıq `Content-Disposition: attachment` yazırsa, linkə
+`target="_blank"` ƏLAVƏ ETMƏ** — bu, lazımsız bir tab açıb-bağladır və
+istifadəçiyə "nəsə pozulub" təəssüratı yaradır. Sadə `<a href="...">`
+(yeni pəncərə YOX) faylı cari səhifədən çıxmadan yükləyir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (CSS mötərizə balansı, JS Node sintaksis yoxlaması). İstifadəçi
+real brauzerdə yoxlamalıdır: modal pəncərəsinin indi daha geniş/hündür
+açıldığını və "Yüklə" düyməsinin heç bir yeni tab açmadan faylı birbaşa
+yüklədiyini.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

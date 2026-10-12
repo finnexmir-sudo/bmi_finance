@@ -49,7 +49,7 @@
                     '<i class="bi gm-preview-icon"></i>' +
                     '<span class="gm-preview-filename"></span>' +
                     '<div class="gm-preview-actions">' +
-                        '<a class="gm-btn gm-btn-sm gm-btn-outline gm-preview-download" target="_blank" title="Yüklə">' +
+                        '<a class="gm-btn gm-btn-sm gm-btn-outline gm-preview-download" title="Yüklə">' +
                             '<i class="bi bi-download"></i>' +
                         '</a>' +
                         '<button type="button" class="gm-btn gm-btn-sm gm-btn-outline gm-preview-print" title="Çap et" style="display:none">' +
@@ -217,7 +217,9 @@
 
         ov.querySelector('.gm-preview-filename').textContent = opts.name || '';
         ov.querySelector('.gm-preview-icon').className = 'bi gm-preview-icon ' + iconForExt(ext);
-        ov.querySelector('.gm-preview-download').setAttribute('href', opts.downloadUrl || '#');
+        var downloadLink = ov.querySelector('.gm-preview-download');
+        downloadLink.setAttribute('href', opts.downloadUrl || '#');
+        if (opts.name) downloadLink.setAttribute('download', opts.name);
         ov.querySelector('.gm-preview-print').style.display = ext === '.pdf' ? '' : 'none';
 
         body.innerHTML = '';
