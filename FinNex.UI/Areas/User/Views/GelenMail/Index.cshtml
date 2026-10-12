@@ -88,6 +88,12 @@ function gmIzlemeDeyisdi(checked) {
                 <span class="gm-badge-unread" title="Oxunmamış mail">@oxunmamisSay</span>
             }
             <span id="syncMsg" style="font-size:.82rem;color:#10b981;display:none"></span>
+            @if (oxunmamisSay > 0)
+            {
+                <button type="button" id="hamisiniOxuBtn" class="gm-btn gm-btn-outline" title="Bütün oxunmamış mailləri oxunmuş kimi işarələ">
+                    <i class="bi bi-envelope-open"></i> Hamısını oxundu et
+                </button>
+            }
             <button type="button" id="yenileBtn" class="gm-btn gm-btn-outline">
                 <i class="bi bi-arrow-clockwise"></i> Yenilə
             </button>
@@ -302,7 +308,11 @@ function gmIzlemeDeyisdi(checked) {
             }
         </div>
 
-        @if (Model.Count == 50)
+        @* "Əvvəlki" əvvəl `Model.Count == 50`-ə bağlı idi (12.10.2026-da düzəldildi) —
+           son səhifədə (50-dən az nəticə) BÜTÖV panel yoxa çıxırdı, "Əvvəlki"
+           ilə geri qayıtmaq mümkün olmurdu. İndi panel `currentPage > 1`-dirsə
+           DƏ görünür, "Növbəti" isə yenə yalnız səhifə tam (50) olanda. *@
+        @if (currentPage > 1 || Model.Count == 50)
         {
             <div class="gm-pagination">
                 @if (currentPage > 1)
@@ -312,9 +322,12 @@ function gmIzlemeDeyisdi(checked) {
                     </a>
                 }
                 <span class="gm-page-info">Səhifə @(currentPage)</span>
-                <a href="@nextUrl" class="gm-btn gm-btn-outline">
-                    Növbəti <i class="bi bi-chevron-right"></i>
-                </a>
+                @if (Model.Count == 50)
+                {
+                    <a href="@nextUrl" class="gm-btn gm-btn-outline">
+                        Növbəti <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
             </div>
         }
     }
@@ -420,6 +433,38 @@ function gmIzlemeDeyisdi(checked) {
         }
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Yenilə';
+    });
+})();
+</script>
+<script>
+(function () {
+    var btn = document.getElementById('hamisiniOxuBtn');
+    var msg = document.getElementById('syncMsg');
+    var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+    if (!btn) return;
+
+    btn.addEventListener('click', async function () {
+        if (!confirm('Bütün oxunmamış mailləri oxunmuş kimi işarələmək istəyirsiniz?')) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> İşarələnir…';
+        msg.style.display = 'none';
+        try {
+            var r = await fetch('/User/GelenMail/HamisiniOxunduIsareEt', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            var d = await r.json();
+            msg.textContent = d.message;
+            msg.style.color = d.success ? '#10b981' : '#ef4444';
+            msg.style.display = '';
+            if (d.success) setTimeout(() => location.reload(), 600);
+        } catch {
+            msg.textContent = 'Bağlantı xətası.';
+            msg.style.color = '#ef4444';
+            msg.style.display = '';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-envelope-open"></i> Hamısını oxundu et';
     });
 })();
 </script>

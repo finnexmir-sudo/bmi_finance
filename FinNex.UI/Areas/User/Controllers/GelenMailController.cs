@@ -358,6 +358,18 @@ public class GelenMailController : Controller
         }
     }
 
+    // ── POST /User/GelenMail/HamisiniOxunduIsareEt — "Hamısını oxundu et" (12.10.2026) ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HamisiniOxunduIsareEt()
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var say = await _mailService.HamisiniOxunduIsareEtAsync(appUser.Id);
+        return Json(new { success = true, count = say, message = say > 0 ? $"{say} mail oxunmuş kimi işarələndi." : "Oxunmamış mail yoxdur." });
+    }
+
     // ── GET /User/GelenMail/MailPanel/5 — split-pane partial ────
     [HttpGet]
     public async Task<IActionResult> MailPanel(int id)

@@ -184,6 +184,27 @@ public class GelenMailService : IGelenMailService
         }
     }
 
+    // Hamısını oxundu et (12.10.2026) — ilk dəfə açılan qutuda onlarla oxunmamış
+    // mail tək-tək açmaq vaxt itkisidir (istifadəçi qərarı). Yalnız bu istifadəçinin
+    // ÖZ (qutunun sahibi) oxunmamış mailləri işarələnir, silinmişlər toxunulmur.
+    public async Task<int> HamisiniOxunduIsareEtAsync(int sahibUserId)
+    {
+        var mails = await _uow.Repository<GelenMail>().Query()
+            .Where(x => x.SahibUserId == sahibUserId && !x.Silinib && !x.Oxunub)
+            .ToListAsync();
+
+        if (mails.Count == 0) return 0;
+
+        var indi = DateTime.Now;
+        foreach (var mail in mails)
+        {
+            mail.Oxunub = true;
+            mail.OxunmaTarixi = indi;
+        }
+        await _uow.YaddaSaxlaAsync();
+        return mails.Count;
+    }
+
     public async Task<bool> TapaAsync(int mailId, List<int> isciIds, string? qeyd, int rehberUserId)
     {
         var mail = await _uow.Repository<GelenMail>().Query()

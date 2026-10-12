@@ -213,7 +213,11 @@ function gmIzlemeDeyisdi(checked) {
             }
         </div>
 
-        @if (Model.Count == 50)
+        @* "Əvvəlki" əvvəl `Model.Count == 50`-ə bağlı idi (12.10.2026-da düzəldildi) —
+           son səhifədə (50-dən az nəticə) BÜTÖV panel yoxa çıxırdı, "Əvvəlki"
+           ilə geri qayıtmaq mümkün olmurdu. İndi panel `currentPage > 1`-dirsə
+           DƏ görünür, "Növbəti" isə yenə yalnız səhifə tam (50) olanda. *@
+        @if (currentPage > 1 || Model.Count == 50)
         {
             <div class="gm-pagination">
                 @if (currentPage > 1)
@@ -223,9 +227,12 @@ function gmIzlemeDeyisdi(checked) {
                     </a>
                 }
                 <span class="gm-page-info">Səhifə @(currentPage)</span>
-                <a href="@nextUrl" class="gm-btn gm-btn-outline">
-                    Növbəti <i class="bi bi-chevron-right"></i>
-                </a>
+                @if (Model.Count == 50)
+                {
+                    <a href="@nextUrl" class="gm-btn gm-btn-outline">
+                        Növbəti <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
             </div>
         }
     }

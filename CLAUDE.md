@@ -4059,6 +4059,74 @@ markup-un eyniliyi tutuşduruldu). İstifadəçi real brauzerdə yoxlamalıdır:
 açılıb-bağlandığını, mail səhifələrindən birindəykən avtomatik açıq
 gəldiyini.
 
+### Üç İş — Combobox Sərhədi, "Hamısını Oxundu Et", Pagination "Əvvəlki" Bugu (12.10.2026)
+
+İstifadəçi eyni gün üç ayrı qüsur bildirdi: *"comboboxu acanda ona aid
+olanlar bilinmir."* + *"bizde hamisi oxundu imkani mumukundur?... ilk
+acanda butun mailler oxunmamis gelir mecbur hamisini oumaq lazim
+gelecek, bu vaxt itgisidir."* + *"novbetini vurdum sehife yenilendi ama
+evvelki hara getdi? burda nese uygunsuzluq var."*
+
+**1. Combobox sərhədi görünmürdü — `.fn-nav-g-body`-yə sol xətt + çəkilmə
+(`topnav.css`).** Yuxarıdakı "Mail" qrupunu (və bütün digər `fn-nav-g`
+qruplarını — "AI Modulları" daxil) açanda, daxili linklər qrupdan SONRA
+gələn ayrı elementlərdən vizual olaraq FƏRQLƏNMİRDİ (eyni padding, eyni
+fon) — "AI Modulları → HR Dashboard" keçidi ilə eyni köhnə tələ, sadəcə
+İNDİ "Mail → Rəhbər Panel" sərhədində. **Qlobal CSS düzəlişi** (bütün
+`fn-nav-g` instansiyalarına aiddir, təkcə Mail-ə yox): `.fn-nav-g-body`-yə
+`border-left: 2px solid rgba(255,255,255,.12)` + `margin-left: 10px`
+əlavə edildi — açıq qrupun daxili linkləri indi görünən bir "qutu/xətt"
+içindədir. Nested sub-qruplar (Davamiyyət/Məzuniyyət) bu xəttdən İSTİSNA
+edildi (`.fn-nav-g-body--nested`) — onların öz fon-zolaqlı başlığı
+(`.fn-nav-g-head--sub`) artıq kifayət edir, ikiqat sərhəd lazımsızdır.
+
+**2. "Hamısını oxundu et" — yeni funksiya.** `IGelenMailService.
+HamisiniOxunduIsareEtAsync(sahibUserId)` (+ implementasiya) — işçinin
+`Silinib=false && Oxunub=false` olan BÜTÜN maillərini TƏK `SaveChanges`
+çağırışında oxunmuş işarələyir (`OxunduIsareEtAsync`-in tək-qeyd versiyası
+ilə EYNİ şərt, təkcə kütləvi). `GelenMailController.
+HamisiniOxunduIsareEt` POST endpoint-i, `GelenMail/Index.cshtml`-də
+YALNIZ `oxunmamisSay > 0` olanda görünən "Hamısını oxundu et" düyməsi
+("Yenilə" düyməsinin yanında, EYNİ fetch+token naxışı). Təsdiq dialoqu
+(`confirm`) var — kütləvi, geri-qaytarılması çətin bir dəyişiklikdir
+(hər mailin `OxunmaTarixi`-si itir). Uğurlu olduqda səhifə yenilənir —
+həm bu səhifənin "74" nişanı, həm top-nav-dakı zərf nişanı (ayrı, müstəqil
+`fn-mail-badge` AJAX sorğusu) avtomatik yeni (0-a yaxın) rəqəmi göstərir,
+əlavə sync kodu yazmağa ehtiyac olmadı.
+
+⚠️ **`GedenMail`/`MailIzleme`-yə ƏLAVƏ EDİLMƏDİ** — "oxunmamış" konsepti
+yalnız Gələn Mailə aiddir (göndərilən/izlənən maillərdə "oxunub" sütunu
+onsuz da yoxdur/mənasızdır).
+
+**3. Pagination — "Əvvəlki" BÜTÖV panellə birlikdə yoxa çıxırdı (KRİTİK,
+hər iki `GelenMail/Index.cshtml` VƏ `GedenMail/Index.cshtml`-də EYNİ
+bug).** Kök səbəb: `@if (Model.Count == 50) { ... BÜTÖV pagination div,
+HƏM "Əvvəlki", HƏM "Növbəti" ... }` — "Növbəti"nin görünməsi üçün məntiqli
+şərt idi (50 nəticə = daha da ola bilər), AMMA eyni şərt "Əvvəlki"ni DƏ
+gizlədirdi. Nəticə: istifadəçi son səhifəyə (adətən 50-dən AZ nəticəli)
+keçən kimi BÜTÖV naviqasiya paneli yoxa çıxırdı — geri qayıtmağın HEÇ BİR
+UI yolu qalmırdı (yalnız brauzerin öz "geri" düyməsi). Bu, elə istifadəçinin
+gördüyü "Növbətini vurdum, Əvvəlki hara getdi" simptomudur.
+
+**Düzəliş:** panel indi `currentPage > 1 || Model.Count == 50` şərti ilə
+göstərilir (istənilən tərəfə getmək mümkündürsə panel görünür), "Əvvəlki"
+öz müstəqil `currentPage > 1` şərtini saxlayır, "Növbəti" isə ayrıca
+`Model.Count == 50`-ə köçürüldü — iki düymə artıq BİR-BİRİNDƏN ASILI
+DEYİL, biri olmadan o biri də yoxa çıxmır.
+
+**Qayda: "Növbəti üçün düzgün olan şərt, "Əvvəlki" üçün də düzgündür"
+fərziyyəsi SƏHVDİR** — ikisi fərqli sualların cavabıdır ("bundan sonra
+daha var?" vs "bundan əvvəl artıq görmüşəm"). Hər pagination düyməsini
+AYRI şərtlə qoru, ortaq bir `@if`-in içinə hər ikisini atma — əks halda
+biri digərini özü ilə birlikdə gizlədə bilər.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (C#/Razor/CSS mötərizə balansı, dörd `<script>` blokunun
+hamısı Node ilə ayrıca sintaksis yoxlamasından keçdi). İstifadəçi real
+brauzerdə yoxlamalıdır: "Mail" qrupu açılanda sol xəttin göründüyünü,
+"Hamısını oxundu et"in həqiqətən bütün maili oxunmuş etdiyini, son
+səhifədə "Əvvəlki" düyməsinin artıq görünməyə davam etdiyini.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

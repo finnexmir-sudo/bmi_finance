@@ -777,20 +777,29 @@ body.theme-midnight .fn-topnav-dd-item--active {
     opacity: 1;
 }
 
+/* Açıq qrupun daxili linkləri SOLDA nazik xətt + çəkilmə ilə əhatə olunur
+   (12.10.2026) — əvvəl `.fn-nav-g-body`-nin qonşu, qrupdan KƏNAR elementlərdən
+   heç bir vizual fərqi yox idi: istifadəçi "comboboxu acanda ona aid olanlar
+   bilinmir" dedi — qrup açıq ikən hansı linklərin onun İÇİNDƏ, hansının
+   ONDAN SONRA gələn ayrı bir element olduğu gözlə seçilmirdi. */
 .fn-nav-g-body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.22s ease;
-    padding: 0 4px;
+    padding: 0 4px 0 10px;
+    margin-left: 10px;
+    border-left: 2px solid rgba(255,255,255,.12);
 }
 
 .fn-nav-g.open > .fn-nav-g-body {
     max-height: 2000px;
-    padding: 2px 4px 6px;
+    padding: 4px 4px 6px 10px;
 }
 
-/* Nested sub-groups (Davamiyyət / Məzuniyyət alt qrupları) */
-.fn-nav-g-body--nested { padding: 0 0 4px 0 !important; }
+/* Nested sub-groups (Davamiyyət / Məzuniyyət alt qrupları) — öz başlıqlarının
+   fonu (`.fn-nav-g-head--sub`) artıq daxili/xarici fərqini göstərir, əlavə
+   sol xətt/çəkilmə ikiqat görünərdi. */
+.fn-nav-g-body--nested { padding: 0 0 4px 0 !important; margin-left: 0 !important; border-left: none !important; }
 .fn-nav-g--sub { margin-bottom: 2px; }
 .fn-nav-g-head--sub {
     padding: 7px 10px 7px 14px;
