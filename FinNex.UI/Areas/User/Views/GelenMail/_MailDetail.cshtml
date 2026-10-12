@@ -175,9 +175,17 @@
         </div>
     }
 
-    <!-- Tapşırma formu -->
-    <div class="gm-panel-assign">
-        <div class="gm-panel-assign-title"><i class="bi bi-person-check"></i> İşçiyə Tapşır</div>
+    <!-- Tapşırma formu — defolt bağlıdır, lazım olanda klik ilə açılır (12.10.2026) -->
+    <details class="gm-panel-assign">
+        <summary class="gm-panel-assign-title">
+            <i class="bi bi-person-check"></i> İşçiyə Tapşır
+            @if (Model.TapalanIsciler.Any())
+            {
+                <span class="gm-panel-assign-count">(@Model.TapalanIsciler.Count nəfər)</span>
+            }
+            <i class="bi bi-chevron-down gm-panel-assign-chevron"></i>
+        </summary>
+    <div class="gm-panel-assign-body">
 
         @if (Model.TapalanIsciler.Any())
         {
@@ -236,6 +244,7 @@
             </button>
         </form>
     </div>
+    </details>
 
     @if (Model.SenedId.HasValue)
     {

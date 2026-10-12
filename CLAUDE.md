@@ -3965,6 +3965,56 @@ real brauzerdə yoxlamalıdır: modal pəncərəsinin indi daha geniş/hündür
 açıldığını və "Yüklə" düyməsinin heç bir yeni tab açmadan faylı birbaşa
 yüklədiyini.
 
+### "İşçiyə Tapşır" Defolt Bağlı + Sidebar-da "Mail" Öz Etiketi Altına Keçdi (12.10.2026)
+
+İstifadəçi (əvvəlki düzəlişi "mohtesem" adlandırandan sonra) iki kiçik görüntü
+tələbi verdi: *"indi isciye tapsir hissesi daim aciq gelmesin istese klik ile
+acib isledsin"* + *"birdeki solda mail ucun AI modullarinin ustunde Mailler
+adi altina sal"*.
+
+**1. «İşçiyə Tapşır» — `<div>` → `<details>`/`<summary>`.** Split-panel-dəki
+(`GelenMail/_MailDetail.cshtml`) tapşırma bölməsi həmişə açıq görünürdü,
+mail panelinin aşağısını doldururdu. Ən sadə, JS-siz həll: native HTML
+`<details>` elementi — defolt BAĞLIDIR, `<summary>`-ə klik açır/bağlayır,
+heç bir listener yazmağa ehtiyac yoxdur. Başlığa (`<summary>`) artıq, əgər
+`TapalanIsciler` boş deyilsə, **"(N nəfər)"** sayğacı əlavə edildi ki, panel
+bağlı olanda belə kimin tapşırıldığı görünsün — açmaq MƏCBURİ deyil, yalnız
+redaktə/yeni tapşırma üçün lazımdır. Fırlanan ox ikonu (`.gm-panel-assign-
+chevron`, `details[open]` seçicisi ilə 180° rotasiya) CSS-dədir.
+
+⚠️ **Yalnız split-panel dəyişdi** — `GelenMail/Detail.cshtml` (tam səhifə)-
+dəki OXŞAR bölmə fərqli markup-dadır (`gm-card-header`, `gm-panel-assign`
+DEYİL) və istifadəçi onu göstərmədi/şikayət etmədi; tam səhifədə yer
+problemi yoxdur (normal skroll var). Toxunulmadı.
+
+**2. Sidebar — "Mail" öz etiketi altına, "AI Modulları"ndan ƏVVƏL.**
+Kök səbəb: `Gələn/Göndərilən Mail + Mail İzləmə` linkləri kodda **Rəhbər/
+Admin blokundan (AI Modulları qrupunu da əhatə edən) SONRA**, öz başlıqları
+OLMADAN yazılmışdı. "AI Modulları" isə **kolaps olunan** qrupdur
+(`fn-nav-g`) — cari səhifə onun öz alt-səhifələrindən biri olmayanda
+(`aiAnyActive=false`) body-si gizlənir, ekranda YALNIZ "AI Modulları"
+başlığı qalır. Nəticə: mail linkləri vizual olaraq elə "AI Modulları"
+başlığının altında aşağı sıralanırdı — sanki o qrupun bir hissəsiymiş kimi.
+
+**Düzəliş:** mail bloku (`@if (hasMail)`) Dashboard linkindən DƏRHAL sonraya,
+Rəhbər/Admin blokundan (deməli AI Modulları qrupundan da) ƏVVƏLƏ köçürüldü,
+başına `<div class="fn-nav-label">Mail</div>` (mövcud "Əsas" etiketi ilə
+EYNİ klass) əlavə edildi. `hasMail` şərti TOXUNULMADI — mail linkinin
+Rəhbər/Admin blokundan müstəqil qalması qaydası ("mail_istifade" icazəsi
+olan adi işçi də görməlidir) qorundu, sadəcə YERİ dəyişdi.
+
+**Qayda: kolaps olunan bir naviqasiya qrupunun (`fn-nav-g`) ARDINCA, öz
+başlığı olmayan bir blok yazma** — qrup bağlı görünəndə (defolt vəziyyət)
+həmin blok vizual olaraq elə qrupun öz hissəsi kimi oxunur, baxmayaraq ki
+kodda ayrı, şərtsiz bir elementdir. Hər məzmun blokunun öz `fn-nav-label`-i
+(və ya oxşar ayırıcı başlığı) olmalıdır, "qonşu qrupun kölgəsinə" güvənmə.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (Razor `@if`/`{}` balansı, HTML `<details>`/`</details>` cütü).
+İstifadəçi real brauzerdə yoxlamalıdır: "İşçiyə Tapşır"-ın bağlı açıldığını
+və kliklə düzgün açılıb-bağlandığını, sidebar-da "Mail" etiketinin
+"AI Modulları"ndan ƏVVƏL göründüyünü.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

@@ -1554,12 +1554,32 @@
     margin-top: 20px;
 }
 
+/* <details>/<summary> — açılış-bağlanış tələb etmir, defolt BAĞLIDIR (12.10.2026) */
 .gm-panel-assign-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-weight: 600;
     font-size: .88rem;
     color: #6b7280;
-    margin-bottom: 10px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
 }
+.gm-panel-assign-title::-webkit-details-marker { display: none; }
+.gm-panel-assign-count {
+    font-weight: 500;
+    font-size: .78rem;
+    color: #94a3b8;
+}
+.gm-panel-assign-chevron {
+    margin-left: auto;
+    font-size: .8rem;
+    color: #94a3b8;
+    transition: transform .15s ease;
+}
+.gm-panel-assign[open] .gm-panel-assign-chevron { transform: rotate(180deg); }
+.gm-panel-assign-body { margin-top: 12px; }
 
 .gm-inline-reply {
     border-top: 2px solid var(--gm-border);

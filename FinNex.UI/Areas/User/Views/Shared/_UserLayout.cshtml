@@ -429,6 +429,37 @@
                    class="fn-nav-item @(currentController == "Dashboard" && currentArea == "User" ? "active" : "")">
                     <i class="bi bi-grid"></i> Dashboard
                 </a>
+                @* Mail linki QƏSDƏN Rəhbər blokundan KƏNARDADIR (01.09.2026):
+                   «mail_istifade» icazəsi verilmiş adi işçi də görməlidir.
+                   Şərt `MailIcazesiAttribute` ilə eynidir — link görünürsə
+                   səhifə də açılmalıdır. Öz "Mail" etiketi altında, "AI
+                   Modulları"ndan ƏVVƏL göstərilir (12.10.2026) — əvvəl
+                   kolaps olunmuş "AI Modulları" başlığının dərhal altında
+                   görünürdü, elə bil mail linkləri o qrupun hissəsiymiş kimi
+                   görünürdü. *@
+                @if (hasMail)
+                {
+                    <div class="fn-nav-label">Mail</div>
+                    <a asp-area="User" asp-controller="GelenMail" asp-action="Index"
+                       class="fn-nav-item @(currentController == "GelenMail" ? "active" : "")">
+                        <i class="bi bi-envelope-fill"></i> Gələn Maillər
+                        @{
+                            var gmBadgeUrl = Url.Action("OxunmamisSay", "GelenMail", new { area = "User" });
+                        }
+                        <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
+                    </a>
+                    @* Göndərilən Maillər + Mail İzləmə (12.10.2026) — EYNİ `hasMail`
+                       şərti, çünki qutu şəxsidir və bu, elə həmin qutunun
+                       "Göndərilənlər" qovluğu / izləmə siyahısıdır. *@
+                    <a asp-area="User" asp-controller="GedenMail" asp-action="Index"
+                       class="fn-nav-item @(currentController == "GedenMail" ? "active" : "")">
+                        <i class="bi bi-send-fill"></i> Göndərilən Maillər
+                    </a>
+                    <a asp-area="User" asp-controller="MailIzleme" asp-action="Index"
+                       class="fn-nav-item @(currentController == "MailIzleme" ? "active" : "")">
+                        <i class="bi bi-eye-fill"></i> Mail İzləmə
+                    </a>
+                }
                 @if (isRehberRol || isAdmin)
                 {
                     <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
@@ -472,32 +503,6 @@
                             </a>
                         </div>
                     </div>
-                }
-                @* Mail linki QƏSDƏN Rəhbər blokundan KƏNARDADIR (01.09.2026):
-                   «mail_istifade» icazəsi verilmiş adi işçi də görməlidir.
-                   Şərt `MailIcazesiAttribute` ilə eynidir — link görünürsə
-                   səhifə də açılmalıdır. *@
-                @if (hasMail)
-                {
-                    <a asp-area="User" asp-controller="GelenMail" asp-action="Index"
-                       class="fn-nav-item @(currentController == "GelenMail" ? "active" : "")">
-                        <i class="bi bi-envelope-fill"></i> Gələn Maillər
-                        @{
-                            var gmBadgeUrl = Url.Action("OxunmamisSay", "GelenMail", new { area = "User" });
-                        }
-                        <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
-                    </a>
-                    @* Göndərilən Maillər + Mail İzləmə (12.10.2026) — EYNİ `hasMail`
-                       şərti, çünki qutu şəxsidir və bu, elə həmin qutunun
-                       "Göndərilənlər" qovluğu / izləmə siyahısıdır. *@
-                    <a asp-area="User" asp-controller="GedenMail" asp-action="Index"
-                       class="fn-nav-item @(currentController == "GedenMail" ? "active" : "")">
-                        <i class="bi bi-send-fill"></i> Göndərilən Maillər
-                    </a>
-                    <a asp-area="User" asp-controller="MailIzleme" asp-action="Index"
-                       class="fn-nav-item @(currentController == "MailIzleme" ? "active" : "")">
-                        <i class="bi bi-eye-fill"></i> Mail İzləmə
-                    </a>
                 }
                 @if (isHR)
                 {
