@@ -261,6 +261,15 @@ namespace FinNex.UI
                                         FinNex.Application.Services.Communication.SmtpMailService>();
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGelenMailImapSyncer,
                                         FinNex.Application.Services.Communication.GelenMailImapSyncer>();
+            // Göndərilən Mail (Sent qovluğu, 12.10.2026) — Gələn Mail-in güzgüsü.
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGedenMailService,
+                                        FinNex.Application.Services.Communication.GedenMailService>();
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGedenMailImapSyncer,
+                                        FinNex.Application.Services.Communication.GedenMailImapSyncer>();
+            // Mail İzləmə Siyahısı (12.10.2026) — "yalnız bu ünvanlardan gələn/
+            // gedənləri göstər" filtri + fon sinxronunun xüsusi bildirişi.
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IMailIzlemeService,
+                                        FinNex.Application.Services.Communication.MailIzlemeService>();
 
             // ==================================================
             // 6. Background Services
@@ -821,6 +830,99 @@ END
                                     FOREIGN KEY ([GelenMailId]) REFERENCES [GelenMailler]([Id]) ON DELETE CASCADE
                             );
                             CREATE INDEX [IX_GelenMailQosmalar_GelenMailId] ON [GelenMailQosmalar] ([GelenMailId]);
+                        END
+                    ");
+                }
+                catch { }
+
+                // ── Göndərilən Mail cədvəlləri (IMAP "Sent" sinxronu, 12.10.2026) ──
+                // Yalnız göstərmə üçündür — GelenMail cədvəlləri ilə EYNİ naxış
+                // (idempotent, bu faylda, EF migration deyil — bu modulun kök
+                // qaydası: GelenMail də elə belə qurulub, bax yuxarı).
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GedenMailler')
+                        BEGIN
+                            CREATE TABLE [GedenMailler] (
+                                [Id]                    INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                                [MessageId]             NVARCHAR(500)   NOT NULL DEFAULT '',
+                                [SahibUserId]           INT             NULL,
+                                [KimeAd]                NVARCHAR(200)   NOT NULL DEFAULT '',
+                                [KimeEmail]             NVARCHAR(320)   NOT NULL DEFAULT '',
+                                [KimeToplu]             NVARCHAR(1000)  NOT NULL DEFAULT '',
+                                [Movzu]                 NVARCHAR(1000)  NOT NULL DEFAULT '',
+                                [MetinHtml]             NVARCHAR(MAX)   NOT NULL DEFAULT '',
+                                [MetinDuz]              NVARCHAR(MAX)   NOT NULL DEFAULT '',
+                                [GonderilmeTarixi]      DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+                                [YaradilmaTarixi]       DATETIME2       NOT NULL DEFAULT GETDATE(),
+                                [YenilenmeTarixi]       DATETIME2       NULL,
+                                [SilinmeTarixi]         DATETIME2       NULL,
+                                [YaradanIcraciId]       INT             NULL,
+                                [YenileyenIcraciId]     INT             NULL,
+                                [SilenIcraciId]         INT             NULL,
+                                [Silinib]               BIT             NOT NULL DEFAULT 0
+                            );
+                            CREATE UNIQUE INDEX [UX_GedenMailler_Sahib_MessageId] ON [GedenMailler] ([SahibUserId], [MessageId]);
+                            CREATE INDEX [IX_GedenMailler_GonderilmeTarixi]       ON [GedenMailler] ([GonderilmeTarixi] DESC);
+                            CREATE INDEX [IX_GedenMailler_SahibUserId]           ON [GedenMailler] ([SahibUserId]);
+                        END
+                    ");
+                }
+                catch { }
+
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GedenMailQosmalar')
+                        BEGIN
+                            CREATE TABLE [GedenMailQosmalar] (
+                                [Id]                INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                                [GedenMailId]       INT             NOT NULL,
+                                [FaylAdi]           NVARCHAR(500)   NOT NULL DEFAULT '',
+                                [ContentType]       NVARCHAR(200)   NOT NULL DEFAULT '',
+                                [OlcuBayt]          BIGINT          NOT NULL DEFAULT 0,
+                                [FaylYolu]          NVARCHAR(1000)  NOT NULL DEFAULT '',
+                                [CixarilmisMetin]   NVARCHAR(MAX)   NULL,
+                                [YaradilmaTarixi]   DATETIME2       NOT NULL DEFAULT GETDATE(),
+                                [YenilenmeTarixi]   DATETIME2       NULL,
+                                [SilinmeTarixi]     DATETIME2       NULL,
+                                [YaradanIcraciId]   INT             NULL,
+                                [YenileyenIcraciId] INT             NULL,
+                                [SilenIcraciId]     INT             NULL,
+                                [Silinib]           BIT             NOT NULL DEFAULT 0,
+                                CONSTRAINT [FK_GedenMailQosmalar_GedenMailler]
+                                    FOREIGN KEY ([GedenMailId]) REFERENCES [GedenMailler]([Id]) ON DELETE CASCADE
+                            );
+                            CREATE INDEX [IX_GedenMailQosmalar_GedenMailId] ON [GedenMailQosmalar] ([GedenMailId]);
+                        END
+                    ");
+                }
+                catch { }
+
+                // ── Mail İzləmə Siyahısı (12.10.2026) ──────────────────────────────
+                // İşçinin əlavə etdiyi mail ünvanları — "yalnız bu ünvanlardan
+                // gələn/gedənləri göstər" filtri və fon sinxronunun xüsusi
+                // bildirişi bunun üzərindən işləyir.
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MailIzlemeUnvanlari')
+                        BEGIN
+                            CREATE TABLE [MailIzlemeUnvanlari] (
+                                [Id]                INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                                [SahibUserId]       INT             NOT NULL,
+                                [Email]             NVARCHAR(320)   NOT NULL,
+                                [Ad]                NVARCHAR(200)   NULL,
+                                [YaradilmaTarixi]   DATETIME2       NOT NULL DEFAULT GETDATE(),
+                                [YenilenmeTarixi]   DATETIME2       NULL,
+                                [SilinmeTarixi]     DATETIME2       NULL,
+                                [YaradanIcraciId]   INT             NULL,
+                                [YenileyenIcraciId] INT             NULL,
+                                [SilenIcraciId]     INT             NULL,
+                                [Silinib]           BIT             NOT NULL DEFAULT 0
+                            );
+                            CREATE UNIQUE INDEX [UX_MailIzlemeUnvanlari_Sahib_Email] ON [MailIzlemeUnvanlari] ([SahibUserId], [Email]);
                         END
                     ");
                 }

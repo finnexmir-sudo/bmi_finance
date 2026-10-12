@@ -1,0 +1,109 @@
+@model FinNex.Application.DTOs.Communication.GedenMailDetailDto
+
+<!-- Top action bar -->
+<div class="gm-panel-topbar">
+    <div class="gm-panel-from">
+        <div class="gm-mail-avatar">@(Model.KimeAd.Length > 0 ? Model.KimeAd[0].ToString().ToUpper() : (Model.KimeEmail.Length > 0 ? Model.KimeEmail[0].ToString().ToUpper() : "?"))</div>
+        <div>
+            <div style="font-weight:600;font-size:.9rem;color:#1a2332">Kimə: @(string.IsNullOrWhiteSpace(Model.KimeAd) ? Model.KimeEmail : Model.KimeAd)</div>
+            <div style="font-size:.78rem;color:#64748b">@Model.KimeToplu</div>
+        </div>
+    </div>
+    <span class="gm-panel-date">@Model.GonderilmeTarixi.ToString("dd MMMM yyyy, HH:mm")</span>
+    <form action="/User/GedenMail/Sil" method="post" style="display:inline"
+          onsubmit="return confirm('Bu maili silmək istəyirsiniz?')">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="gm-btn gm-btn-danger-outline">
+            <i class="bi bi-trash"></i> Sil
+        </button>
+    </form>
+</div>
+
+<div class="gm-panel-content">
+
+    <!-- Mövzu -->
+    <h2 class="gm-panel-subject">@Model.Movzu</h2>
+
+    <!-- Mail mətni -->
+    <div class="gm-mail-body" style="padding:0 0 16px">
+        @if (!string.IsNullOrWhiteSpace(Model.MetinHtml))
+        {
+            <div class="gm-mail-html">@Html.Raw(Model.MetinHtml)</div>
+        }
+        else
+        {
+            <pre class="gm-mail-plain">@Model.MetinDuz</pre>
+        }
+    </div>
+
+    <!-- Qoşmalar -->
+    @if (Model.Qosmalar.Any())
+    {
+        <div class="gm-attachments">
+            <h4 class="gm-attachments-title">
+                <i class="bi bi-paperclip"></i> Qoşmalar (@Model.Qosmalar.Count)
+            </h4>
+            <div class="gm-attachments-list">
+                @foreach (var q in Model.Qosmalar)
+                {
+                    <div class="gm-attachment-card">
+                        <div class="gm-attachment-icon">
+                            <i class="bi @(GetFileIcon(q.FaylAdi)) fs-2"></i>
+                        </div>
+                        <div class="gm-attachment-info">
+                            <span class="gm-attachment-name">@q.FaylAdi</span>
+                            <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
+                        </div>
+                        <div class="gm-attachment-actions">
+                            @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+                            {
+                                <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            }
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+                        {
+                            <div id="text-@q.Id" class="gm-attachment-text" style="display:none">
+                                <pre>@q.CixarilmisMetin.Substring(0, Math.Min(q.CixarilmisMetin.Length, 2000))@(q.CixarilmisMetin.Length > 2000 ? "\n[...]" : "")</pre>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+
+@functions {
+    string FormatBytes(long b) =>
+        b < 1024 ? $"{b} B" : b < 1048576 ? $"{b/1024.0:F1} KB" : $"{b/1048576.0:F1} MB";
+
+    string GetFileIcon(string f) {
+        var e = System.IO.Path.GetExtension(f ?? "").ToLowerInvariant();
+        if (e == ".pdf") return "bi-file-earmark-pdf text-danger";
+        if (e == ".docx" || e == ".doc") return "bi-file-earmark-word text-primary";
+        if (e == ".xlsx" || e == ".xls") return "bi-file-earmark-excel text-success";
+        return "bi-file-earmark text-secondary";
+    }
+}
+
+<script>
+(function () {
+    window.toggleText = function(id) {
+        var el = document.getElementById('text-' + id);
+        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // Email image cleanup
+    var body = document.querySelector('.gm-mail-html');
+    if (!body) return;
+    body.querySelectorAll('img').forEach(function(img) {
+        var src = (img.getAttribute('src') || '').trim();
+        if (src.toLowerCase().startsWith('cid:')) { img.remove(); return; }
+        img.addEventListener('error', function() { this.classList.add('gm-img-broken'); });
+    });
+})();
+</script>

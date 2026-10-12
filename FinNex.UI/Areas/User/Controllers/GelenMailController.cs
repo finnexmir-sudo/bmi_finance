@@ -30,6 +30,7 @@ public class GelenMailController : Controller
     private readonly IXatirlatmaService _xatirlatmaService;
     private readonly IBildirisService _bildirisService;
     private readonly IGelenMailImapSyncer _imapSyncer;
+    private readonly IMailIzlemeService _izlemeService;
     private readonly UserManager<AppUser> _userManager;
     private readonly IDataProtector _protector;
 
@@ -41,6 +42,7 @@ public class GelenMailController : Controller
         IXatirlatmaService xatirlatmaService,
         IBildirisService bildirisService,
         IGelenMailImapSyncer imapSyncer,
+        IMailIzlemeService izlemeService,
         UserManager<AppUser> userManager,
         IDataProtectionProvider dpProvider)
     {
@@ -51,6 +53,7 @@ public class GelenMailController : Controller
         _xatirlatmaService = xatirlatmaService;
         _bildirisService = bildirisService;
         _imapSyncer = imapSyncer;
+        _izlemeService = izlemeService;
         _userManager = userManager;
         _protector = dpProvider.CreateProtector("MailSmtpParol");
     }
@@ -59,6 +62,7 @@ public class GelenMailController : Controller
         bool? oxunmamis, int? isciId, string? q,
         string? tarixden, string? tarixe,
         bool? tapshirildi, bool? qosmali, string? deadline,
+        bool? izleme,
         int page = 1)
     {
         var appUser = await _userManager.GetUserAsync(User);
@@ -67,9 +71,16 @@ public class GelenMailController : Controller
         DateTime? tdFrom = DateTime.TryParse(tarixden, out var tf) ? tf : null;
         DateTime? tdTo   = DateTime.TryParse(tarixe,   out var tt) ? tt : null;
 
+        // "Yalnız izlənənlər" seçilibsə siyahını əvvəlcə gətir — boşdursa
+        // (heç bir ünvan əlavə edilməyib) filtri tətbiq ETMİRİK, yoxsa bütün
+        // siyahı səbəbsiz boş görünərdi.
+        List<string>? izlenenEmaillar = null;
+        if (izleme == true)
+            izlenenEmaillar = await _izlemeService.GetEmailSiyahisiAsync(appUser.Id);
+
         var mails = await _mailService.GetListAsync(
             oxunmamis, isciId, page, 50, q,
-            tdFrom, tdTo, tapshirildi, qosmali, deadline, appUser.Id);
+            tdFrom, tdTo, tapshirildi, qosmali, deadline, appUser.Id, izlenenEmaillar);
         var oxunmamisSay = await _mailService.GetOxunmamisSayAsync(appUser.Id);
         var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
@@ -84,6 +95,8 @@ public class GelenMailController : Controller
         ViewBag.Tapshirildi    = tapshirildi;
         ViewBag.Qosmali        = qosmali;
         ViewBag.DeadlineFilter = deadline;
+        ViewBag.IzlemeFilter   = izleme;
+        ViewBag.IzlemeSayi     = (await _izlemeService.GetListAsync(appUser.Id)).Count;
         ViewBag.Page           = page;
         ViewData["Title"]      = "Gələn Maillər";
 

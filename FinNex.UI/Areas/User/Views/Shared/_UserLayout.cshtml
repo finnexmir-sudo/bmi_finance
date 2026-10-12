@@ -487,6 +487,17 @@
                         }
                         <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
                     </a>
+                    @* Göndərilən Maillər + Mail İzləmə (12.10.2026) — EYNİ `hasMail`
+                       şərti, çünki qutu şəxsidir və bu, elə həmin qutunun
+                       "Göndərilənlər" qovluğu / izləmə siyahısıdır. *@
+                    <a asp-area="User" asp-controller="GedenMail" asp-action="Index"
+                       class="fn-nav-item @(currentController == "GedenMail" ? "active" : "")">
+                        <i class="bi bi-send-fill"></i> Göndərilən Maillər
+                    </a>
+                    <a asp-area="User" asp-controller="MailIzleme" asp-action="Index"
+                       class="fn-nav-item @(currentController == "MailIzleme" ? "active" : "")">
+                        <i class="bi bi-eye-fill"></i> Mail İzləmə
+                    </a>
                 }
                 @if (isHR)
                 {

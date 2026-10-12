@@ -4,7 +4,7 @@ namespace FinNex.Application.Interfaces.Communication;
 
 public interface IGelenMailService
 {
-    Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null, int? sahibUserId = null);
+    Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null, int? sahibUserId = null, List<string>? izlenenEmaillar = null);
     Task<GelenMailDetailDto?> GetDetailAsync(int id, int? sahibUserId = null);
     Task OxunduIsareEtAsync(int id, int? sahibUserId = null);
     Task<bool> TapaAsync(int mailId, List<int> isciIds, string? qeyd, int rehberUserId);

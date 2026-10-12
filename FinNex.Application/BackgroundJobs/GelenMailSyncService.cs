@@ -61,11 +61,27 @@ public class GelenMailSyncService : BackgroundService
                         {
                             using var syncScope = _scopeFactory.CreateScope();
                             var syncer = syncScope.ServiceProvider.GetRequiredService<IGelenMailImapSyncer>();
+                            // 2 saniyəlik ehtiyat — bu an və entity-nin öz `YaradilmaTarixi`-nin
+                            // (syncer daxilində `DateTime.Now` ilə yazılır) saat fərqi riski üçün.
+                            var syncBasladi = DateTime.Now.AddSeconds(-2);
                             var count = await syncer.SyncNowAsync(hesab.imapHost, hesab.email, hesab.password, hesab.userId, stoppingToken);
                             if (count > 0)
+                            {
                                 await SendOwnerBildirisAsync(syncScope, hesab.userId, count, stoppingToken);
+                                await SendIzlemeBildirisleriAsync(syncScope, hesab.userId, syncBasladi, stoppingToken);
+                            }
                         }
                         catch (Exception ex) { _logger.LogError(ex, "GelenMail sync xətası (user {UserId})", hesab.userId); }
+
+                        // Göndərilənlər (Sent) — AYRICA scope, AYRICA cəhd. Bildiriş
+                        // yaradılmır (istifadəçi özü göndərib, xəbər vermə mənasızdır).
+                        try
+                        {
+                            using var sentScope = _scopeFactory.CreateScope();
+                            var sentSyncer = sentScope.ServiceProvider.GetRequiredService<IGedenMailImapSyncer>();
+                            await sentSyncer.SyncSentNowAsync(hesab.imapHost, hesab.email, hesab.password, hesab.userId, stoppingToken);
+                        }
+                        catch (Exception ex) { _logger.LogError(ex, "GedenMail (Sent) sync xətası (user {UserId})", hesab.userId); }
                     }
                 }
             }
@@ -215,6 +231,44 @@ public class GelenMailSyncService : BackgroundService
             : $"Gələn qutunuza {count} yeni mail daxil oldu.";
 
         await SendOwnerNotificationAsync(scope, ownerUserId, bashliq, metn);
+    }
+
+    // Mail İzləmə Siyahısı (12.10.2026, istifadəçi tələbi: "həmin maillərdən
+    // gələnlərin bildirişi çıxsın ekrana") — bu sinxron dövründə yaradılmış
+    // mailləri (syncBasladi-dan sonrakılar) işçinin izləmə siyahısı ilə
+    // tutuşdurur, uyğun gələnlər üçün AYRICA (daha konkret) bildiriş göndərir.
+    // `SendOwnerBildirisAsync`-in ümumi "N yeni mail" bildirişinə ƏLAVƏdir,
+    // onu ƏVƏZ ETMİR — ikisi fərqli başlıq/mətn daşıdığı üçün BildirisService-in
+    // dublikat qoruması (15 saniyə, bax CLAUDE.md) bunları bir-birini bloklamır.
+    private async Task SendIzlemeBildirisleriAsync(IServiceScope scope, int ownerUserId, DateTime syncBasladi, CancellationToken ct)
+    {
+        try
+        {
+            var izlemeService = scope.ServiceProvider.GetRequiredService<IMailIzlemeService>();
+            var izlenenler = await izlemeService.GetEmailSiyahisiAsync(ownerUserId);
+            if (izlenenler.Count == 0) return;
+
+            var izlenenSet = new HashSet<string>(izlenenler);
+
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var yeniMaillar = await db.Set<GelenMail>()
+                .AsNoTracking()
+                .Where(x => x.SahibUserId == ownerUserId && !x.Silinib && x.YaradilmaTarixi >= syncBasladi)
+                .Select(x => new { x.Id, x.KimdenAd, x.KimdenEmail, x.Movzu })
+                .ToListAsync(ct);
+
+            foreach (var m in yeniMaillar)
+            {
+                var email = (m.KimdenEmail ?? "").Trim().ToLowerInvariant();
+                if (!izlenenSet.Contains(email)) continue;
+
+                var gonderen = string.IsNullOrWhiteSpace(m.KimdenAd) ? email : m.KimdenAd;
+                await SendOwnerNotificationAsync(scope, ownerUserId,
+                    $"İzlədiyiniz ünvandan mail: {gonderen}",
+                    m.Movzu);
+            }
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Mail İzləmə bildiriş xətası (user {UserId})", ownerUserId); }
     }
 
     // Ortaq köməkçi — bildirişi yalnız sahibin işçi profilinə göndərir

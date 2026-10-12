@@ -1,0 +1,86 @@
+@model List<FinNex.Application.DTOs.Communication.MailIzlemeUnvaniDto>
+@{
+    ViewData["Title"] = "Mail İzləmə Siyahısı";
+}
+
+<link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+
+<div class="fn-page">
+    <div class="gm-detail-nav" style="margin-bottom:16px">
+        <a href="@Url.Action("Index", "GelenMail", new { area = "User" })" class="gm-btn gm-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Gələn Maillər
+        </a>
+        <a href="@Url.Action("Index", "GedenMail", new { area = "User" })" class="gm-btn gm-btn-ghost">
+            Göndərilən Maillər <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="gm-alert gm-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="gm-alert gm-alert--error">@TempData["Error"]</div>
+    }
+
+    <div class="fn-card" style="max-width:640px">
+        <div class="fn-card-title mb-2">
+            <i class="bi bi-eye-fill"></i> Mail İzləmə Siyahısı
+        </div>
+        <p class="gm-form-hint" style="margin-bottom:14px">
+            Burada əlavə etdiyiniz ünvanlardan gələn/gedən mailləri Gələn və Göndərilən
+            Maillər səhifələrində «Yalnız izlənənlər» filtri ilə ayrıca görə bilərsiniz.
+            Gələn maildə bu ünvanlardan yeni mail düşəndə ayrıca bildiriş alacaqsınız.
+        </p>
+
+        <form asp-action="Ekle" method="post" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+            @Html.AntiForgeryToken()
+            <input type="email" name="email" required placeholder="nümunə@domen.com"
+                   class="fn-input" style="flex:1;min-width:200px" />
+            <input type="text" name="ad" placeholder="Etiket (ixtiyari)"
+                   class="fn-input" style="flex:1;min-width:160px" />
+            <button type="submit" class="gm-btn gm-btn-primary">
+                <i class="bi bi-plus-lg"></i> Əlavə et
+            </button>
+        </form>
+
+        @if (!Model.Any())
+        {
+            <div class="gm-empty" style="padding:24px 0">
+                <i class="bi bi-eye-slash"></i>
+                <p>Hələ heç bir ünvan əlavə edilməyib.</p>
+            </div>
+        }
+        else
+        {
+            <div class="gm-list">
+                @foreach (var u in Model)
+                {
+                    <div class="gm-item-wrap">
+                        <div class="gm-item" style="cursor:default">
+                            <div class="gm-item-avatar"><span>@(u.Email.Length > 0 ? u.Email[0].ToString().ToUpper() : "?")</span></div>
+                            <div class="gm-item-body">
+                                <div class="gm-item-from">
+                                    <span class="gm-from-name">@(string.IsNullOrWhiteSpace(u.Ad) ? u.Email : u.Ad)</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(u.Ad))
+                                {
+                                    <div class="gm-item-subject" style="color:#64748b">@u.Email</div>
+                                }
+                            </div>
+                        </div>
+                        <form asp-action="Sil" method="post" class="gm-item-sil-form"
+                              onsubmit="return confirm('Bu ünvanı siyahıdan silmək istəyirsiniz?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@u.Id" />
+                            <button type="submit" class="gm-item-sil-btn" title="Sil">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

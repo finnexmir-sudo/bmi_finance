@@ -17,7 +17,7 @@ public class GelenMailService : IGelenMailService
         _uow = uow;
     }
 
-    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null, int? sahibUserId = null)
+    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null, int? sahibUserId = null, List<string>? izlenenEmaillar = null)
     {
         IQueryable<GelenMail> query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
@@ -52,6 +52,12 @@ public class GelenMailService : IGelenMailService
             query = query.Where(x => !x.TapalanIsciler.Any(ti => !ti.Silinib));
         if (qosmali == true)
             query = query.Where(x => x.Qosmalar.Any(q => !q.Silinib));
+        // Mail İzləmə Siyahısı (12.10.2026) — "yalnız bu ünvanlardan gələnlər".
+        // Siyahı boşdursa (heç bir ünvan əlavə edilməyib) filtr tətbiq OLUNMUR —
+        // boş `Contains` SQL-də "heç nə" demək deyil, "hamısı" demək olardı
+        // (filtr keçirilmir) əgər yoxlanmasa.
+        if (izlenenEmaillar != null && izlenenEmaillar.Count > 0)
+            query = query.Where(x => izlenenEmaillar.Contains(x.KimdenEmail.ToLower()));
         if (!string.IsNullOrWhiteSpace(deadlineFilter))
         {
             var today = DateTime.Today;

@@ -1,0 +1,295 @@
+@model List<FinNex.Application.DTOs.Communication.GedenMailListDto>
+@{
+    ViewData["Title"] = "Göndərilən Maillər";
+    var axtarisFilter  = ViewBag.Axtaris as string;
+    var tarixdenFilter = ViewBag.Tarixden as string;
+    var tarixeFilter   = ViewBag.Tarixe as string;
+    var qosmaliFlt     = ViewBag.Qosmali as bool?;
+    var izlemeFlt      = ViewBag.IzlemeFilter as bool?;
+    var izlemeSayi     = (int)(ViewBag.IzlemeSayi ?? 0);
+    var currentPage    = (int)(ViewBag.Page ?? 1);
+
+    bool herhansiFilter = !string.IsNullOrWhiteSpace(axtarisFilter)
+        || !string.IsNullOrWhiteSpace(tarixdenFilter)
+        || !string.IsNullOrWhiteSpace(tarixeFilter)
+        || qosmaliFlt.HasValue
+        || izlemeFlt.HasValue;
+
+    var prevUrl = Url.Action("Index", new { page = currentPage - 1, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, qosmali = qosmaliFlt, izleme = izlemeFlt });
+    var nextUrl = Url.Action("Index", new { page = currentPage + 1, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, qosmali = qosmaliFlt, izleme = izlemeFlt });
+}
+
+<link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+
+<div class="gm-split-page">
+
+    <div class="gm-split-top">
+    <div class="gm-header">
+        <h1 class="gm-title">
+            <i class="bi bi-send-fill"></i>
+            Göndərilən Maillər
+        </h1>
+        <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
+            <span id="syncMsg" style="font-size:.82rem;color:#10b981;display:none"></span>
+            <button type="button" id="yenileBtn" class="gm-btn gm-btn-outline">
+                <i class="bi bi-arrow-clockwise"></i> Yenilə
+            </button>
+            <a asp-action="Index" asp-controller="GelenMail" class="gm-btn gm-btn-outline">
+                <i class="bi bi-inbox"></i> Gələn Maillər
+            </a>
+            <a asp-action="Index" asp-controller="MailIzleme" class="gm-btn gm-btn-outline">
+                <i class="bi bi-eye"></i> İzləmə @(izlemeSayi > 0 ? $"({izlemeSayi})" : "")
+            </a>
+        </div>
+    </div>
+    </div>
+    @Html.AntiForgeryToken()
+
+    <div class="gm-split-body">
+    <div class="gm-split-left">
+
+    <form method="get" id="filterForm" class="gm-split-filterbar">
+
+        <div class="gm-split-search-row">
+            <div class="gm-search-wrap" style="flex:1;min-width:0">
+                <i class="bi bi-search gm-search-icon"></i>
+                <input type="text" name="q" value="@axtarisFilter"
+                       class="gm-search-input"
+                       placeholder="Mövzu, alıcı axtar…" autocomplete="off" />
+                @if (!string.IsNullOrWhiteSpace(axtarisFilter))
+                {
+                    <a href="@Url.Action("Index")" class="gm-search-clear" title="Sıfırla">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                }
+            </div>
+            <button type="submit" class="gm-btn gm-btn-primary gm-split-search-btn">
+                <i class="bi bi-search"></i>
+            </button>
+            @if (herhansiFilter)
+            {
+                <a href="@Url.Action("Index")" class="gm-btn gm-btn-ghost gm-split-search-btn" title="Sıfırla">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            }
+        </div>
+
+        <div class="gm-split-filter-section">
+            <div class="gm-split-filter-row">
+                <label class="gm-checkbox-label" style="white-space:nowrap">
+                    <input type="checkbox" name="qosmali" value="true"
+                           @(qosmaliFlt == true ? "checked" : "")
+                           onchange="this.form.submit()" />
+                    <i class="bi bi-paperclip"></i> Qoşmalı
+                </label>
+                <label class="gm-checkbox-label" style="white-space:nowrap" title="Yalnız izləmə siyahınızdaki ünvanlara göndərilənlər">
+                    <input type="checkbox" name="izleme" value="true"
+                           @(izlemeFlt == true ? "checked" : "")
+                           onchange="this.form.submit()" />
+                    <i class="bi bi-eye"></i> Yalnız izlənənlər
+                </label>
+            </div>
+            <div class="gm-split-filter-row">
+                <input type="date" name="tarixden" value="@tarixdenFilter"
+                       class="gm-input-date" title="Tarixdən" />
+                <span style="color:#94a3b8;font-size:.8rem">—</span>
+                <input type="date" name="tarixe" value="@tarixeFilter"
+                       class="gm-input-date" title="Tarixə" />
+            </div>
+        </div>
+
+        @if (herhansiFilter)
+        {
+            <div class="gm-active-chips">
+                @if (!string.IsNullOrWhiteSpace(axtarisFilter))
+                {
+                    <span class="gm-achip">🔍 @axtarisFilter</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(tarixdenFilter) || !string.IsNullOrWhiteSpace(tarixeFilter))
+                {
+                    <span class="gm-achip">📅 @(tarixdenFilter ?? "…") – @(tarixeFilter ?? "…")</span>
+                }
+                @if (qosmaliFlt == true)
+                {
+                    <span class="gm-achip">📎 Qoşmalı</span>
+                }
+                @if (izlemeFlt == true)
+                {
+                    <span class="gm-achip">👁️ Yalnız izlənənlər</span>
+                }
+                <span class="gm-achip-count">@Model.Count nəticə</span>
+            </div>
+        }
+
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="gm-empty">
+            <i class="bi bi-send"></i>
+            <p>@(izlemeFlt == true ? "İzlənən ünvanlara göndərilmiş mail tapılmadı." : "Heç bir mail tapılmadı.")</p>
+        </div>
+    }
+    else
+    {
+        <div class="gm-list">
+            @foreach (var mail in Model)
+            {
+                var detailUrl = Url.Action("Detail", "GedenMail", new { area = "User", id = mail.Id });
+                var avatarChar = mail.KimeAd.Length > 0 ? mail.KimeAd[0].ToString().ToUpper() : (mail.KimeEmail.Length > 0 ? mail.KimeEmail[0].ToString().ToUpper() : "?");
+                var toName = string.IsNullOrWhiteSpace(mail.KimeAd) ? mail.KimeEmail : mail.KimeAd;
+                <div id="mailItem-@mail.Id" class="gm-item-wrap">
+                <a href="@detailUrl" class="gm-item" data-mailid="@mail.Id">
+                    <div class="gm-item-indicator"></div>
+                    <div class="gm-item-avatar"><span>@avatarChar</span></div>
+                    <div class="gm-item-body">
+                        <div class="gm-item-from">
+                            <span class="gm-from-name">Kimə: @toName</span>
+                            @if (!string.IsNullOrWhiteSpace(mail.KimeToplu) && mail.KimeToplu.Contains(','))
+                            {
+                                <span class="gm-from-email">+@(mail.KimeToplu.Count(c => c == ',')) digər</span>
+                            }
+                            else
+                            {
+                                <span class="gm-from-email">@mail.KimeEmail</span>
+                            }
+                        </div>
+                        <div class="gm-item-subject">@mail.Movzu</div>
+                    </div>
+                    <div class="gm-item-meta">
+                        <span class="gm-item-date">@mail.GonderilmeTarixi.ToString("dd MMM HH:mm")</span>
+                        <div class="gm-item-tags">
+                            @if (mail.QosmaCount > 0)
+                            {
+                                <span class="gm-tag gm-tag--attach"><i class="bi bi-paperclip"></i> @mail.QosmaCount</span>
+                            }
+                        </div>
+                    </div>
+                </a>
+                <form asp-action="Sil" method="post" class="gm-item-sil-form"
+                      onsubmit="return confirm('Silinsin?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@mail.Id" />
+                    <button type="submit" class="gm-item-sil-btn" title="Sil">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+                </div>
+            }
+        </div>
+
+        @if (Model.Count == 50)
+        {
+            <div class="gm-pagination">
+                @if (currentPage > 1)
+                {
+                    <a href="@prevUrl" class="gm-btn gm-btn-outline">
+                        <i class="bi bi-chevron-left"></i> Əvvəlki
+                    </a>
+                }
+                <span class="gm-page-info">Səhifə @(currentPage)</span>
+                <a href="@nextUrl" class="gm-btn gm-btn-outline">
+                    Növbəti <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+        }
+    }
+</div>@* /gm-split-left *@
+
+<div class="gm-split-right" id="gmRightPanel">
+    <div class="gm-split-placeholder">
+        <i class="bi bi-send" style="font-size:2.5rem"></i>
+        <span>Oxumaq üçün mail seçin</span>
+    </div>
+</div>
+
+</div>@* /gm-split-body *@
+
+@section Scripts {
+<script>
+(function() {
+    var panel = document.getElementById('gmRightPanel');
+
+    function executeScripts(container) {
+        container.querySelectorAll('script').forEach(function(old) {
+            var s = document.createElement('script');
+            s.textContent = old.textContent;
+            old.parentNode.replaceChild(s, old);
+        });
+    }
+
+    async function loadPanel(id) {
+        panel.innerHTML = '<div class="gm-split-loading"><i class="bi bi-arrow-repeat spin"></i> Yüklənir...</div>';
+        document.querySelectorAll('.gm-item-wrap').forEach(el => el.classList.remove('gm-item--active'));
+        var wrap = document.getElementById('mailItem-' + id);
+        if (wrap) wrap.classList.add('gm-item--active');
+
+        try {
+            var res = await fetch('/User/GedenMail/MailPanel/' + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            var html = await res.text();
+            panel.innerHTML = html;
+            executeScripts(panel);
+        } catch(e) {
+            panel.innerHTML = '<div class="gm-split-placeholder"><i class="bi bi-exclamation-circle"></i><span>Yükləmə xətası</span></div>';
+        }
+    }
+
+    if (window.innerWidth >= 992) {
+        var clickTimer = null;
+
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('.gm-item[data-mailid]');
+            if (!link) return;
+            e.preventDefault();
+            if (clickTimer !== null) return;
+            var savedHref = link.href;
+            var savedId   = link.dataset.mailid;
+            clickTimer = setTimeout(function() {
+                clickTimer = null;
+                loadPanel(savedId);
+            }, 240);
+        });
+
+        document.addEventListener('dblclick', function(e) {
+            var link = e.target.closest('.gm-item[data-mailid]');
+            if (!link) return;
+            e.preventDefault();
+            if (clickTimer !== null) { clearTimeout(clickTimer); clickTimer = null; }
+            window.location.href = link.href;
+        });
+    }
+})();
+</script>
+<script>
+(function () {
+    var btn = document.getElementById('yenileBtn');
+    var msg = document.getElementById('syncMsg');
+    var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+    if (!btn) return;
+
+    btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Yüklənir…';
+        msg.style.display = 'none';
+        try {
+            var r = await fetch('/User/GedenMail/ManualSync', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            var d = await r.json();
+            msg.textContent = d.message;
+            msg.style.color = d.success ? '#10b981' : '#ef4444';
+            msg.style.display = '';
+            if (d.success && d.count > 0) setTimeout(() => location.reload(), 800);
+        } catch {
+            msg.textContent = 'Bağlantı xətası.';
+            msg.style.color = '#ef4444';
+            msg.style.display = '';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Yenilə';
+    });
+})();
+</script>
+<style>.spin { animation: spin .8s linear infinite; } @@keyframes spin { to { transform: rotate(360deg); } }</style>
+}

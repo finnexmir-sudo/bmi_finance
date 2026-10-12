@@ -10,6 +10,8 @@
     var tapshirildiFlt   = ViewBag.Tapshirildi as bool?;
     var qosmaliFlt       = ViewBag.Qosmali as bool?;
     var deadlineFlt      = ViewBag.DeadlineFilter as string;
+    var izlemeFlt        = ViewBag.IzlemeFilter as bool?;
+    var izlemeSayi       = (int)(ViewBag.IzlemeSayi ?? 0);
     var oxunmamisSay     = (int)(ViewBag.OxunmamisSay ?? 0);
     var currentPage      = (int)(ViewBag.Page ?? 1);
 
@@ -19,10 +21,11 @@
         || !string.IsNullOrWhiteSpace(tarixeFilter)
         || tapshirildiFlt.HasValue
         || qosmaliFlt.HasValue
-        || !string.IsNullOrWhiteSpace(deadlineFlt);
+        || !string.IsNullOrWhiteSpace(deadlineFlt)
+        || izlemeFlt.HasValue;
 
-    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, tapshirildi = tapshirildiFlt, qosmali = qosmaliFlt, deadline = deadlineFlt });
-    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, tapshirildi = tapshirildiFlt, qosmali = qosmaliFlt, deadline = deadlineFlt });
+    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, tapshirildi = tapshirildiFlt, qosmali = qosmaliFlt, deadline = deadlineFlt, izleme = izlemeFlt });
+    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, tapshirildi = tapshirildiFlt, qosmali = qosmaliFlt, deadline = deadlineFlt, izleme = izlemeFlt });
 }
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
@@ -62,6 +65,12 @@
             </button>
             <a asp-action="TapshirilanMailler" class="gm-btn gm-btn-outline">
                 <i class="bi bi-list-check"></i> Tapşırılanlar
+            </a>
+            <a asp-action="Index" asp-controller="GedenMail" class="gm-btn gm-btn-outline">
+                <i class="bi bi-send"></i> Göndərilənlər
+            </a>
+            <a asp-action="Index" asp-controller="MailIzleme" class="gm-btn gm-btn-outline">
+                <i class="bi bi-eye"></i> İzləmə @(izlemeSayi > 0 ? $"({izlemeSayi})" : "")
             </a>
         </div>
     </div>
@@ -123,6 +132,12 @@
                            onchange="this.form.submit()" />
                     <i class="bi bi-paperclip"></i>
                 </label>
+                <label class="gm-checkbox-label" style="white-space:nowrap" title="Yalnız izləmə siyahınızdakı ünvanlardan gələnlər">
+                    <input type="checkbox" name="izleme" value="true"
+                           @(izlemeFlt == true ? "checked" : "")
+                           onchange="this.form.submit()" />
+                    <i class="bi bi-eye"></i> İzlənən
+                </label>
             </div>
             <div class="gm-split-filter-row">
                 <input type="date" name="tarixden" value="@tarixdenFilter"
@@ -161,6 +176,10 @@
                 @if (oxunmamisFilter == true)
                 {
                     <span class="gm-achip">✉️ Oxunmamış</span>
+                }
+                @if (izlemeFlt == true)
+                {
+                    <span class="gm-achip">👁️ Yalnız izlənənlər</span>
                 }
                 <span class="gm-achip-count">@Model.Count nəticə</span>
             </div>

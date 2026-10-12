@@ -203,6 +203,10 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IAnthropicService, AnthropicService>();
         services.AddScoped<IAttachmentTextExtractor, AttachmentTextExtractor>();
 
+        // ── Göndərilən Mail Modulu (IMAP Sent — 12.10.2026) ────
+        services.AddScoped<IGedenMailService, GedenMailService>();
+        services.AddScoped<IMailIzlemeService, MailIzlemeService>();
+
         // ── AI Sənəd Modulları ─────────────────────────────
         services.AddScoped<ISenedAiService, SenedAiService>();
 

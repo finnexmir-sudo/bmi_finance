@@ -3393,6 +3393,91 @@ sətrinin `colspan`-ı 9-dan 11-ə yeniləndi.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
 - Eyni tip səhvin bir daha olmaması üçün bu fayla əlavə et.
 
+## Göndərilən Mail + Mail İzləmə Siyahısı (12.10.2026)
+
+İstifadəçi tələbi: *"geden mailleride gormek imkani olsun, cox seliqeli, mail
+proqramina oxsarliqda"* + *"iscide siyahi elave etmek imkanida olsun ki,
+istediyi mail unvanlarini elave etsin, secimi olsun ki yalniz bu mailden
+gelen ve gedenleri gorsun, ve elave edekki hemin maillerden gelenlarin
+bildirisi cixsin ekrana"*. Üç hissədən ibarətdir, hamısı `GelenMail`-in
+(Gələn Mail, bax yuxarıdakı "mail_istifade" bölmələri) **güzgüsü/əlavəsidir**
+— izolyasiya, icazə (`[MailIcazesi]`) qaydası da EYNİdir.
+
+### 1. Göndərilən Maillər (`GedenMail`) — IMAP "Sent" sinxronu
+
+`GelenMailImapSyncer` (Inbox) ilə **tam simmetrik** yeni servis —
+`GedenMailImapSyncer.SyncSentNowAsync`. Fərq yalnız qovluqdadır: əvvəlcə
+MailKit-in `GetFolder(SpecialFolder.Sent)` (SPECIAL-USE/XLIST) sınanır,
+dəstəklənmirsə `BilinenSentAdlari` siyahısı (`Sent`, `Sent Items`, `INBOX.Sent`
+və s.) üzrə ad-axtarışına keçilir. Nəticə **yalnız göstərmə üçündür** — real
+göndərmə hələ də SMTP ilə gedir (`GelenMailController.CavabGonder`), bu servis
+heç nə göndərmir, poçt qutusunun artıq göndərdiyini oxuyur.
+
+Fon sinxronu (`GelenMailSyncService`) hər dövrdə **hər iki** istiqaməti
+(Inbox + Sent) ayrı scope/ayrı cəhdlə sinxronlaşdırır — Sent üçün bildiriş
+YARADILMIR (istifadəçi özü göndərib, xəbər vermə mənasızdır).
+
+⚠️ **UI qəsdən sadədir** — AI təhlili, tapşırma, cavab yazma YOXDUR (bunlar
+Gələn Mailə məxsus). Yalnız axtarış/filtr/silmə + qoşma mətnini önizləmə.
+Baxılan sıra: `Exchange`/`Kassa` modulunda olduğu kimi, görüntü ÜÇÜN `~/css/
+User/gelen-mail.css`-dəki mövcud `gm-*` klasları TƏKRAR işlədilir — yeni CSS
+faylı yaradılmadı.
+
+⚠️ **Bu modulun DB cədvəlləri EF migration-la DEYİL** — `GelenMail`-in özü
+kimi, `FinNex.UI/Program.cs`-dəki idempotent `IF NOT EXISTS` SQL bloklarıyla
+qurulur (startup-da). Bu, layihənin əsas "Əl ilə Yazılan Migration" qaydasından
+(`DataAccess/Migrations/*.cs`) FƏRQLİ, köhnə Gələn Mail modulunun davam etdirdiyi
+**üçüncü bir naxışdır** — toxunanda qarışdırma, mövcud `GelenMailler`/
+`GelenMailQosmalar` bloklarının yanında, EYNİ üslubda yazılmalıdır.
+
+### 2. Mail İzləmə Siyahısı (`MailIzlemeUnvani`)
+
+İşçi `/User/MailIzleme` səhifəsində istədiyi qədər e-poçt ünvanı əlavə edir
+(şəxsi siyahı — `SahibUserId`). Gələn/Göndərilən Mail səhifələrində **"Yalnız
+izlənənlər"** checkbox-u bu siyahı ilə uyğun gələn mailləri süzür:
+- Gələn Mail → `KimdenEmail` (göndərən) siyahıdadırsa göstərilir;
+- Göndərilən Mail → **yalnız İLK (əsas) alıcı** (`KimeEmail`) yoxlanılır,
+  `KimeToplu`-dakı Cc-lər YOX (dinamik siyahı üzrə sətir-daxili LIKE SQL-ə
+  yaxşı tərcümə olunmur — qəsdən buraxılan sadələşdirmədir).
+
+**Normallaşdırma MƏCBURİDİR** (Pul Köçürməsi-dəki `FinTemizle` ilə EYNİ
+prinsip) — ünvan həmişə `Trim().ToLowerInvariant()` ilə saxlanılır
+(`MailIzlemeService.Normallashdir`), yoxsa `Qara@X.com` ilə `qara@x.com`
+səssizcə iki ayrı ünvan sayılar və filtr/bildiriş keçər.
+
+⚠️ **Yumşaq Silinmiş Sətir + Unikal İndeks tələsi BURADA DA var** (bax yuxarı
+"Yumşaq Silinmiş Sətir..." bölməsi) — `(SahibUserId, Email)` üzərində unikal
+indeks `Silinib`-i filtrləmir. `EkleAsync` əvvəlcə `QueryAll()` (filtrsiz) ilə
+axtarır: tapılmayıbsa yeni yaradır, tapılıb AKTİVdirsə rədd edir, tapılıb
+SİLİNİBsə **dirildir** (`Silinib=false`) — `Query()`-lə (avtomatik `!Silinib`)
+axtarsaydı bu "dirilt" qolu heç vaxt işə düşməzdi və silinmiş ünvanı yenidən
+əlavə etmək cəhdi `DbUpdateException` ilə sınardı.
+
+### 3. İzlənən ünvandan mail gələndə AYRICA bildiriş
+
+`GelenMailSyncService.SendIzlemeBildirisleriAsync` — hər sinxron dövründə,
+yeni mail tapılıbsa, sinxron BAŞLAMAZDAN ƏVVƏLKİ anı (`syncBasladi`, 2 saniyə
+ehtiyatla) qeyd edib sonra `YaradilmaTarixi >= syncBasladi` olan TƏZƏ sətirləri
+işçinin izləmə siyahısı ilə tutuşdurur. Uyğun gələn HƏR mail üçün **ayrıca**
+bildiriş göndərilir (başlıqda göndərənin adı) — bu, `SendOwnerBildirisAsync`-in
+ümumi "N yeni mail" bildirişini ƏVƏZ ETMİR, ona **əlavədir** (fərqli başlıq/
+mətn daşıdığı üçün `BildirisService`-in 15 saniyəlik dublikat qoruması
+bunları bir-birini bloklamır).
+
+**Ekrana "bildiriş çıxması" artıq hazır mexanizmdən gəlir** — `BildirisService.
+YaratAsync` HƏR bildirişdə `IDesktopBildirisService.PushAsync`-i fire-and-forget
+çağırır (SignalR ilə masaüstü push) — yeni kod YAZILMADI, mövcud borunu
+işlətdi, sadəcə YENİ, daha konkret bir bildiriş mətni əlavə etdi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(namespace/using-lər, metod imzaları, DTO sahələri bir-bir tutuşduruldu — bax
+"`FindFirstValue` CS1061" bölməsi). İstifadəçi Visual Studio-da **Rebuild All**
+ilə yoxlamalı, SMTP/IMAP hesabı olan real bir istifadəçi ilə ucdan-uca test
+etməlidir: (1) Göndərilən Maillər səhifəsi "Yenilə" ilə Sent qovluğunu
+gətirsin, (2) Mail İzləmə-yə ünvan əlavə edib Gələn/Göndərilən-də "Yalnız
+izlənənlər" filtri işləsin, (3) həmin ünvandan real mail göndərilib fon
+sinxronu (5 dəq) və ya "Yenilə" ilə gələndə ekrana xüsusi bildiriş çıxsın.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

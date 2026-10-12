@@ -140,6 +140,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<GelenMail> GelenMailler { get; set; }
     public DbSet<GelenMailQosma> GelenMailQosmalar { get; set; }
     public DbSet<GelenMailIsci> GelenMailIsciler { get; set; }
+    public DbSet<GedenMail> GedenMailler { get; set; }
+    public DbSet<GedenMailQosma> GedenMailQosmalar { get; set; }
+    public DbSet<MailIzlemeUnvani> MailIzlemeUnvanlari { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -1853,6 +1856,25 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ── Göndərilən Mail Modulu (IMAP "Sent" sinxronu, 12.10.2026) ─────
+        // Unikallıq birbaşa (SahibUserId, MessageId) üzrə — GelenMail-in əvvəl
+        // qlobal unikal başlayıb sonra buna keçməli olduğu iki addımlı yolu
+        // (bax CLAUDE.md) təkrarlamağa ehtiyac yoxdur, elə əvvəldən düzgün qur.
+        builder.Entity<GedenMail>()
+            .HasIndex(x => new { x.SahibUserId, x.MessageId })
+            .IsUnique();
+
+        builder.Entity<GedenMailQosma>()
+            .HasOne(x => x.GedenMail)
+            .WithMany(x => x.Qosmalar)
+            .HasForeignKey(x => x.GedenMailId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Mail İzləmə Siyahısı (12.10.2026) — hər işçi öz ünvanlarını əlavə edir
+        builder.Entity<MailIzlemeUnvani>()
+            .HasIndex(x => new { x.SahibUserId, x.Email })
+            .IsUnique();
 
         // ── AI Module ──────────────────────────────────────────────
         builder.Entity<SenedAnaliz>(e =>
