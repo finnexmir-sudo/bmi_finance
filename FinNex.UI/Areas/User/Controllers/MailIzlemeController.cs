@@ -1,5 +1,5 @@
 using FinNex.Application.Interfaces.Communication;
-using FinNex.Domain.Entities.HR;
+using FinNex.Domain;
 using FinNex.UI.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

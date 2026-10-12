@@ -437,6 +437,21 @@ fayllar düzgündür" fərziyyəsi hər faylı tək-tək örtmür. Bu sessiyada 
 mümkün olmadığı üçün bu xəta yalnız istifadəçinin real Rebuild-ində üzə çıxdı —
 "`FindFirstValue` CS1061" bölməsindəki xəbərdarlığın elə növbəti nümunəsi.
 
+### ÜÇÜNCÜ DƏFƏ — Göndərilən Mail modulu (12.10.2026)
+
+İstifadəçinin real Visual Studio Rebuild-i (ekran-görüntüsü) `GedenMailController.cs`
+və `MailIzlemeController.cs`-də **4 × CS0246** göstərdi — EYNİ səhv: hər iki fayl
+`UserManager<AppUser>` işlədirdi, amma yalnız `using FinNex.Domain.Entities.HR;`
+yazmışdı (`GelenMailController.cs`-dən köçürülərkən bu faylın özündə **İKİ**
+using olduğu — `FinNex.Domain` VƏ `FinNex.Domain.Entities.HR` — gözdən qaçırılıb,
+yalnız HR-li sətir köçürülüb). Düzəliş: hər iki fayla `using FinNex.Domain;`
+əlavə edildi; `using FinNex.Domain.Entities.HR;` isə heç bir HR tipi (Isci və s.)
+işlətmədikləri üçün tamamilə **silindi** (ölü using qalmasın).
+
+**Qayda bir daha təsdiqləndi:** `UserManager<AppUser>` yazılan HƏR yeni fayl üçün
+`using FinNex.Domain;`-i mövcud bir fayldan "köçürmək" kifayət etmir — həmin
+fayldakı BÜTÜN using sətirlərini (təkcə ən oxşar görünəni yox) tutuşdurmaq lazımdır.
+
 ## Namespace Adı Entity Adını Kölgələyir (CS0118) — Kaskad Build Xətası (KRİTİK)
 
 C#-da alt namespace adı, valideyn namespace-dəki **tip adı** ilə eyni olarsa, həmin
