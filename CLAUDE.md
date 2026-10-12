@@ -3728,6 +3728,48 @@ nə göstərdiyini yoxlamadan "səhifəyə öz başlığını qoy" fərziyyəsi,
 mənbədən gələn gizli dublikata aparır (kodda `grep` ilə bir-birini görmür,
 yalnız ekranda görünür).
 
+### Mail İzləmə Siyahısı — 4-Sütunlu Grid-ə 2 Element Verəndə Sütunlar Sürüşür (12.10.2026, KRİTİK)
+
+İstifadəçi ünvan əlavə edəndən sonra `/User/MailIzleme` səhifəsində sətir
+yalnız kiçik, bənövşəyi, içində «fin...» kimi kəsilmiş mətn olan bir dairə
+kimi göründü — nə ikon, nə tam email görünürdü: *"izlenenleri yazandan sonra
+ico ve mail gorunmur"*.
+
+**Kök səbəb:** `.gm-item` (`gelen-mail.css`) `display:grid; grid-template-columns:
+3px 30px 1fr auto;` — DÖRD sütun gözləyir: indikator (3px), avatar (30px),
+body (1fr), meta (auto). Bu, mail siyahısı sətirlərinin (`GelenMail`/`GedenMail`
+Index-ləri) markup-unda HƏR DƖFƏ dörd uşaq elementlə təmin olunur — birincisi
+`.gm-item-indicator` (boş, yalnız rəngli zolaq üçün).
+
+`MailIzleme/Index.cshtml`-in sətri isə bu klassı TƏKRAR işlədərkən yalnız
+**İKİ** uşaq verirdi: `.gm-item-avatar` və `.gm-item-body`. Grid-in avtomatik
+yerləşdirməsi onları sıra ilə 1-ci (3px) və 2-ci (30px) sütuna qoydu —
+avatar 3px-lik yerə, ad+email mətni olan body isə 30px-lik yerə sıxışdı.
+Nəticə: email mətni həmin dar sütunda `text-overflow:ellipsis` ilə «fin...»-ə
+qədər kəsildi, avatar da öz sabit 30px ölçüsü ilə 3px-lik sütundan çıxıb
+mətnlə üst-üstə düşdü — ekranda hamısı bir "bənövşəyi badge" kimi görünürdü.
+
+**Düzəliş:** `MailIzleme/Index.cshtml`-in sətrinə çatışmayan `<div
+class="gm-item-indicator"></div>` (avatar-dan ƏVVƏL) əlavə edildi — indi üç
+sütun düzgün yerləşir (4-cü, `auto`/meta sütunu bu sətirdə məzmunsuz qalır,
+bu zərərsizdir). Backend (`MailIzlemeService.EkleAsync`) artıq düzgün
+işləyirdi — "Ünvan əlavə edildi" bildirişi göstərir ki, bu, sırf GÖRÜNTÜ
+(front-end) sütun sürüşməsi idi.
+
+**Qayda: paylaşılan grid-əsaslı klassı (`.gm-item` kimi) başqa bir səhifədə
+TƏKRAR işlədəndə, həmin grid-in GÖZLƏDİYİ bütün sütun sayını (burada: 4)
+tutuşdur — əskik uşaq elementi (bura: `.gm-item-indicator`) grid-i sındırmır,
+sükutla QALAN bütün sütunları SÜRÜŞDÜRÜR. Bu, «paylaşılan CSS klassını
+başqa bir markup-da işlətmək» riskinin YENİ bir forması idi — əvvəlki
+«başlıq təkrarı» tələsi kimi, kodda heç bir xəta yoxdur, yalnız ekranda
+görünür.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (CSS grid sütun sayı ilə markup-dakı uşaq element sayı
+tutuşduruldu). İstifadəçi real brauzerdə yoxlamalıdır: yeni ünvan əlavə
+edib siyahıda avatar dairəsi + ad/email mətninin düzgün yan-yana
+göründüyünü təsdiqləməli.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
