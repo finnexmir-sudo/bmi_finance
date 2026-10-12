@@ -4015,6 +4015,50 @@ yoxlanıldı** (Razor `@if`/`{}` balansı, HTML `<details>`/`</details>` cütü)
 və kliklə düzgün açılıb-bağlandığını, sidebar-da "Mail" etiketinin
 "AI Modulları"ndan ƏVVƏL göründüyünü.
 
+### "Mail" Etiketi → Kolaps Olunan Qrup (12.10.2026, eyni gün, davam)
+
+İstifadəçi yuxarıdakı düzəlişdən bir az sonra daha dəqiq nə istədiyini
+göstərdi: *"Mail -combobox kimi et, bagli gelsin, iseyende acsin."* — yəni
+sadə `fn-nav-label` (statik mətn başlığı, "Əsas" kimi) kifayət deyildi;
+istifadəçi "AI Modulları" ilə EYNİ davranışı istəyirdi — qapalı başlayan,
+klikləndə açılan bir qrup.
+
+**Həll:** "Mail" bloku sadə `<div class="fn-nav-label">` əvəzinə mövcud
+`fn-nav-g` kolaps qrupu naxışına (`fn-nav-g-head` düyməsi + `fn-nav-g-body`)
+köçürüldü — bu, "AI Modulları"nın özünün də istifadə etdiyi, artıq
+sınanmış, paylaşılan bir komponentdir. **Heç bir yeni JS yazılmadı** —
+`_UserLayout.cshtml`-in sonundakı ortaq skript artıq SƏHİFƏDƏKİ BÜTÜN
+`.fn-nav-g-head` düymələrinə klik-toggle əlavə edir
+(`document.querySelectorAll('.fn-nav-g-head')`), ona görə yeni button
+avtomatik işə düşür.
+
+Defolt açıq/bağlı vəziyyət digər qruplarla EYNİ qaydaya tabedir: yeni
+`mailAnyActive` dəyişəni (`currentController is "GelenMail" or "GedenMail"
+or "MailIzleme"`) — istifadəçi artıq mail səhifələrindən birindədirsə qrup
+AÇIQ başlayır (məs. "Gələn Maillər"i açıbsa sidebar-da "Mail" artıq bağlı
+görünməsin), əks halda bağlıdır. Elə `aiAnyActive`-in "AI Modulları" üçün
+etdiyi işin eynisi.
+
+⚠️ **Top-nav-dakı ayrıca oxunmamış say nişanı (zərf ikonu, `#gelenMailBtn`)
+TOXUNULMADI** — o, sidebar-dakı `fn-mail-badge`-dən TAMAMİLƏ MÜSTƏQİL bir
+göstəricidir (header-in sağ üstündə, həmişə görünür). Yəni "Mail" qrupu
+bağlı olanda belə, oxunmamış say top-nav-da görünməyə davam edir —
+istifadəçi info itirmir, qrupu açmaq MƏCBURİ deyil.
+
+**Qayda: istifadəçi "combobox kimi", "AI Modulları kimi" deyə mövcud bir
+UI naxışına açıq işarə edəndə, oxşar GÖRÜNTÜ yaratmaq kifayət etmir —
+HƏMİN NAXIŞIN ÖZÜNÜ (eyni CSS class-ları, eyni JS mexanizmi) təkrar
+istifadə et.** Fərqli bir həll (məs. `<details>`, yeni bir toggle class)
+işləsə belə, istifadəçinin "bu artıq tanıdığım davranış olsun" gözləntisini
+tam qarşılamır və sidebar-da iki fərqli kolaps mexanizmi yaradardı.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (Razor mötərizə balansı, mövcud `fn-nav-g` nümunələri ilə
+markup-un eyniliyi tutuşduruldu). İstifadəçi real brauzerdə yoxlamalıdır:
+"Mail" başlığının indi "AI Modulları" kimi bağlı başladığını, kliklə
+açılıb-bağlandığını, mail səhifələrindən birindəykən avtomatik açıq
+gəldiyini.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

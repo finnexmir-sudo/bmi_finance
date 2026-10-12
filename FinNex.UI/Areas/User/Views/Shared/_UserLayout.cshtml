@@ -162,6 +162,7 @@
     var hrMeslehetciAktiv = currentController == "HRMeslehetci" ? "active" : "";
     var aiRiskAktiv  = currentController == "SenedAi" && currentAction == "RiskAnaliz";
     var aiAnyActive  = aiRiskAktiv || !string.IsNullOrEmpty(konstrAktiv) || !string.IsNullOrEmpty(hrMeslehetciAktiv) || !string.IsNullOrEmpty(kreditAktiv);
+    var mailAnyActive = currentController is "GelenMail" or "GedenMail" or "MailIzleme";
 }
 
 <!DOCTYPE html>
@@ -432,33 +433,42 @@
                 @* Mail linki QƏSDƏN Rəhbər blokundan KƏNARDADIR (01.09.2026):
                    «mail_istifade» icazəsi verilmiş adi işçi də görməlidir.
                    Şərt `MailIcazesiAttribute` ilə eynidir — link görünürsə
-                   səhifə də açılmalıdır. Öz "Mail" etiketi altında, "AI
-                   Modulları"ndan ƏVVƏL göstərilir (12.10.2026) — əvvəl
-                   kolaps olunmuş "AI Modulları" başlığının dərhal altında
-                   görünürdü, elə bil mail linkləri o qrupun hissəsiymiş kimi
-                   görünürdü. *@
+                   səhifə də açılmalıdır. "AI Modulları"ndan ƏVVƏL, öz
+                   `fn-nav-g` kolaps qrupunda göstərilir (12.10.2026) — "Mail"
+                   etiketi 12.10.2026-da əvvəlcə sadə `fn-nav-label` idi, amma
+                   istifadəçi "AI Modulları" kimi QAPALI başlayıb kliklə açılan
+                   combobox-a bənzəsin dedi: "Mail -combobox kimi et, bagli
+                   gelsin, iseyende acsin." JS tələb etmir — `.fn-nav-g-head`
+                   üçün toggle artıq aşağıdakı ortaq skriptdə var. *@
                 @if (hasMail)
                 {
-                    <div class="fn-nav-label">Mail</div>
-                    <a asp-area="User" asp-controller="GelenMail" asp-action="Index"
-                       class="fn-nav-item @(currentController == "GelenMail" ? "active" : "")">
-                        <i class="bi bi-envelope-fill"></i> Gələn Maillər
-                        @{
-                            var gmBadgeUrl = Url.Action("OxunmamisSay", "GelenMail", new { area = "User" });
-                        }
-                        <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
-                    </a>
-                    @* Göndərilən Maillər + Mail İzləmə (12.10.2026) — EYNİ `hasMail`
-                       şərti, çünki qutu şəxsidir və bu, elə həmin qutunun
-                       "Göndərilənlər" qovluğu / izləmə siyahısıdır. *@
-                    <a asp-area="User" asp-controller="GedenMail" asp-action="Index"
-                       class="fn-nav-item @(currentController == "GedenMail" ? "active" : "")">
-                        <i class="bi bi-send-fill"></i> Göndərilən Maillər
-                    </a>
-                    <a asp-area="User" asp-controller="MailIzleme" asp-action="Index"
-                       class="fn-nav-item @(currentController == "MailIzleme" ? "active" : "")">
-                        <i class="bi bi-eye-fill"></i> Mail İzləmə
-                    </a>
+                    <div class="fn-nav-g @(mailAnyActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Mail</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="GelenMail" asp-action="Index"
+                               class="fn-nav-item @(currentController == "GelenMail" ? "active" : "")">
+                                <i class="bi bi-envelope-fill"></i> Gələn Maillər
+                                @{
+                                    var gmBadgeUrl = Url.Action("OxunmamisSay", "GelenMail", new { area = "User" });
+                                }
+                                <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
+                            </a>
+                            @* Göndərilən Maillər + Mail İzləmə (12.10.2026) — EYNİ `hasMail`
+                               şərti, çünki qutu şəxsidir və bu, elə həmin qutunun
+                               "Göndərilənlər" qovluğu / izləmə siyahısıdır. *@
+                            <a asp-area="User" asp-controller="GedenMail" asp-action="Index"
+                               class="fn-nav-item @(currentController == "GedenMail" ? "active" : "")">
+                                <i class="bi bi-send-fill"></i> Göndərilən Maillər
+                            </a>
+                            <a asp-area="User" asp-controller="MailIzleme" asp-action="Index"
+                               class="fn-nav-item @(currentController == "MailIzleme" ? "active" : "")">
+                                <i class="bi bi-eye-fill"></i> Mail İzləmə
+                            </a>
+                        </div>
+                    </div>
                 }
                 @if (isRehberRol || isAdmin)
                 {
