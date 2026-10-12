@@ -76,15 +76,14 @@ function gmIzlemeDeyisdi(checked) {
     @* ── Başlıq ── *@
     <div class="gm-split-top">
     <div class="gm-header">
-        <h1 class="gm-title">
-            <i class="bi bi-envelope-fill"></i>
-            Gələn Maillər
+        @* Başlıq silindi (12.10.2026) — "Gələn Maillər" artıq yuxarıdakı
+           breadcrumb-da yazılır, burda təkrarlanması lazımsız hündürlük yaradırdı.
+           Oxunmamış sayı itirilmədi — "Yenilə" düyməsinin yanına köçürüldü. *@
+        <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
             @if (oxunmamisSay > 0)
             {
-                <span class="gm-badge-unread">@oxunmamisSay</span>
+                <span class="gm-badge-unread" title="Oxunmamış mail">@oxunmamisSay</span>
             }
-        </h1>
-        <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
             <span id="syncMsg" style="font-size:.82rem;color:#10b981;display:none"></span>
             <button type="button" id="yenileBtn" class="gm-btn gm-btn-outline">
                 <i class="bi bi-arrow-clockwise"></i> Yenilə

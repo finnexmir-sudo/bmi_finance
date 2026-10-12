@@ -3692,6 +3692,42 @@ mümkündür) tələb edər — bu, başqa məktublardakı HƏQİQİ vurğulaman
 istifadəçi konkret bunu da istəsə, ayrıca qərar və diqqətli əhatə (yalnız
 imza bloku, bütün HTML yox) lazımdır.
 
+### İkinci Dalğa — Başlıq Təkrarı + Siyahı Sətirləri Hələ İri İdi (12.10.2026)
+
+İstifadəçi yeni ekran-görüntüləri göndərdi: *"men hecne gormurem, icolar boyukdur,
+burdakilar cox hundurdur, bunuda naziklesdir"* + *"3-cu sekilde gonderilen
+mailleri sil, zaten yixarida yizilir, bu halda bu divde naziklesecek"*.
+
+**1. "Göndərilən Maillər" / "Gələn Maillər" başlığı İKİ DƏFƏ yazılırdı** —
+`_UserLayout.cshtml`-in öz üst zolağı (`fn-topbar-title`, sətir 1551) onsuz
+da `ViewData["Title"]`-ı göstərir («‹ Geri | Göndərilən Maillər | 12 oktyabr
+2026»); səhifənin öz `gm-header`-indəki `<h1 class="gm-title">` eyni mətni
+TƏKRARLAYIRDI. İkisi fərqli yerdən gəlir (layout vs səhifə), ona görə kodda
+görünməyən bir dublikat idi. **Düzəliş:** hər iki `Index.cshtml`-dən `<h1>`
+silindi, yalnız düymə sırası (Yenilə/Gələn-Göndərilən/İzləmə) qaldı.
+`GelenMail`-dəki oxunmamış sayı (`oxunmamisSay`) İTİRİLMƏDİ — "Yenilə"
+düyməsinin yanına kiçik pill kimi köçürüldü.
+
+⚠️ **`GelenMail/TapshirilanMailler.cshtml`-ə TOXUNULMADI** — o, eyni
+`gm-header`/`gm-split-top` class-larını paylaşır, amma öz `<h1>`-i var və
+istifadəçi onu göstərmədi. `.gm-header`-in paylaşılan `margin-bottom`-u
+(20px→0) və `.gm-split-top`-un padding-i (16px 0 12px→10px 0) **ÜÇ səhifəyə
+də** tətbiq olundu (yeganə üç istifadəçisi bunlardır) — TapshirilanMailler-in
+öz başlığı bir az daha yaxın görünəcək, amma kəsilmir/pozulmur.
+
+**2. Sol siyahının sətirləri ("burdakilar cox hundurdur") kiçildildi** —
+`.gm-item` padding 14px→8px, avatar 40px→30px (font .78rem), `.gm-from-name`
+.9rem/600→.82rem/500, `.gm-item-subject` .88rem→.8rem, tarix/meta sahələri
+.75rem→.7rem. Dəyişiklik `.gm-item`/`.gm-item-avatar` class-ları üzərindədir —
+split-panel VƏ tam səhifə siyahıları eyni class-ları paylaşdığı üçün hər yerdə
+avtomatik tətbiq olunur, ayrı-ayrı yer axtarmaq lazım olmadı.
+
+**Qayda:** paylaşılan layout (`_UserLayout.cshtml`) artıq səhifə başlığını
+göstərirsə, səhifənin öz görünən h1/h2 başlığı TƏKRAR yazmasın — layout-un
+nə göstərdiyini yoxlamadan "səhifəyə öz başlığını qoy" fərziyyəsi, iki fərqli
+mənbədən gələn gizli dublikata aparır (kodda `grep` ilə bir-birini görmür,
+yalnız ekranda görünür).
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
