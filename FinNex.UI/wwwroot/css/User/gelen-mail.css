@@ -639,6 +639,81 @@
 }
 .gm-preview-empty i { font-size: 2.6rem; color: #cbd5e1; }
 
+/* ── Yüklənmə vəziyyəti (docx/xlsx fetch+parse zamanı) ── */
+.gm-preview-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 90px 20px;
+    color: var(--gm-text-muted);
+    font-size: .85rem;
+}
+.gm-preview-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e2e8f0;
+    border-top-color: var(--gm-accent);
+    border-radius: 50%;
+    animation: gm-preview-spin .8s linear infinite;
+}
+@keyframes gm-preview-spin { to { transform: rotate(360deg); } }
+
+/* ── .docx önizləmə (mammoth.js ilə HTML-ə çevrilir) ── */
+.gm-preview-docx {
+    background: #fff;
+    padding: 28px 36px;
+    max-width: 820px;
+    margin: 0 auto;
+    font-size: .88rem;
+    line-height: 1.6;
+    color: var(--gm-text);
+}
+.gm-preview-docx h1, .gm-preview-docx h2, .gm-preview-docx h3 { color: #1e293b; margin: 18px 0 10px; }
+.gm-preview-docx p { margin: 0 0 10px; }
+.gm-preview-docx table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+.gm-preview-docx table td, .gm-preview-docx table th {
+    border: 1px solid #cbd5e1;
+    padding: 6px 10px;
+    font-size: .84rem;
+}
+.gm-preview-docx img { max-width: 100%; height: auto; }
+
+/* ── .xlsx/.xls önizləmə (SheetJS ilə cədvələ çevrilir) ── */
+.gm-preview-xlsx { background: #fff; min-height: 100%; }
+.gm-preview-xlsx-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px 0;
+    border-bottom: 1px solid var(--gm-border);
+    background: #f8fafc;
+    overflow-x: auto;
+}
+.gm-preview-xlsx-tab {
+    border: 1px solid var(--gm-border);
+    border-bottom: none;
+    background: #eef2f7;
+    color: var(--gm-text-muted);
+    font-size: .78rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.gm-preview-xlsx-tab--active { background: #fff; color: var(--gm-text); font-weight: 600; }
+.gm-preview-xlsx-sheet { overflow: auto; padding: 14px; }
+.gm-preview-xlsx-sheet table {
+    border-collapse: collapse;
+    font-size: .78rem;
+}
+.gm-preview-xlsx-sheet table td, .gm-preview-xlsx-sheet table th {
+    border: 1px solid #e2e8f0;
+    padding: 4px 8px;
+    white-space: nowrap;
+}
+
 /* ══ AI Hero Card (full-width, top of detail page) ══ */
 .gm-ai-hero {
     background: #ffffff;

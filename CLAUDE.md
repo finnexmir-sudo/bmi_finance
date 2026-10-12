@@ -3841,6 +3841,92 @@ basanda modal açılıb faylın iframe-də göründüyünü, şəkil qoşmasınd
 `<img>`-in göründüyünü, "Yüklə" düyməsinin ayrıca işlədiyini və Çap
 düyməsinin (yalnız PDF-də görünür) işə düşdüyünü təsdiqləməli.
 
+### PDF Modalda Göstərmirdi — Qlobal `X-Frame-Options: DENY` Öz İframe-ini Bloklayırdı (12.10.2026, KRİTİK)
+
+İstifadəçi yuxarıdakı modalı test edəndə: *"pdf -de gostermir"* — PDF qoşmaya
+basanda modal açılırdı, amma iframe-in içində boş, sındırılmış-fayl ikonu
+görünürdü (həm PDF, həm sonra göstərilən .docx önizləməsi).
+
+**Kök səbəb:** `FinNex.UI/Middleware/SecurityHeadersMiddleware.cs` HƏR
+cavaba qlobal `X-Frame-Options: DENY` + `Content-Security-Policy:
+frame-ancestors 'none'` yazır (clickjacking qoruması). Bu başlıqlar "bu
+cavab HEÇ BİR səhifənin iframe-i daxilində göstərilə bilməz" deməkdir —
+**öz saytımızın öz iframe-i də daxil olmaqla**. `QosmaBax` cavabı bu
+qlobal başlıqları daşıdığı üçün brauzer öz `<iframe src="...QosmaBax/5">`-
+imizi özü bloklayırdı.
+
+**Bu, YENİ kəşf edilən tələ deyildi — layihədə artıq həll edilmiş presedent
+var idi**, sadəcə görmədim: `SenedDovriyyesi/SenedController.Preview`
+(Sənəd Dövriyyəsi modulunun öz PDF-önizləmə endpoint-i) məhz bu problemi
+əvvəlcədən konkret bu iki başlığı **override edərək** həll edib:
+
+```csharp
+Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+Response.Headers["Content-Security-Policy"] = "frame-ancestors 'self'";
+```
+
+Middleware bu başlıqları `_next(context)`-dən ƏVVƏL yazır, controller
+action isə SONRA işləyir — `Response.Headers[...] = ...` overwrite kimi
+işləyir (nə `Add` kimi dublikat xətası, nə "header artıq göndərilib" xətası,
+çünki body hələ flush olunmayıb). Eyni naxış `QosmaBax`-a (hər iki
+controller) köçürüldü, əlavə olaraq `Content-Disposition: inline;
+filename="..."` əl ilə yazıldı (əvvəl `File()`-a fayl adı VERİLMİRDİ ki,
+ASP.NET avtomatik "attachment" yazmasın — indi əvəzinə fayl adı HƏLƏ DƏ
+`File()`-a verilmir, amma `Content-Disposition` əl ilə "inline" olaraq
+yazılır, PDF viewer-ə fayl adını da ötürür).
+
+**Qayda: "iframe-də boş/sınmış ikon görünür, şəbəkə xətası yoxdur" simptomu
+əvvəlcə CSP/`X-Frame-Options`-u yoxlasın** — bu, "fayl tapılmadı" və ya "yanlış
+MIME tipi"ndən FƏRQLİ bir uğursuzluq sinfidir: server 200 qaytarır, amma
+BRAUZER cavabı GÖSTƏRMƏKDƏN özü imtina edir, DevTools konsolunda isə adətən
+sakit bir "Refused to display '...' in a frame because it set
+'X-Frame-Options' to 'deny'" xətası olur. Layihədə **qlobal təhlükəsizlik
+middleware-i olan hər yerdə**, öz-sayt daxili iframe/embed əlavə edəndə bu
+presedenti axtar (`grep -rn "X-Frame-Options" FinNex.UI`) — təzədən
+kəşf etməyə ehtiyac yoxdur.
+
+### .docx/.xlsx Qoşmaları da Modalda Formatlı Göstərilir (12.10.2026)
+
+Eyni mesajda istifadəçi daha bir fərq göstərdi: Titan-da .docx qoşma
+açılanda formatlı (başlıqlar, cədvəllər) görünür, bizdə isə "göz" düyməsi
+çıxarılmış XAM MƏTNİ (`CixarilmisMetin` — Word-ün daxili `PAGEREF`/TOC sahə
+kodları da daxil, formatsız bir divar) göstərirdi.
+
+**Həll — brauzerdə client-side çevirmə, server dəyişmədi:**
+- **`.docx`** → **mammoth.js** (`cdn.jsdelivr.net/npm/mammoth@1.8.0`) —
+  `QosmaBax`-dan gələn xam baytları (`fetch().arrayBuffer()`)
+  `mammoth.convertToHtml({arrayBuffer})` ilə semantik HTML-ə (başlıqlar,
+  paraqraflar, cədvəllər, qalın/mail) çevirir, `.gm-preview-docx`
+  konteynerində göstərir.
+- **`.xlsx`/`.xls`** → **SheetJS (`xlsx@0.18.5`)** —
+  `XLSX.read(buf,{type:'array'})` + `XLSX.utils.sheet_to_html(sheet)`;
+  birdən çox vərəq varsa yuxarıda tab düymələri (`.gm-preview-xlsx-tabs`)
+  göstərilir, SheetJS **köhnə binar `.xls`-i də** oxuya bilir (mammoth
+  köhnə `.doc`-u OXUYA BİLMİR — bax aşağı).
+- Hər iki kitabxana **kəşf olunduqda (lazy) bir dəfə** yüklənir
+  (`loadScript` + `libPromises` keşi) — modal hər açılanda təkrar
+  yüklənmir, həm də əvvəllər heç bir docx/xlsx açılmayıbsa səhifə ilk
+  yüklənəndə əlavə ağırlıq gətirmir.
+- Çevirmə/şəbəkə xətası olarsa (ən çox səbəb: köhnə binar `.doc` — mammoth
+  yalnız OOXML `.docx` oxuyur) **səssizcə sınmır** — `catch` bloku (varsa)
+  çıxarılmış mətnə, olmasa "ekranda açıla bilmədi, yüklə" mesajına düşür.
+
+⚠️ **CSP-nin `script-src`-i artıq `https://cdn.jsdelivr.net`-ə icazə
+verirdi** (`marked.min.js` AI xülasə render-i üçün onsuz da işlədilirdi) —
+mammoth/xlsx üçün middleware-ə TOXUNMAQ LAZIM OLMADI, eyni icazəli host
+kifayət etdi. Yeni bir CDN host əlavə etsəydik, `SecurityHeadersMiddleware`-
+in `script-src` sətrinə də əlavə etmək LAZIM OLARDI — yoxsa skript
+səssizcə CSP tərəfindən bloklanardı (eyni "görünən xəta yox, brauzer özü
+imtina edir" sinfi).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (C# mötərizə/dırnaq balansı, JS Node sintaksis yoxlaması).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real mühitdə
+yoxlamalıdır: PDF-in indi iframe-də göründüyünü, .docx-in formatlı (cədvəl/
+başlıqlarla) açıldığını, çoxvərəqli .xlsx-də tab-ların işlədiyini və köhnə
+binar `.doc` faylında səliqəli "açıla bilmədi" mesajının çıxdığını (sükutla
+sınmadığını).
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

@@ -290,8 +290,12 @@ public class GelenMailController : Controller
     }
 
     // ── GET /User/GelenMail/QosmaBax/5 — modalda önizləmə üçün (12.10.2026) ──
-    // QosmaYukle-dən fərqli: fayl adı verilmir ki, Content-Disposition "attachment"
-    // yazılmasın — brauzer PDF/şəkili iframe/img src-də İNLINE göstərsin.
+    // QosmaYukle-dən fərqli: fayl adı File()-a verilmir ki, ASP.NET Core
+    // Content-Disposition "attachment" yazmasın — Content-Disposition özü
+    // əl ilə "inline" yazılır. Həmçinin X-Frame-Options/CSP-ni SAMEORIGIN-ə
+    // boşaldır (SecurityHeadersMiddleware qlobal "DENY"/"frame-ancestors 'none'"
+    // yazır — bu, SenedController.Preview-dəki EYNİ, artıq sınanmış naxışdır,
+    // onsuz brauzer öz-öz iframe-ini belə bloklayır).
     [HttpGet]
     public async Task<IActionResult> QosmaBax(int id)
     {
@@ -302,6 +306,9 @@ public class GelenMailController : Controller
         if (fayl == null) return NotFound();
 
         var bytes = await System.IO.File.ReadAllBytesAsync(fayl.Value.FaylYolu);
+        Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+        Response.Headers["Content-Security-Policy"] = "frame-ancestors 'self'";
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{fayl.Value.FaylAdi}\"";
         return File(bytes, fayl.Value.ContentType);
     }
 
