@@ -46,8 +46,16 @@ public class GedenMailService : IGedenMailService
         // Cc-lər YOX — sətir daxilində dinamik siyahı üzrə LIKE SQL-ə yaxşı
         // tərcümə olunmur. Gələn Mail-in simmetrik tərəfi (`KimdenEmail`) tək
         // sahə olduğu üçün bu məhdudiyyətə düşmür.
-        if (izlenenEmaillar != null && izlenenEmaillar.Count > 0)
-            query = query.Where(x => izlenenEmaillar.Contains(x.KimeEmail.ToLower()));
+        // ⚠️ 12.10.2026, DÜZƏLİŞ: `null` ilə BOŞ siyahı FƏRQLİ mənalar daşımalıdır —
+        // bax GelenMailService.GetListAsync-dəki eyni düzəliş üçün izah. `null` =
+        // filtr tələb olunmayıb. BOŞ (non-null, Count=0) = filtr tələb olunub,
+        // amma izləmə siyahısı boşdur → HEÇ NƏ uyğun gəlməməlidir, "hamısı" YOX.
+        if (izlenenEmaillar != null)
+        {
+            query = izlenenEmaillar.Count > 0
+                ? query.Where(x => izlenenEmaillar.Contains(x.KimeEmail.ToLower()))
+                : query.Where(x => false);
+        }
 
         var mails = await query
             .OrderByDescending(x => x.GonderilmeTarixi)

@@ -30,6 +30,32 @@
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
 
+@* Mail İzləmə (12.10.2026) — "İzlənən" seçimi yadda saxlanır (istifadəçi şikayəti:
+   "yadda saxlamir bunu? herdefe secim etmeliyik?"). URL-də `izleme` parametri heç
+   YOXDURSA (nə true, nə false — yəni bu, sırf aç bu səhifəni ziyarətdir, checkbox-un
+   özündən gələn göndəriş deyil) localStorage-a baxılır: əvvəl işarələnibsə eyni
+   seçimlə yenidən yönləndirilir. Checkbox dəyişəndə (işarələnsin/götürülsün — hər
+   iki hal) dəyər DƏRHAL (form submit-dən ƏVVƏL) localStorage-a yazılır ki, "götür"
+   seçimi də düzgün yadda qalsın — əks halda unchecked checkbox GET-də heç ötürülmür
+   və sonrakı ziyarətdə localStorage köhnə "true" dəyərini yenidən tətbiq edərdi. *@
+<script>
+(function () {
+    try {
+        var params = new URLSearchParams(location.search);
+        if (!params.has('izleme')) {
+            var saved = localStorage.getItem('gmIzlemeFilter');
+            if (saved === '1') {
+                params.set('izleme', 'true');
+                location.replace(location.pathname + '?' + params.toString());
+            }
+        }
+    } catch (e) { /* localStorage əlçatmazdırsa sadəcə normal davam et */ }
+})();
+function gmIzlemeDeyisdi(checked) {
+    try { localStorage.setItem('gmIzlemeFilter', checked ? '1' : '0'); } catch (e) {}
+}
+</script>
+
 @functions {
     static string StripMd(string s) {
         if (string.IsNullOrEmpty(s)) return s;
@@ -135,7 +161,7 @@
                 <label class="gm-checkbox-label" style="white-space:nowrap" title="Yalnız izləmə siyahınızdakı ünvanlardan gələnlər">
                     <input type="checkbox" name="izleme" value="true"
                            @(izlemeFlt == true ? "checked" : "")
-                           onchange="this.form.submit()" />
+                           onchange="gmIzlemeDeyisdi(this.checked); this.form.submit()" />
                     <i class="bi bi-eye"></i> İzlənən
                 </label>
             </div>
@@ -191,7 +217,21 @@
     {
         <div class="gm-empty">
             <i class="bi bi-inbox"></i>
-            <p>Heç bir mail tapılmadı.</p>
+            @if (izlemeFlt == true && izlemeSayi == 0)
+            {
+                <p>İzləmə siyahınız boşdur — "Yalnız izlənən" filtri ona görə heç nə göstərmir.</p>
+                <a asp-action="Index" asp-controller="MailIzleme" class="gm-btn gm-btn-primary" style="margin-top:8px">
+                    <i class="bi bi-plus-lg"></i> İzləmə siyahısına ünvan əlavə et
+                </a>
+            }
+            else if (izlemeFlt == true)
+            {
+                <p>İzləmə siyahınızdakı ünvanlardan hələ mail gəlməyib.</p>
+            }
+            else
+            {
+                <p>Heç bir mail tapılmadı.</p>
+            }
         </div>
     }
     else

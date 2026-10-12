@@ -3493,6 +3493,77 @@ gətirsin, (2) Mail İzləmə-yə ünvan əlavə edib Gələn/Göndərilən-də 
 izlənənlər" filtri işləsin, (3) həmin ünvandan real mail göndərilib fon
 sinxronu (5 dəq) və ya "Yenilə" ilə gələndə ekrana xüsusi bildiriş çıxsın.
 
+### Canlı Test Tapdığı 2 Bug — Boş İzləmə Siyahısı "Hamısı" Sayırdı + Filtr Yadda Qalmırdı (12.10.2026, KRİTİK)
+
+İstifadəçi yuxarıdakı funksiyaları real mühitdə test edib iki ekran-görüntüsü
+göndərdi: *"izleme bosdur axi,ve birde yadda saxlamir bunu? herdefe secim
+etmeliyik?"*
+
+**1. Boş izləmə siyahısı ilə "Yalnız izlənənlər" HAMISINI göstərirdi.**
+`GelenMailService.GetListAsync` və `GedenMailService.GetListAsync`-in filtr
+şərti `if (izlenenEmaillar != null && izlenenEmaillar.Count > 0)` idi — bu,
+**«filtr tələb olunmayıb» (`null`) ilə «filtr tələb olunub, amma siyahı
+boşdur» (boş, `null`-dan FƏRQLİ list) hallarını EYNİ cür rəftar edirdi**,
+hər ikisində `.Where()` tətbiq olunmurdu. İstifadəçinin izləmə siyahısı
+TAMAMILƏ boş olanda (`MailIzlemeUnvanlari`-də sıfır sətir) checkbox-u
+işarələyəndə 50 maildən **hamısı** göstərilirdi — gözlənilən nəticə isə SIFIR
+idi («izləmə siyahınız boşdur, uyğun gələn heç nə yoxdur»).
+
+Düzəliş — hər iki servisdə eyni forma:
+```csharp
+if (izlenenEmaillar != null)
+{
+    query = izlenenEmaillar.Count > 0
+        ? query.Where(x => izlenenEmaillar.Contains(x.KimdenEmail.ToLower()))  // GedenMail-də: x.KimeEmail
+        : query.Where(x => false);
+}
+```
+`null` yenə «toxunma» deməkdir (filtr heç tələb olunmayıb), **boş (non-null)
+siyahı isə indi açıq şəkildə SIFIR nəticəyə məcbur edir**. Hər iki boş-siyahı
+görüntüsündə («Hələ mail yoxdur» yox) istifadəçiyə izah edən mesaj +
+«İzləmə siyahısına ünvan əlavə et» düyməsi əlavə olundu (`GelenMail/
+Index.cshtml`, `GedenMail/Index.cshtml`) ki, səbəb açıq görünsün.
+
+**Qayda: bir filtr parametri `List<T>?` tipindədirsə, `null` və «boş,
+amma göndərilmiş» siyahı arasında İKİ AYRI anlam var** — `Count > 0`
+yoxlamasını `!= null` yoxlamasından ayırma. Bu, "Üst-Üstə Düşən Məzuniyyət"
+və "Limit 20 000 USD" bölmələrindəki eyni «filtr effektiv-boşdursa nəticə də
+boş olmalıdır, "hamısı" DEYİL» prinsipinin YENİ bir forması idi.
+
+**2. "İzlənən" checkbox-u yadda saxlanmırdı — hər səhifə ziyarətində yenidən
+işarələmək lazım idi.** Checkbox GET formuna bağlıdır və `onchange` ilə
+avtomatik submit olunur — server tərəfdə heç bir "istifadəçinin defolt
+seçimi" saxlanmırdı, hər yeni ziyarət `izleme` parametrsiz başlayırdı.
+
+Həll — **`localStorage`** (açar: `gmIzlemeFilter`, `GelenMail/Index.cshtml`
+VƏ `GedenMail/Index.cshtml` arasında **PAYLAŞILIR** — konseptual eyni
+seçimdir, ayrı saxlasaq istifadəçi «birində işarələdim, digərində yenə
+soruşur» vəziyyətinə düşərdi):
+- Checkbox-un `onchange`-i DƏRHAL (`this.form.submit()`-dən ƏVVƏL)
+  `gmIzlemeDeyisdi(this.checked)` çağırır → cari vəziyyət (həm `true`, həm
+  `false`) yazılır.
+- Səhifə başında (CSS link-dən dərhal sonra, bloklayıcı `<script>`, DOM
+  render olunmadan) — URL-də `izleme` parametri **ÜMUMİYYƏTLƏ YOXDURSA**
+  (`!params.has('izleme')`), `localStorage`-dan oxunur; `'1'`-dirsə
+  `location.replace` ilə `?izleme=true` əlavə edilib yönləndirilir.
+
+⚠️ **`!params.has('izleme')` yoxlaması MƏCBURİDİR, sadəcə `!= 'true'` yox** —
+checkbox GET formunda **unchecked** vəziyyətdə heç bir parametr göndərmir
+(«Şərtli Render Olunan Form Sahəsi» bölməsindəki eyni HTML-checkbox xüsusiyyəti).
+Yəni istifadəçi işarəni GÖTÜRƏNDƏ də URL-də `izleme` olmayacaq — bu, "heç vaxt
+seçilməyib" ilə eyni görünər. Fərqi `localStorage`-un özü saxlayır: `onchange`
+HƏR DƏFƏ (işarələnsə də, götürülsə də) yeni vəziyyəti yazdığı üçün, növbəti
+səhifə ziyarətində `saved` artıq `'0'`-dır və avtomatik yönləndirmə işə
+düşmür — istifadəçinin "götür" seçimi doğru xatırlanır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (metod imzaları, `JavaScript`-in brauzerdə işləyə bilən sintaksisi,
+CSHTML bloklarının balansı). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real ssenari ilə yoxlamalıdır: (1) izləmə siyahısı boşdursa "İzlənən"
+işarələnəndə sıfır nəticə + izahlı mesaj gəlsin, (2) checkbox işarələnib
+səhifədən çıxılıb yenidən girəndə vəziyyət qorunsun, (3) işarə götürüləndə də
+qorunsun (yenidən avtomatik işarələnməsin).
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

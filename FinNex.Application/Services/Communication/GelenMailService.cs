@@ -53,11 +53,19 @@ public class GelenMailService : IGelenMailService
         if (qosmali == true)
             query = query.Where(x => x.Qosmalar.Any(q => !q.Silinib));
         // Mail İzləmə Siyahısı (12.10.2026) — "yalnız bu ünvanlardan gələnlər".
-        // Siyahı boşdursa (heç bir ünvan əlavə edilməyib) filtr tətbiq OLUNMUR —
-        // boş `Contains` SQL-də "heç nə" demək deyil, "hamısı" demək olardı
-        // (filtr keçirilmir) əgər yoxlanmasa.
-        if (izlenenEmaillar != null && izlenenEmaillar.Count > 0)
-            query = query.Where(x => izlenenEmaillar.Contains(x.KimdenEmail.ToLower()));
+        // ⚠️ 12.10.2026, DÜZƏLİŞ: `null` ilə BOŞ siyahı FƏRQLİ mənalar daşımalıdır.
+        // `null` = filtr ümumiyyətlə tələb olunmayıb (adi siyahı) → toxunma.
+        // BOŞ siyahı (non-null, Count=0) = filtr TƏLƏB OLUNUB, amma işçinin
+        // izləmə siyahısı boşdur → HEÇ NƏ uyğun gəlməməlidir, "hamısı" YOX.
+        // Əvvəlki versiya boş siyahını da "toxunma" sayırdı — nəticədə boş
+        // izləmə siyahısı ilə "Yalnız izlənənlər" işarələnəndə BÜTÜN maillər
+        // göstərilirdi (real hadisə, istifadəçi ekran-görüntüsü ilə tapdı).
+        if (izlenenEmaillar != null)
+        {
+            query = izlenenEmaillar.Count > 0
+                ? query.Where(x => izlenenEmaillar.Contains(x.KimdenEmail.ToLower()))
+                : query.Where(x => false);
+        }
         if (!string.IsNullOrWhiteSpace(deadlineFilter))
         {
             var today = DateTime.Today;
