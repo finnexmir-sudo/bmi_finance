@@ -3564,6 +3564,62 @@ işarələnəndə sıfır nəticə + izahlı mesaj gəlsin, (2) checkbox işarə
 səhifədən çıxılıb yenidən girəndə vəziyyət qorunsun, (3) işarə götürüləndə də
 qorunsun (yenidən avtomatik işarələnməsin).
 
+## Masaüstü Bildiriş Klikinin "Login" Açması — Agent Bu REPODA DEYİL (12.10.2026, KRİTİK)
+
+İstifadəçi şikayəti: ekrana düşən masaüstü bildirişə klikləyəndə yeni səhifə
+açılır və **login/şifrə istəyir**, baxmayaraq ki, sayt artıq başqa tabda açıq
+və giriş edilib. Araşdırma zamanı diaqnostik suallar "digər sessiya"ya
+göndərildi (həmin sessiya agentin real klik məntiqini göstərən cavab verdi:
+`NotificationPopup.cs:280-299`, `OnMouseDown` → `Process.Start` ilə sistemin
+**defolt brauzerində** açılır, `TrayAgent.cs:246`-dakı `_config.BaseUrl` ilə
+nisbi yolu tam ünvana çevirir).
+
+⚠️ **BU FAYL BMI_FINANCE REPOSUNDA MÖVCUD DEYİL — hər branch, bütün tarixçə
+yoxlanıldı (`git log --all -- '**/NotificationPopup.cs'`, nəticə BOŞ).**
+Bu repoda olan **`FinNex.DesktopAgent/TrayAgent.cs`** (177 sətir) heç bir
+`url`/`BaseUrl`/`Process.Start`/klik məntiqinə malik DEYİL — `ShowBalloon`
+yalnız başlıq+mətn göstərir, SignalR payload-ındaki `url` sahəsini heç
+OXUMUR BELƏ. Yəni real maşınlarda işləyən agent **bu repodan FƏRQLİ,
+başqa bir kod bazasından build olunub** — "digər sessiya"nın gördüyü
+`NotificationPopup.cs` buradan deyil, haradasa başqa yerdə yaşayır.
+
+**Nəticə: bmi_finance TƏRƏFİ agentın klik davranışını birbaşa düzəldə
+BİLMƏZ** — yalnız SignalR-la ONA NƏ GÖNDƏRDİYİNİ idarə edə bilər.
+İstifadəçi qərarı: *"əgər linki biz bmifinancedən verəriksə, onda boş link
+göndərək, klik edəndə heç nə baş verməsin, çünki agentdə bunu etmək bütün
+kompüterləri yenidən yükləmək deməkdir"*. Yəni: düzgün işləməyən davranışdansa,
+**heç bir davranış** seçildi.
+
+**Həll — `SignalRDesktopBildirisService.PushAsync`, TƏK YERDƏ:** SignalR
+payload-ındakı `url` sahəsi indi **HƏMİŞƏ `null`** göndərilir, metodun öz
+`url` parametri nə olursa olsun (`url = (string?)null` payload-da sabit).
+Bu, **beş çağırış yerinin** (`BildirisService.YaratAsync`,
+`ChatController` ×3, `ChatHub`) heç birinə toxunmadan, tək bir yerdən
+bütün masaüstü push-ları eyni qaydaya tabe edir — yeni bir çağırış yeri
+əlavə olunsa belə, avtomatik qorunur.
+
+⚠️ **`Bildiris.RedirectUrl` (DB sütunu) TOXUNULMADI** — bu, SignalR push-dan
+TAMAMİLƏ AYRI bir mexanizmdir: `BildirisService.YaratAsync` onu entity-yə
+yazır, **veb UI-nin öz Gələn Qutusu** (`Areas/User/Views/Inbox/Index.cshtml`,
+«Bax →» linki) oradan oxuyur. O, artıq AÇIQ olan brauzer tabında işləyir,
+heç bir login problemi yoxdur — YALNIZ masaüstü (SignalR) push-un göndərdiyi
+`url` sahəsi söndürüldü, DB-dəki `RedirectUrl` yazılması davam edir.
+
+**Qayda: "klik davranışını düzəlt" tələbi gələndə əvvəlcə HƏQİQƏTƏN hansı
+kodun işlədiyini yoxla** — "WinForm agent bu reponun hissəsidir" fərziyyəsi
+(əvvəlki sessiyada edilmiş) `git log --all` ilə YOXLANMADAN qəbul edilmişdi.
+Başqa sessiyanın verdiyi fayl/sətir nömrələri bu repoda axtarılanda sıfır
+nəticə çıxdı — bu, "kim doğru deyir" sualını deyil, "bu, İKİ AYRI KOD BAZASI"
+faktını göstərir. Bu halda düzəliş yalnız **göndərilən datanın** üzərində
+aparıla bilər (özü agentın məntiqini dəyişə bilməz) — agentın özünü
+düzəltmək başqa bir repo/deployment-ə aid ayrıca işdir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı.** İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: bildiriş gələndə balloon/popup-a klikləyəndə HEÇ
+NƏ baş verməməlidir (əvvəlki kimi login səhifəsi açılmamalıdır) — Gələn
+Qutusundaki «Bax →» linki isə əvvəlki kimi işləməlidir.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
