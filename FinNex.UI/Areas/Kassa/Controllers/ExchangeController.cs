@@ -1,7 +1,6 @@
 using FinNex.Application.DTOs.Kassa;
 using FinNex.Application.Helpers.Kredit;
 using FinNex.Application.Interfaces.Kassa;
-using FinNex.Application.Interfaces.Kurval;
 using FinNex.Application.Services.Kassa;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
@@ -35,22 +34,15 @@ namespace FinNex.UI.Areas.Kassa.Controllers
     public class ExchangeController : Controller
     {
         private readonly IKassaKursService _kassaKursService;
-        private readonly IBmiValyutaService _bmiValyutaService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IConfiguration _config;
 
-        // kurval kodları (IBmiValyutaService.Ehtiyat ilə eyni) — "01" USD, "02" AVRO.
-        private const string UsdKodu = "01";
-        private const string AvroKodu = "02";
-
         public ExchangeController(
             IKassaKursService kassaKursService,
-            IBmiValyutaService bmiValyutaService,
             UserManager<AppUser> userManager,
             IConfiguration config)
         {
             _kassaKursService = kassaKursService;
-            _bmiValyutaService = bmiValyutaService;
             _userManager = userManager;
             _config = config;
         }
@@ -61,22 +53,11 @@ namespace FinNex.UI.Areas.Kassa.Controllers
             ViewData["Title"] = "Exchange — Valyuta kursu";
 
             var secilenTarix = (tarix ?? DateTime.Today).Date;
-            var bugun = DateTime.Today;
 
-            // ⚠️ HAMISI ARDICIL ÇAĞIRILIR — paralel (Task başladıb sonra await
-            // etmək) bütün bu çağırışlar EYNİ scoped IUnitOfWork/DbContext-i
-            // paylaşdığı üçün "A second operation was started on this context
-            // instance…" ilə sındı (09.10.2026, real hadisə — bax CLAUDE.md
-            // "Bildirişlər — Paralel Yazı" ilə EYNİ tələ, bu dəfə oxumada).
-            // MB (CBAR) kursu HƏMİŞƏ bugünkü gün üçündür (istifadəçi tələbi:
-            // "cari günə") — seçilmiş tarixdən ASILI DEYİL.
             var vm = new ExchangeIndexVM
             {
                 Gunluk = await _kassaKursService.GunlukGetirAsync(secilenTarix),
-                SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync(),
-                UsdMbKurs = await _bmiValyutaService.KursAsync(UsdKodu, bugun),
-                AvroMbKurs = await _bmiValyutaService.KursAsync(AvroKodu, bugun),
-                MbTarix = bugun
+                SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync()
             };
 
             return View(vm);

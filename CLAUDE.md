@@ -4248,6 +4248,55 @@ IMAP hesabı ilə (SMTP/IMAP qurulmuş istifadəçi) yoxlamalıdır: yeni gələ
 mailin saatının Titan-dakı real saatla (server Azərbaycan vaxt qurşağındadırsa)
 tam uyğun gəldiyini.
 
+## Kassa — "MB (CBAR) Kursu" Kartı MÜVƏQQƏTİ YIĞIŞDIRILDI (13.10.2026)
+
+İstifadəçi əvvəlcə ümumi təhlükəsizlik sualı verdi: *"biz ilk dəfə kənardan
+məlumat aldıq, cbardan kursları alırıq, bu bizim proqram kənardan kiminsə
+girişinə və ya müdaxiləsinə açıq qapı deyil?"* — araşdırma göstərdi ki,
+"MB kursu" kartı (bax yuxarı "Kassa — Valyuta Mübadiləsi" bölməsi, 09.10.2026)
+əslində cbar.az-a birbaşa müraciət ETMİR — Oracle-dakı (BMI-nin öz bazası)
+`kurval`/`odb.func_get_kurval` funksiyasını **oxuyur**, yəni xaricə çıxan
+heç bir HTTP çağırışı yoxdur (nə yeni, nə köhnə BMI WinForms kodunda —
+hər ikisi araşdırıldı, təsdiqləndi: giriş qapısı açılmayıb).
+
+İstifadəçi bunu eşidəndə aydınlaşdırdı: *"əslində mən həmin kursu cbardan
+alınmağını istəmişdim, çünki oracledəki sorğu ya mən əlavə etdiyimdir"* —
+yəni `VALYUTA_KURSU` Oracle sorğusunun (`docs/sql/valyuta/Valyuta_Kursu_
+OracleSorgu.sql`) ÖZÜ istifadəçinin bu sessiyada (07.09.2026-da, 20 000 USD
+limiti üçün) əlavə etdiyi bir sorğudur — yəni kartın göstərdiyi "CBAR kursu"
+əslində **canlı/rəsmi CBAR mənbəyi deyil**, sadəcə `func_get_kurval`-ın
+(bankın öz köhnə, mənbəyi bilinməyən Oracle funksiyası) qaytardığı rəqəmdir.
+Qərar: *"ən yaxşısı, hələlik o kartı yığışdıraq, çünki mənasız olur, yenə
+mən yazdığımdır"*.
+
+**Silinən (müvəqqəti, görüntü + ötürmə qatı):**
+- `ExchangeController.Index` — `IBmiValyutaService` asılılığı, `UsdKodu`/
+  `AvroKodu` sabitləri, `KursAsync` çağırışları silindi (hər səhifə
+  açılışında 2 lazımsız Oracle round-trip aradan qalxdı).
+- `ExchangeIndexVM.UsdMbKurs`/`AvroMbKurs`/`MbTarix` sahələri silindi.
+- `Exchange/Index.cshtml` — `kx-mb-card` bloku (və onun `Mb()` helper
+  funksiyası) silindi, yalnız "Təsdiq ekranı" düyməsi qaldı.
+
+**TOXUNULMAYIB — kritik asılılıq var:**
+`IBmiValyutaService.KursAsync`-in ÖZÜ (`BmiValyutaService.cs`) silinmədi —
+`KocurmeLimit.cs` (Pul Köçürməsi, 20 000 USD aylıq limiti) onu **hələ də
+işlədir** və bu, kritik, istifadə olunan bir funksiyadır. CLAUDE.md-nin
+"İŞLƏK FUNKSİYANI SİLMƏK — YALNIZ AÇIQ İCAZƏ İLƏ" qaydasına uyğun: yalnız
+istifadəçinin konkret icazə verdiyi hissə (Exchange-dəki kart) götürüldü,
+servisin özü və onun başqa, kritik istehlakçısı TOXUNULMADI.
+
+**`.kx-mb-*` CSS sinifləri (`exchange.css`) QƏSDƏN SİLİNMƏDİ** — "hələlik"
+sözü (müvəqqəti) gələcəkdə əsl CBAR inteqrasiyası qurulsa kartın geri
+qaytarılması ehtimalını saxlayır; ölü CSS zərərsizdir, markup onsuz da onu
+çağırmır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/Razor şərh balansı). İstifadəçi Visual Studio-da
+**Rebuild All** ilə yoxlamalı — xüsusilə `IBmiValyutaService` DI
+qeydiyyatının (`AddApplicationServices.cs`) toxunulmadığını (başqa
+servislər onu hələ istifadə edir) və Exchange səhifəsinin kartsız düzgün
+açıldığını.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
