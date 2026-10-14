@@ -22,5 +22,18 @@ namespace FinNex.UI.Areas.HR.ViewModels.Jeton
         public int AktivMusbetSayi { get; set; }
         // Aktiv qara (cəza) jeton sayı
         public int AktivQaraSayi { get; set; }
+
+        // ── İllik "36 Saat Hüququ" (icazə sisteminin illik balansı) — MÜKAFAT
+        // jetonlarından (yuxarıdakı sahələr) TAMAMİLƏ AYRI bir kəmiyyətdir.
+        // Rəhbər tələbi (14.10.2026): "illik saatlardan kimde ne qalib, ne
+        // istifade olunub". Mənbə — DashboardService-in öz kartı ilə EYNİ:
+        // hüquq = JetonService.IllikHuquqQalanSaatAsync (Qara Jeton kəsintisi
+        // nəzərə alınmış), istifadə = IcazeService.GetIsciIzlemeAsync.TesdiqSaat
+        // (cari il, JetonOdenenSaat onsuz da çıxılmış) — ikisi də CLAUDE.md-də
+        // "altı yerdən biri" kimi sənədləşmiş kanonik mənbələrdir, yeni düstur
+        // YAZILMADI.
+        public decimal IllikHuquqSaat { get; set; }
+        public decimal IllikIstifadeSaat { get; set; }
+        public decimal IllikQaliqSaat => IllikHuquqSaat - IllikIstifadeSaat;
     }
 }

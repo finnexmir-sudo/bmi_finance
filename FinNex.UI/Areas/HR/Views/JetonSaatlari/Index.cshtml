@@ -5,6 +5,7 @@
     decimal umumiBalans = Model.Sum(x => x.CariBalansSaat);
     decimal umumiQazanilmis = Model.Sum(x => x.ToplamQazanilmisSaat);
     int balansliSayi = Model.Count(x => x.CariBalansSaat > 0);
+    int cariIl = DateTime.Today.Year;
 }
 
 <style>
@@ -54,6 +55,11 @@
     .js-qara { display:inline-block; min-width:22px; text-align:center; padding:1px 7px; border-radius:10px;
                font-size:.74rem; font-weight:700; background:#1a1a1a; color:#fff; }
     .js-empty { text-align:center; padding:48px 16px; color:#8590a6; }
+    /* "İllik Saat Hüququ" sütunları mükafat jetonundan AYRI kəmiyyətdir —
+       qarışdırılmasın deyə qalın sol xətt ilə vizual bölünür (14.10.2026). */
+    .js-div { border-left:2px solid #e2e8f0; }
+    .js-qaliq { font-weight:800; font-size:15px; color:#0f766e; }
+    .js-qaliq--menfi { color:#dc2626; }
 </style>
 
 <div class="js-page">
@@ -82,6 +88,10 @@
             <div class="js-kpi-val">@Model.Count</div>
             <div class="js-kpi-lbl">Ümumi işçi</div>
         </div>
+        <div class="js-kpi">
+            <div class="js-kpi-val">@Model.Count(x => x.IllikQaliqSaat < 0)</div>
+            <div class="js-kpi-lbl">İllik hüququ aşan işçi (@cariIl)</div>
+        </div>
     </div>
 
     <div class="js-card">
@@ -101,10 +111,13 @@
                         <th>İşçi</th>
                         <th>Şöbə / Vəzifə</th>
                         <th class="num">Aktiv jeton</th>
-                        <th class="num">Qazanılmış (saat)</th>
-                        <th class="num">İstifadə (saat)</th>
-                        <th class="num">Cari balans (saat)</th>
+                        <th class="num">Mükafat qazanılmış (saat)</th>
+                        <th class="num">Mükafat istifadə (saat)</th>
+                        <th class="num">Mükafat balans (saat)</th>
                         <th class="num">Qara jeton</th>
+                        <th class="num js-div" title="36 Saat Hüququ @cariIl">İllik hüquq (saat)</th>
+                        <th class="num" title="Cari ilin təsdiqlənmiş icazələrindən sayılan istifadə">İstifadə olunub (@cariIl)</th>
+                        <th class="num">Qalıb (@cariIl)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,6 +153,13 @@
                                 {
                                     <span class="js-muted">—</span>
                                 }
+                            </td>
+                            <td class="num js-div js-muted">@x.IllikHuquqSaat.ToString("0.##")</td>
+                            <td class="num js-muted">@(x.IllikIstifadeSaat > 0 ? x.IllikIstifadeSaat.ToString("0.##") : "—")</td>
+                            <td class="num">
+                                <span class="js-qaliq @(x.IllikQaliqSaat < 0 ? "js-qaliq--menfi" : "")">
+                                    @x.IllikQaliqSaat.ToString("0.##")
+                                </span>
                             </td>
                         </tr>
                     }

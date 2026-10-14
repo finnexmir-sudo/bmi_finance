@@ -1434,6 +1434,62 @@ ilə test etməlidir (qara jeton ver → müsbətdən çıxılsın → ləğv et
 `QalanSaat`-ı dəqiq geri qayıtsın, "36 Saat Hüququ" və gözləyən borc varsa onlar
 da düzəlsin) — "Maliyyəyə/balansa toxunan hər dəyişiklik" qaydasına görə.
 
+## `HR/JetonSaatlari` — "36 Saat Hüququ" Mükafat Balansına Qarışırdı + Rəhbər Üçün Qalıb/İstifadə Sütunları (14.10.2026)
+
+İstifadəçi (Rəhbər rolunda) sual verdi: *"bizde mumkundurki iscilerin qalan
+saatlarina baxmaq? bele bir sehifemiz var?"* — cavab olaraq mövcud
+`HR → İşçi Jeton Saatları` (`/HR/JetonSaatlari`) göstərildi, amma eyni anda bir
+qüsur aşkar edildi: bu səhifənin "Cari balans"/"Qazanılmış"/"İstifadə" sütunları
+`IsciJetonu.Nov == Musbat` olan HƏR jetonu cəmləyirdi — **"36 Saat Hüququ"
+jetonunu (`Sistemli=true`) FİLTRLƏMƏDƏN**. Bu, layihənin hər yerdə (6+ yerdə:
+`AktivSaatBalansiAsync`, FIFO kəsinti, HR kataloqu, `JetonAnalitikaController`-in
+07.10.2026-da düzəldilmiş eyni bugu və s.) riayət etdiyi `!x.JetonTeyinati.
+Sistemli` qoruyucusunun BU səhifədə unudulmuş forması idi — mükafat balansı
+illik icazə hüququ ilə səssizcə qarışırdı.
+
+İstifadəçinin sonrakı tələbi dəqiqləşdi: *"rehber bilmek isteyirki hemde illik
+saatlardan kimde ne qalib ne istifade olunub"* — yəni mükafat balansından AYRI,
+konkret "36 Saat Hüququ" üçün hər işçidə qalıb/istifadə olunub sütunları.
+
+**Düzəliş — iki hissədən ibarətdir:**
+
+1. **Qarışıqlıq bugu düzəldildi** — `JetonSaatlariController.Index`-də `musbet`
+   siyahısına `&& !x.JetonTeyinati.Sistemli` əlavə edildi. İndi "Mükafat
+   qazanılmış/istifadə/balans" sütunları YALNIZ Qızıl/Gümüş/Bürünc/Platin kimi
+   real mükafat jetonlarını əks etdirir.
+2. **İKİ YENİ sütun əlavə edildi** (mövcud sütunlardan qalın sol xətt ilə
+   vizual ayrılıb): **İllik hüquq**, **İstifadə olunub (@il)**, **Qalıb (@il)**.
+   Mənbə — YENİ DÜSTUR YAZILMADI, iki artıq kanonik yerdən oxunur:
+   - **Hüquq** — `IJetonService.IllikHuquqQalanSaatAsync(isciId, cariIl)` —
+     `DashboardService`-in öz kartının ("İcazə saatı — bu il") işlətdiyi EYNİ metod
+     (Qara Jeton kəsintisi nəzərə alınmış).
+   - **İstifadə** — `IIcazeService.GetIsciIzlemeAsync` (cari il: 1 yanvar →
+     bu gün), nəticənin `TesdiqSaat` sahəsi — bu, CLAUDE.md-də "İcazə — Nahar
+     Güzəşti" bölməsində sadalanan icazə-sayılan-saat düsturunun (nahar + jeton
+     çıxılmaqla) artıq mövcud, kanonik **altı** çağırış yerindən biridir.
+   - **Qalıb** = Hüquq − İstifadə (DashboardService-in `IcazeQaligSaat`-ı ilə
+     EYNİ düstur, mənfi ola bilər — `<0` olanda qırmızı işarələnir + KPI kartında
+     "İllik hüququ aşan işçi" sayğacı).
+
+⚠️ **N+1 qəbul edildi, optimallaşdırılmadı.** `IllikHuquqQalanSaatAsync` hər
+işçi üçün ayrıca çağırılır (yoxdursa jetonu YARADIR — `DashboardService`-in də
+etdiyi kimi) — bu, HR-ın bir dəfəlik, az-tezlikli hesabat səhifəsi olduğu üçün
+qəbul edilən xərcdir, `GetIsciIzlemeAsync` isə BİR dəfə (bütün işçilər üçün
+toplu) çağırılır, N+1 deyil.
+
+⚠️ **Rol dəyişmədi** — səhifə əvvəldən HR/Admin/Rəhbərə açıq idi
+(`JetonSaatlariController`-in sinif atributu), yeni icazə əlavə edilmədi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(namespace-lər hər `using` üçün faylın öz mənbəyindən təsdiqləndi — `IIcazeService`
+→ `FinNex.Application.Interfaces`, `IcazeIzlemeFiltrDto` → `FinNex.Application.
+DTOs.HR.Icaze`, `IJetonService` qlobal namespace-dədir, `using` lazım deyil —
+bax "Qovluq Adı ≠ Namespace" bölməsi). İstifadəçi Visual Studio-da **Rebuild
+All** ilə yoxlamalı, həm də real ssenari ilə: (1) "Mükafat balans" rəqəminin
+əvvəlkindən kiçildiyini (36-saat hüququ artıq qarışmır) və (2) yeni "Qalıb"
+sütununun Dashboard-dakı "İcazə saatı — bu il" kartı ilə HƏR işçi üçün dəqiq
+üst-üstə düşdüyünü təsdiqləməli.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.

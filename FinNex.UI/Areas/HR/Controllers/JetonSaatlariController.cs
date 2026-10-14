@@ -1,3 +1,5 @@
+using FinNex.Application.DTOs.HR.Icaze;
+using FinNex.Application.Interfaces;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -15,10 +17,17 @@ namespace FinNex.UI.Areas.HR.Controllers
     public class JetonSaatlariController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IJetonService _jetonService;
+        private readonly IIcazeService _icazeService;
 
-        public JetonSaatlariController(IUnitOfWork unitOfWork)
+        public JetonSaatlariController(
+            IUnitOfWork unitOfWork,
+            IJetonService jetonService,
+            IIcazeService icazeService)
         {
             _unitOfWork = unitOfWork;
+            _jetonService = jetonService;
+            _icazeService = icazeService;
         }
 
         public async Task<IActionResult> Index()
@@ -46,15 +55,42 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .GroupBy(x => x.IsciId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            var model = isciler.Select(isci =>
+            // ── İllik "36 Saat Hüququ" — ayrıca, bir dəfəlik sorğu ──
+            // Rəhbər tələbi (14.10.2026): "kimdə nə qalıb, nə istifadə olunub".
+            // İSTİFADƏ = IcazeService.GetIsciIzlemeAsync (cari il, TesdiqSaat) —
+            // layihədə bu, icazə-sayılan-saat düsturunun 6 kanonik çağırış
+            // yerindən biridir (CLAUDE.md "İcazə — Nahar Güzəşti"), yeni düstur
+            // YAZILMADI. HÜQUQ (qalıq) isə hər işçi üçün ayrıca oxunur —
+            // IllikHuquqQalanSaatAsync yoxdursa jetonu YARADIR (DashboardService-
+            // in də etdiyi kimi), ona görə N+1 qaçılmazdır, amma işçi sayı
+            // böyük olmadığı üçün (bu, HR-ın bir dəfəlik hesabat səhifəsidir)
+            // qəbul edilən xərcdir.
+            var cariIl = DateTime.Today.Year;
+            var izlemeNeticesi = await _icazeService.GetIsciIzlemeAsync(new IcazeIzlemeFiltrDto
+            {
+                TarixFrom = new DateTime(cariIl, 1, 1),
+                TarixTo = DateTime.Today
+            });
+            var istifadeByIsci = izlemeNeticesi.Success && izlemeNeticesi.Data != null
+                ? izlemeNeticesi.Data.ToDictionary(x => x.IsciId, x => x.TesdiqSaat)
+                : new Dictionary<int, double>();
+
+            var model = new List<IsciJetonSaatVM>();
+            foreach (var isci in isciler)
             {
                 var list = jetonByIsci.GetValueOrDefault(isci.Id) ?? new List<IsciJetonu>();
-                var musbet = list.Where(x => x.JetonTeyinati.Nov == JetonNovu.Musbat).ToList();
+                // 14.10.2026 düzəlişi: "36 Saat Hüququ" (Sistemli=true) BURADAN
+                // ÇIXARILDI — o, mükafat balansı DEYİL, aşağıdaki ayrıca
+                // IllikHuquqSaat/IllikIstifadeSaat sütunlarında göstərilir.
+                // Əvvəl filtr yox idi və bu jeton səssizcə "Cari balans"a
+                // qarışırdı (bax CLAUDE.md-dəki bu bölmənin tarixçəsi).
+                var musbet = list.Where(x => x.JetonTeyinati.Nov == JetonNovu.Musbat
+                                           && !x.JetonTeyinati.Sistemli).ToList();
                 var aktivMusbet = musbet.Where(x => x.Status == IsciJetonuStatus.Aktiv).ToList();
 
                 var teyinat = isci.IsciTeyinatlari.FirstOrDefault();
 
-                return new IsciJetonSaatVM
+                model.Add(new IsciJetonSaatVM
                 {
                     IsciId = isci.Id,
                     AdSoyad = $"{isci.Ad} {isci.Soyad}".Trim(),
@@ -68,16 +104,20 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .Sum(x => x.JetonTeyinati.SaatDeyeri),
                     AktivMusbetSayi = aktivMusbet.Count,
                     AktivQaraSayi = list.Count(x => x.JetonTeyinati.Nov == JetonNovu.Menfi
-                                                    && x.Status == IsciJetonuStatus.Aktiv)
-                };
-            })
-            .OrderByDescending(x => x.CariBalansSaat)
-            .ThenByDescending(x => x.ToplamQazanilmisSaat)
-            .ThenBy(x => x.AdSoyad)
-            .ToList();
+                                                    && x.Status == IsciJetonuStatus.Aktiv),
+                    IllikHuquqSaat = await _jetonService.IllikHuquqQalanSaatAsync(isci.Id, cariIl),
+                    IllikIstifadeSaat = (decimal)istifadeByIsci.GetValueOrDefault(isci.Id, 0.0)
+                });
+            }
+
+            var sirali = model
+                .OrderByDescending(x => x.CariBalansSaat)
+                .ThenByDescending(x => x.ToplamQazanilmisSaat)
+                .ThenBy(x => x.AdSoyad)
+                .ToList();
 
             ViewData["Title"] = "İşçi Jeton Saatları";
-            return View(model);
+            return View(sirali);
         }
     }
 }
