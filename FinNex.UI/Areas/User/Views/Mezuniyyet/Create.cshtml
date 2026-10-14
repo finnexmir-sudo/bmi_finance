@@ -23,6 +23,9 @@
                   method="post" id="mezForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="IsciId" />
+                @* Preview-un son göstərdiyi "umumiNet" buraya yazılır (refreshPreview, aşağıda) —
+                   göndəriləndə müraciətin öz üzərində dondurulur (14.10.2026). *@
+                <input type="hidden" asp-for="TexminiNetMaas" id="texminiNetMaasInput" />
 
                 <div class="fn-card fn-card--form">
 
@@ -708,7 +711,12 @@
 
                         // Uğursuz cavabda köhnə iş günü YADDA QALMAMALIDIR — sonrakı
                         // keş bərpası onu yeni aralığın yanına yazardı.
-                        if (!data.success) { lastIsGun = null; isGunuYaz(null); previewBox.style.display = 'none'; return; }
+                        if (!data.success) {
+                            lastIsGun = null; isGunuYaz(null); previewBox.style.display = 'none';
+                            const texminiInp = document.getElementById('texminiNetMaasInput');
+                            if (texminiInp) texminiInp.value = '';
+                            return;
+                        }
                         previewBox.style.display = 'block';
 
                         document.getElementById('mpTeqvimGun').textContent = data.teqvimGun + ' gün';
@@ -897,6 +905,10 @@
                         }
 
                         document.getElementById('mpUmumiYekun').textContent = fmt(data.umumiNet);
+                        // Müraciətin özündə dondurulub saxlanacaq (Mezuniyyet.TexminiNetMaas,
+                        // 14.10.2026) — işçi Müraciət Detayı səhifəsində sonra da görə bilsin.
+                        const texminiInp = document.getElementById('texminiNetMaasInput');
+                        if (texminiInp) texminiInp.value = (data.umumiNet != null ? data.umumiNet : '');
 
                         const hint = document.getElementById('mpHint');
                         if (data.qabaqcadan) {
@@ -956,8 +968,15 @@
                 if (ozBox)      ozBox.style.display      = ozHes ? '' : 'none';
                 if (odenisBox)  odenisBox.style.display  = ozHes ? 'none' : '';
                 if (sideBalans) sideBalans.style.display = ozHes ? 'none' : '';
-                if (ozHes) previewBox.style.display = 'none';
-                else refreshPreview(true);
+                if (ozHes) {
+                    previewBox.style.display = 'none';
+                    // Öz hesabına (ödənişsiz) — köhnə Əmək məzuniyyəti preview-undan
+                    // qalmış rəqəm bura keçib getməsin.
+                    const texminiInp = document.getElementById('texminiNetMaasInput');
+                    if (texminiInp) texminiInp.value = '';
+                } else {
+                    refreshPreview(true);
+                }
             }
 
             baslamaInp?.addEventListener('change', () => refreshPreview(false));

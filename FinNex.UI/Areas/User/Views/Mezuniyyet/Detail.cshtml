@@ -257,6 +257,13 @@
                         <span class="fn-ir-val">@Model.EvezEdenIsciAdSoyad</span>
                     </div>
                 }
+                @if (Model.TexminiNetMaas.HasValue)
+                {
+                    <div class="fn-info-row" title="Müraciət yazarkən ekranda göstərilən hesablama — real ödəniş HR təsdiqində yenidən hesablanır, fərqli ola bilər.">
+                        <span class="fn-ir-lbl">Təxmini net maaş <span style="font-weight:400;color:#8590a6">(müraciət zamanı)</span></span>
+                        <span class="fn-ir-val">@Model.TexminiNetMaas.Value.ToString("#,0.00") ₼</span>
+                    </div>
+                }
                 @if (!string.IsNullOrEmpty(Model.Qeyd))
                 {
                     <div class="fn-info-row fn-info-row--full">

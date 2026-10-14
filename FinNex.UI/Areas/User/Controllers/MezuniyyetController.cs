@@ -344,6 +344,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 OdenisTipi = vm.OdenisTipi == 2
                     ? MezuniyyetOdenisTipi.QabaqcadanOdenis
                     : MezuniyyetOdenisTipi.AySonuOdenis,
+                TexminiNetMaas = vm.TexminiNetMaas,
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
                 MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),

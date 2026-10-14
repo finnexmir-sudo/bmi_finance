@@ -15,6 +15,12 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         // Məzuniyyət ödənişinin vaxtı (işçi seçir — default AySonuOdenis)
         public MezuniyyetOdenisTipi OdenisTipi { get; set; } = MezuniyyetOdenisTipi.AySonuOdenis;
 
+        // Müraciət formasında ("Preview" endpoint-indən) son göstərilən "umumiNet" —
+        // işçinin ekranında bir anlıq gördüyü təxmini net maaş. Burdan entity-yə
+        // dondurularaq yazılır (14.10.2026). JS doldurur, boş qala bilər (məs.
+        // "Öz hesabına" növündə preview heç göstərilmir).
+        public decimal? TexminiNetMaas { get; set; }
+
         // Rol əsaslı workflow — controller tərəfindən doldurulur
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }

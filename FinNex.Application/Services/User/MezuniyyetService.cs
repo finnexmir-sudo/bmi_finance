@@ -2259,6 +2259,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             OdenisStatus = entity.OdenisStatus,
             OdenenMebleg = entity.OdenenMebleg,
             PlanliOdenisTarixi = entity.PlanliOdenisTarixi,
+            TexminiNetMaas = entity.TexminiNetMaas,
             EmrRegem = entity.EmrRegem,
             EmrSuffiks = entity.EmrSuffiks,
             EmrIl = entity.EmrIl,

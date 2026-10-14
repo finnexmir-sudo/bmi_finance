@@ -44,6 +44,10 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public decimal? OdenenMebleg { get; set; }
         public DateTime? PlanliOdenisTarixi { get; set; }
 
+        // Müraciət yaradılan anda göstərilən (dondurulmuş) təxmini net maaş —
+        // real HR hesablaması (OdenenMebleg) ilə eyni olacağına zəmanət yoxdur.
+        public decimal? TexminiNetMaas { get; set; }
+
         // Ɗmr nömrəsi (K/M) — HR təsdiqindən sonra avtomatik verilir
         public int? EmrRegem { get; set; }
         public string? EmrSuffiks { get; set; }

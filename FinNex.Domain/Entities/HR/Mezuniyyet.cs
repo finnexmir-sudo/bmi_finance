@@ -130,5 +130,15 @@ namespace FinNex.Domain.Entities.HR
         public bool     LegvTelebEdilib { get; set; } = false;
         public string?  LegvTelebSebebi { get; set; }
         public DateTime? LegvTelebTarixi { get; set; }
+
+        // ── Müraciət anında göstərilən təxmini net maaş (14.10.2026) ──────
+        // İşçi müraciət yaradanda ekranda real hesablama mühərriki ilə
+        // ("MezuniyyetController.Preview" → "umumiNet") bir dəfəlik göstərilir,
+        // amma əvvəl HEÇ YERƏ yazılmırdı — işçi sonra onu bir daha görə bilmirdi.
+        // Bu sahə o anın NET rəqəmini DONDURARAQ saxlayır (eyni prinsip:
+        // Kocurme.UsdEkvivalent, IsciJetonu.MenfiMiqdar). QƏSDƏN "TƏXMİNİ" adlanır
+        // və real ödənişlə (OdenenMebleg, HR təsdiqində YENİDƏN hesablanır) eyni
+        // olacağına zəmanət YOXDUR — göstərmə qatı bunu açıq etiketləməlidir.
+        public decimal? TexminiNetMaas { get; set; }
     }
 }

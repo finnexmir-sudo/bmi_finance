@@ -30,6 +30,11 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         // 1 = AySonuOdenis (default), 2 = QabaqcadanOdenis
         public int OdenisTipi { get; set; } = 1;
 
+        // "Preview" endpoint-indən son göstərilən "umumiNet" — JS forma göndərilməzdən
+        // əvvəl gizli sahəyə yazır (14.10.2026). "Öz hesabına" növündə preview
+        // göstərilmir, boş qala bilər.
+        public decimal? TexminiNetMaas { get; set; }
+
         // ── Dropdown məlumatları ───────────────────────────────
         public List<SelectListItem> NovList { get; set; } = new()
         {

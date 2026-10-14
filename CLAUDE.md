@@ -4353,6 +4353,66 @@ qeydiyyatının (`AddApplicationServices.cs`) toxunulmadığını (başqa
 servislər onu hələ istifadə edir) və Exchange səhifəsinin kartsız düzgün
 açıldığını.
 
+## Məzuniyyət Müraciəti — "Təxmini Net Maaş" Dondurulub Saxlanır (14.10.2026)
+
+İşçinin sualı HR vasitəsilə gəldi: *"mezuniyyet yazdigi zaman teqribi maasi
+gosterir, amma sonra onu hec yerde gore bilmirem"*. Araşdırma göstərdi ki,
+`MezuniyyetController.Preview` (`GET /User/Mezuniyyet/Preview`) müraciət
+formasında göstərilən rəqəmi (`umumiNet`) **real hesablama mühərriki**
+(`MaasHesablamaService.MezuniyyetOdenisiDetalliHesablaAsync` + `Tutulmalari
+HesablaAsync`) ilə hazırlayır — təxmin yox, HYS/avans/vergi daxil tam
+hesablamadır — amma bu cavab **heç yerə yazılmırdı**, işçiyə bir dəfə
+göstərilib itirdi.
+
+**Həll — `Mezuniyyet.TexminiNetMaas`** (yeni sütun, migration
+`20261014090000_MezuniyyetTexminiNetMaas.cs`, yalnız `AddColumn`,
+`InsertData` yoxdur): müraciət forması (`Create.cshtml`) JS-i `refreshPreview`
+cavabından (`data.umumiNet`) gizli bir sahəni (`#texminiNetMaasInput`,
+`MezuniyyetCreateVM.TexminiNetMaas`) doldurur, `Create` POST bunu
+`MezuniyyetCreateDto`-ya, oradan (AutoMapper, convention-based) entity-yə
+keçirir. İşçinin öz **Müraciət Detayı** səhifəsində (`/User/Mezuniyyet/
+Detail/{id}`) sağdakı "Müraciət məlumatları" kartına əlavə sətir kimi
+göstərilir, etiketi **"Təxmini net maaş (müraciət zamanı)"**.
+
+⚠️ **QƏSDƏN "TƏXMİNİ" — real ödənişlə EYNİ OLACAĞINA ZƏMANƏT YOXDUR.** Bu,
+"Qara Jeton — MenfiMiqdar" və "Pul Köçürməsi — UsdEkvivalent" ilə EYNİ
+"əməliyyat anında dondur" prinsipidir: `TexminiNetMaas` müraciət YARADILAN
+anın hesablamasıdır, real ödəniş (`OdenenMebleg`) isə HR təsdiqində AYRICA,
+sonradan yenidən hesablanır (başqa məzuniyyət, korreksiya, qazanc tarixçəsi
+dəyişikliyi s. ola bilər) — iki rəqəm fərqli çıxa bilər. Görüntü qatında bu
+tooltip ilə açıq bildirilir, "rəsmi ödəniş" kimi TƏQDİM EDİLMİR.
+
+**"Öz hesabına" (ödənişsiz) növündə sahə BOŞ qalır** — JS tərəfi `novToggle`-
+də (Nov dəyişəndə) və preview uğursuz/gizli olanda gizli sahəni açıq
+təmizləyir (`texminiInp.value = ''`), yoxsa Əmək məzuniyyəti üçün hesablanmış
+köhnə rəqəm səhvən ödənişsiz müraciətə keçə bilərdi.
+
+**Üç qat yeniləndi** (Metod İmzası Dəyişikliyi qaydasına uyğun — DTO, Entity,
+görüntü eyni anda): `MezuniyyetCreateDto`/`MezuniyyetDto`/`MezuniyyetDetailVM`
+hamısı `TexminiNetMaas`-ı daşıyır; `MezuniyyetService.IdIleGetirAsync` **əl
+ilə** map edir (bu metod AutoMapper DEYİL, manual DTO qurur — unudulsa sahə
+həmişə `null` qalardı, Detail səhifəsi heç vaxt göstərməzdi).
+
+⚠️ **HR tərəfinin öz Mezuniyyet Detal səhifəsinə ƏLAVƏ EDİLMƏDİ** — sual
+konkret işçinin öz portalından gəldi (ekran-görüntüsü `/User/Mezuniyyet/
+Detail`-dan idi), qapsam ora məhdudlaşdırıldı. HR də istəsə, eyni sahə
+onsuz da DB-də var — yalnız HR-in öz detal view-una bir sətir əlavə etmək
+kifayətdir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — bu düzəlişdən ƏVVƏL yaradılmış müraciətlərdə
+sütun NULL-dur (o anın preview cavabı heç yerdə saxlanılmayıb, retroaktiv
+bərpa mümkün deyil) — Detail səhifəsi həmin köhnə qeydlərdə sadəcə bu sətiri
+göstərmir (şərt `HasValue`).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/brace balansı skriptlə yoxlanıldı — düzəlişin özü
+balanslı, faylların pre-existing balanssızlığı şərh mətnindəki mötərizələrdən
+gəlir, kodun özündən deyil). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real ssenari ilə yoxlamalıdır: yeni "Əmək məzuniyyəti" müraciəti yazıb
+göndərəndə Müraciət Detayı səhifəsində "Təxmini net maaş" sətrinin formada
+göstərilən rəqəmlə DƏQİQ eyni göründüyünü, "Öz hesabına" müraciətdə isə
+sətrin ümumiyyətlə görünmədiyini.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

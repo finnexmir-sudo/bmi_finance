@@ -70,6 +70,11 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         // ── Ləğv edə bilər? (yalnız Gözləmədə və ya Şöbə rəisi) *@
         public bool LegvEdeBiler { get; set; }
 
+        // ── Müraciət yaradılanda göstərilən (dondurulmuş) təxmini net maaş ──
+        // Real HR hesablaması ilə EYNİ olacağına zəmanət yoxdur — bax
+        // Mezuniyyet.TexminiNetMaas-ın öz izahı.
+        public decimal? TexminiNetMaas { get; set; }
+
         // ── DTO-dan map ────────────────────────────────────────
         public static MezuniyyetDetailVM FromDto(MezuniyyetDto dto) => new()
         {
@@ -123,6 +128,8 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
             HrTesdiqTarixi = dto.HrTesdiqTarixi,
 
             LegvEdeBiler = (int)dto.Status <= 4,  // Gozlemede(1), SobeReisiTesdiqinde(2), RehberTesdiqinde(3), HrTesdiqinde(4)
+
+            TexminiNetMaas = dto.TexminiNetMaas,
         };
     }
 }
