@@ -25,8 +25,11 @@ namespace FinNex.Application.Interfaces.Kassa
         /// aydın səbəblə qayıdır.</summary>
         Task<Result> SaxlaAsync(KassaKursSaxlaDto dto, int icraciIsciId);
 
-        /// <summary>Son N günün bütün sətirləri (cədvəl üçün, hər valyuta ayrı sətir).</summary>
-        Task<IList<KassaKursSiyahiDto>> SonBeyannameleriGetirAsync(int gunSayi = 60);
+        /// <summary>"Son qeydlər" cədvəli — BEYANNAMƏ (gün qrupu) üzrə səhifələnir,
+        /// hər beyannamə 5 valyuta sətri doğurur. Default `sehifeOlcusu=1` — yalnız
+        /// ƏN SON beyannamə (15.10.2026, istifadəçi tələbi). `sehifeOlcusu<=0` —
+        /// "Hamısı" (limitsiz, səhifələmədən çıxır).</summary>
+        Task<KassaKursSiyahiSehifeDto> SonBeyannameleriGetirAsync(int sehife = 1, int sehifeOlcusu = 1);
 
         /// <summary>Təsdiq gözləyən beyannamələr (ən son öndə).</summary>
         Task<IList<KassaKursBeyannameOzetDto>> GozleyenleriGetirAsync();

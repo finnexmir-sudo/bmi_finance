@@ -47,8 +47,15 @@ namespace FinNex.UI.Areas.Kassa.Controllers
             _config = config;
         }
 
-        // GET /Kassa/Exchange?tarix=2026-10-09
-        public async Task<IActionResult> Index(DateTime? tarix)
+        // GET /Kassa/Exchange?tarix=2026-10-09&sehife=1&olcu=1
+        //
+        // "Son qeydlər" səhifələnməsi (15.10.2026, istifadəçi tələbi: "sehife bele
+        // uzanir, belke en sonuncunu verek, eger isteyerse isci hamisini secere,
+        // segifeleme ile"). Default `olcu=1` — yalnız ən son beyannamə göstərilir;
+        // `olcu<=0` "Hamısı" deməkdir. "Yenilə" düyməsi (eyni tələbdə: təsdiq anını
+        // izləmək üçün) — ayrıca AJAX YOX, sadəcə bu action-ı TƏKRAR çağırır
+        // (GET, dəyişməz query ilə) ki, `Gunluk.Status` təzədən oxunsun.
+        public async Task<IActionResult> Index(DateTime? tarix, int sehife = 1, int olcu = 1)
         {
             ViewData["Title"] = "Exchange — Valyuta kursu";
 
@@ -57,7 +64,7 @@ namespace FinNex.UI.Areas.Kassa.Controllers
             var vm = new ExchangeIndexVM
             {
                 Gunluk = await _kassaKursService.GunlukGetirAsync(secilenTarix),
-                SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync()
+                SonQeydler = await _kassaKursService.SonBeyannameleriGetirAsync(sehife, olcu)
             };
 
             return View(vm);

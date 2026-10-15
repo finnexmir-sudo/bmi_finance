@@ -41,6 +41,13 @@
         <a asp-action="Index" asp-controller="ExchangeTesdiq" class="fn-btn fn-btn--outline">
             <i class="bi bi-check2-circle"></i> Təsdiq ekranı
         </a>
+        @* "Yenilə" (15.10.2026, istifadəçi tələbi: "ekranda yenile dugmesi olsun,
+           cunki tesdiq anini izlemek ucun lazimdir") — AJAX YOX, sadəcə cari
+           URL-i (tarix/səhifə/ölçü query-si ilə birlikdə) yenidən yükləyir ki,
+           `Gunluk.Status` (yuxarıdaki status nişanı) təzədən oxunsun. *@
+        <button type="button" class="fn-btn fn-btn--outline" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Yenilə
+        </button>
     </div>
 
     <div class="fn-card">
@@ -144,7 +151,23 @@
     </div>
 
     <div class="fn-card mt-3">
-        <div class="fn-card-title mb-2">Son qeydlər</div>
+        <div class="kx-son-head mb-2">
+            <div class="fn-card-title">Son qeydlər</div>
+            @* Səhifə ölçüsü seçimi (15.10.2026) — dəyişən kimi avtomatik göndərilir,
+               cari `tarix` saxlanılır, `sehife` isə 1-ə sıfırlanır (köhnə ölçüdə
+               2-ci səhifədə ikən "Hamısı"na keçsən mənasız boş nəticə qalmasın). *@
+            <form method="get" asp-action="Index" class="kx-son-olcu-form">
+                <input type="hidden" name="tarix" value="@g.Tarix.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="sehife" value="1" />
+                <label for="kxOlcu" class="kx-son-olcu-label">Göstər:</label>
+                <select id="kxOlcu" name="olcu" class="fn-input kx-son-olcu-select" onchange="this.form.submit()">
+                    <option value="1" selected="@(Model.SonQeydler.SehifeOlcusu == 1 ? "selected" : null)">Ən sonuncu</option>
+                    <option value="10" selected="@(Model.SonQeydler.SehifeOlcusu == 10 ? "selected" : null)">Son 10</option>
+                    <option value="30" selected="@(Model.SonQeydler.SehifeOlcusu == 30 ? "selected" : null)">Son 30</option>
+                    <option value="0" selected="@(Model.SonQeydler.HamisiSecilib ? "selected" : null)">Hamısı</option>
+                </select>
+            </form>
+        </div>
         <div class="table-responsive">
             <table class="kx-table">
                 <thead>
@@ -155,7 +178,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.SonQeydler.Any())
+                    @if (!Model.SonQeydler.Setirler.Any())
                     {
                         <tr><td colspan="11" class="text-center text-muted py-3">Qeyd tapılmadı.</td></tr>
                     }
@@ -167,7 +190,7 @@
                         // yeni kod bloku açmaq lazım deyil, birbaşa yaz; bax CLAUDE.md
                         // "Razor — @if bloku içində kod bloku açma" bölməsi, RZ1010.)
                         var gorunenBeyanname = new HashSet<int>();
-                        @foreach (var r in Model.SonQeydler)
+                        @foreach (var r in Model.SonQeydler.Setirler)
                         {
                             var (ad, cls) = r.Status switch
                             {
@@ -201,5 +224,37 @@
                 </tbody>
             </table>
         </div>
+
+        @* Hər düymə ÖZ müstəqil şərtinə görə görünür (12.10.2026-da Mail
+           modulunda tapılan "Əvvəlki bir yoxlamaya bağlı qalıb Növbəti ilə
+           birlikdə yoxa çıxırdı" bugunun EYNİ naxışla qarşısı alınır — bax
+           CLAUDE.md "Göndərilən/Gələn Mail Detalı... Pagination 'Əvvəlki'
+           Bugu" bölməsi). "Hamısı" seçilibsə panel ÜMUMİYYƏTLƏ göstərilmir. *@
+        @if (Model.SonQeydler.EvvelkiVarMi || Model.SonQeydler.NovbetiVarMi)
+        {
+            <div class="kx-pag-row mt-2">
+                @if (Model.SonQeydler.EvvelkiVarMi)
+                {
+                    <a class="fn-btn fn-btn--outline fn-btn--sm"
+                       asp-action="Index"
+                       asp-route-tarix="@g.Tarix.ToString("yyyy-MM-dd")"
+                       asp-route-olcu="@Model.SonQeydler.SehifeOlcusu"
+                       asp-route-sehife="@(Model.SonQeydler.Sehife - 1)">
+                        <i class="bi bi-chevron-left"></i> Əvvəlki
+                    </a>
+                }
+                <span class="kx-pag-info">Səhifə @Model.SonQeydler.Sehife</span>
+                @if (Model.SonQeydler.NovbetiVarMi)
+                {
+                    <a class="fn-btn fn-btn--outline fn-btn--sm"
+                       asp-action="Index"
+                       asp-route-tarix="@g.Tarix.ToString("yyyy-MM-dd")"
+                       asp-route-olcu="@Model.SonQeydler.SehifeOlcusu"
+                       asp-route-sehife="@(Model.SonQeydler.Sehife + 1)">
+                        Növbəti <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
+            </div>
+        }
     </div>
 </div>

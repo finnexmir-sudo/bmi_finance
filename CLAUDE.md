@@ -4538,6 +4538,71 @@ cədvəlinə çevrilib skriptin özünə (1505 literal `INSERT ... VALUES` sətr
 hər biri ≤500 sətirlik toplu bloklarda, SQL Server-in 1000-sətir/ifadə
 həddinə görə) yazıldı; ayrıca `.xls`/`.csv` fayl təqdim olunmur.
 
+## Kassa Exchange — "Son Qeydlər" Səhifələnməsi + "Yenilə" Düyməsi (15.10.2026)
+
+Yuxarıdakı tarixi idxal nəticəsində "Son qeydlər" cədvəli **yüzlərlə** gün
+qrupuna (hər qrup 5 valyuta sətri) çatacaqdı — istifadəçi canlı ekranda bunu
+görüb şikayətləndi: *"SEHIFE BELE UZANIR, BELKE EN SONUNCUNU VEREK, EGER
+ISTEYERSE ISCI HAMISINI SECERE, SEGIFELEME ILE. VE BIR DE EKRANDA YENILE
+DUYMESI OLSUN, CUNKI TESDIQ ANINI IZLEMEK UCUN LAZIMDIR"*.
+
+**Səhifələmə BEYANNAMƏ (gün qrupu) sayı ilə ölçülür, sətir sayı ilə YOX** —
+hər beyannamə 5 valyuta sətri doğurur, səhifəni sətir sayına görə kəssək bir
+beyannamənin valyutaları iki səhifəyə bölünərdi.
+
+**Dəyişən üç qat** (Metod İmzası Dəyişikliyi qaydasına uyğun, yeganə çağırış
+yeri olduğu üçün köhnə imza dərhal əvəz edildi, geriyə-uyğunluq şimi YOXDUR):
+
+1. `IKassaKursService.SonBeyannameleriGetirAsync(int gunSayi = 60)` →
+   `SonBeyannameleriGetirAsync(int sehife = 1, int sehifeOlcusu = 1)` —
+   **`gunSayi`(60 günlük pəncərə) tamamilə çıxarıldı**, indi `Skip`/`Take`
+   birbaşa beyannamə sırasına tətbiq olunur (SQL səviyyəsində, yaddaşa
+   hamısı yüklənmir).
+2. İmplementasiya (`KassaKursService.cs`) — yeni `KassaKursSiyahiSehifeDto`
+   (`FinNex.Application/DTOs/Kassa/`) qaytarır: `Setirler` (cari səhifənin
+   sətirləri) + `Sehife`/`SehifeOlcusu`/`UmumiBeyannameSayi` +
+   hesablanan `HamisiSecilib`/`EvvelkiVarMi`/`NovbetiVarMi`.
+3. `ExchangeController.Index(DateTime? tarix, int sehife = 1, int olcu = 1)`
+   — yeni query-string parametrləri, `ExchangeIndexVM.SonQeydler` tipi
+   `IList<KassaKursSiyahiDto>` → `KassaKursSiyahiSehifeDto`-ya dəyişdi.
+
+**Default `sehifeOlcusu=1`** — "ən sonuncunu verək" tələbinə uyğun, açılışda
+YALNIZ ən son beyannamə (5 sətir) görünür. Ekranda **"Göstər:" açılan siyahı**
+(Ən sonuncu / Son 10 / Son 30 / Hamısı) — dəyişən kimi `onchange="this.form.
+submit()"` ilə avtomatik göndərilir, `sehife` İSTƏR-İSTƏMƏZ `1`-ə sıfırlanır
+(gizli sahə) ki, köhnə ölçüdə 2-ci səhifədə ikən ölçünü dəyişən istifadəçi
+boş/yanlış nəticə almasın.
+
+**`olcu<=0` = "Hamısı"** — bu halda `Skip`/`Take` tətbiq olunmur, amma
+limitsiz DEYİL: `KassaKursService.HamisiTavan = 2000` təhlükəsizlik tavanı
+var (CLAUDE.md-nin AML "BÖYÜK SİYAHI" bölməsindəki eyni prinsip — "limitsiz"
+sözü "hədsiz" demək deyil). "Hamısı" seçilibsə pagination paneli
+ÜMUMİYYƏTLƏ göstərilmir (`EvvelkiVarMi`/`NovbetiVarMi` hər ikisi `false`
+qayıdır).
+
+**Pagination düymələri İKİ MÜSTƏQİL şərtdədir** — 12.10.2026-da Mail
+modulunda tapılan "Əvvəlki bir yoxlamaya bağlı qalıb Növbəti ilə birlikdə
+yoxa çıxırdı" bugunun EYNİ naxışla qarşısı alınır (bax yuxarı "Göndərilən/
+Gələn Mail Detalı... Pagination 'Əvvəlki' Bugu" bölməsi): `EvvelkiVarMi`
+(`Sehife > 1`) və `NovbetiVarMi` (`Sehife * SehifeOlcusu < UmumiBeyannameSayi`)
+bir-birindən tamamilə asılı deyil, hər link öz `@if`-indədir.
+
+**"Yenilə" düyməsi — AJAX YOX, sadəcə `location.reload()`.** Mail modulunun
+"Yenilə" düyməsindən FƏRQLİ (o, xarici IMAP qutusunu sinxronlaşdırır, ona
+görə fetch+token lazımdır) — buradaki data artıq öz SQL Server bazamızdadır,
+`Index` action-ı onsuz da HƏR GET-də təzə sorğu aparır. Sadə səhifə yenidən
+yüklənməsi `tarix`/`sehife`/`olcu` query-sini saxlayır (URL dəyişmir) və
+yuxarıdaki status nişanını (`g.Status` — Gözləyir/Təsdiqləndi/İmtina) təzədən
+oxuyur, elə istifadəçinin istədiyi "təsdiq anını izləmək" buna kifayətdir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı, DTO/interfeys/implementasiya/controller
+imza uyğunluğu). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+mühitdə yoxlamalıdır: açılışda yalnız 1 beyannamənin göründüyünü, "Son 10"/
+"Son 30"/"Hamısı" seçimlərinin düzgün say qaytardığını, Əvvəlki/Növbəti
+düymələrinin sərhəddə (ilk/son səhifə) düzgün gizləndiyini və "Yenilə"
+düyməsinin cari görünüşü (xüsusən status nişanını) itirmədən yenilədiyini.
+
 ## Məzuniyyət Müraciəti — "Təxmini Net Maaş" Dondurulub Saxlanır (14.10.2026)
 
 İşçinin sualı HR vasitəsilə gəldi: *"mezuniyyet yazdigi zaman teqribi maasi

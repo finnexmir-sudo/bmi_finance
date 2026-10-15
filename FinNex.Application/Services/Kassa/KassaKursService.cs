@@ -189,18 +189,29 @@ namespace FinNex.Application.Services.Kassa
                 : "Kurs göndərildi — təsdiq gözləyir.");
         }
 
-        public async Task<IList<KassaKursSiyahiDto>> SonBeyannameleriGetirAsync(int gunSayi = 60)
-        {
-            var baslangic = DateTime.Now.Date.AddDays(-gunSayi);
+        // "Hamısı" seçiləndə (sehifeOlcusu<=0) tətbiq olunan təhlükəsizlik tavanı —
+        // CLAUDE.md "BÖYÜK SİYAHI" prinsipi ilə eyni: limitsiz demək hədsiz demək deyil.
+        private const int HamisiTavan = 2000;
 
-            var beyannameler = await _uow.Repository<KassaKursBeyannamesi>().Query()
-                .Where(x => !x.Silinib && x.Tarix >= baslangic)
+        public async Task<KassaKursSiyahiSehifeDto> SonBeyannameleriGetirAsync(int sehife = 1, int sehifeOlcusu = 1)
+        {
+            if (sehife < 1) sehife = 1;
+
+            var hamisi = sehifeOlcusu <= 0;
+            var sorgu = _uow.Repository<KassaKursBeyannamesi>().Query().Where(x => !x.Silinib);
+
+            var umumiSayi = await sorgu.CountAsync();
+
+            var beyannameQuery = sorgu
                 .Include(x => x.Setirler)
                 .Include(x => x.Icraci)
                 .Include(x => x.TesdiqEden)
                 .OrderByDescending(x => x.Tarix)
-                .ThenByDescending(x => x.Id)
-                .ToListAsync();
+                .ThenByDescending(x => x.Id);
+
+            var beyannameler = hamisi
+                ? await beyannameQuery.Take(HamisiTavan).ToListAsync()
+                : await beyannameQuery.Skip((sehife - 1) * sehifeOlcusu).Take(sehifeOlcusu).ToListAsync();
 
             var rows = new List<KassaKursSiyahiDto>();
             foreach (var b in beyannameler)
@@ -224,7 +235,14 @@ namespace FinNex.Application.Services.Kassa
                     });
                 }
             }
-            return rows;
+
+            return new KassaKursSiyahiSehifeDto
+            {
+                Setirler = rows,
+                Sehife = sehife,
+                SehifeOlcusu = sehifeOlcusu,
+                UmumiBeyannameSayi = umumiSayi
+            };
         }
 
         public async Task<IList<KassaKursBeyannameOzetDto>> GozleyenleriGetirAsync()
