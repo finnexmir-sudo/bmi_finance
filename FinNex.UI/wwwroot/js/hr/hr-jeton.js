@@ -6,6 +6,12 @@ let hjCurrentRedimStage = null;   // cari sorğunun rehberTesdiq mərhələsi (n
 let hjCurrentLegvetId = null;
 let hjSelectedJetonId = null;
 
+// hj-td-sebeb indi `-webkit-line-clamp:2` ilə iki sətirə kəsilir (15.10.2026,
+// "Altıncı dalğa" — bax CLAUDE.md) — `title` atributu tam mətni hover-də göstərir.
+function hjEsc(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 // ── Tab idarəsi ───────────────────────────────────────────
 function hjSwitchTab(btn, tab) {
     document.querySelectorAll('.hj-tab').forEach(t => t.classList.remove('hj-tab--active'));
@@ -46,7 +52,7 @@ async function hjLoadTarixce() {
                 <td>${r.neticeTarixi ? hjDate(r.neticeTarixi) : '—'}</td>
                 <td>${r.tesdiqleyenAd ?? '—'}</td>
                 <td>${hjStatusBadge(r.status + 10)}</td>
-                <td class="hj-td-sebeb">${r.qeyd ?? '—'}</td>
+                <td class="hj-td-sebeb" title="${hjEsc(r.qeyd)}">${r.qeyd ?? '—'}</td>
                 <td>
                     <button class="hj-btn hj-btn--ghost hj-btn--sm" onclick='hjOpenTarixceDetay(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
                         <i class="bi bi-eye"></i>
@@ -111,7 +117,7 @@ async function hjLoadEmeliyyatlar() {
                 <td style="white-space:nowrap">${hjQalanGoster(r)}</td>
                 <td style="white-space:nowrap;font-size:12px">${hjXercGoster(r)}</td>
                 <td style="white-space:nowrap">${hjDate(r.qazanmaTarixi)}</td>
-                <td class="hj-td-sebeb">${r.sebeb ?? '—'}</td>
+                <td class="hj-td-sebeb" title="${hjEsc(r.sebeb)}">${r.sebeb ?? '—'}</td>
                 <td>${hjStatusBadge(r.status)}</td>
                 <td>
                     ${r.status === 1

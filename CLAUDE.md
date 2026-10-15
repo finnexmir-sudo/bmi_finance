@@ -1708,6 +1708,54 @@ cədvəlin sağ kənarının (Status + silmə düyməsi) artıq görünən qald�
 (lazım gələrsə üfüqi scroll ilə), "Xərcləndi" sütununun daha geniş/səliqəli
 göründüyünü.
 
+#### ALTINCI DALĞA — "Overflow-x:auto" HƏLL DEYİLMİŞ, Status Sütunu "İTDİ" (15.10.2026, KRİTİK)
+
+Beşinci dalğanın `overflow-x:auto` düzəlişi deploy olunandan sonra istifadəçi
+real ekranda STATUS sütununun və silmə düyməsinin ÜMUMİYYƏTLƏ görünmədiyini
+bildirdi: *"sağda hansı sütun var idi hanı o? status sütunu. çox bərbad
+hazırlayırsan"*.
+
+**Kök səbəb — "overflow-x:auto" texniki cəhətdən düz idi, amma PRAKTİKİ
+İSTİFADƏ EDİLƏ BİLMƏZ idi.** Dördüncü dalğada İşçi/Xərcləndi/Səbəb
+sütunlarına qoyulan `min-width` cəmi (170+210+280-420px) cədvəlin ümumi
+enini `.hj-page {max-width:1200px}` konteynerindən (~1140px istifadə olunan
+sahə) KEÇİRDİ. `overflow-x:auto` bunu SCROLL EDİLƏ bilən edir, AMMA həmin
+scrollbar **cədvəlin ƏN ALTINDA** (bütün sətirlərdən SONRA) çıxır — çoxsaylı
+sətirli (10+ sətir) bir cədvəldə bu, səhifəni lap sona qədər aşağı
+sürüşdürmədən GÖRÜNMÜR/ƏLÇATAN DEYİL. İstifadəçi üçün nəticə — "Status
+sütunu yoxa çıxdı" idi, texniki olaraq "scroll edilə bilən, amma tapıla
+bilməyən".
+
+**Düzgün həll — GENİŞLƏNMƏ ƏVƏZİNƏ MƏHDUDLAŞDIRMA:**
+- `İşçi`/`Xərcləndi` sütunlarına qoyulan `min-width` TAM SİLİNDİ — auto
+  düzüm bu sütunları onsuz da kifayət qədər sığdırırdı, overflow-ə onların
+  PAYI həlledici deyildi, silinməsi zərərsizdir.
+- `Səbəb` sütunu artıq GENİŞLƏNMİR — `-webkit-line-clamp: 2` ilə **İKİ
+  SƏTİRƏ MƏHDUDLAŞDIRILIR**, uzun mətn "…" ilə kəsilir, `max-width:320px`
+  (əvvəlki 420px-dən azaldıldı). Tam mətn itmir — `title` atributunda qalır
+  (brauzerin öz hover-tooltip-i, `hr-jeton.js`-ə yeni `hjEsc()` helper-i ilə
+  HTML-qaçırılmış şəkildə yazılır).
+- `.hj-table-wrap`-in `overflow-x:auto`-su (beşinci dalğa) SİLİNMƏDİ — ehtiyat
+  şəbəkəsi kimi qalır, amma artıq **adi halda işə düşməməlidir**, çünki
+  cədvəl bir daha konteynerdən enli olmur.
+
+**Qayda: "sütun çox sətirə bölünür, çirkin görünür" şikayətini HƏMİŞƏ
+`min-width` ilə GENİŞLƏNDİRƏRƏK həll etmə** — konteyner sabit/məhdud enlidirsə
+(`max-width` olan səhifə kimi), genişlənmə digər (xüsusən SAĞDAKI) sütunları
+konteynerdən kənara itələyə bilər, nəticədə `overflow-x:auto` olsa belə həmin
+sütunlar PRAKTİKİ olaraq itmiş görünər (scrollbar uzun cədvəldə əlçatmazdır).
+**`-webkit-line-clamp` (mətni N sətirə kəsib "…" qoyma, tam mətni `title`-da
+saxlama) sütunun ENİNƏ TOXUNMADAN eyni "çox sətirli çirkinlik" problemini
+həll edir** — dar/məhdud konteynerlərdə bu, TƏHLÜKƏSİZ defolt seçimdir, geniş
+konteyner isbat olunmayana qədər `min-width` ilə genişləndirməyə üstünlük
+vermə.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(CSS mötərizə balansı, `node -c` ilə JS sintaksisi). İstifadəçi real brauzerdə
+yoxlamalıdır: Status sütunu və silmə düyməsinin indi HEÇ bir scroll lazım
+olmadan görünən qaldığını, Səbəb sütununun uzun mətndə iki sətirdən sonra
+"…" ilə kəsildiyini və üzərinə hover edəndə tooltip-də tam mətnin çıxdığını.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.

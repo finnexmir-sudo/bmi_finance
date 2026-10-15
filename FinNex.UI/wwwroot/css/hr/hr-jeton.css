@@ -128,29 +128,37 @@
     text-align: right;
 }
 
-/* İKİNCİ DALĞA (15.10.2026) — istifadəçi: "Səbəb sütununu genişləndirsə cədvəl
-   səliqəyə düşər... işçi adını da genişləndir". Köhnə `max-width:260px` elə
-   DAR idi ki, uzun səbəb mətni (məs. "Qeyri iş vaxtı ... server otağının
-   təmiri ilə əlaqədar işə çıxdığı üçün.") hər sözdən sonra sətir keçirdi —
-   6-7 sətirlik nazik sütun yaradırdı, sətir hündürlüyü "İşçi"/"Jeton" kimi
-   tək-sətirli qonşu sütunlarla ƏN BÖYÜK ziddiyyəti yaradan elə bu idi.
-   `min-width` ilə genişləndirilib ki, orta uzunluqlu səbəb TƏK sətirdə qalsın,
-   `max-width` yalnız HƏDSİZ uzun mətni (yüzlərlə simvol) məhdudlaşdırır —
-   əvvəlki kimi hər söz üçün sətir kəsmir. `İşçi` sütunu (nth-child(1)) da
-   eyni səbəbdən genişləndirildi — ad-soyad iki sözə bölünüb iki sətirə
-   düşməsin (məs. "Məhəmməd Bəkirov" əvvəl eni sabit olmayan sütunda tez-tez
-   qırılırdı). `table-layout:fixed` İNDİ DƏ İŞLƏDİLMİR — yalnız `min-width`
-   sütunun minimum enini qaldırır, auto düzüm hələ də real məzmuna görə
-   lazım gələndə ondan da genişlənə bilir, overflow-qonşu-sütuna-daşma riski
-   yoxdur (bax yuxarıdakı qeyd). */
-#hjEmeliyyatlarTable td:nth-child(1), #hjEmeliyyatlarTable th:nth-child(1) {
-    min-width: 170px;
-}
-#hjEmeliyyatlarTable td:nth-child(5), #hjEmeliyyatlarTable th:nth-child(5) {
-    min-width: 210px;
-}
+/* ALTINCI DALĞA (15.10.2026, KRİTİK — ƏVVƏLKİ İKİ DALĞANI DÜZƏLDİR) —
+   "İkinci dalğa"nın İşçi/Xərcləndi/Səbəb sütunlarına qoyduğu `min-width`
+   dəyərləri (170+210+280-420px) cədvəlin ÜMUMİ enini konteynerdən (`.hj-page
+   {max-width:1200px}`, təxminən 1140px istifadə olunan sahə) GENİŞ etdi.
+   "Beşinci dalğa"da bunu `overflow-x:auto` ilə "həll etdim" — AMMA bu, həqiqi
+   həll DEYİLDİ: scrollbar çoxsaylı sətirli cədvəlin ƏN ALTINDA (bütün
+   sətirlərdən sonra) çıxır, səhifəni sona qədər aşağı sürüşdürmədən
+   GÖRÜNMÜR/TAPILMIR — istifadəçi "Status sütunu hara getdi?" sualı ilə bunu
+   təsdiqlədi. Nəticə: Status + silmə düyməsi sütunları PRAKTİKİ OLARAQ
+   İTMİŞ GÖRÜNDÜ.
+   **Düzgün həll — genişlənmək ƏVƏZİNƏ sıxışdırmaq:** İşçi/Xərcləndi-dəki
+   `min-width` tam SİLİNDİ (auto düzüm bunları artıq kifayət qədər sığdırırdı,
+   overflow-ə onların PAYI azdır, amma yenə kömək edir). Səbəb isə genişlənmə
+   YERİNƏ `-webkit-line-clamp:2` ilə İKİ SƏTİRƏ MƏHDUDLAŞDIRILIR (uzun mətn
+   "…" ilə kəsilir, tam mətn `title` atributunda qalır — JS, `hr-jeton.js`) —
+   bu, "6-7 sətirlik eniş" problemini HƏLL EDİR, AMMA sütunun enini
+   BÖYÜTMÜR, əksinə `max-width` ilə MƏHDUDLAŞDIRIR. Nəticə: cədvəlin ümumi
+   eni konteynerdən bir daha aşmır, Status + silmə düyməsi HƏMİŞƏ görünür.
+   `overflow-x:auto` (yuxarı, `.hj-table-wrap`) TOXUNULMADI — zərərsiz ehtiyat
+   şəbəkəsi kimi qalır, amma artıq ADİ halda İŞƏ DÜŞMƏMƏLİDİR.
+   **Qayda: cədvəl sütununun "çox sətirə bölünür, çirkin görünür" şikayətini
+   HƏMİŞƏ `min-width` ilə genişləndirərək həll etmə** — əgər konteyner
+   sabit/məhdud enlidirsə (`max-width` olan səhifə kimi), genişlənmə digər
+   sütunları (xüsusən sağdakıları) konteynerdən kənara İTƏLƏYƏ bilər.
+   `-webkit-line-clamp` (mətni N sətirə kəsib "…" qoyma, tam mətni `title`-da
+   saxlama) sütunun ENİNƏ TOXUNMADAN eyni "çox sətirli çirkinlik" problemini
+   həll edir — konteyner darsa bu, TƏHLÜKƏSİZ defolt seçimdir. */
 .hj-td-sebeb {
-    min-width: 280px; max-width: 420px;
+    max-width: 320px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
     overflow-wrap: break-word; word-break: break-word;
     font-size: 13px; color: var(--hj-muted);
 }
