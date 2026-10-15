@@ -108,11 +108,36 @@
 }
 .hj-table td {
     padding: 12px 14px; border-bottom: 1px solid #f3f4f6;
-    color: var(--hj-text);
+    color: var(--hj-text); vertical-align: middle;
 }
 .hj-table tbody tr:last-child td { border-bottom: none; }
 .hj-table tbody tr:hover { background: #f9fafb; }
 .hj-empty { text-align: center; color: var(--hj-muted); padding: 32px; }
+
+/* "Əməliyyatlar" cədvəli (İşçi/Jeton/Dəyər/Qalan/Xərcləndi/Tarix/Səbəb/Status/—) —
+   15.10.2026, istifadəçi: "cedvel ozude seliqesiz, hamisi ic ice". İKİ əsl qüsur
+   var idi: (1) `vertical-align` təyin olunmamışdı — "Xərcləndi" sütunu ikon+2
+   sətir, qonşu sütunlar (Dəyər/Qalan/Status) tək sətir, bu sətirləri şaquli
+   fərqli bağlayırdı; (2) rəqəm sütunları (Dəyər/Qalan) mətn kimi SOLA düzülürdü.
+   ⚠️ `table-layout:fixed` + sərt faiz enlər QƏSDƏN İŞLƏDİLMİR — Dəyər/Qalan/
+   Xərcləndi/Tarix sütunları artıq JS-dən `white-space:nowrap` alır (sətir
+   106-111, hr-jeton.js); sərt dar faiz enlə + nowrap birləşsə məzmun kəsilib
+   qonşu sütunun ÜSTÜNƏ daşardı — elə ilk şikayətin («32.41666…» rəqəmi) səbəb
+   olduğu görüntü. Default (`auto`) cədvəl düzümü sütunu real məzmuna görə
+   genişləndirdiyi üçün bu risk yoxdur. */
+#hjEmeliyyatlarTable td:nth-child(3), #hjEmeliyyatlarTable td:nth-child(4) {
+    text-align: right;
+}
+
+/* `hj-td-sebeb` markup-da (Jeton/Index.cshtml) yazılıb, amma heç bir CSS-i
+   yox idi — sərbəst "Səbəb" mətni heç bir en sərhədi olmadan cədvəli
+   lazımsız genişləndirə bilirdi. `max-width` + söz-sındırma onu məhdudlaşdırır,
+   `white-space:normal` ilə (default) sətir daxilində sərbəst bükülür. */
+.hj-td-sebeb {
+    max-width: 260px;
+    overflow-wrap: break-word; word-break: break-word;
+    font-size: 13px; color: var(--hj-muted);
+}
 
 /* ── Jeton badge ──────────────────────────────────────── */
 .hj-jeton-badge {

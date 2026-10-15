@@ -1576,6 +1576,44 @@ DİGƏR rəqəmlərin işlətdiyi formatlama funksiyasını (burada: `toFixed(2)
 trailing-zero təmizləmə) təkrar istifadə et, yeni, formatlanmamış bir
 çıxışı birbaşa buraxma.
 
+#### ÜÇÜNCÜ DALĞA — Rəqəm Düzəlsə Belə Cədvəlin Özündə Qalan Köhnə Qüsurlar (15.10.2026)
+
+Rəqəm formatlandıqdan sonra istifadəçi davam etdi: *"cedvel ozude seliqesiz
+deyil?"* — haqlı idi, cədvəlin özündə uzun onluq rəqəmdən ASILI OLMAYAN
+**iki köhnə qüsur** var idi:
+
+1. **`vertical-align` HEÇ YERDƏ təyin olunmamışdı** — "Xərcləndi" sütunu
+   (ikon + iki sətir: "⏱ İcazə" / tarix+saat / "xərcləndi: …") qonşu tək-
+   sətirli sütunlardan (Dəyər, Qalan, Status) HÜNDÜR idi, brauzerin default
+   `vertical-align` davranışı sətirləri şaquli FƏRQLİ bağlayırdı — nəticə
+   "hamısı iç-içə" təəssüratı idi, heç bir CSS xətası olmadan.
+2. **Rəqəm sütunları (Dəyər, Qalan) mətn kimi SOLA düzülürdü** — rəqəmlər
+   üçün qeyri-standart görünüş, "Qalan" sütunu ilə yanaşı "Xərcləndi"
+   sütunu arasında vizual ayrım zəifləyirdi.
+
+**Düzəliş — `hr-jeton.css`:** `.hj-table td { vertical-align: middle; }`
+(bütün 3 cədvələ — Əməliyyatlar/Tarixçə/Redim — tətbiq olunur, `.hj-table`
+paylaşılan sinifdir) + `#hjEmeliyyatlarTable td:nth-child(3,4) { text-align:
+right; }` (yalnız Dəyər/Qalan, yalnız bu cədvəl) + `.hj-td-sebeb` sinfinə
+(markup-da artıq var idi, CSS-i YOX idi) `max-width:260px` + söz-sındırma.
+
+⚠️ **`table-layout:fixed` + sərt faiz enlər QƏSDƏN İŞLƏDİLMƏDİ** — ilk
+cəhddə bu yanaşma sınanmış, amma committə çatmadan geri götürülmüşdü: dar
+faiz enli sütun (məs. Dəyər/Qalan `width:9%`) `white-space:nowrap` (bu
+sütunlar artıq JS-dən inline nowrap alır) ilə birləşəndə, uzun məzmun
+sütunu KƏSMİR, əvəzinə QONŞU SÜTUNUN ÜSTÜNƏ DAŞIR — bu, elə "32.41666…"
+rəqəminin yaratdığı orijinal şikayətin başqa bir forması olardı, indi sabit
+faiz enlə təkrar yaradılardı. `table-layout:auto` (default) sütunu real
+məzmuna görə genişləndirdiyi üçün bu risk yoxdur — əvəzinə yalnız
+`vertical-align` + `text-align` + Səbəb-ə `max-width` ilə kifayətləndi.
+
+**Qayda: "cədvəl səliqəsizdir" şikayətində, bir pafoloji dəyəri (uzun
+rəqəm) düzəltdikdən SONRA da əl ilə yoxla ki, cədvəlin ÖZÜNDƏ (vertical-
+align, text-align, sərhədsiz sərbəst-mətn sütunu) ayrıca, pafoloji dəyərdən
+asılı olmayan köhnə qüsurlar qalmayıb.** Bir simptomun bir səbəbi
+düzəldilməsi "cədvəl indi səliqəlidir" demək deyil — istifadəçinin "cədvəlin
+özü" sualı dəqiq bunu aşkar etdi.
+
 **Qayda: eyni rəqəmin İKİ yazıcısı/oxuyucusu olanda (burada: bir sütun İKİ
 AYRI controller-dən fərqli düsturla hesablanır), bir yerdə düzəliş edərkən
 HƏR ÇAĞIRIŞ YERİNİ sadala, təkcə ƏN SON toxunulan səhifəni yox.** 14.10.2026-dakı
