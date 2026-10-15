@@ -4353,6 +4353,90 @@ qeydiyyatının (`AddApplicationServices.cs`) toxunulmadığını (başqa
 servislər onu hələ istifadə edir) və Exchange səhifəsinin kartsız düzgün
 açıldığını.
 
+## Kassa — Köhnə `bmi_kassa_kurs` Tarixçəsinin SQL Server-ə İdxalı (15.10.2026)
+
+İstifadəçi tələbi: *"biz exchangdeki kohne bazadaki melumatlari yeniye
+kecirtmeliyik"* — BMI-nin köhnə Oracle `bmi_kassa_kurs` cədvəlindəki bütün
+tarixi kurs qeydlərini yeni Kassa modulunun (`KassaKursBeyannameleri`/
+`KassaKursSetirleri`) özünə köçürmək. İstifadəçi cədvəlin tam export-unu
+(`select * from bmi_kassa_kurs`, Excel/.xls) birbaşa verdi — `IOracleService`
+üzərindən CANLI sorğu APARILMADI (bu sessiyada Oracle-a bağlantı yoxdur,
+üstəlik export artıq əldə idi).
+
+**Mənbə məlumatın quruluşu** (1505 sətir, 2025-03-03 — 2026-10-14,
+`xlrd` ilə oxundu — köhnə OLE2 `.xls`, `openpyxl` BUNU AÇA BİLMƏZ, bax
+"Excel OXUNUŞU" bölməsi, eyni qayda `.xlsx`-dən əlavə köhnə `.xls` üçün də
+keçərlidir): `TARIX, VALYUTA, N_ALIS, N_SATIS, QN_ALIS, QN_SATIS, ICRACI,
+APPROVAL, APPROVAL_DATE, APPROVED_BY, MESAJ, INSERT_GROUP_NO`. Təmiz data:
+bütün 1505 sətir `APPROVAL='təsdiqləndi'`, İCRACİ həmişə "Axundov Elxan",
+APPROVED_BY "Najafi Asghar" (1445) və ya "Ibrahimov Anar" (60). `IRR`/`AED`/
+`RUB` sətirlərində alış-satış sütunları HƏMİŞƏ boşdur (yalnız USD/AVRO-da
+real dəyər var) — target cədvəlin `NagdAlis` və s. sütunlarının nullable
+olması elə bu reallığa görədir.
+
+**`INSERT_GROUP_NO` = bir günlük beyannamə, İSTİSNA TƏKDİR.** 296 qrupdan
+295-i tam 5 sətirlik (bir gün × 5 valyuta) təmiz qrupdur. **`GroupNo=1`
+İSTİSNADIR** — 30 sətir, 6 MÜXTƏLİF tarixə yayılıb (köhnə sistemin ilk
+doldurma zamanı bir dəfəlik toplu yazdığı ilkin qeydlər görünür). Skript
+bunu tarixə görə 6 ayrı beyannaməyə bölür (sintetik açar `100000+`, real
+qrup nömrələri 1–297 arasında olduğu üçün toqquşma yoxdur). Yekun: **301
+beyannamə, 1505 setir sətri**.
+
+⚠️ **8 gündə BİRDƏN ÇOX qrup var (10 və ya 15 sətir)** — kursun həmin gün
+ərzində bir neçə dəfə göndərildiyini göstərir. Bu, YENİ sistemin özünün də
+dəstəklədiyi "Gün İçində Kurs Dəyişikliyi" davranışıdır (bax yuxarı, 09.10.2026)
+— HƏR qrup AYRI, tam beyannamə kimi idxal olunur (sonuncusu "cari" sayılır,
+`GunlukGetirAsync`-in `OrderByDescending(Id)` qaydası ilə eyni), BİRİ o
+birini əvəz etmir.
+
+**Skript — `docs/sql/kassa/01_Exchange_Tarixi_Idxal.sql`** (iki addımlı,
+CLAUDE.md-nin "SQL migration vermədən əvvəl SELECT ilə göstər" qaydasına
+uyğun):
+- **ADDIM 1** (yalnız SELECT): (a) mənbədəki üç ad (Axundov Elxan/Najafi
+  Asghar/Ibrahimov Anar) `Isciler`-də Soyad+Ad üzrə tapılırmı — "TAPILMADI"
+  və ya "BİRDƏN ÇOX TAPILDI" statusları ilə; (b) hansı tarixlərdə artıq
+  `KassaKursBeyannameleri`-də qeyd var (09.10.2026 modul işə düşəndən sonra
+  canlı sistemdən yazılmış ola bilər — xüsusilə 2026-10-09/12/13/14, bu
+  export elə həmin günləri də əhatə edir); (c) ADDIM 2-nin HƏQİQƏTƏN nə
+  qədər yeni beyannamə yaradacağının sayı.
+- **ADDIM 2**: `#Kaynak` staging cədvəlindən **CURSOR** ilə (OUTPUT+Tarix
+  üzrə geri-uyğunlaşdırma QƏSDƏN İŞLƏDİLMƏDİ — yuxarıdaki 8 "bir gündə
+  bir neçə qrup" halında Tarix unikal deyil, OUTPUT-u Tarix-ə görə geri
+  bağlasaq sətirlər səhv beyannaməyə düşərdi) hər qrupu öz tranzaksiyası
+  daxilində `KassaKursBeyannameleri` + `KassaKursSetirleri`-yə yazır,
+  Status birbaşa **Tesdiqlendi (2)** ilə (tarixi data onsuz da təsdiqlənib,
+  Gözləyir→Tesdiqlendi iki addımlı keçidə ehtiyac yoxdur).
+
+**İdempotentlik açarı `(Tarix, TesdiqTarixi)` cütüdür, YALNIZ `Tarix` DEYİL** —
+tək `Tarix` ilə yoxlasaydıq, eyni günün 2-3 tarixi qrupundan yalnız BİRİNCİSİ
+yazılıb qalanları "artıq var" deyə səhvən atlanardı. `(Tarix, TesdiqTarixi)`
+hər tarixi qrupu öz dəqiq təsdiq anına görə ayırd edir və skripti TƏKRAR
+işlətmək təhlükəsizdir (artıq idxal olunmuş sətirlər bir də yazılmır).
+
+**Ad uyğunluğu `Isciler.Soyad`+`Ad`-a görədir** (BMI-nin "Soyad Ad" formatı
+birbaşa uyğun gəlir), `TOP 1 ORDER BY Id` ilə qorunur ki, ambiqusiya halında
+(bir addan çox işçi) skript XƏTA VERMƏSİN — amma bu, "doğru seçim" ZƏMANƏTİ
+DEYİL, ADDIM 1a-nın "BİRDƏN ÇOX TAPILDI" xəbərdarlığı buna görədir. Ad
+ümumiyyətlə tapılmasa (`RAISERROR`, ad+tarixlə) **bütün tranzaksiya geri
+qaytarılır** — qismən idxal qalmır.
+
+⚠️ **GÖRÜNTÜ/YAZMA AUDİT SAHƏLƏRİ (`YaradanIcraciId` və s.) BOŞ QALIR** —
+bu, keçmiş sistemdən gələn tarixi idxaldır, "kim idxal etdi" mənasında bir
+`AppUser` yoxdur; `YaradilmaTarixi`/`TesdiqTarixi` real tarixi dəyərlə (BMI-nin
+`APPROVAL_DATE`-i) doldurulur ki, "Son qeydlər" siyahısı düzgün xronoloji
+sırada görünsün.
+
+⚠️ **BU SESSİYADA SKRİPT İCRA EDİLMƏDİ** — bu mühitdə canlı SQL Server
+bağlantısı yoxdur (Oracle-a da bağlantı yoxdur, mənbə artıq Excel export
+kimi verilmişdi). İstifadəçi skripti öz SQL Server-ində **ƏVVƏLCƏ ADDIM 1**
+ilə işlədib nəticəyə (xüsusilə ad uyğunluğu və tarix overlap-i) baxmalı,
+yalnız bundan sonra ADDIM 2-ni icra etməlidir.
+
+**Mənbə fayl saxlanmadı** — Excel export-u birbaşa `#Kaynak` staging
+cədvəlinə çevrilib skriptin özünə (1505 literal `INSERT ... VALUES` sətri,
+hər biri ≤500 sətirlik toplu bloklarda, SQL Server-in 1000-sətir/ifadə
+həddinə görə) yazıldı; ayrıca `.xls`/`.csv` fayl təqdim olunmur.
+
 ## Məzuniyyət Müraciəti — "Təxmini Net Maaş" Dondurulub Saxlanır (14.10.2026)
 
 İşçinin sualı HR vasitəsilə gəldi: *"mezuniyyet yazdigi zaman teqribi maasi
