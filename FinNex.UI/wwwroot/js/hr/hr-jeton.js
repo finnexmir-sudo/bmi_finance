@@ -140,6 +140,18 @@ function hjQalanGoster(r) {
     // Aktiv deyilsə qalan göstərməyə ehtiyac yoxdur
     if (r.status !== 1) return '<span style="color:#9ca3af">—</span>';
     const tam = r.jetonSaatDeyeri ?? 0;
+    // "36 Saat Hüququ" (Sistemli) jetonunda QalanSaat sütunu YALNIZ Qara Jeton
+    // kəsintisi ilə dəyişir — adi icazə istifadəsi onu toxunmaz saxlayır (bax
+    // CLAUDE.md "'36 Saat Hüququ' — illik limit artıq JETONDUR" bölməsi).
+    // Ona görə burada server-in hesabladığı effektivQalanSaat (Hüquq − cari
+    // ilin təsdiqlənmiş icazə saatı, İşçi Jeton Saatları ilə EYNİ düstur)
+    // istifadə olunur — 15.10.2026, real hadisə: Əjdər Dəmirov 36/36 YOX,
+    // 32,42 göstərməlidir.
+    if (r.sistemli && r.effektivQalanSaat != null) {
+        const eff = r.effektivQalanSaat;
+        const renk = eff < tam ? '#f59e0b' : '#22c55e';
+        return `<span style="color:${renk};font-weight:600" title="Hüquq (${tam} saat) − bu ilin təsdiqlənmiş icazə saatı">${eff} saat</span>`;
+    }
     // qalanSaat null deməkdir tam qalıb
     const qalan = r.qalanSaat != null ? r.qalanSaat : tam;
     const renk = qalan < tam ? '#f59e0b' : '#22c55e';

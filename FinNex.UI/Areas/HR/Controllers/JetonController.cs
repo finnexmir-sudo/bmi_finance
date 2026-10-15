@@ -1,4 +1,6 @@
+using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.DTOs.HR.Jeton;
+using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
@@ -18,12 +20,23 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IJetonService _jetonService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
+        // JetonSaatlariController-dəki EYNİ düsturu (Hüquq − cari ilin təsdiqlənmiş
+        // icazə saatı) bura da tətbiq etmək üçün — bax GetEmeliyyatlar (15.10.2026).
+        // IJetonService-in özünə İNJECT EDİLMİR: IcazeService artıq IJetonService-ə
+        // bağlıdır (jeton-ödənişi FIFO üçün), JetonService-ə IIcazeService əlavə
+        // etsək dairəvi DI asılılığı (JetonService→IcazeService→JetonService) yaranardı.
+        private readonly IIcazeService _icazeService;
 
-        public JetonController(IJetonService jetonService, IUnitOfWork unitOfWork, UserManager<AppUser> userManager)
+        public JetonController(
+            IJetonService jetonService,
+            IUnitOfWork unitOfWork,
+            UserManager<AppUser> userManager,
+            IIcazeService icazeService)
         {
             _jetonService = jetonService;
             _unitOfWork = unitOfWork;
             _userManager = userManager;
+            _icazeService = icazeService;
         }
 
         // ── GET /HR/Jeton ────────────────────────────────────
@@ -48,7 +61,48 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> GetEmeliyyatlar(int? isciId)
         {
             var list = await _jetonService.JetonEmeliyyatlariGetirAsync(isciId);
+            await EffektivQalanDoldurAsync(list);
             return Json(new { success = true, data = list });
+        }
+
+        // "36 Saat Hüququ {il}" (Sistemli=true) sətirlərinin QALAN-ını İşçi Jeton
+        // Saatları (/HR/JetonSaatlari) ilə EYNİ düsturla doldurur: Hüquq − cari ilin
+        // təsdiqlənmiş icazə saatı. Əks halda bu sətir adi mükafat jetonu kimi
+        // QalanSaat-ı (Qara Jeton kəsintisi xaric dəyişməz) göstərir — "36 Saat
+        // Hüququ" 36/36 qalır, halbuki işçi onun bir hissəsini icazəyə sərf edib
+        // (15.10.2026, real hadisə: Əjdər Dəmirov — burada 36, İşçi Jeton
+        // Saatlarında 32,42).
+        private async Task EffektivQalanDoldurAsync(IList<IsciJetonuListDto> list)
+        {
+            var sistemliSetirler = list.Where(x => x.Sistemli).ToList();
+            if (sistemliSetirler.Count == 0) return;
+
+            // Jeton adı "36 Saat Hüququ {il}" formatındadır, amma il üçün etibarlı
+            // mənbə QazanmaTarixi-dir (JetonService.EnsureIllikHuquqJetonuAsync
+            // onu `new DateTime(il, 1, 1)` ilə yazır) — mətn ayrıştırmağa güvənmə.
+            var illerUzreIsciler = sistemliSetirler
+                .GroupBy(x => x.QazanmaTarixi.Year)
+                .ToList();
+
+            foreach (var qrup in illerUzreIsciler)
+            {
+                var il = qrup.Key;
+                var neticeler = await _icazeService.GetIsciIzlemeAsync(new IcazeIzlemeFiltrDto
+                {
+                    TarixFrom = new DateTime(il, 1, 1),
+                    TarixTo = il == DateTime.Today.Year ? DateTime.Today : new DateTime(il, 12, 31)
+                });
+                var istifadeByIsci = neticeler.Success && neticeler.Data != null
+                    ? neticeler.Data.ToDictionary(x => x.IsciId, x => x.TesdiqSaat)
+                    : new Dictionary<int, double>();
+
+                foreach (var dto in qrup)
+                {
+                    var huquq = dto.QalanSaat ?? dto.JetonSaatDeyeri;
+                    var istifade = (decimal)istifadeByIsci.GetValueOrDefault(dto.IsciId, 0.0);
+                    dto.EffektivQalanSaat = huquq - istifade;
+                }
+            }
         }
 
         // ── POST /HR/Jeton/JetonVer ──────────────────────────

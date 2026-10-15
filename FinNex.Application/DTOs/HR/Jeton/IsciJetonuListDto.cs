@@ -36,5 +36,18 @@ namespace FinNex.Application.DTOs.HR.Jeton
         // kəsdiyi saat (JetonSaatDeyeri − hələ "Gözləyir"/bağışlanmış qalıq).
         // Null = Menfi deyil / hələ hesablanmayıb.
         public decimal? QaraJetonKesilenSaat { get; set; }
+
+        // "36 Saat Hüququ {il}" kimi Sistemli jeton növüdürmü (JetonTeyinati.Sistemli).
+        // 15.10.2026: bu bayraq olmadan HR/Jeton ("Jeton İdarəetməsi") səhifəsi bu
+        // jetonun QALAN-ını da adi mükafat kimi (QalanSaat, Qara Jeton kəsintisi
+        // xaric dəyişməz) göstərirdi — İşçi Jeton Saatları səhifəsinin "Qalıb"
+        // sütunu isə icazə istifadəsini çıxıb fərqli (düzgün) rəqəm göstərirdi.
+        public bool Sistemli { get; set; }
+
+        // YALNIZ Sistemli=true olan (məs. "36 Saat Hüququ") sətirlərdə doldurulur —
+        // JetonController.GetEmeliyyatlar, İşçi Jeton Saatları ilə EYNİ düsturla
+        // (Hüquq − cari ilin təsdiqlənmiş icazə saatı). Digər jeton növlərində
+        // həmişə null — QalanSaat-ın özü istifadə olunur.
+        public decimal? EffektivQalanSaat { get; set; }
     }
 }

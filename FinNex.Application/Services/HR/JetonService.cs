@@ -1483,6 +1483,7 @@ namespace FinNex.Application.Services.HR
             IcazeBaslamaSaati = x.Icaze != null ? x.Icaze.BaslamaSaati.ToString(@"hh\:mm") : null,
             IcazeBitisSaati   = x.Icaze != null ? x.Icaze.BitisSaati.ToString(@"hh\:mm") : null,
             XerclenmeTarixi   = x.XerclenmeTarixi,
+            Sistemli          = x.JetonTeyinati.Sistemli,
         };
 
         private static JetonRedimTelebiListDto MapRedim(JetonRedimTelebi x) => new()

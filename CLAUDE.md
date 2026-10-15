@@ -1490,6 +1490,79 @@ All** ilə yoxlamalı, həm də real ssenari ilə: (1) "Mükafat balans" rəqəm
 sütununun Dashboard-dakı "İcazə saatı — bu il" kartı ilə HƏR işçi üçün dəqiq
 üst-üstə düşdüyünü təsdiqləməli.
 
+### `HR/Jeton` ("Jeton İdarəetməsi") HƏLƏ KÖHNƏ RƏQƏMİ GÖSTƏRİRDİ — Yuxarıdaki Düzəliş Bu Səhifəyə KÖÇÜRÜLMƏMİŞDİ (15.10.2026, KRİTİK)
+
+İstifadəçi iki ekran-görüntüsü göndərdi: eyni işçinin (Əjdər Dəmirov) "36 Saat
+Hüququ 2026" jetonu `HR → Jeton İdarəetməsi` ("Əməliyyatlar" tabı) səhifəsində
+**QALAN=36** (tam, toxunulmamış) göstərirdi, `HR → İşçi Jeton Saatları`
+səhifəsində isə eyni işçi üçün **Qalıb=32,42** (36 − 3,58 istifadə) göstərirdi
+— sual: *"ejdere bax, niye ferqlidir? isci jeton saatlarinda duzdur ama
+idareetmede yox"*.
+
+**Kök səbəb — yuxarıdakı (14.10.2026) düzəliş YALNIZ `JetonSaatlariController`-ə
+yazılmışdı, "Jeton İdarəetməsi"ni çağıran `JetonService.JetonEmeliyyatlariGetirAsync`
+isə TOXUNULMAMIŞ qalmışdı.** Bu metod (`GET /HR/Jeton/GetEmeliyyatlar`-ı
+qidalandırır) `IsciJetonu.QalanSaat`-ı **olduğu kimi** DTO-ya yazır (`MapJeton`),
+`hr-jeton.js`-in `hjQalanGoster`-i isə `qalanSaat ?? jetonSaatDeyeri` məntiqi ilə
+göstərir. "36 Saat Hüququ" jetonunun `QalanSaat`-ı isə (yuxarı bax, "Qara Jeton"
+bölməsi) **YALNIZ Qara Jeton kəsintisi ilə dəyişir** — adi icazə istifadəsi ONA
+HEÇ TOXUNMUR (`IcazeUcunFifoJetonXercleAsync` və s. hamısı `!Sistemli` filtri ilə
+bu jetonu bilərəkdən kənarda saxlayır). Nəticə: Qara Jeton heç verilməyibsə
+`QalanSaat` HƏMİŞƏ `null`/tam dəyərdir, "Jeton İdarəetməsi" də HƏMİŞƏ 36/36
+göstərir — işçi nə qədər icazə istifadə edib-etməməsindən asılı olmayaraq.
+
+**Niyə sadəcə eyni hesablamanı `JetonService`-in özünə köçürmək OLMADI —
+DAİRƏVİ DI ASILILIĞI:** `IcazeService` artıq `IJetonService`-i inject edir
+(jeton-ödənişi FIFO üçün, `IcazeUcunFifoJetonXercleAsync`). `JetonService`-ə
+`IIcazeService` əlavə etsəydik, `JetonService → IcazeService → JetonService`
+dairəsi yaranardı — ASP.NET Core DI konteyneri bunu resolve anında
+`InvalidOperationException` ("A circular dependency was detected...") ilə
+rədd edərdi. Buna görə hesablama **`JetonController`-ə** (servis qatına yox,
+controller-ə) köçürüldü — controller hər iki servisi sərbəst inject edə bilər,
+dairə yalnız servislər arasında qadağandır.
+
+**Düzəliş — üç fayl:**
+1. `IsciJetonuListDto`-ya iki yeni sahə: `Sistemli` (`x.JetonTeyinati.Sistemli`,
+   `JetonService.MapJeton`-da doldurulur) və `EffektivQalanSaat` (`decimal?`,
+   yalnız Sistemli sətirlərdə dolu).
+2. `JetonController.GetEmeliyyatlar` → yeni `EffektivQalanDoldurAsync` helper —
+   siyahıdakı Sistemli sətirləri `QazanmaTarixi.Year`-ə görə qruplaşdırır (hər
+   "36 Saat Hüququ {il}" öz ilinin icazə statistikasına baxmalıdır), hər il üçün
+   **BİR DƏFƏ** `IIcazeService.GetIsciIzlemeAsync`-i çağırıb (`JetonSaatlariController`
+   ilə EYNİ çağırış, nəticə `TesdiqSaat`) nəticəni `IsciId`-yə görə lüğətə yığır,
+   sonra hər sətrə `EffektivQalanSaat = (QalanSaat ?? JetonSaatDeyeri) − İstifadə`
+   yazır — `JetonSaatlariController`-in `IllikQaliqSaat` düsturu ilə BİT-Bİ-BİT
+   eynidir, yeni düstur İCAD EDİLMƏDİ.
+3. `hr-jeton.js`-in `hjQalanGoster`-i — `r.sistemli && r.effektivQalanSaat != null`
+   olanda `effektivQalanSaat`-ı göstərir (tooltip-lə: "Hüquq (N saat) − bu ilin
+   təsdiqlənmiş icazə saatı"), əks halda köhnə `qalanSaat` yolu dəyişmədən qalır
+   (digər bütün jeton növləri — Platin/Qızıl/Gümüş/Bürünc/Qara — TOXUNULMADI).
+
+⚠️ **Yalnız `JetonEmeliyyatlariGetirAsync`-i çağıran "Jeton İdarəetməsi" düzəldi
+— `IsciAktivJetonlariniGetirAsync`-ə (işçinin öz "Cüzdanım" kart siyahısı)
+TOXUNULMADI**, çünki o metod artıq `!x.JetonTeyinati.Sistemli` filtri ilə bu
+jetonu TAMAMƏN kənarda saxlayır (işçi öz kartında "36 Saat Hüququ"nu
+ümumiyyətlə mükafat kimi görmür) — orada göstəriləcək səhv rəqəm yoxdur.
+
+**Qayda: eyni rəqəmin İKİ yazıcısı/oxuyucusu olanda (burada: bir sütun İKİ
+AYRI controller-dən fərqli düsturla hesablanır), bir yerdə düzəliş edərkən
+HƏR ÇAĞIRIŞ YERİNİ sadala, təkcə ƏN SON toxunulan səhifəni yox.** 14.10.2026-dakı
+"HR/JetonSaatlari" düzəlişi "36 Saat Hüququ"nun yalnız BİR göstərilmə yolunu
+(yeni, xüsusi hesabat səhifəsini) düzəltdi — "Jeton İdarəetməsi" həmin vaxt
+MÖVCUD İDİ və eyni jetonu göstərirdi, amma ora toxunulmadı, çünki o zaman
+istifadəçinin sualı konkret o səhifəyə aid deyildi. Nəticə: iki səhifə eyni
+jeton üçün eyni real tarixdə fərqli rəqəm göstərməyə davam etdi, 15.10.2026-da
+istifadəçi bunu fərq edənə qədər.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, DI dairəsi əl ilə izlənildi — `IcazeService` konstruktoru
+yoxlanıb `IJetonService` daşıdığı təsdiqləndi). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: Əjdər Dəmirov üçün
+"Jeton İdarəetməsi"ndəki "36 Saat Hüququ 2026" QALAN sütununun artıq
+"İşçi Jeton Saatları"ndəki Qalıb (32,42) ilə DƏQİQ üst-üstə düşdüyünü,
+digər (Platin/Qızıl/Gümüş/Bürünc/Qara) jeton sətirlərinin əvvəlki kimi
+qaldığını.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.
