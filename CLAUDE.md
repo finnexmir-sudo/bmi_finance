@@ -4422,11 +4422,67 @@ bir az artır (burada hər fayl ~1600 sətir), amma istifadəçi sətir seçimi
 kimi səhvə açıq, çaşdırıcı addımla məşğul olmur — "aç, F5, nəticəyə bax"
 qədər sadədir.
 
-**İdempotentlik açarı `(Tarix, TesdiqTarixi)` cütüdür, YALNIZ `Tarix` DEYİL** —
-tək `Tarix` ilə yoxlasaydıq, eyni günün 2-3 tarixi qrupundan yalnız BİRİNCİSİ
-yazılıb qalanları "artıq var" deyə səhvən atlanardı. `(Tarix, TesdiqTarixi)`
-hər tarixi qrupu öz dəqiq təsdiq anına görə ayırd edir və skripti TƏKRAR
-işlətmək təhlükəsizdir (artıq idxal olunmuş sətirlər bir də yazılmır).
+### İdempotentlik — Dəqiq Cütlük YERİNƏ TARİX SƏVİYYƏSİNDƏ QORUMA (15.10.2026, KRİTİK)
+
+İlk versiyada idempotentlik açarı `(Tarix, TesdiqTarixi)` CÜTÜ idi — tək `Tarix`
+ilə yoxlasaydıq, eyni günün 2-3 tarixi qrupundan yalnız BİRİNCİSİ yazılıb
+qalanları "artıq var" deyə səhvən atlanacaqdı. Bu, SKRİPTİN TƏKRAR İŞLƏDİLMƏ
+təhlükəsizliyi üçün düzgün idi, amma **CANLI SİSTEMLƏ TOQQUŞMA RİSKİNİ görmürdü**.
+
+ADDIM 1-in 1b sorğusu göstərdi ki, `KassaKursBeyannameleri`-də **2026-10-09**
+üçün artıq 2 sətir var (modulun özü 09.10.2026-da işə düşəndə yaradılmış) —
+dəqiq `(Tarix, TesdiqTarixi)` cütü ilə yoxlasaydıq, bu canlı sətirlərin
+`TesdiqTarixi`-si BMI export-undakı (`APPROVAL_DATE`) tarixi dəyərdən FƏRQLİ
+olduğu üçün **uyğunluq tapılmayacaq və skript 2026-10-09 üçün YENİ bir
+beyannamə YARADACAQDI** — canlı sətirlərin yanında.
+
+**Niyə bu, sadəcə "əlavə sətir" ilə bitməzdi:** `KassaKursService.
+GunlukGetirAsync` günün "cari" kursunu **`OrderByDescending(x => x.Id)`** ilə
+seçir — ən böyük Id "ən son". Bulk idxal BUGÜN (15.10.2026) icra olunduğu üçün
+import edilən tarixi sətir, Id sırasına görə canlı 09.10.2026 sətirlərindən
+**həmişə sonra** gəlir, deməli **daha böyük Id alır**. Nəticə: canlı sistemin
+09.10.2026-da həqiqətən təsdiqlədiyi kurs ekrandan yoxa çıxar, əvəzinə
+BMI-nin köhnə tarixi kursu "bugünkü status" kimi göstərilərdi — səssiz, heç
+bir xəta vermədən.
+
+**Həll — `#QorunanTarixler` (qorunan-tarixlər) snapshot-u, CURSOR dövrəsindən
+ƏVVƏL bir dəfə çəkilir:**
+
+```sql
+SELECT DISTINCT Tarix INTO #QorunanTarixler
+FROM KassaKursBeyannameleri WHERE Silinib = 0;
+```
+
+Cursor-un yoxlaması indi dəqiq cütlük DEYİL, **tarix səviyyəsindədir**:
+`IF NOT EXISTS (SELECT 1 FROM #QorunanTarixler WHERE Tarix = @Tarix)`. Bir
+tarixin artıq İSTƏNİLƏN canlı (silinməmiş) beyannaməsi varsa, o tarixin BÜTÜN
+BMI qrupları (bu dataset-də yalnız 2026-10-09, 1 qrup/5 sətir) ATLANIR —
+`TesdiqTarixi` saatı uyğun gəlsə də, gəlməsə də. ADDIM 1-in 1c sorğusu da
+eyni qaydaya köçürüldü: "Artıq mövcud tarix olduğu üçün ATLANACAQ beyannamə
+sayı" (tarix-səviyyəli) və "Yaradılacaq YENİ beyannamə sayı" göstərir.
+
+**8 "bir gündə bir neçə qrup" halı (öz-öz üst-üstə düşməsi) bundan
+TƏSİRLƏNMİR** — o hallar `#Kaynak`-ın öz daxilində, HEÇ BİRİNİN
+`KassaKursBeyannameleri`-də canlı qarşılığı olmadığı tarixlərdədir; yalnız
+canlı sistemdə ARTIQ mövcud olan tarix (bu dataset-də sırf 2026-10-09)
+qorunur, qalan 300 tarix adi qaydada (hamısı yeni) idxal olunur.
+
+**İstifadəçi aydınlaşdırması (15.10.2026): "bu menim oz bazamdakidir, problem
+yoxdur, canlida bosdur exchange"** — ADDIM 1-dəki 2026-10-09 sətirləri
+istifadəçinin öz (test) bazasındaki qeydlərdir, HƏQİQİ canlı/production
+Exchange isə hələ BOŞDUR. Yəni real idxal zamanı qorunan-tarix siyahısı çox
+güman boş çıxacaq və BÜTÜN 301 qrup yeni yazılacaq — `#QorunanTarixler`
+mexanizmi YENƏ DƏ saxlanılır (zərərsizdir, boş olanda heç nəyi atlamır) ki,
+gələcəkdə модуl istifadəyə başlayandan SONRA bu skript təkrar işlədilərsə
+(məs. unudulmuş köhnə qrup aşkar olunsa), canlı data yenə qorunsun.
+
+**Qayda: "skripti təkrar işlətmək təhlükəsizdir" YALNIZ öz-özünə dublikat
+yaratmamaq demək deyil — HƏDƏF cədvəldə skriptdən TAMAMİLƏ MÜSTƏQİL yaranmış
+(canlı istifadədən gələn) sətirlərlə TOQQUŞMA ehtimalını da AYRICA yoxla.**
+Burada hər ikisi lazım idi: `#Kaynak`-ın öz-özü ilə (8 çoxqruplu tarix) VƏ
+hədəf cədvəlin canlı vəziyyəti ilə (2026-10-09) — iki fərqli risk, iki fərqli
+qoruma mexanizmi (daxili dedup yoxdur, çünki hər qrup qəsdən ayrı beyannamə;
+xarici qoruma isə `#QorunanTarixler`).
 
 ### Ad Uyğunluğu — SQL-DƏ "TƏXMİN" YOX, İSTİFADƏÇİ ƏL İLƏ TƏSDİQLƏDİ (15.10.2026)
 

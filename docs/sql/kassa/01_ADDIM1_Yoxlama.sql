@@ -1561,13 +1561,19 @@ FROM #Kaynak k
 JOIN KassaKursBeyannameleri b ON b.Tarix = k.Tarix AND b.Silinib = 0
 ORDER BY k.Tarix;
 
--- 1c. Ümumi say xülasəsi — ADDIM 2 faylının HƏQİQƏTƏN nə edəcəyi
+-- 1c. Ümumi say xülasəsi — ADDIM 2 faylının HƏQİQƏTƏN nə edəcəyi.
+--     DİQQƏT: 1b-də tapılan tarix(lər) artıq mövcud olduğu üçün o GÜNÜN
+--     BÜTÜN qrupları ATLANIR (yalnız dəqiq təsdiq vaxtı uyğun gələn sətir
+--     yox — səbəb: 'ən son ID = cari kurs' qaydası canlı qeydi gizlədə bilər).
 
 SELECT
     (SELECT COUNT(DISTINCT k.BeyannameKey) FROM #Kaynak k) AS [Mənbədəki beyannamə sayı],
     (SELECT COUNT(*) FROM #Kaynak)                          AS [Mənbədəki sətir sayı],
-    (SELECT COUNT(DISTINCT k.BeyannameKey) FROM
-        (SELECT DISTINCT BeyannameKey, Tarix, TesdiqTarixi FROM #Kaynak) k
-       JOIN KassaKursBeyannameleri b
-         ON b.Tarix = k.Tarix AND b.TesdiqTarixi = k.TesdiqTarixi AND b.Silinib = 0)
-                                                              AS [Artıq idxal olunmuş (ATLANACAQ) beyannamə sayı];
+    (SELECT COUNT(DISTINCT k.BeyannameKey) FROM #Kaynak k
+       WHERE EXISTS (SELECT 1 FROM KassaKursBeyannameleri b
+                      WHERE b.Tarix = k.Tarix AND b.Silinib = 0))
+                                                              AS [Artıq mövcud tarix olduğu üçün ATLANACAQ beyannamə sayı],
+    (SELECT COUNT(DISTINCT k.BeyannameKey) FROM #Kaynak k
+       WHERE NOT EXISTS (SELECT 1 FROM KassaKursBeyannameleri b
+                          WHERE b.Tarix = k.Tarix AND b.Silinib = 0))
+                                                              AS [Yaradılacaq YENİ beyannamə sayı];

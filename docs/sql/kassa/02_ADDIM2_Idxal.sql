@@ -1539,6 +1539,19 @@ INSERT INTO #Kaynak (BeyannameKey, Tarix, Valyuta, NagdAlis, NagdSatis, QeyriNag
 (287, '2026-09-30', N'RUB', NULL, NULL, NULL, NULL, 2, 25, '2026-09-30T09:09:03');
 
 -- ============================================================
+-- QORUNAN TARİXLƏR — bu skript BAŞLAMAZDAN ƏVVƏL artıq mövcud olan
+-- (canlı sistemdən yazılmış) tarixlərin SİYAHISI. Bu siyahıdakı tarixlərin
+-- BÜTÜN qrupları atlanır (yalnız dəqiq təsdiq vaxtı uyğun gələn sətir yox) —
+-- çünki 'günün kursu = ən son ID' qaydası yeni idxal olunan köhnə sətiri
+-- canlı qeydin ÜSTÜNDƏ 'cari' kimi göstərə bilərdi (ADDIM 1-də tapılan risk).
+-- ============================================================
+
+IF OBJECT_ID('tempdb..#QorunanTarixler') IS NOT NULL DROP TABLE #QorunanTarixler;
+SELECT DISTINCT Tarix INTO #QorunanTarixler
+FROM KassaKursBeyannameleri
+WHERE Silinib = 0;
+
+-- ============================================================
 -- İDXAL — qrup-qrup CURSOR ilə (hər qrup öz tranzaksiyasında)
 -- ============================================================
 
@@ -1558,8 +1571,7 @@ FETCH NEXT FROM qrup_cursor INTO @BeyannameKey, @Tarix, @IcraciIsciId, @TesdiqEd
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM KassaKursBeyannameleri
-                   WHERE Tarix = @Tarix AND TesdiqTarixi = @TesdiqTarixi AND Silinib = 0)
+    IF NOT EXISTS (SELECT 1 FROM #QorunanTarixler WHERE Tarix = @Tarix)
     BEGIN
         INSERT INTO KassaKursBeyannameleri
             (Tarix, IcraciIsciId, Status, TesdiqEdenIsciId, TesdiqTarixi, ImtinaSebebi, YaradilmaTarixi, Silinib)
