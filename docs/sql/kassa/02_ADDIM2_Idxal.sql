@@ -1,37 +1,12 @@
 /* ============================================================
-   Kassa — Exchange (Valyuta Mübadiləsi) tarixi məlumatların idxalı
-   Mənbə: BMI-nin köhnə `bmi_kassa_kurs` cədvəlinin tam export-u
-   (istifadəçinin verdiyi Kassa_kurslar.xls, 'select * from bmi_kassa_kurs',
-   1505 sətir, 2025-03-03 — 2026-10-14).
+   Kassa — köhnə bmi_kassa_kurs tarixçəsinin idxalı — ADDIM 2: İDXAL
 
-   Oracle-a YAZI qadağandır və bu məlumat onsuz da Oracle-dan DEYİL —
-   Excel export-undan gəlir. Yazı birbaşa FinNex-in öz SQL Server bazasına gedir.
+   BU FAYL YAZIR — KassaKursBeyannameleri/KassaKursSetirleri-ə INSERT edir.
+   YALNIZ 01_ADDIM1_Yoxlama.sql-in nəticəsini gördükdən və razılaşdıqdan
+   SONRA işlət. SSMS-də aç, tam faylı F5 ilə işlət.
 
-   AD UYĞUNLUĞU ARTIQ HƏLL OLUNUB (15.10.2026, istifadəçi SSMS-də canlı yoxladı):
-   mənbədə cəmi 3 fərqli ad var, hər üçü üçün dəqiq Isciler.Id tapılıb və
-   BURADA SABİT YAZILIB (aşağıdakı INSERT-lərin özündə) — SQL-də heç bir
-   CHARINDEX/LTRIM ilə 'təxmin etmə' artıq YOXDUR:
-     - "Axundov Elxan" → Isciler.Id = 2
-     - "Najafi Asghar" → Isciler.Id = 25
-     - "Ibrahimov Anar" → Isciler.Id = 3
-   (ad-uyğunlaşdırma yoxlaması 1a-da əvvəl bəzi uyğunluqları TUTMURDU —
-   deyəsən gizli diakritik/kodlaşdırma fərqi var idi; indi lazım deyil,
-   çünki ID-lər istifadəçi tərəfindən əl ilə, ekranda baxaraq təsdiqlənib.)
-
-   QRUPLAMA: mənbədə INSERT_GROUP_NO sütunu var — hər qrup bir gündəlik
-   beyannaməyə (5 valyuta sətri) uyğundur. YALNIZ GroupNo=1 İSTİSNADIR —
-   30 sətir, 6 müxtəlif tarix daşıyır — bu skript onu TARİXƏ görə 6 ayrı
-   beyannaməyə bölür (sintetik açar 100000+).
-
-   ADDIM 1 — əvvəlcə YALNIZ aşağıdakı 'ADDIM 1' bölməsini işlət və nəticəyə bax:
-     (a) yuxarıdakı 3 ID Isciler-də aktiv/mövcuddurmu;
-     (b) hansı tarixlər artıq KassaKursBeyannameleri-də var (09.10.2026-dan
-         sonra canlı sistemdən əl ilə yazılmış ola bilər) — bunlar ADDIM 2-də
-         AVTOMATİK ATLANIR, təkrar yazılmır.
-   ADDIM 2 — yalnız (a) və (b) nəticəsini gördükdən və təsdiqlədikdən sonra işlət.
-
-   TƏKRAR İŞLƏDİLƏ BİLƏR — artıq idxal olunmuş (Tarix, TesdiqTarixi) cütləri
-   ikinci dəfə yazılmır (ADDIM 2-nin IF NOT EXISTS şərti).
+   TƏKRAR İŞLƏDİLƏ BİLƏR — artıq idxal olunmuş (Tarix, TesdiqTarixi)
+   cütləri ikinci dəfə yazılmır.
    ============================================================ */
 
 SET NOCOUNT ON;
@@ -1564,46 +1539,7 @@ INSERT INTO #Kaynak (BeyannameKey, Tarix, Valyuta, NagdAlis, NagdSatis, QeyriNag
 (287, '2026-09-30', N'RUB', NULL, NULL, NULL, NULL, 2, 25, '2026-09-30T09:09:03');
 
 -- ============================================================
--- ADDIM 1 — YOXLAMA (yalnız SELECT, heç nə dəyişmir)
--- ============================================================
-
--- 1a. Yuxarıdakı 3 ID Isciler-də mövcud/aktivdirmi?
-
-SELECT Id, Ad, Soyad, Silinib,
-       CASE WHEN Silinib = 1 THEN 'XƏBƏRDARLIQ — SİLİNİB!' ELSE 'OK' END AS Vəziyyət
-FROM Isciler
-WHERE Id IN (2, 25, 3)
-ORDER BY Id;
-
--- 1b. Bu tarixlərdən hansı artıq KassaKursBeyannameleri-də var?
---     (canlı sistemdən 09.10.2026-dan sonra əl ilə yazılmış ola bilər — ƏL İLƏ BAX,
---     tam dublikat deyilsə ADDIM 2 bunu ATLAMIR, çünki yoxlama (Tarix,
---     TesdiqTarixi) cütünə görədir, təkcə Tarix-ə görə yox — bax aşağı 1c.)
-
-SELECT DISTINCT k.Tarix, b.Id AS MovcudBeyannameId, b.Status, b.TesdiqTarixi AS MovcudTesdiqTarixi
-FROM #Kaynak k
-JOIN KassaKursBeyannameleri b ON b.Tarix = k.Tarix AND b.Silinib = 0
-ORDER BY k.Tarix;
-
--- 1c. Ümumi say xülasəsi — ADDIM 2-nin HƏQİQƏTƏN nə edəcəyi (dəqiq
---     (Tarix, TesdiqTarixi) cütünə görə, 1b-dəki kimi sadəcə Tarix-ə görə YOX)
-
-SELECT
-    (SELECT COUNT(DISTINCT k.BeyannameKey) FROM #Kaynak k) AS [Mənbədəki beyannamə sayı],
-    (SELECT COUNT(*) FROM #Kaynak)                          AS [Mənbədəki sətir sayı],
-    (SELECT COUNT(DISTINCT k.BeyannameKey) FROM
-        (SELECT DISTINCT BeyannameKey, Tarix, TesdiqTarixi FROM #Kaynak) k
-       JOIN KassaKursBeyannameleri b
-         ON b.Tarix = k.Tarix AND b.TesdiqTarixi = k.TesdiqTarixi AND b.Silinib = 0)
-                                                              AS [Artıq idxal olunmuş (ATLANACAQ) beyannamə sayı];
-
--- ============================================================
--- ADDIM 2 — İDXAL (ADDIM 1-i gördükdən və təsdiqlədikdən SONRA işlət)
---
--- Qrup-qrup CURSOR ilə yazılır — 8 gündə mənbədə BİR tarixə BİRDƏN ÇOX qrup
--- var (eyni gün ərzində bir neçə dəfə göndərilmiş kurs, canlı sistemin özünün
--- dəstəklədiyi hal), ona görə Tarix-ə görə toplu INSERT+geri-uyğunlaşdırma
--- YERİNƏ hər qrup öz Id-sinə bağlanır.
+-- İDXAL — qrup-qrup CURSOR ilə (hər qrup öz tranzaksiyasında)
 -- ============================================================
 
 BEGIN TRANSACTION;
@@ -1622,11 +1558,6 @@ FETCH NEXT FROM qrup_cursor INTO @BeyannameKey, @Tarix, @IcraciIsciId, @TesdiqEd
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    -- Eyni (Tarix, TesdiqTarixi) cütü ilə qeyd artıq varsa — bu KONKRET tarixi
-    -- idxal ATLANIR (skriptin təkrar işlədilməsindən qorunur). Yalnız Tarix-ə görə
-    -- yoxlamırıq — bir gündə BİRDƏN ÇOX tarixi mənbə qrupu ola bilər (gün ərzində
-    -- kursun bir neçə dəfə göndərildiyi 8 gün) və bunların HƏR BİRİ öz TesdiqTarixi-i
-    -- ilə AYRICA tarixçə sətri olaraq qalmalıdır.
     IF NOT EXISTS (SELECT 1 FROM KassaKursBeyannameleri
                    WHERE Tarix = @Tarix AND TesdiqTarixi = @TesdiqTarixi AND Silinib = 0)
     BEGIN

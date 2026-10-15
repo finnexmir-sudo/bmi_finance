@@ -4389,21 +4389,38 @@ dəstəklədiyi "Gün İçində Kurs Dəyişikliyi" davranışıdır (bax yuxar�
 `GunlukGetirAsync`-in `OrderByDescending(Id)` qaydası ilə eyni), BİRİ o
 birini əvəz etmir.
 
-**Skript — `docs/sql/kassa/01_Exchange_Tarixi_Idxal.sql`** (iki addımlı,
-CLAUDE.md-nin "SQL migration vermədən əvvəl SELECT ilə göstər" qaydasına
-uyğun):
-- **ADDIM 1** (yalnız SELECT): (a) aşağıdakı 3 `Isciler.Id`-nin mövcud/aktiv
-  olduğunu göstərir; (b) hansı tarixlərdə artıq `KassaKursBeyannameleri`-də
-  qeyd var (09.10.2026 modul işə düşəndən sonra canlı sistemdən yazılmış ola
-  bilər — xüsusilə 2026-10-09/12/13/14, bu export elə həmin günləri də əhatə
-  edir); (c) ADDIM 2-nin HƏQİQƏTƏN nə qədər yeni beyannamə yaradacağının sayı.
-- **ADDIM 2**: `#Kaynak` staging cədvəlindən **CURSOR** ilə (OUTPUT+Tarix
-  üzrə geri-uyğunlaşdırma QƏSDƏN İŞLƏDİLMƏDİ — yuxarıdaki 8 "bir gündə
-  bir neçə qrup" halında Tarix unikal deyil, OUTPUT-u Tarix-ə görə geri
-  bağlasaq sətirlər səhv beyannaməyə düşərdi) hər qrupu öz tranzaksiyası
-  daxilində `KassaKursBeyannameleri` + `KassaKursSetirleri`-yə yazır,
-  Status birbaşa **Tesdiqlendi (2)** ilə (tarixi data onsuz da təsdiqlənib,
-  Gözləyir→Tesdiqlendi iki addımlı keçidə ehtiyac yoxdur).
+**İKİ AYRI, TAM MÜSTƏQİL fayl** (CLAUDE.md-nin "SQL migration vermədən əvvəl
+SELECT ilə göstər" qaydasına uyğun) — istifadəçi "niyə sətir seçməliyəm,
+niyə tam vermirsən" deyə haqlı etiraz etdikdən sonra (15.10.2026) BİR
+kombinə fayl (ADDIM 1 + ADDIM 2, "bu sətirdən bu sətrə qədər seç" təlimatı
+ilə) İKİ tam, öz-özünə yetərli fayla bölündü — hər biri `#Kaynak` staging
+cədvəlini (1505 sətirlik `INSERT`) ÖZ İÇİNDƏ TƏKRARLAYIR ki, istifadəçi
+faylı SSMS-də açıb **sadəcə tam F5 ilə işlətsin**, heç bir sətir seçməsin:
+
+- **`docs/sql/kassa/01_ADDIM1_Yoxlama.sql`** — yalnız SELECT, heç nə yazmır.
+  (a) aşağıdakı 3 `Isciler.Id`-nin mövcud/aktiv olduğunu göstərir;
+  (b) hansı tarixlərdə artıq `KassaKursBeyannameleri`-də qeyd var (09.10.2026
+  modul işə düşəndən sonra canlı sistemdən yazılmış ola bilər — xüsusilə
+  2026-10-09/12/13/14, bu export elə həmin günləri də əhatə edir);
+  (c) ADDIM 2-nin HƏQİQƏTƏN nə qədər yeni beyannamə yaradacağının sayı.
+- **`docs/sql/kassa/02_ADDIM2_Idxal.sql`** — yazır. `#Kaynak` staging
+  cədvəlindən **CURSOR** ilə (OUTPUT+Tarix üzrə geri-uyğunlaşdırma QƏSDƏN
+  İŞLƏDİLMƏDİ — 8 "bir gündə bir neçə qrup" halında Tarix unikal deyil,
+  OUTPUT-u Tarix-ə görə geri bağlasaq sətirlər səhv beyannaməyə düşərdi)
+  hər qrupu öz tranzaksiyası daxilində `KassaKursBeyannameleri` +
+  `KassaKursSetirleri`-yə yazır, Status birbaşa **Tesdiqlendi (2)** ilə
+  (tarixi data onsuz da təsdiqlənib, Gözləyir→Tesdiqlendi iki addımlı
+  keçidə ehtiyac yoxdur). YALNIZ 1-ci faylın nəticəsini gördükdən sonra
+  işlədilməlidir.
+
+**Qayda: bir SQL skripti bir neçə addımdan ibarətdirsə (YOXLA → YAZ) və
+istifadəçi SSMS-dən əl ilə işlədəcəksə, addımları TƏK fayl daxilində
+"bu sətirdən bu sətrə qədər seç" təlimatı ilə AYIRMA — hər addım üçün
+AYRI, tam, başdan-sona F5 ilə işə düşən fayl yaz, lazım gələn staging
+datanı (temp cədvəl + INSERT-lər) hər faylın özündə TƏKRARLA.** Fayl ölçüsü
+bir az artır (burada hər fayl ~1600 sətir), amma istifadəçi sətir seçimi
+kimi səhvə açıq, çaşdırıcı addımla məşğul olmur — "aç, F5, nəticəyə bax"
+qədər sadədir.
 
 **İdempotentlik açarı `(Tarix, TesdiqTarixi)` cütüdür, YALNIZ `Tarix` DEYİL** —
 tək `Tarix` ilə yoxlasaydıq, eyni günün 2-3 tarixi qrupundan yalnız BİRİNCİSİ
