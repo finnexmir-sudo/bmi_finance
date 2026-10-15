@@ -1672,6 +1672,42 @@ enli olduğunu, "İşçi" adlarının tək sətirdə qaldığını, cədvəl xan
 indi görünən xətlərlə (grid) ayrıldığını — həm "Bütün işçilər" (tam siyahı),
 həm filtrlənmiş (tək işçi) görünüşdə.
 
+#### BEŞİNCİ DALĞA — `overflow:hidden` Sütunları KƏSİRDİ, Scroll YOX İDİ (15.10.2026, KRİTİK)
+
+Dördüncü dalğanın (yuxarı) `min-width` düzəlişi deploy olunandan dərhal sonra
+istifadəçi real ekranda cədvəlin **sağ kənarının kəsildiyini** göstərdi —
+"STATUS" sütunu və silmə düyməsi ekrandan çıxmışdı, heç bir üfüqi scrollbar
+yox idi: *"bu nedir? cox seliqesiz. xerclendi sutununuda genislendir"*.
+
+**Kök səbəb:** `.hj-table-wrap`-in köhnə `overflow: hidden` qaydası —
+dördüncü dalğada İşçi/Səbəb sütunlarına əlavə olunan `min-width` dəyərləri
+cədvəlin ÜMUMİ enini konteynerdən GENİŞ etdi, amma `overflow:hidden`
+daşan hissəni scroll ETMİR, sadəcə **görünməz edib kəsir**. Nəticə: Status
+sütunu və əməliyyat düyməsi fiziki olaraq mövcud idi, amma konteynerin
+kənarından kənarda, görünməz qalırdı.
+
+**Düzəliş:** `overflow: hidden` → `overflow-x: auto` — cədvəl konteynerdən
+genişdirsə indi **üfüqi scrollbar** çıxır, heç bir sütun kəsilmir. Bu, üç
+cədvəlin (Əməliyyatlar/Tarixçə/Redim) HAMISINA aiddir, çünki `.hj-table-wrap`
+paylaşılan sinifdir.
+
+**Əlavə tələb — "Xərcləndi" sütunu da genişləndirildi** (`nth-child(5)`,
+`min-width:210px`) — bu sütun multi-sətir məzmun daşıyır (ikon+növ, icazə
+tarix-saat aralığı, "xərcləndi: TARİX" qeydi) və dar enlə hər sətir öz
+daxilində də sıxışırdı.
+
+**Qayda: `min-width` ilə sütun genişləndirəndə, konteynerin `overflow`
+davranışını da yoxla.** `overflow:hidden` olan bir konteynerə `min-width`
+əlavə etmək cədvəli konteynerdən genişlədə bilər — bu halda `hidden` sütunları
+SCROLL ETMƏK ƏVƏZİNƏ KƏSİR, heç bir xəta/xəbərdarlıq olmadan. Konteyner
+`overflow-x:auto` olmalıdır ki, genişlənmə scrollbar versin, kəsilmə yox.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (CSS mötərizə balansı). İstifadəçi real brauzerdə yoxlamalıdır:
+cədvəlin sağ kənarının (Status + silmə düyməsi) artıq görünən qaldığını
+(lazım gələrsə üfüqi scroll ilə), "Xərcləndi" sütununun daha geniş/səliqəli
+göründüyünü.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.

@@ -95,7 +95,7 @@
 /* ── Table ─────────────────────────────────────────────── */
 .hj-table-wrap {
     background: #fff; border-radius: var(--hj-radius);
-    box-shadow: var(--hj-shadow); overflow: hidden;
+    box-shadow: var(--hj-shadow); overflow-x: auto;
     border: 1px solid var(--hj-border);
 }
 .hj-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -145,6 +145,9 @@
    yoxdur (bax yuxarıdakı qeyd). */
 #hjEmeliyyatlarTable td:nth-child(1), #hjEmeliyyatlarTable th:nth-child(1) {
     min-width: 170px;
+}
+#hjEmeliyyatlarTable td:nth-child(5), #hjEmeliyyatlarTable th:nth-child(5) {
+    min-width: 210px;
 }
 .hj-td-sebeb {
     min-width: 280px; max-width: 420px;
