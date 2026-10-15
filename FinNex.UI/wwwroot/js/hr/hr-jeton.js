@@ -149,8 +149,13 @@ function hjQalanGoster(r) {
     // 32,42 göstərməlidir.
     if (r.sistemli && r.effektivQalanSaat != null) {
         const eff = r.effektivQalanSaat;
+        // Server c# decimal çıxarması (Hüquq − İstifadə) uzun onluq qalıq verə
+        // bilər (məs. 32.41666666666667) — digər QALAN dəyərləri ilə EYNİ
+        // formatlama (toFixed(2) + artıq sıfırları/nöqtəni at) tətbiq olunur,
+        // "İşçi Jeton Saatları"ndəki Razor "0.##" formatı ilə UYĞUN (15.10.2026).
+        const effStr = eff.toFixed(2).replace(/\.?0+$/, '');
         const renk = eff < tam ? '#f59e0b' : '#22c55e';
-        return `<span style="color:${renk};font-weight:600" title="Hüquq (${tam} saat) − bu ilin təsdiqlənmiş icazə saatı">${eff} saat</span>`;
+        return `<span style="color:${renk};font-weight:600" title="Hüquq (${tam} saat) − bu ilin təsdiqlənmiş icazə saatı">${effStr} saat</span>`;
     }
     // qalanSaat null deməkdir tam qalıb
     const qalan = r.qalanSaat != null ? r.qalanSaat : tam;

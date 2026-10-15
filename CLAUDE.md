@@ -1544,6 +1544,38 @@ TOXUNULMADI**, çünki o metod artıq `!x.JetonTeyinati.Sistemli` filtri ilə bu
 jetonu TAMAMƏN kənarda saxlayır (işçi öz kartında "36 Saat Hüququ"nu
 ümumiyyətlə mükafat kimi görmür) — orada göstəriləcək səhv rəqəm yoxdur.
 
+#### İKİNCİ DALĞA — Formatlanmamış C# Decimal Cədvəli Pozdu (15.10.2026)
+
+Düzəliş deploy olunandan dərhal sonra istifadəçi real ekranda QALAN sütununda
+**"32.41666666666667 saat"** göstərildiyini bildirdi: *"siyahida seliqesizdiye,
+hamisi ic ice"*. Səbəb: `EffektivQalanDoldurAsync`-dəki `huquq − istifade`
+çıxarması (`decimal`, `TesdiqSaat`-dan gələn `double`-ın `(decimal)` cast-ı)
+heç bir yuvarlaqlaşdırma olmadan **xam** DTO-ya yazılırdı, `hjQalanGoster`
+isə onu `${eff}`-lə birbaşa çap edirdi — nəticə 15 onluq rəqəmli bir mətn
+idi. `<td style="white-space:nowrap">` sütunu bu uzun mətnə görə həddindən
+artıq genişlənir, cədvəlin qalan sütunları (Xərcləndi/Tarix/Səbəb/Status)
+sıxışıb bir-birinin üstünə düşmüş görünürdü — "hamısı iç-içə" simptomunun
+kök səbəbi elə BU rəqəmin uzunluğu idi, ayrıca CSS/layout bugu deyil.
+
+**Düzəliş — `hr-jeton.js`, `hjQalanGoster`:** `effektivQalanSaat` indi
+cədvəldəki DİGƏR bütün rəqəmlərlə (məs. `qalan/8` gün hesabı, sətir 159)
+EYNİ naxışla formatlanır — `eff.toFixed(2).replace(/\.?0+$/, '')` — yəni
+ən çox 2 onluq, artıq sıfırlar/nöqtə atılır (`32.42`, tam ədəddirsə `32`).
+Bu, "İşçi Jeton Saatları"nın özünün Razor-dakı `"0.##"` formatı ilə EYNİ
+NƏTİCƏNİ verir (fərq yalnız onluq ayırıcıda — JS `.` yazır, Razor az-AZ
+mədəniyyətində `,` — hər ikisi öz kontekstində doğrudur, bax "Razor → CSS/JS
+Rəqəm — Mədəniyyət" bölməsi: problem YALNIZ maşın-oxuyan tərəfdə yaranır,
+burada hər iki tərəf artıq İNSAN-oxuyan mətndir).
+
+**Qayda: serverdən gələn xam `decimal`/`double` DƏYƏRİ birbaşa `${...}`
+şablon literalına YAZMA** — xüsusən çıxarma/bölmə kimi əməliyyatın nəticəsi
+uzun onluq qalıqla gələ bilər. Cədvəl kontekstində bu, sadəcə "çirkin rəqəm"
+DEYİL — sabit en olmayan sütunları genişləndirib bütün cədvəl sətrini
+pozur. Yeni bir rəqəm sahəsi JS-dən render edəndə, HƏMİŞƏ həmin cədvəldəki
+DİGƏR rəqəmlərin işlətdiyi formatlama funksiyasını (burada: `toFixed(2)` +
+trailing-zero təmizləmə) təkrar istifadə et, yeni, formatlanmamış bir
+çıxışı birbaşa buraxma.
+
 **Qayda: eyni rəqəmin İKİ yazıcısı/oxuyucusu olanda (burada: bir sütun İKİ
 AYRI controller-dən fərqli düsturla hesablanır), bir yerdə düzəliş edərkən
 HƏR ÇAĞIRIŞ YERİNİ sadala, təkcə ƏN SON toxunulan səhifəni yox.** 14.10.2026-dakı
