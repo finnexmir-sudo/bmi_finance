@@ -104,13 +104,12 @@
     padding: 11px 14px; text-align: left;
     font-size: 12px; font-weight: 700; color: var(--hj-muted);
     text-transform: uppercase; letter-spacing: .5px;
-    border-bottom: 1px solid var(--hj-border);
+    border: 1px solid var(--hj-border);
 }
 .hj-table td {
-    padding: 12px 14px; border-bottom: 1px solid #f3f4f6;
+    padding: 12px 14px; border: 1px solid #f3f4f6;
     color: var(--hj-text); vertical-align: middle;
 }
-.hj-table tbody tr:last-child td { border-bottom: none; }
 .hj-table tbody tr:hover { background: #f9fafb; }
 .hj-empty { text-align: center; color: var(--hj-muted); padding: 32px; }
 
@@ -129,12 +128,26 @@
     text-align: right;
 }
 
-/* `hj-td-sebeb` markup-da (Jeton/Index.cshtml) yazılıb, amma heç bir CSS-i
-   yox idi — sərbəst "Səbəb" mətni heç bir en sərhədi olmadan cədvəli
-   lazımsız genişləndirə bilirdi. `max-width` + söz-sındırma onu məhdudlaşdırır,
-   `white-space:normal` ilə (default) sətir daxilində sərbəst bükülür. */
+/* İKİNCİ DALĞA (15.10.2026) — istifadəçi: "Səbəb sütununu genişləndirsə cədvəl
+   səliqəyə düşər... işçi adını da genişləndir". Köhnə `max-width:260px` elə
+   DAR idi ki, uzun səbəb mətni (məs. "Qeyri iş vaxtı ... server otağının
+   təmiri ilə əlaqədar işə çıxdığı üçün.") hər sözdən sonra sətir keçirdi —
+   6-7 sətirlik nazik sütun yaradırdı, sətir hündürlüyü "İşçi"/"Jeton" kimi
+   tək-sətirli qonşu sütunlarla ƏN BÖYÜK ziddiyyəti yaradan elə bu idi.
+   `min-width` ilə genişləndirilib ki, orta uzunluqlu səbəb TƏK sətirdə qalsın,
+   `max-width` yalnız HƏDSİZ uzun mətni (yüzlərlə simvol) məhdudlaşdırır —
+   əvvəlki kimi hər söz üçün sətir kəsmir. `İşçi` sütunu (nth-child(1)) da
+   eyni səbəbdən genişləndirildi — ad-soyad iki sözə bölünüb iki sətirə
+   düşməsin (məs. "Məhəmməd Bəkirov" əvvəl eni sabit olmayan sütunda tez-tez
+   qırılırdı). `table-layout:fixed` İNDİ DƏ İŞLƏDİLMİR — yalnız `min-width`
+   sütunun minimum enini qaldırır, auto düzüm hələ də real məzmuna görə
+   lazım gələndə ondan da genişlənə bilir, overflow-qonşu-sütuna-daşma riski
+   yoxdur (bax yuxarıdakı qeyd). */
+#hjEmeliyyatlarTable td:nth-child(1), #hjEmeliyyatlarTable th:nth-child(1) {
+    min-width: 170px;
+}
 .hj-td-sebeb {
-    max-width: 260px;
+    min-width: 280px; max-width: 420px;
     overflow-wrap: break-word; word-break: break-word;
     font-size: 13px; color: var(--hj-muted);
 }

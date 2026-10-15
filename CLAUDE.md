@@ -1633,6 +1633,45 @@ yoxlanıb `IJetonService` daşıdığı təsdiqləndi). İstifadəçi Visual Stu
 digər (Platin/Qızıl/Gümüş/Bürünc/Qara) jeton sətirlərinin əvvəlki kimi
 qaldığını.
 
+#### DÖRDÜNCÜ DALĞA — Səbəb Sütunu Dar Qalırdı + Xətsiz Cədvəl (15.10.2026)
+
+İstifadəçi real ekranlarda (iki ayrı ekran-görüntüsü) iki əlavə qüsur göstərdi:
+*"Səbəb sütununu genişləndirsə cədvəl səliqəyə düşər"* + *"2-ci şəkildə də eyni
+qayda ilə, bir az çərçivə qat cədvələ, xətlər görünəndə daha səliqəli olur,
+işçi adını da genişləndir"*.
+
+1. **`.hj-td-sebeb`-in köhnə `max-width:260px`-i DAR idi** — uzun səbəb mətni
+   (məs. "Qeyri iş vaxtı 12.10.2026 tarixində saat 00:40-dək server otağının
+   təmiri ilə əlaqədar işə çıxdığı üçün.") hər 2-3 sözdən sonra sətir keçib
+   6-7 sətirlik nazik sütun yaradırdı — bu, qonşu tək-sətirli sütunlarla
+   (İşçi/Jeton/Status) şaquli ən böyük uyğunsuzluğu elə BU sütun yaradırdı.
+   `max-width` 420px-ə qaldırıldı, əlavə `min-width:280px` qoyuldu — orta
+   uzunluqlu səbəb indi tək (və ya iki) sətirdə qalır, yalnız HƏDSİZ uzun
+   mətn (yüzlərlə simvol) hələ də kəsilib bükülür.
+2. **"İşçi" sütunu (nth-child(1))** eyni səbəbdən `min-width:170px` aldı —
+   ad-soyad (məs. "Məhəmməd Bəkirov") əvvəl sabit eni olmayan sütunda iki
+   sözə bölünüb iki sətirə düşə bilirdi.
+3. **Grid/çərçivə görünüşü** — `.hj-table th`/`.hj-table td`-nin yalnız
+   `border-bottom` yazan köhnə qaydası **tam `border: 1px solid`**-ə
+   dəyişdirildi (üç cədvələ — Əməliyyatlar/Tarixçə/Redim — də tətbiq olunur,
+   `.hj-table` paylaşılan sinifdir). Nəticə: hər xana öz xətti ilə ayrılır —
+   istifadəçinin istədiyi "xətlər görünəndə daha səliqəli olur" effekti.
+   Köhnə `tbody tr:last-child td { border-bottom: none }` qaydası artıq
+   mənasız olduğu üçün silindi (indi HƏR sətrin öz tam sərhədi var).
+
+⚠️ **`table-layout:fixed` YENƏ DƏ İŞLƏDİLMƏDİ** — `min-width` sütunun minimum
+enini qaldırır, amma `auto` düzüm hələ də lazım gələndə ondan da genişlənə
+bilir (fixed-width kimi sərt kəsmə yoxdur) — ƏVVƏLKİ DALĞADA (yuxarı) izah
+edilən "dar faiz en + nowrap = qonşu sütuna daşma" riski bu üsulda yoxdur,
+çünki `min-width` yalnız AŞAĞI hədd qoyur, YUXARI hədd qoymur.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (CSS mötərizə balansı, mojibake skanı — hər ikisi təmiz).
+İstifadəçi real brauzerdə yoxlamalıdır: "Səbəb" sütununun artıq normal
+enli olduğunu, "İşçi" adlarının tək sətirdə qaldığını, cədvəl xanalarının
+indi görünən xətlərlə (grid) ayrıldığını — həm "Bütün işçilər" (tam siyahı),
+həm filtrlənmiş (tək işçi) görünüşdə.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.
