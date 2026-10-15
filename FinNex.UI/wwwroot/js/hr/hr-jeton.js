@@ -12,6 +12,68 @@ function hjEsc(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
+// ── Cədvəl sətir/sütun seçimi (15.10.2026) ─────────────────────────────────
+// İstifadəçi "GPT-nin dizaynı" nümunəsindən YALNIZ bu hissəni istədi (bax
+// CLAUDE.md, AskUserQuestion cavabı: "Yalnız cədvələ sətir/sütun seçimi") —
+// KPI kartları/qrafik/avatar YOXDUR. Başlığa klik sütunu, sətrə klik sətri
+// vurğulayır (tək seçim, təkrar klik ləğv edir). Hər üç cədvəl (Əməliyyatlar/
+// Tarixçə/Redim) eyni generik funksiyadan keçir — thead/tbody elementlərinin
+// ÖZÜ reload-da dəyişmir (yalnız `tbody.innerHTML` yenilənir), ona görə
+// delegasiya bir dəfə qoşulub hər reload-dan sonra işləməyə davam edir.
+function hjInitTableSelection(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table || table.dataset.hjSelInit) return;
+    table.dataset.hjSelInit = '1';
+
+    const theadRow = table.tHead && table.tHead.rows[0];
+    if (theadRow) {
+        Array.from(theadRow.cells).forEach((th, idx) => {
+            if (!th.textContent.trim()) return; // son, başlıqsız (əməliyyat) sütunu seçilməsin
+            th.style.cursor = 'pointer';
+            if (!th.title) th.title = 'Sütunu vurğula';
+            th.addEventListener('click', () => hjToggleColSelect(table, idx));
+        });
+    }
+
+    const tbody = table.tBodies[0];
+    if (tbody) {
+        tbody.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return; // əməliyyat düyməsi seçimi tətikləməsin
+            const tr = e.target.closest('tr');
+            if (!tr || !tbody.contains(tr) || tr.querySelector('.hj-empty')) return;
+            hjToggleRowSelect(tbody, tr);
+        });
+    }
+}
+
+function hjToggleRowSelect(tbody, tr) {
+    const was = tr.classList.contains('hj-row-selected');
+    tbody.querySelectorAll('tr.hj-row-selected').forEach(r => r.classList.remove('hj-row-selected'));
+    if (!was) tr.classList.add('hj-row-selected');
+}
+
+function hjToggleColSelect(table, idx) {
+    const already = table.dataset.hjSelCol === String(idx);
+    delete table.dataset.hjSelCol;
+    table.querySelectorAll('.hj-col-selected').forEach(el => el.classList.remove('hj-col-selected'));
+    if (already) return;
+    table.dataset.hjSelCol = String(idx);
+    hjApplyColSelect(table);
+}
+
+// Cədvəl yenidən yüklənəndə (filtr/yenilə) `tbody.innerHTML` dəyişir və
+// köhnə sütun vurğusu avtomatik itir — hər reload-dan sonra çağırılıb
+// seçimi bərpa edir. Seçim yoxdursa heç nə etmir.
+function hjApplyColSelect(table) {
+    const idx = table.dataset.hjSelCol;
+    if (idx == null) return;
+    const i = Number(idx);
+    table.querySelectorAll('thead tr, tbody tr').forEach(tr => {
+        const cell = tr.children[i];
+        if (cell) cell.classList.add('hj-col-selected');
+    });
+}
+
 // ── Tab idarəsi ───────────────────────────────────────────
 function hjSwitchTab(btn, tab) {
     document.querySelectorAll('.hj-tab').forEach(t => t.classList.remove('hj-tab--active'));
@@ -59,6 +121,7 @@ async function hjLoadTarixce() {
                     </button>
                 </td>
             </tr>`).join('');
+        hjApplyColSelect(document.getElementById('hjTarixceTable'));
     } catch {
         tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Xəta baş verdi.</td></tr>';
     }
@@ -127,6 +190,7 @@ async function hjLoadEmeliyyatlar() {
                         : ''}
                 </td>
             </tr>`).join('');
+        hjApplyColSelect(document.getElementById('hjEmeliyyatlarTable'));
     } catch {
         tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Xəta baş verdi.</td></tr>';
     }
@@ -233,6 +297,7 @@ async function hjLoadRedimler() {
                     </button>
                 </td>
             </tr>`).join('');
+        hjApplyColSelect(document.getElementById('hjRedimTable'));
     } catch {
         tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Xəta baş verdi.</td></tr>';
     }
@@ -445,6 +510,9 @@ function hjToast(msg, type = 'info') {
 
 // ── Init ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    hjInitTableSelection('hjEmeliyyatlarTable');
+    hjInitTableSelection('hjTarixceTable');
+    hjInitTableSelection('hjRedimTable');
     hjLoadEmeliyyatlar();
     // Gözləyən redim badge-ini yüklə
     fetch('/HR/Jeton/GetRedimler')

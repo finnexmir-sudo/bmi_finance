@@ -113,6 +113,24 @@
 .hj-table tbody tr:hover { background: #f9fafb; }
 .hj-empty { text-align: center; color: var(--hj-muted); padding: 32px; }
 
+/* ── Sətir/sütun seçimi (15.10.2026) ─────────────────────
+   GPT-mockup nümunəsindən istifadəçinin seçdiyi YEGANƏ hissə — bax
+   hr-jeton.js "Cədvəl sətir/sütun seçimi" bloku. Başlığa klik sütunu,
+   sətrə klik sətri vurğulayır; hover-dən (yuxarı, boz) fərqləndirmək üçün
+   bənövşəyi (--hj-primary) tonunda, aydın görünən fon seçildi. */
+.hj-table tbody tr.hj-row-selected,
+.hj-table tbody tr.hj-row-selected:hover {
+    background: color-mix(in srgb, var(--hj-primary) 10%, #fff);
+}
+.hj-table th.hj-col-selected,
+.hj-table td.hj-col-selected {
+    background: color-mix(in srgb, var(--hj-primary) 7%, #fff);
+}
+.hj-table tbody tr.hj-row-selected td.hj-col-selected {
+    background: color-mix(in srgb, var(--hj-primary) 16%, #fff);
+}
+.hj-table th.hj-col-selected { color: var(--hj-primary-h); }
+
 /* "Əməliyyatlar" cədvəli (İşçi/Jeton/Dəyər/Qalan/Xərcləndi/Tarix/Səbəb/Status/—) —
    15.10.2026, istifadəçi: "cedvel ozude seliqesiz, hamisi ic ice". İKİ əsl qüsur
    var idi: (1) `vertical-align` təyin olunmamışdı — "Xərcləndi" sütunu ikon+2

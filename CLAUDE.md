@@ -1756,6 +1756,61 @@ yoxlamalıdır: Status sütunu və silmə düyməsinin indi HEÇ bir scroll laz�
 olmadan görünən qaldığını, Səbəb sütununun uzun mətndə iki sətirdən sonra
 "…" ilə kəsildiyini və üzərinə hover edəndə tooltip-də tam mətnin çıxdığını.
 
+#### YEDDİNCİ DALĞA — Sətir/Sütun Seçimi (GPT-mockup-un YALNIZ bu hissəsi, 15.10.2026)
+
+İstifadəçi ChatGPT-nin hazırladığı bir "Jeton Analitika" mockup şəkli göstərdi
+(KPI kartları, qrafik, avatarlı sətirlər, sağda "Son əməliyyatlar" paneli) və
+*"gpt nin versiyasida yaxsidir mence, biraz cedvel goruntusunude yaratsaq,
+sutun setior secilse dahada yaxsi olar mence"* dedi. Tələb qeyri-müəyyən idi
+— həm əhatə (kiçik əlavə vs tam redizayn), həm hədəf (bu sessiyada işlənən
+"Jeton İdarəetməsi" vs mockup-un öz başlığının adlandırdığı, tamamilə ayrı,
+artıq mövcud "Jeton Analitika" səhifəsi) aydın deyildi. `AskUserQuestion` ilə
+dəqiqləşdirildi, cavablar: **"Yalnız cədvələ sətir/sütun seçimi"** (KPI
+kartı/qrafik/avatar YOX) + **"Jeton İdarəetməsi"** (Jeton Analitika YOX).
+
+**Tətbiq — generik, hər üç cədvələ (Əməliyyatlar/Sorğu Tarixçəsi/Xərcləmə
+Sorğuları):** `hr-jeton.js`-ə `hjInitTableSelection(tableId)` əlavə olundu —
+başlıq xanasına klik bütün sütunu, sətrə klik (əməliyyat düyməsindən kənar
+hər yerə) bütün sətri vurğulayır, hər ikisi **tək seçimdir** (təkrar klik
+ləğv edir). Delegasiya `tbody`-nin ÖZÜNƏ (DOM elementinin, `innerHTML`-ə yox)
+bir dəfə (`DOMContentLoaded`-da, `table.dataset.hjSelInit` qoruyucusu ilə)
+qoşulur — reload-lar (filtr/"Yenilə") `tbody.innerHTML`-i dəyişir, konteyner
+elementin özü dəyişmədiyi üçün delegasiya hər reload-dan SONRA da işləməyə
+davam edir, yeniden qoşmağa ehtiyac yoxdur.
+
+**Sütun vurğusu reload-da avtomatik İTİRDİYİ üçün** (`tbody.innerHTML`
+dəyişəndə köhnə xanalar silinir, üzərlərindəki `.hj-col-selected` sinfi
+onlarla birlikdə gedir) hər üç yükləmə funksiyası (`hjLoadEmeliyyatlar`,
+`hjLoadTarixce`, `hjLoadRedimler`) öz uğurlu render-indən DƏRHAL sonra
+`hjApplyColSelect(table)`-i çağırır — seçim yoxdursa (`dataset.hjSelCol`
+boşdur) heç nə etmir, varsa cari sütunu təzə sətirlərə yenidən tətbiq edir.
+Sətir seçimi isə RELOAD-DA QƏSDƏN SIFIRLANIR (yeni sətirlər köhnəni əvəz
+etdiyi üçün bu, təbii və gözlənilən davranışdır — ayrıca "bərpa et" məntiqi
+yazılmadı).
+
+**Başlıqsız sütun (son, əməliyyat düyməsi) seçilə bilmir** — `hjInitTableSelection`
+boş mətnli `<th>`-ə klik handler-i qoşmur (`if (!th.textContent.trim())
+return;`), çünki orada vurğulanacaq məzmun yoxdur.
+
+**CSS rəngi hover-dən (mövcud, boz) fərqləndirmək üçün `--hj-primary`
+(bənövşəyi) tonunda, `color-mix` ilə** — sətir+sütun kəsişməsi daha tündü
+bir ton alır ki, "hansı xana ikisinə də aiddir" aydın olsun.
+
+**Qayda:** bir cədvəl üçün statik (reload-da dəyişməyən) DOM elementlərinə
+(buradakı `<thead>`/`<tbody>` konteynerləri) bir dəfə qoşulan event
+delegasiyası, `innerHTML` ilə edilən hər reload-dan ÖZBAŞINA sağ çıxır —
+yenidən qoşmağa ehtiyac yoxdur. Yalnız reload-un SİLDİYİ vəziyyəti (bura:
+sütun vurğusunun CSS sinfi) əl ilə bərpa etmək lazımdır, delegasiyanın
+özünü yox.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (`node -c` ilə JS sintaksisi, CSS mötərizə balansı,
+mojibake skanı — hər ikisi təmiz). İstifadəçi real brauzerdə yoxlamalıdır:
+hər üç cədvəldə başlığa klikin sütunu, sətrə klikin sətri vurğuladığını,
+təkrar klikin ləğv etdiyini, "Yenilə"/filtr dəyişəndə sütun vurğusunun
+qaldığını (sətir vurğusunun isə təbii olaraq sıfırlandığını), və əməliyyat
+düyməsinə (məs. "Ləğv et"/"Bax") klikin seçimi TƏTİKLƏMƏDİYİNİ.
+
 ## İmtiyazlarım — İşçiyə Verilmiş Fərdi İstisna (07.10.2026)
 
 İstifadəçi tələbi: *"işçi öz səhifəsində ona olunmuş imtiyazları görməsi. misal.
