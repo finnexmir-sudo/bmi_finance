@@ -4392,13 +4392,11 @@ birini əvəz etmir.
 **Skript — `docs/sql/kassa/01_Exchange_Tarixi_Idxal.sql`** (iki addımlı,
 CLAUDE.md-nin "SQL migration vermədən əvvəl SELECT ilə göstər" qaydasına
 uyğun):
-- **ADDIM 1** (yalnız SELECT): (a) mənbədəki üç ad (Axundov Elxan/Najafi
-  Asghar/Ibrahimov Anar) `Isciler`-də Soyad+Ad üzrə tapılırmı — "TAPILMADI"
-  və ya "BİRDƏN ÇOX TAPILDI" statusları ilə; (b) hansı tarixlərdə artıq
-  `KassaKursBeyannameleri`-də qeyd var (09.10.2026 modul işə düşəndən sonra
-  canlı sistemdən yazılmış ola bilər — xüsusilə 2026-10-09/12/13/14, bu
-  export elə həmin günləri də əhatə edir); (c) ADDIM 2-nin HƏQİQƏTƏN nə
-  qədər yeni beyannamə yaradacağının sayı.
+- **ADDIM 1** (yalnız SELECT): (a) aşağıdakı 3 `Isciler.Id`-nin mövcud/aktiv
+  olduğunu göstərir; (b) hansı tarixlərdə artıq `KassaKursBeyannameleri`-də
+  qeyd var (09.10.2026 modul işə düşəndən sonra canlı sistemdən yazılmış ola
+  bilər — xüsusilə 2026-10-09/12/13/14, bu export elə həmin günləri də əhatə
+  edir); (c) ADDIM 2-nin HƏQİQƏTƏN nə qədər yeni beyannamə yaradacağının sayı.
 - **ADDIM 2**: `#Kaynak` staging cədvəlindən **CURSOR** ilə (OUTPUT+Tarix
   üzrə geri-uyğunlaşdırma QƏSDƏN İŞLƏDİLMƏDİ — yuxarıdaki 8 "bir gündə
   bir neçə qrup" halında Tarix unikal deyil, OUTPUT-u Tarix-ə görə geri
@@ -4413,12 +4411,42 @@ yazılıb qalanları "artıq var" deyə səhvən atlanardı. `(Tarix, TesdiqTari
 hər tarixi qrupu öz dəqiq təsdiq anına görə ayırd edir və skripti TƏKRAR
 işlətmək təhlükəsizdir (artıq idxal olunmuş sətirlər bir də yazılmır).
 
-**Ad uyğunluğu `Isciler.Soyad`+`Ad`-a görədir** (BMI-nin "Soyad Ad" formatı
-birbaşa uyğun gəlir), `TOP 1 ORDER BY Id` ilə qorunur ki, ambiqusiya halında
-(bir addan çox işçi) skript XƏTA VERMƏSİN — amma bu, "doğru seçim" ZƏMANƏTİ
-DEYİL, ADDIM 1a-nın "BİRDƏN ÇOX TAPILDI" xəbərdarlığı buna görədir. Ad
-ümumiyyətlə tapılmasa (`RAISERROR`, ad+tarixlə) **bütün tranzaksiya geri
-qaytarılır** — qismən idxal qalmır.
+### Ad Uyğunluğu — SQL-DƏ "TƏXMİN" YOX, İSTİFADƏÇİ ƏL İLƏ TƏSDİQLƏDİ (15.10.2026)
+
+İlk versiyada 3 adın (Axundov Elxan/Najafi Asghar/Ibrahimov Anar) `Isciler.Id`-si
+SQL-in özündə (`LTRIM`/`RTRIM`/`CHARINDEX` ilə "Soyad Ad" formatını ayıraraq)
+**təxmin edilirdi**. İstifadəçi SSMS-də əl ilə yoxlayanda **`Soyad = N'Ibrahimov'
+AND Ad = N'Anar'` dəqiq uyğunluğu TAPMADI** (0 sətir), halbuki `Isciler`-də belə
+bir sətir **var idi** (Id=3) — yəqin gizli diakritik/kodlaşdırma fərqi (məs. Azəri
+"İ" ilə ASCII "I" arasında collation-a görə fərq) idi. `LIKE '%ibrahim%'` geniş
+axtarışı isə tapdı. Eyni axtarışla "Najafi Asghar" da aşkarlandı — amma **real
+soyad "Najafimarganmaskan"dır** (Ad=Asghar), BMI-nin köhnə datası yalnız qısaldılmış
+"Najafi" formasını saxlayıb — bu, mənim "Soyad=birinci söz" fərziyyəmin xətası idi
+(`SQLQuery1`, Id=25).
+
+**Düzəliş:** ad-uyğunlaşdırma SQL-dən **tamamilə çıxarıldı**. Mənbədə cəmi 3 fərqli
+ad olduğu üçün (ICRACI həmişə eyni, TESDIQ_EDEN yalnız 2 variant), istifadəçinin
+SSMS-də canlı tapdığı 3 ID **generasiya skriptinin özündə** (Python, `gen_sql2.py`)
+sabit yazıldı və hər `#Kaynak` sətrinə birbaşa `IcraciIsciId`/`TesdiqEdenIsciId`
+tam ədəd kimi daxil edildi:
+
+```
+"Axundov Elxan"  → Isciler.Id = 2
+"Najafi Asghar"  → Isciler.Id = 25   (əslində Ad=Asghar, Soyad=Najafimarganmaskan)
+"Ibrahimov Anar" → Isciler.Id = 3
+```
+
+ADDIM 1a indi sadəcə bu 3 ID-nin `Isciler`-də mövcud/aktiv olduğunu göstərir
+(`WHERE Id IN (2,3,25)`) — SQL-də heç bir `CHARINDEX`/`LTRIM` "təxmini ad
+tapma" YOXDUR, ADDIM 2-nin cursor-u da artıq ad-uyğunlaşdırma etmir, birbaşa
+`#Kaynak`-dakı hazır ID-ləri yazır.
+
+**Qayda:** mənbə datada fərqli ad SAYI KİÇİKdirsə (burada: cəmi 3), SQL-də
+fuzzy-matching alqoritmi yazmaqdansa, adları **bir dəfə, insan gözü ilə** (SSMS-də
+sadə `SELECT ... LIKE`) tapıb ID-ni **sabit yazmaq** daha etibarlıdır — xüsusən
+mənbə (BMI) və hədəf (`Isciler`) arasında soyad formatı/diakritik fərqi ola
+biləcəyi məlum olanda. Yalnız fərqli ad sayı böyük olanda (onlarla/yüzlərlə, məs.
+AML Excel idxalı kimi) SQL-səviyyəli fuzzy-matching əsaslandırılır.
 
 ⚠️ **GÖRÜNTÜ/YAZMA AUDİT SAHƏLƏRİ (`YaradanIcraciId` və s.) BOŞ QALIR** —
 bu, keçmiş sistemdən gələn tarixi idxaldır, "kim idxal etdi" mənasında bir
