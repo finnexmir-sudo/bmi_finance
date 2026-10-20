@@ -1,20 +1,82 @@
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Interfaces;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FinNex.Application.Services.Communication;
 
 public class GelenMailService : IGelenMailService
 {
     private readonly IUnitOfWork _uow;
+    private readonly IGelenMailImapSyncer _imapSyncer;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly IDataProtectionProvider _dpProvider;
+    private readonly ILogger<GelenMailService> _logger;
 
-    public GelenMailService(IUnitOfWork uow)
+    public GelenMailService(
+        IUnitOfWork uow,
+        IGelenMailImapSyncer imapSyncer,
+        UserManager<AppUser> userManager,
+        IDataProtectionProvider dpProvider,
+        ILogger<GelenMailService> logger)
     {
         _uow = uow;
+        _imapSyncer = imapSyncer;
+        _userManager = userManager;
+        _dpProvider = dpProvider;
+        _logger = logger;
+    }
+
+    // ── "\Seen" yazması (16.10.2026) ────────────────────────────────────
+    // FinNex-də oxunan mail serverin ÖZ qutusunda da `\Seen` işarələnsin ki,
+    // eyni qutuya IMAP ilə qoşulan Outlook (və ya başqa müştəri) onu da
+    // oxunmuş görsün. Fire-and-forget (`_ = `) — BildirisService.YaratAsync-in
+    // `_desktop.PushAsync` çağırışı ilə EYNİ naxış (bax CLAUDE.md "Bildirişlər").
+    // Bu YEREL "oxundu" statusunu HEÇ VAXT bloklamır/gecikdirmir — çağıran
+    // tərəf DB-ni artıq yeniləyib, bura yalnız ƏLAVƏ, ikinci dərəcəli bir
+    // addımdır. IMAP qurulmayıbsa (şifrə/host yoxdur) sakit keçir — xəta yoxdur,
+    // çünki bu, hər istifadəçi üçün MƏCBURİ deyil.
+    private void ServerdeOxunduIsaretleFireAndForget(int? sahibUserId, IReadOnlyCollection<string> messageIds)
+    {
+        if (!sahibUserId.HasValue) return;
+        messageIds = messageIds.Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
+        if (messageIds.Count == 0) return;
+
+        _ = ServerdeOxunduIsaretleAsync(sahibUserId.Value, messageIds);
+    }
+
+    private async Task ServerdeOxunduIsaretleAsync(int sahibUserId, IReadOnlyCollection<string> messageIds)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(sahibUserId.ToString());
+            if (user == null || string.IsNullOrWhiteSpace(user.MailSmtpEmail) || string.IsNullOrWhiteSpace(user.MailSmtpParol))
+                return; // Bu istifadəçi IMAP qurmayıb — yalnız yerli "oxundu" kifayətdir.
+
+            var protector = _dpProvider.CreateProtector("MailSmtpParol");
+            var password = MailParolQoruyucu.Ac(protector, user.MailSmtpParol);
+            if (password == null)
+            {
+                _logger.LogWarning(
+                    "GelenMail \\Seen yazma: {Email} (UserId={UserId}) üçün saxlanmış şifrə açılmadı.",
+                    user.MailSmtpEmail, user.Id);
+                return;
+            }
+
+            var imapHost = GelenMailImapSyncer.DeriveImapHost(user.MailSmtpHost, user.MailSmtpEmail);
+            await _imapSyncer.OxunduIsaretleServerdeAsync(imapHost, user.MailSmtpEmail, password, messageIds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "GelenMail \\Seen yazma xətası (user {UserId})", sahibUserId);
+        }
     }
 
     public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null, int? sahibUserId = null, List<string>? izlenenEmaillar = null)
@@ -181,6 +243,8 @@ public class GelenMailService : IGelenMailService
             mail.Oxunub = true;
             mail.OxunmaTarixi = DateTime.Now;
             await _uow.YaddaSaxlaAsync();
+
+            ServerdeOxunduIsaretleFireAndForget(mail.SahibUserId, new[] { mail.MessageId });
         }
     }
 
@@ -202,6 +266,11 @@ public class GelenMailService : IGelenMailService
             mail.OxunmaTarixi = indi;
         }
         await _uow.YaddaSaxlaAsync();
+
+        // Hamısı EYNİ qutudandır (sahibUserId bir dənədir) — TƏK IMAP bağlantısı
+        // ilə hamısı işarələnir, hər mail üçün ayrıca qoşulmur.
+        ServerdeOxunduIsaretleFireAndForget(sahibUserId, mails.Select(m => m.MessageId).ToList());
+
         return mails.Count;
     }
 

@@ -4984,6 +4984,73 @@ göndərəndə Müraciət Detayı səhifəsində "Təxmini net maaş" sətrinin 
 göstərilən rəqəmlə DƏQİQ eyni göründüyünü, "Öz hesabına" müraciətdə isə
 sətrin ümumiyyətlə görünmədiyini.
 
+## Gələn Mail — Oxundu Statusu Serverə Yazılır (`\Seen`) — Outlook ilə Sinxron (16.10.2026)
+
+İstifadəçi şikayəti: *"mailləri titan ilə bağlamışıq, amma işdə Outlook işlədirlər —
+FinNex-də oxuyanda Outlook-da bilinmirki oxundu"*. Kök səbəb tapıldı:
+`GelenMailService.OxunduIsareEtAsync`/`HamisiniOxunduIsareEtAsync` "oxundu"-nu
+**yalnız öz bazamızda** (`Oxunub=true`) yazırdı, IMAP serverinə heç müraciət
+etmirdi. `GelenMailImapSyncer.SyncNowAsync` da qutunu **`FolderAccess.ReadOnly`**
+ilə açırdı — sinxronizasiya YALNIZ bir istiqamətli idi (serverdən bizə).
+
+**Niyə bu, Outlook-u da düzəldir:** `\Seen` bayrağı IMAP protokolunun ÖZÜNÜN
+(Titan-a xas DEYİL, hər IMAP serverində — Dovecot/Zimbra/Exchange və s.) **server-
+tərəfli, paylaşılan** vəziyyətidir. Eyni poçt qutusuna qoşulan HƏR müştəri (FinNex-in
+öz IMAP bağlantısı, Outlook-un öz IMAP bağlantısı) EYNİ bayrağa baxır — FinNex
+serverə yazsa, Outlook da onu dərhal oxunmuş görür, əlavə inteqrasiya lazım deyil.
+
+**Tətbiq — iki fayl:**
+1. `IGelenMailImapSyncer.OxunduIsaretleServerdeAsync(imapHost, email, password,
+   messageIds)` + implementasiya (`GelenMailImapSyncer.cs`) — qutunu
+   **`FolderAccess.ReadWrite`** ilə açır (SyncNowAsync-in `ReadOnly`-si ilə
+   QARIŞDIRMA — bayraq yazmaq üçün yazma icazəsi məcburidir), hər `messageId`
+   üçün `Message-Id` header-i üzrə **IMAP SEARCH** aparır, tapılan UID-lərə
+   `AddFlagsAsync(uids, MessageFlags.Seen, true)` yazır.
+2. `GelenMailService` — iki yazma yolunda da (tək mail, "Hamısını oxundu et")
+   yerli DB yeniləməsindən **SONRA** `ServerdeOxunduIsaretleFireAndForget`-i
+   çağırır — `BildirisService.YaratAsync`-in `_desktop.PushAsync`-ı necə
+   fire-and-forget (`_ = `) çağırdığı ilə EYNİ naxış (bax "Bildirişlər" bölməsi).
+
+⚠️ **UID SAXLANMIR, HƏR DƏFƏ AXTARIŞ APARILIR — QƏSDƏN.** `GelenMail.MessageId`
+yalnız `Message-Id` header-idir, IMAP UID deyil. UID-i sync anında keşləmək
+sürətli olardı, AMMA **UIDVALIDITY** dəyişsə (admin qutunu yenidən qursa) köhnə
+UID başqa bir mailə yapışmış ola bilər — bu, **SƏHV mailı "oxundu" işarələmək**
+demək olardı, ən pis nəticə. Message-Id üzrə təzə axtarış YAVAŞDIR, amma
+TƏHLÜKƏSİZDİR: ya DOĞRU mailı tapır, ya HEÇ NƏYİ (səhv mailı HEÇ VAXT YOX).
+
+⚠️ **Best-effort — YEREL "oxundu" statusunu HEÇ VAXT bloklamır.** IMAP yazması
+`try/catch` ilə TAM əhatə olunub, heç vaxt istisna ATMIR (server əlçatmaz, şifrə
+açılmır, mail tapılmır — hamısı sakit `LogWarning`). Çağıran DB-ni artıq (IMAP
+cəhdindən ƏVVƏL) yeniləyib — FinNex-in öz UI-si IMAP-ın nəticəsindən ASILI DEYİL.
+
+⚠️ **Yalnız işçi ÖZÜ Profil → Mail Ayarları-nda IMAP qurubsa işləyir.** `user.
+MailSmtpEmail`/`MailSmtpParol` boşdursa (əksər adi işçidə belədir — yalnız
+Gələn Mail modulunu işlədən Rəhbər/Admin/`mail_istifade` icazəli işçilər bunu
+doldurur) sakit keçir, xəta YOXDUR — bu, hər istifadəçi üçün məcburi deyil.
+
+⚠️ **Göndərici (sender) Outlook-u "oxundu" GÖRMƜR — bu AYRI məsələdir.** `\Seen`
+yalnız ALICININ (bizim) öz qutusunda, YALNIZ bizim öz müştərilərimizə (FinNex,
+öz Outlook-umuz) görünür. Göndərənin Outlook-unda "oxundu" bildirişi (Read
+Receipt / MDN, RFC 3798) **tamam fərqli** bir protokol — FinNex bunu dəstəkləmir
+və bu düzəliş bunu HƏLL ETMİR, qarışdırma.
+
+⚠️ **GedenMail (Göndərilən Mail) toxunulmadı** — "oxundu" konsepti yalnız Gələn
+Mailə aiddir, bu modul qapsam xaricindədir.
+
+**Titandan öz serverə keçid təsirsizdir:** `\Seen` IMAP-ın ÖZ xüsusiyyətidir —
+`GelenMailImapSyncer.DeriveImapHost` "smtp.X → imap.X" qaydası yeni serverdə
+də eyni sxemi izləyirsə (standart IMAP, 993 port, istifadəçi+parol girişi),
+kodda HEÇ nə dəyişmədən işləyəcək — hər işçi sadəcə Profil səhifəsindəki SMTP
+Host-u yeniləyir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, MailKit API imzaları — `SearchQuery.HeaderContains`,
+`AddFlagsAsync(uids, MessageFlags.Seen, true, ct)` — yaddaşdan təsdiqləndi,
+NuGet sənədinə birbaşa baxılmadı). İstifadəçi Visual Studio-da **Rebuild All**
+ilə, sonra real IMAP hesabı ilə yoxlamalıdır: FinNex-də mail açılanda, EYNİ
+qutuya qoşulan Outlook-da da (bir neçə saniyə/Outlook-un öz sinxron dövrü
+ərzində) mailin oxunmuş kimi göründüyünü.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

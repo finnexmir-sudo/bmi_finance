@@ -118,6 +118,67 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
         return newMails.Count;
     }
 
+    // ── "\Seen" yazması (16.10.2026) ────────────────────────────────────
+    // FinNex-də oxunan mail serverin ÖZ qutusunda da `\Seen` olaraq
+    // işarələnir — eyni qutuya IMAP ilə qoşulan Outlook (və ya başqa
+    // müştəri) də onu oxunmuş görsün. Bax CLAUDE.md "Mail — Oxundu Statusu
+    // Serverə Yazılır" bölməsi.
+    public async Task OxunduIsaretleServerdeAsync(string imapHost, string email, string password,
+        IReadOnlyCollection<string> messageIds, CancellationToken ct = default)
+    {
+        if (messageIds == null || messageIds.Count == 0) return;
+
+        try
+        {
+            using var client = new ImapClient();
+            await client.ConnectAsync(imapHost, 993, MailKit.Security.SecureSocketOptions.SslOnConnect, ct);
+            await client.AuthenticateAsync(email, password, ct);
+
+            // ReadWrite MƏCBURİDİR — SyncNowAsync-in ReadOnly açması ilə QARIŞDIRMA,
+            // bayraq yazmaq üçün yazma icazəsi tələb olunur.
+            var inbox = client.Inbox;
+            await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
+
+            foreach (var msgId in messageIds)
+            {
+                if (string.IsNullOrWhiteSpace(msgId)) continue;
+
+                try
+                {
+                    // UID SAXLANMIR (GelenMail.MessageId yalnız Message-Id header-idir) —
+                    // ona görə hər dəfə TƏZƏ axtarış aparılır. Bu, UID-i keşləməkdən
+                    // YAVAŞDIR, amma TƏHLÜKƏSİZDİR: UIDVALIDITY dəyişsə (qutu yenidən
+                    // qurulsa) köhnə UID SƏHV mailə yapışardı — axtarış heç vaxt bunu etmir,
+                    // ya DOĞRU mailı tapır, ya da HEÇ NƏYİ (səhv mailı YOX).
+                    var uids = await inbox.SearchAsync(MailKit.Search.SearchQuery.HeaderContains("Message-Id", msgId), ct);
+                    if (uids.Count == 0)
+                    {
+                        _logger.LogWarning(
+                            "GelenMail \\Seen yazma: mail serverdə tapılmadı (silinib/köçürülüb ola bilər) — Message-Id={MsgId}",
+                            msgId);
+                        continue;
+                    }
+
+                    await inbox.AddFlagsAsync(uids, MessageFlags.Seen, true, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Bir mailin axtarışı/yazması uğursuz olsa, qalanlara MANE OLMASIN.
+                    _logger.LogWarning(ex, "GelenMail \\Seen yazma xətası — Message-Id={MsgId}", msgId);
+                }
+            }
+
+            await client.DisconnectAsync(true, ct);
+        }
+        catch (Exception ex)
+        {
+            // Best-effort: server əlçatmaz olsa belə YEREL "oxundu" statusu
+            // artıq yazılıb (çağıran tərəf — GelenMailService — DB-ni bundan
+            // ƏVVƏL yeniləyir) — bu metod heç vaxt istisna ATMIR.
+            _logger.LogWarning(ex, "GelenMail \\Seen yazma — IMAP bağlantısı alınmadı ({Email})", email);
+        }
+    }
+
     // smtp.titan.email → imap.titan.email; auto-detect if no smtpHost
     public static string DeriveImapHost(string? smtpHost, string email)
     {
