@@ -128,6 +128,17 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
     {
         if (messageIds == null || messageIds.Count == 0) return;
 
+        // 21.10.2026 — DİAQNOSTİK LOG ƏLAVƏ EDİLDİ. Əvvəlki versiya yalnız XƏTA
+        // halında log yazırdı — UĞURLU yazmada HEÇ BİR iz qalmırdı. Canlı testdə
+        // Titan hələ "oxunmamış" göstərməyə davam edəndə bu, "tapıldı/yazıldı" ilə
+        // "heç vaxt çağırılmadı/sakitcə uğursuz oldu" hallarını ayırd etməyi
+        // mümkünsüz edirdi — log faylına baxmaqla belə səbəb bilinmirdi. İndi hər
+        // addım (başlanğıc, server tapma, bayraq yazma) Information/Warning
+        // səviyyəsində qeyd olunur.
+        _logger.LogInformation(
+            "GelenMail \\Seen yazma BAŞLADI — Email={Email}, Host={Host}, MesajSayi={Say}",
+            email, imapHost, messageIds.Count);
+
         try
         {
             using var client = new ImapClient();
@@ -154,12 +165,15 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
                     if (uids.Count == 0)
                     {
                         _logger.LogWarning(
-                            "GelenMail \\Seen yazma: mail serverdə tapılmadı (silinib/köçürülüb ola bilər) — Message-Id={MsgId}",
+                            "GelenMail \\Seen yazma: mail serverdə tapılmadı (silinib/köçürülüb, ya da Message-Id axtarışı uyğun gəlmədi) — Message-Id={MsgId}",
                             msgId);
                         continue;
                     }
 
                     await inbox.AddFlagsAsync(uids, MessageFlags.Seen, true, ct);
+                    _logger.LogInformation(
+                        "GelenMail \\Seen yazıldı — Message-Id={MsgId}, UID-lər={Uids}",
+                        msgId, string.Join(",", uids));
                 }
                 catch (Exception ex)
                 {

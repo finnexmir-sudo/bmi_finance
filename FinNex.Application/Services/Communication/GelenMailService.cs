@@ -81,7 +81,15 @@ public class GelenMailService : IGelenMailService
 
             var user = await userManager.FindByIdAsync(sahibUserId.ToString());
             if (user == null || string.IsNullOrWhiteSpace(user.MailSmtpEmail) || string.IsNullOrWhiteSpace(user.MailSmtpParol))
-                return; // Bu istifadəçi IMAP qurmayıb — yalnız yerli "oxundu" kifayətdir.
+            {
+                // 21.10.2026 — diaqnostik üçün AÇIQ log (əvvəl sakit `return` idi,
+                // "IMAP qurulmayıb" ilə "hər hansı digər səbəbdən heç nə baş vermədi"
+                // ayırd edilmirdi).
+                _logger.LogInformation(
+                    "GelenMail \\Seen yazma: user={UserId} IMAP qurmayıb (user tapılmadı={UserNull}, email boş={EmailBos}, şifrə boş={ParolBos}) — buraxılır.",
+                    sahibUserId, user == null, user != null && string.IsNullOrWhiteSpace(user.MailSmtpEmail), user != null && string.IsNullOrWhiteSpace(user.MailSmtpParol));
+                return;
+            }
 
             var protector = dpProvider.CreateProtector("MailSmtpParol");
             var password = MailParolQoruyucu.Ac(protector, user.MailSmtpParol);
