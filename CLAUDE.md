@@ -5278,6 +5278,15 @@ görünən pəncərə ölçüsü (300) ilə bağlı ola bilər — neçə mesaj 
 qaldığını (`inbox.Count` ilə həmin mailin sırası) bildirmək növbəti
 diaqnozu sürətləndirər.
 
+✅ **TƏSDİQLƏNDİ (21.10.2026, eyni gün).** İstifadəçi rebuild edib real
+mühitdə yenidən test etdi, `Logs\log-20261021.txt`-i Notepad++-da göstərdi:
+`11:41:47.930 [INF] GelenMail \Seen yazma BAŞLADI — …, MesajSayi=1` dərhal
+ardınca `11:41:50.050 [INF] GelenMail \Seen yazıldı — Message-Id=…,
+UID=160` — **heç bir "tapılmadı" xəbərdarlığı yoxdur**. Yerli `FetchAsync`+
+`Dictionary` müqayisəsi Titan-da `SEARCH`-in əvəzinə HƏQİQƏTƏN işləyir.
+Dörd dalğalıq zəncir (DI-scope → `ServerdeSeenIsarelendi` retry →
+`SEARCH`→yerli-müqayisə) bununla TAM bağlandı.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
