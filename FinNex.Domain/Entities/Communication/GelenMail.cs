@@ -19,6 +19,14 @@ public class GelenMail : BaseEntity
     public bool Oxunub { get; set; } = false;
     public DateTime? OxunmaTarixi { get; set; }
 
+    // 21.10.2026 — IMAP \Seen yazısının TƏSDİQLƏNDİYİ (AddFlagsAsync uğurla
+    // qayıtdığı) sahə. `Oxunub`-dan QƏSDƏN ayrıdır: `Oxunub` artıq `true` olsa
+    // belə (köhnə build-də açılmış ola bilər), bu sahə `false` qalarsa mail
+    // YENİDƏN açılanda server-yazısı TƏKRAR cəhd edilir (bax GelenMailService.
+    // OxunduIsareEtAsync). Bax CLAUDE.md "Gələn Mail — Oxundu Statusu Serverə
+    // Yazılır" bölməsi.
+    public bool ServerdeSeenIsarelendi { get; set; } = false;
+
     // AI təhlili
     public string? AIXulase { get; set; }
     public DateTime? AITahlilTarixi { get; set; }

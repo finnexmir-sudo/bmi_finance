@@ -61,16 +61,36 @@ public class GelenMailService : IGelenMailService
     // (onlar artıq constructor-da saxlanılmır, yalnız `IServiceScopeFactory`
     // saxlanılır). Bu yeni scope yalnız bu bir background əməliyyatı üçün
     // yaşayır, request-in öz scope-undan tamamilə asılı deyil.
-    private void ServerdeOxunduIsaretleFireAndForget(int? sahibUserId, IReadOnlyCollection<string> messageIds)
+    //
+    // ⚠️ 21.10.2026, İKİNCİ DÜZƏLİŞ — "Oxunub" ARTIQ TRUE OLANDA TƏKRAR CƏHD
+    // OLUNMURDU. Yuxarıdakı scope-fix tətbiq olunub rebuild edilsə BELƏ istifadəçi
+    // "hələ işləmir" dedi — kök səbəb: `OxunduIsareEtAsync`-in çağırışı yalnız
+    // `!mail.Oxunub` (yəni "oxunmamış→oxunmuş" İLK keçid) şərtinə bağlı idi. Əgər
+    // bu konkret mail KÖHNƏ (bu fix-dən ƏVVƏLKİ) build-də artıq açılıb
+    // `Oxunub=true` yazılmışdısa, rebuild-dən sonra eyni maili YENİDƏN açmaq
+    // `ServerdeOxunduIsaretleFireAndForget`-i BİR DAHA ÇAĞIRMIR — şərt artıq
+    // yalan idi. Nəticə: IMAP-a heç bir yeni cəhd getmir, Titan köhnə vəziyyətdə
+    // qalır — görünən simptom "fix işləmir" idi, əslində fix-in ÖZÜ heç
+    // çağırılmırdı.
+    //
+    // Həll: `GelenMail.ServerdeSeenIsarelendi` — `Oxunub`-dan AYRI, "server-yazısı
+    // HƏQİQƏTƏN təsdiqləndi" sahəsi. `OxunduIsareEtAsync` indi `!mail.
+    // ServerdeSeenIsarelendi` şərtinə görə TƏKRAR cəhd edir, `Oxunub` onsuz da
+    // `true` olsa belə. Bu metod indi IMAP syncer-in qaytardığı HƏQİQƏTƏN
+    // uğurlu Message-Id-lərə uyğun `GelenMail` sətirlərini TAPIB
+    // `ServerdeSeenIsarelendi=true` yazır — TƏZƏ `IUnitOfWork` ilə, həmin SCOPE-un
+    // özündən (constructor-un `_uow`-u YOX, o, HTTP request-in köhnə scope-undadır).
+    private void ServerdeOxunduIsaretleFireAndForget(int? sahibUserId, IReadOnlyDictionary<int, string> mailIdToMessageId)
     {
         if (!sahibUserId.HasValue) return;
-        messageIds = messageIds.Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
-        if (messageIds.Count == 0) return;
+        var temiz = mailIdToMessageId.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+        if (temiz.Count == 0) return;
 
-        _ = ServerdeOxunduIsaretleAsync(sahibUserId.Value, messageIds);
+        _ = ServerdeOxunduIsaretleAsync(sahibUserId.Value, temiz);
     }
 
-    private async Task ServerdeOxunduIsaretleAsync(int sahibUserId, IReadOnlyCollection<string> messageIds)
+    private async Task ServerdeOxunduIsaretleAsync(int sahibUserId, IReadOnlyDictionary<int, string> mailIdToMessageId)
     {
         try
         {
@@ -102,7 +122,26 @@ public class GelenMailService : IGelenMailService
             }
 
             var imapHost = GelenMailImapSyncer.DeriveImapHost(user.MailSmtpHost, user.MailSmtpEmail);
-            await imapSyncer.OxunduIsaretleServerdeAsync(imapHost, user.MailSmtpEmail, password, messageIds);
+            var ugurluMsgIdler = await imapSyncer.OxunduIsaretleServerdeAsync(
+                imapHost, user.MailSmtpEmail, password, mailIdToMessageId.Values.ToList());
+
+            if (ugurluMsgIdler.Count == 0) return;
+
+            var tesdiqlenenMailIdler = mailIdToMessageId
+                .Where(kv => ugurluMsgIdler.Contains(kv.Value))
+                .Select(kv => kv.Key)
+                .ToList();
+            if (tesdiqlenenMailIdler.Count == 0) return;
+
+            // TƏZƏ `IUnitOfWork` — eyni YENİ scope-dan, constructor-un `_uow`-u
+            // YOX (o, artıq dispose olmuş ola bilən request scope-undadır).
+            var freshUow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var mailsToUpdate = await freshUow.Repository<GelenMail>().Query()
+                .Where(x => tesdiqlenenMailIdler.Contains(x.Id))
+                .ToListAsync();
+            foreach (var m in mailsToUpdate)
+                m.ServerdeSeenIsarelendi = true;
+            await freshUow.YaddaSaxlaAsync();
         }
         catch (Exception ex)
         {
@@ -274,9 +313,13 @@ public class GelenMailService : IGelenMailService
             mail.Oxunub = true;
             mail.OxunmaTarixi = DateTime.Now;
             await _uow.YaddaSaxlaAsync();
-
-            ServerdeOxunduIsaretleFireAndForget(mail.SahibUserId, new[] { mail.MessageId });
         }
+
+        // 21.10.2026 — `Oxunub` artıq `true` olsa belə (əvvəlki açılışdan, ya da
+        // köhnə build-dən) server-yazısı HƏLƏ təsdiqlənməyibsə TƏKRAR cəhd et.
+        // Bax yuxarı "ServerdeOxunduIsaretleFireAndForget" şərhi.
+        if (!mail.ServerdeSeenIsarelendi)
+            ServerdeOxunduIsaretleFireAndForget(mail.SahibUserId, new Dictionary<int, string> { [mail.Id] = mail.MessageId });
     }
 
     // Hamısını oxundu et (12.10.2026) — ilk dəfə açılan qutuda onlarla oxunmamış
@@ -300,7 +343,7 @@ public class GelenMailService : IGelenMailService
 
         // Hamısı EYNİ qutudandır (sahibUserId bir dənədir) — TƏK IMAP bağlantısı
         // ilə hamısı işarələnir, hər mail üçün ayrıca qoşulmur.
-        ServerdeOxunduIsaretleFireAndForget(sahibUserId, mails.Select(m => m.MessageId).ToList());
+        ServerdeOxunduIsaretleFireAndForget(sahibUserId, mails.ToDictionary(m => m.Id, m => m.MessageId));
 
         return mails.Count;
     }

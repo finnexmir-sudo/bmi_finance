@@ -942,6 +942,14 @@ END
                                 ALTER TABLE [GelenMailler] ADD [DedlaynQeyd] NVARCHAR(500) NULL;
                             IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='DedlaynXatirlatmaYaradildi')
                                 ALTER TABLE [GelenMailler] ADD [DedlaynXatirlatmaYaradildi] BIT NOT NULL DEFAULT 0;
+                            -- 21.10.2026 — \Seen serverə yazılıbmı (CLAUDE.md "Gələn Mail — Oxundu
+                            -- Statusu Serverə Yazılır" bölməsi). `Oxunub`-dan AYRI sahədir: `Oxunub`
+                            -- yerli statusdur, bu isə IMAP-a YAZMANIN TƏSDİQLƏNMİŞ olub-olmadığıdır.
+                            -- Ayrı saxlanmasının səbəbi: `Oxunub` artıq `true` olsa da (məs. köhnə
+                            -- build-də açılıb), bu sahə `false` qalarsa mail YENİDƏN açılanda IMAP
+                            -- yazısı TƏKRAR cəhd edilə bilsin.
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='ServerdeSeenIsarelendi')
+                                ALTER TABLE [GelenMailler] ADD [ServerdeSeenIsarelendi] BIT NOT NULL DEFAULT 0;
                         END
                     ");
                 }

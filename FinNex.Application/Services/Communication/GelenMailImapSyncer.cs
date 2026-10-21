@@ -123,10 +123,11 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
     // işarələnir — eyni qutuya IMAP ilə qoşulan Outlook (və ya başqa
     // müştəri) də onu oxunmuş görsün. Bax CLAUDE.md "Mail — Oxundu Statusu
     // Serverə Yazılır" bölməsi.
-    public async Task OxunduIsaretleServerdeAsync(string imapHost, string email, string password,
+    public async Task<HashSet<string>> OxunduIsaretleServerdeAsync(string imapHost, string email, string password,
         IReadOnlyCollection<string> messageIds, CancellationToken ct = default)
     {
-        if (messageIds == null || messageIds.Count == 0) return;
+        var ugurluMsgIdler = new HashSet<string>();
+        if (messageIds == null || messageIds.Count == 0) return ugurluMsgIdler;
 
         // 21.10.2026 — DİAQNOSTİK LOG ƏLAVƏ EDİLDİ. Əvvəlki versiya yalnız XƏTA
         // halında log yazırdı — UĞURLU yazmada HEÇ BİR iz qalmırdı. Canlı testdə
@@ -171,6 +172,7 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
                     }
 
                     await inbox.AddFlagsAsync(uids, MessageFlags.Seen, true, ct);
+                    ugurluMsgIdler.Add(msgId);
                     _logger.LogInformation(
                         "GelenMail \\Seen yazıldı — Message-Id={MsgId}, UID-lər={Uids}",
                         msgId, string.Join(",", uids));
@@ -178,6 +180,8 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
                 catch (Exception ex)
                 {
                     // Bir mailin axtarışı/yazması uğursuz olsa, qalanlara MANE OLMASIN.
+                    // `ugurluMsgIdler`-ə ƏLAVƏ EDİLMİR — çağıran tərəf bunu "hələ
+                    // təsdiqlənməyib" sayıb növbəti açılışda TƏKRAR cəhd edəcək.
                     _logger.LogWarning(ex, "GelenMail \\Seen yazma xətası — Message-Id={MsgId}", msgId);
                 }
             }
@@ -188,9 +192,12 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
         {
             // Best-effort: server əlçatmaz olsa belə YEREL "oxundu" statusu
             // artıq yazılıb (çağıran tərəf — GelenMailService — DB-ni bundan
-            // ƏVVƏL yeniləyir) — bu metod heç vaxt istisna ATMIR.
+            // ƏVVƏL yeniləyir) — bu metod heç vaxt istisna ATMIR. Bura qədər
+            // uğurla yazılmış (əgər varsa) Message-Id-lər hələ `ugurluMsgIdler`-dədir.
             _logger.LogWarning(ex, "GelenMail \\Seen yazma — IMAP bağlantısı alınmadı ({Email})", email);
         }
+
+        return ugurluMsgIdler;
     }
 
     // smtp.titan.email → imap.titan.email; auto-detect if no smtpHost

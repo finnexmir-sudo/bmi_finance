@@ -5128,6 +5128,83 @@ All** ilə, sonra real mühitdə yenidən test etməlidir: FinNex-də mail oxuya
 bir neçə saniyə sonra Titan-ın öz "oxunmamış" sayğacının azaldığını, "Yenilə"
 düyməsinin "mail yoxdur" desə belə səhifəni yeniləyib cari siyahını göstərdiyini.
 
+### ÜÇÜNCÜ DALĞA — Scope-fix Rebuild Olunub Yenidən Test Edilsə DƏ İŞLƏMİRDİ (21.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi yuxarıdakı Bug A düzəlişini (IServiceScopeFactory) rebuild edib
+yenidən test etdi — eyni problem davam etdi: *"bizde oxunub ama titanda
+helede oxunmamisdir"* (ekran-görüntüsü ilə). Scope-fix-in özü DÜZGÜN idi
+(yoxlanıldı, təsdiqləndi), amma bir şərt onu **ümumiyyətlə çağırılmaqdan**
+saxlayırdı.
+
+**Kök səbəb:** `GelenMailService.OxunduIsareEtAsync`-də `\Seen` yazısı yalnız
+`if (!mail.Oxunub) { ... ServerdeOxunduIsaretleFireAndForget(...); }` blokunun
+**İÇİNDƏ**, yəni YALNIZ "oxunmamış→oxunmuş" **İLK keçiddə** çağırılırdı. Bu
+konkret test mailları ƏVVƏLKİ (scope-fix-dən ƏVVƏLKİ) build-də bir dəfə
+açılmışdı — FinNex-in öz bazasında artıq `Oxunub=true` idi. Rebuild-dən sonra
+eyni maili YENİDƏN açmaq `if (!mail.Oxunub)` şərtini **yalan** tapırdı —
+IMAP-a heç bir YENİ cəhd getmirdi. Fix-in özü düz işləyirdi, sadəcə heç vaxt
+İCRA OLUNMURDU — simptom "fix işləmir" kimi görünürdü, əslində "fix heç
+çağırılmır" idi.
+
+**Həll — `GelenMail.ServerdeSeenIsarelendi`** (yeni `BIT NOT NULL DEFAULT 0`
+sütunu, `Program.cs`-in `GelenMailler` idempotent `ALTER TABLE` blokuna əlavə
+edildi — bu modulun DB cədvəlləri EF migration-la DEYİL, bax yuxarı
+"Göndərilən Mail + Mail İzləmə" bölməsi). `Oxunub`-dan **qəsdən AYRI**
+sahədir:
+- `Oxunub` — yerli, FinNex-in öz "oxundu" statusu (UI-da göstərilən).
+- `ServerdeSeenIsarelendi` — IMAP `\Seen` yazısının **HƏQİQƏTƏN təsdiqləndiyi**
+  sahə (server tapdı VƏ `AddFlagsAsync` xətasız qayıtdı).
+
+`OxunduIsareEtAsync` indi **iki AYRI şərtə** baxır: `Oxunub`-u (lokal statusu)
+yalnız hələ `false`-dursa yazır, AMMA `\Seen` cəhdini `!mail.
+ServerdeSeenIsarelendi` şərtinə görə edir — `Oxunub` artıq `true` olsa belə.
+Yəni mail **neçə dəfə açılırsa-açılsın**, server-yazısı HƏQİQƏTƏN
+təsdiqlənənə qədər HƏR açılışda təkrar cəhd olunur (uğursuz cəhdlər — server
+əlçatmaz, mail tapılmadı — səssizcə qalır, növbəti açılışda yenidən sınanır).
+
+**`IGelenMailImapSyncer.OxunduIsaretleServerdeAsync` imzası dəyişdi** —
+əvvəl `Task` (heç nə qaytarmırdı, çağıran tərəf HANSI mesajların uğurlu
+olduğunu BİLMİRDİ) → indi **`Task<HashSet<string>>`**, yalnız HƏQİQƏTƏN
+`AddFlagsAsync`-i xətasız keçən Message-Id-ləri qaytarır. `GelenMailService`
+bu dəst ilə `mailIdToMessageId` lüğətini **tərs axtarıb** (Message-Id →
+GelenMail.Id) yalnız TƏSDİQLƏNMİŞ sətirlərə `ServerdeSeenIsarelendi=true`
+yazır — **TƏZƏ bir `IUnitOfWork`** ilə, eyni YENİ scope-dan (constructor-un
+`_uow`-u YOX, o, HTTP request-in köhnə, dispose olmuş scope-undadır — Bug
+A-nın elə özü, burada TƏKRAR düşməmək üçün).
+
+**Əlavə diaqnostik log** (`GelenMailImapSyncer.OxunduIsaretleServerdeAsync`,
+`GelenMailService.ServerdeOxunduIsaretleAsync`) — əvvəl YALNIZ xəta halında
+log yazılırdı, uğurlu yazmada HEÇ BİR iz qalmırdı. İndi başlanğıc
+(`Information`), "IMAP qurulmayıb" (`Information`, əvvəl sakit `return`
+idi) və hər uğurlu `\Seen` yazısı (`Information`, Message-Id + UID-lərlə)
+qeyd olunur — növbəti dəfə oxşar şikayət gələrsə, `Logs\log-<tarix>.txt`
+faylında `\Seen` sözünü axtarmaqla HARADA dayandığı DƏRHAL görünür.
+
+**Qayda:** fire-and-forget bir background əməliyyəti (`\Seen` yazısı kimi)
+yerli bir "bayraq" (`Oxunub`) ilə EYNİ şərtə bağlamaq TƏHLÜKƏLİDİR — əgər
+background əməliyyət HƏLƏ tətbiq olunmazdan ƏVVƏL həmin bayraq artıq `true`
+olubsa (köhnə kod, əvvəlki uğursuz cəhd, əl ilə redaktə və s.), yeni kod
+HEÇ VAXT işə düşmür, baxmayaraq ki özü düzgündür. İki fərqli sualın
+("istifadəçi üçün oxunubmu?" vs "arxa-plan əməliyyatı TƏSDİQLƏNİBMİ?") CAVABI
+AYRI sahələrdə saxlanmalıdır — "Qara Jeton MenfiMiqdar" və "VM9821 Tip"
+bölmələrindəki "iki fərqli sualın iki fərqli cavabı var" prinsipinin YENİ
+forması.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNUR, AMMA GECİKMƏLİ** — köhnə (bu düzəlişdən əvvəl
+`Oxunub=true` yazılmış) mailların `ServerdeSeenIsarelendi`-si default
+`false`-dur, ona görə onlar ÖZBAŞINA düzəlmir, AMMA növbəti dəfə İSTİFADƏÇİ
+O MAİLİ YENİDƏN AÇANDA (MailPanel-ə təkrar klik) avtomatik təkrar cəhd
+ediləcək — əlavə SQL/miqrasiya lazım deyil, təbii istifadə zamanı özü düzəlir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, DTO/interfeys/implementasiya imza uyğunluğu). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra EYNİ (artıq bir dəfə açılmış)
+test mailını YENİDƏN açaraq test etməlidir — bu dəfə "Oxunub artıq true"
+şərti onu bloklamayacaq. Əlavə olaraq: `Logs\log-<bugünkü-tarix>.txt`
+faylında "\Seen" axtarıb hansı addımda dayandığını (başladı/tapılmadı/
+yazıldı/xəta) göstərən sətirləri tapıb bura əlavə etmək, gələcək diaqnoz
+üçün çox dəyərli olacaq.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
