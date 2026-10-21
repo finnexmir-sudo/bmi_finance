@@ -5051,6 +5051,83 @@ ilə, sonra real IMAP hesabı ilə yoxlamalıdır: FinNex-də mail açılanda, E
 qutuya qoşulan Outlook-da da (bir neçə saniyə/Outlook-un öz sinxron dövrü
 ərzində) mailin oxunmuş kimi göründüyünü.
 
+### İKİ BUG — Canlı Testdə Tapıldı (16.10.2026, EYNİ GÜN, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi yuxarıdakı funksiyanı dərhal real mühitdə (öz-özünə test maili
+göndərib, FinNex-də oxuyub, Titan-ın öz webmail-ini başqa tab-da yoxlayaraq)
+sınadı və iki bug tapdı: *"men indi test etdim… bmifinansda maile girdim ama
+titanda hemin mail helede oxunmamis idi, sehifeni yeniledimde olmadi. biz
+bunu duzeltmedikki?"* + *"birde yenile duymesini vurdum mail yoxdur yazdi
+ama sehifeni yeniledim mail gorundu, bunada bax"*.
+
+**Bug A — `\Seen` yazması serverə HEÇ VAXT çatmırdı (scoped DI "fire-and-
+forget"dən sonra dispose).** `GelenMailService`-in konstruktoru
+`UserManager<AppUser>`/`IDataProtectionProvider`/`IGelenMailImapSyncer`-i
+REQUEST-SCOPED nüsxə kimi birbaşa saxlayırdı. `ServerdeOxunduIsaretleFireAndForget`
+isə `_ = ServerdeOxunduIsaretleAsync(...)` ilə **gözlənilmədən** (fire-and-forget)
+çağrılırdı — controller action HTTP cavabını dərhal qaytarır, onun DI scope-u
+demək olar DƏRHAL dispose olunur, background task isə hələ ilk `await
+_userManager.FindByIdAsync(...)`-ə çatmamış ola bilər. `UserManager`-in
+arxasındakı scoped `AppDbContext` artıq dispose edildiyi üçün bu çağırış
+`ObjectDisposedException` atırdı — bu da elə öz `catch (Exception ex)`
+blokumuzda SAKİTCƏ tutulub `LogWarning`-ə yazılırdı. Nəticə: yerli "oxundu"
+statusu düz işləyirdi, amma IMAP `\Seen` heç vaxt yazılmırdı — kod "uğurlu"
+görünən bir warning-lə susurdu.
+
+Bu, elə layihənin ÖZ `GelenMailSyncService.cs` (fon sinxron job-u) ARTIQ
+HƏLL ETDİYİ tələdir — o, hər background əməliyyat üçün `_scopeFactory.
+CreateScope()` ilə TƏZƏ, request-dən asılı olmayan bir scope açır. Yeni
+`\Seen` yazma metodu bu qaydaya tabe DEYİLDİ.
+
+**Düzəliş:** `GelenMailService`-in konstruktoru `UserManager<AppUser>`/
+`IDataProtectionProvider`/`IGelenMailImapSyncer`-i **artıq saxlamır** (bu
+üçü sinifdə YALNIZ bu bir metodda işlənirdi, başqa heç yerdə) — əvəzinə
+`IServiceScopeFactory _scopeFactory` saxlanılır. `ServerdeOxunduIsaretleAsync`
+indi `using var scope = _scopeFactory.CreateScope();` açır, bu üç servisi
+`scope.ServiceProvider.GetRequiredService<T>()` ilə O scope-dan alır —
+`GelenMailSyncService.GetAllImapCredentialsAsync`-in dəqiq eyni naxışı.
+
+**Bug B — "Yenilə" düyməsi "mail yoxdur" dedi, amma F5 maili göstərdi.**
+`GelenMail/Index.cshtml` (və güzgüsü `GedenMail/Index.cshtml`) "Yenilə"
+düyməsinin JS-i səhifəni yalnız `d.success && d.count > 0` olanda yeniləyirdi.
+`count` isə YALNIZ bu KONKRET `ManualSync` çağırışının IMAP-dan tapdığı YENİ
+mail sayıdır — fon sinxronu (`GelenMailSyncService`, hər 5 dəqiqə) bu klikdən
+BİR AZ ƏVVƏL eyni maili artıq bazaya yazmış ola bilər. Belə halda `ManualSync`
+düzgün "0 yeni" qaytarır (IMAP-da onsuz da artıq görülmüş mail var), AMMA
+səhifənin ilk GET-də render olunmuş statik siyahısı bazadakı YENİ (artıq
+mövcud) mail ilə uyğunlaşdırılmırdı — yalnız əl ilə F5 (tam yeni GET) bunu
+üzə çıxarırdı.
+
+**Düzəliş — hər iki `Index.cshtml`-də eyni sətir:** `if (d.success && d.count
+> 0)` → **`if (d.success)`** — "Yenilə" düyməsi indi öz adına uyğun, HƏR
+uğurlu cavabda səhifəni yeniləyir, `count`-un sıfır olması ("bu konkret IMAP
+çağırışı yeni heç nə tapmadı") ilə "bazada göstərilməli yeni heç nə yoxdur"
+eyni şey DEYİL — yalnız sonuncunu yoxlamaq mümkün deyildi (səhifənin öz
+statik siyahısı ilə bazanın canlı vəziyyətini tutuşdurmaq üçün əlavə sorğu
+lazım olardı), ona görə ən sadə, təhlükəsiz həll hər uğurlu "Yenilə"-də
+yenidən yükləməkdir — "heç nə yoxdursa" zərərsiz, görünməz bir reload olur.
+
+**Qayda (Bug A):** bir servisin konstruktoru request-scoped bir asılılığı
+(`UserManager`, `DbContext`, və onlardan asılı hər şey) saxlayır VƏ həmin
+sinifdə fire-and-forget (`_ = Metod(...)`, gözlənilmədən) bir background
+task varsa — o task ƏSLA konstruktor-scoped asılılığı işlətməməlidir, çünki
+onun yaşadığı müddət controller action-ın HTTP cavabı qədərdir, background
+task-ın öz icra müddəti qədər YOX. `IServiceScopeFactory`-dən yeni scope
+açmaq MƏCBURİDİR — bu, elə `GelenMailSyncService`-in başdan bu cür yazılmasının
+səbəbidir, yeni bir fire-and-forget yol əlavə edəndə bu presedenti unutmaq olmaz.
+
+**Qayda (Bug B):** "N yeni tapıldı" sayğacı ilə "ekran indi bazanın həqiqi
+vəziyyətini göstərir" FƏRQLİ təsdiqlərdir. Manual sinxron düyməsinin arxasında
+FON sinxron job-u da VARSA, düymənin öz sayğacı sıfır ola bilsin deyə, ekranı
+yeniləmə qərarını bu sayğaca bağlama — "Yenilə" əməliyyatının ÖZÜ uğurlu
+olub-olmamasına bağla.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, JS/C# sintaksisi). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real mühitdə yenidən test etməlidir: FinNex-də mail oxuyandan
+bir neçə saniyə sonra Titan-ın öz "oxunmamış" sayğacının azaldığını, "Yenilə"
+düyməsinin "mail yoxdur" desə belə səhifəni yeniləyib cari siyahını göstərdiyini.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

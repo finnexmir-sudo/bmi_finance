@@ -322,7 +322,12 @@ function gmIzlemeDeyisdi(checked) {
             msg.textContent = d.message;
             msg.style.color = d.success ? '#10b981' : '#ef4444';
             msg.style.display = '';
-            if (d.success && d.count > 0) setTimeout(() => location.reload(), 800);
+            // 16.10.2026 — GelenMail/Index.cshtml-dəki EYNİ düzəliş (bax orada
+            // "Bug B" şərhi): `count` yalnız BU çağırışın tapdığı yeni mail
+            // sayıdır, fon sinxronu bir az əvvəl eyni maili artıq yazmış ola
+            // bilər — onda köhnə siyahı yalnız F5 ilə düzəlirdi. İndi hər
+            // uğurlu cavabda səhifə yenilənir, `count`-dan asılı deyil.
+            if (d.success) setTimeout(() => location.reload(), 800);
         } catch {
             msg.textContent = 'Bağlantı xətası.';
             msg.style.color = '#ef4444';

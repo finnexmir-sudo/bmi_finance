@@ -425,7 +425,17 @@ function gmIzlemeDeyisdi(checked) {
             msg.textContent = d.message;
             msg.style.color = d.success ? '#10b981' : '#ef4444';
             msg.style.display = '';
-            if (d.success && d.count > 0) setTimeout(() => location.reload(), 800);
+            // 16.10.2026, DÜZƏLİŞ (Bug B — real test): əvvəl yalnız `d.count > 0`-da
+            // yenilənirdi. `count` YALNIZ bu konkret IMAP çağırışının TAPDIĞI yeni
+            // mail sayıdır — fon sinxronu (GelenMailSyncService, hər 5 dəqiqə) bu
+            // klikdən BİR AZ ƏVVƏL eyni maili artıq bazaya yazmış ola bilər; onda
+            // bu çağırış düzgün "0 yeni" qaytarır, amma səhifənin artıq göstərdiyi
+            // siyahı bazadakı HƏQİQƏTƏN mövcud mail ilə köhnəlmiş qalır — yalnız əl
+            // ilə F5 bunu üzə çıxarırdı (istifadəçinin tapdığı real hadisə). "Yenilə"
+            // düyməsi öz adına uyğun İNDİ HƏR UĞURLU cavabda səhifəni yeniləyir —
+            // `count` nə olursa olsun, göstərilən siyahı bazadakı cari vəziyyətlə
+            // HƏMİŞƏ uyğunlaşır.
+            if (d.success) setTimeout(() => location.reload(), 800);
         } catch {
             msg.textContent = 'Bağlantı xətası.';
             msg.style.color = '#ef4444';

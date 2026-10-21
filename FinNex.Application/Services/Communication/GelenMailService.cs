@@ -8,6 +8,7 @@ using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FinNex.Application.Services.Communication;
@@ -15,22 +16,16 @@ namespace FinNex.Application.Services.Communication;
 public class GelenMailService : IGelenMailService
 {
     private readonly IUnitOfWork _uow;
-    private readonly IGelenMailImapSyncer _imapSyncer;
-    private readonly UserManager<AppUser> _userManager;
-    private readonly IDataProtectionProvider _dpProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<GelenMailService> _logger;
 
     public GelenMailService(
         IUnitOfWork uow,
-        IGelenMailImapSyncer imapSyncer,
-        UserManager<AppUser> userManager,
-        IDataProtectionProvider dpProvider,
+        IServiceScopeFactory scopeFactory,
         ILogger<GelenMailService> logger)
     {
         _uow = uow;
-        _imapSyncer = imapSyncer;
-        _userManager = userManager;
-        _dpProvider = dpProvider;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -43,6 +38,29 @@ public class GelenMailService : IGelenMailService
     // tərəf DB-ni artıq yeniləyib, bura yalnız ƏLAVƏ, ikinci dərəcəli bir
     // addımdır. IMAP qurulmayıbsa (şifrə/host yoxdur) sakit keçir — xəta yoxdur,
     // çünki bu, hər istifadəçi üçün MƏCBURİ deyil.
+    //
+    // ⚠️ 16.10.2026, DÜZƏLİŞ (canlı testdə tapılan bug — "Titan hələ oxunmamış
+    // göstərir"): ƏVVƏLCƏ bu metod constructor-dan birbaşa injection olunan
+    // REQUEST-SCOPED `UserManager<AppUser>`/`IDataProtectionProvider`/
+    // `IGelenMailImapSyncer`-i işlədirdi. `_ = ServerdeOxunduIsaretleAsync(...)`
+    // fire-and-forget olduğu üçün controller action HTTP cavabını dərhal
+    // qaytarır və onun DI scope-u demək olar DƏRHAL dispose olunur —
+    // background task isə hələ ilk `await`-ə (`FindByIdAsync`) çatmamış ola
+    // bilər. `UserManager`-in arxasındakı scoped `AppDbContext` artıq dispose
+    // edilmiş olduğu üçün bu çağırış `ObjectDisposedException` atır — bu da
+    // elə öz `catch (Exception ex)` blokumuzda SAKİTCƏ tutulub log-a yazılırdı.
+    // Nəticə: IMAP `\Seen` yazması HEÇ VAXT icra olunmurdu, yerli "oxundu"
+    // düz işləyirdi, amma serverə heç nə getmirdi — kodun özü "uğurlu" görünən
+    // bir warning-lə susurdu.
+    //
+    // Həll `GelenMailSyncService`-in (bu layihənin öz background job-u) ARTIQ
+    // İŞLƏTDİYİ naxışdır: fire-and-forget task ÖZ, TƏZƏ
+    // `IServiceScopeFactory.CreateScope()`-unu açır və lazım olan BÜTÜN scoped
+    // servisləri (`UserManager`, `IDataProtectionProvider`, `IGelenMailImapSyncer`)
+    // O scope-dan alır — constructor-dan gələn request-scoped nüsxələri YOX
+    // (onlar artıq constructor-da saxlanılmır, yalnız `IServiceScopeFactory`
+    // saxlanılır). Bu yeni scope yalnız bu bir background əməliyyatı üçün
+    // yaşayır, request-in öz scope-undan tamamilə asılı deyil.
     private void ServerdeOxunduIsaretleFireAndForget(int? sahibUserId, IReadOnlyCollection<string> messageIds)
     {
         if (!sahibUserId.HasValue) return;
@@ -56,11 +74,16 @@ public class GelenMailService : IGelenMailService
     {
         try
         {
-            var user = await _userManager.FindByIdAsync(sahibUserId.ToString());
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var dpProvider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
+            var imapSyncer = scope.ServiceProvider.GetRequiredService<IGelenMailImapSyncer>();
+
+            var user = await userManager.FindByIdAsync(sahibUserId.ToString());
             if (user == null || string.IsNullOrWhiteSpace(user.MailSmtpEmail) || string.IsNullOrWhiteSpace(user.MailSmtpParol))
                 return; // Bu istifadəçi IMAP qurmayıb — yalnız yerli "oxundu" kifayətdir.
 
-            var protector = _dpProvider.CreateProtector("MailSmtpParol");
+            var protector = dpProvider.CreateProtector("MailSmtpParol");
             var password = MailParolQoruyucu.Ac(protector, user.MailSmtpParol);
             if (password == null)
             {
@@ -71,7 +94,7 @@ public class GelenMailService : IGelenMailService
             }
 
             var imapHost = GelenMailImapSyncer.DeriveImapHost(user.MailSmtpHost, user.MailSmtpEmail);
-            await _imapSyncer.OxunduIsaretleServerdeAsync(imapHost, user.MailSmtpEmail, password, messageIds);
+            await imapSyncer.OxunduIsaretleServerdeAsync(imapHost, user.MailSmtpEmail, password, messageIds);
         }
         catch (Exception ex)
         {
