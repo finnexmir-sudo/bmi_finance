@@ -5205,6 +5205,79 @@ faylında "\Seen" axtarıb hansı addımda dayandığını (başladı/tapılmad�
 yazıldı/xəta) göstərən sətirləri tapıb bura əlavə etmək, gələcək diaqnoz
 üçün çox dəyərli olacaq.
 
+### DÖRDÜNCÜ DALĞA — Retry Mexanizmi İşlədi, AMMA Titan-ın IMAP `SEARCH`-i Mailı Heç Vaxt TAPMADI (21.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi Rebuild All edib ÜÇÜNCÜ DALĞA düzəlişini (`ServerdeSeenIsarelendi`
+retry mexanizmi) yenidən test etdi və TƏSDİQLƏDİ ki, bu dəfə rebuild
+edilmiş kod işə düşmüşdü (`AskUserQuestion`-a "Bəli, rebuild edib yenidən
+sınadım" cavabı). Nəticə yenə **"olmadi yene"** idi — amma bu dəfə istifadəçi
+tam `Logs\log-….txt` çıxışını yapıştırdı, bu da diaqnozu kökündən dəyişdi.
+
+**Loglar nə sübut etdi:**
+- `GelenMail \Seen yazma BAŞLADI` sətri bir neçə dəfə, YAXIN vaxtlarla
+  görünürdü → retry mexanizmi (ÜÇÜNCÜ DALĞA) **düzgün işləyirdi**, heç bir
+  `ObjectDisposedException`/scope xətası YOX idi → Bug A-nın (DI scope)
+  fix-i də TƏSDİQ olundu.
+- Hər dəfə ardınca **`GelenMail \Seen yazma: mail serverdə tapılmadı …`**
+  (`WARN`) gəlirdi — yəni problem artıq retry-da YOX, `inbox.SearchAsync
+  (SearchQuery.HeaderContains("Message-Id", msgId))` çağırışının ÖZÜNDƏ idi.
+- Həlledici sübut: `GelenMailImapSyncer: 1 yeni mail yükləndi.` log sətri
+  (fon sinxron job-u, `SyncNowAsync`) saat 11:22:20-də yazılmışdı, DƏRHAL
+  ardınca (11:22:29-30) ELƏ HƏMİN mailin `\Seen` axtarışı "tapılmadı"
+  qaytarırdı — yəni `SEARCH` ELƏ İNDİCƏ `FetchAsync` ilə TAPILMIŞ, bazaya
+  yazılmış bir mesajı belə tapa bilmirdi. Bu, Titan-ın IMAP `SEARCH HEADER`
+  əmrinin (ən azı `Message-Id` header-i üzərində substring axtarışda)
+  **etibarsız/işləməyən** olduğunu göstərir — kod məntiqi deyil, server
+  tərəfinin məhdudiyyətidir.
+
+**Kök səbəb:** server-side `SEARCH` əmrinə güvənmək. `SyncNowAsync`
+(fon sinxronu, EYNİ fayl) heç vaxt `SEARCH` işlətmir — son N mesajı
+`FetchAsync` ilə YÜKLƏYİR, `Envelope.MessageId`-ni YERLİ olaraq (C#
+`Dictionary`/`HashSet` ilə) müqayisə edir. `OxunduIsaretleServerdeAsync`
+isə bunun ƏKSİNƏ, hər mesaj üçün SERVERƏ `SEARCH` göndərirdi — elə bu fərq
+labüd idi.
+
+**Düzəliş — `OxunduIsaretleServerdeAsync`, `SyncNowAsync`-in ÖZÜ İLƏ EYNİ
+nümunə:** `SEARCH` tamamilə çıxarıldı. Əvəzinə: `inbox.Count` və
+`FetchAsync(startIndex, -1, UniqueId | Envelope, ct)` ilə son **300**
+mesajın (`\Seen` yazması adətən bir neçə mail üçün çağırılır, sinxron
+pəncərəsi — 100 — ilə eyni olması vacib deyil, bir az geniş tutuldu) UID+
+Envelope-u BİR DƏFƏ yüklənir, `Dictionary<string, UniqueId>`
+(`Envelope.MessageId → UniqueId`) qurulur, hər hədəf `msgId` bu lüğətdən
+axtarılır (`TryGetValue`) — tapılarsa `AddFlagsAsync(uid, Seen, true, ct)`,
+tapılmazsa (həqiqətən pəncərədən kənardadırsa — köhnə mail, silinib,
+köçürülüb) əvvəlki kimi sakit `continue` + `LogWarning`.
+
+⚠️ **Pəncərə (300) hələ də MƏHDUDDUR** — `\Seen` yazılacaq mail 300-dən
+əvvəlki (çox köhnə) mesajlardandırsa, YENƏ "tapılmadı" qalacaq. Bu, praktik
+risk aşağıdır (işçi adətən öz GƏLƏN QUTUSUNDA son mailləri açır, bu da elə
+sinxronun (100-lük pəncərə) idxal etdiyi diapazondur), amma SƏHV DEYİL —
+sadəcə qəbul edilmiş bir güzəşt. Lazım gəlsə pəncərə böyüdülə bilər, amma
+hər böyütmə `FETCH`-in özünün gətirdiyi məlumat həcmini artırır.
+
+**Qayda:** eyni fayldakı İKİ metoddan BİRİ (`SyncNowAsync`) artıq sınanmış,
+işlək bir server-sorğu nümunəsi işlədirsə, YENİ bir metod (`OxunduIsaretle
+ServerdeAsync`) AYNI serverlə danışarkən FƏRQLİ bir ilkin yanaşma (bura:
+`SEARCH`) seçməzdən əvvəl, həmin FƏRQİN səbəbini sual et — "niyə qonşu metod
+bunu belə etmir?" sualının cavabı tez-tez "çünki o üsul bu serverdə işləmir"
+olur, xüsusən fərqli IMAP server implementasiyaları arasında `SEARCH`
+dəstəyi/davranışı kəskin fərqlənə bilir (RFC 3501-in `SEARCH`-i geniş, bəzi
+serverlər yalnız alt-dəstəyini düzgün dəstəkləyir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/dırnaq balansı skriptlə yoxlanıldı, `MailKit.
+IMailFolder.AddFlagsAsync(UniqueId, MessageFlags, bool, CancellationToken)`
+overload-u `SyncNowAsync`-in özündəki import/namespace-lərlə eynidir, əlavə
+`using` lazım olmadı). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real mühitdə YENİDƏN test etməlidir — mail açılanda (və ya "Hamısını
+oxundu et" ilə) `Logs\log-<bugünkü-tarix>.txt`-də bu dəfə **"GelenMail
+\Seen yazıldı — Message-Id=…, UID=…"** (`Information`) sətrinin göründüyünü,
+VƏ bir neçə saniyə sonra Titan-ın öz qutusunda/Outlook-da mailin
+OXUNMUŞ kimi göründüyünü yoxlamalıdır. Hələ "tapılmadı" çıxırsa, bu dəfə
+görünən pəncərə ölçüsü (300) ilə bağlı ola bilər — neçə mesaj arxada
+qaldığını (`inbox.Count` ilə həmin mailin sırası) bildirmək növbəti
+diaqnozu sürətləndirər.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

@@ -151,35 +151,49 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
             var inbox = client.Inbox;
             await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
 
+            // 21.10.2026 — İKİNCİ DALĞA: server-side `SEARCH HEADER Message-Id …`
+            // Titan-da DƏFƏLƏRLƏ "tapılmadı" qaytardı, hətta elə indicə
+            // `SyncNowAsync`-in ÖZÜNÜN yüklədiyi mailə görə belə — loglar bunu
+            // dəqiq sübut etdi (bax CLAUDE.md). SEARCH əməliyyatı Titan-da
+            // etibarsızdır. Həll: `SyncNowAsync`-in artıq İŞLƏK olan üsulunu
+            // TƏKRARLA — son mesajları FETCH edib Message-Id-ni YERLİ olaraq
+            // müqayisə et, serverə axtarış GÖNDƏRMƏ.
+            var count = inbox.Count;
+            var startIndex = Math.Max(0, count - 300);
+            var summaries = await inbox.FetchAsync(startIndex, -1,
+                MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope, ct);
+
+            var msgIdToUid = new Dictionary<string, UniqueId>();
+            foreach (var summary in summaries)
+            {
+                var envelopeMsgId = summary.Envelope?.MessageId;
+                if (!string.IsNullOrWhiteSpace(envelopeMsgId))
+                    msgIdToUid[envelopeMsgId] = summary.UniqueId;
+            }
+
             foreach (var msgId in messageIds)
             {
                 if (string.IsNullOrWhiteSpace(msgId)) continue;
 
                 try
                 {
-                    // UID SAXLANMIR (GelenMail.MessageId yalnız Message-Id header-idir) —
-                    // ona görə hər dəfə TƏZƏ axtarış aparılır. Bu, UID-i keşləməkdən
-                    // YAVAŞDIR, amma TƏHLÜKƏSİZDİR: UIDVALIDITY dəyişsə (qutu yenidən
-                    // qurulsa) köhnə UID SƏHV mailə yapışardı — axtarış heç vaxt bunu etmir,
-                    // ya DOĞRU mailı tapır, ya da HEÇ NƏYİ (səhv mailı YOX).
-                    var uids = await inbox.SearchAsync(MailKit.Search.SearchQuery.HeaderContains("Message-Id", msgId), ct);
-                    if (uids.Count == 0)
+                    if (!msgIdToUid.TryGetValue(msgId, out var uid))
                     {
                         _logger.LogWarning(
-                            "GelenMail \\Seen yazma: mail serverdə tapılmadı (silinib/köçürülüb, ya da Message-Id axtarışı uyğun gəlmədi) — Message-Id={MsgId}",
-                            msgId);
+                            "GelenMail \\Seen yazma: mail serverdə (son {Pencere} mesaj içində) tapılmadı — Message-Id={MsgId}",
+                            summaries.Count, msgId);
                         continue;
                     }
 
-                    await inbox.AddFlagsAsync(uids, MessageFlags.Seen, true, ct);
+                    await inbox.AddFlagsAsync(uid, MessageFlags.Seen, true, ct);
                     ugurluMsgIdler.Add(msgId);
                     _logger.LogInformation(
-                        "GelenMail \\Seen yazıldı — Message-Id={MsgId}, UID-lər={Uids}",
-                        msgId, string.Join(",", uids));
+                        "GelenMail \\Seen yazıldı — Message-Id={MsgId}, UID={Uid}",
+                        msgId, uid);
                 }
                 catch (Exception ex)
                 {
-                    // Bir mailin axtarışı/yazması uğursuz olsa, qalanlara MANE OLMASIN.
+                    // Bir mailin yazması uğursuz olsa, qalanlara MANE OLMASIN.
                     // `ugurluMsgIdler`-ə ƏLAVƏ EDİLMİR — çağıran tərəf bunu "hələ
                     // təsdiqlənməyib" sayıb növbəti açılışda TƏKRAR cəhd edəcək.
                     _logger.LogWarning(ex, "GelenMail \\Seen yazma xətası — Message-Id={MsgId}", msgId);
