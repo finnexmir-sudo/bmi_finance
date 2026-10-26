@@ -5442,6 +5442,56 @@ başlayan yeni bir xəstəlik bülleteni yarat → önizləmədəki dövr tarixi
 yuxarıdakı cədvəllə tutuşdur, həm mühasib Exceli ilə ən azı bir real halı
 yoxla.
 
+## Xəstəlik Kəsintisi — TƏQVİM Günü İŞ Günü Dərəcəsinə Vurulurdu (26.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi Toplu Maaş siyahısında İlkanə Mahmudovanın "XƏSTƏLİK" kartına baxıb şübhələndi:
+*"11 gün xəstəliyin günüdür amma iş günü deyil, biz cari aydakı iş günündən -11 etmişik
+deyəsən, araşdır"* — haqlı çıxdı.
+
+`MaasHesablamaService.FerdiHesabla` addım 6.5-də:
+```csharp
+int xestelikGun = xestelikSirketGun + xestelikDsmfGun;   // TƏQVİM günüdür!
+xestelikKesinti = Math.Round(esasMaas / ayIsGunu * xestelikGun, 2);
+```
+`xestelikSirketGun`/`DsmfGun` (`XestelikService.OdenisleriYaratAsync`-də yaranır:
+`aySirketGun = Math.Min(ayTeqvimGun, limitQalan)`) **TƏQVİM günüdür** — bu, DSMF/189 saylı
+Əsasnamə qaydasına görə ÖDƏNİŞ (`xestelikSirketOdenis`) tərəfi üçün DÜZGÜNDÜR. Amma
+`esasMaas / ayIsGunu` **İŞ GÜNÜ** dərəcəsidir — bunu birbaşa təqvim gün sayına vurmaq
+şənbə/bazar günlərini də kəsir, halbuki işçi o günləri onsuz da işləməyəcəkdi. Hətta izah
+mətni özü "{xestelikSirketGun} **iş günü**" yazırdı — əslində təqvim günü idi.
+
+**Müqayisə — məzuniyyət bunu DOĞRU edir** (eyni fayl, "Mezuniyyet Odenisi"/"Mezuniyyet
+Kesintisi" addımları): iki ayrı dəyişən var — `aySonuIGS` (bütün günlər, ÖDƏNİŞ üçün) və
+`aySonuHIGS` (yalnız real iş günü, həftəsonu/bayram çıxılmış, **KƏSİNTİ üçün**). Xəstəlikdə
+bu ayrım yox idi — tək `xestelikGun` (təqvim) həm ödənişə, həm kəsintiyə eyni cür gedirdi.
+
+**Düzəliş — İKİ yerdə, EYNİ məntiqlə** (ikisi də tapıldı, ikisi də düzəldildi):
+1. **Addım 6.5** (cari ayın xəstəliyi) — yeni `xestelikHaqiqiIsGun`: hər `Xestelik`
+   qeydinin bu aya düşən hissəsi (`BaslamaTarixi`/`BitmeTarixi` aya kəsilmiş) üzrə,
+   `AyinIsGunleriniHesablaAsync` ilə **EYNİ** gün-təsnifatından (BayramGunu.Tip==IsGunu →
+   sayılır, Bayram → sayılmır, default → şənbə/bazar xaric sayılır) hesablanır. Kəsinti
+   indi `esasMaas/ayIsGunu × xestelikHaqiqiIsGun`-dur, ödəniş tərəfi (`xestelikSirketOdenis`,
+   təqvim əsaslı) TOXUNULMADI.
+2. **Addım 6.6** (əvvəlki ay post-maaş korreksiyası) — EYNİ bug, EYNİ fayl, `xstGun` yerinə
+   `xstHaqiqiIsGun`. `korreksiyaXstOdenisler` sorğusuna `.Include(x => x.Xestelik)` əlavə
+   edildi (əvvəl `Xestelik` naviqasiyası yüklənmirdi, `BaslamaTarixi`/`BitmeTarixi`-ə çatmaq
+   üçün lazımdır) — tapılmasa (ehtiyat) köhnə təqvim-əsaslı dəyərə geri düşür.
+
+**İzah mətnindəki mislabel də düzəldildi**: "Xəstəlik Ödənişi (Şirkət)" addımında
+`"{xestelikSirketGun} iş günü"` → `"{xestelikSirketGun} təqvim günü"`.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRA hesablanan aylara təsir edir (eyni
+"dondurma" prinsipi — keçmiş `HesablamaIzahi`/`Maas` qeydləri toxunulmayıb).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə
+balansı, `BayramGunu`/`GunTipi` tiplərinin faylda artıq istifadə olunduğu təsdiqləndi,
+dəyişən adları mövcud scope ilə toqquşdurulmadı — `xst`/`ayBaslangic` kimi adlar başqa
+metodlarda işləndiyi üçün yeni dəyişənlərə `xst`/`xstAy...` prefiksi verildi). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: İlkanə
+Mahmudovanın (və ya həftəsonu əhatə edən hər hansı xəstəlik bülletenli işçinin) Oktyabr
+kəsintisinin əvvəlkindən AZ olduğunu (yalnız real iş günləri qədər), xəstəlik ödənişinin
+(831,32 ₼) dəyişmədiyini — mühasib Exceli ilə bir real halı tutuşdurmalıdır.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

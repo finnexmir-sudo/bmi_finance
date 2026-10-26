@@ -711,15 +711,55 @@ namespace FinNex.Application.Services.HR
                     }
                 }
 
-                int xestelikGun = xestelikSirketGun + xestelikDsmfGun;
-                if (xestelikGun > 0)
+                // xestelikSirketGun/DsmfGun TƏQVİM günüdür (189 saylı Əsasnamə — ödəniş
+                // təqvim üzrə hesablanır, bax XestelikService.OdenisleriYaratAsync). Bunu
+                // birbaşa kəsinti düsturunda (esasMaas/ayIsGunu — İŞ GÜNÜ dərəcəsi)
+                // işlətmək səhvdir: şənbə/bazar işçi onsuz da işləməyəcəkdi, o günlər üçün
+                // əlavə kəsmək artıq kəsintidir (26.10.2026, real hadisə: İlkanə Mahmudova,
+                // mezuniyyətin IGS/HIGS ayrımı ilə EYNİ tələ). Kəsinti üçün bülletənin bu
+                // aya düşən REAL iş günü lazımdır — AyinIsGunleriniHesablaAsync ilə EYNİ
+                // gün-təsnifatından (BayramGunu.Tip==IsGunu → sayılır, Bayram → sayılmır,
+                // default → şənbə/bazar xaric sayılır).
+                int xestelikHaqiqiIsGun = 0;
+                if (xestelikler.Count > 0)
                 {
-                    xestelikKesinti = Math.Round(esasMaas / ayIsGunu * xestelikGun, 2);
+                    var xstAyBaslangic = new DateTime(input.Il, input.Ay, 1);
+                    var xstAyBitis = xstAyBaslangic.AddMonths(1).AddDays(-1);
+                    var xstOzelGunler = await _unitOfWork.Repository<BayramGunu>()
+                        .HamisiniGetirAsync(x =>
+                            x.Tarix >= xstAyBaslangic && x.Tarix <= xstAyBitis && !x.Silinib);
+                    var xstOzelDict = xstOzelGunler
+                        .GroupBy(x => x.Tarix.Date)
+                        .ToDictionary(g => g.Key, g => g.First().Tip);
+
+                    foreach (var xst in xestelikler)
+                    {
+                        var xstBaslama = xst.BaslamaTarixi < xstAyBaslangic ? xstAyBaslangic : xst.BaslamaTarixi;
+                        var xstBitme = xst.BitmeTarixi > xstAyBitis ? xstAyBitis : xst.BitmeTarixi;
+                        for (var t = xstBaslama; t <= xstBitme; t = t.AddDays(1))
+                        {
+                            if (xstOzelDict.TryGetValue(t.Date, out var tip))
+                            {
+                                if (tip == GunTipi.IsGunu) xestelikHaqiqiIsGun++;
+                            }
+                            else if (t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday)
+                            {
+                                xestelikHaqiqiIsGun++;
+                            }
+                        }
+                    }
+                }
+
+                int xestelikGun = xestelikSirketGun + xestelikDsmfGun;   // təqvim günü — yalnız izah üçün
+                if (xestelikHaqiqiIsGun > 0)
+                {
+                    xestelikKesinti = Math.Round(esasMaas / ayIsGunu * xestelikHaqiqiIsGun, 2);
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Xəstəlik Gün Kəsintisi",
-                        Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {xestelikGun} xəstəlik günü " +
-                               $"(şirkət: {xestelikSirketGun}, DSMF: {xestelikDsmfGun}) = {xestelikKesinti:N2} ₼. " +
+                        Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {xestelikHaqiqiIsGun} faktiki iş günü " +
+                               $"(bülletən {xestelikGun} təqvim günüdür — şirkət: {xestelikSirketGun}, " +
+                               $"DSMF: {xestelikDsmfGun}; həftəsonu/bayram kəsintiyə düşmür) = {xestelikKesinti:N2} ₼. " +
                                "Əsas maaşdan çıxılır — həmin günlər üçün ayrıca Xəstəlik Ödənişi əlavə olunur.",
                         Mebleg = xestelikKesinti,
                         Tip = "kesinti"
@@ -731,7 +771,7 @@ namespace FinNex.Application.Services.HR
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Xəstəlik Ödənişi (Şirkət)",
-                        Izah = $"{xestelikSirketGun} iş günü × bir günlük (max 14 gün/il)",
+                        Izah = $"{xestelikSirketGun} təqvim günü × bir günlük (max 14 gün/il)",
                         Mebleg = xestelikSirketOdenis,
                         Tip = "gelir"
                     });
@@ -790,17 +830,48 @@ namespace FinNex.Application.Services.HR
                             .Where(x => x.IsciId == input.IsciId
                                 && x.Il == prevIl && x.Ay == prevAy
                                 && !x.Silinib && x.MaasId == null && x.SirketGunSayi > 0)
+                            .Include(x => x.Xestelik)
                             .ToListAsync();
 
                         if (korreksiyaXstOdenisler.Any())
                         {
-                            int xstGun = korreksiyaXstOdenisler.Sum(x => x.SirketGunSayi);
+                            int xstGun = korreksiyaXstOdenisler.Sum(x => x.SirketGunSayi);   // təqvim günü — yalnız izah üçün
                             decimal xstOdenis = korreksiyaXstOdenisler.Sum(x => x.SirketOdenis);
-                            decimal xstKesinti = Math.Round(prevGunluk * xstGun, 2);
+
+                            // Kəsinti REAL iş günü üzrə (eynilə yuxarıdakı addım 6.5-dəki
+                            // düzəliş, 26.10.2026) — SirketGunSayi təqvim günüdür, prevGunluk
+                            // isə iş-günü dərəcəsidir, birbaşa vurmaq həftəsonunu da kəsirdi.
+                            var prevOzelGunler = await _unitOfWork.Repository<BayramGunu>()
+                                .HamisiniGetirAsync(x =>
+                                    x.Tarix >= prevAyBaslama && x.Tarix <= prevAyBitis && !x.Silinib);
+                            var prevOzelDict = prevOzelGunler
+                                .GroupBy(x => x.Tarix.Date)
+                                .ToDictionary(g => g.Key, g => g.First().Tip);
+
+                            int xstHaqiqiIsGun = 0;
+                            foreach (var od in korreksiyaXstOdenisler)
+                            {
+                                if (od.Xestelik == null) { xstHaqiqiIsGun += od.SirketGunSayi; continue; }
+                                var odBaslama = od.Xestelik.BaslamaTarixi < prevAyBaslama ? prevAyBaslama : od.Xestelik.BaslamaTarixi;
+                                var odBitme = od.Xestelik.BitmeTarixi > prevAyBitis ? prevAyBitis : od.Xestelik.BitmeTarixi;
+                                for (var t = odBaslama; t <= odBitme; t = t.AddDays(1))
+                                {
+                                    if (prevOzelDict.TryGetValue(t.Date, out var tip))
+                                    {
+                                        if (tip == GunTipi.IsGunu) xstHaqiqiIsGun++;
+                                    }
+                                    else if (t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday)
+                                    {
+                                        xstHaqiqiIsGun++;
+                                    }
+                                }
+                            }
+
+                            decimal xstKesinti = Math.Round(prevGunluk * xstHaqiqiIsGun, 2);
                             korreksiyaKesinti += xstKesinti;
                             korreksiyaGelir += xstOdenis;
                             korrHisseler.Add(
-                                $"{prevAy:D2}/{prevIl} xəstəlik: {xstGun} gün artıq ödəniş " +
+                                $"{prevAy:D2}/{prevIl} xəstəlik: {xstHaqiqiIsGun} faktiki iş günü ({xstGun} təqvim günü) artıq ödəniş " +
                                 $"kəsintisi {xstKesinti:N2} ₼ + xəstəlik haqqı {xstOdenis:N2} ₼");
                         }
 
