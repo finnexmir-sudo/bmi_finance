@@ -5362,6 +5362,86 @@ dondur → FerdiHesabla/TopluHesabla önizləməsi/mühasibat provodkası/məzun
 çıxarmadığını təsdiqlə; sonra ləğv et → növbəti hesablamada yenidən çıxıldığını
 təsdiqlə.
 
+## Xəstəlik — "Son 12 Ay" SÜRÜŞƏN YOX, "Son 4 Rüb" SABİT Dövr İdi (26.10.2026, KRİTİK)
+
+İstifadəçi qanun mətnini dəqiqləşdirdi: 189 saylı Əsasnamənin (30.01.2026-cı il
+tarixli 31 saylı Qərarla dəyişiklik, 01.05.2026-dan qüvvədə) qaydası
+**"əmək qabiliyyətinin müvəqqəti itirildiyi AYDAN ƏVVƏLKİ ARDICIL GƏLƏN 4 RÜBƏ"**
+deyir — bu, SABİT təqvim rübləridir (Yan-Mar/Apr-İyun/İyul-Sen/Okt-Dek), kodun
+əvvəlki "xəstəlik ayından əvvəlki sürüşən 12 tam ay" modeli DEYİL. İki müstəqil
+mənbə (vergiler.az-ın iki ayrı məqaləsi, konkret tarixli nümunələrlə) eyni
+qaydanı təsdiqlədi.
+
+**Fərq yalnız rübün İLK ayında (Yanvar/Aprel/İyul/Oktyabr) başlayan xəstəliklərdə
+GÖRÜNMÜR** (təsadüfən eyni nəticə verir) — qalan 8 ayda (fevral, mart, may, iyun,
+avqust, sentyabr, noyabr, dekabr) 1-2 ay sürüşmə var idi, bazanı həm əskik, həm
+artıq göstərə bilərdi.
+
+**Həll — `XestelikService.Son4RubDovruTap(xestelikBaslama)`** (yeni, ortaq, `static`
+helper): xəstəlik ayını əvvəlcə öz rübünün İLK ayına yuvarlaqlaşdırır
+(`((ay-1)/3)*3+1` → 1, 4, 7 və ya 10), sonra 1 gün geri (dövrün sonu) və 12 ay
+geri (dövrün başlanğıcı) çəkir. Xəstəliyin ÖZ rübü tamamilə kənarda qalır —
+rübün hansı ayında başlamasından (ilk/orta/son) asılı olmayaraq eyni dövrü verir.
+
+Məsələn: May 2026 (Apr-May-İyun rübü) → dövr **01.04.2025 – 31.03.2026**
+(Aprel/May/İyunun HƏR biri eyni nəticəni verir — rüb daxilində fərq yoxdur).
+
+**İKİ canlı yazıcı yeri tapıldı, ikisinə də tətbiq olundu** (literal `AddMonths(-11)`
+grep-i ilə bütün repo axtarıldı):
+
+| Yer | Nə üçün |
+|---|---|
+| `XestelikService.PreviewAsync` → `YeniXestelikHesablaAsync` | HR-in "Yeni Xəstəlik Bülleteni" formasında görünən ÖNİZLƏMƏ |
+| `XestelikService.OdenisleriYaratAsync` | `CreateAsync`-dən çağırılan ƏSL yazma yolu — `XestelikOdenis` sətirlərini yaradır, real ödəniş |
+
+Üçüncü bir metod, `Son12AyIsGununuHesablaAsync` (iş günü əsaslı, köhnə — May
+2026-dan əvvəlki DSMF-əsaslı olmayan düsturun qalığı) **heç yerdən çağırılmır**
+(grep ilə təsdiqləndi) — ölü koddur, TOXUNULMADI (dəyişiklik heç bir davranışa
+təsir etməyəcəkdi).
+
+⚠️ **Görüntü qatına (ekran) TOXUNMAQ LAZIM OLMADI.** `HR/Xestelik/Create.cshtml`-dəki
+"DSMF cəmi (son 12 ay …)" etiketinin yanındakı `#ppDovr` elementi serverin
+qaytardığı `Son12AyBaslangic`/`Son12AyBitis` DTO sahələrini **dinamik** göstərir
+(JS-dən doldurulur) — servis düzgün tarixi qaytaran kimi ekran da avtomatik
+düzəlir, ayrıca JS/Razor dəyişikliyi lazım olmadı. "Son 12 ay" etiketi hələ də
+HƏQİQƏTƏ UYĞUNDUR — dövr indi də dəqiq 12 ay təşkil edir, sadəcə sürüşən deyil,
+rüb sərhədlərinə bağlıdır.
+
+**SQL diaqnostik skripti yeniləndi** — `docs/sql/hr/Xestelik_DSMF_Pencere_Yoxlama.sql`
+əvvəl "sürüşən 12 ay"ı "kodun hazırkı pəncərəsi" deyə etiketləyirdi, bu artıq
+doğru deyil; etiketlər "KÖHNƏ (sürüşən)" / "YENİ (sabit rüb, kodun hazırkı
+pəncərəsi)" olaraq tərsinə çevrildi.
+
+⚠️ **"Öz hesabına" (ödənişsiz məzuniyyət) — ayrıca, həll olunmuş sual.** Eyni
+müzakirə zamanı aydınlaşdırıldı: öz hesabına məzuniyyət günləri bu 4-rüblük
+dövrün MƏXRƏCİNDƏN (ÇTG) ÇIXILMIR — mühasiblə birgə təsdiqləndi, rəsmi mənbələrdə
+(sosial.gov.az) tapılmadı. Kod onsuz da bunu heç vaxt çıxarmırdı
+(`Son12AyXestelikTeqvimGunAsync` YALNIZ `Xestelikler` cədvəlini oxuyur,
+`MezuniyyetNovu.OzHesabina`-ya toxunmur) — deməli bu hissədə **heç bir kod
+dəyişikliyi lazım olmadı**, mövcud davranış artıq düzgün idi.
+
+⚠️ **Rəsmi ÇTG siyahısında daha iki kateqoriya var (hamiləlik/doğum məzuniyyəti,
+qismən ödənişli sosial məzuniyyət) — bunlar HƏLƏ TƏTBİQ OLUNMAYIB**, çünki
+sistemdə bu iki məzuniyyət növü üçün ayrıca kateqoriya belə YOXDUR
+(`MezuniyyetNovu` enum-u yalnız Illik/Xəstəlik/Ezamiyyət/DövlətVəzifəsi/
+ÖzHesabına daşıyır). Bu, bugünkü işin əhatəsinə DAXİL DEYİL — ayrıca müzakirə
+tələb edir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRA yaradılan xəstəlik
+bülletenlərinə təsir edir. Keçmiş `XestelikOdenis` sətirləri (əvvəlki sürüşən-
+pəncərə ilə hesablanmış) dəyişmir, yenidən hesablanmır — bu, layihənin digər
+"dondurma" presedentləri ilə eyni qaydadır (keçmişi düzəltmək ayrı iş, SQL/əl
+düzəlişi tələb edir, bu sessiyada edilmədi, istifadəçi tələb etməyib).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, hər iki çağırış yerinin `var (ayBaslangic, ayBitis) =
+Son4RubDovruTap(...)` tuple-deconstruction sintaksisi əl ilə oxunub təsdiqləndi).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: rübün ORTA/SON ayında (məs. fevral, iyun, sentyabr, dekabr)
+başlayan yeni bir xəstəlik bülleteni yarat → önizləmədəki dövr tarixini (`#ppDovr`)
+yuxarıdakı cədvəllə tutuşdur, həm mühasib Exceli ilə ən azı bir real halı
+yoxla.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

@@ -28,13 +28,12 @@ DECLARE @IsciId INT = (
         OR Soyad + N' ' + Ad LIKE '%' + @IsciAdSoyad + '%')
 );
 
--- 2) KOD HAZIRKI VƏZİYYƏTDƏ necə hesablayır — SÜRÜŞƏN 12 ay
--- (XestelikService.PreviewAsync: ayBitis = xəstəlik ayından 1 gün əvvəl,
---  ayBaslangic = ayBitis-dən 11 ay geri)
+-- 2) KÖHNƏ MODEL — SÜRÜŞƏN 12 ay (26.10.2026-ya qədər kodda idi, artıq İŞLƏDİLMİR)
+-- (ayBitis = xəstəlik ayından 1 gün əvvəl, ayBaslangic = ayBitis-dən 11 ay geri)
 DECLARE @AyBitis DATE = DATEADD(DAY, -1, DATEFROMPARTS(YEAR(@XestelikBaslama), MONTH(@XestelikBaslama), 1));
 DECLARE @AyBaslangic DATE = DATEADD(MONTH, -11, DATEFROMPARTS(YEAR(@AyBitis), MONTH(@AyBitis), 1));
 
-SELECT N'SÜRÜŞƏN (kodun hazırkı pəncərəsi)' AS Model,
+SELECT N'SÜRÜŞƏN (KÖHNƏ model — artıq kodda yoxdur)' AS Model,
        @AyBaslangic AS Bas, @AyBitis AS Bit;
 
 -- 3) Həmin pəncərəyə düşən bütün aylıq qeydlər — ekrandakı cəmin tərkibi
@@ -79,15 +78,16 @@ WHERE IsciId = @IsciId
   AND BaslamaTarixi <= @AyBitis
   AND BitmeTarixi   >= @AyBaslangic;
 
--- 6) MÜQAYİSƏ ÜÇÜN — QANUNUN (çox güman) tələb etdiyi SABİT RÜB pəncərəsi
--- (əvvəlki müzakirəyə bax: xəstəlik ayının rübündən əvvəlki 4 tam rüb)
+-- 6) YENİ MODEL — SABİT RÜB (26.10.2026-dan kodun hazırkı pəncərəsi,
+-- bax XestelikService.Son4RubDovruTap). Qanun: "əmək qabiliyyətinin
+-- itirildiyi aydan əvvəlki ardıcıl 4 rüb" (189 saylı Əsasnamə).
 DECLARE @RubBasAyi INT = ((MONTH(@XestelikBaslama) - 1) / 3) * 3 + 1;
 DECLARE @RubBaslangici DATE = DATEFROMPARTS(YEAR(@XestelikBaslama), @RubBasAyi, 1);
 DECLARE @AyBitis_Rub DATE = DATEADD(DAY, -1, @RubBaslangici);
 DECLARE @AyBaslangic_Rub DATE = DATEADD(MONTH, -11, DATEFROMPARTS(YEAR(@AyBitis_Rub), MONTH(@AyBitis_Rub), 1));
 
-SELECT N'SABİT RÜB (qanunun çox güman tələb etdiyi pəncərə)' AS Model,
+SELECT N'SABİT RÜB (YENİ — kodun hazırkı pəncərəsi, 26.10.2026-dan)' AS Model,
        @AyBaslangic_Rub AS Bas, @AyBitis_Rub AS Bit,
        IIF(@AyBaslangic_Rub = @AyBaslangic AND @AyBitis_Rub = @AyBitis,
-           N'EYNİDİR — bu konkret ay üçün fərq yoxdur',
-           N'FƏRQLİDİR — kod səhv dövrü götürür') AS NeticeMuqayise;
+           N'EYNİDİR — bu konkret ay üçün köhnə/yeni model fərqlənmir',
+           N'FƏRQLİDİR — köhnə (sürüşən) model fərqli dövr götürərdi, indi SABİT RÜB tətbiq olunur') AS NeticeMuqayise;

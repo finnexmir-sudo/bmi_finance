@@ -314,9 +314,8 @@ namespace FinNex.Application.Services.HR
                 int isGunSayi = await IsGunSayiniHesablaAsync(baslama, bitme);
                 int teqvimGunSayi = (bitme.Date - baslama.Date).Days + 1;
 
-                // ── Son 12 ay dövrü (xəstəlik ayından əvvəlki 12 tam ay) ──
-                var ayBitis = new DateTime(baslama.Year, baslama.Month, 1).AddDays(-1);
-                var ayBaslangic = new DateTime(ayBitis.Year, ayBitis.Month, 1).AddMonths(-11);
+                // ── Son 4 tam rüb dövrü (189 saylı Əsasnamə, 2026 qaydası) ──
+                var (ayBaslangic, ayBitis) = Son4RubDovruTap(baslama);
 
                 // ── Yeni düstur (DSMF-əsaslı) ───────────────────────────
                 var dto = await YeniXestelikHesablaAsync(
@@ -487,7 +486,32 @@ namespace FinNex.Application.Services.HR
             };
         }
 
-        // Son 12 ayda işçinin xəstəlik təqvim günlərini hesablayır
+        /// <summary>
+        /// Xəstəliyin hesablanma dövrünü tapır — Nazirlər Kabinetinin 189 saylı
+        /// Əsasnaməsinin 2026 qaydası: "əmək qabiliyyətinin müvəqqəti itirildiyi
+        /// aydan əvvəlki ARDICIL GƏLƏN 4 RÜBƏ". Bu, sürüşən 12 ay DEYİL — sabit
+        /// təqvim rüblərinə (Yan-Mar/Apr-İyun/İyul-Sen/Okt-Dek) bağlıdır.
+        ///
+        /// Xəstəliyin ÖZ rübü tamamilə kənarda qalır (rübün ilk/orta/son
+        /// ayında başlamasından asılı olmayaraq) — əvvəlcə xəstəlik ayı öz
+        /// rübünün İLK ayına yuvarlaqlaşdırılır, sonra 1 gün geri (= dövrün
+        /// sonu) və 12 ay geri (= dövrün başlanğıcı) çəkilir.
+        ///
+        /// Məsələn: May 2026 (Apr-May-İyun rübü) → dövr 01.04.2025 – 31.03.2026.
+        /// Rübün istənilən ayında (Aprel, May, yaxud İyun) başlasa nəticə EYNİDİR.
+        ///
+        /// Mənbə: https://vergiler.az/news/opinion/38157.html,
+        /// https://vergiler.az/news/article/39367.html
+        /// </summary>
+        private static (DateTime ayBaslangic, DateTime ayBitis) Son4RubDovruTap(DateTime xestelikBaslama)
+        {
+            int rubBasAyi = ((xestelikBaslama.Month - 1) / 3) * 3 + 1;   // 1, 4, 7 və ya 10
+            var ayBitis = new DateTime(xestelikBaslama.Year, rubBasAyi, 1).AddDays(-1);
+            var ayBaslangic = new DateTime(xestelikBaslama.Year, rubBasAyi, 1).AddMonths(-12);
+            return (ayBaslangic, ayBitis);
+        }
+
+        // Son 4 rüb dövründə işçinin xəstəlik təqvim günlərini hesablayır
         // (Xestelik cədvəlindən, hər bülletənin intervala kəsilmiş hissəsi cəmlənir)
         private async Task<int> Son12AyXestelikTeqvimGunAsync(int isciId, DateTime ayBaslangic, DateTime ayBitis)
         {
@@ -626,9 +650,8 @@ namespace FinNex.Application.Services.HR
         /// </summary>
         private async Task OdenisleriYaratAsync(Xestelik xestelik)
         {
-            // 12 ay dövrü
-            var ayBitis = new DateTime(xestelik.BaslamaTarixi.Year, xestelik.BaslamaTarixi.Month, 1).AddDays(-1);
-            var ayBaslangic = new DateTime(ayBitis.Year, ayBitis.Month, 1).AddMonths(-11);
+            // Son 4 tam rüb dövrü (189 saylı Əsasnamə, 2026 qaydası) — bax Son4RubDovruTap
+            var (ayBaslangic, ayBitis) = Son4RubDovruTap(xestelik.BaslamaTarixi);
 
             // Son 12 ay DSMF cəmi (işçi + şirkət)
             var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>().Query()
