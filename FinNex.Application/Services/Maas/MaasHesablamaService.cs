@@ -717,38 +717,9 @@ namespace FinNex.Application.Services.HR
                 // işlətmək səhvdir: şənbə/bazar işçi onsuz da işləməyəcəkdi, o günlər üçün
                 // əlavə kəsmək artıq kəsintidir (26.10.2026, real hadisə: İlkanə Mahmudova,
                 // mezuniyyətin IGS/HIGS ayrımı ilə EYNİ tələ). Kəsinti üçün bülletənin bu
-                // aya düşən REAL iş günü lazımdır — AyinIsGunleriniHesablaAsync ilə EYNİ
-                // gün-təsnifatından (BayramGunu.Tip==IsGunu → sayılır, Bayram → sayılmır,
-                // default → şənbə/bazar xaric sayılır).
-                int xestelikHaqiqiIsGun = 0;
-                if (xestelikler.Count > 0)
-                {
-                    var xstAyBaslangic = new DateTime(input.Il, input.Ay, 1);
-                    var xstAyBitis = xstAyBaslangic.AddMonths(1).AddDays(-1);
-                    var xstOzelGunler = await _unitOfWork.Repository<BayramGunu>()
-                        .HamisiniGetirAsync(x =>
-                            x.Tarix >= xstAyBaslangic && x.Tarix <= xstAyBitis && !x.Silinib);
-                    var xstOzelDict = xstOzelGunler
-                        .GroupBy(x => x.Tarix.Date)
-                        .ToDictionary(g => g.Key, g => g.First().Tip);
-
-                    foreach (var xst in xestelikler)
-                    {
-                        var xstBaslama = xst.BaslamaTarixi < xstAyBaslangic ? xstAyBaslangic : xst.BaslamaTarixi;
-                        var xstBitme = xst.BitmeTarixi > xstAyBitis ? xstAyBitis : xst.BitmeTarixi;
-                        for (var t = xstBaslama; t <= xstBitme; t = t.AddDays(1))
-                        {
-                            if (xstOzelDict.TryGetValue(t.Date, out var tip))
-                            {
-                                if (tip == GunTipi.IsGunu) xestelikHaqiqiIsGun++;
-                            }
-                            else if (t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday)
-                            {
-                                xestelikHaqiqiIsGun++;
-                            }
-                        }
-                    }
-                }
+                // aya düşən REAL iş günü lazımdır — TƏK mənbə: XestelikHaqiqiIsGunuSayAsync
+                // (Toplu Maaş önizləməsi də EYNİ metodu çağırır, bax MaasController).
+                int xestelikHaqiqiIsGun = await XestelikHaqiqiIsGunuSayAsync(input.IsciId, input.Il, input.Ay);
 
                 int xestelikGun = xestelikSirketGun + xestelikDsmfGun;   // təqvim günü — yalnız izah üçün
                 if (xestelikHaqiqiIsGun > 0)
@@ -841,31 +812,14 @@ namespace FinNex.Application.Services.HR
                             // Kəsinti REAL iş günü üzrə (eynilə yuxarıdakı addım 6.5-dəki
                             // düzəliş, 26.10.2026) — SirketGunSayi təqvim günüdür, prevGunluk
                             // isə iş-günü dərəcəsidir, birbaşa vurmaq həftəsonunu da kəsirdi.
-                            var prevOzelGunler = await _unitOfWork.Repository<BayramGunu>()
-                                .HamisiniGetirAsync(x =>
-                                    x.Tarix >= prevAyBaslama && x.Tarix <= prevAyBitis && !x.Silinib);
-                            var prevOzelDict = prevOzelGunler
-                                .GroupBy(x => x.Tarix.Date)
-                                .ToDictionary(g => g.Key, g => g.First().Tip);
-
-                            int xstHaqiqiIsGun = 0;
-                            foreach (var od in korreksiyaXstOdenisler)
-                            {
-                                if (od.Xestelik == null) { xstHaqiqiIsGun += od.SirketGunSayi; continue; }
-                                var odBaslama = od.Xestelik.BaslamaTarixi < prevAyBaslama ? prevAyBaslama : od.Xestelik.BaslamaTarixi;
-                                var odBitme = od.Xestelik.BitmeTarixi > prevAyBitis ? prevAyBitis : od.Xestelik.BitmeTarixi;
-                                for (var t = odBaslama; t <= odBitme; t = t.AddDays(1))
-                                {
-                                    if (prevOzelDict.TryGetValue(t.Date, out var tip))
-                                    {
-                                        if (tip == GunTipi.IsGunu) xstHaqiqiIsGun++;
-                                    }
-                                    else if (t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday)
-                                    {
-                                        xstHaqiqiIsGun++;
-                                    }
-                                }
-                            }
+                            // TƏK mənbə: HaqiqiIsGunuSayHelperAsync (addım 6.5 ilə EYNİ).
+                            int xstHaqiqiIsGun = korreksiyaXstOdenisler
+                                .Where(o => o.Xestelik == null)
+                                .Sum(o => o.SirketGunSayi);   // ehtiyat: naviqasiya yüklənməsə
+                            var xstAraliqlar = korreksiyaXstOdenisler
+                                .Where(o => o.Xestelik != null)
+                                .Select(o => (o.Xestelik.BaslamaTarixi, o.Xestelik.BitmeTarixi));
+                            xstHaqiqiIsGun += await HaqiqiIsGunuSayHelperAsync(xstAraliqlar, prevIl, prevAy);
 
                             decimal xstKesinti = Math.Round(prevGunluk * xstHaqiqiIsGun, 2);
                             korreksiyaKesinti += xstKesinti;
@@ -1729,6 +1683,54 @@ namespace FinNex.Application.Services.HR
                 }
             }
             return isGunleri.Count;
+        }
+
+        /// <summary>
+        /// Verilmiş tarix aralıqlarının bir aya düşən REAL iş günü sayı (BayramGunu +
+        /// həftəsonu qaydaları ilə) — xəstəlik kəsintisi üçün TƏK mənbə (26.10.2026).
+        /// Addım 6.5, addım 6.6 (əvvəlki ay korreksiyası) və
+        /// <see cref="XestelikHaqiqiIsGunuSayAsync"/> bunu çağırır — düstur üç yerdə
+        /// ayrı-ayrı yazılsaydı biri gec-tez köhnə qalardı (bax CLAUDE.md "Bir
+        /// Kəmiyyətə Üç Yazıcı").
+        /// </summary>
+        private async Task<int> HaqiqiIsGunuSayHelperAsync(
+            IEnumerable<(DateTime Baslama, DateTime Bitme)> araliqlar, int il, int ay)
+        {
+            var ayBaslangic = new DateTime(il, ay, 1);
+            var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= ayBaslangic && x.Tarix <= ayBitis && !x.Silinib);
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
+
+            int sayi = 0;
+            foreach (var (baslamaX, bitmeX) in araliqlar)
+            {
+                var baslama = baslamaX < ayBaslangic ? ayBaslangic : baslamaX;
+                var bitme = bitmeX > ayBitis ? ayBitis : bitmeX;
+                for (var t = baslama.Date; t <= bitme.Date; t = t.AddDays(1))
+                {
+                    if (ozelDict.TryGetValue(t.Date, out var tip))
+                    {
+                        if (tip == GunTipi.IsGunu) sayi++;
+                    }
+                    else if (t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday)
+                    {
+                        sayi++;
+                    }
+                }
+            }
+            return sayi;
+        }
+
+        public async Task<int> XestelikHaqiqiIsGunuSayAsync(int isciId, int il, int ay)
+        {
+            var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(isciId, il, ay);
+            if (xestelikler.Count == 0) return 0;
+            return await HaqiqiIsGunuSayHelperAsync(
+                xestelikler.Select(x => (x.BaslamaTarixi, x.BitmeTarixi)), il, ay);
         }
 
         /// <summary>

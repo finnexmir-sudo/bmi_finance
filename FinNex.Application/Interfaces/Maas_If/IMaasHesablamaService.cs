@@ -108,6 +108,17 @@ namespace FinNex.Application.Interfaces.Maas_If
         Task<decimal> CixisKesintisiPreviewAsync(int isciId, int il, int ay);
 
         /// <summary>
+        /// Xəstəlik bülletenlərinin bu aydakı REAL İŞ GÜNLƏRİ sayı (26.10.2026).
+        /// Yalnız baza maaş KƏSİNTİSİ üçün — XestelikOdenis.SirketGunSayi/DsmfGunSayi
+        /// TƏQVİM günüdür (ödəniş düzgün bu əsasda hesablanır), kəsinti isə İŞ GÜNÜ
+        /// dərəcəsinə (esasMaas/ayIsGunu) vurulmalıdır. Toplu hesablama preview-ı bu
+        /// rəqəmi FerdiHesablaAsync-ın saxladığı kəsinti ilə eyni etmək üçün istifadə
+        /// edir (bax OzHesabinaIsGunuSayAsync ilə eyni naxış). Həftəsonu və
+        /// hesablanmayan bayramlar çıxılır.
+        /// </summary>
+        Task<int> XestelikHaqiqiIsGunuSayAsync(int isciId, int il, int ay);
+
+        /// <summary>
         /// Toplu hesablama preview üçün — əvvəlki ayın maaşı hesablandıqdan
         /// sonra yaradılan xəstəlik/məzuniyyət qeydləri əsasında cari ayın maaşına
         /// tətbiq olunacaq korreksiyanı qaytarır.

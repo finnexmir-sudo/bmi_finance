@@ -1229,26 +1229,30 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Where(o => !o.Silinib && isciIdler.Contains(o.IsciId)
                          && o.Il == cIl && o.Ay == cAy)
                 .ToListAsync();
-            var isciXestelikMap = xestelikOdenisList
-                .GroupBy(o => o.IsciId)
-                .ToDictionary(
-                    g => g.Key,
-                    g =>
-                    {
-                        int sirketGun = g.Sum(o => o.SirketGunSayi);
-                        int dsmfGun = g.Sum(o => o.DsmfGunSayi);
-                        decimal esas = cariMaasMap.TryGetValue(g.Key, out var m) ? m : 0m;
-                        decimal kesinti = (ayIsGunu > 0 && (sirketGun + dsmfGun) > 0)
-                            ? Math.Round(esas / ayIsGunu * (sirketGun + dsmfGun), 2)
-                            : 0m;
-                        return (
-                            sirketGun: sirketGun,
-                            dsmfGun: dsmfGun,
-                            sirketOdenis: g.Sum(o => o.SirketOdenis),
-                            dsmfOdenis: g.Sum(o => o.DsmfOdenis),
-                            kesinti: kesinti
-                        );
-                    });
+            // Kəsinti TƏK mənbədən — XestelikHaqiqiIsGunuSayAsync (26.10.2026).
+            // Əvvəl burada (sirketGun+dsmfGun) — TƏQVİM günü — birbaşa iş-günü
+            // dərəcəsinə vurulurdu (eyni bug MaasHesablamaService-dəki kimi, bax
+            // CLAUDE.md "Xəstəlik Kəsintisi" bölməsi); indi FerdiHesabla-nın özünün
+            // çağırdığı EYNİ metod işlədilir ki, önizləmə ilə əsl hesablama
+            // uyğunlaşmayan nəticə verməsin.
+            var isciXestelikMap = new Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis, decimal kesinti)>();
+            foreach (var g in xestelikOdenisList.GroupBy(o => o.IsciId))
+            {
+                int sirketGun = g.Sum(o => o.SirketGunSayi);
+                int dsmfGun = g.Sum(o => o.DsmfGunSayi);
+                int haqiqiIsGun = await _hesablamaService.XestelikHaqiqiIsGunuSayAsync(g.Key, cIl, cAy);
+                decimal esas = cariMaasMap.TryGetValue(g.Key, out var m) ? m : 0m;
+                decimal kesinti = (ayIsGunu > 0 && haqiqiIsGun > 0)
+                    ? Math.Round(esas / ayIsGunu * haqiqiIsGun, 2)
+                    : 0m;
+                isciXestelikMap[g.Key] = (
+                    sirketGun: sirketGun,
+                    dsmfGun: dsmfGun,
+                    sirketOdenis: g.Sum(o => o.SirketOdenis),
+                    dsmfOdenis: g.Sum(o => o.DsmfOdenis),
+                    kesinti: kesinti
+                );
+            }
 
             // Qayıb kəsintisi preview — MaasdanKes=true olan qayıb günlərini say
             var qayibQeydler = await _unitOfWork.Repository<Davamiyyet>()
