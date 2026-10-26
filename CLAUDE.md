@@ -31,12 +31,30 @@ Sessiyanın **sonunda** (işlər tamamlananda) mütləq:
 - Dəyişikliyin əvvəl ehtimal etdiyin kimi işlədiyini yoxla.
 - Yalnız sintaktik düzgünlük yox — real məntiq düzgünlüyünü yoxla.
 - Test nəticəsini istifadəçiyə bildirməzdən əvvəl özün əmin ol.
+- **Bir hesablama/düstur səhvini düzəldəndə, "düzəldim" demədən ƏVVƏL bütün repoda
+  eyni ifadəni/dəyişəni `grep` ilə axtar** (26.10.2026, real hadisə: xəstəlik
+  kəsintisi `MaasHesablamaService`-də düzəldildi, elan edildi, istifadəçi publish
+  edib yoxladı — rəqəm DƏYİŞMƏDİ, çünki eyni köhnə düstur `MaasController`-in öz
+  Toplu Maaş önizləməsində AYRICA, dublikat kodla təkrarlanırdı). "Əsl hesablama"nı
+  (servis metodu) düzəltmək kifayət etmir — onu göstərən HƏR ekranın/preview-un,
+  controller-in öz dublikat kodu ola bilər (bax "Bir Kəmiyyətə Üç Yazıcı" prinsipi).
+  Axtarış açarı: dəyişən adı (`SirketGunSayi`), əməliyyatın şəkli (`/ ayIsGunu *`),
+  və ya köhnə sahə adının özü. Tapılan HƏR yeri eyni düzəlişlə (tərcihən **tək
+  paylaşılan metoda çıxararaq**, OzHesabinaIsGunuSayAsync nümunəsi kimi) bağla.
+- **"Build 0 xəta verdi" = "sintaksis düzgündür" deməkdir, "məntiq hər yerdə
+  düzəldi" demək DEYİL.** İkisini qarışdırıb istifadəçiyə "düzəldi" demə — əvvəlcə
+  yuxarıdakı `grep` axtarışını bitir, sonra de.
 
 ## Maliyyə və Maaş Hesablamaları
 
 - Payroll hesablamaları tarix aralığı əsasında işləyir — `IsGunlerininSayi` sıfırlamaq kifayət deyil, query-dən filtrlənməlidir.
 - Məzuniyyət dəyişikliklərindən sonra `TopluHesabla` səhifəsini real data ilə yoxla.
 - İkiqat sayılma riskini hər zaman nəzərə al (korreksiya + orijinal).
+- **Hər maaş rəqəmi İKİ YERDƏN gələ bilər — servisin əsl hesablaması (`MaasHesablamaService.
+  FerdiHesabla`, yazılan dəyər) VƏ Toplu Maaş ekranının ÖZ preview kodu
+  (`MaasController.TopluHesabla`/`TopluOnizleme`).** Birini düzəldib o birini
+  unutmaq — rəqəmin publish-dən sonra da "dəyişmədi" görünməsinin ən çox rast
+  gəlinən səbəbidir. Hər ikisini tutuşdurmadan "düzəldi" demə.
 - SQL migration vermədən əvvəl `SELECT` ilə nə dəyişəcəyini göstər.
 
 ## Aylıq Qazanc Tarixçəsi (IsciAyliqQazanc) — Nə Düşür, Nə Düşmür (KRİTİK)
