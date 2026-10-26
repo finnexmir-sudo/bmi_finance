@@ -1,0 +1,141 @@
+@model FinNex.Domain.Entities.HR.IsciHYS
+@{
+    ViewData["Title"] = "HYS dondurma";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var dondurmalar = (List<FinNex.Domain.Entities.HR.IsciHYSDondurma>)ViewBag.Dondurmalar;
+    var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                          "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+    var bugun = DateTime.Today;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-hys.css" asp-append-version="true" />
+}
+
+<div class="ih-form-page">
+    <div class="ih-form-head">
+        <a asp-action="Index" asp-route-isciId="@Model.IsciId" class="ih-back"><i class="bi bi-arrow-left"></i> Geri</a>
+        <div class="ih-title">HYS dondurma — @(Model.Isci?.TamAd ?? "#" + Model.IsciId)</div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="ih-form-card">
+        <div class="ih-form-group">
+            <label class="ih-label">Sığorta şirkəti</label>
+            <div class="ih-static">@(string.IsNullOrWhiteSpace(Model.Sirket) ? "—" : Model.Sirket)</div>
+        </div>
+        <div class="ih-form-row">
+            <div class="ih-form-group">
+                <label class="ih-label">Aylıq HYS</label>
+                <div class="ih-static">@Model.Mebleg.ToString("N2") ₼</div>
+            </div>
+            <div class="ih-form-group">
+                <label class="ih-label">Aktiv dövr</label>
+                <div class="ih-static">
+                    @Model.BaslamaTarixi.ToString("dd.MM.yyyy") –
+                    @(Model.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "müddətsiz")
+                </div>
+            </div>
+        </div>
+        <p class="ih-sub" style="margin-top:4px">
+            Dondurulan ay üçün bu HYS məbləği maaş/vergi bazasından çıxılmır — işçi həmin ay üçün
+            HYS-i olmayan kimi hesablanır. Növbəti ay avtomatik davam edir, <code>IsciHYS</code>-in
+            özünün başlama/bitmə tarixinə toxunulmur.
+        </p>
+    </div>
+
+    <div class="ih-form-card">
+        <div class="ih-title" style="font-size:1rem;margin-bottom:12px">Yeni dondurma əlavə et</div>
+        <form asp-action="Dondur" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="isciHYSId" value="@Model.Id" />
+            <div class="ih-form-row">
+                <div class="ih-form-group">
+                    <label class="ih-label">İl <span class="ih-req">*</span></label>
+                    <input type="number" name="il" class="ih-input" value="@bugun.Year"
+                           min="2020" max="2100" required />
+                </div>
+                <div class="ih-form-group">
+                    <label class="ih-label">Ay <span class="ih-req">*</span></label>
+                    <select name="ay" class="ih-select">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(m == bugun.Month)">@ayAdlar[m]</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="ih-form-group">
+                <label class="ih-label">Səbəb <span class="ih-hint">(istəyə bağlı)</span></label>
+                <textarea name="sebeb" rows="2" class="ih-input" maxlength="500"
+                          placeholder="Məs: işçinin öz müraciəti ilə bu ay dondurulub"></textarea>
+            </div>
+            <div class="ih-form-actions">
+                <button type="submit" class="ih-btn ih-btn--primary">
+                    <i class="bi bi-snow2"></i> Dondur
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="ih-card">
+        @if (!dondurmalar.Any())
+        {
+            <div class="ih-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Bu HYS üçün heç bir ay dondurulmayıb</p>
+            </div>
+        }
+        else
+        {
+            <table class="ih-table">
+                <thead>
+                    <tr>
+                        <th>Ay</th>
+                        <th>Səbəb</th>
+                        <th>Dondurulma tarixi</th>
+                        <th class="ih-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in dondurmalar)
+                    {
+                        <tr>
+                            <td><strong>@ayAdlar[d.Ay] @d.Il</strong></td>
+                            <td class="ih-note">@(d.Sebeb ?? "—")</td>
+                            <td>@d.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="ih-act">
+                                @* asp-route-id/-isciHYSId QƏSDƏN AÇIQ yazılır — cari GET səhifəsinin
+                                   ambient "id" (= Model.Id, HYS-in özü) route dəyəri ilə bu formun öz
+                                   "id" parametrinin (dondurma qeydinin Id-si) qarışmaması üçün. Index.cshtml-
+                                   dəki Delete formu ilə EYNİ konvensiya (hidden input YOX, asp-route-*). *@
+                                <form asp-action="DondurmaLegvEt" asp-route-id="@d.Id" asp-route-isciHYSId="@Model.Id"
+                                      method="post" style="display:inline"
+                                      onsubmit="return confirm('@ayAdlar[d.Ay] @d.Il ayının dondurulmasını ləğv etmək istəyirsiniz? Növbəti hesablamada bu ay üçün HYS yenidən çıxılacaq.');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="ih-btn ih-btn--danger ih-btn--sm">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Ləğv et
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

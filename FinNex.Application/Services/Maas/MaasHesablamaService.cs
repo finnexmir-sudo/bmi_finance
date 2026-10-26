@@ -38,17 +38,20 @@ namespace FinNex.Application.Services.HR
         private readonly IUnitOfWork _unitOfWork;
         private readonly IIsciAyliqQazancService _ayliqQazancService;
         private readonly IXestelikService _xestelikService;
+        private readonly IIsciHYSDondurmaService _hysDondurmaService;
         private readonly Microsoft.Extensions.Configuration.IConfiguration? _config;
 
         public MaasHesablamaService(
             IUnitOfWork unitOfWork,
             IIsciAyliqQazancService ayliqQazancService,
             IXestelikService xestelikService,
+            IIsciHYSDondurmaService hysDondurmaService,
             Microsoft.Extensions.Configuration.IConfiguration? config = null)
         {
             _unitOfWork = unitOfWork;
             _ayliqQazancService = ayliqQazancService;
             _xestelikService = xestelikService;
+            _hysDondurmaService = hysDondurmaService;
             _config = config;
         }
 
@@ -963,7 +966,14 @@ namespace FinNex.Application.Services.HR
                     (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
                 .ToListAsync();
 
-            // Bütün aktiv HYS qeydlərinin cəm məbləği — vergi+DSMF bazasından çıxılır.
+            // Bu ay üçün dondurulmuş HYS qeydlərini xaric et (IsciHYSDondurma,
+            // 26.10.2026) — TƏK mənbə DondurulmusIdlerAsync-dir, öz sorğunu yazma.
+            var hysDondurulmusIdler = await _hysDondurmaService.DondurulmusIdlerAsync(input.Il, input.Ay);
+            if (hysDondurulmusIdler.Count > 0)
+                isciHysList = isciHysList.Where(x => !hysDondurulmusIdler.Contains(x.Id)).ToList();
+
+            // Bütün aktiv (və dondurulmamış) HYS qeydlərinin cəm məbləği —
+            // vergi+DSMF bazasından çıxılır.
             decimal hysMebleg = isciHysList.Sum(x => x.Mebleg);
 
             // 8.6. İşəgötürən HYS payını əvvəlcədən hesabla (GROSS-a daxildir)
@@ -2064,14 +2074,22 @@ namespace FinNex.Application.Services.HR
             {
                 var ayBaslangicHys = new DateTime(tarix.Year, tarix.Month, 1);
                 var ayBitisHys = ayBaslangicHys.AddMonths(1).AddDays(-1);
-                hysMebleg = await _unitOfWork.Repository<IsciHYS>()
+                var hysQeydleri = await _unitOfWork.Repository<IsciHYS>()
                     .Query()
                     .Where(x =>
                         !x.Silinib &&
                         x.IsciId == isciId.Value &&
                         x.BaslamaTarixi <= ayBitisHys &&
                         (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangicHys))
-                    .SumAsync(x => (decimal?)x.Mebleg) ?? 0m;
+                    .ToListAsync();
+
+                // Bu ay üçün dondurulmuş HYS qeydlərini xaric et — eyni TƏK
+                // mənbə, bax yuxarıdakı 8.5-ci addımdakı eyni şərh.
+                var hysDondurulmusIdler = await _hysDondurmaService.DondurulmusIdlerAsync(tarix.Year, tarix.Month);
+                if (hysDondurulmusIdler.Count > 0)
+                    hysQeydleri = hysQeydleri.Where(x => !hysDondurulmusIdler.Contains(x.Id)).ToList();
+
+                hysMebleg = hysQeydleri.Sum(x => x.Mebleg);
                 if (hysMebleg > 0)
                 {
                     var hysIsvParam = await _unitOfWork.Repository<MaasParametri>()

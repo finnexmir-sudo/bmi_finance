@@ -107,6 +107,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IMaasService, MaasService>();
         services.AddScoped<IIsciAyliqQazancService, IsciAyliqQazancService>();
         services.AddScoped<IXestelikService, XestelikService>();
+        services.AddScoped<IIsciHYSDondurmaService, IsciHYSDondurmaService>();
         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
         services.AddScoped<IAyliqElaveService, AyliqElaveService>();
         services.AddScoped<IIsciSiralamaService, IsciSiralamaService>();

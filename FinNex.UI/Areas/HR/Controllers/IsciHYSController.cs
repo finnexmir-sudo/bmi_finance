@@ -1,3 +1,4 @@
+using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -12,10 +13,12 @@ namespace FinNex.UI.Areas.HR.Controllers
     public class IsciHYSController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IIsciHYSDondurmaService _hysDondurmaService;
 
-        public IsciHYSController(IUnitOfWork unitOfWork)
+        public IsciHYSController(IUnitOfWork unitOfWork, IIsciHYSDondurmaService hysDondurmaService)
         {
             _unitOfWork = unitOfWork;
+            _hysDondurmaService = hysDondurmaService;
         }
 
         // ── GET: butun HYS teyinatlari (filter: isciId optional) ──
@@ -246,6 +249,44 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ? "HYS təyinatı silindi."
                 : "Təyinat tapılmadı.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── Bir ayliq HYS dondurma (26.10.2026) ──
+        [HttpGet]
+        public async Task<IActionResult> Dondur(int id)
+        {
+            var hys = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .Where(x => x.Id == id && !x.Silinib)
+                .Include(x => x.Isci)
+                .FirstOrDefaultAsync();
+
+            if (hys == null)
+            {
+                TempData["Error"] = "HYS təyinatı tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.Dondurmalar = await _hysDondurmaService.IsciHYSUzreGetirAsync(id);
+            return View(hys);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Dondur(int isciHYSId, int il, int ay, string? sebeb)
+        {
+            var result = await _hysDondurmaService.DondurAsync(isciHYSId, il, ay, sebeb);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Dondur), new { id = isciHYSId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DondurmaLegvEt(int id, int isciHYSId)
+        {
+            var result = await _hysDondurmaService.LegvEtAsync(id);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Dondur), new { id = isciHYSId });
         }
 
         private async Task FillDropdownsAsync()

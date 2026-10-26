@@ -40,6 +40,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IWebHostEnvironment _env;
         // VM 98.2.1 — işçi kreditləri üzrə hesabi gəlir (Toplu Hesablama sahəsini doldurur)
         private readonly IIsciKreditFaydaService _isciKreditFayda;
+        private readonly IIsciHYSDondurmaService _hysDondurmaService;
 
         public MaasController(
             IMaasService maasService,
@@ -52,6 +53,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             IMuhasibatHesabService muhasibatHesabService,
             IDigerTutulmaService digerTutulmaService,
             IIsciKreditFaydaService isciKreditFayda,
+            IIsciHYSDondurmaService hysDondurmaService,
             IWebHostEnvironment env)
         {
             _maasService = maasService;
@@ -64,6 +66,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _muhasibatHesabService = muhasibatHesabService;
             _digerTutulmaService = digerTutulmaService;
             _isciKreditFayda = isciKreditFayda;
+            _hysDondurmaService = hysDondurmaService;
             _env = env;
         }
 
@@ -242,6 +245,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                          && x.BaslamaTarixi <= hysAyBit
                          && (x.BitmeTarixi == null || x.BitmeTarixi >= hysAyBas))
                 .ToListAsync();
+
+            // Bu ay üçün dondurulmuş HYS qeydlərini provodkadan xaric et —
+            // TƏK mənbə IIsciHYSDondurmaService-dir (bax CLAUDE.md "Bir
+            // Kəmiyyətə Üç/Dörd Yazıcı" qaydası, FerdiHesabla ilə EYNİ şərt).
+            var hysDondurulmusIdler = await _hysDondurmaService.DondurulmusIdlerAsync(il, ay);
+            if (hysDondurulmusIdler.Count > 0)
+                hysList = hysList.Where(x => !hysDondurulmusIdler.Contains(x.Id)).ToList();
 
             var hysSirketsiz = new List<string>();
             foreach (var grp in hysList.GroupBy(x => x.Sirket!.Trim()).OrderBy(g => g.Key))
@@ -1165,6 +1175,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                     x.BaslamaTarixi <= ayBitis &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
                 .ToListAsync();
+
+            // Bu ay üçün dondurulmuş HYS qeydlərini xaric et — FerdiHesablaAsync
+            // (əsl hesablama) ilə EYNİ şərt, TopluHesabla önizləməsi ekranla
+            // uyğunsuzlaşmasın (bax CLAUDE.md "Bir Kəmiyyətə Üç/Dörd Yazıcı").
+            var hysDondurulmusIdlerPreview = await _hysDondurmaService.DondurulmusIdlerAsync(cIl, cAy);
+            if (hysDondurulmusIdlerPreview.Count > 0)
+                isciHysList = isciHysList.Where(x => !hysDondurulmusIdlerPreview.Contains(x.Id)).ToList();
 
             // İşçi bir neçə şirkətdə HYS aça bilər — hər işçi üçün cəm məbləği
             var isciHysMap = isciHysList

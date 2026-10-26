@@ -97,6 +97,10 @@
                             </td>
                             <td class="ih-note">@(x.Qeyd ?? "—")</td>
                             <td class="ih-act">
+                                <a asp-action="Dondur" asp-route-id="@x.Id"
+                                   class="ih-btn ih-btn--outline ih-btn--sm" title="Aylıq dondurma">
+                                    <i class="bi bi-snow2"></i>
+                                </a>
                                 <a asp-action="Edit" asp-route-id="@x.Id"
                                    class="ih-btn ih-btn--outline ih-btn--sm" title="Redaktə">
                                     <i class="bi bi-pencil"></i>

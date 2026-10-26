@@ -28,6 +28,7 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIsciAyliqQazancService _ayliqQazancService;
         private readonly IMaasHesablamaService _maasHesablamaService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IIsciHYSDondurmaService _hysDondurmaService;
 
         public MezuniyyetController(
             IMezuniyyetService mezuniyyetService,
@@ -37,7 +38,8 @@ namespace FinNex.UI.Areas.User.Controllers
             IEvezediciTesdiqService evezediciTesdiqService,
             IIsciAyliqQazancService ayliqQazancService,
             IMaasHesablamaService maasHesablamaService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IIsciHYSDondurmaService hysDondurmaService)
         {
             _mezuniyyetService = mezuniyyetService;
             _dashboardService = dashboardService;
@@ -47,6 +49,7 @@ namespace FinNex.UI.Areas.User.Controllers
             _ayliqQazancService = ayliqQazancService;
             _maasHesablamaService = maasHesablamaService;
             _unitOfWork = unitOfWork;
+            _hysDondurmaService = hysDondurmaService;
         }
 
         // ── GET /User/Mezuniyyet/Preview?baslama=2026-04-10&bitme=2026-04-17&odenisTipi=1 ──
@@ -68,14 +71,23 @@ namespace FinNex.UI.Areas.User.Controllers
 
             // HYS — bütün aktiv qeydlərin cəmi (işçi bir neçə şirkətdə HYS aça bilər)
             var hysAyBitis = new DateTime(baslama.Year, baslama.Month, 1).AddMonths(1).AddDays(-1);
-            decimal hysMebleg = await _unitOfWork.Repository<IsciHYS>()
+            var hysQeydleri = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
                 .Where(x =>
                     !x.Silinib &&
                     x.IsciId == isciId.Value &&
                     x.BaslamaTarixi <= hysAyBitis &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(baslama.Year, baslama.Month, 1)))
-                .SumAsync(x => (decimal?)x.Mebleg) ?? 0m;
+                .ToListAsync();
+
+            // Bu ay dondurulmuş HYS-ləri xaric et — HR tərəfindəki eyni
+            // hesablama (MezuniyyetOdenisController) ilə EYNİ qayda, işçinin
+            // öz "Təxmini Net Maaş" preview-u HR-ın gördüyündən fərqlənməsin.
+            var hysDondurulmusIdler = await _hysDondurmaService.DondurulmusIdlerAsync(baslama.Year, baslama.Month);
+            if (hysDondurulmusIdler.Count > 0)
+                hysQeydleri = hysQeydleri.Where(x => !hysDondurulmusIdler.Contains(x.Id)).ToList();
+
+            decimal hysMebleg = hysQeydleri.Sum(x => x.Mebleg);
 
             // İşəgötürən HYS faizi
             var hysIsvParam = await _unitOfWork.Repository<MaasParametri>()

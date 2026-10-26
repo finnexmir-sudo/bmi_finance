@@ -5287,6 +5287,81 @@ UID=160` — **heç bir "tapılmadı" xəbərdarlığı yoxdur**. Yerli `FetchAs
 Dörd dalğalıq zəncir (DI-scope → `ServerdeSeenIsarelendi` retry →
 `SEARCH`→yerli-müqayisə) bununla TAM bağlandı.
 
+## HYS — Bir Aylıq Dondurma (26.10.2026)
+
+İstifadəçi sualı: *"isci HYS ni misal bir ayliq dondurmaq isteyir ve bu hemin
+ayda nezere alinmamalidir. bunun ucun bizim kodlarda ne var?"* — kodda belə bir
+funksiya YOX idi; iki dizayn təklif olundu (IsciHYS-in özünü ləğv/yenidən yarat
+vs ayrıca audit cədvəli), istifadəçi ikincisini seçdi və **"son dərəcədə
+ehtiyyatlı iş istəyirəm, maksimum diqqətli, yaddan çıxan heç nə qalmasın"**
+tapşırığı ilə həyata keçirildi.
+
+**Niyə `IsciHYS.BaslamaTarixi/BitmeTarixi`-ni bölmək YOX:** bir ayı "kəsmək"
+üçün mövcud sətri bitirib yeni sətirlə davam etmək (iki ayrı dövr) tarixçəni
+ikiqat artırar və hər HYS-ə görə fərqli ola bilən 50%-limit/dövr-kəsişmə
+yoxlamalarını təkrar-təkrar işə salardı. Əvəzinə **`IsciHYSDondurma`** — bir
+sətir = bir (IsciHYSId, Il, Ay). `IsciHYS`-in öz tarixləri **TOXUNULMUR**,
+növbəti ay avtomatik davam edir. Silinmir, deaktiv edilir (`Silinib=true`) —
+`MasinMuddetService`/`IsciGuzest` ilə eyni konvensiya.
+
+**TƏK mənbə — `IIsciHYSDondurmaService.DondurulmusIdlerAsync(il, ay)`.**
+Verilmiş (il, ay) üçün dondurulmuş **bütün** `IsciHYS.Id`-lərin dəstini
+qaytarır; çağıran tərəf öz `IsciHYS` siyahısından bu dəstdə olanları filtrləyib
+sonra cəmləyir. Kodda HYS-i aylıq pəncərə ilə sorğulayan **altı** yer var idi —
+hamısı tapıldı (literal `IsciHYS` grep-i ilə başlandı, sonra çağırış zəncirini
+izləyərək `TutulmalariHesablaAsync`-in dolayı çağıranları da aşkar edildi) və
+hamısına **eyni naxış** (`siyahı çək → DondurulmusIdlerAsync ilə filtrlə →
+sonra cəmlə`) tətbiq olundu:
+
+| Yer | Nə üçün |
+|---|---|
+| `MaasHesablamaService.FerdiHesabla` (8.5-ci addım) | əsl aylıq hesablama, yazılan dəyər |
+| `MaasHesablamaService.TutulmalariHesablaAsync` | məzuniyyət ödənişi vergi/DSMF bazası (bir çox çağıran: `MaasController`, `MezuniyyetOdenisController`, `User/MezuniyyetController`) |
+| `HR/MaasController` (provodka, D) HYS bölməsi) | mühasibat əməliyyat yazılışı |
+| `HR/MaasController` (TopluHesabla önizləməsi) | ekranla əsl hesablama uyğunsuzlaşmasın |
+| `HR/MezuniyyetOdenisController` (Detal/`maasGuniNet`) | məzuniyyət ödənişinin maaş günü qalığı |
+| `User/MezuniyyetController` (`Preview`, "Təxmini Net Maaş") | işçinin öz müraciət preview-u HR-ın gördüyündən fərqlənməsin |
+
+**Audit sahələri ƏL İLƏ YAZILMIR.** `AppDbContext.SaveChangesAsync`-in
+interceptor-u (`EntityState.Added` qolu) `YaradanIcraciId`-i HttpContext-dəki
+cari istifadəçi ilə **şərtsiz üstələyir** — ilk versiyada servis metodlarına
+`int? icraciId` parametri əlavə edilmişdi, amma bu, interceptor tərəfindən hər
+zaman əvəz olunacağı üçün tamamilə mənasız idi. Silindi. `LegvEtAsync` isə
+`EfRepositoryAsync.YumshakSilAsync`-in etdiyi İLƏ EYNİ: yalnız `Silinib=true` +
+`SilinmeTarixi=DateTime.Now` yazır, `SilenIcraciId`-ə toxunmur (interceptor
+`SilinmeTarixi` artıq dolu olanda onu doldurmur — bu, layihənin **bütün**
+`YumshakSilAsync` yollarında mövcud, qəsdən dəyişdirilməmiş davranışdır).
+
+**UI — `HR/IsciHYS`:** `Index.cshtml`-ə hər sətrə "Dondur" (qar dənəciyi ikonu)
+düyməsi əlavə olundu, yeni `Dondur.cshtml` səhifəsi (il/ay/səbəb formu + mövcud
+dondurmaların siyahısı, hər birində "Ləğv et"). Dondurulacaq ay **HYS-in öz
+aktiv dövrünə düşməlidir** (servis yoxlayır) — əks halda dondurmağın mənası
+yoxdur, o ay onsuz da hesablamaya daxil olmayacaq.
+
+⚠️ **Routing tələsi — `DondurmaLegvEt` formunda `asp-route-id` AÇIQ yazılıb,
+hidden input YOX.** `Dondur.cshtml` GET səhifəsi `{controller}/{action}/{id?}`
+ambient route-unda `id=IsciHYS.Id` ilə açılır. Həmin səhifədəki
+`DondurmaLegvEt` formunun öz `id` parametri (dondurma qeydinin Id-si) ambient
+"id" dəyəri ilə QARIŞA bilərdi — `asp-route-id="@d.Id"` açıq yazılaraq
+(`Index.cshtml`-dəki Delete formu ilə EYNİ konvensiya) bu qarışıqlığın qarşısı
+alındı. "Dondur" (yarat) formunda bu risk yoxdur, çünki o action-un imzasında
+`id` adlı parametr YOXDUR.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — dondurma yalnız BUNDAN SONRA hesablanan aylara
+təsir edir, keçmiş `HesablamaIzahi`/`IsciAyliqQazanc` sətirlərini dəyişmir
+(eyni "dondurma" prinsipi, bax "Qara Jeton MenfiMiqdar"/VM9821 bölmələri).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, hər 6 çağırış yerinin dəyişən əhatəsi — `input.Il/
+Ay`, `tarix.Year/Month`, `il/ay`, `cIl/cAy`, `mezIl/mezAy`, `baslama.Year/
+Month` — təkbətək oxunub təsdiqləndi, namespace-lər `FinNex.Application.
+Interfaces.HR` qaydasına uyğun yoxlanıldı). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: bir HYS-in bir ayını
+dondur → FerdiHesabla/TopluHesabla önizləməsi/mühasibat provodkası/məzuniyyət
+ödənişi preview-larının (HR və işçi tərəfi) HAMISININ həmin ay üçün HYS-i
+çıxarmadığını təsdiqlə; sonra ləğv et → növbəti hesablamada yenidən çıxıldığını
+təsdiqlə.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

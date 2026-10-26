@@ -133,6 +133,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciImtiyaz> IsciImtiyazlar { get; set; }
     public DbSet<IsciUsaq> IsciUsaqlari { get; set; }
     public DbSet<IsciHYS> IsciHYSler { get; set; }
+    public DbSet<IsciHYSDondurma> IsciHYSDondurmalari { get; set; }
     public DbSet<Avans> Avanslar { get; set; }
     public DbSet<Teklif> Teklifler { get; set; }
 

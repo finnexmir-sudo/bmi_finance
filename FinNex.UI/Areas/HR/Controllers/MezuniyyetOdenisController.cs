@@ -1,5 +1,6 @@
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
@@ -26,17 +27,20 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMaasHesablamaService _maasHesablamaService;
         private readonly IBildirisService _bildirisService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IIsciHYSDondurmaService _hysDondurmaService;
 
         public MezuniyyetOdenisController(
             IUnitOfWork unitOfWork,
             IMaasHesablamaService maasHesablamaService,
             IBildirisService bildirisService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IIsciHYSDondurmaService hysDondurmaService)
         {
             _unitOfWork = unitOfWork;
             _maasHesablamaService = maasHesablamaService;
             _bildirisService = bildirisService;
             _userManager = userManager;
+            _hysDondurmaService = hysDondurmaService;
         }
 
         // ── GET /HR/MezuniyyetOdenis ─────────────────────────────
@@ -104,13 +108,23 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // HYS
             var hysAyBitis = new DateTime(mezIl, mezAy, 1).AddMonths(1).AddDays(-1);
-            decimal hysMebleg = await _unitOfWork.Repository<IsciHYS>()
+            var hysQeydleri = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
                 .Where(x =>
                     !x.Silinib && x.IsciId == mez.IsciId &&
                     x.BaslamaTarixi <= hysAyBitis &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(mezIl, mezAy, 1)))
-                .SumAsync(x => (decimal?)x.Mebleg) ?? 0m;
+                .ToListAsync();
+
+            // Bu ay dondurulmuş HYS-lər maaş günü qalığına da ("maasGuniNet",
+            // aşağıda) daxil edilmir — TutulmalariHesablaAsync-in öz daxili
+            // filtri ilə EYNİ qayda, əks halda vergi bazası düzgün, amma net
+            // ödəniş səhv çıxardı.
+            var hysDondurulmusIdler = await _hysDondurmaService.DondurulmusIdlerAsync(mezIl, mezAy);
+            if (hysDondurulmusIdler.Count > 0)
+                hysQeydleri = hysQeydleri.Where(x => !hysDondurulmusIdler.Contains(x.Id)).ToList();
+
+            decimal hysMebleg = hysQeydleri.Sum(x => x.Mebleg);
 
             // Avans
             var avanslar = await _unitOfWork.Repository<Avans>()
