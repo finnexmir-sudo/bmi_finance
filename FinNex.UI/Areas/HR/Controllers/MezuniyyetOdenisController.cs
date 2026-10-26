@@ -170,22 +170,27 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ? mezOdenisNetCemi : 0;
 
             // ── Mühasib cədvəli üçün əvəzləşmə (yalnız göstərmə) ─────────────
-            // YALNIZ qabaqcadan ödənişdə dolur — AySonu qeydində qabaqcadan
-            // verilmiş pul yoxdur, «əvəzləşmə» anlayışı mənasızdır (view da
-            // netlər boş olanda sütunları ümumiyyətlə göstərmir).
-            //
             // 27.08.2026: hesab BURADAN ÇIXARILDI və servisə köçürüldü —
             // MaasHesablamaService.MezuniyyetAvansAyPaylariAsync. Səbəb: eyni
             // bölgünü indi MAAŞ HESABLAMASI da işlədir (vergi bazası aylara
             // bölünür). İki nüsxə saxlansaydı biri gec-tez köhnə qalardı və
             // ekranla maaş bir-birini təkzib edərdi (CLAUDE.md qaydası).
             //
-            // Hədəf net: FAKTİKİ ödənilmiş məbləğ (varsa) — netlərin cəmi bank
-            // köçürməsi ilə qəpiyinə tutuşsun; yoxdursa hesablanmış net.
+            // 26.10.2026: AySonu qeydlərdə DƏ doldurulur (əvvəl yalnız
+            // QabaqcadanOdenis-də). Niyə: ay sərhədini keçən «Ay sonu» bir
+            // məzuniyyətdə mühasib gələcək ayın payını NAĞD ödəmədən ƏVVƏL
+            // dəqiq NET rəqəmi görməlidir (Detail səhifəsi — bax CLAUDE.md
+            // «Qabaqcadan deyişsək necə olacaq» müzakirəsi). `mez.OdenenMebleg`
+            // AySonu qeyddə həmişə boşdur (heç vaxt bu axından ödənilmir), ona
+            // görə hədəf birbaşa təzə hesablanmış `mezOdenisNetCemi`-dir.
+            //
+            // Hədəf net: FAKTİKİ ödənilmiş məbləğ (varsa, yalnız Qabaqcadan
+            // axınında ola bilər) — netlərin cəmi bank köçürməsi ilə qəpiyinə
+            // tutuşsun; yoxdursa təzə hesablanmış cəmi net.
             decimal hedefNet = (mez.OdenenMebleg.HasValue && mez.OdenenMebleg.Value > 0)
-                ? mez.OdenenMebleg.Value : advanceNet;
+                ? mez.OdenenMebleg.Value : mezOdenisNetCemi;
 
-            if (mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis && hedefNet > 0)
+            if (hedefNet > 0)
             {
                 var aypaylar = await _maasHesablamaService.MezuniyyetAvansAyPaylariAsync(
                     mez.IsciId, mez.BaslamaTarixi, mez.BitmeTarixi, hedefNet);
