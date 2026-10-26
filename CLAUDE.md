@@ -5492,6 +5492,48 @@ Mahmudovanın (və ya həftəsonu əhatə edən hər hansı xəstəlik bülleten
 kəsintisinin əvvəlkindən AZ olduğunu (yalnız real iş günləri qədər), xəstəlik ödənişinin
 (831,32 ₼) dəyişmədiyini — mühasib Exceli ilə bir real halı tutuşdurmalıdır.
 
+### ÜÇÜNCÜ DUBLİKAT — Toplu Maaş Önizləməsi (eyni gün, publish-dən sonra)
+
+İstifadəçi publish edib yenidən baxdı — İlkanənin ekranı (Toplu Maaş →
+Oktyabr) **dəqiq eyni** qalmışdı, heç nə dəyişməmişdi. Səbəb: `MaasController.
+TopluHesabla` (bu ekranı yaradan GET action) `isciXestelikMap`-i **öz,
+ayrıca** inline kodla hesablayırdı — eyni köhnə `esas/ayIsGunu ×
+(sirketGun+dsmfGun)` (təqvim günü) düsturu, `FerdiHesabla`-nın özündən
+TAMAMİLƏ MÜSTƏQİL. Bu, "Bir Kəmiyyətə Üç Yazıcı" qaydasının klassik
+nümunəsidir — mən yalnız BİR yazıcını (əsl hesablama) düzəltmişdim, ekranı
+yaradan İKİNCİ yazıcı toxunulmamış qalmışdı.
+
+**Kök həll — düstur bir yerə çıxarıldı:** `MaasHesablamaService.
+XestelikHaqiqiIsGunuSayAsync(isciId, il, ay)` (+ private `HaqiqiIsGunuSay
+HelperAsync`, tarix-aralığı siyahısı qəbul edən ümumi helper) — bu, elə
+`OzHesabinaIsGunuSayAsync`-in artıq istifadə etdiyi "paylaşılan servis
+metodu" naxışıdır (`MaasController` özü bu metodu `FerdiHesabla`-nın
+"Öz hesabına" kəsintisi üçün onsuz da çağırırdı, şərh ilə: *"FerdiHesablaAsync-ın
+saxladığı kəsinti ilə EYNİ"* — xəstəlikdə bu NAXIŞ unudulub, əvəzinə inline
+kod yazılmışdı). İndi **üç** çağıran (`FerdiHesabla` addım 6.5, addım 6.6,
+`MaasController.TopluHesabla`) eyni metodu işlədir — gələcəkdə düstur
+dəyişsə, tək yerdə dəyişdirmək kifayətdir.
+
+⚠️ **Dictionary-nin tuple sahə adları diqqətlə saxlanıldı** — `Views/Maas/
+TopluHesabla.cshtml:454` `ViewBag.IsciXestelikMap`-i **açıq tip adı ilə**
+cast edir (`as Dictionary<int, (int sirketGun, int dsmfGun, decimal
+sirketOdenis, decimal dsmfOdenis, decimal kesinti)>`) — tuple sahə adları
+(`sirketGun`, `dsmfGun`...) bir hərf də dəyişsəydi `as` sakitcə `null`
+qaytarardı və bütün kart "—" göstərərdi, heç bir xəta vermədən.
+
+**Qayda (təkrar, bu dəfə üçüncü dalğada təsdiqləndi):** "düzəlişi push etdim,
+build 0 xəta verdi" demək "bütün ekranlar düzəldi" demək DEYİL — eyni
+rəqəmi göstərən HƏR ekranın/preview-un ÖZ hesablama yolunu olub-olmadığını
+yoxla. `grep` ilə köhnə düsturun (burada: `SirketGunSayi + DsmfGunSayi`
+birbaşa kəsintiyə vurulan yer) BAŞQA fayllarda da olub-olmadığına bax —
+yalnız `MaasHesablamaService.cs`-i düzəltmək kifayət etmədi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, `ViewBag` cast-ının tuple sahə adları ilə tam eyniliyi
+sətir-sətir yoxlanıldı). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra YENİDƏN publish edib İlkanənin Oktyabr sətrinə baxmalıdır — bu dəfə
+kəsinti dəyişməlidir.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
