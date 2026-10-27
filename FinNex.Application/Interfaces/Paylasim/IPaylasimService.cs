@@ -18,7 +18,8 @@ namespace FinNex.Application.Interfaces.Paylasim
 
         Task<PaylasimListDto?> DetailGetirAsync(int id);
 
-        Task<Result<int>> YaratAsync(PaylasimYaratDto dto, int isciId);
+        /// <param name="appUserId">Göndərənin AppUser.Id-si (Isci DEYİL — admin hesabının işçi profili olmaya bilər).</param>
+        Task<Result<int>> YaratAsync(PaylasimYaratDto dto, int appUserId);
 
         Task<Result> YenileAsync(int id, PaylasimYaratDto dto);
 

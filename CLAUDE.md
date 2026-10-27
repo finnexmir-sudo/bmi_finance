@@ -6464,3 +6464,48 @@ restore etməlidir) ilə, sonra real ssenari ilə yoxlamalıdır: Admin-də bir 
 şəkilli, formatlı paylaşım yazıb göndər → işçi tərəfdə "Paylaşımlar"da gözəl
 görünüşlü kart kimi göründüyünü, şəkillərin `FinNex_DMS\paylasim-sekiller\`-ə
 düşdüyünü, "Gizlət"in lentdən çıxardığını təsdiqləməli.
+
+### "Göndərən" Isci YOX, AppUser Olmalı İdi — Admin HEÇ BİR Paylaşım Yarada Bilmirdi (27.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real mühitdə "Yeni Paylaşım" yaradıb göndərdi, nəticə **"İşçi profiliniz
+tapılmadı"** xətası idi — Admin paylaşım yarada BİLMİRDİ, modulun özü istifadəyə
+yararsız idi.
+
+**Kök səbəb:** `Melumat.GonderenIsciId` **`Isci`-yə bağlı NOT NULL FK** idi (Elan-ın
+öz konvensiyasını təqlid edərək). Amma Elan **HR Area**-dan (`Areas/HR/Controllers/
+ElanController.cs`) yaradılır — oranı işlədən HR işçisinin `AppUser.IsciId`-si demək
+olar həmişə doludur. Paylaşımlar isə **Admin Area**-dandır — Admin super-user
+hesabının `IsciId`-si **boş ola bilər** (işçi profilinə bağlı deyil, sırf sistem
+hesabıdır). `GetCurrentIsciIdAsync()` → `appUser?.IsciId` → `null` → hər publish
+cəhdi "İşçi profiliniz tapılmadı" ilə bloklanırdı, baxmayaraq ki, Admin tam
+autentifikasiya olunmuş, icazəli bir istifadəçi idi.
+
+**Düzəliş — `Isci` asılılığı tamamilə çıxarıldı, `AppUser` ilə əvəz olundu:**
+`Melumat.GonderenIsciId`/`GonderenIsci` → **`GonderenAppUserId`/`GonderenAppUser`**.
+`AppUser.Id` autentifikasiya olunmuş HƏR sessiyada mütləq mövcuddur (Isci kimi
+"bağlı ola bilər, ya bilməz" riski yoxdur) — `GetCurrentIsciIdAsync` →
+`GetCurrentAppUserIdAsync` (`appUser?.Id`), `GonderenAdi` indi `AppUser.Ad`/
+`AppUser.Soyad`-dan oxunur (Isci-də olduğu kimi bu sahələr AppUser-də də var).
+
+**Yeni migration — `20261027170000_PaylasimGonderenAppUser.cs`** (ƏVVƏLKİ
+`20261027140000_Paylasim.cs`-i DƏYİŞMƏDİM — o artıq istifadəçinin bazasında tətbiq
+olunmuşdu, `__EFMigrationsHistory`-də qeydlidir; redaktə etsəydim EF onu "artıq
+tətbiq olunub" sayıb təkrar işlətməzdi və sxem köhnə qalardı). Yeni migration
+`GonderenIsciId` sütununu/FK-nı/indeksini **atır**, `GonderenAppUserId`-ni
+`AspNetUsers(Id)`-ə FK ilə **əlavə edir**. `Melumatlar` cədvəli bu anda **boş**
+idi (ilk paylaşım hələ yaradıla bilmədiyi üçün) — data itkisi riski yox idi.
+
+**Qayda:** "Göndərən" sahəsini modelləşdirərkən **modulun HANSI Area-dan
+istifadə ediləcəyini** nəzərə al — HR/User Area-dan yaradılan bir məzmun üçün
+`Isci` FK-sı təhlükəsizdir (o istifadəçilərin demək olar hamısının işçi profili
+var), **Admin Area-dan yaradılan** məzmun üçün isə YOX — Admin hesabı sistem
+hesabı ola bilər, `AppUser.IsciId`-si boş qala bilər. Belə hallarda "göndərən"
+`AppUser`-ə bağlanmalıdır, `Isci`-yə YOX.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı, `using FinNex.Domain;` namespace qaydasına uyğun — "Qovluq Adı
+≠ Namespace" bölməsi, `AppUser` `FinNex.Domain`-dədir, `.Entities.HR` YOX). İstifadəçi
+Visual Studio-da **Rebuild All**, sonra `Update-Database` (yeni migration tətbiq
+olunsun) ilə, sonra real ssenari ilə yoxlamalıdır: Admin "Yeni Paylaşım" yaradıb
+göndərsin — bu dəfə xətasız keçməli, "Göndərən" sütununda Admin hesabının adı
+görünməlidir.

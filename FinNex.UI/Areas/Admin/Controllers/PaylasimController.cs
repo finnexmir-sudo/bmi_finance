@@ -49,14 +49,14 @@ public class PaylasimController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Yarat(PaylasimYaratDto dto)
     {
-        var isciId = await GetCurrentIsciIdAsync();
-        if (isciId == null)
+        var appUserId = await GetCurrentAppUserIdAsync();
+        if (appUserId == null)
         {
-            TempData["Error"] = "İşçi profiliniz tapılmadı.";
+            TempData["Error"] = "Hesabınız tapılmadı — yenidən daxil olun.";
             return RedirectToAction(nameof(Index));
         }
 
-        var netice = await _paylasim.YaratAsync(dto, isciId.Value);
+        var netice = await _paylasim.YaratAsync(dto, appUserId.Value);
         if (!netice.Success)
         {
             TempData["Error"] = netice.Message;
@@ -139,9 +139,15 @@ public class PaylasimController : Controller
         return Json(new { ok = true, url = $"/dms/paylasim-sekiller/{uniqueName}" });
     }
 
-    private async Task<int?> GetCurrentIsciIdAsync()
+    /// <summary>
+    /// AppUser.Id — Isci DEYİL (27.10.2026, düzəliş). Əvvəl `appUser?.IsciId` istifadə
+    /// olunurdu, admin hesabının işçi profili olmadıqda (`IsciId == null`) hər publish
+    /// cəhdi "İşçi profiliniz tapılmadı" ilə bloklanırdı. AppUser.Id autentifikasiya
+    /// olunmuş hər sessiyada mütləq mövcuddur.
+    /// </summary>
+    private async Task<int?> GetCurrentAppUserIdAsync()
     {
         var appUser = await _userManager.GetUserAsync(User);
-        return appUser?.IsciId;
+        return appUser?.Id;
     }
 }

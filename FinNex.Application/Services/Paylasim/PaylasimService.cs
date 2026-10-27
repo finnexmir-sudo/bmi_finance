@@ -2,7 +2,6 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Paylasim;
 using FinNex.Application.Interfaces.Paylasim;
 using FinNex.Domain.Entities.Communication;
-using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Ganss.Xss;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +28,7 @@ namespace FinNex.Application.Services.Paylasim
         public async Task<List<PaylasimListDto>> HamisiniGetirAsync()
         {
             var lista = await _uow.Repository<Melumat>().Query().AsNoTracking()
-                .Include(x => x.GonderenIsci)
+                .Include(x => x.GonderenAppUser)
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
@@ -39,7 +38,7 @@ namespace FinNex.Application.Services.Paylasim
         public async Task<List<PaylasimListDto>> AktivLentAsync()
         {
             var lista = await _uow.Repository<Melumat>().Query().AsNoTracking()
-                .Include(x => x.GonderenIsci)
+                .Include(x => x.GonderenAppUser)
                 .Where(x => x.Aktivdir)
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .Take(50)
@@ -51,13 +50,13 @@ namespace FinNex.Application.Services.Paylasim
         public async Task<PaylasimListDto?> DetailGetirAsync(int id)
         {
             var m = await _uow.Repository<Melumat>().Query().AsNoTracking()
-                .Include(x => x.GonderenIsci)
+                .Include(x => x.GonderenAppUser)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             return m == null ? null : Map(m);
         }
 
-        public async Task<Result<int>> YaratAsync(PaylasimYaratDto dto, int isciId)
+        public async Task<Result<int>> YaratAsync(PaylasimYaratDto dto, int appUserId)
         {
             var xeta = Yoxla(dto);
             if (xeta != null) return Result<int>.Fail(xeta);
@@ -66,7 +65,7 @@ namespace FinNex.Application.Services.Paylasim
             {
                 Basliq = dto.Basliq.Trim(),
                 MetnHtml = _sanitizer.Sanitize(dto.MetnHtml),
-                GonderenIsciId = isciId,
+                GonderenAppUserId = appUserId,
                 Aktivdir = true
             };
 
@@ -131,7 +130,7 @@ namespace FinNex.Application.Services.Paylasim
             Id = m.Id,
             Basliq = m.Basliq,
             MetnHtml = m.MetnHtml,
-            GonderenAdi = $"{m.GonderenIsci.Ad} {m.GonderenIsci.Soyad}",
+            GonderenAdi = $"{m.GonderenAppUser.Ad} {m.GonderenAppUser.Soyad}",
             YaradilmaTarixi = m.YaradilmaTarixi,
             Aktivdir = m.Aktivdir
         };

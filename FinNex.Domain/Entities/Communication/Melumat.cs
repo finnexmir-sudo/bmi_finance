@@ -1,4 +1,4 @@
-using FinNex.Domain.Entities.HR;
+using FinNex.Domain;
 
 namespace FinNex.Domain.Entities.Communication
 {
@@ -15,8 +15,14 @@ namespace FinNex.Domain.Entities.Communication
         /// <summary>Rich-text HTML — serverdə HtmlSanitizer ilə təmizlənib saxlanılır.</summary>
         public string MetnHtml { get; set; } = null!;
 
-        public int GonderenIsciId { get; set; }
-        public Isci GonderenIsci { get; set; } = null!;
+        /// <summary>
+        /// Göndərən — AppUser-dir, Isci DEYİL (27.10.2026, düzəliş): Admin hesabının
+        /// IsciId-si boş ola bilər (işçi profilinə bağlı deyil), ona görə Isci FK-sı
+        /// "İşçi profiliniz tapılmadı" ilə HƏR publish cəhdini bloklayırdı. AppUser
+        /// hər autentifikasiya olunmuş sessiyada mütləq mövcuddur.
+        /// </summary>
+        public int GonderenAppUserId { get; set; }
+        public AppUser GonderenAppUser { get; set; } = null!;
 
         public bool Aktivdir { get; set; } = true;
     }
