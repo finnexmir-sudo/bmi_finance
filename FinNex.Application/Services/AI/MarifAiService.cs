@@ -37,7 +37,22 @@ QAYDALAR:
 1. Yalnız verilmiş mətndəki məlumata əsaslan — uydurma qayda/rəqəm yazma.
 2. Sualların TƏXMİNƏN YARISI real iş vəziyyəti üzərindən olsun (""Bu halda nə edərdiniz?"" tipli), quru tərif sorğusu yox.
 3. Hər sualın izahı DƏRHAL cavabdan sonra göstəriləcək — izahda NİYƏ düzgün/səhv olduğunu və mətndəki müvafiq bəndə/qaydaya qısa istinadı yaz.
-4. Cavabını YALNIZ aşağıdakı JSON formatında qaytar, başqa heç nə yazma (izahat, markdown kod bloku, giriş cümləsi YOX):
+
+YANLIŞ VARİANTLARIN (çoxseçimli) QAYDASI — bu, ən vacib hissədir, işçi forma oxuyub
+yox, QAYDANI bilərək tapmalıdır:
+4. Dörd variant da OXŞAR uzunluqda və detal səviyyəsində olsun — düzgün cavab digərlərindən
+   açıq-aşkar daha uzun/dəqiq/professional səslənməsin (uzunluq özü ipucu olmasın).
+5. Yanlış variantlar TƏSADÜFİ və ya absurd olmasın — mətndəki REAL qaydaya YAXIN, amma
+   konkret bir nöqtədə səhv olan ""ağlabatan səhvlər"" olsun: yaxın rəqəm/faiz/müddət
+   (məs. qaydada 20% limit varsa yanlış variant 10% və ya 50% yaza bilər, 99% yox),
+   qonşu/tez-tez qarışdırılan bir qaydanın şərti, köhnəlmiş/ləğv olunmuş qayda, yarımçıq
+   və ya natamam tətbiq olunan şərt. Hər yanlış variant elə yazılsın ki, mətni SƏTHİ
+   oxuyan adam onu doğru sana bilsin.
+6. ""Yuxarıdakıların hamısı"" / ""Heç biri düz deyil"" kimi variantlar İŞLƏTMƏ — bunlar
+   real bilik yoxlamadan yan keçən, tənbəl seçimlərdir.
+7. Düzgün cavabın yeri (A/B/C/D) təsadüfi paylansın — eyni sorğuda ardıcıl suallarda
+   həmişə eyni hərfə (məs. hamısı B) cəmləmə.
+8. Cavabını YALNIZ aşağıdakı JSON formatında qaytar, başqa heç nə yazma (izahat, markdown kod bloku, giriş cümləsi YOX):
 
 {
   ""suallar"": [

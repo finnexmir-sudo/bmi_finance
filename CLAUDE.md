@@ -5605,6 +5605,24 @@ yalnız `DuzgunCavabMetni` "nümunəvi cavab" kimi göstərilir). AI-dən defolt
 çoxseçimli, YARISI açıq istənir — Admin "Yarat" ekranında istənilən sualın tipini
 dəyişə, silə, yeni əlavə edə bilər.
 
+### Yanlış variantlar — "açıq-aşkar səhv" OLMASIN (istifadəçi sualı, 27.10.2026)
+
+İstifadəçi haqlı sual verdi: variantlar bir-birindən çox fərqli olsa, işçi QAYDANI
+bilmədən, sadəcə formaya baxıb düzgün cavabı tapa bilər (uzun/detallı olan, yaxud
+absurd görünən yanlışlar arasından seçmək). İlk promptda bu barədə **heç bir qayda
+yox idi**. Əlavə edilən açıq qaydalar (`MarifAiService.SystemPrompt`):
+- 4 variant OXŞAR uzunluq/detal səviyyəsində olsun (uzunluq ipucu olmasın);
+- yanlış variantlar mətnə YAXIN, "ağlabatan səhvlər" olsun (yaxın rəqəm/faiz,
+  qonşu qayda, köhnəlmiş şərt) — təsadüfi/absurd DEYİL;
+- "Yuxarıdakıların hamısı"/"Heç biri" İŞLƏDİLMİR;
+- düzgün cavabın hərfi (A/B/C/D) təsadüfi paylansın, hər sual eyni hərfə cəmlənməsin.
+
+⚠️ **Bu, AI-yə YALNIZ TÖVSİYƏDİR, zəmanət DEYİL** — LLM hər dəfə qaydaya tam əməl
+etməyə bilər. Ona görə `Yarat.cshtml`-ə («3. Suallar» bölməsinin üstünə) Admin üçün
+açıq yoxlama siyahısı əlavə edildi (eyni 4 bəndin qısaldılmış forması) — son
+nəzarət HƏMİŞƏ Admin-in gözündədir, AI-nin "qaralama"sı sözün əsl mənasında
+qaralamadır.
+
 ### "Dərhal sonra izah" — hər sual AYRI-AYRI cavablanır
 
 İstifadəçi qərarı: işçi hər suala cavab verən kimi (bütün testi bitirmədən) düzgün
