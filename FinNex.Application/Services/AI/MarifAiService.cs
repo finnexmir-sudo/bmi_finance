@@ -40,19 +40,31 @@ QAYDALAR:
 
 YANLIŞ VARİANTLARIN (çoxseçimli) QAYDASI — bu, ən vacib hissədir, işçi forma oxuyub
 yox, QAYDANI bilərək tapmalıdır:
-4. Dörd variant da OXŞAR uzunluqda və detal səviyyəsində olsun — düzgün cavab digərlərindən
-   açıq-aşkar daha uzun/dəqiq/professional səslənməsin (uzunluq özü ipucu olmasın).
-5. Yanlış variantlar TƏSADÜFİ və ya absurd olmasın — mətndəki REAL qaydaya YAXIN, amma
+4. Hər yanlış variantı yazmazdan ƏVVƏL özünə sual ver: ""bu qaydanı yarım-bilən işçi
+   məhz BU səhvi niyə edər?"" — tapdığın cavab yanlış variantın özüdür. Təsadüfi
+   uydurma rəqəm/ifadə yazma.
+5. Dörd variant da OXŞAR uzunluqda, formada və detal səviyyəsində olsun — düzgün cavab
+   digərlərindən açıq-aşkar daha uzun/dəqiq/professional səslənməsin, və variantların
+   TİPİ qarışıq olmasın (məs. 3 rəqəm + 1 sözlə izah, yaxud 3 ""Bəli"" + 1 ""Xeyr""
+   kimi bölgü özü ipucu verməsin — mümkünsə formalar bərabər bölünsün).
+6. Yanlış variantlar TƏSADÜFİ və ya absurd olmasın — mətndəki REAL qaydaya YAXIN, amma
    konkret bir nöqtədə səhv olan ""ağlabatan səhvlər"" olsun: yaxın rəqəm/faiz/müddət
    (məs. qaydada 20% limit varsa yanlış variant 10% və ya 50% yaza bilər, 99% yox),
    qonşu/tez-tez qarışdırılan bir qaydanın şərti, köhnəlmiş/ləğv olunmuş qayda, yarımçıq
    və ya natamam tətbiq olunan şərt. Hər yanlış variant elə yazılsın ki, mətni SƏTHİ
    oxuyan adam onu doğru sana bilsin.
-6. ""Yuxarıdakıların hamısı"" / ""Heç biri düz deyil"" kimi variantlar İŞLƏTMƏ — bunlar
+7. ""Mütləq sözlər"" (yalnız, həmişə, heç vaxt, heç bir) ya HEÇ BİR variantda, ya da
+   HAMISINDA olsun — yalnız yanlış variantlarda olub düzgündə olmaması (və ya əksi)
+   özü bir ipucudur.
+8. ""Yuxarıdakıların hamısı"" / ""Heç biri düz deyil"" kimi variantlar İŞLƏTMƏ — bunlar
    real bilik yoxlamadan yan keçən, tənbəl seçimlərdir.
-7. Düzgün cavabın yeri (A/B/C/D) təsadüfi paylansın — eyni sorğuda ardıcıl suallarda
+9. Düzgün cavabın yeri (A/B/C/D) təsadüfi paylansın — eyni sorğuda ardıcıl suallarda
    həmişə eyni hərfə (məs. hamısı B) cəmləmə.
-8. Cavabını YALNIZ aşağıdakı JSON formatında qaytar, başqa heç nə yazma (izahat, markdown kod bloku, giriş cümləsi YOX):
+10. Bir sualın mətni və ya variantları başqa sualın cavabını açıq-aşkar vermir —
+    hər sual MÜSTƏQİL oxunub cavablana bilməlidir.
+11. İzahda qaydanı sadəcə TƏKRARLAMA — SƏHVİN YOLUNU de (""bu cavab niyə ağlabatan
+    görünür, amma niyə səhvdir"").
+12. Cavabını YALNIZ aşağıdakı JSON formatında qaytar, başqa heç nə yazma (izahat, markdown kod bloku, giriş cümləsi YOX):
 
 {
   ""suallar"": [

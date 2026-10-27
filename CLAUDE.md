@@ -5619,9 +5619,24 @@ yox idi**. Əlavə edilən açıq qaydalar (`MarifAiService.SystemPrompt`):
 
 ⚠️ **Bu, AI-yə YALNIZ TÖVSİYƏDİR, zəmanət DEYİL** — LLM hər dəfə qaydaya tam əməl
 etməyə bilər. Ona görə `Yarat.cshtml`-ə («3. Suallar» bölməsinin üstünə) Admin üçün
-açıq yoxlama siyahısı əlavə edildi (eyni 4 bəndin qısaldılmış forması) — son
+açıq yoxlama siyahısı əlavə edildi (eyni bəndlərin qısaldılmış forması) — son
 nəzarət HƏMİŞƏ Admin-in gözündədir, AI-nin "qaralama"sı sözün əsl mənasında
 qaralamadır.
+
+**Eyni gün — başqa bir layihənin (dərslik üçün DİM-səviyyəli sual yazma sistemi,
+kor-həll/rəyçi agent zənciri olan, yüzlərlə sual üçün nəzərdə tutulmuş) qaydalar
+sənədindən ucuz, birbaşa prompta sığan bəndlər götürüldü** (ağır infrastruktur —
+blind-solve agent, struktur skripti, pg_trgm təkrar yoxlaması, B/T/A çətinlik
+metadatası, kurikulum-sırası qaydaları — QƏSDƏN KÖÇÜRÜLMƏDİ, bizim miqyasımıza
+uyğun deyil, Admin-in əl ilə baxışı bizim "rəyçi"mizdir):
+- **"Tipik səhv" üsulu** — hər yanlış variantı yazmazdan əvvəl "bu səhvi kim, niyə
+  edər?" sualına cavab tapıb, O cavabı yazmaq (təsadüfi uydurmaq yox).
+- **Variantların FORMASI da balanslı olsun**, təkcə uzunluq yox — 3 rəqəm + 1 mətn,
+  yaxud 3 "Bəli" + 1 "Xeyr" kimi bölgü özü ipucu olmasın (DİM termini: VARIANT-LEAK).
+- **"Mütləq söz" (yalnız/həmişə/heç vaxt) balansı** — yalnız yanlış variantlarda
+  olub düzgündə olmaması (və ya əksi) bilmədən tapmağı asanlaşdırır.
+- **Suallar bir-birinin cavabını açmasın** — hər sual müstəqil oxunub cavablana bilsin.
+- **İzah "səhvin yolunu" desin**, qaydanı sadəcə təkrarlamasın.
 
 ### "Dərhal sonra izah" — hər sual AYRI-AYRI cavablanır
 
