@@ -6403,3 +6403,64 @@ Yeni bir sahədə fayl yükləmə lazım olarsa:
 3. `Directory.CreateDirectory(dir)` ilə qovluğu avtomatik yarat
 4. Faylı yaz, DB-yə **yalnız nisbi yolu** saxla (məs: `dovlet-vezife/abc123.pdf`)
 5. Faylı serve etmək üçün `Program.cs`-dəki `/dms` static file middleware-i istifadə et
+
+## "Paylaşımlar" — Admin-in Bölüşdüyü Rich-text Bilik Lenti (27.10.2026)
+
+İstifadəçi tələbi: xaricdən aldığı mənalı məlumatı (tarix, maraqlı fakt və s.)
+işçilərlə şəkilli, səliqəli formatda bölüşmək. **Elanlardan QƏSDƏN AYRI modul** —
+istifadəçinin öz sözü: *"bu məlumatdir axı, elan deyil"*. Elan əməliyyat
+xəbərdarlığıdır (vacib bayrağı, bitmə tarixi, tək banner şəkil, sadə mətn qutusu);
+Paylaşım isə sırf oxuma məqsədli, mətnin İÇİNƏ bir neçə şəkil yerləşdirilə bilən,
+rich-text formatlı bilik lentidir.
+
+**Struktur:** `Melumat` entity (`Entities/Communication/`, Elanla EYNİ FK naxışı —
+`GonderenIsciId → Isciler`), migration `20261027140000_Paylasim` (seed yoxdur).
+`IPaylasimService`/`PaylasimService` — Clean Architecture qaydasına uyğun yeni
+servis qatı (Elan-ın özü hələ köhnə, controller-də birbaşa `IUnitOfWork` işlədən
+nümunədir — Paylaşım onu TƏKRARLAMADI).
+
+**Rich-text — Quill.js (jsdelivr CDN, `quill@2.0.3`).** Admin tərəfində
+(`Admin/Paylasim/Yarat`, `Redakte`) toolbar: başlıq (H2/H3), qalın/kursiv/altxətt,
+siyahı, sitat, link, **mətnin içinə birbaşa şəkil**. Şəkillər ayrıca `SekilYukle`
+AJAX endpoint-i ilə **`FinNex_DMS\paylasim-sekiller\`**-ə yazılır (`wwwroot`-a YOX
+— mövcud DMS qaydasına uyğun), `/dms/paylasim-sekiller/{guid}.ext` kimi embed
+olunur.
+
+**Saxlamazdan ƏVVƏL server-tərəfli sanitizasiya — `HtmlSanitizer` (Ganss.Xss,
+NuGet).** `PaylasimService`-in konstruktorunda bir dəfə qurulur, YARADIQ/YENİLƏ
+hər ikisində `MetnHtml` saxlanmazdan əvvəl `_sanitizer.Sanitize(...)`-dan keçir —
+`<script>`/`onerror` və s. atılır. Bu, layihədə `Html.Raw` ilə göstərilən İLK
+admin-yaratdığı sərbəst HTML-dir (Mail HTML-i xarici mənbədəndir, Chat/Elan isə
+sadə mətndir) — ona görə sanitizasiya **MƏCBURİ** sayıldı, sırf Admin-rol
+məhdudiyyətinə güvənilmədi.
+
+⚠️ **CSP-nin `style-src`-i Quill-in CSS-ini SƏSSİZCƏ BLOKLAYA BİLƏRDİ.**
+`SecurityHeadersMiddleware`-in `script-src`-i artıq `cdn.jsdelivr.net`-ə icazə
+verirdi (əvvəlki `marked.min.js`/mammoth/xlsx üçün, bax "Qoşma Önizləməsi"
+bölməsi), AMMA **`style-src`** eyni host-u daşımırdı — `quill.snow.css`
+yüklənərdi, `<link>` cavabı 200 qaytarardı, amma brauzer onu CSP-yə görə
+**tətbiq etməzdi** (redaktor stilsiz, çirkin görünərdi, DevTools-da sakit bir
+CSP xəbərdarlığı olardı). Toxunmazdan ƏVVƏL aşkar edilib düzəldildi —
+`style-src`-ə də `https://cdn.jsdelivr.net` əlavə olundu. **Qayda:** yeni bir
+CDN host-dan HƏM script, HƏM stylesheet yüklənirsə, CSP-nin İKİ DİREKTİVİNİ DƏ
+(`script-src` VƏ `style-src`) yoxla — biri unudulsa, simptom "işləyir amma
+eybəcərdir", funksional xəta yox.
+
+**İşçi görüntüsü — `User/Paylasim/Index.cshtml` + `paylasim.css`**, Elanların
+`elan.css` feed dizaynından ilhamlanıb (kart, kölgə, yuvarlaq künc), amma
+RICH-TEXT tipoqrafiyası üçün ayrıca stil bloku (`py-body h2/h3/p/ul/ol/
+blockquote/img/a`) — sadə mətn göstərən Elan-ın öz CSS-i bunun üçün kifayət
+etməzdi.
+
+**Sidebar:** Admin-də "Daxili Maarifləndirmə"nin yanında, User-də
+"Maarifləndirmə"nin yanında — iki ayrı, müstəqil sətir (Marif-in quiz-əsaslı
+funksiyası ilə QARIŞDIRILMADI, sadəcə qonşu yerləşdirildi).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, interfeys↔implementasiya↔DI↔çağıran dörd qatı əl
+ilə tutuşduruldu, `Ganss.Xss` namespace/sinif adı veb axtarışı ilə təsdiqləndi).
+İstifadəçi Visual Studio-da **Rebuild All** (HtmlSanitizer NuGet paketini
+restore etməlidir) ilə, sonra real ssenari ilə yoxlamalıdır: Admin-də bir neçə
+şəkilli, formatlı paylaşım yazıb göndər → işçi tərəfdə "Paylaşımlar"da gözəl
+görünüşlü kart kimi göründüyünü, şəkillərin `FinNex_DMS\paylasim-sekiller\`-ə
+düşdüyünü, "Gizlət"in lentdən çıxardığını təsdiqləməli.
