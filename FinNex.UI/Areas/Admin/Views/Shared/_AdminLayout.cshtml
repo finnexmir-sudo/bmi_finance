@@ -94,6 +94,12 @@
                 Daxili Maarifləndirmə
             </a>
 
+            <a class="nav-link @(currentController == "Paylasim" ? "active" : "")"
+               asp-area="Admin" asp-controller="Paylasim" asp-action="Index">
+                <i class="bi bi-share-fill"></i>
+                Paylaşımlar
+            </a>
+
             <div class="nav-section">Kassa</div>
 
             <a class="nav-link @(currentController == "KassaTesdiqEdici" ? "active" : "")"

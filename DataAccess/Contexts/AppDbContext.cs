@@ -185,6 +185,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     // Elan
     public DbSet<Elan> Elanlar { get; set; }
+    public DbSet<Melumat> Melumatlar { get; set; }
 
     // =====================
     // Motivasiya / Jeton Modulu

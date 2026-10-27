@@ -1,0 +1,45 @@
+@model List<FinNex.Application.DTOs.Paylasim.PaylasimListDto>
+@{
+    ViewData["Title"] = "Paylaşımlar";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Paylaşımlar</div>
+            <div class="fn-page-sub">Oxumağa dəyər məlumatlar</div>
+        </div>
+    </div>
+
+    <div class="py-feed">
+        @if (!Model.Any())
+        {
+            <div class="py-empty">Hələ heç bir paylaşım yoxdur.</div>
+        }
+        else
+        {
+            @foreach (var p in Model)
+            {
+                var bash = (p.GonderenAdi ?? "?").Trim();
+                var ilkHerf = bash.Length > 0 ? bash[0].ToString().ToUpperInvariant() : "?";
+                <div class="py-card">
+                    <div class="py-card-head">
+                        <div class="py-avatar">@ilkHerf</div>
+                        <div class="py-head-info">
+                            <div class="py-sender">@p.GonderenAdi</div>
+                            <div class="py-date">@p.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-AZ"))</div>
+                        </div>
+                    </div>
+                    <div class="py-title">@p.Basliq</div>
+                    <div class="py-body">@Html.Raw(p.MetnHtml)</div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/paylasim.css" asp-append-version="true" />
+}

@@ -217,5 +217,6 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         // ── Daxili Maarifləndirmə (27.10.2026, pilot) ──────
         services.AddScoped<FinNex.Application.Interfaces.AI.IMarifAiService, FinNex.Application.Services.AI.MarifAiService>();
         services.AddScoped<FinNex.Application.Interfaces.Marif.IMarifService, FinNex.Application.Services.Marif.MarifService>();
+        services.AddScoped<FinNex.Application.Interfaces.Paylasim.IPaylasimService, FinNex.Application.Services.Paylasim.PaylasimService>();
     }
 }
