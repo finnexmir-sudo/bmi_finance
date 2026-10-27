@@ -192,6 +192,29 @@
       }
     </div>
 
+    @if (isAdmin)
+    {
+        <div class="hrm-upload-panel">
+          <h4>Qanun Faylı Yüklə</h4>
+          <div class="hrm-form-row">
+            <input type="text" id="faylAd" class="fn-input-sm" placeholder="Fayl adı (məs. Əmək Məcəlləsi)">
+            <select id="faylKat" class="fn-select-sm">
+              <option value="">Kateqoriya seçin...</option>
+              <option value="emek">Əmək Hüququ</option>
+              <option value="vergi">Vergi</option>
+              <option value="dsmf">DSMF</option>
+              <option value="itss">İTSS</option>
+              <option value="diger">Digər</option>
+            </select>
+            <input type="file" id="faylInput" class="fn-input-sm" accept=".pdf,.doc,.docx">
+            <button type="button" class="btn-yukle" id="btnYukle" onclick="faylYukle()">
+              <i class="bi bi-cloud-upload-fill"></i> Yüklə
+            </button>
+            <div id="yuklemeNetic" style="font-size:11.5px;min-height:14px"></div>
+          </div>
+        </div>
+    }
+
   </div>
 
   @* Sağ panel *@
