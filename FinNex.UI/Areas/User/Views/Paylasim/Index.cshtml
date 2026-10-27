@@ -39,6 +39,10 @@
             {
                 var bash = (p.GonderenAdi ?? "?").Trim();
                 var ilkHerf = bash.Length > 0 ? bash[0].ToString().ToUpperInvariant() : "?";
+                // Sırf görüntü — DB-yə toxunmur, "Yeni" kartın yaradılma tarixinə görə
+                // hesablanır (27.10.2026). Sidebar-dakı nişan isə AYRI, "son baxış"
+                // tarixinə görə işləyir — ikisi fərqli sualların cavabıdır.
+                var yeniKart = (DateTime.Now - p.YaradilmaTarixi).TotalDays <= 3;
                 <div class="py-card" data-kat="@p.KateqoriyaAdi">
                     <div class="py-card-head">
                         <div class="py-avatar">@ilkHerf</div>
@@ -46,9 +50,18 @@
                             <div class="py-sender">@p.GonderenAdi</div>
                             <div class="py-date">@p.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-AZ"))</div>
                         </div>
-                        @if (!string.IsNullOrEmpty(p.KateqoriyaAdi))
+                        @if (yeniKart || !string.IsNullOrEmpty(p.KateqoriyaAdi))
                         {
-                            <span class="py-kat-badge">@p.KateqoriyaAdi</span>
+                            <div class="py-head-badges">
+                                @if (yeniKart)
+                                {
+                                    <span class="py-new-badge">Yeni</span>
+                                }
+                                @if (!string.IsNullOrEmpty(p.KateqoriyaAdi))
+                                {
+                                    <span class="py-kat-badge">@p.KateqoriyaAdi</span>
+                                }
+                            </div>
                         }
                     </div>
                     <div class="py-title">@p.Basliq</div>

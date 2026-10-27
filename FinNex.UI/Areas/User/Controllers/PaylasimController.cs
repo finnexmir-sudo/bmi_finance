@@ -34,6 +34,22 @@ public class PaylasimController : Controller
         var isciId = appUser?.IsciId ?? 0;
 
         var lenti = await _paylasim.AktivLentAsync(isciId);
+
+        // Lenti gördü — sayğacı sıfırlamaq üçün son-baxış tarixini indiyə yeniləyir
+        // (27.10.2026, sidebar-dakı "yeni paylaşım" nişanı).
+        if (appUser != null)
+            await _paylasim.GorulduIsaretleAsync(appUser.Id);
+
         return View(lenti);
+    }
+
+    // ── GET /User/Paylasim/YeniSay — sidebar nişanı (27.10.2026) ─────
+    public async Task<IActionResult> YeniSay()
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Json(new { say = 0 });
+
+        var say = await _paylasim.YeniSayAsync(appUser.IsciId ?? 0, appUser.Id);
+        return Json(new { say });
     }
 }

@@ -6710,3 +6710,51 @@ ya da string/`null` cütü (boş sətir YOX, `null`) istifadə et.
   elə özünün nümunəsidir (mötərizə balansı bu cür sintaksis xətasını TUTMUR, çünki
   RZ1031 Razor-un tag-helper parserinin SEMANTIK qaydasıdır, ümumi `{}`/`()` balansı
   deyil).
+
+## Paylaşımlar — Yeni Post Nişanı (Sidebar) + "Yeni" Pilli Kart (27.10.2026)
+
+İstifadəçi tələbi: *"paylasimlar terefde, yeni paylasim oldugunu bildire bilerik?
+misal ustunde bir isare olsa, ne deyirsen?"* — iki yüngül, DB-yə minimum toxunan
+əlavə edildi.
+
+**1. Sidebar nişanı — "son baxış" tarixinə görə sayğac.** Yeni cədvəl
+`PaylasimBaxisler` (`PaylasimBaxis` entity, `PaylasimSonHedefKitlesi` ilə EYNİ
+naxış — hər `AppUser` üçün tək sətir, migration `20261027200000_PaylasimBaxis.cs`,
+`InsertData` YOXDUR). `/User/Paylasim` açılanda `GorulduIsaretleAsync` sətri
+`DateTime.Now`-a yeniləyir; `GET /User/Paylasim/YeniSay` (`{ say: N }`) bu
+tarixdən sonra yaradılmış, işçiyə GÖRÜNƏN (eyni `AktivLentAsync`-in
+Aktivdir/Qaralamadir/hədəf filtri) post sayını qaytarır.
+
+**Dublikat düstur yazılmadı — `GorunenlerSorgusu(isciId)` ortaq private helper-ə
+çıxarıldı.** Əvvəl `AktivLentAsync`-in özündə olan Aktivdir/Qaralamadir/hədəf-EXISTS
+şərti indi `IQueryable<Melumat>` qaytaran bir metoddadır, həm `AktivLentAsync`
+(lentin özü), həm `YeniSayAsync` (sayğac) onu çağırır — "Bir Kəmiyyətə Üç Yazıcı"
+prinsipinin əksi: **iki oxuyucu bir mənbədən**, filtr heç vaxt uyğunsuzlaşa bilməz.
+
+**Görüntü — Mail-in `.fn-mail-badge`-i ilə EYNİ dizayn, amma GLOBAL CSS-də.**
+Kəşf edildi: `.fn-mail-badge`-in CSS-i `gelen-mail.css`-dədir, bu fayl isə YALNIZ
+mail səhifələrində yüklənir — sidebar isə hər səhifədə göstərilir. Yeni
+`.fn-paylasim-badge` sinifi bu səbəbdən **global `topnav.css`-ə** yazıldı (Mail
+badge-in köhnə, kiçik bir boşluğunu TƏKRARLAMAMAQ üçün) — sidebar HƏR səhifədə
+(təkcə Paylaşım səhifələrində yox) düzgün görünür. JS tərəfi Mail-in öz
+`refreshMailBadge`-inə TOXUNMADAN, AYRI, kiçik bir blokdadır (2 dəqiqəlik
+interval, eyni fetch+say naxışı) — risk minimuma endirildi.
+
+**2. "Yeni" pilli kart — sırf görüntü, DB lazım deyil.** İşçi lentindəki hər
+kartda `YaradilmaTarixi`-dən 3 gün keçməyibsə yaşıl "Yeni" nişanı (kateqoriya
+nişanı ilə yanaşı, `py-head-badges` ortaq konteynerində). Bu, sidebar nişanından
+**TAMAMİLƏ MÜSTƏQİLDİR** — biri "mən bunu hələ görməmişəm" sualına (son-baxış
+tarixi), o biri "bu, təzə yazılıb" sualına (yaradılma tarixi) cavab verir, iki
+fərqli məqsəd, iki fərqli mənbə.
+
+⚠️ **Push bildirişi (desktop toast) ƏLAVƏ EDİLMƏDİ** — qərar istifadəçi ilə
+müzakirə edildi, hər post üçün bütün hədəf işçilərə bildiriş göndərmək (Marif-in
+etdiyi kimi) pilot miqyasda artıq olardı; sadə sidebar nişanı kifayət sayıldı.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, JS `node -c` ilə yeni script bloku, interfeys↔
+implementasiya↔controller↔view qatları əl ilə tutuşduruldu). İstifadəçi Visual
+Studio-da **Rebuild All**, `Update-Database`, sonra real ssenari ilə
+yoxlamalıdır: yeni paylaşım göndər (başqa istifadəçi kimi) → sidebar-da qırmızı
+rəqəm çıxsın → `/User/Paylasim`-ə gir → nişan sıfırlansın, kartda "Yeni" pilinin
+göründüyünü təsdiqlə.

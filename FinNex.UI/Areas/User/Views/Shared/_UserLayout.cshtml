@@ -544,6 +544,10 @@
                 <a asp-area="User" asp-controller="Paylasim" asp-action="Index"
                    class="fn-nav-item @(currentController == "Paylasim" && currentArea == "User" ? "active" : "")">
                     <i class="bi bi-share"></i> Paylaşımlar
+                    @{
+                        var pySayUrl = Url.Action("YeniSay", "Paylasim", new { area = "User" });
+                    }
+                    <span class="fn-paylasim-badge" data-badge-url="@pySayUrl" style="display:none"></span>
                 </a>
                 break;
 
@@ -1680,6 +1684,25 @@
     }
     refreshMailBadge();
     setInterval(refreshMailBadge, 120000);
+})();
+</script>
+
+<script>
+(function () {
+    // "Paylaşımlar" sidebar nişanı — yeni paylaşım sayğacı (27.10.2026).
+    var badge = document.querySelector('.fn-paylasim-badge');
+    if (!badge) return;
+    var url = badge.getAttribute('data-badge-url');
+    if (!url) return;
+    function refreshPaylasimBadge() {
+        fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+            var say = d.say || 0;
+            badge.textContent = say;
+            badge.style.display = say > 0 ? 'inline-flex' : 'none';
+        }).catch(function () {});
+    }
+    refreshPaylasimBadge();
+    setInterval(refreshPaylasimBadge, 120000);
 })();
 </script>
 

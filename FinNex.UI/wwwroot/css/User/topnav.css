@@ -812,6 +812,25 @@ body.theme-midnight .fn-topnav-dd-item--active {
 .fn-nav-g--sub .fn-nav-g-body { padding: 0 0 0 10px; }
 .fn-nav-g--sub.open .fn-nav-g-body { padding: 2px 0 4px 10px; }
 
+/* "Paylaşımlar" sidebar nişanı — yeni paylaşım sayğacı (27.10.2026).
+   Mail-in `.fn-mail-badge`-i (gelen-mail.css) ilə EYNİ görüntü, amma bu sinif
+   global `topnav.css`-dədir ki, sidebar HƏR səhifədə (yalnız Paylaşım
+   səhifələrində yox) düzgün görünsün. */
+.fn-paylasim-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 99px;
+    padding: 0 5px;
+    margin-left: 4px;
+}
+
 .fn-sidebar2 .fn-nav-label {
     font-size: 10px;
     font-weight: 700;

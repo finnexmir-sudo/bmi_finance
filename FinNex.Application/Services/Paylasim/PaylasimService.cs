@@ -44,20 +44,63 @@ namespace FinNex.Application.Services.Paylasim
 
         public async Task<List<PaylasimListDto>> AktivLentAsync(int isciId)
         {
-            // Hədəf sətri YOXDURSA → "Hamısına" (geriyə uyğun). Varsa → yalnız bu Isci.
-            var hedefRepo = _uow.Repository<MelumatHedef>();
-
-            var lista = await _uow.Repository<Melumat>().Query().AsNoTracking()
+            var lista = await GorunenlerSorgusu(isciId)
                 .Include(x => x.GonderenAppUser)
                 .Include(x => x.Kateqoriya)
-                .Where(x => x.Aktivdir && !x.Qaralamadir &&
-                    (!hedefRepo.Query().Any(h => h.MelumatId == x.Id) ||
-                     hedefRepo.Query().Any(h => h.MelumatId == x.Id && h.IsciId == isciId)))
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .Take(50)
                 .ToListAsync();
 
             return lista.Select(m => Map(m)).ToList();
+        }
+
+        /// <summary>
+        /// Bir işçiyə görünən (aktiv, qaralama olmayan, hədəflənmiş/"hamısına") postların
+        /// ortaq filtri — `AktivLentAsync` VƏ `YeniSayAsync` eyni şərti TƏKRARLAMASIN deyə
+        /// bura çıxarıldı (bax CLAUDE.md "Bir Kəmiyyətə Üç Yazıcı" prinsipi).
+        /// </summary>
+        private IQueryable<Melumat> GorunenlerSorgusu(int isciId)
+        {
+            // Hədəf sətri YOXDURSA → "Hamısına" (geriyə uyğun). Varsa → yalnız bu Isci.
+            var hedefRepo = _uow.Repository<MelumatHedef>();
+
+            return _uow.Repository<Melumat>().Query().AsNoTracking()
+                .Where(x => x.Aktivdir && !x.Qaralamadir &&
+                    (!hedefRepo.Query().Any(h => h.MelumatId == x.Id) ||
+                     hedefRepo.Query().Any(h => h.MelumatId == x.Id && h.IsciId == isciId)));
+        }
+
+        public async Task<int> YeniSayAsync(int isciId, int appUserId)
+        {
+            var baxis = await _uow.Repository<PaylasimBaxis>().Query().AsNoTracking()
+                .FirstOrDefaultAsync(x => x.AppUserId == appUserId);
+            var sonBaxis = baxis?.SonBaxisTarixi ?? DateTime.MinValue;
+
+            return await GorunenlerSorgusu(isciId)
+                .Where(x => x.YaradilmaTarixi > sonBaxis)
+                .CountAsync();
+        }
+
+        public async Task GorulduIsaretleAsync(int appUserId)
+        {
+            var movcud = await _uow.Repository<PaylasimBaxis>().Query()
+                .FirstOrDefaultAsync(x => x.AppUserId == appUserId);
+
+            if (movcud != null)
+            {
+                movcud.SonBaxisTarixi = DateTime.Now;
+                await _uow.Repository<PaylasimBaxis>().YenileAsync(movcud);
+            }
+            else
+            {
+                await _uow.Repository<PaylasimBaxis>().YaratAsync(new PaylasimBaxis
+                {
+                    AppUserId = appUserId,
+                    SonBaxisTarixi = DateTime.Now
+                });
+            }
+
+            await _uow.YaddaSaxlaAsync();
         }
 
         public async Task<PaylasimListDto?> DetailGetirAsync(int id)

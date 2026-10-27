@@ -46,5 +46,14 @@ namespace FinNex.Application.Interfaces.Paylasim
 
         /// <summary>Qaralamanı dərc edir — Qaralamadir=false, Aktivdir=true.</summary>
         Task<Result> PaylaAsync(int id);
+
+        /// <summary>
+        /// Bu işçiyə görünən postlardan, son baxışından sonra yaradılmışların sayı —
+        /// sidebar-dakı "yeni paylaşım" nişanı üçün (27.10.2026).
+        /// </summary>
+        Task<int> YeniSayAsync(int isciId, int appUserId);
+
+        /// <summary>İşçinin "son baxış" tarixini indiyə yeniləyir (/User/Paylasim açılanda çağırılır).</summary>
+        Task GorulduIsaretleAsync(int appUserId);
     }
 }
