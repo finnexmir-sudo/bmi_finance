@@ -7140,3 +7140,15 @@ Studio-da **Rebuild All** ilə, sonra login səhifəsini brauzerdə yenidən aç
 zərf/qıfıl ikonlarının artıq doğru göründüyünü (boş kvadrat deyil) təsdiqləməlidir
 — tam yeniləmə üçün brauzerin keşini təmizləmək (Ctrl+Shift+R) lazım ola bilər,
 çünki köhnə CSP başlığı/CSS cavabı keşdə qala bilər.
+
+## Login — "İstifadəçi Adı" Xanasında Zərf İkonu Səhv İdi (28.10.2026)
+
+Yuxarıdakı font-src düzəlişindən sonra ikonlar artıq GÖRÜNÜRDÜ, amma istifadəçi
+məntiqi fərqi gördü: *"mektub icosu niye?"* — xana "İstifadəçi adı" (username)
+üçündür, amma `bi-envelope` (zərf/mail) ikonu daşıyırdı. Bu, email xanası DEYİL —
+sahə `UserName` DTO-dur, placeholder "İstifadəçi adı" yazır, autocomplete
+`username-new`-dir. Zərf ikonu sırf vizual kopyalama xətası idi (email-login
+formalarının adi ikonu təsadüfən bura düşmüşdü).
+
+**Düzəliş:** `bi-envelope` → `bi-person` (`Login.cshtml`, "İstifadəçi adı" xanası).
+Şifrə xanasındakı `bi-lock` TOXUNULMADI — düzgündür.
