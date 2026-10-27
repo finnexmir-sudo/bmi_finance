@@ -6758,3 +6758,79 @@ Studio-da **Rebuild All**, `Update-Database`, sonra real ssenari ilə
 yoxlamalıdır: yeni paylaşım göndər (başqa istifadəçi kimi) → sidebar-da qırmızı
 rəqəm çıxsın → `/User/Paylasim`-ə gir → nişan sıfırlansın, kartda "Yeni" pilinin
 göründüyünü təsdiqlə.
+
+### Paylaşımlar — Tipoqrafiya, Eni, Başlıq Təkrarı, Önizləmə/"Davamını oxu" (27.10.2026)
+
+İstifadəçi canlı ekrana baxıb konkret oxunaqlılıq şikayətləri verdi: mətn xırda
+(15,5px/1,75), abzaslar arası həddindən artıq açıq (boş `<p><br></p>` sətirləri
+Quill-dən qalırdı), şəkil həddindən artıq yer tuturdu, "Paylaşımlar" başlığı
+EKRANDA İKİ DƏFƏ görünürdü. Sonra kartın enini (760px → 850-900px) açmağı,
+HƏM DƏ lentin uzun olmamasını (hər post üçün şəkil + 2-3 sətir önizləmə +
+"Davamını oxu" ilə tam mətn açılsın) istədi.
+
+**Başlıq təkrarı — kök səbəb `_UserLayout.cshtml`-in öz topbar-ı.** Yoxlanıldı:
+`fn-topbar-title` elementi onsuz da `@ViewData["Title"]`-ı ("Paylaşımlar")
+göstərir (sətir 1578) — səhifənin öz `fn-page-head`-indəki `fn-page-title`
+divi bunu TƏKRARLAYIRDI. Yalnız o div SİLİNDİ, `fn-page-sub` ("Oxumağa dəyər
+məlumatlar") saxlanıldı — bu, Mail modulunda eyni bugun (bax yuxarı "Üç İş"
+bölməsi) tətbiq olunmuş düzəlişin eyni forması.
+
+**Tipoqrafiya — `paylasim.css`, `.py-body`:** `font-size: 15.5px → 16px`,
+`line-height: 1.75 → 1.6`, paraqraf `margin-bottom: 14px → 16px`, siyahı
+bəndi `margin-bottom: 4px → 2px` (daha yaxın). Mobil media sorğusundaki
+ayrıca kiçik `font-size: 14.5px` override-i SİLİNDİ — mobil də indi 16px.
+
+**Boş paraqraflar — CSS YOX, JS.** Quill boş sətirləri `<p><br></p>` kimi
+yazır; CSS `:has(> br:only-child)` seçicisi bunu həll edə bilərdi, amma
+brauzer dəstəyinə görünməz güvənmək əvəzinə JS seçildi: səhifə yükləndikdə
+`.py-body p` üzərində gəzib, mətni boş VƏ içində şəkil YOXDURSA `display:none`
+yazılır — DB-yə TOXUNULMUR, sırf göstərmə qatıdır.
+
+**Şəkil hündürlüyü — `max-height: 420px` (əvvəl heç bir hədd yox idi, yalnız
+`max-width:100%`).** `width:auto; height:auto` ilə — nisbət POZULMUR, şəkil
+YALNIZ kiçilir (heç vaxt kəsilmir, `object-fit:cover` kimi kəsmə üsulu
+İŞLƏDİLMƏDİ — istifadəçinin "şəkildəki yazıları kəsmə" tələbinə görə).
+
+**Kart eni — `.py-filters`/`.py-feed`, `max-width: 760px → 880px`.**
+
+**Lent önizləməsi + "Davamını oxu" — TAMAMILƏ CSS/JS, BACKEND DƏYİŞMƏDİ.**
+Ayrıca "qısa təsvir"/"üz qabığı" DB sahəsi (bu modulun ƏVVƏLKİ bir dalğasında
+GPT-mockup müzakirəsində İSTİFADƏÇİ TƏRƏFİNDƏN QƏSDƏN rədd edilmişdi — bax
+yuxarı "Kateqoriya + Qaralama/Paylaş Axını" bölməsi) YARADILMADI — əvəzinə
+`.py-body`yə default `py-collapsed` sinfi (max-height:260px, overflow:hidden,
+aşağıda ağ qradient fade) qoyulur, kolaps halında `.py-body.py-collapsed img`
+əlavə olaraq `max-height:150px`-ə kiçildilir (belə ki, kolaps təxminən
+"kiçik şəkil + bir neçə sətir" effekti versin — bu, dəqiq "2-3 sətir" ÖLÇÜSÜ
+DEYİL, GÖZLƏ YAXIN bir təxmindir, çünki məzmun qarışıq rich-HTML-dir, sərt
+sətir-kəsimi mümkün deyil).
+
+**Button YALNIZ lazım olanda görünür.** Hər kartın altında gizli (`style=
+"display:none"`) "Davamını oxu" düyməsi var; səhifə tam yükləndikdə (`window.
+load`, ŞƏKİLLƏR DAXİL) hər kartın `scrollHeight`-i kolaps hündürlüyündən
+böyükdürsə düymə göstərilir, əks halda `py-collapsed` sinfi tamamilə
+götürülür (qısa post heç vaxt kəsilmir, boş düymə görünmür). Kliklə
+`classList.toggle('py-collapsed')` — mətn açılır/bağlanır, düymə mətni
+"Davamını oxu" ↔ "Bağla" arasında dəyişir.
+
+⚠️ **`window.addEventListener('load', ...)` TƏK BAŞINA RİSKLİ İDİ — özüm
+yoxlayarkən tapıb düzəltdim.** Skript səhifənin SONUNDA yerləşir; şəkillər
+keşdən sürətli yüklənərsə, brauzerin `load` hadisəsi bu listener qoşulmazdan
+ƏVVƏL artıq atəşlənmiş ola bilər — belə halda listener HEÇ VAXT çağırılmaz
+və bütün kartlar ƏBƏDI kolaps qalardı (düymə də görünməzdi, çünki onu göstərən
+kod da elə bu funksiyanın içindədir). Düzəliş: `document.readyState ===
+'complete'` yoxlanılır — artıq yüklənibsə funksiya DƏRHAL çağırılır, əks
+halda `load`-a qoşulur.
+
+**Qayda (təkrar, YENİ formada):** `window.load`/`DOMContentLoaded` kimi
+"bir dəfə atəşlənən" hadisələrə skriptin ÖZ YÜKLƏNMƏ VAXTINDAN asılı
+olmadan güvənmə — hadisə artıq keçmiş ola bilər. Əvvəlcə `document.
+readyState` (və ya instər oxşar bayraq) yoxla, lazım gələrsə dərhal çağır,
+yoxsa listener qoş.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(CSS/Razor mötərizə balansı skriptlə). İstifadəçi real brauzerdə yoxlamalıdır:
+mətnin indi 16px/1.6 ilə rahat oxunduğunu, boş sətirlərin getdiyini, şəklin
+daha kiçik və KƏSİLMƏDƏN göründüyünü, "Paylaşımlar" başlığının bir dəfə
+göründüyünü, kartın bir qədər enli olduğunu, uzun postda "Davamını oxu"
+düyməsinin çıxıb tam mətni açdığını, qısa postda isə düymənin ümumiyyətlə
+görünmədiyini.
