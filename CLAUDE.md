@@ -6834,3 +6834,64 @@ daha kiçik və KƏSİLMƏDƏN göründüyünü, "Paylaşımlar" başlığının
 göründüyünü, kartın bir qədər enli olduğunu, uzun postda "Davamını oxu"
 düyməsinin çıxıb tam mətni açdığını, qısa postda isə düymənin ümumiyyətlə
 görünmədiyini.
+
+### Paylaşımlar — "Böyük kart" Lentindən Sıx SİYAHI Dizaynına (28.10.2026, GPT mockup)
+
+İstifadəçi ChatGPT-də hazırladığı bir redizayn mockup-ı göstərdi (*"bele daha
+seliqeli gorunur mence, sen bize daha seliqeli dizayna sala bilmirsene"*) —
+hər post tam genişlikdə açıq kart kimi yox, **kompakt sətir** kimi: solda
+kiçik ikon/miniatür, üstdə "Yeni | tarix | kateqoriya" meta sətri, qalın
+başlıq, 2 sətirlik boz önizləmə mətni, göy "Oxumağa davam et →" linki, sağda
+ox işarəsi. Üstdə "Son paylaşımlar · N paylaşım" başlıq zolağı.
+
+**Əvvəlki "kolaps + Davamını oxu" mexanizmi (27.10.2026-da qurulmuşdu) TAM
+ƏVƏZ OLUNDU** — köhnə üsul `.py-body`-ni 260px-ə kəsib aşağıda qradient
+göstərirdi (hələ də tam HTML-in bir hissəsi görünürdü); yeni üsulda
+DEFOLT vəziyyətdə body ÜMUMİYYƏTLƏ görünmür, yalnız ondan ÇIXARILAN
+(ikon/mətn) qısa xülasə göstərilir, klikləyəndə TAM GÖRÜNTÜ (`.py-row-full`)
+əvəz edir.
+
+**Backend-ə HEÇ TOXUNULMADI — sırf CSS/JS.** "Qısa təsvir"/"üz qabığı" DB
+sahəsi YENƏ DƏ əlavə edilmədi (bu, modul daxilində artıq İKİNCİ dəfə
+istifadəçinin qərarı ilə qəsdən buraxılan bir şeydir — bax yuxarı
+"Kateqoriya + Qaralama/Paylaş Axını" bölməsi) — əvəzinə client-side JS,
+artıq DOM-da (gizli) olan `.py-body`-nin HTML-indən iki şey çıxarır:
+1. **Miniatür** — body-nin İLK `<img>`-i varsa onun `src`-i miniatür kimi
+   göstərilir (`object-fit:cover`, 92×84px); yoxdursa, sətir indeksinə görə
+   6 rəngdən birini alan boş bir ikon kvadratı (`py-thumb-c0..c5`,
+   `bi-journal-richtext`) göstərilir.
+2. **Önizləmə mətni** — `bodyEl.textContent` (bütün teqlər atılmış xam mətn),
+   130 simvoldan sonra "…" ilə kəsilir, CSS `-webkit-line-clamp:2` ilə 2
+   sətirə də MƏHDUDLAŞDIRILIR (qoşa qoruyucu — uzun sözlü dillərdə JS kəsimi
+   təsadüfən 3-cü sətrə düşə bilər, CSS son sərhəddir).
+
+**Sadələşmə — `window.load` gözləməsi artıq LAZIM DEYİL.** Əvvəlki "Davamını
+oxu" mexanizmi `scrollHeight`-i ÖLÇMƏLİ olduğu üçün şəkillərin yüklənməsini
+(`window.load`) gözləməli idi (bax yuxarı "`window.addEventListener('load',
+...)` TƏK BAŞINA RİSKLİ İDİ" bölməsi — orada tapılan `readyState` qoruyucusu
+bu yeni dizaynda artıq İŞLƏNMİR). Yeni üsulda miniatür üçün yalnız `<img>`
+elementinin `src` ATRİBUTU lazımdır (şəklin ÖZÜNÜN yüklənməsi yox) — bu,
+DOM parse olunan kimi (DOMContentLoaded-dan ƏVVƏL belə) mövcuddur, ona görə
+skript sadəcə səhifənin sonunda, heç bir hadisəyə qoşulmadan dərhal işləyir.
+
+**Klik davranışı:** `.py-row-summary`-ə (bütün sətrə, təkcə linkə yox) klik
+`.py-row-full`-u göstərir, `.py-row-summary`-ni gizlədir; aşağıdakı "Bağla"
+düyməsi tərsini edir və `scrollIntoView({block:'nearest'})` ilə sətri
+yenidən görünən sahəyə qaytarır (uzun post bağlananda səhifə yuxarı
+sıçramasın deyə).
+
+⚠️ **Mockup-dakı FƏRQLİ-FƏRQLİ ikonlar (bank, zərf+qalxan, kilid) BİRƏ-BİR
+TƏKRARLANMADI** — onlar GPT-nin konkret məzmuna uyğun çəkdiyi illüstrasiyalardır,
+bizim datada belə bir "ikon seçimi" sahəsi yoxdur (və əlavə edilmədi — yuxarıdakı
+qərara görə). Əvəzinə: şəkilli postda ÖZ şəkli, şəkilsiz postda isə NEYTRAL,
+rəng-rotasiyalı bir ikon istifadə olunur — mockup-un GÖRÜNTÜ dilini (kvadrat
+rəngli tile) qorudu, konkret ikon seçimini YOX.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(Razor/CSS mötərizə balansı skriptlə, hər iki `<script>` bloku `node -c` ilə
+JS sintaksisi üçün ayrıca yoxlanıldı — hər ikisi təmiz). İstifadəçi real
+brauzerdə yoxlamalıdır: siyahının indi sıx sətirlər şəklində göründüyünü,
+şəkilli postda miniatürün, şəkilsiz postda rəngli ikon kvadratının çıxdığını,
+sətrə klikləyəndə tam mətnin (şəkil/format daxil) açıldığını, "Bağla"
+düyməsinin bağlayıb sətri geri gətirdiyini, kateqoriya filtrinin YENİ
+`.py-row` elementlərinə görə işlədiyini.

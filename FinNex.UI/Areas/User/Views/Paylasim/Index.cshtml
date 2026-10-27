@@ -30,49 +30,73 @@
         </div>
     }
 
-    <div class="py-feed">
+    <div class="py-list-wrap">
         @if (!Model.Any())
         {
             <div class="py-empty">Hələ heç bir paylaşım yoxdur.</div>
         }
         else
         {
-            @foreach (var p in Model)
-            {
-                var bash = (p.GonderenAdi ?? "?").Trim();
-                var ilkHerf = bash.Length > 0 ? bash[0].ToString().ToUpperInvariant() : "?";
-                // Sırf görüntü — DB-yə toxunmur, "Yeni" kartın yaradılma tarixinə görə
-                // hesablanır (27.10.2026). Sidebar-dakı nişan isə AYRI, "son baxış"
-                // tarixinə görə işləyir — ikisi fərqli sualların cavabıdır.
-                var yeniKart = (DateTime.Now - p.YaradilmaTarixi).TotalDays <= 3;
-                <div class="py-card" data-kat="@p.KateqoriyaAdi">
-                    <div class="py-card-head">
-                        <div class="py-avatar">@ilkHerf</div>
-                        <div class="py-head-info">
-                            <div class="py-sender">@p.GonderenAdi</div>
-                            <div class="py-date">@p.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-AZ"))</div>
+            <div class="py-list-header">
+                <div class="py-list-title">Son paylaşımlar</div>
+                <div class="py-list-count">@Model.Count paylaşım</div>
+            </div>
+            <div class="py-list">
+                @{ var pyIdx = 0; }
+                @foreach (var p in Model)
+                {
+                    pyIdx++;
+                    var bash = (p.GonderenAdi ?? "?").Trim();
+                    var ilkHerf = bash.Length > 0 ? bash[0].ToString().ToUpperInvariant() : "?";
+                    // Sırf görüntü — DB-yə toxunmur, "Yeni" kartın yaradılma tarixinə görə
+                    // hesablanır (27.10.2026). Sidebar-dakı nişan isə AYRI, "son baxış"
+                    // tarixinə görə işləyir — ikisi fərqli sualların cavabıdır.
+                    var yeniKart = (DateTime.Now - p.YaradilmaTarixi).TotalDays <= 3;
+                    var renk = pyIdx % 6;
+                    <div class="py-row" data-kat="@p.KateqoriyaAdi" id="pyRow_@p.Id">
+                        <div class="py-row-summary" data-target="pyRow_@p.Id">
+                            <div class="py-row-thumb py-thumb-c@renk">
+                                <i class="bi bi-journal-richtext"></i>
+                            </div>
+                            <div class="py-row-main">
+                                <div class="py-row-meta">
+                                    @if (yeniKart)
+                                    {
+                                        <span class="py-new-dot"></span><span class="py-new-text">Yeni</span><span class="py-meta-sep">|</span>
+                                    }
+                                    <span class="py-row-date">@p.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-AZ"))</span>
+                                    @if (!string.IsNullOrEmpty(p.KateqoriyaAdi))
+                                    {
+                                        <span class="py-meta-sep">|</span><span class="py-row-kat">@p.KateqoriyaAdi</span>
+                                    }
+                                </div>
+                                <div class="py-row-title">@p.Basliq</div>
+                                <div class="py-row-excerpt"></div>
+                                <span class="py-row-link">Oxumağa davam et <i class="bi bi-arrow-right"></i></span>
+                            </div>
+                            <div class="py-row-chevron"><i class="bi bi-chevron-right"></i></div>
                         </div>
-                        @if (yeniKart || !string.IsNullOrEmpty(p.KateqoriyaAdi))
-                        {
-                            <div class="py-head-badges">
-                                @if (yeniKart)
-                                {
-                                    <span class="py-new-badge">Yeni</span>
-                                }
+                        <div class="py-row-full" style="display:none">
+                            <div class="py-card-head">
+                                <div class="py-avatar">@ilkHerf</div>
+                                <div class="py-head-info">
+                                    <div class="py-sender">@p.GonderenAdi</div>
+                                    <div class="py-date">@p.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-AZ"))</div>
+                                </div>
                                 @if (!string.IsNullOrEmpty(p.KateqoriyaAdi))
                                 {
-                                    <span class="py-kat-badge">@p.KateqoriyaAdi</span>
+                                    <div class="py-head-badges"><span class="py-kat-badge">@p.KateqoriyaAdi</span></div>
                                 }
                             </div>
-                        }
+                            <div class="py-title">@p.Basliq</div>
+                            <div class="py-body" id="pyBody_@p.Id">@Html.Raw(p.MetnHtml)</div>
+                            <div class="py-row-collapse-wrap">
+                                <button type="button" class="py-row-collapse-btn" data-target="pyRow_@p.Id">Bağla <i class="bi bi-chevron-up"></i></button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="py-title">@p.Basliq</div>
-                    <div class="py-body py-collapsed" id="pyBody_@p.Id">@Html.Raw(p.MetnHtml)</div>
-                    <div class="py-readmore-wrap">
-                        <button type="button" class="py-readmore-btn" data-target="pyBody_@p.Id" style="display:none">Davamını oxu</button>
-                    </div>
-                </div>
-            }
+                }
+            </div>
         }
     </div>
 </div>
@@ -95,54 +119,67 @@
             btn.classList.add('active');
 
             var kat = btn.dataset.kat || '';
-            document.querySelectorAll('.py-card').forEach(function (card) {
-                card.style.display = (!kat || card.dataset.kat === kat) ? '' : 'none';
+            document.querySelectorAll('.py-row').forEach(function (row) {
+                row.style.display = (!kat || row.dataset.kat === kat) ? '' : 'none';
             });
         });
     })();
     </script>
     <script>
     (function () {
-        // Boş (yalnız <br>) paraqrafları gizlət — abzas aralarındaki artıq boşluğu
-        // aradan qaldırır (27.10.2026). DB-yə toxunmur, sırf göstərmə qatıdır.
-        document.querySelectorAll('.py-body p').forEach(function (p) {
-            if (p.textContent.trim() === '' && !p.querySelector('img')) {
-                p.style.display = 'none';
+        // Hər sətir üçün artıq server-dən gələn (gizli) tam HTML-dən — şəkil
+        // varsa miniatür, yoxdursa ikon, VƏ qısa mətn önizləməsi çıxarılır
+        // (28.10.2026, GPT mockup-una uyğun sıx siyahı görünüşü). Heç bir AJAX
+        // yoxdur — `.py-body` artıq DOM-dadır, sadəcə `.py-row-full` ilə gizlidir.
+        document.querySelectorAll('.py-row').forEach(function (row) {
+            var bodyEl = row.querySelector('.py-body');
+            if (!bodyEl) return;
+
+            // Boş (yalnız <br>) paraqrafları gizlət — açılanda abzas aralarındaki
+            // artıq boşluğu aradan qaldırır. DB-yə toxunmur.
+            bodyEl.querySelectorAll('p').forEach(function (p) {
+                if (p.textContent.trim() === '' && !p.querySelector('img')) {
+                    p.style.display = 'none';
+                }
+            });
+
+            var thumb = row.querySelector('.py-row-thumb');
+            var img = bodyEl.querySelector('img');
+            if (thumb && img && img.getAttribute('src')) {
+                thumb.innerHTML = '';
+                var im = document.createElement('img');
+                im.src = img.getAttribute('src');
+                im.alt = '';
+                thumb.appendChild(im);
+                thumb.classList.add('py-thumb-img');
+            }
+
+            var excerptEl = row.querySelector('.py-row-excerpt');
+            if (excerptEl) {
+                var text = (bodyEl.textContent || '').replace(/\s+/g, ' ').trim();
+                if (text.length > 130) text = text.slice(0, 130).trim() + '…';
+                excerptEl.textContent = text;
             }
         });
 
-        // Lentdə hər kart qısa önizləmə (şəkil + bir neçə sətir) göstərir,
-        // "Davamını oxu" tam mətni açır (27.10.2026). Şəkillər yüklənənə qədər
-        // hündürlük düzgün ölçülmür, ona görə `load` hadisəsini gözləyirik.
-        function pySetupReadMore() {
-            document.querySelectorAll('.py-card').forEach(function (card) {
-                var body = card.querySelector('.py-body');
-                var btn = card.querySelector('.py-readmore-btn');
-                if (!body || !btn) return;
-                if (body.scrollHeight > body.clientHeight + 20) {
-                    btn.style.display = 'inline-block';
-                } else {
-                    body.classList.remove('py-collapsed');
-                    btn.style.display = 'none';
-                }
-            });
-        }
-        // Skript səhifənin SONUNDA işə düşür — şəkillər keşdən artıq yüklənmiş
-        // ola bilər və `load` hadisəsi ARTIQ atəşlənmiş olar; belə halda
-        // listener heç vaxt çağırılmazdı (kartlar əbədi kolaps qalardı).
-        if (document.readyState === 'complete') {
-            pySetupReadMore();
-        } else {
-            window.addEventListener('load', pySetupReadMore);
-        }
-
         document.addEventListener('click', function (e) {
-            var btn = e.target.closest('.py-readmore-btn');
-            if (!btn) return;
-            var body = document.getElementById(btn.getAttribute('data-target'));
-            if (!body) return;
-            var collapsed = body.classList.toggle('py-collapsed');
-            btn.textContent = collapsed ? 'Davamını oxu' : 'Bağla';
+            var summary = e.target.closest('.py-row-summary');
+            if (summary) {
+                var row = document.getElementById(summary.getAttribute('data-target'));
+                if (!row) return;
+                row.querySelector('.py-row-summary').style.display = 'none';
+                row.querySelector('.py-row-full').style.display = 'block';
+                return;
+            }
+
+            var closeBtn = e.target.closest('.py-row-collapse-btn');
+            if (closeBtn) {
+                var row2 = document.getElementById(closeBtn.getAttribute('data-target'));
+                if (!row2) return;
+                row2.querySelector('.py-row-full').style.display = 'none';
+                row2.querySelector('.py-row-summary').style.display = 'flex';
+                row2.scrollIntoView({ block: 'nearest' });
+            }
         });
     })();
     </script>

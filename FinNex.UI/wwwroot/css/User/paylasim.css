@@ -1,4 +1,4 @@
-/* ── Paylaşımlar — Bilik Lenti (27.10.2026) ────────────────── */
+/* ── Paylaşımlar — Bilik Lenti (27.10.2026, 28.10.2026 sıx-siyahı redizaynı) ── */
 
 /* ── Kateqoriya süzgəci (client-side, 27.10.2026) ──────────── */
 .py-filters {
@@ -29,45 +29,9 @@
     color: #fff;
 }
 
-/* ── Kateqoriya + "Yeni" nişanları (kart başlığında, 27.10.2026) ───── */
-.py-head-badges {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-}
-
-.py-kat-badge {
-    background: #eef2ff;
-    color: #4338ca;
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 999px;
-    white-space: nowrap;
-}
-
-/* Yaradılma tarixindən 3 gün ərzində — sırf görüntü, DB-yə yazılmır. */
-.py-new-badge {
-    background: #dcfce7;
-    color: #15803d;
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 999px;
-    white-space: nowrap;
-}
-
-.py-feed {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
+.py-empty {
     max-width: 880px;
     margin: 0 auto;
-}
-
-.py-empty {
     background: #fff;
     border-radius: 16px;
     border: 1px solid #e8eaef;
@@ -76,13 +40,141 @@
     color: #9ca3af;
 }
 
-/* ── Kart ──────────────────────────────────── */
-.py-card {
+/* ── Siyahı qabı — "Son paylaşımlar · N paylaşım" (28.10.2026) ────── */
+.py-list-wrap {
+    max-width: 880px;
+    margin: 0 auto;
+}
+
+.py-list-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 0 2px;
+}
+
+.py-list-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a2035;
+}
+
+.py-list-count {
+    font-size: 12.5px;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+.py-list {
     background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.06);
-    border: 1px solid #ecedf2;
+    border-radius: 16px;
+    border: 1px solid #e8eaef;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.05);
     overflow: hidden;
+}
+
+/* ── Sətir — kompakt önizləmə (GPT mockup-undan ilhamlanıb, 28.10.2026) ── */
+.py-row { border-bottom: 1px solid #eef0f4; }
+.py-row:last-child { border-bottom: none; }
+
+.py-row-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 22px;
+    cursor: pointer;
+    transition: background .12s ease;
+}
+
+.py-row-summary:hover { background: #fafbfd; }
+
+.py-row-thumb {
+    width: 92px;
+    height: 84px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #fff;
+    overflow: hidden;
+}
+
+.py-row-thumb.py-thumb-img { padding: 0; }
+.py-row-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.py-thumb-c0 { background: linear-gradient(135deg, #1e293b, #334155); }
+.py-thumb-c1 { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.py-thumb-c2 { background: linear-gradient(135deg, #b45309, #d97706); }
+.py-thumb-c3 { background: linear-gradient(135deg, #15803d, #22c55e); }
+.py-thumb-c4 { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+.py-thumb-c5 { background: linear-gradient(135deg, #be123c, #e11d48); }
+
+.py-row-main { flex: 1; min-width: 0; }
+
+.py-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: #9ca3af;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.py-new-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+}
+
+.py-new-text { color: #15803d; font-weight: 700; }
+.py-meta-sep { color: #d1d5db; }
+.py-row-kat { color: #4338ca; }
+
+.py-row-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 3px;
+    letter-spacing: -0.01em;
+}
+
+.py-row-excerpt {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.py-row-link {
+    color: #2563eb;
+    font-size: 12.5px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.py-row-link i { font-size: 11px; margin-left: 2px; }
+
+.py-row-chevron {
+    flex-shrink: 0;
+    color: #c7cbd4;
+    font-size: 15px;
+    align-self: center;
+}
+
+/* ── Tam görüntü — kliklənəndə açılır (28.10.2026) ─────────── */
+.py-row-full {
+    border-top: 1px solid #eef0f4;
+    background: #fcfcfd;
 }
 
 .py-card-head {
@@ -110,6 +202,24 @@
 .py-sender { font-weight: 700; font-size: 13.5px; color: #1a2035; }
 .py-date { font-size: 12px; color: #9ca3af; }
 
+.py-head-badges {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.py-kat-badge {
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
 .py-title {
     font-size: 21px;
     font-weight: 800;
@@ -120,7 +230,7 @@
 
 /* ── Zəngin mətn məzmunu ───────────────────── */
 .py-body {
-    padding: 8px 24px 26px;
+    padding: 8px 24px 10px;
     font-size: 16px;
     line-height: 1.6;
     color: #374151;
@@ -173,48 +283,31 @@
 
 .py-body strong { color: #1f2937; }
 
-/* ── Önizləmə (kolaps) + "Davamını oxu" (27.10.2026) ───────── */
-/* Lentdə hər kart kiçik şəkil + bir neçə sətirlik önizləmə göstərir;
-   şəkil də önizləmədə daha da kiçildilir ki, "şəkil + 2-3 sətir" görünsün. */
-.py-body.py-collapsed {
-    max-height: 260px;
-    overflow: hidden;
-    position: relative;
+.py-row-collapse-wrap {
+    padding: 4px 24px 22px;
 }
 
-.py-body.py-collapsed img {
-    max-height: 150px;
-}
-
-.py-body.py-collapsed::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 56px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1));
-    pointer-events: none;
-}
-
-.py-readmore-wrap {
-    padding: 0 24px 22px;
-    text-align: center;
-}
-
-.py-readmore-btn {
-    border: none;
-    background: none;
-    color: #2563eb;
+.py-row-collapse-btn {
+    border: 1px solid #e3e5eb;
+    background: #fff;
+    color: #4b5563;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 12.5px;
     cursor: pointer;
-    padding: 6px 4px;
+    padding: 7px 16px;
+    border-radius: 999px;
 }
 
-.py-readmore-btn:hover { text-decoration: underline; }
+.py-row-collapse-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
 
 @media (max-width: 576px) {
-    .py-title { font-size: 18.5px; margin: 14px 16px 4px; }
+    .py-row-summary { padding: 14px 16px; gap: 12px; }
+    .py-row-thumb { width: 64px; height: 64px; font-size: 20px; }
+    .py-row-title { font-size: 14.5px; }
+    .py-row-excerpt { display: none; }
+    .py-row-chevron { display: none; }
     .py-card-head { padding: 16px 16px 0; }
-    .py-body { padding: 6px 16px 20px; }
-    .py-readmore-wrap { padding: 0 16px 18px; }
+    .py-title { font-size: 18.5px; margin: 14px 16px 4px; }
+    .py-body { padding: 6px 16px 10px; }
+    .py-row-collapse-wrap { padding: 4px 16px 18px; }
 }
