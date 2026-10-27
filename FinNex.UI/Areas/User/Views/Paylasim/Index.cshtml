@@ -12,8 +12,12 @@
 <div class="fn-page">
 
     <div class="py-page-header">
-        <h1 class="py-page-title">Paylaşımlar</h1>
-        <div class="py-page-desc">Oxumağa dəyər məlumatlar</div>
+        <div class="py-page-header-icon"><i class="bi bi-share-fill"></i></div>
+        <div class="py-page-header-text">
+            <h1 class="py-page-title">Paylaşımlar</h1>
+            <div class="py-page-desc">Oxumağa dəyər məlumatlar</div>
+        </div>
+        <div class="py-page-header-count">@Model.Count paylaşım</div>
     </div>
 
     @{
@@ -38,10 +42,6 @@
         }
         else
         {
-            <div class="py-list-header">
-                <div class="py-list-title">Son paylaşımlar</div>
-                <div class="py-list-count">@Model.Count paylaşım</div>
-            </div>
             <div class="py-list">
                 @{ var pyIdx = 0; }
                 @foreach (var p in Model)

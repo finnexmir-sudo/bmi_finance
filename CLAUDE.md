@@ -6982,3 +6982,71 @@ səhifədə yoxa çıxdığını (digər səhifələrdə DƏYİŞMƏDİYİNİ �
 Dashboard`-a baxıb topbar-ın orada hələ göründüyünü təsdiqləsə yaxşı olar),
 mobil enlikdə şəklin yuxarıda, mətnin aşağıda, üfüqi scroll olmadan
 göründüyünü.
+
+### Paylaşımlar — "Mərkəzləşdir" Tələbinin Nəticəsi İstəniləndən Fərqli Çıxdı — Sola Yaxın + Qutulu Başlıq (28.10.2026)
+
+Yuxarıdakı (278.png maketinə görə) düzəliş `.py-page-header`/`.py-filters`/
+`.py-list-wrap`-i `margin:0 auto` ilə **mərkəzləşdirmişdi** (bənd 1-in hərfi
+tələbinə uyğun). İstifadəçi real ekranda nəticəni gördü — geniş monitorda
+(1920px) sidebar-dan sonra qalan sahə ~1680px olduğu üçün 1200px-lik qutu
+hər iki tərəfdə ~250-280px boş sahə buraxırdı, məzmun "ortada boğulmuş" kimi
+görünürdü. İstifadəçi iki ekran-görüntüsü göndərdi: **279.png** (canlı tətbiq)
+və **280.webp** (ChatGPT-nin şəkil-redaktə alətində eyni skrinşotun üzərinə
+çəkilmiş maket — sual: *"biz bunu sola yaxin, ve biraz basliqli ede
+bilmirikki? gpt ya dedim etdi, bizde nese problem var buna gore?"*).
+
+**Bu dəfə hər iki şəkil `Read` aləti ilə birbaşa açılıb piksel-piksel
+müqayisə edildi** — əvvəlki dalğadakı "skrinşot müqayisəsi mümkün deyil"
+xəbərdarlığı YALNIZ istifadəçinin öz canlı `localhost:44331`-inə CANLI
+baxışa aiddir (bu mühitdən əlçatan deyil); istifadəçinin BU SESSİYADA
+GÖNDƏRDİYİ fayllar isə `/tmp/.../images/*.png`-də yerli fayllardır və
+`Read` onları açıb göstərə bilir — iki fərqli şey qarışdırılmamalıdır.
+
+**280.webp-dən aydın oldu:** GPT-nin "redaktəsi" əslində kod dəyişikliyi
+DEYİL — sadəcə ChatGPT-nin şəkil annotasiya alətində eyni skrinşotun üzərinə
+əl ilə çəkilmiş vizual maketdir (alətin "İşarətlə/Sil/Yenidən boyutlandır"
+paneli görünür). Amma maket aydın iki fərq göstərirdi:
+1. **Sola yaxın, mərkəzləşdirilməmiş** — qutu sidebar-dan dərhal sonra
+   başlayır, sağda boş sahə qalır (sol-sağ SİMMETRİK boşluq YOX).
+2. **Başlıq "qutulu"** — "Paylaşımlar" sadə mətn yox, ağ/bordürlü, kiçik
+   ikonlu (paylaşım işarəsi, dairə fonunda) bir kart kimi, sağında "N
+   paylaşım" nişanı ilə BİRLİKDƏ.
+
+**Düzəliş — iki hissə, backend-ə YENƏ TOXUNULMADI:**
+
+1. **`margin:0 auto` → `margin:0`** (`.py-page-header`, `.py-filters`,
+   `.py-list-wrap`) — mərkəzləşdirmə YOX, qutular `.fn-page`-in öz 24px
+   padding-indən DƏRHAL sonra, sol kənara bağlı başlayır. `max-width:1200px`
+   saxlanıldı (çox geniş ekranda hədsiz uzanmasın) — fərq YALNIZ artıq
+   boşluğun sağda qalmasıdır, hər iki tərəfə bölünmür. Əvvəlki ayrıca 32px
+   yan padding-lər (`.py-filters`/`.py-list-wrap`-da) də silindi — `.fn-page`-in
+   öz 24px-i artıq kifayət qədər gutter verir, ikiqat padding lazım deyil.
+
+2. **Başlıq qutuya çevrildi** — `.py-page-header` indi `display:flex;
+   align-items:center;` ilə ÜÇ hissədən ibarətdir: **ikon** (40×40px, açıq
+   bənövşəyi dairə, `bi-share-fill`, `.py-kat-badge`-in rəng tonu ilə EYNİ
+   — yeni rəng icad edilmədi), **başlıq+izah** (ortada, flex:1), **"N
+   paylaşım" nişanı** (sağda, elə o eyni rəng tonunda pill). Bütün qutu ağ
+   fon + nazik sərhəd + yüngül kölgə ilə kart kimi görünür (`.py-list`-in
+   özünün sərhəd/kölgə dilini təkrarlayır — yeni vizual dil icad edilmədi).
+
+**Köhnə `.py-list-header` ("Son paylaşımlar · N paylaşım" ayrıca sətri)
+TAMAMİLƏ SİLİNDİ** — say artıq yuxarıdaki qutuda bir dəfə göstərilir, iki
+yerdə təkrarlanmır (`Index.cshtml`-dəki `else` qolunun başındakı div bloku
+çıxarıldı, CSS-dən `.py-list-header`/`.py-list-title`/`.py-list-count`
+qaydaları silindi — `grep` ilə hər iki fayldan referansların qalmadığı
+təsdiqləndi).
+
+⚠️ **Mobil media sorğusu yenidən yazıldı** — əvvəlki `.py-filters`/
+`.py-list-wrap`-ə mobil-xüsusi `padding-left/right:16px` override-i artıq
+lazımsız idi (əsas qaydada bu padding-lər onsuz da silinib) — SİLİNDİ, yerinə
+yeni qutulu başlığın öz mobil kiçilmə qaydaları (ikon 34px, başlıq 16.5px,
+nişan 11px) əlavə olundu.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, hər iki fayldan köhnə sinif adlarının `grep`-lə
+tam silindiyi təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All**,
+sonra real brauzerdə yoxlamalıdır: başlığın indi sola yaxın, ikonlu/qutulu
+göründüyünü, "N paylaşım" nişanının həmin qutunun sağında olduğunu, siyahının
+(filtr pill-ləri + post kartı) da eyni sol kənara bağlı başladığını, geniş
+monitorda artıq boşluğun YALNIZ sağda qaldığını (iki tərəfə bölünmədiyini).
