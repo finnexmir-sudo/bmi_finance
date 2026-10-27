@@ -6660,3 +6660,53 @@ paylaşım "Qaralama saxla" ilə göndər → heç kimə görünmədiyini, Admin
 lentində göründüyünü yoxla; "+ Yeni" ilə yeni kateqoriya yarat, dropdown-da
 dərhal seçili gəldiyini, işçi lentindəki filtr pill-lərinin düzgün süzdüyünü
 təsdiqlə.
+
+## Razor — "Bare" Şərtli Atribut (`@(...)` AD OLMADAN) = RZ1031 (27.10.2026, KRİTİK)
+
+`<option>`/`<input>` kimi tag-helper-hədəflənən bir elementdə, mövcud atributlardan
+SONRA **ad OLMADAN** birbaşa `@(...)` (və ya `@deyisenAdi`) yazmaq **RZ1031** verir:
+*«The tag helper 'option' must not have C# in the element's attribute declaration
+area.»* Real hadisə: Visual Studio Rebuild-də `FinNex.UI` build FAILED oldu,
+Paylaşımlar modulunun `_KateqoriyaSecim.cshtml:13` və `_HedefSecim.cshtml:11/14/37`
+sətirlərində:
+
+```cshtml
+❌ <option value="@k.Id" @(Model.KateqoriyaId == k.Id ? "selected" : "")>@k.Ad</option>
+❌ <input type="radio" ... value="true" @(hamisinaGonder ? "checked" : "")>
+❌ <input class="form-check-input" ... value="@isci.Id" id="pyIsci_@isci.Id" @checkedAttr>
+```
+
+Bu, köhnə ("əsas-Razor") səhifələrdə bəzən işləyən bir qısayoldur, amma
+tag-helper-hədəflənən elementlərdə (CLAUDE.md-dəki "Şərhdə Tag Helper Adı" siyahısı:
+`form, input, select, textarea, a, img, label, link, script, environment`) Razor
+atributu AD-DƏYƏR cütü kimi parse etməyə çalışır — adsız, floating bir C# ifadəsi
+bu parsinqi sındırır.
+
+**Düzgün üsul — Razor-un ÖZ "şərtli atribut" mexanizmi, atribut AD-I ilə:**
+
+```cshtml
+✅ <option value="@k.Id" selected="@(Model.KateqoriyaId == k.Id ? "selected" : null)">@k.Ad</option>
+✅ <input type="radio" ... value="true" checked="@hamisinaGonder">
+✅ <input ... value="@isci.Id" id="pyIsci_@isci.Id" checked="@secili">
+```
+
+Razor-un daxili qaydası: atribut dəyəri **TƏK bir ifadədirsə** və nəticə `bool`-dursa
+(`false` → atribut TAMAMƏN ATILIR, `true` → `attr="attr"` kimi render olunur) **və ya**
+`string`-dirsə və `null`-dursa (atribut atılır) — bu, `checked`/`selected`/`disabled`/
+`readonly`/`multiple` kimi HTML boolean atributları üçün təhlükəsiz, standart yoldur.
+**`""` (boş sətir) ATILMIR** — `checked=""` kimi render olunur ki, HTML-də bu, "işarəli"
+sayılır (atributun VARLIĞI kifayətdir, dəyəri yox) — ona görə `"checked"/""` string
+cütü əvəzinə **`bool` dəyişən** (`checked="@boolDeyisen"`) işlətmək daha təhlükəsizdir,
+ya da string/`null` cütü (boş sətir YOX, `null`) istifadə et.
+
+**Qayda:**
+- Tag-helper-hədəflənən bir elementdə şərtli atribut yazanda HƏMİŞƏ **`atribut-adı=
+  "@(...)"`** formasını işlət — heç vaxt adsız, floating `@(...)`/`@dəyişən` yazma.
+- Şərtli boolean HTML atributları (`checked`, `selected`, `disabled`, `readonly`)
+  üçün ən təhlükəsiz yol: dəyəri **`bool`** kimi hesablayıb birbaşa `attr="@boolIfade"`
+  yaz — `"checked"`/`""` string oyunundan çəkin (boş sətir "atribut var" deməkdir).
+- Bu sessiyada `dotnet build` mümkün olmadığı üçün bu bug yalnız istifadəçinin real
+  Visual Studio Rebuild-ində üzə çıxdı — "yalnız əl ilə yoxlanıldı" xəbərdarlığının
+  elə özünün nümunəsidir (mötərizə balansı bu cür sintaksis xətasını TUTMUR, çünki
+  RZ1031 Razor-un tag-helper parserinin SEMANTIK qaydasıdır, ümumi `{}`/`()` balansı
+  deyil).

@@ -10,7 +10,7 @@
             <option value="">— Seçilməyib —</option>
             @foreach (var k in kateqoriyalar)
             {
-                <option value="@k.Id" @(Model.KateqoriyaId == k.Id ? "selected" : "")>@k.Ad</option>
+                <option value="@k.Id" selected="@(Model.KateqoriyaId == k.Id ? "selected" : null)">@k.Ad</option>
             }
         </select>
         <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="pyYeniKatBtn" title="Yeni kateqoriya əlavə et">
