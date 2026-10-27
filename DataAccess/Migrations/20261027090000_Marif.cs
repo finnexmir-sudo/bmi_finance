@@ -166,7 +166,7 @@ namespace FinNex.DataAccess.Migrations
                         column: x => x.SualId,
                         principalTable: "MarifSuallar",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
