@@ -5,6 +5,7 @@ using FinNex.Application.Interfaces.Marif;
 using FinNex.Domain;
 using FinNex.Domain.Entities.AI;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.Marif;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -79,8 +80,17 @@ public class MarifController : Controller
     // Mənbəni üç yerdən birindən tapır: Daxili Qayda / Qanun Faylı / birbaşa mətn-yükləmə.
     [HttpPost]
     public async Task<IActionResult> SuallarHazirla(int? hrDaxiliQaydaId, int? hrQanunFaylId,
-        string? menbeMetn, int sualSayi, IFormFile? fayl)
+        string? menbeMetn, int sualSayi, IFormFile? fayl, string? sualNovu)
     {
+        // 27.10.2026 — generasiya anında tip seçimi: "coxsecimli"/"aciq" tək tipi
+        // sabitləyir, hər hansı başqa dəyər (boş, "qarisiq") qarışıq (default) deməkdir.
+        MarifSualTipi? yalnizTip = sualNovu?.Trim().ToLowerInvariant() switch
+        {
+            "coxsecimli" => MarifSualTipi.CoxSecimli,
+            "aciq" => MarifSualTipi.Acig,
+            _ => null
+        };
+
         string? metn = null;
         string? tempPath = null;
 
@@ -123,7 +133,7 @@ public class MarifController : Controller
                 return Json(new { ok = false, xeta = "Mənbə seçilməyib — qayda seçin, fayl yükləyin və ya mətn yapışdırın." });
             }
 
-            var netice = await _ai.SuallarHazirlaAsync(metn ?? "", sualSayi <= 0 ? 5 : sualSayi);
+            var netice = await _ai.SuallarHazirlaAsync(metn ?? "", sualSayi <= 0 ? 5 : sualSayi, yalnizTip);
             if (!netice.Success)
                 return Json(new { ok = false, xeta = netice.Message });
 

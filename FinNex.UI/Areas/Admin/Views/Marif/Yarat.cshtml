@@ -77,6 +77,14 @@
                     <label class="form-label small text-muted">Sual sayı</label>
                     <input type="number" id="mfSualSayi" class="form-control" value="5" min="1" max="15" style="width:100px">
                 </div>
+                <div class="col-auto">
+                    <label class="form-label small text-muted">Sual növü</label>
+                    <select id="mfSualNovu" class="form-select" style="width:190px">
+                        <option value="qarisiq" selected>Hər ikisi (qarışıq)</option>
+                        <option value="coxsecimli">Yalnız çoxseçimli</option>
+                        <option value="aciq">Yalnız yazılı (açıq)</option>
+                    </select>
+                </div>
                 <div class="col-auto d-flex align-items-end">
                     <button type="button" id="mfHazirlaBtn" class="btn btn-primary">
                         <span id="mfHazirlaSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
@@ -157,6 +165,7 @@
         const menbeTip = document.querySelector('input[name="mfMenbeTip"]:checked').value;
         const fd = new FormData();
         fd.append('sualSayi', $('mfSualSayi').value || '5');
+        fd.append('sualNovu', $('mfSualNovu').value || 'qarisiq');
 
         if (menbeTip === 'daxili') {
             const id = $('mfDaxiliQaydaId').value;

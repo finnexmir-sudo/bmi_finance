@@ -7050,3 +7050,48 @@ sonra real brauzerdə yoxlamalıdır: başlığın indi sola yaxın, ikonlu/qutu
 göründüyünü, "N paylaşım" nişanının həmin qutunun sağında olduğunu, siyahının
 (filtr pill-ləri + post kartı) da eyni sol kənara bağlı başladığını, geniş
 monitorda artıq boşluğun YALNIZ sağda qaldığını (iki tərəfə bölünmədiyini).
+
+## Daxili Maarifləndirmə — Generasiya Anında Sual Növü Seçimi (28.10.2026)
+
+İstifadəçi sualı: *"men sual hazirlatdirarken, secme sansim varki ancaq
+variantli olsun ve ya yazili?"* — cavab o anda **XEYR** idi: AI həmişə default
+50/50 qarışıq (yarısı çoxseçimli, yarısı açıq) qaytarırdı, yeganə yol
+generasiyadan SONRA Admin "Yarat" ekranında hər sualı TƏK-TƏK əl ilə dəyişmək
+idi. İstifadəçi: *"yoxdursa onuda hazirla"* — generasiya ANINDA seçim əlavə
+olundu.
+
+**Üç qat, "Metod İmzası Dəyişikliyi" qaydasına uyğun eyni anda yeniləndi:**
+
+1. `IMarifAiService.SuallarHazirlaAsync` — yeni, **nullable** `MarifSualTipi?
+   yalnizTip = null` parametri (nullable DEFAULT dəyəri qoruyur — köhnə davranış
+   dəyişmir, `null` = əvvəlki "qarışıq" istək).
+2. `MarifAiService` — `yalnizTip`-ə görə AI-yə göndərilən mətn dəyişir
+   ("SUALLARIN HAMISI çoxseçimli olsun" / "...açıq/yazılı olsun" / köhnə
+   50/50 mətni). **Qoruyucu süzgəc əlavə edildi** — AI tələbə tam əməl
+   etməyib qarışıq tip qaytarsa (bu, YALNIZ tövsiyədir, zəmanət deyil — eyni
+   "ağlabatan səhv" prinsipinin əksi, burada etibarsız tərəf AI-nin özüdür),
+   `Parse()`-dan sonra `yalnizTip` veriləndə uyğun gəlməyən suallar **atılır**;
+   hamısı atılsa (nəticə boş) açıq `Result.Fail` qaytarılır — yarım-qarışıq
+   dəst admin-ə göstərilmir.
+3. `MarifController.SuallarHazirla` — yeni `string? sualNovu` form sahəsi
+   (`"coxsecimli"`/`"aciq"`/hər hansı başqa dəyər və ya boş = qarışıq),
+   `MarifSualTipi?`-ə map olunub servisə ötürülür.
+
+**Görüntü — `Yarat.cshtml`:** "Sual sayı" xanasının yanına `<select
+id="mfSualNovu">` (Hər ikisi / Yalnız çoxseçimli / Yalnız yazılı, defolt
+"Hər ikisi") əlavə olundu, `fd.append('sualNovu', ...)` ilə `SuallarHazirla`
+AJAX çağırışına ötürülür.
+
+⚠️ **Yalnız GENERASİYA anında seçimdir — generasiyadan SONRA admin istədiyi
+kimi hər sualın tipini hələ də dəyişə/sil/əlavə edə bilər** (bu, əvvəldən
+mövcud idi, toxunulmadı). İkisi bir-birini əvəz etmir: generasiya seçimi
+"AI-dən nə istə" sualına cavabdır, əl ilə redaktə isə "nəticədə nə qalsın"
+sualına.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, interfeys↔implementasiya↔controller↔
+view dörd qatı əl ilə tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real ssenari ilə yoxlamalıdır: "Yalnız çoxseçimli" seçib
+sual hazırlat → bütün suallar çoxseçimli gəlsin; "Yalnız yazılı" seçib
+hazırlat → hamısı açıq/yazılı gəlsin; "Hər ikisi" (default) əvvəlki qarışıq
+davranışı qorusun.

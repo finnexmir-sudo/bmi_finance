@@ -87,7 +87,7 @@ yox, QAYDANI bilərək tapmalıdır:
   ]
 }";
 
-        public async Task<Result<List<MarifSualDto>>> SuallarHazirlaAsync(string menbeMetn, int sualSayi)
+        public async Task<Result<List<MarifSualDto>>> SuallarHazirlaAsync(string menbeMetn, int sualSayi, MarifSualTipi? yalnizTip = null)
         {
             if (string.IsNullOrWhiteSpace(_apiKey))
                 return Result<List<MarifSualDto>>.Fail("AI açarı konfiqurasiya edilməyib.");
@@ -102,7 +102,16 @@ yox, QAYDANI bilərək tapmalıdır:
                 ? menbeMetn[..MaxKontekstChar] + "\n\n[... sənəd kəsildi, həcm limiti aşıldı ...]"
                 : menbeMetn;
 
-            var userMessage = $@"Aşağıdakı mətndən {sualSayi} sual hazırla (yarısı çoxseçimli, yarısı açıq — tam bərabər bölünmürsə çoxseçimli üstünlük tutsun):
+            // 27.10.2026 — Admin generasiya anında tipi sabitləyə bilər (yalnız çoxseçimli
+            // / yalnız açıq); yalnizTip == null-da əvvəlki kimi qarışıq (50/50) istənir.
+            var tipTelebi = yalnizTip switch
+            {
+                MarifSualTipi.CoxSecimli => $"{sualSayi} sual hazırla — SUALLARIN HAMISI çoxseçimli (tip=\"coxsecimli\") olsun, heç biri açıq sual olmasın",
+                MarifSualTipi.Acig => $"{sualSayi} sual hazırla — SUALLARIN HAMISI açıq/yazılı (tip=\"aciq\") olsun, heç biri çoxseçimli olmasın",
+                _ => $"{sualSayi} sual hazırla (yarısı çoxseçimli, yarısı açıq — tam bərabər bölünmürsə çoxseçimli üstünlük tutsun)"
+            };
+
+            var userMessage = $@"Aşağıdakı mətndən {tipTelebi}:
 
 --- MƏTN BAŞLAYIR ---
 {truncated}
@@ -115,6 +124,19 @@ yox, QAYDANI bilərək tapmalıdır:
             var suallar = Parse(raw);
             if (suallar == null || suallar.Count == 0)
                 return Result<List<MarifSualDto>>.Fail("AI cavabı anlaşılmadı (JSON formatı gözlənildiyi kimi deyil). Yenidən cəhd edin.");
+
+            // Qoruyucu süzgəc — AI bəzən tələbə tam əməl etməyib qarışıq tip qaytara bilər
+            // (bu, YALNIZ TÖVSİYƏDİR, zəmanət DEYİL — eyni "ağlabatan səhv" prinsipinin
+            // əksi: burada etibarsız olan tərəf bizik, AI-yə güvəndiyimiz üçün). Tip
+            // sabitlənibsə uyğun gəlməyən sualları ATIRIQ — admin-ə yarım-qarışıq sual
+            // dəsti göstərməkdənsə, az sayda, amma tipə dəqiq uyğun sual göstərmək
+            // daha yaxşıdır.
+            if (yalnizTip.HasValue)
+            {
+                suallar = suallar.Where(s => s.Tip == yalnizTip.Value).ToList();
+                if (suallar.Count == 0)
+                    return Result<List<MarifSualDto>>.Fail("AI istənilən tipdə sual qaytarmadı. Yenidən cəhd edin.");
+            }
 
             return Result<List<MarifSualDto>>.Ok(suallar);
         }
