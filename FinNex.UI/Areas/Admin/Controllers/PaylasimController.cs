@@ -49,6 +49,7 @@ public class PaylasimController : Controller
             : new List<int>();
 
         await HedefViewBagDoldurAsync(sonSecilmisler, hamisinaGonder: true);
+        await KateqoriyaViewBagDoldurAsync();
         return View(new PaylasimYaratDto());
     }
 
@@ -68,6 +69,7 @@ public class PaylasimController : Controller
         {
             TempData["Error"] = netice.Message;
             await HedefViewBagDoldurAsync(dto.SeciliIsciIdler, dto.HamisinaGonder);
+            await KateqoriyaViewBagDoldurAsync();
             return View(dto);
         }
 
@@ -89,13 +91,16 @@ public class PaylasimController : Controller
 
         ViewData["Title"] = "Paylaşımı Redaktə Et";
         ViewBag.Id = id;
+        ViewBag.Qaralamadir = post.Qaralamadir;
         await HedefViewBagDoldurAsync(movcudHedef, hamisinaGonder: movcudHedef.Count == 0);
+        await KateqoriyaViewBagDoldurAsync();
         return View(new PaylasimYaratDto
         {
             Basliq = post.Basliq,
             MetnHtml = post.MetnHtml,
             HamisinaGonder = movcudHedef.Count == 0,
-            SeciliIsciIdler = movcudHedef
+            SeciliIsciIdler = movcudHedef,
+            KateqoriyaId = post.KateqoriyaId
         });
     }
 
@@ -115,10 +120,33 @@ public class PaylasimController : Controller
         if (!netice.Success)
         {
             ViewBag.Id = id;
+            var cariPost = await _paylasim.DetailGetirAsync(id);
+            ViewBag.Qaralamadir = cariPost?.Qaralamadir ?? false;
             await HedefViewBagDoldurAsync(dto.SeciliIsciIdler, dto.HamisinaGonder);
+            await KateqoriyaViewBagDoldurAsync();
             return View(dto);
         }
         return RedirectToAction(nameof(Index));
+    }
+
+    // ── POST /Admin/Paylasim/Payla/5 — qaralamanı dərc edir ──────────
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Payla(int id)
+    {
+        var netice = await _paylasim.PaylaAsync(id);
+        TempData[netice.Success ? "Success" : "Error"] = netice.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── POST /Admin/Paylasim/KateqoriyaYarat (AJAX, "+ Yeni") ────────
+    [HttpPost]
+    public async Task<IActionResult> KateqoriyaYarat(string ad)
+    {
+        var netice = await _paylasim.KateqoriyaYaratAsync(ad);
+        if (!netice.Success)
+            return Json(new { ok = false, xeta = netice.Message });
+
+        return Json(new { ok = true, id = netice.Data!.Id, ad = netice.Data.Ad });
     }
 
     /// <summary>Yarat/Redakte formunun hədəf-seçim siyahısını hazırlayır.</summary>
@@ -127,6 +155,12 @@ public class PaylasimController : Controller
         ViewBag.Isciler = await _paylasim.AktivIscilerAsync();
         ViewBag.SecilmisIdler = secilmisIdler ?? new List<int>();
         ViewBag.HamisinaGonder = hamisinaGonder;
+    }
+
+    /// <summary>Yarat/Redakte formunun kateqoriya seçim siyahısını hazırlayır.</summary>
+    private async Task KateqoriyaViewBagDoldurAsync()
+    {
+        ViewBag.Kateqoriyalar = await _paylasim.AktivKateqoriyalarAsync();
     }
 
     // ── POST /Admin/Paylasim/AktivlikDeyis/5 ────────────────────────

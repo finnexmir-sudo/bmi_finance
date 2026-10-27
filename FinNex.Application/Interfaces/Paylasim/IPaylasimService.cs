@@ -37,5 +37,14 @@ namespace FinNex.Application.Interfaces.Paylasim
 
         /// <summary>Bu adminin "Seçilmiş işçilər" rejimində SON istifadə etdiyi siyahı — Yarat ekranında əvvəlcədən işarələmək üçün.</summary>
         Task<List<int>> SonHedefKitlesiAsync(int adminAppUserId);
+
+        /// <summary>Kateqoriya seçim siyahısı — yalnız aktiv, ada görə sıralanmış.</summary>
+        Task<List<PaylasimKateqoriyaDto>> AktivKateqoriyalarAsync();
+
+        /// <summary>Formadan "+ Yeni" ilə sürətli kateqoriya yaratma. Eyni adda aktiv kateqoriya varsa, onu qaytarır (dublikat yaratmır).</summary>
+        Task<Result<PaylasimKateqoriyaDto>> KateqoriyaYaratAsync(string ad);
+
+        /// <summary>Qaralamanı dərc edir — Qaralamadir=false, Aktivdir=true.</summary>
+        Task<Result> PaylaAsync(int id);
     }
 }

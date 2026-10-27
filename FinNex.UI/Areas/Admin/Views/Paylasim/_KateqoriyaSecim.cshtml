@@ -1,0 +1,54 @@
+@model FinNex.Application.DTOs.Paylasim.PaylasimYaratDto
+@{
+    var kateqoriyalar = (List<FinNex.Application.DTOs.Paylasim.PaylasimKateqoriyaDto>)ViewBag.Kateqoriyalar;
+}
+
+<div class="mb-3">
+    <label class="form-label small text-muted d-block mb-2">Kateqoriya</label>
+    <div class="d-flex gap-2">
+        <select name="KateqoriyaId" id="pyKateqoriya" class="form-select">
+            <option value="">— Seçilməyib —</option>
+            @foreach (var k in kateqoriyalar)
+            {
+                <option value="@k.Id" @(Model.KateqoriyaId == k.Id ? "selected" : "")>@k.Ad</option>
+            }
+        </select>
+        <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="pyYeniKatBtn" title="Yeni kateqoriya əlavə et">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+(function () {
+    document.getElementById('pyYeniKatBtn').addEventListener('click', async function () {
+        const ad = prompt('Yeni kateqoriyanın adı:');
+        if (!ad || !ad.trim()) return;
+
+        try {
+            const fd = new FormData();
+            fd.append('ad', ad.trim());
+            const resp = await fetch('@Url.Action("KateqoriyaYarat")', { method: 'POST', body: fd });
+            const data = await resp.json();
+
+            if (data.ok) {
+                const sel = document.getElementById('pyKateqoriya');
+                const movcud = Array.from(sel.options).find(o => o.value == String(data.id));
+                if (movcud) {
+                    movcud.selected = true;
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = data.id;
+                    opt.textContent = data.ad;
+                    opt.selected = true;
+                    sel.appendChild(opt);
+                }
+            } else {
+                alert(data.xeta || 'Kateqoriya yaradılmadı.');
+            }
+        } catch {
+            alert('Şəbəkə xətası — kateqoriya yaradılmadı.');
+        }
+    });
+})();
+</script>

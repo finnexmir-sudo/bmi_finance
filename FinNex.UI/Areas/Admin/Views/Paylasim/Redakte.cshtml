@@ -25,24 +25,49 @@
     <form asp-action="Redakte" asp-route-id="@id" method="post" id="pySealForm">
         @Html.AntiForgeryToken()
 
-        <div class="card border-0 shadow-sm rounded-4 mb-3">
-            <div class="card-body">
-                <label class="form-label small text-muted">Başlıq</label>
-                <input type="text" name="Basliq" class="form-control form-control-lg mb-4"
-                       value="@Model.Basliq" maxlength="300" required>
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 mb-3">
+                    <div class="card-body">
+                        <label class="form-label small text-muted">Başlıq</label>
+                        <input type="text" name="Basliq" class="form-control form-control-lg mb-4"
+                               value="@Model.Basliq" maxlength="300" required>
 
-                <label class="form-label small text-muted">Məzmun</label>
-                <div id="pyEditor" style="min-height:320px"></div>
-                <input type="hidden" name="MetnHtml" id="pyMetnHtml">
+                        <label class="form-label small text-muted">Məzmun</label>
+                        <div id="pyEditor" style="min-height:320px"></div>
+                        <input type="hidden" name="MetnHtml" id="pyMetnHtml">
+                    </div>
+                </div>
             </div>
-        </div>
 
-        @await Html.PartialAsync("_HedefSecim")
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Paylaşım ayarları</h6>
 
-        <div class="d-flex justify-content-end">
-            <button type="submit" class="btn btn-primary btn-lg" id="pySaxlaBtn">
-                <i class="bi bi-check-lg me-1"></i>Yadda saxla
-            </button>
+                        @await Html.PartialAsync("_KateqoriyaSecim", Model)
+                        @await Html.PartialAsync("_HedefSecim")
+
+                        <div class="d-grid gap-2 mt-3">
+                            @if ((bool)ViewBag.Qaralamadir)
+                            {
+                                <button type="submit" name="QaralamaOlaraqSaxla" value="false" class="btn btn-primary">
+                                    <i class="bi bi-send-fill me-1"></i>Paylaş
+                                </button>
+                                <button type="submit" name="QaralamaOlaraqSaxla" value="true" class="btn btn-outline-secondary">
+                                    <i class="bi bi-file-earmark-text me-1"></i>Qaralama olaraq saxla
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i>Yadda saxla
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </form>
 </div>

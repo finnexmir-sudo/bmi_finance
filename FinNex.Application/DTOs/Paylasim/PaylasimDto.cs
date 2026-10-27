@@ -12,6 +12,12 @@ namespace FinNex.Application.DTOs.Paylasim
 
         /// <summary>0 — "Hamısına" göndərilib. &gt;0 — yalnız bu sayda işçiyə hədəflənib.</summary>
         public int HedefSayi { get; set; }
+
+        public int? KateqoriyaId { get; set; }
+        public string? KateqoriyaAdi { get; set; }
+
+        /// <summary>true — hələ "Qaralama"dır, heç kimə görünmür (bax Melumat.Qaralamadir).</summary>
+        public bool Qaralamadir { get; set; }
     }
 
     public class PaylasimYaratDto
@@ -22,6 +28,15 @@ namespace FinNex.Application.DTOs.Paylasim
         /// <summary>true (defolt) — hamısına görünür. false-dursa `SeciliIsciIdler` məcburidir.</summary>
         public bool HamisinaGonder { get; set; } = true;
         public List<int> SeciliIsciIdler { get; set; } = new();
+
+        public int? KateqoriyaId { get; set; }
+
+        /// <summary>
+        /// true — "Qaralama saxla" düyməsi (heç kimə görünmür). false — "Paylaş"
+        /// (dərhal dərc olunur). Redaktədə artıq paylaşılmış (Qaralama DEYİL) postda
+        /// bu sahə oxunmur — bax PaylasimService.YenileAsync.
+        /// </summary>
+        public bool QaralamaOlaraqSaxla { get; set; }
     }
 
     /// <summary>Hədəf-seçim siyahısında bir işçi sətri — anonim tip/dynamic əvəzinə.</summary>
@@ -30,5 +45,11 @@ namespace FinNex.Application.DTOs.Paylasim
         public int Id { get; set; }
         public string Ad { get; set; } = "";
         public string Soyad { get; set; } = "";
+    }
+
+    public class PaylasimKateqoriyaDto
+    {
+        public int Id { get; set; }
+        public string Ad { get; set; } = "";
     }
 }

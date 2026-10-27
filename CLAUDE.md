@@ -6577,3 +6577,75 @@ yoxlamalıdır: "Seçilmiş işçilər" ilə 2-3 nəfərə paylaşım göndər �
 onların `/User/Paylasim`-də gördüyünü, digərlərinin görmədiyini, Admin
 siyahısında "N işçi" nişanının göründüyünü, yeni paylaşım yaradanda
 əvvəlki seçimin avtomatik işarəli gəldiyini təsdiqləməli.
+
+### Paylaşımlar — Kateqoriya + Qaralama/Paylaş Axını, GPT Mockup-una Uyğun Redizayn (27.10.2026)
+
+İstifadəçi ChatGPT-də hazırlanmış "Yeni Paylaşım" və "Paylaşımlar" lenti mockup-larını
+göstərdi (*"gpt nin tesviri mence yaxsi idi"*). Mockup-da bizdə olmayan 5 yeni şey var idi:
+Kateqoriya, Qısa təsvir, ayrıca Üz qabığı şəkli, Qaralama/Paylaş axını, Axtarış+"Digər
+paylaşımlar"+"Yadda saxla". Model öz tövsiyəsini verdi (*"bu, pilot modul, hamısı lazım
+deyil"*) — istifadəçi **Kateqoriya + Qaralama/Paylaş**-ı seçdi, Qısa təsvir/Üz qabığı
+(Quill-in artıq etdiyini təkrarlayır) və Axtarış/Yadda saxla/Digər paylaşımlar (say az
+olanda mənasız) buraxıldı.
+
+**Kateqoriya — açar-cədvəl** (`PaylasimKateqoriyasi`, `KocurmeSenedNovleri` ilə EYNİ
+naxış): migration `20261027190000_PaylasimKateqoriyaQaralama.cs` 4 başlanğıc dəyərlə
+**seed olunur** (`migrationBuilder.Sql(INSERT)` — `InsertData` YOX): Bankçılıq, Maliyyə
+tarixi, Təhlükəsizlik, Digər — bu, boş başlayan açar-cədvəllərdən (KocurmeSenedNovleri)
+QƏSDƏN FƏRQLİDİR, çünki istifadəçi mockup-dakı konkret adları göstərmişdi, boş dropdown
+ilə başlamaq addım geri olardı. Admin "+ Yeni" düyməsi ilə (AJAX, `KateqoriyaYarat`
+endpoint) sərbəst əlavə edə bilir — eyni ad artıq varsa (aktiv), dublikat yaratmır,
+mövcudu qaytarır.
+
+**Qaralama/Paylaş — `Melumat.Qaralamadir` (yeni bool), `Aktivdir`-dən AYRI.**
+`Aktivdir` YALNIZ artıq dərc olunmuş postun Göstər/Gizlət vəziyyətini idarə edir;
+`Qaralamadir=true` isə "hələ HEÇ KİMƏ görünməyib" deməkdir — iki bayraq qarışdırılsaydı
+(məs. tək `Aktivdir`-dən "qaralama" da ifadə etməyə çalışsaydıq) bir qaralamanın
+"Gizlədilmiş paylaşılmış post" ilə eyni sayılması riski olardı.
+
+- **Yarat formu** — iki submit düyməsi, EYNİ `name="QaralamaOlaraqSaxla"`, fərqli
+  `value` (`"false"`=Paylaş, `"true"`=Qaralama saxla) — standart HTML submit-button
+  davranışı: yalnız basılan düymənin ad/dəyər cütü POST-a düşür, əlavə JS/hidden sahə
+  lazım deyil.
+- **Redaktə formu** — `ViewBag.Qaralamadir` (DB-dəki CARİ dəyər) hansı düymə dəstinin
+  göstəriləcəyini həll edir: hələ Qaralamadırsa → eyni iki düymə; artıq paylaşılıbsa →
+  tək "Yadda saxla" (bu halda `dto.QaralamaOlaraqSaxla` POST-a heç düşmür, servis onu
+  oxumur da — `melumat.Qaralamadir` DB-dən fetch edilən CARİ dəyər `true` olmadıqca
+  servis bu sahəyə toxunmur).
+- `PaylaAsync(id)` — yeni, ayrıca endpoint (`POST /Admin/Paylasim/Payla/5`), Admin
+  siyahısında qaralama kartının "Gizlət/Göstər" əvəzinə göstərdiyi **"Paylaş"** düyməsi
+  bunu çağırır. Artıq paylaşılmış postda çağırılarsa (UI-dan mümkün deyil, amma
+  defensiv) `Result.Fail("Bu paylaşım artıq dərc olunub.")` — səssiz no-op YOX.
+
+**`AktivLentAsync` (işçi lenti) indi `!x.Qaralamadir`-i də yoxlayır** — `Aktivdir`
+default `!dto.QaralamaOlaraqSaxla` ilə təyin olunduğu üçün nəzəri olaraq ehtiyac
+yoxdur (qaralama heç vaxt `Aktivdir=true` olmur), amma ikinci qoruyucu kimi saxlanıldı
+— eyni prinsip "Aktiv ≠ tam dəyərli" (Qara Jeton) qaydasının bu formasıdır: bir
+bayrağa güvənmək əvəzinə hər iki şərti aydın yazmaq.
+
+**Görüntü — `_KateqoriyaSecim.cshtml` yeni partial**, `_HedefSecim.cshtml` ilə
+birlikdə `Yarat.cshtml`/`Redakte.cshtml`-in YENİ iki-sütunlu (`col-lg-8` məzmun,
+`col-lg-4` "Paylaşım ayarları" sidebar) düzümünə köçürüldü. `_HedefSecim.cshtml`-in
+ÖZ `<div class="card">` örtüyü SİLİNDİ (əvvəl müstəqil kart idi) — indi sidebar-ın
+ÖZ kartının içindədir, iki iç-içə kart görünməsin deyə.
+
+**Admin siyahısında** üç-vəziyyətli nişan (Qaralama/Aktiv/Gizli) + kateqoriya nişanı.
+**İşçi lentində** kateqoriya nişanı (kart başlığının sağında) + **client-side
+filtr pill-ləri** ("Hamısı" + mövcud postlarda rast gəlinən kateqoriyalar) — server
+sorğusu YOX, sadəcə `.py-card[data-kat]`-ə görə JS `style.display` keçidi (say az
+olduğu üçün AJAX/server-side axtarış əsaslandırılmır, istifadəçi ilə razılaşmış
+əhatəyə uyğun).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNUR, DAVRANIŞ DƏYİŞMİR** — mövcud paylaşımların `KateqoriyaId`
+`null`, `Qaralamadir` `false` (sütun defolt dəyəri) olaraq qalır — onlar indi də
+"Aktiv, kateqoriyasız" kimi görünməyə davam edir, heç biri qəfil "Qaralama"ya düşmür.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, JS `node -c` ilə hər iki yeni script bloku, interfeys↔
+implementasiya↔çağıran üç qatı əl ilə tutuşduruldu). İstifadəçi Visual Studio-da
+**Rebuild All**, `Update-Database`, sonra real ssenari ilə yoxlamalıdır: yeni
+paylaşım "Qaralama saxla" ilə göndər → heç kimə görünmədiyini, Admin siyahısında
+"Qaralama" nişanı + "Paylaş" düyməsi olduğunu təsdiqlə; "Paylaş"a bas → işçi
+lentində göründüyünü yoxla; "+ Yeni" ilə yeni kateqoriya yarat, dropdown-da
+dərhal seçili gəldiyini, işçi lentindəki filtr pill-lərinin düzgün süzdüyünü
+təsdiqlə.

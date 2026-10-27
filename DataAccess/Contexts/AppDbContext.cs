@@ -188,6 +188,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Melumat> Melumatlar { get; set; }
     public DbSet<MelumatHedef> MelumatHedefler { get; set; }
     public DbSet<PaylasimSonHedefKitlesi> PaylasimSonHedefKitlesi { get; set; }
+    public DbSet<PaylasimKateqoriyasi> PaylasimKateqoriyalari { get; set; }
 
     // =====================
     // Motivasiya / Jeton Modulu

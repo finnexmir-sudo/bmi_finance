@@ -30,6 +30,7 @@ namespace FinNex.Application.Services.Paylasim
         {
             var lista = await _uow.Repository<Melumat>().Query().AsNoTracking()
                 .Include(x => x.GonderenAppUser)
+                .Include(x => x.Kateqoriya)
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
@@ -48,7 +49,8 @@ namespace FinNex.Application.Services.Paylasim
 
             var lista = await _uow.Repository<Melumat>().Query().AsNoTracking()
                 .Include(x => x.GonderenAppUser)
-                .Where(x => x.Aktivdir &&
+                .Include(x => x.Kateqoriya)
+                .Where(x => x.Aktivdir && !x.Qaralamadir &&
                     (!hedefRepo.Query().Any(h => h.MelumatId == x.Id) ||
                      hedefRepo.Query().Any(h => h.MelumatId == x.Id && h.IsciId == isciId)))
                 .OrderByDescending(x => x.YaradilmaTarixi)
@@ -62,6 +64,7 @@ namespace FinNex.Application.Services.Paylasim
         {
             var m = await _uow.Repository<Melumat>().Query().AsNoTracking()
                 .Include(x => x.GonderenAppUser)
+                .Include(x => x.Kateqoriya)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             return m == null ? null : Map(m);
@@ -77,7 +80,9 @@ namespace FinNex.Application.Services.Paylasim
                 Basliq = dto.Basliq.Trim(),
                 MetnHtml = _sanitizer.Sanitize(dto.MetnHtml),
                 GonderenAppUserId = appUserId,
-                Aktivdir = true
+                KateqoriyaId = dto.KateqoriyaId,
+                Qaralamadir = dto.QaralamaOlaraqSaxla,
+                Aktivdir = !dto.QaralamaOlaraqSaxla
             };
 
             await _uow.Repository<Melumat>().YaratAsync(melumat);
@@ -99,6 +104,17 @@ namespace FinNex.Application.Services.Paylasim
 
             melumat.Basliq = dto.Basliq.Trim();
             melumat.MetnHtml = _sanitizer.Sanitize(dto.MetnHtml);
+            melumat.KateqoriyaId = dto.KateqoriyaId;
+
+            // Yalnız HƏLƏ QARALAMA olan post Paylaş/Qaralama saxla ilə vəziyyət dəyişə bilər —
+            // artıq bir dəfə paylaşılmış (Qaralamadir=false) postun Aktivdir-i YALNIZ
+            // Göstər/Gizlət düyməsi ilə idarə olunur, redaktə buna toxunmur.
+            if (melumat.Qaralamadir)
+            {
+                melumat.Qaralamadir = dto.QaralamaOlaraqSaxla;
+                if (!dto.QaralamaOlaraqSaxla) melumat.Aktivdir = true;
+            }
+
             await _uow.Repository<Melumat>().YenileAsync(melumat);
 
             await HedefleriTetbiqEtAsync(id, dto, appUserId);
@@ -155,6 +171,50 @@ namespace FinNex.Application.Services.Paylasim
                 .FirstOrDefaultAsync(x => x.AdminAppUserId == adminAppUserId);
 
             return ParseCsv(setir?.IsciIdlerCsv);
+        }
+
+        public async Task<List<PaylasimKateqoriyaDto>> AktivKateqoriyalarAsync()
+        {
+            return await _uow.Repository<PaylasimKateqoriyasi>().Query()
+                .Where(x => x.Aktivdir)
+                .OrderBy(x => x.Ad)
+                .Select(x => new PaylasimKateqoriyaDto { Id = x.Id, Ad = x.Ad })
+                .ToListAsync();
+        }
+
+        public async Task<Result<PaylasimKateqoriyaDto>> KateqoriyaYaratAsync(string ad)
+        {
+            var temiz = (ad ?? "").Trim();
+            if (string.IsNullOrEmpty(temiz))
+                return Result<PaylasimKateqoriyaDto>.Fail("Kateqoriya adı boş ola bilməz.");
+            if (temiz.Length > 150)
+                return Result<PaylasimKateqoriyaDto>.Fail("Kateqoriya adı 150 simvoldan uzun ola bilməz.");
+
+            // Eyni adda aktiv kateqoriya varsa dublikat yaratmır, mövcudu qaytarır.
+            var movcud = await _uow.Repository<PaylasimKateqoriyasi>().Query()
+                .FirstOrDefaultAsync(x => x.Aktivdir && x.Ad == temiz);
+            if (movcud != null)
+                return Result<PaylasimKateqoriyaDto>.Ok(new PaylasimKateqoriyaDto { Id = movcud.Id, Ad = movcud.Ad });
+
+            var yeni = new PaylasimKateqoriyasi { Ad = temiz, Aktivdir = true };
+            await _uow.Repository<PaylasimKateqoriyasi>().YaratAsync(yeni);
+            await _uow.YaddaSaxlaAsync();
+
+            return Result<PaylasimKateqoriyaDto>.Ok(new PaylasimKateqoriyaDto { Id = yeni.Id, Ad = yeni.Ad });
+        }
+
+        public async Task<Result> PaylaAsync(int id)
+        {
+            var melumat = await _uow.Repository<Melumat>().IdIleGetirAsync(id);
+            if (melumat == null) return Result.Fail("Paylaşım tapılmadı.");
+            if (!melumat.Qaralamadir) return Result.Fail("Bu paylaşım artıq dərc olunub.");
+
+            melumat.Qaralamadir = false;
+            melumat.Aktivdir = true;
+            await _uow.Repository<Melumat>().YenileAsync(melumat);
+            await _uow.YaddaSaxlaAsync();
+
+            return Result.Ok("Paylaşım dərc edildi.");
         }
 
         /// <summary>
@@ -235,7 +295,10 @@ namespace FinNex.Application.Services.Paylasim
             GonderenAdi = $"{m.GonderenAppUser.Ad} {m.GonderenAppUser.Soyad}",
             YaradilmaTarixi = m.YaradilmaTarixi,
             Aktivdir = m.Aktivdir,
-            HedefSayi = hedefSayi
+            HedefSayi = hedefSayi,
+            KateqoriyaId = m.KateqoriyaId,
+            KateqoriyaAdi = m.Kateqoriya?.Ad,
+            Qaralamadir = m.Qaralamadir
         };
     }
 }

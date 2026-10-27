@@ -13,6 +13,21 @@
         </div>
     </div>
 
+    @{
+        var kateqoriyalar = Model.Where(x => !string.IsNullOrEmpty(x.KateqoriyaAdi))
+            .Select(x => x.KateqoriyaAdi!).Distinct().OrderBy(x => x).ToList();
+    }
+    @if (Model.Any() && kateqoriyalar.Any())
+    {
+        <div class="py-filters" id="pyFilters">
+            <button type="button" class="py-filter-pill active" data-kat="">Hamısı</button>
+            @foreach (var k in kateqoriyalar)
+            {
+                <button type="button" class="py-filter-pill" data-kat="@k">@k</button>
+            }
+        </div>
+    }
+
     <div class="py-feed">
         @if (!Model.Any())
         {
@@ -24,13 +39,17 @@
             {
                 var bash = (p.GonderenAdi ?? "?").Trim();
                 var ilkHerf = bash.Length > 0 ? bash[0].ToString().ToUpperInvariant() : "?";
-                <div class="py-card">
+                <div class="py-card" data-kat="@p.KateqoriyaAdi">
                     <div class="py-card-head">
                         <div class="py-avatar">@ilkHerf</div>
                         <div class="py-head-info">
                             <div class="py-sender">@p.GonderenAdi</div>
                             <div class="py-date">@p.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-AZ"))</div>
                         </div>
+                        @if (!string.IsNullOrEmpty(p.KateqoriyaAdi))
+                        {
+                            <span class="py-kat-badge">@p.KateqoriyaAdi</span>
+                        }
                     </div>
                     <div class="py-title">@p.Basliq</div>
                     <div class="py-body">@Html.Raw(p.MetnHtml)</div>
@@ -42,4 +61,26 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/paylasim.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+    (function () {
+        var filtersEl = document.getElementById('pyFilters');
+        if (!filtersEl) return;
+
+        filtersEl.addEventListener('click', function (e) {
+            var btn = e.target.closest('.py-filter-pill');
+            if (!btn) return;
+
+            filtersEl.querySelectorAll('.py-filter-pill').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+
+            var kat = btn.dataset.kat || '';
+            document.querySelectorAll('.py-card').forEach(function (card) {
+                card.style.display = (!kat || card.dataset.kat === kat) ? '' : 'none';
+            });
+        });
+    })();
+    </script>
 }
