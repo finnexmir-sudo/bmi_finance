@@ -52,6 +52,9 @@ namespace FinNex.Application.DTOs.Marif
         public string DuzgunCavabMetni { get; set; } = "";
         public string IzahMetni { get; set; } = "";
 
+        /// <summary>İşçinin verdiyi cavab — CoxSecimli-də "B) tam mətn" formatında, Açıqda olduğu kimi.</summary>
+        public string VerilmisCavab { get; set; } = "";
+
         /// <summary>Bütün suallar bitibsə true — işçi ekrana "test tamamlandı" göstərə bilsin.</summary>
         public bool TestTamamlandi { get; set; }
     }

@@ -443,11 +443,16 @@ namespace FinNex.Application.Services.Marif
                 ? VariantMetni(sual, sual.DuzgunVariant)
                 : (sual.DuzgunCavabMetni ?? "");
 
+            var verilmisCavab = sual.Tip == MarifSualTipi.CoxSecimli
+                ? VariantMetni(sual, movcudCavab.IsciCavabi)
+                : movcudCavab.IsciCavabi;
+
             return Result<MarifCavabNeticeDto>.Ok(new MarifCavabNeticeDto
             {
                 DuzgunduMu = movcudCavab.DuzgunduMu,
                 DuzgunCavabMetni = duzgunMetn,
                 IzahMetni = sual.IzahMetni,
+                VerilmisCavab = verilmisCavab,
                 TestTamamlandi = tesyinat.TamamlandiMi
             });
         }

@@ -59,6 +59,7 @@
         }
         return `
             <div class="mb-2">${badge}</div>
+            <div class="mb-1 text-muted"><strong>Sizin cavabınız:</strong> ${esc(netice.verilmisCavab) || '<i>boş</i>'}</div>
             <div class="mb-2"><strong>Düzgün cavab:</strong> ${esc(netice.duzgunCavabMetni)}</div>
             <div class="text-muted small"><i class="bi bi-info-circle me-1"></i>${esc(netice.izahMetni)}</div>
             <button type="button" class="fn-btn fn-btn--primary fn-btn--sm mt-3" id="mfNovbeti">
