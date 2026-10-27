@@ -5552,6 +5552,147 @@ sətir-sətir yoxlanıldı). İstifadəçi Visual Studio-da **Rebuild All** ilə
 sonra YENİDƏN publish edib İlkanənin Oktyabr sətrinə baxmalıdır — bu dəfə
 kəsinti dəyişməlidir.
 
+## Daxili Maarifləndirmə — Pilot (27.10.2026)
+
+İstifadəçi tapşırığı: işçilərə daxili/xarici qaydalar üzərindən AI ilə bilik-yoxlama
+sualları hazırlayıb göndərmək. **Pilot mərhələsi — idarəetmə TAM Admin əlindədir**,
+avtomatik cədvəl/aralıqlı təkrar (spaced repetition) **QƏSDƏN YOXDUR**: Admin qayda
+atır → AI qaralama hazırlayır → Admin redaktə/təsdiq edir → seçdiyi işçilərə göndərir.
+
+**Axın:** `Admin → Daxili Maarifləndirmə → Yeni sual dəsti` → mənbə seç (aşağı bax) →
+"Suallar hazırla" (AI, bir dəfəlik çağırış) → hər sualı redaktə/sil/əlavə et → Başlıq
+yaz → "Yadda saxla" (Qaralama) → "İşçi seç və göndər" → işçi `/User/Marif`-də görür,
+sual-sual cavablayır, **hər cavabdan DƏRHAL SONRA** düzgün cavab+izah görünür.
+
+### Mənbə — ÜÇ seçim, kəşf olunmuş mövcud infrastruktur
+
+İlk araşdırmada (bu sessiyanın əvvəlində) səhvən "daxili qaydalar üçün ayrıca yer
+yoxdur" deyilmişdi — **bu YANLIŞ idi**. `HRDaxiliQayda` (`FinNex.Domain.Entities.AI`)
+artıq mövcuddur və `HRMeslehetciController`-in (`User/HRMeslehetci/Qayda*` action-ları)
+tam funksional modulu var — `Kod` (HR-001...), `Ad`, `Mezmun` (mətn), `Kateqoriya`,
+`Versiya`, `Aktiv`. Sadəcə diqqətdən qaçmışdı (ilk grep yalnız `HRQanunFayl`-ı tapdı).
+Mənbə indi bunu PRİORİTET sayır:
+
+| Seçim | Mənbə | Nə üçün |
+|---|---|---|
+| **Daxili Qayda** (defolt) | `HRDaxiliQaydalar.Mezmun` | HR-in öz strukturlaşdırılmış, versiyalı qaydaları |
+| **Qanun Faylı** | `HRQanunFayllar.MetnContent` | Xarici qanunvericilik (Əmək Məcəlləsi və s.), HR Məsləhətçinin artıq yüklədiyi fayllar |
+| **Mətn / Fayl** | Admin-in özünün yapışdırdığı mətn **və ya** yüklədiyi PDF/DOC/DOCX | Heç biri uyğun gəlmirsə — fayl YALNIZ mətn çıxarmaq üçün müvəqqəti saxlanır, DMS-ə YAZILMIR (yalnız çıxarılan mətn `MenbeMetn`-ə düşür) |
+
+`MarifSualSeti`-də hər üçü üçün nullable FK/mətn sahəsi var (`HRDaxiliQaydaId`,
+`HRQanunFaylId`, `MenbeMetn`) — yalnız biri doldurulur.
+
+### AI — yalnız GENERASİYA anında, bir dəfə
+
+`IMarifAiService.SuallarHazirlaAsync` (`FinNex.Application/Services/AI/MarifAiService.cs`)
+`HRMeslehetciService`-in Anthropic açarını/klientini (`"Anthropic"` adlı `HttpClient`,
+`Claude Opus 4.7`) işlədir — **ayrıca abunəlik/API açarı lazım deyil**. İstifadəçi ilə
+müzakirə edilən xərc (27.10.2026): orta sənəd (~40k token) üçün Opus ≈ $0,25, Haiku
+≈ $0,005 — bir dəfəlik olduğu üçün fərq əhəmiyyətsizdir, **Opus seçildi** (keyfiyyət
+üçün). Sual YARANDIQDAN sonra (Admin təsdiqləyib yadda saxlayandan sonra) AI BİR DAHA
+ÇAĞIRILMIR — işçiyə göstərmək, cavablamaq, nəticəni görmək hamısı statik DB oxumasıdır.
+
+AI-dən **ciddi JSON formatında** cavab istənir (`suallar: [{tip, sual, variantA-D,
+duzgunVariant, izah}]` və ya açıq sual üçün `duzgunCavab`); ```json kod bloku ilə
+əhatələnərsə `Parse()` təmizləyir. JSON anlaşılmazsa açıq xəta qaytarılır, boş/yarımçıq
+sual YARADILMIR.
+
+### Sual növü — HƏR İKİSİ (istifadəçi qərarı)
+
+`MarifSualTipi.CoxSecimli` (A/B/C/D, avtomatik qiymətləndirilir,
+`MarifSual.DuzgunVariant`) və `MarifSualTipi.Acig` (sərbəst mətn, qiymətləndirilmir —
+yalnız `DuzgunCavabMetni` "nümunəvi cavab" kimi göstərilir). AI-dən defolt YARISI
+çoxseçimli, YARISI açıq istənir — Admin "Yarat" ekranında istənilən sualın tipini
+dəyişə, silə, yeni əlavə edə bilər.
+
+### "Dərhal sonra izah" — hər sual AYRI-AYRI cavablanır
+
+İstifadəçi qərarı: işçi hər suala cavab verən kimi (bütün testi bitirmədən) düzgün
+cavab+izah görsün. `MarifController.CavabVerAsync` (User) **hər sual üçün AYRI AJAX
+çağırışı** qəbul edir, `Sual.cshtml`-in JS-i (`User/Views/Marif/Sual.cshtml`) sual-sual
+irəliləyir — bütöv formanı bir dəfəyə göndərmə YOXDUR.
+
+**`CavabVerAsync` İDEMPOTENTDİR** — eyni (TesyinatId, SualId) üçün ikinci çağırış
+yeni sətir YARATMIR, mövcud nəticəni geri qaytarır. Bu, həm "səhvən iki dəfə klikləmə"
+qoruyucusudur, həm də **artıq cavablanmış suala qayıdanda** (`Sual.cshtml` səhifəni
+yeniləsə) eyni nəticənin yenidən göstərilməsini təmin edir — `dto.Cavab` belə hallarda
+boş göndərilir, servis onu oxumur (`movcudCavab != null` qolu).
+
+### Bildiriş — `BildirisNovu.MarifTesyinatGonderildi` (yeni, 55)
+
+`MarifService.GonderAsync` seçilmiş işçilərin HƏR BİRİNƏ **ARDICIL** (`Task.WhenAll`
+YOX — bax CLAUDE.md "Bildirişlər — Paralel Yazı") bildiriş göndərir,
+`redirectUrl = "/User/Marif/Sual/{tesyinatId}"`. Artıq göndərilmiş işçi **təkrar
+əlavə olunmur** (`Query()` ilə mövcud `MarifTesyinat.IsciId` siyahısı yoxlanır) —
+"Əlavə işçiyə göndər" düyməsi mövcud göndərişi pozmadan YENİ işçi əlavə edə bilir.
+
+### Audit sahələri — ƏL İLƏ YAZILMIR
+
+Bu modulda `YaradanIcraciId`/`YenileyenIcraciId`/`SilenIcraciId` servis metodlarına
+**ayrıca `userId` parametri kimi ötürülmür** — `AppDbContext.SaveChangesAsync`
+(~sətir 1996) bunları HttpContext-dəki cari istifadəçiyə görə artıq ŞƏRTSİZ doldurur
+(bax "Qara Jeton — Dondurma" bölmələrindəki eyni interceptor). `IsciImtiyazService`
+kimi köhnə servislərin `userId`-i əl ilə TƏKRAR yazması — interceptor tərəfindən
+üstələndiyi üçün — artıq lazımsız clutter idi, bu modulda TƏKRARLANMADI.
+
+### Anonim tip + `dynamic` Razor view-da İŞLƏDİLMƏDİ — açıq DTO seçildi
+
+İlk versiyada dropdown/işçi siyahıları `Select(x => new { x.Id, x.Ad })` anonim
+tipi + Razor-da `@model IEnumerable<dynamic>` ilə göstərilirdi (layihədə HEÇ BİR
+presedenti yoxdur — yoxlanıldı, `grep "@model.*dynamic"` sıfır nəticə verdi). Bu,
+Razor view-ların ayrı assembly-də compile oluna biləcəyi hallarda anonim tipin
+`internal` görünürlüyünə görə runtime xətası riski daşıyır. Əvəzinə **açıq DTO-lar**
+yazıldı — `MarifIsciSecimDto` (Id/Ad/Soyad), `MarifMenbeSecimDto` (Id/Etiket,
+hazır formatlanmış mətnlə) — `FinNex.Application/DTOs/Marif/MarifSecimDto.cs`.
+
+### JSON case tələsi — Razor-da `JsonSerializer.Serialize` birbaşa çağırılanda
+
+`Sual.cshtml` sualları JS-ə ötürmək üçün `@Html.Raw(System.Text.Json.JsonSerializer.
+Serialize(Model.Suallar))` yazmışdı — **bu, MVC-nin `Json()` helper-indən FƏRQLİ
+defolt daşıyır**: `Json()` (bütün `fetch` cavablarında işlənən) ASP.NET Core-un
+qlobal `JsonOptions`-u ilə **camelCase** verir, amma `JsonSerializer.Serialize`
+birbaşa, options vermədən çağırılanda **PascalCase** (`SualId`, `VariantA`) qaytarır.
+JS isə `s.sualId`/`s.variantA` (camelCase) oxuyurdu — uyğunsuzluq `undefined`
+dəyərlərlə nəticələnərdi. Düzəliş: `Serialize`-ə açıq
+`new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }`
+verildi. **Qayda: Razor view-da `JsonSerializer.Serialize`-i HEÇ VAXT options
+vermədən çağırma** — MVC-nin öz `Json()` nəticəsi ilə eyni səhifədə qarışdırılırsa
+casing səssizcə fərqlənər.
+
+### Fayllar
+
+Entity-lər: `FinNex.Domain/Entities/Marif/` (`MarifSualSeti`, `MarifSual`,
+`MarifTesyinat`, `MarifCavab`, `MarifSetStatusu`, `MarifSualTipi`). Migration:
+`DataAccess/Migrations/20261027090000_Marif.cs` (əl ilə, `InsertData` YOXDUR).
+DTO-lar: `FinNex.Application/DTOs/Marif/`. Servislər:
+`FinNex.Application/Services/AI/MarifAiService.cs` (generasiya),
+`FinNex.Application/Services/Marif/MarifService.cs` (CRUD/axın). Controller-lər:
+`Areas/Admin/Controllers/MarifController.cs`, `Areas/User/Controllers/MarifController.cs`.
+
+### Açıq qalan (qəsdən bu mərhələdə edilmədi)
+
+- **Aralıqlı təkrar/cədvəl (spaced repetition) YOXDUR** — istifadəçi qərarı,
+  "ilk iş və sınaqdır" sözü ilə qəsdən pilot miqyasında saxlanıldı.
+- **`MarifService.SetYenileAsync`** (Qaralama statusunda redaktə) servis qatında
+  YAZILIB, amma heç bir controller action/view-a BAĞLANMAYIB — hazırkı axında
+  "Yarat" ekranının özü tam redaktə imkanı verdiyi üçün ehtiyac yox idi, gələcəkdə
+  "artıq saxlanmış qaralamaya qayıt" funksiyası əlavə olunsa hazır metoddur.
+  (Bu minillik "görünür deyil, çağırılmır" bir vəziyyətdir — gələcəkdə görünmür
+  əlavə edilsə, `MarifSualSeti.Suallar` navigasiyasının `Include` zamanı soft-delete
+  filtri yalnız KÖK sorğuya tətbiq olunduğunu, uşaq kolleksiyasına YOX olduğunu
+  nəzərə al — bax CLAUDE.md "EF Core — Filtered Include + Tracking Tələsi".)
+- **Nəticə analitikası** (hansı mövzuda çox səhv edilir, hansı şöbəyə əlavə izah
+  lazımdır) — `MarifTesyinatNeticeDto` yalnız tək-tək işçi nəticəsini göstərir,
+  toplu/şöbə-üzrə analitika YOXDUR.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, interfeys↔implementasiya↔DI↔çağıran dörd qatı əl ilə
+tutuşduruldu, namespace-lər hər faylın öz mənbəyindən təsdiqləndi). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: qayda
+seçib sual hazırlat → redaktə et → yadda saxla → işçi seçib göndər → işçi
+`/User/Marif`-də görüb sual-sual cavablasın, hər cavabdan sonra izahın dərhal
+göründüyünü təsdiqləsin.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:

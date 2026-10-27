@@ -4,6 +4,7 @@ using FinNex.Domain.Entities.AI;
 using FinNex.Domain.Entities.Avtopark;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.Marif;
 using FinNex.Domain.Entities.Mektub;
 using FinNex.Domain.Entities.Hevale;
 using FinNex.Domain.Entities.Emeliyyat;
@@ -244,6 +245,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<HRSohbetMesaj> HRSohbetMesajlar { get; set; }
     public DbSet<HRQanunFayl> HRQanunFayllar { get; set; }
     public DbSet<HRDaxiliQayda> HRDaxiliQaydalar { get; set; }
+    public DbSet<MarifSualSeti> MarifSualSetleri { get; set; }
+    public DbSet<MarifSual> MarifSuallar { get; set; }
+    public DbSet<MarifTesyinat> MarifTesyinatlar { get; set; }
+    public DbSet<MarifCavab> MarifCavablar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

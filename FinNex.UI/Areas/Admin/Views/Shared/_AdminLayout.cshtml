@@ -88,6 +88,12 @@
                 Sistem İcazələri
             </a>
 
+            <a class="nav-link @(currentController == "Marif" ? "active" : "")"
+               asp-area="Admin" asp-controller="Marif" asp-action="Index">
+                <i class="bi bi-mortarboard-fill"></i>
+                Daxili Maarifləndirmə
+            </a>
+
             <div class="nav-section">Kassa</div>
 
             <a class="nav-link @(currentController == "KassaTesdiqEdici" ? "active" : "")"

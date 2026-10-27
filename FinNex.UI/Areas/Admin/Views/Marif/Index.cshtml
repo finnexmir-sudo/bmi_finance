@@ -1,0 +1,94 @@
+@model IList<FinNex.Application.DTOs.Marif.MarifSualSetiListDto>
+@using FinNex.Domain.Entities.Marif
+
+@{
+    ViewData["Title"] = "Daxili Maarifləndirmə";
+
+    static string StatusBadge(MarifSetStatusu s) => s switch
+    {
+        MarifSetStatusu.Qaralama => "secondary",
+        MarifSetStatusu.Gonderilib => "success",
+        _ => "secondary"
+    };
+
+    static string StatusText(MarifSetStatusu s) => s switch
+    {
+        MarifSetStatusu.Qaralama => "Qaralama",
+        MarifSetStatusu.Gonderilib => "Göndərilib",
+        _ => s.ToString()
+    };
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-mortarboard-fill me-2 text-primary"></i>
+                Daxili Maarifləndirmə
+            </h3>
+            <small class="text-muted">Qayda üzrə sual dəsti hazırlayın, redaktə edin, işçilərə göndərin (pilot)</small>
+        </div>
+        <a asp-action="Yarat" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i>Yeni sual dəsti
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="admin-table-card">
+        <div class="table-responsive">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Başlıq</th>
+                        <th>Status</th>
+                        <th class="text-center">Sual sayı</th>
+                        <th class="text-center">Göndərilib</th>
+                        <th class="text-center">Tamamlayıb</th>
+                        <th>Yaradılma tarixi</th>
+                        <th class="text-end">Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-4">Hələ heç bir sual dəsti yaradılmayıb.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var s in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@s.Basliq</td>
+                                <td><span class="badge bg-@StatusBadge(s.Status) bg-opacity-10 text-@StatusBadge(s.Status) admin-badge">@StatusText(s.Status)</span></td>
+                                <td class="text-center">@s.SualSayi</td>
+                                <td class="text-center">@s.GonderilenIsciSayi</td>
+                                <td class="text-center">@s.TamamlayanIsciSayi</td>
+                                <td>@s.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="text-end">
+                                    <a asp-action="Detail" asp-route-id="@s.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>Bax
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

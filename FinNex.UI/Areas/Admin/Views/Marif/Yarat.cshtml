@@ -1,0 +1,317 @@
+@using FinNex.Application.DTOs.Marif
+@{
+    ViewData["Title"] = "Yeni Sual Dəsti";
+    var daxiliQaydalar = ViewBag.DaxiliQaydalar as IEnumerable<MarifMenbeSecimDto>;
+    var qanunFayllar = ViewBag.QanunFayllar as IEnumerable<MarifMenbeSecimDto>;
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="bi bi-magic me-2 text-primary"></i>Yeni Sual Dəsti</h3>
+            <small class="text-muted">Qayda seçin və ya yapışdırın — AI sual qaralaması hazırlayacaq, sonra redaktə edib yadda saxlayın</small>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Geri
+        </a>
+    </div>
+
+    <div id="mfError" class="alert alert-danger d-none"></div>
+
+    <!-- ── MƏNBƏ SEÇİMİ ────────────────────────────────────────────── -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">1. Mənbə</h6>
+
+            <div class="btn-group mb-3" role="group">
+                <input type="radio" class="btn-check" name="mfMenbeTip" id="mfTipDaxili" value="daxili" checked>
+                <label class="btn btn-outline-primary" for="mfTipDaxili">Daxili Qayda</label>
+
+                <input type="radio" class="btn-check" name="mfMenbeTip" id="mfTipQanun" value="qanun">
+                <label class="btn btn-outline-primary" for="mfTipQanun">Qanun Faylı</label>
+
+                <input type="radio" class="btn-check" name="mfMenbeTip" id="mfTipSerbest" value="serbest">
+                <label class="btn btn-outline-primary" for="mfTipSerbest">Mətn / Fayl</label>
+            </div>
+
+            <div id="mfMenbeDaxili">
+                <select id="mfDaxiliQaydaId" class="form-select">
+                    <option value="">— Qayda seçin —</option>
+                    @if (daxiliQaydalar != null)
+                    {
+                        foreach (var q in daxiliQaydalar)
+                        {
+                            <option value="@q.Id">@q.Etiket</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div id="mfMenbeQanun" class="d-none">
+                <select id="mfQanunFaylId" class="form-select">
+                    <option value="">— Fayl seçin —</option>
+                    @if (qanunFayllar != null)
+                    {
+                        foreach (var f in qanunFayllar)
+                        {
+                            <option value="@f.Id">@f.Etiket</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div id="mfMenbeSerbest" class="d-none">
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Fayl yüklə (PDF/DOC/DOCX)</label>
+                    <input type="file" id="mfFayl" class="form-control" accept=".pdf,.doc,.docx">
+                </div>
+                <div>
+                    <label class="form-label small text-muted">— və ya mətni birbaşa yapışdır —</label>
+                    <textarea id="mfSerbestMetn" class="form-control" rows="6" placeholder="Qayda mətnini bura yapışdırın..."></textarea>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-auto">
+                    <label class="form-label small text-muted">Sual sayı</label>
+                    <input type="number" id="mfSualSayi" class="form-control" value="5" min="1" max="15" style="width:100px">
+                </div>
+                <div class="col-auto d-flex align-items-end">
+                    <button type="button" id="mfHazirlaBtn" class="btn btn-primary">
+                        <span id="mfHazirlaSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                        <i class="bi bi-stars me-1"></i>Suallar hazırla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── REDAKTƏ BÖLMƏSİ (yalnız suallar hazırlananda görünür) ──────── -->
+    <div id="mfRedakteBlok" class="d-none">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">2. Başlıq</h6>
+                <input type="text" id="mfBasliq" class="form-control" maxlength="200" placeholder="Məs: Müştəri məlumatlarının qorunması">
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">3. Suallar — redaktə edib təsdiqləyin</h6>
+        <div id="mfSuallarContainer"></div>
+
+        <button type="button" id="mfYeniSualBtn" class="btn btn-outline-primary mb-4">
+            <i class="bi bi-plus-lg me-1"></i>Yeni sual əlavə et
+        </button>
+
+        <div class="d-flex justify-content-end mb-5">
+            <button type="button" id="mfSaxlaBtn" class="btn btn-success btn-lg">
+                <span id="mfSaxlaSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                <i class="bi bi-check-lg me-1"></i>Yadda saxla
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const TIP_COX = 1, TIP_ACIG = 2;
+    let state = { suallar: [] };
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => (s ?? '').toString()
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // ── Mənbə tipi dəyişəndə uyğun bloku göstər ──────────────────────
+    document.querySelectorAll('input[name="mfMenbeTip"]').forEach(r => {
+        r.addEventListener('change', () => {
+            $('mfMenbeDaxili').classList.toggle('d-none', r.value !== 'daxili' || !r.checked);
+            $('mfMenbeQanun').classList.toggle('d-none', r.value !== 'qanun' || !r.checked);
+            $('mfMenbeSerbest').classList.toggle('d-none', r.value !== 'serbest' || !r.checked);
+        });
+    });
+    document.querySelectorAll('input[name="mfMenbeTip"]').forEach(r => {
+        if (r.checked) r.dispatchEvent(new Event('change'));
+    });
+
+    function showError(msg) {
+        const el = $('mfError');
+        el.textContent = msg;
+        el.classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function hideError() { $('mfError').classList.add('d-none'); }
+
+    // ── 1. "Suallar hazırla" — AI çağırışı ───────────────────────────
+    $('mfHazirlaBtn').addEventListener('click', async () => {
+        hideError();
+        const menbeTip = document.querySelector('input[name="mfMenbeTip"]:checked').value;
+        const fd = new FormData();
+        fd.append('sualSayi', $('mfSualSayi').value || '5');
+
+        if (menbeTip === 'daxili') {
+            const id = $('mfDaxiliQaydaId').value;
+            if (!id) { showError('Daxili qayda seçin.'); return; }
+            fd.append('hrDaxiliQaydaId', id);
+        } else if (menbeTip === 'qanun') {
+            const id = $('mfQanunFaylId').value;
+            if (!id) { showError('Qanun faylı seçin.'); return; }
+            fd.append('hrQanunFaylId', id);
+        } else {
+            const fayl = $('mfFayl').files[0];
+            const metn = $('mfSerbestMetn').value.trim();
+            if (fayl) fd.append('fayl', fayl);
+            else if (metn) fd.append('menbeMetn', metn);
+            else { showError('Fayl yükləyin və ya mətn yapışdırın.'); return; }
+        }
+
+        $('mfHazirlaBtn').disabled = true;
+        $('mfHazirlaSpinner').classList.remove('d-none');
+        try {
+            const r = await fetch('@Url.Action("SuallarHazirla")', { method: 'POST', body: fd });
+            const d = await r.json();
+            if (!d.ok) { showError(d.xeta || 'Suallar hazırlana bilmədi.'); return; }
+
+            state.suallar = (d.suallar || []).map(s => ({
+                tip: s.tip || TIP_COX,
+                sualMetni: s.sualMetni || '',
+                variantA: s.variantA || '', variantB: s.variantB || '',
+                variantC: s.variantC || '', variantD: s.variantD || '',
+                duzgunVariant: (s.duzgunVariant || 'A').toUpperCase(),
+                duzgunCavabMetni: s.duzgunCavabMetni || '',
+                izahMetni: s.izahMetni || ''
+            }));
+
+            $('mfRedakteBlok').classList.remove('d-none');
+            render();
+            $('mfRedakteBlok').scrollIntoView({ behavior: 'smooth' });
+        } catch (e) {
+            showError('Şəbəkə xətası — yenidən cəhd edin.');
+        } finally {
+            $('mfHazirlaBtn').disabled = false;
+            $('mfHazirlaSpinner').classList.add('d-none');
+        }
+    });
+
+    // ── 2. Qaralama kartlarının render-i ──────────────────────────────
+    function kart(s, i) {
+        const coxSecimli = s.tip === TIP_COX;
+        return `
+        <div class="card border-0 shadow-sm rounded-4 mb-3" data-idx="${i}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-secondary">${i + 1}-ci sual</span>
+                    <div>
+                        <select class="form-select form-select-sm d-inline-block w-auto mf-f" data-f="tip" style="width:auto">
+                            <option value="${TIP_COX}" ${coxSecimli ? 'selected' : ''}>Çoxseçimli</option>
+                            <option value="${TIP_ACIG}" ${!coxSecimli ? 'selected' : ''}>Açıq</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-2 mf-sil"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+
+                <label class="form-label small text-muted">Sual mətni</label>
+                <textarea class="form-control mb-2 mf-f" data-f="sualMetni" rows="2" maxlength="1000">${esc(s.sualMetni)}</textarea>
+
+                ${coxSecimli ? `
+                <div class="row g-2 mb-2">
+                    ${['A','B','C','D'].map(h => `
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">
+                                <input type="radio" name="mf-duzgun-${i}" class="mf-f" data-f="duzgunVariant" value="${h}" ${s.duzgunVariant === h ? 'checked' : ''}>
+                            </span>
+                            <span class="input-group-text">${h}</span>
+                            <input type="text" class="form-control mf-f" data-f="variant${h}" maxlength="500" value="${esc(s['variant' + h])}" placeholder="${h} variantı">
+                        </div>
+                    </div>`).join('')}
+                </div>
+                <div class="form-text mb-2">Soldakı işarəni düzgün variantın üstünə qoyun.</div>
+                ` : `
+                <label class="form-label small text-muted">Nümunəvi (düzgün) cavab</label>
+                <textarea class="form-control mb-2 mf-f" data-f="duzgunCavabMetni" rows="2" maxlength="1000">${esc(s.duzgunCavabMetni)}</textarea>
+                `}
+
+                <label class="form-label small text-muted">İzah (cavabdan dərhal sonra göstərilir)</label>
+                <textarea class="form-control mf-f" data-f="izahMetni" rows="2" maxlength="2000">${esc(s.izahMetni)}</textarea>
+            </div>
+        </div>`;
+    }
+
+    function render() {
+        $('mfSuallarContainer').innerHTML = state.suallar.map(kart).join('');
+    }
+
+    // ── Delegasiya — redaktə sahələrinin dəyişikliyi state-ə yazılır ──
+    $('mfSuallarContainer').addEventListener('input', (e) => {
+        const f = e.target.dataset.f;
+        if (!f) return;
+        const idx = parseInt(e.target.closest('[data-idx]').dataset.idx, 10);
+        state.suallar[idx][f] = e.target.value;
+    });
+    $('mfSuallarContainer').addEventListener('change', (e) => {
+        const f = e.target.dataset.f;
+        if (!f) return;
+        const idx = parseInt(e.target.closest('[data-idx]').dataset.idx, 10);
+        if (f === 'tip') {
+            state.suallar[idx].tip = parseInt(e.target.value, 10);
+            render();
+            return;
+        }
+        if (f === 'duzgunVariant') state.suallar[idx].duzgunVariant = e.target.value;
+    });
+    $('mfSuallarContainer').addEventListener('click', (e) => {
+        const silBtn = e.target.closest('.mf-sil');
+        if (!silBtn) return;
+        const idx = parseInt(silBtn.closest('[data-idx]').dataset.idx, 10);
+        state.suallar.splice(idx, 1);
+        render();
+    });
+
+    $('mfYeniSualBtn').addEventListener('click', () => {
+        state.suallar.push({
+            tip: TIP_COX, sualMetni: '',
+            variantA: '', variantB: '', variantC: '', variantD: '', duzgunVariant: 'A',
+            duzgunCavabMetni: '', izahMetni: ''
+        });
+        render();
+        $('mfSuallarContainer').lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // ── 3. Yadda saxla ─────────────────────────────────────────────
+    $('mfSaxlaBtn').addEventListener('click', async () => {
+        hideError();
+        const basliq = $('mfBasliq').value.trim();
+        if (!basliq) { showError('Başlıq mütləqdir.'); return; }
+        if (state.suallar.length === 0) { showError('Ən azı bir sual olmalıdır.'); return; }
+
+        const menbeTip = document.querySelector('input[name="mfMenbeTip"]:checked').value;
+        const payload = {
+            basliq,
+            hrDaxiliQaydaId: menbeTip === 'daxili' ? (parseInt($('mfDaxiliQaydaId').value, 10) || null) : null,
+            hrQanunFaylId: menbeTip === 'qanun' ? (parseInt($('mfQanunFaylId').value, 10) || null) : null,
+            menbeMetn: menbeTip === 'serbest' ? $('mfSerbestMetn').value : null,
+            suallar: state.suallar
+        };
+
+        $('mfSaxlaBtn').disabled = true;
+        $('mfSaxlaSpinner').classList.remove('d-none');
+        try {
+            const r = await fetch('@Url.Action("Yarat")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const d = await r.json();
+            if (!d.ok) { showError(d.xeta || 'Yadda saxlanıla bilmədi.'); return; }
+            window.location.href = d.redirectUrl;
+        } catch (e) {
+            showError('Şəbəkə xətası — yenidən cəhd edin.');
+        } finally {
+            $('mfSaxlaBtn').disabled = false;
+            $('mfSaxlaSpinner').classList.add('d-none');
+        }
+    });
+})();
+</script>
+}

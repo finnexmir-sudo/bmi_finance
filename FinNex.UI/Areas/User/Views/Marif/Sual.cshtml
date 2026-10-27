@@ -1,0 +1,141 @@
+@model FinNex.Application.DTOs.Marif.MarifIsciSualSetiDto
+@{
+    ViewData["Title"] = Model.Basliq;
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page" style="max-width:680px">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@Model.Basliq</div>
+            <div class="fn-page-sub" id="mfIreliFasl">Sual <span id="mfCariNo">1</span> / @Model.Suallar.Count</div>
+        </div>
+    </div>
+
+    <div class="fn-card">
+        <div id="mfSualGovdesi"></div>
+    </div>
+
+    <div id="mfBitdi" class="fn-card d-none text-center">
+        <div class="fw-bold fs-5 mb-2">✅ Test tamamlandı</div>
+        <div class="text-muted mb-3">Cavablarınız qeydə alındı.</div>
+        <a asp-action="Index" class="fn-btn fn-btn--primary fn-btn--sm">Siyahıya qayıt</a>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const TIP_COX = 1;
+    // DİQQƏT: MVC-nin Json() helper-i (fetch cavabları) default CAMEL CASE verir,
+    // amma System.Text.Json.JsonSerializer.Serialize birbaşa çağırılanda PASCAL CASE
+    // qaytarır (ayrı defolt) — ikisini EYNİ JS state-də işlətdiyimiz üçün burada
+    // açıq CamelCase siyasəti verilir, yoxsa s.sualMetni/s.variantA undefined olardı.
+    const suallar = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Suallar,
+        new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+    const tesyinatId = @Model.TesyinatId;
+    let idx = 0;
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => (s ?? '').toString()
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    async function cavabGonder(sualId, cavab) {
+        const r = await fetch('@Url.Action("CavabVer")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tesyinatId, sualId, cavab })
+        });
+        return await r.json();
+    }
+
+    function neticeHtml(s, netice) {
+        let badge = '';
+        if (s.tip === TIP_COX) {
+            badge = netice.duzgunduMu
+                ? '<span class="fn-badge fn-badge--done">Düzgün ✔</span>'
+                : '<span class="fn-badge fn-badge--rejected">Səhv ✘</span>';
+        }
+        return `
+            <div class="mb-2">${badge}</div>
+            <div class="mb-2"><strong>Düzgün cavab:</strong> ${esc(netice.duzgunCavabMetni)}</div>
+            <div class="text-muted small"><i class="bi bi-info-circle me-1"></i>${esc(netice.izahMetni)}</div>
+            <button type="button" class="fn-btn fn-btn--primary fn-btn--sm mt-3" id="mfNovbeti">
+                ${idx + 1 >= suallar.length ? 'Bitir' : 'Növbəti sual'}
+            </button>`;
+    }
+
+    function sualFormHtml(s) {
+        if (s.tip === TIP_COX) {
+            const variantlar = [['A', s.variantA], ['B', s.variantB], ['C', s.variantC], ['D', s.variantD]];
+            return `
+                <p class="fw-semibold mb-3">${esc(s.sualMetni)}</p>
+                <div class="d-flex flex-column gap-2 mb-3">
+                    ${variantlar.map(([h, v]) => `
+                        <label class="d-flex align-items-center gap-2" style="cursor:pointer">
+                            <input type="radio" name="mfVariant" value="${h}">
+                            <span><strong>${h})</strong> ${esc(v)}</span>
+                        </label>`).join('')}
+                </div>
+                <button type="button" class="fn-btn fn-btn--primary fn-btn--sm" id="mfCavablaBtn" disabled>Cavabla</button>`;
+        }
+        return `
+            <p class="fw-semibold mb-3">${esc(s.sualMetni)}</p>
+            <textarea class="form-control mb-3" id="mfAcigCavab" rows="3" placeholder="Cavabınızı yazın..."></textarea>
+            <button type="button" class="fn-btn fn-btn--primary fn-btn--sm" id="mfCavablaBtn">Cavabla</button>`;
+    }
+
+    async function render() {
+        if (idx >= suallar.length) {
+            $('mfIreliFasl').closest('.fn-page-head')?.classList.add('d-none');
+            document.querySelector('.fn-card').classList.add('d-none');
+            $('mfBitdi').classList.remove('d-none');
+            return;
+        }
+
+        const s = suallar[idx];
+        $('mfCariNo').textContent = idx + 1;
+
+        if (s.cavablanibMi) {
+            // Artıq cavablanıb — mövcud nəticəni göstər (CavabVer idempotentdir, təkrar yazmır)
+            $('mfSualGovdesi').innerHTML = `<p class="fw-semibold mb-3">${esc(s.sualMetni)}</p><div class="text-muted">Yüklənir...</div>`;
+            const d = await cavabGonder(s.sualId, '');
+            if (d.ok) {
+                $('mfSualGovdesi').innerHTML = `<p class="fw-semibold mb-3">${esc(s.sualMetni)}</p>` + neticeHtml(s, d.netice);
+                $('mfNovbeti').addEventListener('click', () => { idx++; render(); });
+            }
+            return;
+        }
+
+        $('mfSualGovdesi').innerHTML = sualFormHtml(s);
+
+        if (s.tip === TIP_COX) {
+            document.querySelectorAll('input[name="mfVariant"]').forEach(r =>
+                r.addEventListener('change', () => { $('mfCavablaBtn').disabled = false; }));
+        }
+
+        $('mfCavablaBtn').addEventListener('click', async () => {
+            let cavab = '';
+            if (s.tip === TIP_COX) {
+                const secili = document.querySelector('input[name="mfVariant"]:checked');
+                if (!secili) return;
+                cavab = secili.value;
+            } else {
+                cavab = $('mfAcigCavab').value.trim();
+                if (!cavab) return;
+            }
+
+            $('mfCavablaBtn').disabled = true;
+            const d = await cavabGonder(s.sualId, cavab);
+            if (!d.ok) { alert(d.xeta || 'Xəta baş verdi.'); $('mfCavablaBtn').disabled = false; return; }
+
+            $('mfSualGovdesi').innerHTML = `<p class="fw-semibold mb-3">${esc(s.sualMetni)}</p>` + neticeHtml(s, d.netice);
+            $('mfNovbeti').addEventListener('click', () => { idx++; render(); });
+        });
+    }
+
+    render();
+})();
+</script>
+}

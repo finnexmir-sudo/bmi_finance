@@ -1,0 +1,136 @@
+@model FinNex.Application.DTOs.Marif.MarifSualSetiDetailDto
+@using FinNex.Domain.Entities.Marif
+
+@{
+    ViewData["Title"] = Model.Basliq;
+    var statusBadge = Model.Status == MarifSetStatusu.Gonderilib ? "success" : "secondary";
+    var statusText = Model.Status == MarifSetStatusu.Gonderilib ? "Göndərilib" : "Qaralama";
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">@Model.Basliq</h3>
+            <span class="badge bg-@statusBadge bg-opacity-10 text-@statusBadge admin-badge">@statusText</span>
+        </div>
+        <div>
+            @if (Model.Status == MarifSetStatusu.Qaralama)
+            {
+                <a asp-action="IsciSec" asp-route-id="@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-send me-1"></i>İşçi seç və göndər
+                </a>
+                <form asp-action="SetSil" asp-route-id="@Model.Id" method="post" class="d-inline"
+                      onsubmit="return confirm('Bu sual dəsti silinsin?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger ms-2"><i class="bi bi-trash"></i></button>
+                </form>
+            }
+            else
+            {
+                <a asp-action="IsciSec" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                    <i class="bi bi-person-plus me-1"></i>Əlavə işçiyə göndər
+                </a>
+            }
+            <a asp-action="Index" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-arrow-left me-1"></i>Geri
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <h6 class="fw-bold mb-3">Suallar (@Model.Suallar.Count)</h6>
+    @foreach (var s in Model.Suallar)
+    {
+        <div class="card border-0 shadow-sm rounded-4 mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-light text-dark border mb-2">@(s.Tip == MarifSualTipi.CoxSecimli ? "Çoxseçimli" : "Açıq")</span>
+                </div>
+                <p class="fw-semibold mb-2">@s.SualMetni</p>
+
+                @if (s.Tip == MarifSualTipi.CoxSecimli)
+                {
+                    <ul class="list-unstyled mb-2">
+                        @foreach (var h in new[] { "A", "B", "C", "D" })
+                        {
+                            var deyer = h switch { "A" => s.VariantA, "B" => s.VariantB, "C" => s.VariantC, _ => s.VariantD };
+                            var duzgun = s.DuzgunVariant == h;
+                            <li class="@(duzgun ? "text-success fw-semibold" : "")">
+                                @(duzgun ? "✔" : "—") @h) @deyer
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-success mb-2"><strong>Nümunəvi cavab:</strong> @s.DuzgunCavabMetni</p>
+                }
+
+                <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>@s.IzahMetni</div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Status == MarifSetStatusu.Gonderilib)
+    {
+        <h6 class="fw-bold mt-4 mb-3">Göndərilən işçilər (@Model.Tesyinatlar.Count)</h6>
+        <div class="admin-table-card">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>İşçi</th>
+                            <th>Göndərilmə tarixi</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Çoxseçimli düzgün</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.Tesyinatlar)
+                        {
+                            <tr>
+                                <td>@t.IsciAdi</td>
+                                <td>@t.GonderilmeTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="text-center">
+                                    @if (t.TamamlandiMi)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success admin-badge">Tamamlayıb</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">Gözlənilir</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (t.CoxSecimliCemi > 0)
+                                    {
+                                        @($"{t.CoxSecimliDuzgunSayi} / {t.CoxSecimliCemi}")
+                                    }
+                                    else
+                                    {
+                                        @:—
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

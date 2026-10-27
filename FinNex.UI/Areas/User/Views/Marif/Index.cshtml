@@ -1,0 +1,52 @@
+@model IList<FinNex.Application.DTOs.Marif.MarifIsciTesyinatListDto>
+@{
+    ViewData["Title"] = "Maarifləndirmə";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Maarifləndirmə</div>
+            <div class="fn-page-sub">Sizə göndərilmiş qayda-üzrə sual dəstləri</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-title">Hazırda sizə göndərilmiş test yoxdur</div>
+            <div class="fn-empty-sub">Yeni sual dəstləri burada görünəcək</div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var t in Model)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="fn-card h-100">
+                        <div class="fn-card-head">
+                            <div class="fn-card-title">@t.Basliq</div>
+                            @if (t.TamamlandiMi)
+                            {
+                                <span class="fn-badge fn-badge--done">Tamamlanıb</span>
+                            }
+                            else
+                            {
+                                <span class="fn-badge fn-badge--wait">Gözlənilir</span>
+                            }
+                        </div>
+                        <div class="text-muted small mb-3">
+                            @t.SualSayi sual &middot; @t.GonderilmeTarixi.ToString("dd.MM.yyyy")
+                        </div>
+                        <a asp-action="Sual" asp-route-id="@t.TesyinatId" class="fn-btn fn-btn--primary fn-btn--sm">
+                            @(t.TamamlandiMi ? "Nəticəyə bax" : "Başla")
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
