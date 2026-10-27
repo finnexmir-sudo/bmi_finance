@@ -7095,3 +7095,48 @@ All** ilə, sonra real ssenari ilə yoxlamalıdır: "Yalnız çoxseçimli" seçi
 sual hazırlat → bütün suallar çoxseçimli gəlsin; "Yalnız yazılı" seçib
 hazırlat → hamısı açıq/yazılı gəlsin; "Hər ikisi" (default) əvvəlki qarışıq
 davranışı qorusun.
+
+## Login Səhifəsi — İkonlar Boş Kvadrat Kimi Görünürdü — `font-src` CSP-dən Unudulmuşdu (28.10.2026, KRİTİK)
+
+İstifadəçi canlı login ekranının skrinşotunu göstərdi — "admin"/"Şifrə" xanalarının
+yanındakı ikonlar (zərf, qıfıl) ikon ƏVƏZİNƏ **boş, kvadrat qlif qutusu** kimi
+görünürdü (brauzerin "glyph tapılmadı" standart göstərişi — bu, data itkisi/
+backend bugu DEYİL, sırf vizual).
+
+**Kök səbəb — `SecurityHeadersMiddleware.cs`-in CSP başlığı, `font-src` direktivi.**
+`Login.cshtml` (və bütün layihə) ikonları **Bootstrap Icons** webfontu ilə göstərir
+(`<i class="bi bi-envelope">`), CSS-i `_AuthLayout.cshtml`-dən `cdn.jsdelivr.net`-dən
+yüklənir. CSS faylının özü (`style-src`-ə `cdn.jsdelivr.net` daxil olduğu üçün)
+AÇILIR, amma CSS-in İÇİNDƏKİ `@font-face { src: url(...woff2) }` — faktiki **şrift
+fayl(lar)ı** — AYRI bir CSP direktivi, **`font-src`**, ilə idarə olunur. Köhnə
+qayda yalnız `'self' https://fonts.gstatic.com` icazə verirdi — `cdn.jsdelivr.net`
+YOX idi. Nəticə: stylesheet yükləndi, amma şriftin özü brauzer tərəfindən SƏSSİZCƏ
+bloklandı, DevTools-da adi bir CSP xəbərdarlığı qaldı, ekranda isə hər ikon yerinə
+boş kvadrat (qlif-yoxdur göstərişi) çıxdı.
+
+**Bu, CLAUDE.md-də ARTIQ sənədləşmiş eyni bugun ÜÇÜNCÜ forması idi** —
+"Paylaşımlar" modulunda Quill-in CSS-i üçün `style-src`, mail önizləməsində
+mammoth/xlsx üçün `script-src` unudulmuşdu (bax yuxarı müvafiq bölmələr); bu
+dəfə İKİ İLDİR layihədə olan `_AuthLayout.cshtml`-in öz Bootstrap Icons-u üçün
+`font-src` unudulmuşdu — demək ki, bu, YENİ bir bug deyil, köhnə, elə əvvəldən
+mövcud bir boşluq idi, sadəcə istifadəçi indiyə qədər fərq etməmişdi.
+
+**Düzəliş — tək sətir:** `font-src 'self' https://fonts.gstatic.com` →
+`font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net`.
+
+**Qayda (bu dəfə ÜÇÜNCÜ dalğada təkrar təsdiqləndi, ÜMUMİLƏŞDİRİLMİŞ forma):**
+bir CDN host-dan (`cdn.jsdelivr.net` kimi) HƏR HANSI resurs tipi yüklənirsə
+(script, stylesheet, **VƏ YA webfont**), CSP-nin O TİPƏ uyğun ÜÇ direktivini
+ayrı-ayrı yoxla — `script-src`, `style-src`, **`font-src`** — bir CSS faylının
+AÇILMASI onun İÇİNDƏKİ `@font-face`/`@import` ilə yüklənən İKİNCİ dərəcəli
+resursların da açıq olacağına ZƏMANƏT VERMİR. Simptom hər dəfə eynidir:
+server 200 qaytarır, resurs "yüklənir" (Network tabında görünür), amma brauzer
+onu İSTİFADƏ ETMƏKDƏN imtina edir — funksional xəta yox, sadəcə "eybəcər/boş"
+görünüş.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(tək sətirlik mətn dəyişikliyi, mötərizə/dırnaq riski yoxdur). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra login səhifəsini brauzerdə yenidən açıb
+zərf/qıfıl ikonlarının artıq doğru göründüyünü (boş kvadrat deyil) təsdiqləməlidir
+— tam yeniləmə üçün brauzerin keşini təmizləmək (Ctrl+Shift+R) lazım ola bilər,
+çünki köhnə CSP başlığı/CSS cavabı keşdə qala bilər.
