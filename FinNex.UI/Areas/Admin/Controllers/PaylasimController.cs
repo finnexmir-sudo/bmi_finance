@@ -39,9 +39,16 @@ public class PaylasimController : Controller
     }
 
     // ── GET /Admin/Paylasim/Yarat ───────────────────────────────────
-    public IActionResult Yarat()
+    public async Task<IActionResult> Yarat()
     {
         ViewData["Title"] = "Yeni Paylaşım";
+
+        var appUserId = await GetCurrentAppUserIdAsync();
+        var sonSecilmisler = appUserId != null
+            ? await _paylasim.SonHedefKitlesiAsync(appUserId.Value)
+            : new List<int>();
+
+        await HedefViewBagDoldurAsync(sonSecilmisler, hamisinaGonder: true);
         return View(new PaylasimYaratDto());
     }
 
@@ -60,6 +67,7 @@ public class PaylasimController : Controller
         if (!netice.Success)
         {
             TempData["Error"] = netice.Message;
+            await HedefViewBagDoldurAsync(dto.SeciliIsciIdler, dto.HamisinaGonder);
             return View(dto);
         }
 
@@ -77,23 +85,48 @@ public class PaylasimController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        var movcudHedef = await _paylasim.HedefIsciIdleriAsync(id);
+
         ViewData["Title"] = "Paylaşımı Redaktə Et";
         ViewBag.Id = id;
-        return View(new PaylasimYaratDto { Basliq = post.Basliq, MetnHtml = post.MetnHtml });
+        await HedefViewBagDoldurAsync(movcudHedef, hamisinaGonder: movcudHedef.Count == 0);
+        return View(new PaylasimYaratDto
+        {
+            Basliq = post.Basliq,
+            MetnHtml = post.MetnHtml,
+            HamisinaGonder = movcudHedef.Count == 0,
+            SeciliIsciIdler = movcudHedef
+        });
     }
 
     // ── POST /Admin/Paylasim/Redakte/5 ──────────────────────────────
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Redakte(int id, PaylasimYaratDto dto)
     {
-        var netice = await _paylasim.YenileAsync(id, dto);
+        var appUserId = await GetCurrentAppUserIdAsync();
+        if (appUserId == null)
+        {
+            TempData["Error"] = "Hesabınız tapılmadı — yenidən daxil olun.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var netice = await _paylasim.YenileAsync(id, dto, appUserId.Value);
         TempData[netice.Success ? "Success" : "Error"] = netice.Message;
         if (!netice.Success)
         {
             ViewBag.Id = id;
+            await HedefViewBagDoldurAsync(dto.SeciliIsciIdler, dto.HamisinaGonder);
             return View(dto);
         }
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>Yarat/Redakte formunun hədəf-seçim siyahısını hazırlayır.</summary>
+    private async Task HedefViewBagDoldurAsync(List<int> secilmisIdler, bool hamisinaGonder)
+    {
+        ViewBag.Isciler = await _paylasim.AktivIscilerAsync();
+        ViewBag.SecilmisIdler = secilmisIdler ?? new List<int>();
+        ViewBag.HamisinaGonder = hamisinaGonder;
     }
 
     // ── POST /Admin/Paylasim/AktivlikDeyis/5 ────────────────────────

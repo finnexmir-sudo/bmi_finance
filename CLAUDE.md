@@ -6509,3 +6509,71 @@ Visual Studio-da **Rebuild All**, sonra `Update-Database` (yeni migration tətbi
 olunsun) ilə, sonra real ssenari ilə yoxlamalıdır: Admin "Yeni Paylaşım" yaradıb
 göndərsin — bu dəfə xətasız keçməli, "Göndərən" sütununda Admin hesabının adı
 görünməlidir.
+
+### Paylaşımlar — Hədəf İşçi Seçimi + "Son Seçilmişlər" Yaddaşı (27.10.2026)
+
+İstifadəçi tələbi: *"paylasanda hami ya gedir? secim yoxdur? siyahi olardi secili
+yaddasa vereredim herdefe heminki secilmisler gelerdi,istesem bir klik ile
+artirardim"*. Əvvəl `AktivLentAsync()`-in heç bir hədəf filtri yox idi — hər aktiv
+post bütün işçilərə görünürdü.
+
+**Struktur — iki yeni cədvəl** (migration `20261027180000_PaylasimHedef.cs`):
+
+- **`MelumatHedef`** (`MelumatId`, `IsciId`) — bir `Melumat`-ın HEÇ bir sətri
+  YOXDURSA post **"Hamısına"**dır (geriyə uyğun — mövcud postlar toxunulmadan
+  hamıya görünməyə davam edir). Sətirlər varsa, YALNIZ o işçilərə görünür.
+- **`PaylasimSonHedefKitlesi`** — hər admin (`AdminAppUserId`) üçün TƏK sətir,
+  "Seçilmiş işçilər" rejimində hər publish-də CSV (`IsciIdlerCsv`) olaraq
+  üzərinə yazılır. Sırf UX keşidir, `MelumatHedef`-i ƏVƏZ ETMİR.
+
+**`AktivLentAsync(int isciId)`** (imza dəyişdi — əvvəl parametrsiz idi, "Metod
+İmzası Dəyişikliyi" qaydasına uyğun interfeys+implementasiya+çağıran (User
+`PaylasimController`) eyni anda yeniləndi) — EXISTS alt-sorğusu ilə:
+`Aktivdir && (MelumatHedef sətri YOXDUR || (MelumatHedef sətri VAR və
+IsciId=bu işçi))`. `User/PaylasimController` görən işçinin `AppUser.IsciId`-sini
+oxuyur; `null`dursa `0` keçirir (heç bir real Isci.Id-yə uyğun gəlmir, yalnız
+"Hamısına" postlar görünür — "admin de olmadi" bugundakı eyni "AppUser.IsciId
+boş ola bilər" riskinin BURADA da nəzərə alınmış forması).
+
+**Admin Yarat/Redakte formunda — paylaşılan partial, `_HedefSecim.cshtml`:**
+radio toggle ("Hamısına" / "Seçilmiş işçilər", defolt Hamısına), seçilibsə aktiv
+işçilərin tam siyahısı (checkbox, client-side axtarış filtri, "Hamısını seç" /
+"Təmizlə" / "İlkin seçimi bərpa et" düymələri — sonuncusu Yarat-da admin-in
+"son seçilmişlər" keşini, Redakte-də postun öz mövcud hədəfini bərpa edir).
+Checkbox siyahısı `AktivIscilerAsync()`-dən **İşçi Sıralaması qaydası ilə**
+(Sira/Ad/Soyad) gəlir — ayrıca sıralama ƏL İLƏ YAZILMADI.
+
+**Yarat GET-də pre-check mənbəyi `SonHedefKitlesiAsync(appUserId)`-dir** (admin-in
+son istifadə etdiyi siyahı) — "bir klik ilə artırardım" tələbi elə bununla
+qarşılanır: checkboxlar artıq işarəli gəlir, admin sadəcə əlavə/çıxarma edir.
+**Redakte GET-də isə pre-check mənbəyi `HedefIsciIdleriAsync(melumatId)`-dir**
+(postun ÖZ cari hədəfi) — admin-in ÜMUMİ son seçimi YOX, bu KONKRET postun nəyə
+göndərildiyi göstərilir (düzgün gözlənti: redaktədə "bu post kimə gedib"
+görünməlidir, "mən adətən kimə göndərirəm" yox).
+
+**Validasiya** (`Yoxla`, server tərəfdə + eyni qayda JS-də): "Seçilmiş işçilər"
+seçilib heç kim işarələnməyibsə — `Result.Fail`, heç nə yazılmır. "Hamısına"
+seçilibsə checkbox vəziyyətindən ASILI OLMAYARAQ (gizli blokda qalan köhnə
+işarələr ola bilər — CSS `display:none` POST-u bloklamır, bax "Şərtli Render
+Olunan Form Sahəsi" bölməsi) `HedefleriTetbiqEtAsync` dərhal `return` edir,
+`SeciliIsciIdler`-ə heç toxunmur.
+
+**Admin siyahısında (Index.cshtml) yeni nişan** — `PaylasimListDto.HedefSayi`
+(0 = "Hamısına" mavi nişan, >0 = "N işçi" sarı nişan). `HamisiniGetirAsync`
+bunu **bir dəfəlik qruplaşdırılmış sayğacla** doldurur (hər post üçün ayrıca
+sorğu YOX — N+1 qoyulmadı).
+
+⚠️ **Yeni paylaşım yaradılanda İKİ `SaveChanges` lazımdır** — `MelumatHedef.
+MelumatId` üçün əvvəlcə `Melumat.Id`-nin generasiya olunması (identity sütun)
+şərtdir; açıq tranzaksiya işlədilmədi (aralıq uğursuzluq riski aşağıdır —
+ikinci `SaveChanges` uğursuz olsa post "Hamısına" kimi sağ qalır, korrupt
+vəziyyət yaranmır).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, JS `node -c` ilə sintaksis yoxlaması, interfeys↔
+implementasiya↔çağıran üç qatı əl ilə tutuşduruldu). İstifadəçi Visual
+Studio-da **Rebuild All**, `Update-Database`, sonra real ssenari ilə
+yoxlamalıdır: "Seçilmiş işçilər" ilə 2-3 nəfərə paylaşım göndər → yalnız
+onların `/User/Paylasim`-də gördüyünü, digərlərinin görmədiyini, Admin
+siyahısında "N işçi" nişanının göründüyünü, yeni paylaşım yaradanda
+əvvəlki seçimin avtomatik işarəli gəldiyini təsdiqləməli.

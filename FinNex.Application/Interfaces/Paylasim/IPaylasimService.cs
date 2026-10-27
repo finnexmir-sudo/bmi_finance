@@ -13,19 +13,29 @@ namespace FinNex.Application.Interfaces.Paylasim
         /// <summary>Admin idarəetmə siyahısı — aktiv/deaktiv hamısı, ən yenidən.</summary>
         Task<List<PaylasimListDto>> HamisiniGetirAsync();
 
-        /// <summary>İşçi lenti — yalnız aktiv, ən yenidən.</summary>
-        Task<List<PaylasimListDto>> AktivLentAsync();
+        /// <summary>İşçi lenti — yalnız aktiv VƏ bu işçiyə hədəflənmiş (yaxud "hamısına") postlar, ən yenidən.</summary>
+        Task<List<PaylasimListDto>> AktivLentAsync(int isciId);
 
         Task<PaylasimListDto?> DetailGetirAsync(int id);
 
         /// <param name="appUserId">Göndərənin AppUser.Id-si (Isci DEYİL — admin hesabının işçi profili olmaya bilər).</param>
         Task<Result<int>> YaratAsync(PaylasimYaratDto dto, int appUserId);
 
-        Task<Result> YenileAsync(int id, PaylasimYaratDto dto);
+        /// <param name="appUserId">"Son seçilmişlər" keşini bu adminin adına yeniləmək üçün.</param>
+        Task<Result> YenileAsync(int id, PaylasimYaratDto dto, int appUserId);
 
         /// <summary>Göstər/gizlət — silmədən lentdən çıxarır (geri qaytarıla bilər).</summary>
         Task<Result> AktivlikDeyisAsync(int id);
 
         Task<Result> SilAsync(int id);
+
+        /// <summary>Hədəf-seçim siyahısı üçün aktiv işçilər (İşçi Sıralaması qaydası — Sira/Ad/Soyad).</summary>
+        Task<List<PaylasimIsciSecimDto>> AktivIscilerAsync();
+
+        /// <summary>Bu postun hədəflədiyi Isci.Id-lər (boşdursa post "Hamısına"dır).</summary>
+        Task<List<int>> HedefIsciIdleriAsync(int melumatId);
+
+        /// <summary>Bu adminin "Seçilmiş işçilər" rejimində SON istifadə etdiyi siyahı — Yarat ekranında əvvəlcədən işarələmək üçün.</summary>
+        Task<List<int>> SonHedefKitlesiAsync(int adminAppUserId);
     }
 }

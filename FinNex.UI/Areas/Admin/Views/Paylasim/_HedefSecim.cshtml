@@ -1,0 +1,109 @@
+@{
+    var isciler = (List<FinNex.Application.DTOs.Paylasim.PaylasimIsciSecimDto>)ViewBag.Isciler;
+    var secilmisIdler = (List<int>)ViewBag.SecilmisIdler;
+    var hamisinaGonder = (bool)ViewBag.HamisinaGonder;
+}
+
+<div class="card border-0 shadow-sm rounded-4 mb-3">
+    <div class="card-body">
+        <label class="form-label small text-muted d-block mb-2">Kimlər görsün?</label>
+
+        <div class="btn-group mb-3" role="group">
+            <input type="radio" class="btn-check" name="HamisinaGonder" id="pyHamisi" value="true" @(hamisinaGonder ? "checked" : "")>
+            <label class="btn btn-outline-primary" for="pyHamisi"><i class="bi bi-people-fill me-1"></i>Hamısına</label>
+
+            <input type="radio" class="btn-check" name="HamisinaGonder" id="pySecilmis" value="false" @(!hamisinaGonder ? "checked" : "")>
+            <label class="btn btn-outline-primary" for="pySecilmis"><i class="bi bi-person-check-fill me-1"></i>Seçilmiş işçilər</label>
+        </div>
+
+        <div id="pyIsciSecimBlok" style="display:none">
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <input type="text" id="pyIsciAxtar" class="form-control form-control-sm" style="max-width:220px"
+                       placeholder="Ad ilə axtar...">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="pySonSecilmisBtn">
+                    <i class="bi bi-clock-history me-1"></i>İlkin seçimi bərpa et
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="pyHamisiniSecBtn">Hamısını seç</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="pyTemizleBtn">Təmizlə</button>
+                <small class="text-muted ms-auto align-self-center" id="pySeciliSay"></small>
+            </div>
+            <div id="pyIsciList" class="row row-cols-1 row-cols-md-3 g-1"
+                 style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;padding:10px">
+                @foreach (var isci in isciler)
+                {
+                    var checkedAttr = secilmisIdler.Contains(isci.Id) ? "checked" : "";
+                    <div class="col">
+                        <div class="form-check py-isci-row" data-ad="@($"{isci.Ad} {isci.Soyad}".ToLowerInvariant())">
+                            <input class="form-check-input" type="checkbox" name="SeciliIsciIdler"
+                                   value="@isci.Id" id="pyIsci_@isci.Id" @checkedAttr>
+                            <label class="form-check-label" for="pyIsci_@isci.Id">@isci.Ad @isci.Soyad</label>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const sonSecilmisIdler = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(secilmisIdler));
+
+    const hamisiRadio = document.getElementById('pyHamisi');
+    const secilmisRadio = document.getElementById('pySecilmis');
+    const blok = document.getElementById('pyIsciSecimBlok');
+    const sayEl = document.getElementById('pySeciliSay');
+
+    function hedefModuTetbiqEt() {
+        blok.style.display = hamisiRadio.checked ? 'none' : 'block';
+    }
+    function seciliSayGoster() {
+        const say = document.querySelectorAll('#pyIsciList input[type=checkbox]:checked').length;
+        sayEl.textContent = say > 0 ? (say + ' işçi seçilib') : '';
+    }
+
+    hamisiRadio.addEventListener('change', hedefModuTetbiqEt);
+    secilmisRadio.addEventListener('change', hedefModuTetbiqEt);
+    hedefModuTetbiqEt();
+
+    document.querySelectorAll('#pyIsciList input[type=checkbox]').forEach(cb =>
+        cb.addEventListener('change', seciliSayGoster));
+    seciliSayGoster();
+
+    document.getElementById('pyIsciAxtar').addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase();
+        document.querySelectorAll('.py-isci-row').forEach(row => {
+            row.closest('.col').style.display = row.dataset.ad.includes(q) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('pyHamisiniSecBtn').addEventListener('click', function () {
+        document.querySelectorAll('#pyIsciList input[type=checkbox]').forEach(cb => cb.checked = true);
+        seciliSayGoster();
+    });
+    document.getElementById('pyTemizleBtn').addEventListener('click', function () {
+        document.querySelectorAll('#pyIsciList input[type=checkbox]').forEach(cb => cb.checked = false);
+        seciliSayGoster();
+    });
+    document.getElementById('pySonSecilmisBtn').addEventListener('click', function () {
+        document.querySelectorAll('#pyIsciList input[type=checkbox]').forEach(cb => {
+            cb.checked = sonSecilmisIdler.includes(parseInt(cb.value, 10));
+        });
+        seciliSayGoster();
+    });
+
+    // Göndərmədən əvvəl: "Seçilmiş işçilər" seçilibsə ən azı biri işarəli olmalıdır.
+    const form = document.getElementById('pySealForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            if (secilmisRadio.checked) {
+                const say = document.querySelectorAll('#pyIsciList input[type=checkbox]:checked').length;
+                if (say === 0) {
+                    e.preventDefault();
+                    alert('Ən azı bir işçi seçin, yaxud "Hamısına" seçimini işarələyin.');
+                }
+            }
+        });
+    }
+})();
+</script>

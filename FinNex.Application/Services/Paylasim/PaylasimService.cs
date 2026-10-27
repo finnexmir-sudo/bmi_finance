@@ -2,6 +2,7 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Paylasim;
 using FinNex.Application.Interfaces.Paylasim;
 using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Ganss.Xss;
 using Microsoft.EntityFrameworkCore;
@@ -32,19 +33,29 @@ namespace FinNex.Application.Services.Paylasim
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
-            return lista.Select(Map).ToList();
+            var hedefSaylari = await _uow.Repository<MelumatHedef>().Query().AsNoTracking()
+                .GroupBy(x => x.MelumatId)
+                .Select(g => new { MelumatId = g.Key, Say = g.Count() })
+                .ToDictionaryAsync(g => g.MelumatId, g => g.Say);
+
+            return lista.Select(m => Map(m, hedefSaylari.GetValueOrDefault(m.Id))).ToList();
         }
 
-        public async Task<List<PaylasimListDto>> AktivLentAsync()
+        public async Task<List<PaylasimListDto>> AktivLentAsync(int isciId)
         {
+            // Hədəf sətri YOXDURSA → "Hamısına" (geriyə uyğun). Varsa → yalnız bu Isci.
+            var hedefRepo = _uow.Repository<MelumatHedef>();
+
             var lista = await _uow.Repository<Melumat>().Query().AsNoTracking()
                 .Include(x => x.GonderenAppUser)
-                .Where(x => x.Aktivdir)
+                .Where(x => x.Aktivdir &&
+                    (!hedefRepo.Query().Any(h => h.MelumatId == x.Id) ||
+                     hedefRepo.Query().Any(h => h.MelumatId == x.Id && h.IsciId == isciId)))
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .Take(50)
                 .ToListAsync();
 
-            return lista.Select(Map).ToList();
+            return lista.Select(m => Map(m)).ToList();
         }
 
         public async Task<PaylasimListDto?> DetailGetirAsync(int id)
@@ -70,12 +81,15 @@ namespace FinNex.Application.Services.Paylasim
             };
 
             await _uow.Repository<Melumat>().YaratAsync(melumat);
+            await _uow.YaddaSaxlaAsync(); // melumat.Id lazımdır — MelumatHedef FK-sı üçün
+
+            await HedefleriTetbiqEtAsync(melumat.Id, dto, appUserId);
             await _uow.YaddaSaxlaAsync();
 
             return Result<int>.Ok(melumat.Id, "Paylaşım yaradıldı.");
         }
 
-        public async Task<Result> YenileAsync(int id, PaylasimYaratDto dto)
+        public async Task<Result> YenileAsync(int id, PaylasimYaratDto dto, int appUserId)
         {
             var xeta = Yoxla(dto);
             if (xeta != null) return Result.Fail(xeta);
@@ -86,6 +100,8 @@ namespace FinNex.Application.Services.Paylasim
             melumat.Basliq = dto.Basliq.Trim();
             melumat.MetnHtml = _sanitizer.Sanitize(dto.MetnHtml);
             await _uow.Repository<Melumat>().YenileAsync(melumat);
+
+            await HedefleriTetbiqEtAsync(id, dto, appUserId);
             await _uow.YaddaSaxlaAsync();
 
             return Result.Ok("Paylaşım yeniləndi.");
@@ -114,6 +130,90 @@ namespace FinNex.Application.Services.Paylasim
             return Result.Ok("Paylaşım silindi.");
         }
 
+        public async Task<List<PaylasimIsciSecimDto>> AktivIscilerAsync()
+        {
+            // "İşçi Siyahıları — Sıralama və Filtr Qaydası" (CLAUDE.md): Sira/Ad/Soyad,
+            // Status==Aktiv (Query() onsuz da !Silinib tətbiq edir).
+            return await _uow.Repository<Isci>().Query()
+                .Where(x => x.Status == IsciStatus.Aktiv)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
+                .Select(x => new PaylasimIsciSecimDto { Id = x.Id, Ad = x.Ad, Soyad = x.Soyad })
+                .ToListAsync();
+        }
+
+        public async Task<List<int>> HedefIsciIdleriAsync(int melumatId)
+        {
+            return await _uow.Repository<MelumatHedef>().Query().AsNoTracking()
+                .Where(x => x.MelumatId == melumatId)
+                .Select(x => x.IsciId)
+                .ToListAsync();
+        }
+
+        public async Task<List<int>> SonHedefKitlesiAsync(int adminAppUserId)
+        {
+            var setir = await _uow.Repository<PaylasimSonHedefKitlesi>().Query().AsNoTracking()
+                .FirstOrDefaultAsync(x => x.AdminAppUserId == adminAppUserId);
+
+            return ParseCsv(setir?.IsciIdlerCsv);
+        }
+
+        /// <summary>
+        /// Köhnə hədəf sətirlərini təmizləyib (YenileAsync-də təkrarlandıqda köhnələr
+        /// qalmasın) yenilərini yazır; "Hamısına" seçilibsə heç bir sətir qalmır. Seçilmiş
+        /// işçilər varsa, həm də "son seçilmişlər" keşini bu admin üçün yeniləyir.
+        /// </summary>
+        private async Task HedefleriTetbiqEtAsync(int melumatId, PaylasimYaratDto dto, int appUserId)
+        {
+            var movcudHedefler = await _uow.Repository<MelumatHedef>().Query()
+                .Where(x => x.MelumatId == melumatId)
+                .ToListAsync();
+            foreach (var h in movcudHedefler)
+                await _uow.Repository<MelumatHedef>().YumshakSilAsync(h.Id);
+
+            if (dto.HamisinaGonder) return;
+
+            var secililer = (dto.SeciliIsciIdler ?? new List<int>()).Distinct().ToList();
+            foreach (var isciId in secililer)
+                await _uow.Repository<MelumatHedef>().YaratAsync(new MelumatHedef
+                {
+                    MelumatId = melumatId,
+                    IsciId = isciId
+                });
+
+            await SonHedefKitlesiniSaxlaAsync(appUserId, secililer);
+        }
+
+        private async Task SonHedefKitlesiniSaxlaAsync(int adminAppUserId, List<int> isciIdler)
+        {
+            var csv = string.Join(",", isciIdler);
+            var movcud = await _uow.Repository<PaylasimSonHedefKitlesi>().Query()
+                .FirstOrDefaultAsync(x => x.AdminAppUserId == adminAppUserId);
+
+            if (movcud != null)
+            {
+                movcud.IsciIdlerCsv = csv;
+                await _uow.Repository<PaylasimSonHedefKitlesi>().YenileAsync(movcud);
+            }
+            else
+            {
+                await _uow.Repository<PaylasimSonHedefKitlesi>().YaratAsync(new PaylasimSonHedefKitlesi
+                {
+                    AdminAppUserId = adminAppUserId,
+                    IsciIdlerCsv = csv
+                });
+            }
+        }
+
+        private static List<int> ParseCsv(string? csv)
+        {
+            if (string.IsNullOrWhiteSpace(csv)) return new List<int>();
+            return csv.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => int.TryParse(x, out var n) ? n : (int?)null)
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .ToList();
+        }
+
         private static string? Yoxla(PaylasimYaratDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Basliq))
@@ -122,17 +222,20 @@ namespace FinNex.Application.Services.Paylasim
                 return "Başlıq 300 simvoldan uzun ola bilməz.";
             if (string.IsNullOrWhiteSpace(dto.MetnHtml) || dto.MetnHtml.Trim() == "<p><br></p>")
                 return "Məzmun boş ola bilməz.";
+            if (!dto.HamisinaGonder && (dto.SeciliIsciIdler == null || dto.SeciliIsciIdler.Count == 0))
+                return "Ən azı bir işçi seçin, yaxud \"Hamısına göndər\" seçimini işarələyin.";
             return null;
         }
 
-        private static PaylasimListDto Map(Melumat m) => new()
+        private static PaylasimListDto Map(Melumat m, int hedefSayi = 0) => new()
         {
             Id = m.Id,
             Basliq = m.Basliq,
             MetnHtml = m.MetnHtml,
             GonderenAdi = $"{m.GonderenAppUser.Ad} {m.GonderenAppUser.Soyad}",
             YaradilmaTarixi = m.YaradilmaTarixi,
-            Aktivdir = m.Aktivdir
+            Aktivdir = m.Aktivdir,
+            HedefSayi = hedefSayi
         };
     }
 }
