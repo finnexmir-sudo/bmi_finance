@@ -21,7 +21,7 @@ namespace FinNex.Application.Services.AI
         private readonly string _apiKey;
 
         private const string ApiUrl = "https://api.anthropic.com/v1/messages";
-        private const string Model = "claude-opus-4-7";
+        private const string Model = "claude-sonnet-4-7";
         private const int MaxKontekstChar = 150_000;
 
         public MarifAiService(IHttpClientFactory httpClientFactory, IConfiguration config)

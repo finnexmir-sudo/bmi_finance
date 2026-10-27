@@ -5585,12 +5585,23 @@ Mənbə indi bunu PRİORİTET sayır:
 ### AI — yalnız GENERASİYA anında, bir dəfə
 
 `IMarifAiService.SuallarHazirlaAsync` (`FinNex.Application/Services/AI/MarifAiService.cs`)
-`HRMeslehetciService`-in Anthropic açarını/klientini (`"Anthropic"` adlı `HttpClient`,
-`Claude Opus 4.7`) işlədir — **ayrıca abunəlik/API açarı lazım deyil**. İstifadəçi ilə
-müzakirə edilən xərc (27.10.2026): orta sənəd (~40k token) üçün Opus ≈ $0,25, Haiku
-≈ $0,005 — bir dəfəlik olduğu üçün fərq əhəmiyyətsizdir, **Opus seçildi** (keyfiyyət
-üçün). Sual YARANDIQDAN sonra (Admin təsdiqləyib yadda saxlayandan sonra) AI BİR DAHA
-ÇAĞIRILMIR — işçiyə göstərmək, cavablamaq, nəticəni görmək hamısı statik DB oxumasıdır.
+`HRMeslehetciService`-in Anthropic açarını/klientini (`"Anthropic"` adlı `HttpClient`)
+işlədir — **ayrıca abunəlik/API açarı lazım deyil**. Sual YARANDIQDAN sonra (Admin
+təsdiqləyib yadda saxlayandan sonra) AI BİR DAHA ÇAĞIRILMIR — işçiyə göstərmək,
+cavablamaq, nəticəni görmək hamısı statik DB oxumasıdır.
+
+⚠️ **Model `Claude Opus 4.7` → `Claude Sonnet 4.7`-yə DÜŞÜRÜLDÜ (27.10.2026, real
+istifadə xərci).** İlk versiyada «orta sənəd (~40k token) üçün Opus ≈ $0,25, Haiku
+≈ $0,005, bir dəfəlik olduğu üçün fərq əhəmiyyətsizdir» deyilib Opus seçilmişdi.
+İstifadəçi real sessiyalarda faktiki xərci gördükdən sonra (iki sual dəsti ≈ 0,06
+ABŞ dolları) aşağı salmağı istədi. **Haiku-ya YOX, Sonnet-ə keçirildi** — bu sual
+növü diqqət tələb edən bir generasiyadır (yanlış variantların "ağlabatan səhv"
+olması, uzunluq/forma balansı, sistem promptundakı 8+ incə qayda), Haiku-nun bunu
+etibarlı yerinə yetirəcəyinə az güvənildi. Sonnet Opus-dan açıq-aşkar ucuzdur,
+amma struktur+məntiq tələb edən bu tip generasiyada keyfiyyəti Haiku-dan daha
+yaxın saxlayır. Dəyişiklik tək sətirdir (`MarifAiService.Model`), `HRMeslehetciService`/
+`SenedAiService` (Opus-da qalır — kontekstual Soru-Cavab/sənəd təhlili, davamlı
+istifadə, fərqli risk profili) TOXUNULMADI.
 
 AI-dən **ciddi JSON formatında** cavab istənir (`suallar: [{tip, sual, variantA-D,
 duzgunVariant, izah}]` və ya açıq sual üçün `duzgunCavab`); ```json kod bloku ilə
