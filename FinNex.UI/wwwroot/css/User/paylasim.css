@@ -1,9 +1,35 @@
-/* ── Paylaşımlar — Bilik Lenti (27.10.2026, 28.10.2026 sıx-siyahı redizaynı) ── */
+/* ── Paylaşımlar — Bilik Lenti (27.10.2026, 28.10.2026 sıx-siyahı redizaynı,
+   28.10.2026 ölçü/proporsiya dəqiqləşdirməsi — maket 278.png) ── */
+
+/* ── Səhifə başlığı — yuxarıdaki ağ topbar əvəzinə (28.10.2026) ──── */
+.py-page-header {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto 8px;
+    padding: 24px 32px 0;
+    box-sizing: border-box;
+}
+
+.py-page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+}
+
+.py-page-desc {
+    font-size: 14px;
+    color: #6b7280;
+}
 
 /* ── Kateqoriya süzgəci (client-side, 27.10.2026) ──────────── */
 .py-filters {
-    max-width: 880px;
+    max-width: 1200px;
+    width: 100%;
     margin: 0 auto 18px;
+    padding: 0 32px;
+    box-sizing: border-box;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -30,8 +56,8 @@
 }
 
 .py-empty {
-    max-width: 880px;
-    margin: 0 auto;
+    /* .py-list-wrap artıq 1200px/32px gutter-i tətbiq edir — burada təkrar
+       məhdudlaşdırma lazım deyil, bu qutu onun DAXİLİNDƏdir. */
     background: #fff;
     border-radius: 16px;
     border: 1px solid #e8eaef;
@@ -42,8 +68,11 @@
 
 /* ── Siyahı qabı — "Son paylaşımlar · N paylaşım" (28.10.2026) ────── */
 .py-list-wrap {
-    max-width: 880px;
+    max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
+    padding: 0 32px;
+    box-sizing: border-box;
 }
 
 .py-list-header {
@@ -79,10 +108,11 @@
 .py-row:last-child { border-bottom: none; }
 
 .py-row-summary {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr) 20px;
+    gap: 28px;
+    padding: 24px;
+    align-items: center;
     cursor: pointer;
     transition: background .12s ease;
 }
@@ -90,20 +120,21 @@
 .py-row-summary:hover { background: #fafbfd; }
 
 .py-row-thumb {
-    width: 92px;
-    height: 84px;
+    width: 280px;
+    height: 158px;
     border-radius: 12px;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 30px;
     color: #fff;
     overflow: hidden;
 }
 
 .py-row-thumb.py-thumb-img { padding: 0; }
-.py-row-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Şəkildə yazı/mətn ola bilər — cover kimi kəsmirik, contain ilə tam görünür
+   (28.10.2026, maket 278.png). Boş qalan kənarlar py-thumb-cN fonunu göstərir. */
+.py-row-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 .py-thumb-c0 { background: linear-gradient(135deg, #1e293b, #334155); }
 .py-thumb-c1 { background: linear-gradient(135deg, #2563eb, #3b82f6); }
@@ -112,16 +143,16 @@
 .py-thumb-c4 { background: linear-gradient(135deg, #7c3aed, #a855f7); }
 .py-thumb-c5 { background: linear-gradient(135deg, #be123c, #e11d48); }
 
-.py-row-main { flex: 1; min-width: 0; }
+.py-row-main { min-width: 0; }
 
 .py-row-meta {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11.5px;
+    font-size: 13px;
     color: #9ca3af;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .py-new-dot {
@@ -137,38 +168,42 @@
 .py-row-kat { color: #4338ca; }
 
 .py-row-title {
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 600;
     color: #111827;
-    margin-bottom: 3px;
+    margin-bottom: 6px;
     letter-spacing: -0.01em;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .py-row-excerpt {
-    font-size: 13px;
+    font-size: 16px;
+    line-height: 1.6;
     color: #6b7280;
-    line-height: 1.5;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .py-row-link {
     color: #2563eb;
-    font-size: 12.5px;
+    font-size: 15px;
     font-weight: 700;
     white-space: nowrap;
 }
 
-.py-row-link i { font-size: 11px; margin-left: 2px; }
+.py-row-link i { font-size: 13px; margin-left: 2px; }
 
 .py-row-chevron {
-    flex-shrink: 0;
     color: #c7cbd4;
-    font-size: 15px;
-    align-self: center;
+    font-size: 16px;
+    justify-self: end;
 }
 
 /* ── Tam görüntü — kliklənəndə açılır (28.10.2026) ─────────── */
@@ -300,14 +335,40 @@
 
 .py-row-collapse-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
 
-@media (max-width: 576px) {
-    .py-row-summary { padding: 14px 16px; gap: 12px; }
-    .py-row-thumb { width: 64px; height: 64px; font-size: 20px; }
-    .py-row-title { font-size: 14.5px; }
-    .py-row-excerpt { display: none; }
+/* ── Mobil — şəkil yuxarıda, mətn aşağıda, üfüqi daşma yoxdur (28.10.2026) ── */
+@media (max-width: 680px) {
+    .py-page-header { padding: 18px 16px 0; }
+    .py-page-title { font-size: 22px; }
+    .py-filters,
+    .py-list-wrap { padding-left: 16px; padding-right: 16px; }
+    .py-empty { padding-left: 16px; padding-right: 16px; }
+
+    .py-row-summary {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "thumb"
+            "main";
+        gap: 12px;
+        padding: 16px;
+        align-items: stretch;
+    }
+    .py-row-thumb {
+        grid-area: thumb;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 280 / 158;
+        max-width: 100%;
+    }
+    .py-row-main { grid-area: main; min-width: 0; max-width: 100%; }
+    .py-row-title { font-size: 17px; }
+    .py-row-excerpt { font-size: 14px; -webkit-line-clamp: 2; }
+    .py-row-link { font-size: 13.5px; }
     .py-row-chevron { display: none; }
+
     .py-card-head { padding: 16px 16px 0; }
     .py-title { font-size: 18.5px; margin: 14px 16px 4px; }
     .py-body { padding: 6px 16px 10px; }
+    .py-body img { max-height: 260px; }
     .py-row-collapse-wrap { padding: 4px 16px 18px; }
 }

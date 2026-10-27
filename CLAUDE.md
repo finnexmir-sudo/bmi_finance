@@ -6895,3 +6895,90 @@ brauzerdə yoxlamalıdır: siyahının indi sıx sətirlər şəklində göründ
 sətrə klikləyəndə tam mətnin (şəkil/format daxil) açıldığını, "Bağla"
 düyməsinin bağlayıb sətri geri gətirdiyini, kateqoriya filtrinin YENİ
 `.py-row` elementlərinə görə işlədiyini.
+
+### Paylaşımlar — Dəqiq Ölçü/Proporsiya Düzəlişi (278.png maketinə görə, 28.10.2026)
+
+İstifadəçi əvvəlki sıx-siyahı redizaynını (yuxarı) "funksiya yox, ölçü/
+proporsiya" məsələsi kimi dəqiqləşdirdi — ayrı bir maket (`278.png`) ilə
+dəqiq piksel/nisbət tələbləri verdi. Yeddi konkret dəyişiklik edildi,
+**backend-ə TOXUNULMADI**, yalnız `Index.cshtml` + `paylasim.css` +
+`_UserLayout.cshtml`-də bir bayraq:
+
+1. **Siyahının eni** — `.py-filters`/`.py-list-wrap` indi `max-width:1200px;
+   width:100%; margin:0 auto; padding:0 32px; box-sizing:border-box;`
+   (əvvəlki 880px götürüldü). `.py-empty` artıq öz max-width-ini SAXLAMIR —
+   o, `.py-list-wrap`-in DAXİLİNDƏdir, valideynin 32px gutter-i kifayətdir
+   (iki qat 32px padding stacking-i qarşısı alındı).
+
+2. **Desktop grid** — `.py-row-summary` `display:flex`-dən **`display:grid;
+   grid-template-columns:280px minmax(0,1fr) 20px; gap:28px; padding:24px;
+   align-items:center;`**-ə keçdi. Markup-un özü dəyişmədi — sətir artıq
+   DƏQİQ üç uşaq elementdən ibarət idi (`.py-row-thumb`, `.py-row-main`,
+   `.py-row-chevron`), elə bu üçü grid-in üç sütununa birbaşa düşdü.
+
+3. **Şəkil** — `.py-row-thumb` `92×84px`-dən `280×158px`-ə sabitləndi,
+   `object-fit:cover` → **`contain`** (şəkildə yazı ola bilər, kəsilməsin).
+   Rəngli `.py-thumb-cN` fonu saxlanıldı — `contain`-in boş qalan kənarları
+   indi bu rəngi göstərir (letterbox effekti, qəsdən).
+
+4. **Şriftlər** — başlıq 16px/700 → **22px/1.3/600**; önizləmə 13px →
+   **16px/1.6**; meta sətri (tarix+kateqoriya+"Yeni") 11.5px → **13px**;
+   "Oxumağa davam et" 12.5px → **15px**.
+
+5. **Önizləmə 3 sətir** — `-webkit-line-clamp:2` → **`3`**. Mətn mənbəyi
+   DƏYİŞMƏDİ — JS artıq `bodyEl.textContent` işlədirdi (bu, şəkil/teq
+   daşımayan TƏMİZ mətndir, heç bir dəyişiklik lazım olmadı), yalnız ehtiyat
+   hərf həddi (CSS-in əsl kəsici olduğu, JS-in ötürdüyü xam mətni həddindən
+   artıq böyütməmək üçün) 130-dan **260**-a qaldırıldı (sütun indi qat-qat
+   enlidir, 3 sətirə daha çox söz sığır).
+
+6. **Yuxarı ağ "Geri / Paylaşımlar / tarix" zolağı — YALNIZ bu səhifədə
+   gizlədildi.** `_UserLayout.cshtml`-ə yeni, qlobal defolt-u DƏYİŞMƏYƏN bayraq
+   əlavə edildi: `@if (ViewData["HideTopbar"] == null) { <div class=
+   "fn-topbar-wrap">...</div> }` — bayraq `null` olduqda (bütün DİGƏR
+   səhifələrdə) əvvəlki kimi göstərilir, YALNIZ Paylaşım-ın özü
+   `ViewData["HideTopbar"] = true;` yazdığı üçün öz topbar-ı yoxa çıxır.
+   Əvəzinə yeni `.py-page-header` bloku: **28px** `.py-page-title` +
+   altında `.py-page-desc`. Header-in `margin-bottom:8px`-i `.fn-page`-in
+   öz flex `gap:16px`-i ilə BİRLİKDƏ dəqiq **24px** verir (iki ayrı CSS
+   mənbəyinin cəmi, `.fn-page`-in paylaşılan `gap` qaydasına TOXUNULMADAN).
+
+7. **Mobil — şəkil yuxarıda, mətn aşağıda.** Əvvəlki kiçik-inline-thumb +
+   gizli-excerpt üsulu SİLİNDİ, əvəzinə `@media (max-width:680px)` daxilində
+   `.py-row-summary` `grid-template-areas:"thumb" "main";` ilə TƏK sütuna
+   keçir — şəkil (`aspect-ratio:280/158`, tam en) yuxarıda, mətn aşağıda.
+   Üfüqi daşmanın qarşısını almaq üçün `.py-row-title`/`.py-row-excerpt`-ə
+   `overflow-wrap:break-word; word-break:break-word;` əlavə olundu (uzun,
+   boşluqsuz bir sözün sütunu basması riskinə qarşı).
+
+⚠️ **Canlı kodda tapılan, ÖZÜM aşkar edib düzəltdiyim gizli bug — "Bağla"
+düyməsi grid-i flex-ə çevirirdi.** `py-row-collapse-btn` klikində JS
+`row2.querySelector('.py-row-summary').style.display = 'flex';` yazırdı —
+bu, (3)-cü addımdan ƏVVƏL `.py-row-summary` CSS-də `display:flex` olduğu
+üçün düzgün idi, amma indi `display:grid`-dir. İnline stil CSS sinif
+qaydasını ƏZDİYİ üçün, bir dəfə bağlanıb YENİDƏN açılan sətir grid-dən
+flex-ə düşüb bütün sütun düzümünü sındırardı — heç bir xəta vermədən,
+yalnız "Bağla"dan sonra həmin TƏK sətirdə. Düzəliş: `style.display = ''`
+(boş sətir) — inline stil silinir, CSS-in özü (desktop grid və ya mobil
+grid-template-areas, hansı media sorğusu aktivdirsə) yenidən idarə edir.
+**Qayda (təkrar, YENİ forması):** bir elementin `display` dəyərini JS-dən
+inline `style` ilə "aç/bağla" məntiqi ilə idarə edəndə, CSS-dəki əsl dəyəri
+(`flex`/`grid`/`block`) sabit yazma — sonra CSS-in özü dəyişsə (flex→grid
+kimi) inline-dakı köhnə sətir unudulub qalar və yalnız O YOLDA (bura: bağla
+düyməsi) sakitcə sınar.
+
+⚠️ **Sxrinşot müqayisəsi EDİLMƏDİ — bu mühitdən mümkün deyil.** İstifadəçinin
+canlı tətbiqi öz Visual Studio/IIS Express-ində, `localhost:44331`-dədir —
+bu cloud sessiyasından ƏLÇATAN DEYİL, ona görə "100% miqyasda ekran görüntüsü
+ilə maketlə müqayisə et" tələbi **hərfi mənada yerinə yetirilmədi** — bunu
+açıq demək, "yoxladım, uyğundur" kimi yalan iddia etməkdən YAXŞIDIR. Əvəzinə
+hər 7 bənd ƏDƏD-ƏDƏD (280px, 158px, 22px, 16px, 13px, 15px, 3 sətir, 1200px,
+32px, 28px, 24px) kodda dəqiq tutuşduruldu. İstifadəçi Visual Studio-da
+**Rebuild All**, sonra brauzerdə (100% miqyas) `/User/Paylasim`-ı maketlə
+yan-yana qoyub yoxlamalıdır: şəklin 280×158px sabit qaldığını (kəsilmədən,
+`contain` ilə), üç-sütunlu grid-in düzgün düzüldüyünü, başlıq/mətn/tarix
+ölçülərinin uyğun olduğunu, yuxarıdaki köhnə ağ zolağın İNDİ yalnız bu
+səhifədə yoxa çıxdığını (digər səhifələrdə DƏYİŞMƏDİYİNİ — məs. `/User/
+Dashboard`-a baxıb topbar-ın orada hələ göründüyünü təsdiqləsə yaxşı olar),
+mobil enlikdə şəklin yuxarıda, mətnin aşağıda, üfüqi scroll olmadan
+göründüyünü.

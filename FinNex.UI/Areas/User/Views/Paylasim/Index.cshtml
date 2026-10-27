@@ -2,17 +2,18 @@
 @{
     ViewData["Title"] = "Paylaşımlar";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    // 28.10.2026 (ölçü/proporsiya düzəlişi) — yuxarıdaki ağ "Geri / Paylaşımlar /
+    // tarix" topbar-ı YALNIZ bu səhifədə gizlədilir (_UserLayout.cshtml-dəki
+    // "HideTopbar" bayrağı), əvəzinə aşağıda öz başlığımızı qoyuruq. Digər
+    // səhifələrə TOXUNULMUR — bayraq defolt heç yerdə set olunmur.
+    ViewData["HideTopbar"] = true;
 }
 
 <div class="fn-page">
 
-    @* Başlıq təkrarı (27.10.2026) — "Paylaşımlar" artıq yuxarıdaki ağ topbar-da
-       (_UserLayout.cshtml, fn-topbar-title) göstərilir, buradaki başlığı təkrar
-       yazmırıq, yalnız qısa izah qalır. *@
-    <div class="fn-page-head">
-        <div>
-            <div class="fn-page-sub">Oxumağa dəyər məlumatlar</div>
-        </div>
+    <div class="py-page-header">
+        <h1 class="py-page-title">Paylaşımlar</h1>
+        <div class="py-page-desc">Oxumağa dəyər məlumatlar</div>
     </div>
 
     @{
@@ -154,10 +155,13 @@
                 thumb.classList.add('py-thumb-img');
             }
 
+            // Önizləmə — YALNIZ təmiz mətn (textContent şəkli/teqləri özü atır).
+            // Hərf həddi CSS-in 3-sətirlik line-clamp-i üçün ehtiyat payıdır —
+            // əsl kəsim CSS-dədir, bura yalnız DOM-a çox böyük mətn göndərməsin.
             var excerptEl = row.querySelector('.py-row-excerpt');
             if (excerptEl) {
                 var text = (bodyEl.textContent || '').replace(/\s+/g, ' ').trim();
-                if (text.length > 130) text = text.slice(0, 130).trim() + '…';
+                if (text.length > 260) text = text.slice(0, 260).trim() + '…';
                 excerptEl.textContent = text;
             }
         });
@@ -177,7 +181,9 @@
                 var row2 = document.getElementById(closeBtn.getAttribute('data-target'));
                 if (!row2) return;
                 row2.querySelector('.py-row-full').style.display = 'none';
-                row2.querySelector('.py-row-summary').style.display = 'flex';
+                // Boş sətirlə CSS-in özünə (grid, 28.10.2026) qayıdır —
+                // 'flex' yazsaq inline stil grid-i əzərdi.
+                row2.querySelector('.py-row-summary').style.display = '';
                 row2.scrollIntoView({ block: 'nearest' });
             }
         });
