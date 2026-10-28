@@ -7203,3 +7203,47 @@ xəta YENƏ çıxarsa, bu dəfə `Logs\log-<bugünkü-tarix>.txt`-də "Marif AI
 çağırışı uğursuz — HTTP ..." sətrini tapıb bura (və ya birbaşa mənə)
 göstərməlidir ki, əsl səbəb (açar səhvdir / kredit yoxdur / şəbəkə
 bloklanıb) aydınlaşsın.
+
+### "claude-sonnet-4-7" Model Adı Model Dəyişikliyindən Bəri HEÇ VAXT Uğurlu Olmamışdı (28.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Loglama əlavə olunandan sonra belə eyni PDF ilə "AI cavabı alınmadı" davam etdi.
+**Fərqləndirici test** — HR Məsləhətçi-yə "salam" yazıldı, **O DƏRHAL cavab
+verdi** (eyni serverdə, eyni `Anthropic:ApiKey`, eyni `"Anthropic"` adlı
+`HttpClient`). Bu, açarın/kreditin/şəbəkənin düzgün olduğunu dərhal sübut
+etdi — problem YALNIZ Marif-in özündə idi.
+
+**Kök səbəb — 27.10.2026-dakı model dəyişikliyi (bax yuxarı "Model `Claude
+Opus 4.7` → `Claude Sonnet 4.7`-yə DÜŞÜRÜLDÜ" bölməsi) HEÇ VAXT real
+Anthropic API-sinə qarşı yoxlanılmamışdı.** Həmin bölmədəki "iki sual dəsti
+≈ 0,06 ABŞ dolları" xərci — model DƏYİŞDİRİLMƏZDƏN ƏVVƏL, köhnə
+`"claude-opus-4-7"` ilə yaranmışdı ("İlk versiyada … Opus seçilmişdi …
+istifadəçi real sessiyalarda FAKTİKİ XƏRCİ GÖRDÜKDƏN SONRA … aşağı salmağı
+istədi" — yəni xərc görülüb, SONRA model dəyişdirilib). Model adı
+`"claude-sonnet-4-7"`-yə dəyişdirildikdən sonra Marif HEÇ bir sual dəsti
+uğurla hazırlamamışdı — 28.10.2026-dakı bütün "AI cavabı alınmadı" hadisələri
+elə BU günə, elə bu dəyişikliyə aiddir. `"claude-sonnet-4-7"` ya mövcud
+olmayan, ya da hesabda açıq olmayan bir model ID-dir — Anthropic bunu
+`!IsSuccessStatusCode` ilə rədd edir, bizim kod isə (düzəlişdən əvvəl) səbəbi
+loglamadığı üçün bu, uzun müddət gizli qaldı.
+
+**Düzəliş:** `MarifAiService.Model` → yenidən `"claude-opus-4-7"` (HR
+Məsləhətçi-nin işlətdiyi, SÜBUT OLUNMUŞ model ID). Xərc-azaltma niyyəti
+(ucuz model) özü doğru qərar idi, amma **model adının özü yoxlanılmadan**
+tətbiq edilmişdi — nəticə əks oldu: xərci azaltmaq əvəzinə modulu tamamilə
+sındırdı.
+
+**Qayda:** bir AI servisinin model ID-sini dəyişəndə (xərc azaltmaq, yeni
+versiyaya keçmək və s. səbəblə) — "sintaksis düzgündür" (string dəyişib,
+kompilyasiya olunur) ilə "bu model ID Anthropic-də HƏQİQƏTƏN mövcuddur və
+hesabda açıqdır" EYNİ ŞEY DEYİL. Dəyişiklikdən sonra **ən azı bir real
+sınaq** (real API çağırışı, uğurlu cavab) olmadan "artıq ucuzdur" demə —
+əks halda model sadəcə ÜMUMIYYƏTLƏ İŞLƏMİR, "ucuz" sualı mənasız qalır.
+Fərqləndirici test kimi: EYNİ açarı/HttpClient-i işlədən, artıq sınanmış
+başqa bir servisi (bura: HR Məsləhətçi) sınamaq — açar/şəbəkə ilə model-
+spesifik xəta arasında saniyələr içində aydın sərhəd çəkir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (tək sətirlik sabit dəyər dəyişikliyi). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra YENİDƏN publish edib eyni PDF ilə
+sual hazırlatmağı sınamalıdır — bu dəfə uğurlu nəticə gözlənilir
+(HR Məsləhətçi-nin elə indi göstərdiyi eyni, işlək model ID-dir).
