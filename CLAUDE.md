@@ -161,11 +161,79 @@ Detail səhifəsi onu çağırır. Netlərin cəmi **ödənilmiş NET-ə qəpiyi
 
 Bunlar **bilərəkdən** dəyişdirilməyib — pulun həqiqətən çıxdığı ayı yazırlar:
 
-- `MaasController.MezQabaqcadanBrutMapAsync` — **provodka** (xərc sətri);
-- `MaasController` Maas Detail başlığı — `ViewBag.TamGross` / `TamNet`.
+- ~~`MaasController.MezQabaqcadanBrutMapAsync` — **provodka** (xərc sətri);~~
+  **28.10.2026-da DƏYİŞDİRİLDİ** — bax aşağı "Provodka — Qabaqcadan Məzuniyyət
+  Xərci AYLARA BÖLÜNMÜŞ Modelə Keçdi" bölməsi.
+- `MaasController` Maas Detail başlığı — `ViewBag.TamGross` / `TamNet`. **HƏLƏ
+  KÖHNƏDİR** — aşağıdakı 28.10.2026 düzəlişi BUNA toxunmayıb.
 
 Yəni «ödənilmə ayı» filtri artıq önizləmə sorğusu ilə **eyni deyil**. Uçot tərəfi
-bunları da aylara bölmək istəyirsə — **mühasibin qərarıdır**, özbaşına dəyişmə.
+bunu da aylara bölmək istəyirsə — **mühasibin qərarıdır**, özbaşına dəyişmə.
+
+### Provodka — Qabaqcadan Məzuniyyət Xərci AYLARA BÖLÜNMÜŞ Modelə Keçdi (28.10.2026, KRİTİK)
+
+Real hadisə: Elxan Axundov üçün Oktyabr 2026 provodkasının "rezident işçilərə
+məzuniyyət haqqı" sətri mühasibin gözlədiyindən **4.813,85 AZN az** çıxdı —
+dəqiq onun 01.10–31.10.2026 məzuniyyət avansının brüt dəyəri qədər. Maaş Detalı
+səhifəsi "Mezuniyyet (qabaqcadan — bu ayın payı)" sətrində bu məbləği **artıq
+oktyabra aid** göstərirdi (günlərin TAM oktyabrda olması). Mühasib: *"bu
+hesablama oktyabra aiddir sentyabra yox axi"* — yəni avans sentyabrda
+ödənilsə belə, XƏRCİN ÖZÜ məzuniyyət günlərinin düşdüyü aya (oktyabr) aid
+olmalıdır — bu, yuxarıdakı "QƏSDƏN KÖHNƏ QALDI" qeydinin gözlədiyi məhz O
+mühasib qərarıdır.
+
+**Kök səbəb:** `MezQabaqcadanBrutMapAsync` 27.08.2026-dakı "Aylara Bölünmə"
+keçidini (`AvansAylaraBolunurmu`) **heç yoxlamırdı** — kəsim tarixindən
+(01.08.2026) SONRAKI aylar üçün də şərtsiz köhnə "ödənmə ayı" filtrini
+işlədirdi. Halbuki `TopluHesabla` ekranının öz "Məzuniyyət haqqı" sütunu
+(sətir ~1316-1355) elə HƏMİN kəsimi onsuz da yoxlayır və post-kəsim aylarda
+`MaasHesablamaService.MezuniyyetAvansAyPaylariAsync`-dan (ay-ay bölünmüş
+pay, **yeganə kanonik mənbə** — bax yuxarı) istifadə edir. Yəni provodka ilə
+Toplu Hesabla ekranı artıq fərqli ay-attribusiya modelləri işlədirdi —
+Toplu Hesabla düzgün (yeni) model idi, provodka köhnə qalmışdı.
+
+**Düzəliş — `MaasController.MezQabaqcadanBrutMapAsync`:** indi `TopluHesabla`-nın
+eyni naxışını (sorğu şərti + `MezuniyyetAvansAyPaylariAsync` çağırışı) təkrarlayır
+— yeni düstur İCAD EDİLMƏYİB, mövcud kanonik mənbəyə müraciət edilib:
+- `AvansAylaraBolunurmu(il, ay)` **true**-dursa → `Mezuniyyet` qeydləri **tarix
+  kəsişməsi** üzrə seçilir (`BaslamaTarixi < növbətiAyİlk && BitmeTarixi >=
+  ayİlkGünü`), hər qeyd üçün `MezuniyyetAvansAyPaylariAsync`-dan bu AYIN payı
+  (`Brut`) oxunur, işçi üzrə cəmlənir.
+- **false**-dursa (kəsimdən ƏVVƏLKİ aylar) → köhnə "ödənmə ayı" filtri olduğu
+  kimi qalır — keçmiş aylar üçün artıq saxlanmış provodkaların yenidən
+  hesablanması/dəyişməsi riski YOXDUR.
+
+**Çağırış yerləri (ikisi də avtomatik düzəldi, ayrıca dəyişiklik lazım
+olmadı):** `PravodkaExport` (saxlanmış maaşdan) VƏ `PravodkaOnizlemeExport`
+(dry-run önizləmə) — hər ikisi eyni `MezQabaqcadanBrutMapAsync`-i çağırır
+(sətir 105, 405), tək yerdə düzəliş kifayətdir.
+
+⚠️ **`ExcelIxrac` (Mühasib "Avans hesablama.xls" ixracı, sətir 524) TOXUNULMADI**
+— bu, PROVODKADAN AYRI, DÖRDÜNCÜ bir hesablama yoludur (`ayBas`/`ayBit`
+`BaslamaTarixi` üzrə sadə filtr, `MezuniyyetAvansAyPaylariAsync`-ı ÇAĞIRMIR,
+`OdenenMeblegBrut`-u TAM yazır). Bu sessiyada istifadəçi yalnız provodka
+sətrini göstərdi — `ExcelIxrac` eyni bugu daşıya bilər (çoxaylı məzuniyyətdə
+tam brütü YALNIZ başlanğıc ayına yazar), amma ayrıca təsdiqlənməyib,
+dəyişdirilmədi.
+
+⚠️ **`ViewBag.TamGross`/`TamNet` (Maas Detail başlığı) TOXUNULMADI** — yuxarıdakı
+qeyddə göstərildiyi kimi bu, ayrıca bir "qəsdən köhnə qalan yer"dir, bu gün
+tutulan qərar ona aid edilmədi.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — kəsimdən (01.08.2026) ƏVVƏLKİ aylar üçün
+`avansAylaraBolunur=false` qalır, köhnə davranış dəyişmir. Artıq YARADILMIŞ
+(bu düzəlişdən əvvəlki) Oktyabr 2026 provodkası özbaşına yenilənmir —
+istifadəçi "Yenidən Hesabla"/təkrar `PravodkaExport` çağırışı ilə yeni
+Excel-i təkrar yükləməlidir ki, düzəliş əks olunsun.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, `_hesablamaService`-in sinif sahəsi kimi artıq
+mövcud olduğu təsdiqləndi — yeni asılılıq əlavə edilmədi). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: Oktyabr
+2026 provodkasını yenidən ixrac et → Elxan Axundovun (və bənzər hallarda
+digər işçilərin) "rezident işçilərə məzuniyyət haqqı" sətrinin indi 4.813,85
+AZN artdığını (yəni Maaş Detalı-dakı "bu ayın payı" ilə üst-üstə düşdüyünü)
+təsdiqləməli — "Maliyyəyə toxunan hər dəyişiklik" qaydasına görə.
 
 ### Qazanc tarixçəsi də iş günü bölgüsündədir
 

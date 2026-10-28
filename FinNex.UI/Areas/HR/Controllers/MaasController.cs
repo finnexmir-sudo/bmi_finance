@@ -458,34 +458,69 @@ namespace FinNex.UI.Areas.HR.Controllers
             catch { return 0m; }
         }
 
-        // Bu ay ÖDƏNİLMİŞ (qabaqcadan) məzuniyyət avanslarının BRÜT-ü — işçi üzrə.
+        // Bu ay ÖDƏNİLMİŞ/BU AYA DÜŞƏN (qabaqcadan) məzuniyyət avanslarının BRÜT-ü — işçi üzrə.
         // Provodkada məzuniyyət xərc sətrinə əlavə olunur (cari ay + avans brüt).
         //
-        // ⚠️ 27.08.2026 — BU FİLTR QƏSDƏN KÖHNƏ (KASSA) ƏSASINDA QALDI.
-        // Vergi bazası və önizləmə artıq AYLARA BÖLÜNMÜŞ modeldədir (kəsim:
-        // Mezuniyyet:AvansAylaraBolunmeBaslama), yəni buradakı «ödənilmə ayı»
-        // filtri ONLARLA ARTIQ EYNİ DEYİL — əvvəlki şərh «eyni filtrdir»
-        // deyirdi, indi doğru deyil.
-        // Səbəb: provodka pulun HƏQİQƏTƏN çıxdığı ayı yazır (avqustda 365,37
-        // nağd ödənilib). Hesabat/uçot tərəfi bunu aylara bölmək istəyirsə,
-        // qərar mühasibindir — özbaşına dəyişilməyib.
-        // Toxunanda: bu metod + Maas Detail başlığındakı «Tam gross/net»
-        // (ViewBag.TamGross / TamNet) EYNİ kassa məntiqindədir, ikisini birlikdə dəyiş.
+        // ✅ 28.10.2026 — AVVƏLKİ "QƏSDƏN KÖHNƏ QALDI" QƏRARI MÜHASİB TƏRƏFİNDƏN
+        // DƏYİŞDİRİLDİ (Elxan Axundov 4.813,85 nümunəsi: 01.10–31.10.2026
+        // məzuniyyəti TAM oktyabra aiddir, amma avans sentyabrda ödənildiyi üçün
+        // köhnə "ödənmə ayı" filtri bunu sentyabrın provodkasına yazırdı; mühasib
+        // qərarı — "bu hesablama oktyabra aiddir, sentyabra yox"). İndi bu metod
+        // `TopluHesabla`-nın (sətir ~1316-1355) elə özünün çağırdığı KANONIK
+        // mənbəyə — `MaasHesablamaService.MezuniyyetAvansAyPaylariAsync` (günlərin
+        // düşdüyü aya görə bölünmüş pay) — müraciət edir, YENİ düstur İCAD
+        // EDİLMƏYİB. Kəsimdən (`AvansAylaraBolunurmu`) ƏVVƏLKİ aylar üçün köhnə
+        // "ödənmə ayı" filtri olduğu kimi qalır — keçmiş provodkaların yenidən
+        // hesablanması riski yoxdur.
+        //
+        // ⚠️ Maas Detail başlığındakı «Tam gross/net» (ViewBag.TamGross/TamNet)
+        // HƏLƏ KÖHNƏ (kassa) məntiqdədir — bu dəyişiklik ONA TOXUNMUR, ayrıca
+        // qərar tələb edir (CLAUDE.md "QƏSDƏN KÖHNƏ (KASSA) QALAN YERLƏR").
         private async Task<Dictionary<int, decimal>> MezQabaqcadanBrutMapAsync(int il, int ay)
         {
-            var avanslar = await _unitOfWork.Repository<Mezuniyyet>()
+            bool avansAylaraBolunur = _hesablamaService.AvansAylaraBolunurmu(il, ay);
+            var ayIlkGunu    = new DateTime(il, ay, 1);
+            var novbetiAyIlk = ayIlkGunu.AddMonths(1);
+
+            var avansBazaSorgu = _unitOfWork.Repository<Mezuniyyet>()
                 .Query()
                 .Where(x =>
                     !x.Silinib &&
                     x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis &&
-                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib &&
-                    x.OdenilmeTarixi.HasValue &&
-                    x.OdenilmeTarixi.Value.Year == il &&
-                    x.OdenilmeTarixi.Value.Month == ay)
-                .ToListAsync();
-            return avanslar
-                .GroupBy(x => x.IsciId)
-                .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenMeblegBrut ?? 0m));
+                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib);
+
+            // Kəsişmə şərti `.Date`-siz — TopluHesabla-dakı (sətir 1332) eyni naxış.
+            var avanslar = avansAylaraBolunur
+                ? await avansBazaSorgu
+                    .Where(x => x.BaslamaTarixi < novbetiAyIlk && x.BitmeTarixi >= ayIlkGunu)
+                    .ToListAsync()
+                : await avansBazaSorgu
+                    .Where(x => x.OdenilmeTarixi.HasValue &&
+                                x.OdenilmeTarixi.Value.Year == il &&
+                                x.OdenilmeTarixi.Value.Month == ay)
+                    .ToListAsync();
+
+            var map = new Dictionary<int, decimal>();
+            foreach (var av in avanslar)
+            {
+                decimal brut;
+                if (avansAylaraBolunur)
+                {
+                    // Bu ayın payı — hesablama ilə EYNİ mənbədən (tək yazıcı,
+                    // bax CLAUDE.md "Ay-ay payların yeganə mənbəyi").
+                    var paylar = await _hesablamaService.MezuniyyetAvansAyPaylariAsync(
+                        av.IsciId, av.BaslamaTarixi, av.BitmeTarixi, av.OdenenMebleg);
+                    var buAy = paylar.FirstOrDefault(p => p.Il == il && p.Ay == ay);
+                    brut = buAy?.Brut ?? 0m;
+                }
+                else
+                {
+                    brut = av.OdenenMeblegBrut ?? 0m;
+                }
+                if (brut <= 0) continue;
+                map[av.IsciId] = map.GetValueOrDefault(av.IsciId) + brut;
+            }
+            return map;
         }
 
         // Provodka mənbəyi — saxlanmış Maas və dry-run nəticəsi eyni şəklə düşür.
