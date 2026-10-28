@@ -278,6 +278,21 @@
     letter-spacing: -0.01em;
 }
 
+/* ── Üz qabığı şəkli — mətndən AYRI sahə, başlıqdan ƏVVƏL banner (28.10.2026) ── */
+.py-cover-wrap {
+    margin: 16px 24px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f1f3f8;
+}
+
+.py-cover-img {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+}
+
 /* ── Zəngin mətn məzmunu ───────────────────── */
 .py-body {
     padding: 8px 24px 10px;
@@ -383,6 +398,8 @@
     .py-row-chevron { display: none; }
 
     .py-card-head { padding: 16px 16px 0; }
+    .py-cover-wrap { margin: 14px 16px 0; }
+    .py-cover-img { max-height: 220px; }
     .py-title { font-size: 18.5px; margin: 14px 16px 4px; }
     .py-body { padding: 6px 16px 10px; }
     .py-body img { max-height: 260px; }

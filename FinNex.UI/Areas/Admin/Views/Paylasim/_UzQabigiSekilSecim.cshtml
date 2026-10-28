@@ -1,0 +1,83 @@
+@model FinNex.Application.DTOs.Paylasim.PaylasimYaratDto
+@{
+    // Mətndən AYRI, xüsusi şəkil sahəsi (28.10.2026, istifadəçi tələbi: "şəkil
+    // üçün ayrıca əlavə, mətn üçün ayrı olsun"). Quill-in öz "image" toolbar
+    // düyməsi (Məzmun sahəsinin içində) SİLİNMƏDİ — bu, ONA ƏLAVƏ, daha sadə yoldur.
+    var secili = !string.IsNullOrEmpty(Model.UzQabigiSekilUrl);
+}
+
+<div class="mb-3">
+    <label class="form-label small text-muted d-block mb-2">Üz qabığı şəkli (ixtiyari)</label>
+
+    <input type="hidden" name="UzQabigiSekilUrl" id="pyUzSekilUrl" value="@Model.UzQabigiSekilUrl">
+
+    <div id="pyUzSekilPreviewWrap" class="mb-2" style="@(secili ? "" : "display:none")">
+        <img id="pyUzSekilPreview" src="@Model.UzQabigiSekilUrl" alt=""
+             style="width:100%;max-height:160px;object-fit:contain;background:#f1f3f8;border-radius:10px;border:1px solid #e3e5eb;">
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1" id="pyUzSekilSecBtn">
+            <i class="bi bi-image me-1"></i><span id="pyUzSekilBtnText">@(secili ? "Şəkli dəyiş" : "Şəkil seç")</span>
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm flex-shrink-0" id="pyUzSekilSilBtn" style="@(secili ? "" : "display:none")" title="Şəkli sil">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div class="form-text">Mətnin içinə YOX — ayrıca, postun başına qoyulan tək bir şəkildir.</div>
+</div>
+
+<script>
+(function () {
+    const urlInput = document.getElementById('pyUzSekilUrl');
+    const previewWrap = document.getElementById('pyUzSekilPreviewWrap');
+    const preview = document.getElementById('pyUzSekilPreview');
+    const secBtn = document.getElementById('pyUzSekilSecBtn');
+    const btnText = document.getElementById('pyUzSekilBtnText');
+    const silBtn = document.getElementById('pyUzSekilSilBtn');
+
+    secBtn.addEventListener('click', function () {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+        input.onchange = async () => {
+            const fayl = input.files[0];
+            if (!fayl) return;
+
+            const fd = new FormData();
+            fd.append('fayl', fayl);
+
+            secBtn.disabled = true;
+            btnText.textContent = 'Yüklənir...';
+
+            try {
+                const resp = await fetch('@Url.Action("SekilYukle")', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (data.ok) {
+                    urlInput.value = data.url;
+                    preview.src = data.url;
+                    previewWrap.style.display = '';
+                    silBtn.style.display = '';
+                    btnText.textContent = 'Şəkli dəyiş';
+                } else {
+                    alert(data.xeta || 'Şəkil yüklənmədi.');
+                    btnText.textContent = urlInput.value ? 'Şəkli dəyiş' : 'Şəkil seç';
+                }
+            } catch {
+                alert('Şəbəkə xətası — şəkil yüklənmədi.');
+                btnText.textContent = urlInput.value ? 'Şəkli dəyiş' : 'Şəkil seç';
+            } finally {
+                secBtn.disabled = false;
+            }
+        };
+        input.click();
+    });
+
+    silBtn.addEventListener('click', function () {
+        urlInput.value = '';
+        previewWrap.style.display = 'none';
+        silBtn.style.display = 'none';
+        btnText.textContent = 'Şəkil seç';
+    });
+})();
+</script>

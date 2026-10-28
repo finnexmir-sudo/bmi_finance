@@ -45,6 +45,7 @@
                     <div class="card-body">
                         <h6 class="fw-bold mb-3">Paylaşım ayarları</h6>
 
+                        @await Html.PartialAsync("_UzQabigiSekilSecim", Model)
                         @await Html.PartialAsync("_KateqoriyaSecim", Model)
                         @await Html.PartialAsync("_HedefSecim")
 

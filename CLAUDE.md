@@ -7542,3 +7542,60 @@ SuallarHazirlaAsync` imzasına yeni parametr (`List<string>? movcudSuallar`)
 həm `MarifController.SuallarHazirla`-dakı çağırış eyni anda yenilənməlidir.
 Sorğu mənbəyə görə (`HRDaxiliQaydaId`/`HRQanunFaylId`/`MenbeMetn` üçlüyü)
 bağlanmalıdır — fərqli mənbəli suallar qarışdırılmamalıdır.
+
+## Paylaşımlar — Şəkil Mətndən AYRI Sahəyə Çıxarıldı (28.10.2026)
+
+İstifadəçi ilk real paylaşımı (bax yuxarı modul tarixçəsi) hazırlayanda ekran-
+görüntüsü göstərdi: Quill-in "image" toolbar düyməsi ilə yüklənən bir poster-
+tərzi qrafik (bütün başlıq/tarix mətni şəklin ÖZÜNƏ bişirilmiş) bütün "Məzmun"
+sahəsini doldurmuşdu. *"paylasim hazirlamada cetinlik cekireme,olmazki sekil
+ucun ayrica elave etme olsun metn ucun ayri"* — şəkil və mətn ayrı-ayrı sahələr
+istədi.
+
+**Həll — yeni, MÜSTƏQİL "Üz qabığı şəkli" sahəsi, Quill-in öz inline-şəkil
+imkanı SİLİNMƏDİ.** `Melumat.UzQabigiSekilUrl` (`string?`, migration
+`20261028100000_PaylasimUzQabigiSekil.cs`, yalnız `AddColumn`) — Admin
+formunda (`_UzQabigiSekilSecim.cshtml`, yeni paylaşılan partial, `_Kateqoriya
+Secim`/`_HedefSecim`-in yanında) ayrıca "Şəkil seç" düyməsi, önizləmə və "Sil"
+düyməsi olan bir sahədir, Quill-dən TAM MÜSTƏQİLDİR. Eyni, artıq mövcud
+`SekilYukle` AJAX endpoint-i (`PaylasimController`, `/dms/paylasim-sekiller/`-ə
+yazır) TƏKRAR işlədilir — yeni upload-yolu İCAD EDİLMƏDİ, mövcud infrastruktur
+ikinci dəfə çağırılır.
+
+**Göstərmə prioriteti — server-rendered cover ÜSTÜN, JS-fallback KÖHNƏ
+postlar üçün qalır:**
+- İşçi lentinin sıx sətir görünüşündə (`.py-row-thumb`) — `UzQabigiSekilUrl`
+  varsa serverdən birbaşa `<img>` render olunur, `data-cover="true"` ilə
+  işarələnir. JS-in köhnə "mətnin içindən ilk şəkli çıxar" məntiqi (bax
+  "Böyük kart Lentindən Sıx SİYAHI Dizaynına" bölməsi) `data-cover="true"`
+  olan sətirlərdə ARTIQ ÇALIŞMIR (overwrite etmir) — AMMA excerpt (qısa mətn)
+  hesablaması eyni iterasiyada davam edir, JS-dən erkən `return` YAZILMADI
+  (yazılsaydı excerpt də skip olardı — bax "Pagination Əvvəlki" bugundakı
+  eyni "iki müstəqil şərt" dərsi, fərqli formada).
+- `UzQabigiSekilUrl` YOXDURSA (köhnə postlar, elə ilk "İlk bankomat" paylaşımı
+  daxil) — əvvəlki JS-fallback (body-dəki ilk `<img>`-i çıxar) TOXUNULMADI,
+  köhnə postlar əvvəlki kimi işləməyə davam edir.
+- Tam-görüntü açılanda (`.py-row-full`) üz qabığı şəkli `.py-card-head`-dən
+  SONRA, `.py-title`-dan ƏVVƏL banner kimi göstərilir (`.py-cover-wrap`/
+  `.py-cover-img`, `max-height:360px`, `object-fit:contain` — `.py-body img`
+  ilə EYNİ "mətn/rəqəm kəsilməsin" qaydası, çünki bu şəkillər də adətən
+  mətn daşıyır).
+- Admin idarəetmə siyahısında (`Index.cshtml`) da kiçik bir kart-üstü
+  thumbnail əlavə olundu (sırf görüntü, filtrə təsiri yoxdur).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR, DAVRANIŞ POZULMUR** — yeni sütun `NULL`-dan
+başlayır, mövcud (artıq Quill-dən inline şəkilli) postlar `UzQabigiSekilUrl`
+olmadan əvvəlki kimi göstərilməyə davam edir. İstifadəçinin artıq göndərdiyi
+"İlk bankomat" postu YENİDƏN REDAKTƏ EDİLMƏLİDİR ki, yeni "Üz qabığı şəkli"
+sahəsindən faydalansın — avtomatik köçürülmür (admin istəsə, mövcud inline
+şəkli saxlayıb YA DA üz qabığına köçürüb mətndən silə bilər, hər ikisi əl
+işidir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə hər dəyişən fayl üzrə, mojibake skanı — hər ikisi
+təmiz, DTO↔Entity↔Servis↔Controller↔View beş qatı əl ilə tutuşduruldu).
+İstifadəçi Visual Studio-da **Rebuild All**, `Update-Database`, sonra real
+ssenari ilə yoxlamalıdır: yeni paylaşım yaradanda "Üz qabığı şəkli" sahəsinə
+şəkil yükləyib ayrıca mətn yazsın → işçi lentində düzgün miniatür+banner
+göründüyünü, köhnə ("İlk bankomat") postun hələ əvvəlki kimi işlədiyini,
+"Şəkli sil" düyməsinin sahəni təmizlədiyini təsdiqləməli.

@@ -16,6 +16,16 @@ namespace FinNex.Domain.Entities.Communication
         public string MetnHtml { get; set; } = null!;
 
         /// <summary>
+        /// Üz qabığı şəkli — ixtiyaridir (28.10.2026). Admin şəkli mətnin İÇİNƏ
+        /// (Quill toolbar) yox, AYRICA bu sahəyə yükləyə bilər — istifadəçi qərarı:
+        /// "şəkil üçün ayrıca əlavə, mətn üçün ayrı olsun". `/dms/paylasim-sekiller/`
+        /// yoluna yazılmış faylın nisbi URL-idir, eyni DMS qovluğunu MetnHtml-dəki
+        /// inline şəkillərlə paylaşır. Quill-in öz "image" toolbar düyməsi SİLİNMƏDİ —
+        /// bu, ƏLAVƏ, daha sadə yoldur, mövcud imkanı əvəz etmir.
+        /// </summary>
+        public string? UzQabigiSekilUrl { get; set; }
+
+        /// <summary>
         /// Göndərən — AppUser-dir, Isci DEYİL (27.10.2026, düzəliş): Admin hesabının
         /// IsciId-si boş ola bilər (işçi profilinə bağlı deyil), ona görə Isci FK-sı
         /// "İşçi profiliniz tapılmadı" ilə HƏR publish cəhdini bloklayırdı. AppUser

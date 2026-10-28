@@ -122,6 +122,7 @@ namespace FinNex.Application.Services.Paylasim
             {
                 Basliq = dto.Basliq.Trim(),
                 MetnHtml = _sanitizer.Sanitize(dto.MetnHtml),
+                UzQabigiSekilUrl = string.IsNullOrWhiteSpace(dto.UzQabigiSekilUrl) ? null : dto.UzQabigiSekilUrl.Trim(),
                 GonderenAppUserId = appUserId,
                 KateqoriyaId = dto.KateqoriyaId,
                 Qaralamadir = dto.QaralamaOlaraqSaxla,
@@ -147,6 +148,7 @@ namespace FinNex.Application.Services.Paylasim
 
             melumat.Basliq = dto.Basliq.Trim();
             melumat.MetnHtml = _sanitizer.Sanitize(dto.MetnHtml);
+            melumat.UzQabigiSekilUrl = string.IsNullOrWhiteSpace(dto.UzQabigiSekilUrl) ? null : dto.UzQabigiSekilUrl.Trim();
             melumat.KateqoriyaId = dto.KateqoriyaId;
 
             // Yalnız HƏLƏ QARALAMA olan post Paylaş/Qaralama saxla ilə vəziyyət dəyişə bilər —
@@ -325,6 +327,8 @@ namespace FinNex.Application.Services.Paylasim
                 return "Başlıq 300 simvoldan uzun ola bilməz.";
             if (string.IsNullOrWhiteSpace(dto.MetnHtml) || dto.MetnHtml.Trim() == "<p><br></p>")
                 return "Məzmun boş ola bilməz.";
+            if (dto.UzQabigiSekilUrl != null && dto.UzQabigiSekilUrl.Trim().Length > 500)
+                return "Üz qabığı şəkli yolu çox uzundur.";
             if (!dto.HamisinaGonder && (dto.SeciliIsciIdler == null || dto.SeciliIsciIdler.Count == 0))
                 return "Ən azı bir işçi seçin, yaxud \"Hamısına göndər\" seçimini işarələyin.";
             return null;
@@ -335,6 +339,7 @@ namespace FinNex.Application.Services.Paylasim
             Id = m.Id,
             Basliq = m.Basliq,
             MetnHtml = m.MetnHtml,
+            UzQabigiSekilUrl = m.UzQabigiSekilUrl,
             GonderenAdi = $"{m.GonderenAppUser.Ad} {m.GonderenAppUser.Soyad}",
             YaradilmaTarixi = m.YaradilmaTarixi,
             Aktivdir = m.Aktivdir,

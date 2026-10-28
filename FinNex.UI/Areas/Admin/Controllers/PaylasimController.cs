@@ -98,6 +98,7 @@ public class PaylasimController : Controller
         {
             Basliq = post.Basliq,
             MetnHtml = post.MetnHtml,
+            UzQabigiSekilUrl = post.UzQabigiSekilUrl,
             HamisinaGonder = movcudHedef.Count == 0,
             SeciliIsciIdler = movcudHedef,
             KateqoriyaId = post.KateqoriyaId

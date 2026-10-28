@@ -6,6 +6,9 @@ namespace FinNex.Application.DTOs.Paylasim
         public int Id { get; set; }
         public string Basliq { get; set; } = "";
         public string MetnHtml { get; set; } = "";
+
+        /// <summary>Üz qabığı şəkli — ixtiyaridir, mətndən AYRI sahədə saxlanılır (28.10.2026).</summary>
+        public string? UzQabigiSekilUrl { get; set; }
         public string GonderenAdi { get; set; } = "";
         public DateTime YaradilmaTarixi { get; set; }
         public bool Aktivdir { get; set; }
@@ -24,6 +27,9 @@ namespace FinNex.Application.DTOs.Paylasim
     {
         public string Basliq { get; set; } = "";
         public string MetnHtml { get; set; } = "";
+
+        /// <summary>Üz qabığı şəkli — ixtiyaridir, "Şəkil yüklə" sahəsindən gələn `/dms/...` yolu.</summary>
+        public string? UzQabigiSekilUrl { get; set; }
 
         /// <summary>true (defolt) — hamısına görünür. false-dursa `SeciliIsciIdler` məcburidir.</summary>
         public bool HamisinaGonder { get; set; } = true;

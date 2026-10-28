@@ -56,9 +56,18 @@
                     var renk = pyIdx % 6;
                     <div class="py-row" data-kat="@p.KateqoriyaAdi" id="pyRow_@p.Id">
                         <div class="py-row-summary" data-target="pyRow_@p.Id">
-                            <div class="py-row-thumb py-thumb-c@renk">
-                                <i class="bi bi-journal-richtext"></i>
-                            </div>
+                            @if (!string.IsNullOrEmpty(p.UzQabigiSekilUrl))
+                            {
+                                <div class="py-row-thumb py-thumb-img" data-cover="true">
+                                    <img src="@p.UzQabigiSekilUrl" alt="">
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="py-row-thumb py-thumb-c@renk">
+                                    <i class="bi bi-journal-richtext"></i>
+                                </div>
+                            }
                             <div class="py-row-main">
                                 <div class="py-row-meta">
                                     @if (yeniKart)
@@ -89,6 +98,12 @@
                                     <div class="py-head-badges"><span class="py-kat-badge">@p.KateqoriyaAdi</span></div>
                                 }
                             </div>
+                            @if (!string.IsNullOrEmpty(p.UzQabigiSekilUrl))
+                            {
+                                <div class="py-cover-wrap">
+                                    <img src="@p.UzQabigiSekilUrl" alt="" class="py-cover-img">
+                                </div>
+                            }
                             <div class="py-title">@p.Basliq</div>
                             <div class="py-body" id="pyBody_@p.Id">@Html.Raw(p.MetnHtml)</div>
                             <div class="py-row-collapse-wrap">
@@ -144,9 +159,14 @@
                 }
             });
 
+            // Üz qabığı şəkli ARTIQ SERVERDƏN render olunubsa (data-cover="true"),
+            // mətnin içindəki ilk şəkli onun üzərinə YAZMA — ayrıca seçilmiş şəkil
+            // prioritetlidir (28.10.2026, "şəkil üçün ayrıca sahə" tələbi). Əlavə
+            // `return` BURADA YAZILMADI — excerpt hesablaması aşağıda davam etməlidir.
             var thumb = row.querySelector('.py-row-thumb');
+            var hasCover = thumb && thumb.dataset.cover === 'true';
             var img = bodyEl.querySelector('img');
-            if (thumb && img && img.getAttribute('src')) {
+            if (!hasCover && thumb && img && img.getAttribute('src')) {
                 thumb.innerHTML = '';
                 var im = document.createElement('img');
                 im.src = img.getAttribute('src');
