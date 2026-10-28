@@ -7316,6 +7316,57 @@ Studio-da **Rebuild All** ilə, sonra YENİDƏN publish edib eyni PDF ilə
 sual hazırlatmağı sınamalıdır — bu dəfə uğurlu nəticə gözlənilir
 (HR Məsləhətçi-nin elə indi göstərdiyi eyni, işlək model ID-dir).
 
+### İKİNCİ BUG, EYNİ GÜN — `max_tokens` Azlığı JSON-u Yarımçıq Kəsirdi (28.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Model adı düzələndən sonra istifadəçi YENİDƏN sınadı (5 sual, "Hər ikisi
+qarışıq", `MUT.pdf`) — bu dəfə API-yə çatdı (əvvəlki "AI cavabı alınmadı"
+yox oldu), amma **fərqli** xəta çıxdı: *"AI cavabı anlaşılmadı (JSON formatı
+gözlənildiyi kimi deyil)"*. İstifadəçinin öz sözü: *"bu indi ferqli xeta
+verdi, hemde pulumu yedi"* — çağırış real API-yə getmişdi, pul xərclənmişdi,
+amma nəticə istifadə edilə bilmirdi.
+
+**Kök səbəb:** `max_tokens` düsturu `Math.Max(1500, sualSayi * 500)` idi —
+5 sual üçün cəmi **2500 token**. Sistem promptu HƏR sualda ("izahda SƏHVİN
+YOLUNU de", 4 oxşar-uzunluqlu variant, "ağlabatan səhv" detalları) nisbətən
+uzun JSON tələb edir — 2500 token qarışıq (çoxseçimli+açıq) 5 sual üçün
+kifayət etmədi, Anthropic cavabı **yarımçıq kəsdi** (`stop_reason=
+"max_tokens"`), nəticədə JSON-un sonu (son `}`-lər) yox idi →
+`JsonDocument.Parse` `JsonException` atdı → `Parse()` sakitcə `null`
+qaytarırdı, heç bir iz qalmırdı.
+
+**Düzəliş — üç hissə:**
+1. **Hədd qaldırıldı:** `Math.Min(8000, Math.Max(3000, sualSayi * 900))`.
+   Bu, ƏLAVƏ XƏRC DEYİL — Anthropic `max_tokens`-i tavana görə yox, **həqiqətən
+   istifadə olunan** tokenə görə hesablayır; tavanı qaldırmaq yalnız kəsilmə
+   riskini azaldır, artıq pul yemir.
+2. **`Parse()` daha dözümlü oldu** — əvvəl YALNIZ mətnin BAŞI ` ``` `-dirsə
+   fence təmizlənirdi. İndi ilk sınaq uğursuz olarsa, mətndəki **ilk `{` ilə
+   son `}`** arasını kəsib İKİNCİ dəfə sınayır (AI əlavə mətn/fence-i mətnin
+   ortasında/sonunda qoysa belə).
+3. **Diaqnostik logging əlavə olundu** — `Parse()` uğursuz olanda xam AI
+   cavabı (4000 simvola qədər) `LogWarning`-ə yazılır; `CallApiAsync`-da
+   Anthropic-in öz `stop_reason` sahəsi oxunur, `"max_tokens"`-dirsə AÇIQ
+   xəbərdarlıq ("cavab YARIMÇIQ KƏSİLİB") logda qalır — növbəti belə hadisədə
+   səbəb TƏXMİN yox, `Logs\log-<tarix>.txt`-dən birbaşa FAKT olacaq.
+
+**Qayda:** bir AI servisinin `max_tokens` düsturunu "orta ölçüdə kifayətdir"
+deyə təxmin etmə — xüsusən sistem promptu UZUN, DETALLI çıxış tələb edirsə
+(bura: hər sualda 4 oxşar-uzunluqlu variant + "səhvin yolunu izah et").
+Anthropic-də `max_tokens` sırf TAVANDIR, xərci ARTIRMIR — ona görə həddi
+"ehtiyat qədər geniş" seçmək PULSUZ təhlükəsizlikdir, DAR seçmək isə
+(bura olduğu kimi) pullu çağırışı səssizcə zay edir. `stop_reason`
+sahəsini HƏR AI inteqrasiyasında log üçün oxumaq, təkcə uğursuzluq
+budağında yox, bu bugun kök səbəbini DƏRHAL görünən edərdi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, `out` parametrli `TryParseSuallar`
+helper-in köhnə `Parse()`-un bütün dəyişən adlarını (yerli `netice` →
+`lokalNetice`, parametr adı ilə toqquşma) düzgün ayırdığı əl ilə təsdiqləndi).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra YENİDƏN eyni PDF
+(`MUT.pdf`, 5 sual, "Hər ikisi") ilə sınamalıdır — uğursuz olsa belə, bu
+dəfə `Logs\log-<bugünkü-tarix>.txt`-də "Marif AI cavabı..." sətri əsl
+səbəbi (yarımçıq kəsilmə, yoxsa başqa format problemi) göstərəcək.
+
 ## Kassa — Kurs Təsdiqləndikdə Sabit Siyahıya Bildiriş (28.10.2026)
 
 İstifadəçi tələbi: *"bizde kurslari rehber tesdiqledikden sonra secdiyim

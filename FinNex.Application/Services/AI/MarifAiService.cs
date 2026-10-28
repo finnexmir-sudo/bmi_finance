@@ -120,13 +120,24 @@ yox, QAYDANI bilərək tapmalıdır:
 {truncated}
 --- MƏTN BİTİR ---";
 
-            var raw = await CallApiAsync(userMessage, Math.Max(1500, sualSayi * 500));
+            // 28.10.2026 — köhnə hədd (1500/sual×500) real sınaqda yarımçıq JSON
+            // kəsilməsinə səbəb oldu (Anthropic stop_reason="max_tokens") —
+            // pullu çağırış boşa getdi, Parse() sakit null qaytarırdı. Hədd
+            // qaldırmaq ƏLAVƏ XƏRC DEYİL — Anthropic yalnız HƏQİQƏTƏN istifadə
+            // olunan tokenə görə hesablayır, max_tokens sadəcə tavandır.
+            var raw = await CallApiAsync(userMessage, Math.Min(8000, Math.Max(3000, sualSayi * 900)));
             if (raw == null)
                 return Result<List<MarifSualDto>>.Fail("AI cavabı alınmadı. Zəhmət olmasa yenidən cəhd edin.");
 
             var suallar = Parse(raw);
             if (suallar == null || suallar.Count == 0)
+            {
+                // Kök səbəb (yarımçıq JSON, AI-nin əlavə mətn qoşması və s.)
+                // logda qalsın — pullu çağırış boşa gedibsə, SƏBƏBİ bilinməlidir.
+                _logger.LogWarning("Marif AI cavabı JSON kimi parse olunmadı (uzunluq={Len}) — xam cavab: {Raw}",
+                    raw.Length, raw.Length > 4000 ? raw[..4000] + "…[kəsilib]" : raw);
                 return Result<List<MarifSualDto>>.Fail("AI cavabı anlaşılmadı (JSON formatı gözlənildiyi kimi deyil). Yenidən cəhd edin.");
+            }
 
             // Qoruyucu süzgəc — AI bəzən tələbə tam əməl etməyib qarışıq tip qaytara bilər
             // (bu, YALNIZ TÖVSİYƏDİR, zəmanət DEYİL — eyni "ağlabatan səhv" prinsipinin
@@ -157,12 +168,35 @@ yox, QAYDANI bilərək tapmalıdır:
                 text = text.Trim();
             }
 
+            // 28.10.2026 — fence təmizliyi YALNIZ mətnin BAŞI ```-dirsə işləyir.
+            // AI "YALNIZ JSON" tələbinə tam əməl etməsə (qısa izahat sözü əlavə
+            // etsə, ya da fence-i mətnin ortasında/sonunda qoysa) ilk parse
+            // sınaqdan keçməz — bu halda ilk `{` ilə son `}` arasını kəsib
+            // YENİDƏN sınayırıq, əvvəlcədən başuğı/sonluğu ATMADAN.
+            if (!TryParseSuallar(text, out var netice))
+            {
+                var ilkAcma = text.IndexOf('{');
+                var sonBagma = text.LastIndexOf('}');
+                if (ilkAcma >= 0 && sonBagma > ilkAcma)
+                {
+                    var kesilmis = text[ilkAcma..(sonBagma + 1)];
+                    if (kesilmis != text)
+                        TryParseSuallar(kesilmis, out netice);
+                }
+            }
+
+            return netice;
+        }
+
+        private static bool TryParseSuallar(string text, out List<MarifSualDto>? netice)
+        {
+            netice = null;
             try
             {
                 using var doc = JsonDocument.Parse(text);
-                if (!doc.RootElement.TryGetProperty("suallar", out var array)) return null;
+                if (!doc.RootElement.TryGetProperty("suallar", out var array)) return false;
 
-                var netice = new List<MarifSualDto>();
+                var lokalNetice = new List<MarifSualDto>();
                 int sira = 0;
                 foreach (var s in array.EnumerateArray())
                 {
@@ -193,14 +227,15 @@ yox, QAYDANI bilərək tapmalıdır:
                     }
 
                     if (!string.IsNullOrWhiteSpace(dto.SualMetni))
-                        netice.Add(dto);
+                        lokalNetice.Add(dto);
                 }
 
-                return netice;
+                netice = lokalNetice;
+                return true;
             }
             catch (JsonException)
             {
-                return null;
+                return false;
             }
         }
 
@@ -252,6 +287,18 @@ yox, QAYDANI bilərək tapmalıdır:
             try
             {
                 using var doc = JsonDocument.Parse(body);
+
+                // 28.10.2026 — Anthropic-in öz "nə üçün dayandı" bayrağı. "max_tokens"
+                // olduqda cavab YARIMÇIQ KƏSİLİB — Parse() cavabın JSON formatında
+                // olmamasını ("format gözlənildiyi kimi deyil") göstərəcək, amma
+                // ƏSL səbəb elə budur. Açıq logla ki, diaqnoz qoruyucu təxmin yox,
+                // faktla aparılsın.
+                if (doc.RootElement.TryGetProperty("stop_reason", out var stopReasonEl) &&
+                    stopReasonEl.GetString() == "max_tokens")
+                {
+                    _logger.LogWarning("Marif AI cavabı max_tokens həddinə görə YARIMÇIQ KƏSİLİB — JSON tamamlanmamış qalacaq.");
+                }
+
                 return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
             }
             catch (Exception ex)
