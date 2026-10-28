@@ -17,7 +17,10 @@
         <div>
             @if (Model.Status == MarifSetStatusu.Qaralama)
             {
-                <a asp-action="IsciSec" asp-route-id="@Model.Id" class="btn btn-primary">
+                <a asp-action="Yarat" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil-square me-1"></i>Redaktə et
+                </a>
+                <a asp-action="IsciSec" asp-route-id="@Model.Id" class="btn btn-primary ms-2">
                     <i class="bi bi-send me-1"></i>İşçi seç və göndər
                 </a>
                 <form asp-action="SetSil" asp-route-id="@Model.Id" method="post" class="d-inline"

@@ -7416,3 +7416,89 @@ ssenari ilə yoxlamalıdır: Admin → Kassa → Bildiriş alanları-na bir-iki 
 sahib) təsdiqlə → seçilmiş işçilərin bildiriş qutusunda "Kassa kursu
 təsdiqləndi" mesajının göründüyünü, kliklə `/Kassa/Exchange`-ə yönəldiyini
 təsdiqləməli.
+
+## Daxili Maarifləndirmə — Naviqasiya Edəndə Pullu AI Nəticəsi İTİRDİ (28.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi ÜÇÜNCÜ dəfə (əvvəlki iki — "model adı" və "max_tokens" — yuxarıda,
+"AI Çağırışları" bölməsində düzəldilib) eyni "Suallar hazırla" axınında pul
+itkisi bildirdi: *"bu yene pulumu yedi,hazirlanir yazirdi,men basqa sehifeye
+girdim qayitdim gordum evvelki veziyyetdedir ve pulum gedib"* — "hazırlanır"
+göstərilirdi, admin başqa səhifəyə keçdi, qayıdanda forma İLKİN (boş)
+vəziyyətdə idi, AI çağırışı isə artıq (pullu) icra olunmuşdu.
+
+**Kök səbəb — bu, server BUGU deyil, DİZAYN BOŞLUĞU idi.** `MarifController.
+SuallarHazirla` AI nəticəsini YALNIZ HTTP cavabında qaytarırdı, heç yerə
+YAZMIRDI. `Yarat.cshtml`-in JS-i (`state.suallar`) nəticəni YALNIZ brauzerin
+yaddaşında saxlayırdı — admin naviqasiya edəndə (başqa səhifəyə keçəndə) bu
+JS konteksti TAMAMILƏ MƏHV OLUR, geri qayıdanda fərqli bir `GET /Admin/Marif/
+Yarat` sorğusu təzə, boş bir səhifə render edir. Server tərəfdə `_ai.
+SuallarHazirlaAsync(...)` (Anthropic-ə PULLU çağırış) ARTIQ icra olunub,
+amma nəticə HEÇ YERƏ yazılmadığı üçün bərpa oluna bilmirdi — "generasiya
++ yadda saxlama" iki ayrı, aralarında HEÇ BİR server-tərəfli körpü olmayan
+addım idi, körpü yalnız brauzerin öz yaddaşı idi.
+
+**Həll — nəticə generasiya ANINDA (brauzerə qaytarmadan ƏVVƏL) Qaralama
+kimi avtomatik YAZILIR**, "Yadda saxla" isə artıq YENİ sətir yaratmır, HƏMİN
+sətri YENİLƏYİR:
+
+1. `MarifSualSetiDetailDto`-ya `HRDaxiliQaydaId`/`HRQanunFaylId`/`MenbeMetn`
+   əlavə olundu (`MarifService.DetailGetirAsync`-dən doldurulur) — bərpa
+   zamanı mənbəni də tanımaq lazımdır.
+2. `MarifController.SuallarHazirla` — yeni `int? existingSetId`, `string?
+   basliq` parametrləri. AI uğurla qayıdan kimi nəticə `MarifSualSetiYaratDto`-ya
+   yığılır (`Basliq` admin artıq yazıbsa onu, yoxdursa tarix-damğalı placeholder
+   — `"(Qaralama — dd.MM.yyyy HH:mm, başlıq əlavə edin)"`) və `existingSetId`
+   veriləndə `_marif.SetYenileAsync`, verilməyəndə `_marif.SetYaratAsync` ilə
+   DƏRHAL yazılır. Cavaba `setId` (yeni/yenilənən sətrin Id-si) və (nadir
+   persist-uğursuzluğu halında) `saxlamaXeberdarligi` əlavə olundu.
+3. Yeni `POST /Admin/Marif/SetYenile/{id}` (`[FromBody] MarifSualSetiYaratDto`)
+   — `IMarifService.SetYenileAsync`-i çağırır. Bu metod **artıq mövcud idi**
+   (27.10.2026-dan, "açıq qalan" kimi qeyd olunmuşdu: *"servis qatında
+   YAZILIB, amma heç bir controller action/view-a BAĞLANMAYIB"*) — bu sessiya
+   onu birinci dəfə işə saldı.
+4. `MarifController.Yarat(int? id)` — `id` veriləndə (və status Qaralamadırsa)
+   `_marif.DetailGetirAsync`-dən mövcud qaralamanı yükləyib `ViewBag.MovcudSet`-ə
+   qoyur. `Yarat.cshtml` bunu `JsonSerializer.Serialize(..., CamelCase)` ilə
+   `window.__mfResume`-ə yazır (bax "Razor → CSS/JS" qaydası — `Json()` helper-i
+   ilə EYNİ casing, qarışmasın), JS səhifə açılanda bunu oxuyub başlığı/mənbəni/
+   sualları formaya geri doldurur və redaktə blokunu birbaşa göstərir —
+   "Suallar hazırla"ya YENİDƏN basmağa EHTİYAC qalmır.
+5. `Detail.cshtml` — Qaralama statusunda yeni "Redaktə et" düyməsi (→
+   `Yarat?id=`) əlavə olundu; əvvəl YALNIZ "İşçi seç və göndər" + "Sil" var
+   idi, yazılmış-amma-bərpa-edilə-bilməyən qaralamaya baxmaq/davam etmək
+   yolu YOX idi.
+6. `Yarat.cshtml`-ə iki yeni, ayrı banner: yaşıl **"#N qaralaması avtomatik
+   yadda saxlanıldı"** (hər uğurlu generasiyadan sonra, reassurance) və sarı
+   **xəbərdarlıq** (yalnız avtomatik yazma uğursuz olanda — "bu səhifədən
+   çıxmadan özünüz Yadda saxlayın, yoxsa nəticə itəcək"). İkinci bu, artıq
+   NADIR halda (AI-nin bir sahəni boş qaytarması kimi validasiya xətası) baş
+   verə bilər — o zaman belə admin açıq xəbərdar olunur, səssiz itki YOXDUR.
+
+**Yan təsir (düzəliş) — fayl-mənbəli generasiyada `MenbeMetn` artıq
+İTMİR.** Əvvəlki "Yadda saxla" payload-u HƏMİŞƏ `$('mfSerbestMetn').value`-nı
+göndərirdi — admin FAYL yükləyibsə (mətn yapışdırmayıbsa) bu xana həmişə
+boş idi, yəni generasiya üçün çıxarılan həqiqi mətn son yadda saxlamada
+`null`-a düşürdü (kiçik, əlaqəli, əvvəldən mövcud boşluq). İndi `state.
+menbeMetn` (serverin `SuallarHazirla` cavabında qaytardığı əsl çıxarılmış
+mətn) canlı textarea boşdursa ehtiyat mənbə kimi işlədilir — mətn yapışdırma
+halında isə canlı dəyər (admin redaktə etmiş ola bilər) üstün tutulur.
+
+⚠️ **Hər "Suallar hazırla" kliki ARTIQ ayrıca qaralama YARATMIR** —
+`existingSetId` (JS-dəki `state.setId`) hər dəfə ötürülür, server HƏMİN
+sətri yeniləyir. Yalnız səhifə TƏZƏDƏN açılanda (ilk "Suallar hazırla",
+`state.setId` hələ `null`-dursa) yeni sətir yaranır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — bu düzəlişdən ƏVVƏL itmiş (heç yerə
+yazılmamış) generasiyalar bərpa oluna bilməz, artıq xərclənmiş pul geri
+qayıtmır. Yalnız BUNDAN SONRAKI "Suallar hazırla" çağırışları qorunur.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, `node -c` ilə hər iki JS vəziyyəti —
+`window.__mfResume = null` və real DTO JSON-u — sınandı, interfeys↔
+implementasiya↔controller↔view dörd qatı əl ilə tutuşduruldu). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+"Suallar hazırla"ya bas → yaşıl "#N avtomatik yadda saxlanıldı" bildirişini
+gör → başqa səhifəyə keç → "Daxili Maarifləndirmə" siyahısında həmin #N
+qaralamasının göründüyünü təsdiqlə → "Bax" → "Redaktə et" → sualların/mənbənin
+düzgün geri doldurulduğunu, "Yadda saxla"nın İKİNCİ (dublikat) sətir
+yaratmadığını (eyni #N-i yenilədiyini) təsdiqləməli.

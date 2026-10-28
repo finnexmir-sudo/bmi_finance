@@ -20,6 +20,14 @@ namespace FinNex.Application.DTOs.Marif
         public int Id { get; set; }
         public string Basliq { get; set; } = "";
         public MarifSetStatusu Status { get; set; }
+
+        // 28.10.2026 — Qaralamanı "Yarat" ekranında yenidən açıb redaktə etmək
+        // (naviqasiyadan sonra itən generasiyanı bərpa etmək) üçün mənbəni də
+        // tanımaq lazımdır — əvvəl bu üç sahə DTO-da yox idi.
+        public int? HRDaxiliQaydaId { get; set; }
+        public int? HRQanunFaylId { get; set; }
+        public string? MenbeMetn { get; set; }
+
         public List<MarifSualDto> Suallar { get; set; } = new();
         public List<MarifTesyinatNeticeDto> Tesyinatlar { get; set; } = new();
     }

@@ -229,6 +229,9 @@ namespace FinNex.Application.Services.Marif
                 Id = set.Id,
                 Basliq = set.Basliq,
                 Status = set.Status,
+                HRDaxiliQaydaId = set.HRDaxiliQaydaId,
+                HRQanunFaylId = set.HRQanunFaylId,
+                MenbeMetn = set.MenbeMetn,
                 Suallar = suallar.Select(MapSual).ToList(),
                 Tesyinatlar = tesyinatNetice
             };

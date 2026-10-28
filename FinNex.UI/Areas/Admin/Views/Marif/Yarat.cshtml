@@ -1,15 +1,25 @@
 @using FinNex.Application.DTOs.Marif
+@using System.Text.Json
 @{
     ViewData["Title"] = "Yeni Sual Dəsti";
     var daxiliQaydalar = ViewBag.DaxiliQaydalar as IEnumerable<MarifMenbeSecimDto>;
     var qanunFayllar = ViewBag.QanunFayllar as IEnumerable<MarifMenbeSecimDto>;
+    var movcudSet = ViewBag.MovcudSet as MarifSualSetiDetailDto;
+
+    // 28.10.2026 — qaralamanı bərpa edəndə JS-ə ötürülür. JsonSerializer.Serialize-i
+    // options vermədən çağırmaq PascalCase yazardı, AJAX cavabları (MVC Json()
+    // helper-i) isə camelCase-dir — eyni JS-də iki fərqli casing qarışmasın deyə
+    // burada da açıq camelCase tətbiq olunur.
+    var resumeJson = movcudSet == null
+        ? "null"
+        : JsonSerializer.Serialize(movcudSet, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 }
 
 <div class="container-fluid">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-0"><i class="bi bi-magic me-2 text-primary"></i>Yeni Sual Dəsti</h3>
+            <h3 class="fw-bold mb-0"><i class="bi bi-magic me-2 text-primary"></i>@(movcudSet != null ? "Qaralamanı redaktə et" : "Yeni Sual Dəsti")</h3>
             <small class="text-muted">Qayda seçin və ya yapışdırın — AI sual qaralaması hazırlayacaq, sonra redaktə edib yadda saxlayın</small>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary">
@@ -18,6 +28,8 @@
     </div>
 
     <div id="mfError" class="alert alert-danger d-none"></div>
+    <div id="mfXeberdarliq" class="alert alert-warning d-none"></div>
+    <div id="mfSaxlanildiNot" class="alert alert-success d-none small"></div>
 
     <!-- ── MƏNBƏ SEÇİMİ ────────────────────────────────────────────── -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -130,10 +142,14 @@
 </div>
 
 @section Scripts {
+<script>window.__mfResume = @Html.Raw(resumeJson);</script>
 <script>
 (function () {
     const TIP_COX = 1, TIP_ACIG = 2;
-    let state = { suallar: [] };
+    // 28.10.2026 — setId/menbeMetn əlavə olundu: generasiya anında avtomatik
+    // yazılan qaralamanın id-sini (və fayldan çıxarılmış, textarea-da görünməyən
+    // mətni) saxlamaq üçün — bax aşağı "Suallar hazırla"/"Yadda saxla".
+    let state = { suallar: [], setId: null, menbeMetn: null };
 
     const $ = (id) => document.getElementById(id);
     const esc = (s) => (s ?? '').toString()
@@ -159,13 +175,72 @@
     }
     function hideError() { $('mfError').classList.add('d-none'); }
 
+    function showXeberdarliq(msg) {
+        const el = $('mfXeberdarliq');
+        el.textContent = msg;
+        el.classList.remove('d-none');
+    }
+    function hideXeberdarliq() { $('mfXeberdarliq').classList.add('d-none'); }
+
+    function showSaxlanildiNot(msg) {
+        const el = $('mfSaxlanildiNot');
+        el.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i>' + esc(msg);
+        el.classList.remove('d-none');
+    }
+
+    // ── Qaralamanı bərpa et (bax: MarifController.Yarat(int? id)) ────
+    // 28.10.2026 — "Suallar hazırla" ANINDA avtomatik yadda saxlanan bir
+    // qaralama "Redaktə et" düyməsi ilə buraya qayıdır — mövcud başlığı,
+    // mənbəni və sualları forma/state-ə geri doldur, yenidən "Suallar
+    // hazırla"ya basmağa EHTİYAC qalmadan birbaşa redaktəyə davam edilsin.
+    const resume = window.__mfResume;
+    if (resume) {
+        state.setId = resume.id;
+        state.menbeMetn = resume.menbeMetn || null;
+        state.suallar = (resume.suallar || []).map(s => ({
+            tip: s.tip || TIP_COX,
+            sualMetni: s.sualMetni || '',
+            variantA: s.variantA || '', variantB: s.variantB || '',
+            variantC: s.variantC || '', variantD: s.variantD || '',
+            duzgunVariant: (s.duzgunVariant || 'A').toUpperCase(),
+            duzgunCavabMetni: s.duzgunCavabMetni || '',
+            izahMetni: s.izahMetni || ''
+        }));
+
+        $('mfBasliq').value = resume.basliq || '';
+
+        if (resume.hrDaxiliQaydaId) {
+            $('mfTipDaxili').checked = true;
+            $('mfDaxiliQaydaId').value = String(resume.hrDaxiliQaydaId);
+        } else if (resume.hrQanunFaylId) {
+            $('mfTipQanun').checked = true;
+            $('mfQanunFaylId').value = String(resume.hrQanunFaylId);
+        } else {
+            $('mfTipSerbest').checked = true;
+            $('mfSerbestMetn').value = resume.menbeMetn || '';
+        }
+        document.querySelectorAll('input[name="mfMenbeTip"]').forEach(r => {
+            if (r.checked) r.dispatchEvent(new Event('change'));
+        });
+
+        $('mfRedakteBlok').classList.remove('d-none');
+        render();
+        showSaxlanildiNot(`Bu, #${resume.id} qaralamasıdır — generasiya nəticəsi avtomatik yadda saxlanılıb. Redaktə edib yenə "Yadda saxla"ya basın.`);
+        $('mfRedakteBlok').scrollIntoView({ behavior: 'smooth' });
+    }
+
     // ── 1. "Suallar hazırla" — AI çağırışı ───────────────────────────
     $('mfHazirlaBtn').addEventListener('click', async () => {
         hideError();
+        hideXeberdarliq();
         const menbeTip = document.querySelector('input[name="mfMenbeTip"]:checked').value;
         const fd = new FormData();
         fd.append('sualSayi', $('mfSualSayi').value || '5');
         fd.append('sualNovu', $('mfSualNovu').value || 'qarisiq');
+        fd.append('basliq', $('mfBasliq').value.trim());
+        // Mövcud qaralamanı (əvvəlki generasiyadan/bərpadan) yeniləmək üçün —
+        // yoxsa hər "Suallar hazırla" kliki öz-özünə YENİ qaralama qoyar.
+        if (state.setId) fd.append('existingSetId', state.setId);
 
         if (menbeTip === 'daxili') {
             const id = $('mfDaxiliQaydaId').value;
@@ -199,6 +274,21 @@
                 duzgunCavabMetni: s.duzgunCavabMetni || '',
                 izahMetni: s.izahMetni || ''
             }));
+            state.menbeMetn = d.menbeMetn || null;
+
+            // 28.10.2026 — server bu nəticəni ARTIQ Qaralama kimi yazıb (ya
+            // yenilədi, ya yeni yaratdı) — `d.setId` indi "Yadda saxla"nın
+            // YENİ sətir yox, MƏHZ bu sətri yeniləyəcəyini bildirir.
+            if (d.setId) {
+                state.setId = d.setId;
+                showSaxlanildiNot(`Nəticə #${d.setId} qaralaması kimi avtomatik yadda saxlanıldı — bu səhifədən çıxsanız belə itməyəcək, "Daxili Maarifləndirmə" siyahısında görünəcək.`);
+            } else {
+                // Çox nadir hal — AI nəticəsi avtomatik yazıla bilmədi (bax
+                // server loqu). Admin bunu BİLMƏLİDİR ki, bu dəfə naviqasiya
+                // etsə, pullu nəticə HƏQİQƏTƏN itəcək.
+                showXeberdarliq((d.saxlamaXeberdarligi ? d.saxlamaXeberdarligi + ' — ' : '') +
+                    'AI nəticəsi avtomatik qaralama kimi yadda saxlanıla bilmədi. Bu səhifədən çıxmadan özünüz "Yadda saxla"ya basın, yoxsa nəticə itəcək.');
+            }
 
             $('mfRedakteBlok').classList.remove('d-none');
             render();
@@ -304,18 +394,32 @@
         if (state.suallar.length === 0) { showError('Ən azı bir sual olmalıdır.'); return; }
 
         const menbeTip = document.querySelector('input[name="mfMenbeTip"]:checked').value;
+        // 28.10.2026 — fayldan çıxarılmış mətn heç vaxt `mfSerbestMetn`-ə
+        // yazılmır (yalnız serverdə çıxarılıb state.menbeMetn-ə qayıdır) —
+        // canlı textarea boşdursa (fayl halı) ora geri düşürük ki, "Yadda
+        // saxla" mənbəni silməsin. Mətn yapışdırılıbsa (textarea doludur)
+        // canlı dəyər üstün tutulur — admin onu redaktə etmiş ola bilər.
+        const canliSerbestMetn = $('mfSerbestMetn').value.trim();
         const payload = {
             basliq,
             hrDaxiliQaydaId: menbeTip === 'daxili' ? (parseInt($('mfDaxiliQaydaId').value, 10) || null) : null,
             hrQanunFaylId: menbeTip === 'qanun' ? (parseInt($('mfQanunFaylId').value, 10) || null) : null,
-            menbeMetn: menbeTip === 'serbest' ? $('mfSerbestMetn').value : null,
+            menbeMetn: menbeTip === 'serbest' ? (canliSerbestMetn || state.menbeMetn || null) : null,
             suallar: state.suallar
         };
+
+        // 28.10.2026 — `state.setId` doludursa generasiya artıq bu sətri
+        // Qaralama kimi yazıb; "Yadda saxla" indi YENİ sətir yox, HƏMİN
+        // sətri yeniləyir (SetYenile). Yalnız (çox nadir) avtomatik yazma
+        // uğursuz olubsa, köhnə "Yarat" (yeni sətir) yolu ehtiyat kimi qalır.
+        const saxlaUrl = state.setId
+            ? '@Url.Action("SetYenile")' + '?id=' + encodeURIComponent(state.setId)
+            : '@Url.Action("Yarat")';
 
         $('mfSaxlaBtn').disabled = true;
         $('mfSaxlaSpinner').classList.remove('d-none');
         try {
-            const r = await fetch('@Url.Action("Yarat")', {
+            const r = await fetch(saxlaUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
