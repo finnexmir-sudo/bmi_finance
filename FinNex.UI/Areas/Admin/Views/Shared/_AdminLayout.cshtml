@@ -108,6 +108,12 @@
                 Kurs təsdiqediciləri
             </a>
 
+            <a class="nav-link @(currentController == "KassaBildirisAlani" ? "active" : "")"
+               asp-area="Admin" asp-controller="KassaBildirisAlani" asp-action="Index">
+                <i class="bi bi-bell-fill"></i>
+                Bildiriş alanları
+            </a>
+
             <div class="nav-section">Kredit</div>
 
             <a class="nav-link @(currentController == "KreditBaxanIsci" ? "active" : "")"

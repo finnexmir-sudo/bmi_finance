@@ -7247,3 +7247,53 @@ yoxlanıldı** (tək sətirlik sabit dəyər dəyişikliyi). İstifadəçi Visua
 Studio-da **Rebuild All** ilə, sonra YENİDƏN publish edib eyni PDF ilə
 sual hazırlatmağı sınamalıdır — bu dəfə uğurlu nəticə gözlənilir
 (HR Məsləhətçi-nin elə indi göstərdiyi eyni, işlək model ID-dir).
+
+## Kassa — Kurs Təsdiqləndikdə Sabit Siyahıya Bildiriş (28.10.2026)
+
+İstifadəçi tələbi: *"bizde kurslari rehber tesdiqledikden sonra secdiyim
+iscilere bildiris gelmeyini isteyirem"* — Kassa günlük valyuta kursu
+(`KassaKursBeyannamesi`) `ExchangeTesdiqController.Tesdiq` ilə təsdiqlənəndə
+seçilmiş işçilərə bildiriş getsin. İki seçim arasında (sabit admin-siyahı vs
+hər göndərişdə əl ilə seçim) istifadəçi **sabit siyahını** seçdi — kassir/
+təsdiqedici hər dəfə kimə göndəriləcəyini seçmir.
+
+**Struktur — `KassaTesdiqEdici`-nin DƏQIQ eyni naxışı, AYRI konsept.**
+`KassaBildirisAlani` (entity, migration `20261028090000_KassaBildirisAlani.cs`,
+cədvəl `KassaBildirisAlanlari`) — bu siyahıdakı işçilər TƏSDİQ ETMİR, yalnız
+nəticədən XƏBƏRDAR OLUR. `IKassaBildirisAlaniService`/`KassaBildirisAlaniService`
+`KassaTesdiqEdiciService`-in CRUD-unu (aktiv-pəncərə, soft-delete) sözbəsöz
+təkrarlayır — `AktivIsciIdleriniGetirAsync()` əlavə metodu bildiriş döngəsi
+üçün birbaşa Id siyahısı qaytarır.
+
+**Admin idarəetməsi:** `Admin/KassaBildirisAlani` (controller+views,
+`KassaTesdiqEdiciController`/`Index.cshtml`/`Secim.cshtml`-in sözbəsöz
+köçürülməsi — eyni `IsciSecimVM` paylaşılan VM-i işlədir). Sidebar-da
+"Kurs təsdiqediciləri"-nin dərhal yanında "Bildiriş alanları" sətri
+(`_AdminLayout.cshtml`).
+
+**Göndərmə — TƏK yerdə, `KassaKursService.TesdiqEtAsync`-in ÖZÜNDƏ** (controller-də
+YOX) — beyannamə hansı controller/UI-dan təsdiqlənsə belə bildiriş avtomatik
+gedir, "Bir Kəmiyyətə Üç Yazıcı" riskinin qarşısı alınır. `KassaKursService`
+konstruktoruna `IBildirisService` + `IKassaBildirisAlaniService` əlavə edildi
+(dairəvi asılılıq yoxdur — `BildirisService` yalnız `IUnitOfWork` +
+`IDesktopBildirisService` daşıyır). `TesdiqEtAsync`-in `SaveChanges`-dən
+SONRA, roster üzrə **ARDICIL `foreach`** (`Task.WhenAll` YOX — bax "Bildirişlər
+— Paralel Yazı" qaydası, paylaşılan `DbContext` eyni anda yazıla bilməz)
+`IBildirisService.YaratAsync` çağırılır, `redirectUrl: "/Kassa/Exchange"`.
+
+**Yeni enum — `BildirisNovu.KassaKursTesdiqlendi = 56`** (ardıcıl, ən son
+dəyərdən sonra, `MarifTesyinatGonderildi = 55`-dən sonra).
+
+⚠️ **`ImtinaEtAsync`-ə (rədd olunanda) TOXUNULMADI** — istifadəçi yalnız
+TƏSDİQ anından danışdı, rədd bildirişi tələb olunmayıb.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, interfeys↔implementasiya↔DI↔çağıran qatları əl ilə
+tutuşduruldu, `AppDbContext`-ə yeni `DbSet` + fluent `HasOne/WithMany` əlavə
+olundu — `KassaTesdiqEdici`-nin elə yanındaki konfiqurasiya bloku təkrarlandı).
+İstifadəçi Visual Studio-da **Rebuild All**, `Update-Database`, sonra real
+ssenari ilə yoxlamalıdır: Admin → Kassa → Bildiriş alanları-na bir-iki işçi
+əlavə et → Kassa kursu göndər → başqa istifadəçi ilə (təsdiqedici roluna
+sahib) təsdiqlə → seçilmiş işçilərin bildiriş qutusunda "Kassa kursu
+təsdiqləndi" mesajının göründüyünü, kliklə `/Kassa/Exchange`-ə yönəldiyini
+təsdiqləməli.

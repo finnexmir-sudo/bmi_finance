@@ -88,5 +88,8 @@ namespace FinNex.Domain.Entities.Communication
 
         // Daxili Maarifləndirmə — qayda üzrə sual dəsti göndərildi (27.10.2026)
         MarifTesyinatGonderildi = 55,
+
+        // Kassa — gündəlik kurs beyannaməsi təsdiqləndi (28.10.2026)
+        KassaKursTesdiqlendi = 56,
     }
 }

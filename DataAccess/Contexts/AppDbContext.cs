@@ -213,6 +213,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<FinNex.Domain.Entities.Kassa.KassaKursBeyannamesi> KassaKursBeyannameleri { get; set; }
     public DbSet<FinNex.Domain.Entities.Kassa.KassaKursSetri> KassaKursSetirleri { get; set; }
     public DbSet<FinNex.Domain.Entities.Kassa.KassaTesdiqEdici> KassaTesdiqEdiciler { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kassa.KassaBildirisAlani> KassaBildirisAlanlari { get; set; }
 
     // Kredit
     public DbSet<FinNex.Domain.Entities.Kredit.KreditMuraciet> KreditMuracietler { get; set; }
@@ -1561,6 +1562,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         });
 
         builder.Entity<FinNex.Domain.Entities.Kassa.KassaTesdiqEdici>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FinNex.Domain.Entities.Kassa.KassaBildirisAlani>()
             .HasOne(x => x.Isci)
             .WithMany()
             .HasForeignKey(x => x.IsciId)

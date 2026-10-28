@@ -166,6 +166,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         // ── Kassa Modul Servisləri (BMI frmExchange köçürülməsi) ──
         services.AddScoped<IKassaKursService, KassaKursService>();
         services.AddScoped<IKassaTesdiqEdiciService, KassaTesdiqEdiciService>();
+        services.AddScoped<IKassaBildirisAlaniService, KassaBildirisAlaniService>();
 
         // ── Kredit Modul Servisləri ─────────────────────────
         services.AddScoped<IKreditBaxanIsciService, KreditBaxanIsciService>();

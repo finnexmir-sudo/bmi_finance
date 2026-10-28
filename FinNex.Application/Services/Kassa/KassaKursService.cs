@@ -1,6 +1,8 @@
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Kassa;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.Kassa;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.Kassa;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,8 @@ namespace FinNex.Application.Services.Kassa
     public class KassaKursService : IKassaKursService
     {
         private readonly IUnitOfWork _uow;
+        private readonly IBildirisService _bildiris;
+        private readonly IKassaBildirisAlaniService _bildirisAlani;
 
         // Valyuta siyahısı TƏK YERDƏ — BMI-dəki 5 valyuta (USD/AVRO/IRR/AED/RUB).
         // Yeni valyuta əlavə etmək lazımdırsa, YALNIZ bura əlavə et.
@@ -24,9 +28,11 @@ namespace FinNex.Application.Services.Kassa
         // BMI mənbə kodunun araşdırılması ilə təsdiqləndi).
         public static readonly string[] WordSablonSirasi = { "USD", "AVRO", "RUB", "AED", "IRR" };
 
-        public KassaKursService(IUnitOfWork uow)
+        public KassaKursService(IUnitOfWork uow, IBildirisService bildiris, IKassaBildirisAlaniService bildirisAlani)
         {
             _uow = uow;
+            _bildiris = bildiris;
+            _bildirisAlani = bildirisAlani;
         }
 
         public async Task<KassaKursGunlukDto> GunlukGetirAsync(DateTime tarix)
@@ -288,6 +294,23 @@ namespace FinNex.Application.Services.Kassa
             beyanname.YenilenmeTarixi = DateTime.Now;
             await repo.YenileAsync(beyanname);
             await _uow.YaddaSaxlaAsync();
+
+            // Bildiriş ARDICIL göndərilir — paylaşılan DbContext üzərində paralel
+            // yazı (Task.WhenAll) qadağandır (bax CLAUDE.md "Bildirişlər — Paralel
+            // Yazı"). Siyahı sabitdir (Admin → Kassa → Bildiriş alanları),
+            // kassir/təsdiqedici hər dəfə kimə göndəriləcəyini seçmir
+            // (28.10.2026, istifadəçi tələbi).
+            var alicilar = await _bildirisAlani.AktivIsciIdleriniGetirAsync();
+            foreach (var isciId in alicilar)
+            {
+                await _bildiris.YaratAsync(
+                    isciId,
+                    BildirisNovu.KassaKursTesdiqlendi,
+                    "Kassa kursu təsdiqləndi",
+                    $"{beyanname.Tarix:dd.MM.yyyy} tarixli kassa valyuta kursu təsdiqləndi.",
+                    redirectUrl: "/Kassa/Exchange");
+            }
+
             return Result.Ok("Kurs təsdiqləndi.");
         }
 
