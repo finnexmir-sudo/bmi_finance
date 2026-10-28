@@ -3,6 +3,7 @@ using FinNex.Application.DTOs.Marif;
 using FinNex.Application.Interfaces.AI;
 using FinNex.Domain.Entities.Marif;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
@@ -18,16 +19,18 @@ namespace FinNex.Application.Services.AI
     public class MarifAiService : IMarifAiService
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<MarifAiService> _logger;
         private readonly string _apiKey;
 
         private const string ApiUrl = "https://api.anthropic.com/v1/messages";
         private const string Model = "claude-sonnet-4-7";
         private const int MaxKontekstChar = 150_000;
 
-        public MarifAiService(IHttpClientFactory httpClientFactory, IConfiguration config)
+        public MarifAiService(IHttpClientFactory httpClientFactory, IConfiguration config, ILogger<MarifAiService> logger)
         {
             _httpClientFactory = httpClientFactory;
             _apiKey = config["Anthropic:ApiKey"] ?? "";
+            _logger = logger;
         }
 
         private const string SystemPrompt = @"Sən bankın daxili maarifləndirmə mütəxəssisisən. Sənə bir qayda/sənəd mətni
@@ -222,12 +225,40 @@ yox, QAYDANI bilərək tapmalıdır:
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync(ApiUrl, content);
-            if (!response.IsSuccessStatusCode) return null;
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.PostAsync(ApiUrl, content);
+            }
+            catch (Exception ex)
+            {
+                // Şəbəkə/DNS/TLS/timeout — server api.anthropic.com-a ÜMUMİYYƏTLƏ çata
+                // bilmədi (firewall, outbound proxy və s.). "AI cavabı alınmadı" mesajı
+                // bunu göstərmir — kök səbəb YALNIZ bu logda görünür.
+                _logger.LogError(ex, "Marif AI çağırışı — api.anthropic.com-a bağlantı qurula bilmədi.");
+                return null;
+            }
 
             var body = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(body);
-            return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+            if (!response.IsSuccessStatusCode)
+            {
+                // "ex.Message tək başına heç nə demir" qaydasının HTTP forması —
+                // status kodu + Anthropic-in əsl xəta mətni (açar səhvdir / kredit
+                // bitib / model adı səhvdir / rate limit...) logda qalır.
+                _logger.LogWarning("Marif AI çağırışı uğursuz — HTTP {Status}: {Body}", (int)response.StatusCode, body);
+                return null;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Marif AI cavabı gözlənilən formatda deyil: {Body}", body);
+                return null;
+            }
         }
     }
 }

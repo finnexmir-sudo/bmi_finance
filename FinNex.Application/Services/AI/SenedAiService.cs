@@ -2,6 +2,7 @@ using FinNex.Application.DTOs.AI;
 using FinNex.Application.Interfaces.AI;
 using FinNex.Domain.Enums;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -11,14 +12,16 @@ namespace FinNex.Application.Services.AI;
 public class SenedAiService : ISenedAiService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<SenedAiService> _logger;
     private readonly string _apiKey;
     private const string ApiUrl = "https://api.anthropic.com/v1/messages";
     private const string Model = "claude-opus-4-7";
 
-    public SenedAiService(IHttpClientFactory httpClientFactory, IConfiguration config)
+    public SenedAiService(IHttpClientFactory httpClientFactory, IConfiguration config, ILogger<SenedAiService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _apiKey = config["Anthropic:ApiKey"] ?? "";
+        _logger = logger;
     }
 
     public async Task<RiskAnalizResult> AnalyzeRiskAsync(string text, string fileName)
@@ -84,12 +87,34 @@ public class SenedAiService : ISenedAiService
         var json = JsonSerializer.Serialize(request);
         var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync(ApiUrl, httpContent);
-        if (!response.IsSuccessStatusCode) return null;
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.PostAsync(ApiUrl, httpContent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sənəd AI çağırışı — api.anthropic.com-a bağlantı qurula bilmədi.");
+            return null;
+        }
 
         var body = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Sənəd AI çağırışı uğursuz — HTTP {Status}: {Body}", (int)response.StatusCode, body);
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sənəd AI cavabı gözlənilən formatda deyil: {Body}", body);
+            return null;
+        }
     }
 
     // ── Prompt Builders ───────────────────────────────────────────────────────
@@ -243,12 +268,34 @@ public class SenedAiService : ISenedAiService
         var json = JsonSerializer.Serialize(request);
         var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync(ApiUrl, httpContent);
-        if (!response.IsSuccessStatusCode) return null;
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.PostAsync(ApiUrl, httpContent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sənəd AI (OCR) çağırışı — api.anthropic.com-a bağlantı qurula bilmədi.");
+            return null;
+        }
 
         var body = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Sənəd AI (OCR) çağırışı uğursuz — HTTP {Status}: {Body}", (int)response.StatusCode, body);
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sənəd AI (OCR) cavabı gözlənilən formatda deyil: {Body}", body);
+            return null;
+        }
     }
 
     private static string BuildOcrPrompt(bool withTranslation, string targetLang)

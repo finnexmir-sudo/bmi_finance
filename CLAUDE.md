@@ -7152,3 +7152,54 @@ formalarının adi ikonu təsadüfən bura düşmüşdü).
 
 **Düzəliş:** `bi-envelope` → `bi-person` (`Login.cshtml`, "İstifadəçi adı" xanası).
 Şifrə xanasındakı `bi-lock` TOXUNULMADI — düzgündür.
+
+## AI Çağırışları — "CallApiAsync" HƏR ÜÇ SERVİSDƏ ƏSL XƏTANI UDURDU (28.10.2026, KRİTİK)
+
+İstifadəçi Admin → Daxili Maarifləndirmə → Yeni Sual Dəsti-də PDF yükləyib sual
+hazırlatmağa çalışdı (açarı artıq User Secrets-ə əlavə etdikdən sonra) və
+**"AI cavabı alınmadı. Zəhmət olmasa yenidən cəhd edin."** aldı — heç bir əlavə
+məlumat yox.
+
+**Kök səbəb — `MarifAiService.CallApiAsync` (və iki bacı servisi) Anthropic-in
+ƏSL xətasını (HTTP status kodu + cavab mətni: səhv açar, kredit bitib, səhv
+model adı, rate limit, timeout) heç yerə YAZMADAN sadəcə `null` qaytarırdı:**
+
+```csharp
+var response = await client.PostAsync(ApiUrl, content);
+if (!response.IsSuccessStatusCode) return null;   // ⚠️ SƏBƏB İTİR
+```
+
+Bu, **"`ex.Message` TƏK BAŞINA HEÇ NƏ DEMİR"** qaydasının (bax yuxarı) HTTP
+formasıdır — fərq orada `DbUpdateException.Message`-in generik olması idi,
+burada isə HTTP cavabının ÖZÜ heç oxunmur belə. Üstəlik `grep` ilə eyni
+nümunənin **ÜÇ** AI servisində (ikisi `SenedAiService`-də) sözbəsöz təkrarlandığı
+tapıldı — "Bir Kəmiyyətə Üç Yazıcı" prinsipinin HTTP-xəta-udma forması.
+
+**Düzəliş — `MarifAiService`, `HRMeslehetciService`, `SenedAiService` (4 çağırış
+yeri, hamısı eyni naxışla):**
+1. `PostAsync`-ı `try/catch`-ə alıb şəbəkə/DNS/TLS/timeout xətasını
+   `ILogger.LogError`-a yazır (server `api.anthropic.com`-a ÜMUMİYYƏTLƏ çata
+   bilmirsə — firewall/outbound proxy — bu budaq işə düşür);
+2. `!IsSuccessStatusCode` olanda **status kodu + Anthropic-in əsl cavab
+   mətnini** (`body`) `ILogger.LogWarning`-ə yazır, SONRA `null` qaytarır;
+3. JSON parse `try/catch`-ə alınıb — Anthropic gözlənilməz format qaytarsa
+   (nadir, amma mümkün) tutulmamış istisna əvəzinə log + `null`.
+
+Hər üç servisə konstruktor vasitəsilə `ILogger<T>` inject edildi (Serilog
+artıq `Program.cs`-də qurulub, `Logs\log-yyyyMMdd.txt`-ə yazır — yeni
+infrastruktur lazım olmadı).
+
+**Qayda:** `IsSuccessStatusCode == false` olan HƏR xarici HTTP çağırışında
+(nəinki Anthropic — gələcək hər inteqrasiya) cavab BODY-sini oxuyub LOGLA,
+sadəcə `null`/`false` qaytarma — uğursuzluğun SƏBƏBİ yalnız o body-dədir
+(status kodu tək başına "401" deyir, "niyə 401" demir). Bu, `catch`
+bloklarında `InnerException`-ı göstərmək qaydasının eyni məntiqinin HTTP
+tərəfidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra YENİDƏN eyni PDF ilə sual hazırlatmağı sınamalı —
+xəta YENƏ çıxarsa, bu dəfə `Logs\log-<bugünkü-tarix>.txt`-də "Marif AI
+çağırışı uğursuz — HTTP ..." sətrini tapıb bura (və ya birbaşa mənə)
+göstərməlidir ki, əsl səbəb (açar səhvdir / kredit yoxdur / şəbəkə
+bloklanıb) aydınlaşsın.

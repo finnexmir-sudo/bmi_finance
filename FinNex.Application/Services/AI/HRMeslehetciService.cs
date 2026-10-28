@@ -1,6 +1,7 @@
 using FinNex.Application.Interfaces.AI;
 using FinNex.Domain.Entities.AI;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -10,6 +11,7 @@ namespace FinNex.Application.Services.AI;
 public class HRMeslehetciService : IHRMeslehetciService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<HRMeslehetciService> _logger;
     private readonly string _apiKey;
 
     private const string ApiUrl    = "https://api.anthropic.com/v1/messages";
@@ -63,10 +65,11 @@ hamisi
 
 Sual: {1}";
 
-    public HRMeslehetciService(IHttpClientFactory httpClientFactory, IConfiguration config)
+    public HRMeslehetciService(IHttpClientFactory httpClientFactory, IConfiguration config, ILogger<HRMeslehetciService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _apiKey = config["Anthropic:ApiKey"] ?? "";
+        _logger = logger;
     }
 
     // ── Mərhələ 1: Kateqoriya təyini ─────────────────────────────────────────
@@ -155,11 +158,33 @@ Cavabının SONUNA mütləq bu cümləni əlavə et: ""Mənbə: {menbeAdi ?? "Y�
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync(ApiUrl, content);
-        if (!response.IsSuccessStatusCode) return null;
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.PostAsync(ApiUrl, content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HR Məsləhətçi AI çağırışı — api.anthropic.com-a bağlantı qurula bilmədi.");
+            return null;
+        }
 
         var body = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("HR Məsləhətçi AI çağırışı uğursuz — HTTP {Status}: {Body}", (int)response.StatusCode, body);
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HR Məsləhətçi AI cavabı gözlənilən formatda deyil: {Body}", body);
+            return null;
+        }
     }
 }
