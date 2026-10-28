@@ -7502,3 +7502,43 @@ gör → başqa səhifəyə keç → "Daxili Maarifləndirmə" siyahısında hə
 qaralamasının göründüyünü təsdiqlə → "Bax" → "Redaktə et" → sualların/mənbənin
 düzgün geri doldurulduğunu, "Yadda saxla"nın İKİNCİ (dublikat) sətir
 yaratmadığını (eyni #N-i yenilədiyini) təsdiqləməli.
+
+### Daxili Maarifləndirmə — AI Generasiyası Mövcud Sualları BİLMİR (açıq iş, 28.10.2026)
+
+İstifadəçi sualı: *"hazir qayda var elimde, buna 5 sual verdim hazirladi,
+sonra ne vaxtsa yeniden desem 4 sualda hazirla, bu bazadaki suallari
+yoxlayirki eyni suali hazirlamasin? yoxsa bece yanasir?"*
+
+**Cavab — HƏLƏ "kor" yanaşmadır, dublikat yoxlaması YOXDUR.**
+`MarifController.SuallarHazirla` → `IMarifAiService.SuallarHazirlaAsync`
+AI-yə YALNIZ mənbə mətnini (qayda/qanun/fayl) + sual sayını + tipi göndərir.
+Bazada həmin mənbə üçün ARTIQ mövcud olan (başqa sual setlərindəki də daxil)
+suallar AI-yə heç vaxt ötürülmür — AI hər çağırışda sıfırdan, əvvəlki
+generasiyalardan tam xəbərsiz yazır. Nəticədə:
+- Eyni qaydaya ikinci dəfə "4 sual hazırla" desən, AI əvvəlki 5-dən bixəbər
+  işləyir — üst-üstə düşən/oxşar sual çıxma riski var (xüsusən qayda mətni
+  qısa/dar olduqda).
+- Əgər bu, HƏMİN qaralamanın üstündə (hələ "Yadda saxla" etmədən yenidən
+  "Suallar hazırla"ya basaraq) olursa — köhnə suallar YENİ suallarla
+  ƏVƏZ OLUNUR (bax yuxarı "Naviqasiya Edəndə Pullu AI Nəticəsi İTİRDİ"
+  bölməsi, `existingSetId`/`SetYenileAsync`), YIĞILMIR. Fərqli vaxtda,
+  YENİ bir "Sual Dəsti" açıb eyni mənbəni seçsən, o tamamilə ayrı,
+  müstəqil bir generasiyadır.
+
+**Qərar (28.10.2026): bu, pilot mərhələdə HƏLƏ tətbiq edilmir — istifadəçi
+"lazım olanda edərik" dedi.** Mümkün həll (müzakirə edilib, YAZILMAYIB):
+bazada həmin mənbəyə (`HRDaxiliQaydaId`/`HRQanunFaylId`/eyni `MenbeMetn`)
+aid bütün `MarifSual.SualMetni`-ləri (YALNIZ sual mətni — variant/izah
+YOX, token qənaəti üçün) `SuallarHazirla`-da bir dəfə sorğulayıb promptun
+sonuna "bunlardan fərqli sual yaz" bəndi kimi əlavə etmək. Token artımı
+kiçikdir (hər mövcud sual ~40-60 token, adətən 5-20 ədəd arası — cəmi
+bir neçə yüz token, output tokeninə (giriş qiymətinin 5 qatı) toxunmur),
+amma TƏK TÖVSİYƏDİR — AI-nin tam riayət edəcəyinə zəmanət yoxdur (eyni
+"ağlabatan səhv" prinsipinin əksi: LLM-ə etibar, AI-nin özü).
+
+⚠️ **Tətbiq ediləndə yoxlanmalı yerlər (əvvəlcədən qeyd):** `MarifAiService.
+SuallarHazirlaAsync` imzasına yeni parametr (`List<string>? movcudSuallar`)
+əlavə ediləcəksə, "Metod İmzası Dəyişikliyi" qaydasına uyğun həm interfeys,
+həm `MarifController.SuallarHazirla`-dakı çağırış eyni anda yenilənməlidir.
+Sorğu mənbəyə görə (`HRDaxiliQaydaId`/`HRQanunFaylId`/`MenbeMetn` üçlüyü)
+bağlanmalıdır — fərqli mənbəli suallar qarışdırılmamalıdır.
