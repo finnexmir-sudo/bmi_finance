@@ -79,6 +79,12 @@ public class HesabatController : Controller
         // İl+Rüb seçimi ilə işləyir, ona görə "Rüblük" kateqoriyasına düşür.
         new() { Kod = "dsmf-hisse3", Ad = "DSMF — Əlavə №1 Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat (il + rüb üzrə, 3 ay)",
                 Kateqoriya = "Rüblük", Ikon = "bi-calendar3-week", Area = "Muhasibat", Controller = "Hesabat", Action = "Dsmf3" },
+        // Əlavə №4 Bölmə 3/4/5 — eyni (il+rüb) seçimi, EYNİ struktur (qanun maddəsi-
+        // sətri), ona görə TƏK səhifədə birlikdə (3 ayrı kart YOX — bax "DÜZƏLİŞ #3"
+        // bölməsindəki "eyni destinasiyaya iki qapı" qaydası, burada əksinə, üç
+        // YAXIN məzmun süni şəkildə üç kart kimi çoxaldılmır).
+        new() { Kod = "dsmf-bolme345", Ad = "DSMF — Əlavə №4 Bölmə 3-4-5", Tesvir = "Sığorta-istisna gəlirlər: DSMF/İşsizlik/İTSS haqqına cəlb olunmayan məbləğlər",
+                Kateqoriya = "Rüblük", Ikon = "bi-shield-check", Area = "Muhasibat", Controller = "Hesabat", Action = "Bolme345" },
         // ⚠️ "AMB MHBS 9" ayrıca kart kimi 29.10.2026-da BURADAN ÇIXARILDI —
         // yuxarıdaki şərhə bax. AMB A1 Excel ixracı yuxarıdakı "IFRS 9 — ECL"
         // kartının səhifəsindəki düymədən əlçatandır. Ayrıca kart kimi geri
@@ -565,6 +571,143 @@ public class HesabatController : Controller
                 if (row == null) continue;
                 for (int c = 0; c <= 6; c++)
                     row.GetCell(c)?.SetBlank();
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return ms.ToArray();
+    }
+
+    // ── DSMF Vahid Hesabat Forması — Əlavə №4 Bölmə 3/4/5 (29.10.2026) ──
+    // Üçü EYNİ struktur (qanun maddəsi-sətri), ona görə TƏK önizləmə səhifəsi,
+    // AMMA Excel ixracı HƏR biri üçün AYRI (3 fərqli rəsmi şablon faylı).
+    public async Task<IActionResult> Bolme345(int? il, int? rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var bugun = DateTime.Today;
+        var cariRub = (bugun.Month - 1) / 3 + 1;
+        var yil = il ?? bugun.Year;
+        var r = rub ?? cariRub;
+
+        var model = new List<DsmfIstisnaBolmesiDto>
+        {
+            await _dsmf.Bolme3HazirlaAsync(yil, r),
+            await _dsmf.Bolme4HazirlaAsync(yil, r),
+            await _dsmf.Bolme5HazirlaAsync(yil, r),
+        };
+        return View(model);
+    }
+
+    public async Task<IActionResult> Bolme3Excel(int il, int rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+        var m = await _dsmf.Bolme3HazirlaAsync(il, rub);
+        return BolmeExcelQaytar(m, "UNIFIED_APPENDIX_4_NON_INVOLVED_MDSS.xlsx", "Əlavə №4 - Bölmə 3", "Bolme3");
+    }
+
+    public async Task<IActionResult> Bolme4Excel(int il, int rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+        var m = await _dsmf.Bolme4HazirlaAsync(il, rub);
+        return BolmeExcelQaytar(m, "UNIFIED_APPENDIX_4_NON_INVOLVED_UNEMPLOYED.xlsx", "Əlavə №4 - Bölmə 4", "Bolme4");
+    }
+
+    public async Task<IActionResult> Bolme5Excel(int il, int rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+        var m = await _dsmf.Bolme5HazirlaAsync(il, rub);
+        return BolmeExcelQaytar(m, "UNIFIED_APPENDIX_4_NON_INVOLVED_ITS.xlsx", "Əlavə №4 - Bölmə 5", "Bolme5");
+    }
+
+    private IActionResult BolmeExcelQaytar(DsmfIstisnaBolmesiDto m, string sablonAdi, string vereqAdi, string ixracKodu)
+    {
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "dsmf", sablonAdi);
+        var adı = $"DSMF_{ixracKodu}_{m.Il}_R{m.Rub}.xlsx";
+
+        if (System.IO.File.Exists(sablonPath))
+        {
+            var dolu = BolmeSablonDoldur(sablonPath, vereqAdi, m);
+            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+        }
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet(vereqAdi);
+        int r = 0;
+        sh.CreateRow(r++).CreateCell(0).SetCellValue($"{m.Basliq} — {m.Il}, Rüb {m.Rub}");
+        r++;
+        var h = sh.CreateRow(r++);
+        string[] basliq = { "Sıra №", "Göstəricilər", $"{m.Ay1Adi} — işçi sayı", $"{m.Ay1Adi} — məbləğ",
+                             $"{m.Ay2Adi} — işçi sayı", $"{m.Ay2Adi} — məbləğ", $"{m.Ay3Adi} — işçi sayı", $"{m.Ay3Adi} — məbləğ" };
+        for (int i = 0; i < basliq.Length; i++) h.CreateCell(i).SetCellValue(basliq[i]);
+        foreach (var s in m.Setirler)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(s.SiraNo);
+            row.CreateCell(1).SetCellValue(s.Gostərici);
+            row.CreateCell(2).SetCellValue(s.Ay1IsciSayi);
+            row.CreateCell(3).SetCellValue((double)s.Ay1Mebleg);
+            row.CreateCell(4).SetCellValue(s.Ay2IsciSayi);
+            row.CreateCell(5).SetCellValue((double)s.Ay2Mebleg);
+            row.CreateCell(6).SetCellValue(s.Ay3IsciSayi);
+            row.CreateCell(7).SetCellValue((double)s.Ay3Mebleg);
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel", $"DSMF_{ixracKodu}_{m.Il}_R{m.Rub}.xls");
+    }
+
+    // Rəsmi Bölmə 3/4/5 şablonlarını doldur — üçü AYNI sütun düzümünü (A=Sıra№,
+    // B=Göstəricilər, C/D=1-ci ay (sayı/məbləğ), E/F=2-ci ay, G/H=3-cü ay) və AYNI
+    // başlanğıc sətrini (7-ci, 0-əsaslı 6) paylaşır — bir helper kifayətdir.
+    //
+    // ⚠️ Şablonların özü artıq YALNIZ sistemin hesabladığı maddələri (mühasibin əl
+    // ilə əlavə etdiyi nümunə sətirlər — 5.2.9/5.2.12/6.3/7.2) daşıyır, sayı bizim
+    // Setirler.Count ilə TAM uyğundur — amma gələcəkdə şablon dəyişsə/daha çox
+    // nümunə sətir əlavə olunsa deyə, yazdığımız sətirdən SONRA gələn, hələ
+    // mətni olan (Göstəricilər boş olmayan) HƏR sətri açıq təmizləyirik (Hissə
+    // 3-dəki "numuneSetirSayi" qoruyucusunun ÜMUMİLƏŞDİRİLMİŞ forması).
+    private static byte[] BolmeSablonDoldur(string sablonPath, string vereqAdi, DsmfIstisnaBolmesiDto m)
+    {
+        IWorkbook wb;
+        using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
+            wb = new XSSFWorkbook(fs);
+
+        var ws = wb.GetSheet(vereqAdi);
+        if (ws != null)
+        {
+            const int basSetir = 6; // NPOI 0-əsaslı — şablonun 7-ci sətri
+            for (int i = 0; i < m.Setirler.Count; i++)
+            {
+                var s = m.Setirler[i];
+                var row = ws.GetRow(basSetir + i) ?? ws.CreateRow(basSetir + i);
+                row.CreateCell(0).SetCellValue(s.SiraNo);
+                row.CreateCell(1).SetCellValue(s.Gostərici);
+                row.CreateCell(2).SetCellValue(s.Ay1IsciSayi);
+                row.CreateCell(3).SetCellValue((double)s.Ay1Mebleg);
+                row.CreateCell(4).SetCellValue(s.Ay2IsciSayi);
+                row.CreateCell(5).SetCellValue((double)s.Ay2Mebleg);
+                row.CreateCell(6).SetCellValue(s.Ay3IsciSayi);
+                row.CreateCell(7).SetCellValue((double)s.Ay3Mebleg);
+            }
+
+            int sonrakiSetir = basSetir + m.Setirler.Count;
+            while (true)
+            {
+                var row = ws.GetRow(sonrakiSetir);
+                var govdeXana = row?.GetCell(1);
+                if (row == null || govdeXana == null || string.IsNullOrWhiteSpace(govdeXana.ToString()))
+                    break;
+                for (int c = 0; c <= 7; c++)
+                    row.GetCell(c)?.SetBlank();
+                sonrakiSetir++;
             }
         }
 

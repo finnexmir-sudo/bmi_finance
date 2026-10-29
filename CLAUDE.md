@@ -7974,3 +7974,119 @@ işçi, (3) rüb ərzində işdən çıxan işçi, (4) iki ayı əhatə edən x�
 bülleteni olan işçi — hər dördünün düzgün sütunda/sətirdə, düzgün gün sayı
 ilə göründüyünü, Excel ixracının (şablon DMS-ə qoyulandan sonra) iki
 nümunə sətiri səssizcə saxlamadığını təsdiqləməli.
+
+## DSMF — Əlavə №4 Bölmə 3-4-5 — Sığorta-İstisna Gəlirlər (29.10.2026)
+
+İstifadəçi tapşırığı: *"indi novbeti"* (Hissə 3 bitəndən sonra). İkinci dalğa
+olaraq Əlavə №4-ün 3 bölməsi quruldu — bunlar Hissə 3-dən **struktur olaraq
+tamamilə fərqlidir**: işçi-sətri DEYİL, **qanun maddəsi-sətridir** (hər sətir
+bir VM/qanun bəndi, ay üzrə "işçi sayı" + "cəlb olunmayan məbləğ").
+
+### "Əsgər pulu" nə idi — istifadəçinin öz şablon qeydindən tapıldı
+
+İstifadəçi öz Excel şablonunda (`UNIFIED_APPENDIX_4_NON_INVOLVED_UNEMPLOYED.xlsx`/
+`_ITS.xlsx`) maddə 6.3/7.2-nin "Cəlb olunmayan gəlirlər" xanasına **əl ilə**
+"esger pulu ve xestelik pulu" qeydi yazmışdı. Araşdırma göstərdi ki, bu,
+HR → Əmək haqqı parametrləri → **"Konfiqurasiyalı Gəlir Növləri"**-ndəki
+("mühasibin yaratdığı xüsusi gəlirlər", məs. **"Hərbi Xidmət"**) bir
+`MaasNovu` sətridir (`ManualGelir=true`) — ekran-görüntüsündə DSMF=✓,
+İşsizlik=—, İTSS=— bayraqları göstərilirdi.
+
+**Kodda dəqiq təsdiqləndi** (`MaasHesablamaService.cs:1077-1081,1147-1149`):
+hər manual gəlir növünün **öz bayraqları** (`VergiyeCelb`/`DsmfyeCelb`/
+`IssizliyeCelb`/`ItsseCelb`) vergi/haqq bazalarından çıxılıb-çıxılmayacağını
+müəyyən edir — "Hərbi Xidmət"in `IssizliyeCelb=false`/`ItsseCelb=false`
+olması onu DƏQIQ Bölmə 4 (6.3) və Bölmə 5 (7.2)-yə uyğun edir (Bölmə 3-ə YOX,
+çünki `DsmfyeCelb=true`). Eyni kod bloku daha bir şey göstərdi: **xəstəlik
+şirkət ödənişi** (`XestelikSirketOdenis`) təkcə DSMF-dən (Bölmə 3) yox,
+**İşsizlik VƏ İTSS bazasından da** çıxılır (`dsmfBazasi`/`issizlikBazasi`/
+`itssBazasi`-nin HƏR üçü `xestelikSirketOdenis`-i çıxır) — "esger pulu VE
+**xestelik** pulu" qeydinin "VE xestelik" hissəsi dəqiq budur.
+
+Əlavə tapıntı: Bölmə 3-ün birinci nümunə sətri (**5.2.9**, istifadəçinin
+"cemi HY" qeydi) **HYS**-dir (`IsciHYS.Mebleg`, işçi payı) — eyni kod
+blokunda `dsmfBazasi`-dən çıxılan `hysMebleg` ilə təsdiqləndi. "HY" = "HYS"
+(Həyat Yığım Sığortası), ilk baxışda aydın olmadı, kod oxunaraq tapıldı.
+
+**Dövlət hesabatı olduğu üçün (vergi/sosial sığorta hüquqi nəticəli)
+`AskUserQuestion` ilə hər addımda təsdiqləndi** — "əsgər pulu"nun mənası,
+sonra tam xəritə (B3=HYS+xəstəlik, B4/B5=xəstəlik+manual-gəlir-bayraqlı) —
+heç biri təxmin edilib kor-koranə yazılmadı.
+
+### Xəritə
+
+| Bölmə | Maddə | Mənbə |
+|---|---|---|
+| 3 | 5.2.9 | `IsciHYS.Mebleg` (işçi payı) + işəgötürən payı (`MaasParametrNovu.HysIsegoturenFaizi`, default 15%) |
+| 3 | 5.2.12 | `XestelikOdenis.SirketOdenis` |
+| 4 | 6.3 | `XestelikOdenis.SirketOdenis` + manual `MaasNovu` (`IssizliyeCelb=false`) üzrə `MaasDetay.Mebleg`, BİRLİKDƏ (tək sətir) |
+| 5 | 7.2 | `XestelikOdenis.SirketOdenis` + manual `MaasNovu` (`ItsseCelb=false`) üzrə `MaasDetay.Mebleg`, BİRLİKDƏ (tək sətir) |
+
+**Bölmə 4/5-də "İşçi sayı" iki mənbənin BİRLƏŞMİŞ (distinct) işçi dəstidir** —
+sadəcə iki sayı toplamaq SƏHV olardı (eyni işçi həm xəstəlik, həm manual-gəlir
+istisnası aldıqda ikiqat sayılardı). `HashSet<int>.UnionWith` ilə düzəldi.
+
+**Bayraqla tutulur, ADLA YOX.** "Hərbi Xidmət" heç yerdə ad üzrə axtarılmır —
+`ManualGelirIstisnasiAsync(il, ay, issizlikFlag)` YALNIZ `IssizliyeCelb`/
+`ItsseCelb` bayraqlarına baxır. Gələcəkdə HR başqa bir manual gəlir növü
+yaradıb eyni bayraqla işarələsə (məs. "Fəxri fərman mükafatı" İşsizlikdən
+azad edilsə), DSMF hesabatı kodda DƏYİŞİKLİK LAZIM OLMADAN avtomatik tutur —
+bu, qəsdən belə dizayn edildi (sistemin öz flag-əsaslı arxitekturasına uyğun).
+
+**Yalnız TƏSDİQLƏNMİŞ/ÖDƏNİLMİŞ maaş sayılır, Layihə YOX.** Həm
+`XestelikSirketOdenisiAsync` (`XestelikOdenis.MaasId != null` + `Maas.Status`),
+həm `ManualGelirIstisnasiAsync` (`MaasDetay` → `Maas.Status`) yalnız
+`MaasStatus.Tesdiqlendi`/`Odenildi` sayır — hələ hesablanmamış (`Layihe`)
+və ya ləğv edilmiş (`LegvEdildi`) ayın məlumatı DSMF-ə düşmür. HYS-in isə
+`Maas`-a FK-sı yoxdur (payroll-un GİRİŞİdir, çıxışı deyil) — onun yeganə
+qoruyucusu `IIsciHYSDondurmaService.DondurulmusIdlerAsync` (26.10.2026-dakı
+"bir aylıq dondurma" — TƏK mənbə, öz sorğu yazılmadı).
+
+### Struktur
+
+`DsmfIstisnaBolmesiDto`/`DsmfIstisnaSetirDto` (`FinNex.Application/DTOs/Dsmf/
+DsmfIstisnaBolmesiDto.cs`) — Hissə 3-ün DTO-sundan AYRI tip (fərqli sütun
+sxemi). `DsmfIstisnaGostericileri.cs` — 4 maddənin mətni "combo" vərəqlərindən
+HƏRFİ köçürülüb (qalan 27 maddə bu banka aid olmadığı üçün DAXİL EDİLMƏYİB).
+`IDsmfHesabatService`-ə 3 yeni metod (`Bolme3/4/5HazirlaAsync`) — Hissə 3-ün
+metodu ilə EYNİ interfeysdə. `DsmfHesabatService`-ə yeni `IIsciHYSDondurmaService`
+asılılığı (konstruktor).
+
+Controller/View — TƏK kataloq kartı (`dsmf-bolme345`), TƏK önizləmə səhifəsi
+(`Bolme345.cshtml`, üç bölmənin hamısı eyni il+rüb seçimi ilə stack-lənib) —
+"DÜZƏLİŞ #3"ün "eyni destinasiyaya iki qapı açma" qaydasının MƏNTİQİ davamı:
+üç YAXIN məzmun süni şəkildə üç ayrı kart kimi çoxaldılmadı. Excel ixracı isə
+HƏR bölmə üçün AYRI action-dadır (`Bolme3/4/5Excel`) — 3 fərqli rəsmi şablon
+faylına (`UNIFIED_APPENDIX_4_NON_INVOLVED_{MDSS,UNEMPLOYED,ITS}.xlsx`) yazır,
+Hissə 3-ün `Dsmf3SablonDoldur`-u ilə EYNİ NPOI naxışı (`XSSFWorkbook` doldur,
+yoxdursa `HSSFWorkbook` fallback).
+
+**Şablonun "sızma" qoruyucusu ÜMUMİLƏŞDİRİLDİ** (Hissə 3-ün `numuneSetirSayi`
+sabit ədədindən fərqli) — `BolmeSablonDoldur` yazdığı sətirlərdən SONRA,
+hələ "Göstəricilər" mətni olan HƏR şablon sətrini (nə qədər olursa olsun)
+açıq təmizləyir. İndiki templatelərdə sızma riski YOXDUR (hər üçünün
+əvvəlcədən doldurduğu nümunə sətir sayı mənim hesabladığım sətir sayı ilə
+DƏQİQ üst-üstə düşür — B3=2, B4=1, B5=1), amma gələcəkdə şablon dəyişsə bu
+qoruyucu özü uyğunlaşır.
+
+⚠️ **GƏLƏCƏK İŞ**: Əlavə №1 Hissə 1 (maaş tərkibi, "18 yaş" məsələsi İSTİFADƏ
+OLUNMAYACAQ) və Əlavə №4 Bölmə 2 (VM maddələri üzrə gəlir vergisi güzəştləri)
+hələ qurulmadı — istifadəçi "yavaş-yavaş" sözü ilə qəsdən sonraya saxladı.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə bütün 6 yeni/dəyişən faylda,
+interfeys↔implementasiya↔DI↔controller↔view beş qatı əl ilə tutuşduruldu —
+`XestelikOdenis.MaasId/SirketOdenis`, `IsciHYS.Mebleg/BaslamaTarixi/
+BitmeTarixi`, `MaasNovu.ManualGelir/IssizliyeCelb/ItsseCelb`, `MaasDetay.
+MaasNovuId/Mebleg`, `Maas.Il/Ay/Status`, `MaasParametri.Nov/Deyer`,
+`MaasParametrNovu.HysIsegoturenFaizi`, `MaasStatus.Tesdiqlendi/Odenildi` —
+hamısı mənbə fayllarından bir-bir təsdiqləndi). Bu dəfə `Bolme345.cshtml`-də
+unudulan `.pr-warn` CSS tərifi YAZILARKƏN tapılıb özüm düzəltdim (Dsmf3.cshtml-dəki
+eyni "paylaşılan faylda yoxdur" tələsi) — publish-dən əvvəl. İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: (1) o rübdə
+HYS-i olan işçi (5.2.9-da görünsün), (2) o rübdə xəstəlik bülleteni təsdiqlənib
+maaşa bağlanmış işçi (5.2.12/6.3/7.2-də görünsün), (3) "Hərbi Xidmət" (və ya
+oxşar, İşsizlik/İTSS-dən azad bir manual gəlir növü) məbləği daxil edilib
+maaşı TƏSDİQLƏNMİŞ işçi (6.3/7.2-də görünsün, 5.2.12-də YOX) — hər üçünün
+düzgün bölmədə, düzgün "işçi sayı"+"məbləğ" ilə göründüyünü, HƏLƏ "Layihə"
+statuslu (hesablanmamış) ayın heç yerdə görünmədiyini təsdiqləməli.

@@ -16,4 +16,25 @@ public interface IDsmfHesabatService
     /// alınır; işləməyən gün aşkarlanmayan işçi ÜMUMİYYƏTLƏ sətir almır.
     /// </summary>
     Task<DsmfHissesi3Dto> Hissesi3HazirlaAsync(int il, int rub);
+
+    /// <summary>
+    /// Əlavə №4 Bölmə 3 — Məcburi dövlət sosial sığorta haqqına cəlb olunmayan
+    /// gəlirlər. 2 sətir avtomatik: 5.2.9 (HYS — işçi+işəgötürən payı) və
+    /// 5.2.12 (xəstəlik vərəqəsi üzrə şirkət ödənişi).
+    /// </summary>
+    Task<DsmfIstisnaBolmesiDto> Bolme3HazirlaAsync(int il, int rub);
+
+    /// <summary>
+    /// Əlavə №4 Bölmə 4 — İşsizlikdən sığorta haqqına cəlb olunmayan gəlirlər.
+    /// 1 sətir (6.3) — xəstəlik şirkət ödənişi + manual gəlir növlərindən
+    /// IssizliyeCelb=false olanlar birlikdə.
+    /// </summary>
+    Task<DsmfIstisnaBolmesiDto> Bolme4HazirlaAsync(int il, int rub);
+
+    /// <summary>
+    /// Əlavə №4 Bölmə 5 — İcbari tibbi sığorta haqqına cəlb olunmayan gəlirlər.
+    /// 1 sətir (7.2) — xəstəlik şirkət ödənişi + manual gəlir növlərindən
+    /// ItsseCelb=false olanlar birlikdə.
+    /// </summary>
+    Task<DsmfIstisnaBolmesiDto> Bolme5HazirlaAsync(int il, int rub);
 }

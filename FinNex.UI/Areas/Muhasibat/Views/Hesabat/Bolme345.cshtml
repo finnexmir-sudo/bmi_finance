@@ -1,0 +1,128 @@
+@using FinNex.Application.DTOs.Dsmf
+@model List<DsmfIstisnaBolmesiDto>
+@{
+    ViewData["Title"] = "DSMF — Əlavə №4 Bölmə 3-4-5";
+    var rubAdlari = new[] { "", "Yanvar–Mart", "Aprel–İyun", "İyul–Sentyabr", "Oktyabr–Dekabr" };
+    var cariIl = DateTime.Today.Year;
+    var basNumune = Model.FirstOrDefault();
+    var excelAction = new Dictionary<int, string> { [3] = "Bolme3Excel", [4] = "Bolme4Excel", [5] = "Bolme5Excel" };
+}
+
+<partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
+
+@* Dsmf3.cshtml-dəki eyni "paylaşılan faylda yoxdur" problemi — eyni yerli nüsxə. *@
+<style>
+    .mh-hero--dsmf { background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%); }
+    .pr-warn { display: flex; gap: 10px; padding: 13px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; font-size: 12.5px; color: #713f12; line-height: 1.55; }
+    .pr-warn i { color: #d97706; font-size: 17px; margin-top: 1px; }
+    .pr-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; margin-top: 14px; }
+    .pr-card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; color: #1e293b; }
+    .bolme-xls { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #0f766e; color: #fff; border-radius: 8px; font-size: 12.5px; font-weight: 600; text-decoration: none; }
+    .bolme-xls:hover { background: #0d5f58; color: #fff; }
+</style>
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--dsmf">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-shield-check"></i> Mühasibat / Hesabatlar / DSMF</div>
+            <h1 class="mh-title">Əlavə №4 — Bölmə 3-4-5</h1>
+            <div class="mh-sub"><i class="bi bi-info-circle"></i> Sığorta-istisna gəlirlər — @basNumune?.Il, Rüb @basNumune?.Rub (@rubAdlari[basNumune?.Rub ?? 1])</div>
+        </div>
+        <form method="get" class="mh-datef">
+            <label>İl</label>
+            <select name="il">
+                @for (int y = cariIl - 2; y <= cariIl + 1; y++)
+                {
+                    <option value="@y" selected="@(y == basNumune?.Il)">@y</option>
+                }
+            </select>
+            <label>Rüb</label>
+            <select name="rub">
+                @for (int r = 1; r <= 4; r++)
+                {
+                    <option value="@r" selected="@(r == basNumune?.Rub)">Rüb @r (@rubAdlari[r])</option>
+                }
+            </select>
+            <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
+        </form>
+    </div>
+
+    <div class="pr-warn" style="margin-top:14px;">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div>
+            <b>Əhatə:</b> yalnız sistemdə qarşılığı olan maddələr avtomatik hesablanır —
+            Bölmə 3: 5.2.9 (HYS) + 5.2.12 (xəstəlik şirkət ödənişi); Bölmə 4: 6.3
+            (xəstəlik + "Hərbi Xidmət" kimi İşsizlikdən azad manual gəlirlər); Bölmə 5:
+            7.2 (xəstəlik + İTSS-dən azad manual gəlirlər). Qanunun qalan maddələri
+            (neft-qaz podratçısı, texnologiya parkı, diplomatik xidmət və s.) bu banka
+            aid olmadığı üçün bura DAXİL EDİLMƏYİB — belə hal yaranarsa mühasib əl ilə
+            əlavə etməlidir.
+        </div>
+    </div>
+
+    @foreach (var b in Model)
+    {
+        <div class="pr-card">
+            <div class="pr-card-h">
+                <span><i class="bi bi-table"></i> Bölmə @b.BolmeNo — @b.Setirler.Count sətir</span>
+                <a asp-action="@excelAction[b.BolmeNo]" asp-route-il="@b.Il" asp-route-rub="@b.Rub" class="bolme-xls">
+                    <i class="bi bi-file-earmark-excel"></i> Excel-ə ixrac et
+                </a>
+            </div>
+            @if (b.Setirler.Count == 0)
+            {
+                <div style="padding:22px; text-align:center; color:#64748b; font-size:13.5px;">
+                    <i class="bi bi-inbox" style="font-size:22px; display:block; margin-bottom:6px;"></i>
+                    Bu rübdə sistem tərəfindən aşkarlanan istisna gəlir yoxdur.
+                </div>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
+                    <table class="hj-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Göstəricilər</th>
+                                <th colspan="2" style="text-align:center;">@b.Ay1Adi</th>
+                                <th colspan="2" style="text-align:center;">@b.Ay2Adi</th>
+                                <th colspan="2" style="text-align:center;">@b.Ay3Adi</th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th style="text-align:right;">İşçi sayı</th>
+                                <th style="text-align:right;">Məbləğ</th>
+                                <th style="text-align:right;">İşçi sayı</th>
+                                <th style="text-align:right;">Məbləğ</th>
+                                <th style="text-align:right;">İşçi sayı</th>
+                                <th style="text-align:right;">Məbləğ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in b.Setirler)
+                            {
+                                <tr>
+                                    <td>@s.SiraNo</td>
+                                    <td style="font-size:12px; max-width:420px;">@s.Gostərici</td>
+                                    <td style="text-align:right;">@(s.Ay1IsciSayi > 0 ? s.Ay1IsciSayi.ToString() : "—")</td>
+                                    <td style="text-align:right;">@(s.Ay1Mebleg > 0 ? s.Ay1Mebleg.ToString("N2") : "—")</td>
+                                    <td style="text-align:right;">@(s.Ay2IsciSayi > 0 ? s.Ay2IsciSayi.ToString() : "—")</td>
+                                    <td style="text-align:right;">@(s.Ay2Mebleg > 0 ? s.Ay2Mebleg.ToString("N2") : "—")</td>
+                                    <td style="text-align:right;">@(s.Ay3IsciSayi > 0 ? s.Ay3IsciSayi.ToString() : "—")</td>
+                                    <td style="text-align:right;">@(s.Ay3Mebleg > 0 ? s.Ay3Mebleg.ToString("N2") : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    <div style="margin-top:16px;">
+        <a asp-action="Index" class="mh-xls"><i class="bi bi-arrow-left"></i> Hesabatlar siyahısına qayıt</a>
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton.css" />
