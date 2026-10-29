@@ -53,19 +53,7 @@ public class DsmfHesabatService : IDsmfHesabatService
                 .Select(k => DsmfIslemeyenGunSebebi.Metinler[k]).ToList(),
         };
 
-        var rubBaslangic = new DateTime(il, ay1, 1);
-        var rubBitis = new DateTime(il, ay3, 1).AddMonths(1).AddDays(-1);
-
-        // Rübdə İSTƏNİLƏN gün aktiv olmuş işçilər — "Aktiv işçi" kanonik filtri
-        // (IsciStatus.Aktiv) BURAYA YARAMIR, çünki rüb ərzində işdən çıxmış/işə
-        // qəbul olmuş işçi də lazımdır. Tarix-kəsişməsi şərti işlədilir.
-        var iscilər = await _unitOfWork.Repository<Isci>()
-            .Query()
-            .AsNoTracking()
-            .Where(x => x.IsheQebulTarixi <= rubBitis
-                     && (x.IsdenAyrilmaTarixi == null || x.IsdenAyrilmaTarixi >= rubBaslangic))
-            .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
-            .ToListAsync();
+        var iscilər = await IscilərRubdeAktivAsync(il, ay1, ay3);
 
         var ayLar = new[] { ay1, ay2, ay3 };
         var setirler = new List<DsmfHissesi3SetirDto>();
@@ -228,6 +216,25 @@ public class DsmfHesabatService : IDsmfHesabatService
         return gunler.Count;
     }
 
+    // Rübdə (ay1..ay3) İSTƏNİLƏN gün aktiv olmuş işçilər — Hissə 3-ün və Hissə
+    // 1-in ORTAQ "kimi daxil et" sorğusu (əvvəl yalnız Hissə 3-ün öz daxilində
+    // idi, Hissə 1 əlavə edilərkən TƏKRARLANMAMAQ üçün bura çıxarıldı). "Aktiv
+    // işçi" kanonik filtri (IsciStatus.Aktiv) BURAYA YARAMIR — rüb ərzində
+    // işdən çıxmış/işə qəbul olmuş işçi də lazımdır, tarix-kəsişməsi işlədilir.
+    private async Task<List<Isci>> IscilərRubdeAktivAsync(int il, int ay1, int ay3)
+    {
+        var rubBaslangic = new DateTime(il, ay1, 1);
+        var rubBitis = new DateTime(il, ay3, 1).AddMonths(1).AddDays(-1);
+
+        return await _unitOfWork.Repository<Isci>()
+            .Query()
+            .AsNoTracking()
+            .Where(x => x.IsheQebulTarixi <= rubBitis
+                     && (x.IsdenAyrilmaTarixi == null || x.IsdenAyrilmaTarixi >= rubBaslangic))
+            .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
+            .ToListAsync();
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Əlavə №4 Bölmə 2/3/4/5 — "güzəşt/azadolma" cədvəlləri (29.10.2026). Hissə
     // 3-dən FƏRQLİ struktur: işçi-sətri YOX, qanun-maddəsi-sətridir. İstifadəçi
@@ -257,25 +264,33 @@ public class DsmfHesabatService : IDsmfHesabatService
 
         for (int i = 0; i < 3; i++)
         {
-            var (hysIscilər, hysCemi) = await HysIsciPayiAsync(il, ayLar[i]);
-            SetirAyaYaz(hysSetir, i, hysIscilər.Count, hysCemi);
+            var hys = await HysIsciPayiAsync(il, ayLar[i]);
+            SetirAyaYaz(hysSetir, i, hys.Count, hys.Values.Sum());
 
-            var (standartIscilər, standartCemi) = await StandartGuzestAsync(il, ayLar[i]);
-            SetirAyaYaz(standartSetir, i, standartIscilər.Count, standartCemi);
+            var standart = await StandartGuzestAsync(il, ayLar[i]);
+            SetirAyaYaz(standartSetir, i, standart.Count, standart.Values.Sum());
 
-            var (qacqinIscilər, qacqinCemi) = await GuzestNovuUzreAsync(il, ayLar[i], GuzestNovu.MecburiKockun);
-            SetirAyaYaz(qacqinSetir, i, qacqinIscilər.Count, qacqinCemi);
+            var qacqin = await GuzestNovuUzreAsync(il, ayLar[i], GuzestNovu.MecburiKockun);
+            SetirAyaYaz(qacqinSetir, i, qacqin.Count, qacqin.Values.Sum());
 
-            var (elillikIscilər, elillikCemi) = await GuzestNovuUzreAsync(il, ayLar[i], GuzestNovu.Elillik);
-            SetirAyaYaz(elillikSetir, i, elillikIscilər.Count, elillikCemi);
+            var elillik = await GuzestNovuUzreAsync(il, ayLar[i], GuzestNovu.Elillik);
+            SetirAyaYaz(elillikSetir, i, elillik.Count, elillik.Values.Sum());
 
-            var (esgerIscilər, esgerCemi) = await ManualGelirVergiIstisnasiAsync(il, ayLar[i]);
-            SetirAyaYaz(esgerSetir, i, esgerIscilər.Count, esgerCemi);
+            var esger = await ManualGelirVergiIstisnasiAsync(il, ayLar[i]);
+            SetirAyaYaz(esgerSetir, i, esger.Count, esger.Values.Sum());
         }
 
         dto.Setirler = new List<DsmfIstisnaSetirDto> { hysSetir, standartSetir, qacqinSetir, elillikSetir, esgerSetir };
         return dto;
     }
+
+    // ── Bölmə 2/3-ün PAYLAŞDIĞI və Hissə 1-in DƏ istifadə etdiyi köməkçilər ──
+    // 29.10.2026-da (Hissə 1 əlavə ediləndə) hamısı `(HashSet, decimal)`-dən
+    // `Dictionary<IsciId, Mebleg>`-ə ÇEVRİLDİ — Bölmə 2/3/4/5 bu dict-in
+    // `.Count`/`.Values.Sum()`-unu, Hissə 1 isə HƏR İŞÇİNİN ÖZ PAYINI oxuyur.
+    // Nəticə DƏYİŞMİR (eyni cəm), sadəcə görüntü forması — "Bir Kəmiyyətə
+    // Üç Yazıcı" riski olmasın deyə bu, DÖRD YERDƏ YOX, İKİ YERDƏ (bölmə
+    // cədvəli + Hissə 1 sətri) EYNİ dict-dən oxunur.
 
     // HYS — YALNIZ işçi payı (IsciHYS.Mebleg), işəgötürən payı DAXİL DEYİL
     // (istifadəçi qərarı, 29.10.2026: "sirket yox" — bu qayda Bölmə 2-nin
@@ -283,7 +298,7 @@ public class DsmfHesabatService : IDsmfHesabatService
     // də bu metodu çağırır — əvvəlki "5.2.9 = işçi+işəgötürən" versiyası
     // səhv idi, düzəldildi). Dondurulmuş aylar (IIsciHYSDondurmaService) TƏK
     // mənbədən xaric edilir — bax CLAUDE.md "HYS — Bir Aylıq Dondurma".
-    private async Task<(HashSet<int> Iscilər, decimal Cemi)> HysIsciPayiAsync(int il, int ay)
+    private async Task<Dictionary<int, decimal>> HysIsciPayiAsync(int il, int ay)
     {
         var ayBaslangic = new DateTime(il, ay, 1);
         var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
@@ -300,10 +315,7 @@ public class DsmfHesabatService : IDsmfHesabatService
         if (dondurulmus.Count > 0)
             qeydler = qeydler.Where(x => !dondurulmus.Contains(x.Id)).ToList();
 
-        if (qeydler.Count == 0) return (new HashSet<int>(), 0m);
-
-        var isciMebleqleri = qeydler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
-        return (isciMebleqleri.Keys.ToHashSet(), isciMebleqleri.Values.Sum());
+        return qeydler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
     }
 
     // Standart 200 AZN gəlir vergisi güzəşti (VM 102.1.6, brüt ≤ 2500 — bax
@@ -313,7 +325,7 @@ public class DsmfHesabatService : IDsmfHesabatService
     // HESABLANMIŞ VƏ PERSİST EDİLMİŞ "Vergi Guzesti" izahat addımından (Maas.
     // HesablamaIzahi JSON) oxunur — tək mənbə, canlı payroll ilə HƏMİŞƏ
     // tutuşur.
-    private async Task<(HashSet<int> Iscilər, decimal Cemi)> StandartGuzestAsync(int il, int ay)
+    private async Task<Dictionary<int, decimal>> StandartGuzestAsync(int il, int ay)
     {
         var maaslar = await _unitOfWork.Repository<Maas>()
             .Query()
@@ -324,16 +336,13 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.IsciId, x.HesablamaIzahi })
             .ToListAsync();
 
-        var iscilər = new HashSet<int>();
-        decimal cemi = 0m;
+        var netice = new Dictionary<int, decimal>();
         foreach (var m in maaslar)
         {
             var standart = StandartGuzestdenCixar(m.HesablamaIzahi!);
-            if (standart <= 0) continue;
-            iscilər.Add(m.IsciId);
-            cemi += standart;
+            if (standart > 0) netice[m.IsciId] = standart;
         }
-        return (iscilər, cemi);
+        return netice;
     }
 
     // Əlillik/Qaçqın (MecburiKockun) güzəştinin HƏQİQƏTƏN tətbiq olunan payı.
@@ -344,7 +353,7 @@ public class DsmfHesabatService : IDsmfHesabatService
     // Guzest-in Mebleg-inə DƏQİQ bərabərdirsə) sətirləri sayır — əks halda
     // güzəşt qeydiyyatda var, amma HEÇ VAXT tətbiq olunmayıb (başqa, daha
     // böyük güzəşt qalib gəlib) deməkdir, DSMF-ə yazılmamalıdır.
-    private async Task<(HashSet<int> Iscilər, decimal Cemi)> GuzestNovuUzreAsync(int il, int ay, GuzestNovu novu)
+    private async Task<Dictionary<int, decimal>> GuzestNovuUzreAsync(int il, int ay, GuzestNovu novu)
     {
         var ayBaslangic = new DateTime(il, ay, 1);
         var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
@@ -360,7 +369,7 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.IsciId, x.Guzest!.Mebleg })
             .ToListAsync();
 
-        if (namizedler.Count == 0) return (new HashSet<int>(), 0m);
+        if (namizedler.Count == 0) return new Dictionary<int, decimal>();
 
         var isciMax = namizedler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Max(x => x.Mebleg));
 
@@ -374,25 +383,21 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.IsciId, x.HesablamaIzahi })
             .ToListAsync();
 
-        var iscilər = new HashSet<int>();
-        decimal cemi = 0m;
+        var netice = new Dictionary<int, decimal>();
         foreach (var m in maaslar)
         {
             var tetbiqOlunan = MaksIsciGuzestindenCixar(m.HesablamaIzahi!);
             if (tetbiqOlunan > 0 && tetbiqOlunan == isciMax[m.IsciId])
-            {
-                iscilər.Add(m.IsciId);
-                cemi += tetbiqOlunan;
-            }
+                netice[m.IsciId] = tetbiqOlunan;
         }
-        return (iscilər, cemi);
+        return netice;
     }
 
     // Manual gəlir növlərindən (məs. "Hərbi Xidmət") QİSMƏN gəlir vergisindən
     // azad olanlar — ManualGelirIstisnasiAsync-dən FƏRQLİ: orada İşsizlik/İTSS
     // bazasından TAM azadlıq (bayraqla), burada gəlir vergisi bazasından YALNIZ
     // MaasNovu.GelirVergisiAzadMebleg qədər (Min(ödəniş, azad məbləğ)) azadlıq.
-    private async Task<(HashSet<int> Iscilər, decimal Cemi)> ManualGelirVergiIstisnasiAsync(int il, int ay)
+    private async Task<Dictionary<int, decimal>> ManualGelirVergiIstisnasiAsync(int il, int ay)
     {
         var novlər = await _unitOfWork.Repository<MaasNovu>()
             .Query()
@@ -402,7 +407,7 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.Id, x.GelirVergisiAzadMebleg })
             .ToListAsync();
 
-        if (novlər.Count == 0) return (new HashSet<int>(), 0m);
+        if (novlər.Count == 0) return new Dictionary<int, decimal>();
         var azadMap = novlər.ToDictionary(x => x.Id, x => x.GelirVergisiAzadMebleg);
 
         var detallar = await _unitOfWork.Repository<MaasDetay>()
@@ -414,18 +419,14 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.Maas.IsciId, x.MaasNovuId, x.Mebleg })
             .ToListAsync();
 
-        if (detallar.Count == 0) return (new HashSet<int>(), 0m);
-
-        var iscilər = new HashSet<int>();
-        decimal cemi = 0m;
+        var netice = new Dictionary<int, decimal>();
         foreach (var d in detallar)
         {
             var azad = Math.Min(d.Mebleg, azadMap[d.MaasNovuId]);
             if (azad <= 0) continue;
-            iscilər.Add(d.IsciId);
-            cemi += azad;
+            netice[d.IsciId] = netice.GetValueOrDefault(d.IsciId) + azad;
         }
-        return (iscilər, cemi);
+        return netice;
     }
 
     // ── Maas.HesablamaIzahi (JSON) oxuyucuları — Bölmə 2-nin HYS-dən başqa HƏR
@@ -464,10 +465,10 @@ public class DsmfHesabatService : IDsmfHesabatService
             // DAXİL DEYİL (əvvəlki versiya birləşdirirdi — düzəldildi).
             // Bölmə 2-nin VM 102.1.8 sətri ilə EYNİ metodu (HysIsciPayiAsync)
             // çağırır — iki ayrı qanun maddəsi, amma eyni "yalnız işçi" qaydası.
-            var (hysIscilər, hysCemi) = await HysIsciPayiAsync(il, ayLar[i]);
-            var (xstIscilər, xstCemi) = await XestelikSirketOdenisiAsync(il, ayLar[i]);
-            SetirAyaYaz(hysSetir, i, hysIscilər.Count, hysCemi);
-            SetirAyaYaz(xstSetir, i, xstIscilər.Count, xstCemi);
+            var hys = await HysIsciPayiAsync(il, ayLar[i]);
+            var xst = await XestelikSirketOdenisiAsync(il, ayLar[i]);
+            SetirAyaYaz(hysSetir, i, hys.Count, hys.Values.Sum());
+            SetirAyaYaz(xstSetir, i, xst.Count, xst.Values.Sum());
         }
 
         dto.Setirler = new List<DsmfIstisnaSetirDto> { hysSetir, xstSetir };
@@ -493,12 +494,12 @@ public class DsmfHesabatService : IDsmfHesabatService
 
         for (int i = 0; i < 3; i++)
         {
-            var (xstIscilər, xstCemi) = await XestelikSirketOdenisiAsync(il, ayLar[i]);
-            var (manualIscilər, manualCemi) = await ManualGelirIstisnasiAsync(il, ayLar[i], issizlikFlag);
+            var xst = await XestelikSirketOdenisiAsync(il, ayLar[i]);
+            var manual = await ManualGelirIstisnasiAsync(il, ayLar[i], issizlikFlag);
 
-            var birlesmisIscilər = new HashSet<int>(xstIscilər);
-            birlesmisIscilər.UnionWith(manualIscilər);
-            SetirAyaYaz(setir, i, birlesmisIscilər.Count, xstCemi + manualCemi);
+            var birlesmisIscilər = new HashSet<int>(xst.Keys);
+            birlesmisIscilər.UnionWith(manual.Keys);
+            SetirAyaYaz(setir, i, birlesmisIscilər.Count, xst.Values.Sum() + manual.Values.Sum());
         }
 
         dto.Setirler = new List<DsmfIstisnaSetirDto> { setir };
@@ -538,7 +539,7 @@ public class DsmfHesabatService : IDsmfHesabatService
     // DSMF/İşsizlik/İTSS bazasından çıxdığı ƏN TƏK dəyər — bax o faylın 1147-1149-cu
     // sətirləri) — yalnız real Maas-a bağlanmış (MaasId != null) və TƏSDİQLƏNMİŞ/
     // ÖDƏNİLMİŞ statusda olan qeydlər sayılır, Layihə (hələ hesablanmamış) YOX.
-    private async Task<(HashSet<int> Iscilər, decimal Cemi)> XestelikSirketOdenisiAsync(int il, int ay)
+    private async Task<Dictionary<int, decimal>> XestelikSirketOdenisiAsync(int il, int ay)
     {
         var qeydler = await _unitOfWork.Repository<XestelikOdenis>()
             .Query()
@@ -549,8 +550,7 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.IsciId, x.SirketOdenis })
             .ToListAsync();
 
-        if (qeydler.Count == 0) return (new HashSet<int>(), 0m);
-        return (qeydler.Select(x => x.IsciId).ToHashSet(), qeydler.Sum(x => x.SirketOdenis));
+        return qeydler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.SirketOdenis));
     }
 
     // Konfiqurasiyalı manual gəlir növlərindən (HR → Əmək haqqı parametrləri →
@@ -561,7 +561,7 @@ public class DsmfHesabatService : IDsmfHesabatService
     // dəyişiklik lazım olmadan avtomatik düşür. Yalnız real Maas-a bağlanmış,
     // TƏSDİQLƏNMİŞ/ÖDƏNİLMİŞ sətirlər sayılır (Layihə YOX) —
     // XestelikSirketOdenisiAsync ilə EYNİ status qaydası.
-    private async Task<(HashSet<int> Iscilər, decimal Cemi)> ManualGelirIstisnasiAsync(
+    private async Task<Dictionary<int, decimal>> ManualGelirIstisnasiAsync(
         int il, int ay, bool issizlikFlag)
     {
         var novIdler = await _unitOfWork.Repository<MaasNovu>()
@@ -572,7 +572,7 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => x.Id)
             .ToListAsync();
 
-        if (novIdler.Count == 0) return (new HashSet<int>(), 0m);
+        if (novIdler.Count == 0) return new Dictionary<int, decimal>();
 
         var detallar = await _unitOfWork.Repository<MaasDetay>()
             .Query()
@@ -583,7 +583,158 @@ public class DsmfHesabatService : IDsmfHesabatService
             .Select(x => new { x.Maas.IsciId, x.Mebleg })
             .ToListAsync();
 
-        if (detallar.Count == 0) return (new HashSet<int>(), 0m);
-        return (detallar.Select(x => x.IsciId).ToHashSet(), detallar.Sum(x => x.Mebleg));
+        return detallar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Əlavə №1 Hissə 1 — "işçilər üzrə ümumi məlumat / maaş tərkibi" (29.10.2026).
+    // Hissə 3 kimi İŞÇİ-sətridir (qanun-maddəsi-sətri YOX), 11 sütun × 3 ay.
+    // Şablon: UNIFIED_APPENDIX_1_EMPLOYEE_LIST.xlsx. Sütun xəritəsi real
+    // şablonun BAŞLIQ sətirlərindən (3-5) və mühasibin öz nümunə sətrindəki
+    // (10-cu sətir) "e/h dan S+O", "e/h M+T+U" kimi qeydlərdən çıxarılıb:
+    //
+    //   2.1 Əsas iş yeri olması          → HƏMİŞƏ "Bəli" (istifadəçi qərarı,
+    //                                        29.10.2026 — sistemdə bele bayraq
+    //                                        yoxdur, 27 nümunə sətirdən 25-i
+    //                                        onsuz da "Bəli" idi)
+    //   2.2 Faktiki iş günü               → ayın real iş günü − Hissə 3-dəki
+    //                                        bu işçinin işləmədiyi gün cəmi
+    //                                        (Hissesi3HazirlaAsync-in ÖZ
+    //                                        nəticəsindən, TƏKRAR hesablanmır)
+    //   2.3 Hesablanmış əmək haqqı        → Maas.BrutMebleg
+    //   2.3.1, 2.5, 2.6, 4.5              → HƏMİŞƏ boş (mühasibin öz "bos"
+    //                                        qeydi — sistemdə izi yoxdur:
+    //                                        xaric gəlir, HYS-erkən-xitam,
+    //                                        texnologiya parkı seçimi [bank
+    //                                        üçün N/A])
+    //   3.1 Azadolunan/güzəşt cəmi        → Bölmə 2-nin bu işçi üçün CƏMİ
+    //   4.1 DSMF azad cəmi                → Bölmə 3-ün bu işçi üçün CƏMİ
+    //   5.1 İşsizlik azad cəmi            → Bölmə 4-ün bu işçi üçün CƏMİ
+    //   6.1 İTSS azad cəmi                → Bölmə 5-in bu işçi üçün CƏMİ
+    //
+    // Son dördü (3.1/4.1/5.1/6.1) Bölmə 2-5-in ARTIQ QURULMUŞ per-işçi
+    // dict-lərinin cəmidir — YENİ DÜSTUR YAZILMAYIB, elə yuxarıdakı
+    // HysIsciPayiAsync/StandartGuzestAsync/GuzestNovuUzreAsync/
+    // ManualGelirVergiIstisnasiAsync/XestelikSirketOdenisiAsync/
+    // ManualGelirIstisnasiAsync-dən oxunur.
+    public async Task<DsmfHissesi1Dto> Hissesi1HazirlaAsync(int il, int rub)
+    {
+        rub = Math.Clamp(rub, 1, 4);
+        var ay1 = (rub - 1) * 3 + 1;
+        var ay2 = ay1 + 1;
+        var ay3 = ay1 + 2;
+        var ayLar = new[] { ay1, ay2, ay3 };
+
+        var dto = new DsmfHissesi1Dto
+        {
+            Il = il,
+            Rub = rub,
+            Ay1 = ay1,
+            Ay2 = ay2,
+            Ay3 = ay3,
+            Ay1Adi = AyAdlari[ay1],
+            Ay2Adi = AyAdlari[ay2],
+            Ay3Adi = AyAdlari[ay3],
+        };
+
+        // Hissə 3-ün ÖZ nəticəsi — "faktiki iş günü" elə onun "işləməyib"
+        // cəminin ƏKSİDİR, TƏKRAR gün-sayma məntiqi YAZILMADI.
+        var hisse3 = await Hissesi3HazirlaAsync(il, rub);
+        var islemeyenCemi = new Dictionary<(int IsciId, int AyIndex), int>();
+        void IslemeyenEleve(int isciId, int ayIndex, int gun)
+        {
+            if (gun <= 0) return;
+            var key = (isciId, ayIndex);
+            islemeyenCemi[key] = islemeyenCemi.GetValueOrDefault(key) + gun;
+        }
+        foreach (var s in hisse3.Setirler)
+        {
+            IslemeyenEleve(s.IsciId, 0, s.Ay1Gun);
+            IslemeyenEleve(s.IsciId, 1, s.Ay2Gun);
+            IslemeyenEleve(s.IsciId, 2, s.Ay3Gun);
+        }
+
+        var ayinRealIsGunu = new int[3];
+        var brutMaplar = new Dictionary<int, decimal>[3];
+        var hys = new Dictionary<int, decimal>[3];
+        var standart = new Dictionary<int, decimal>[3];
+        var qacqin = new Dictionary<int, decimal>[3];
+        var elillik = new Dictionary<int, decimal>[3];
+        var esger = new Dictionary<int, decimal>[3];
+        var xst = new Dictionary<int, decimal>[3];
+        var manualIssizlik = new Dictionary<int, decimal>[3];
+        var manualItss = new Dictionary<int, decimal>[3];
+
+        for (int i = 0; i < 3; i++)
+        {
+            var ay = ayLar[i];
+            ayinRealIsGunu[i] = await HaqiqiIsGunuSayAsync(
+                new[] { (new DateTime(il, ay, 1), new DateTime(il, ay, 1).AddMonths(1).AddDays(-1)) }, il, ay);
+            brutMaplar[i] = await MaasBrutMapAsync(il, ay);
+            hys[i] = await HysIsciPayiAsync(il, ay);
+            standart[i] = await StandartGuzestAsync(il, ay);
+            qacqin[i] = await GuzestNovuUzreAsync(il, ay, GuzestNovu.MecburiKockun);
+            elillik[i] = await GuzestNovuUzreAsync(il, ay, GuzestNovu.Elillik);
+            esger[i] = await ManualGelirVergiIstisnasiAsync(il, ay);
+            xst[i] = await XestelikSirketOdenisiAsync(il, ay);
+            manualIssizlik[i] = await ManualGelirIstisnasiAsync(il, ay, issizlikFlag: true);
+            manualItss[i] = await ManualGelirIstisnasiAsync(il, ay, issizlikFlag: false);
+        }
+
+        var iscilər = await IscilərRubdeAktivAsync(il, ay1, ay3);
+        var setirler = new List<DsmfHissesi1SetirDto>();
+        int sira = 1;
+
+        foreach (var isci in iscilər)
+        {
+            var setir = new DsmfHissesi1SetirDto
+            {
+                SiraNo = sira++,
+                IsciId = isci.Id,
+                AdSoyadAta = $"{isci.Soyad} {isci.Ad} {isci.AtaAdi}".Trim(),
+                Fin = isci.FIN,
+            };
+
+            var aylar = new DsmfHissesi1AyDto[3];
+            for (int i = 0; i < 3; i++)
+            {
+                var islememisGun = islemeyenCemi.GetValueOrDefault((isci.Id, i));
+                aylar[i] = new DsmfHissesi1AyDto
+                {
+                    FaktikiIsGunu = Math.Max(0, ayinRealIsGunu[i] - islememisGun),
+                    HesablananMebleg = brutMaplar[i].GetValueOrDefault(isci.Id),
+                    AzadGuzestCemi = hys[i].GetValueOrDefault(isci.Id) + standart[i].GetValueOrDefault(isci.Id)
+                                     + qacqin[i].GetValueOrDefault(isci.Id) + elillik[i].GetValueOrDefault(isci.Id)
+                                     + esger[i].GetValueOrDefault(isci.Id),
+                    DsmfAzadCemi = hys[i].GetValueOrDefault(isci.Id) + xst[i].GetValueOrDefault(isci.Id),
+                    IssizlikAzadCemi = xst[i].GetValueOrDefault(isci.Id) + manualIssizlik[i].GetValueOrDefault(isci.Id),
+                    ItssAzadCemi = xst[i].GetValueOrDefault(isci.Id) + manualItss[i].GetValueOrDefault(isci.Id),
+                };
+            }
+            setir.Ay1 = aylar[0];
+            setir.Ay2 = aylar[1];
+            setir.Ay3 = aylar[2];
+
+            setirler.Add(setir);
+        }
+
+        dto.Setirler = setirler;
+        return dto;
+    }
+
+    // Maas.BrutMebleg-i (2.3 — "Hesablanmış əmək haqqı və digər gəlirlər") BİR
+    // DƏFƏYƏ, bütün işçilər üçün toplu oxuyur — N+1 qarşısı alınır (Hissə 1-in
+    // hər sətrinin öz Maas sorğusu yazmasının qarşısında).
+    private async Task<Dictionary<int, decimal>> MaasBrutMapAsync(int il, int ay)
+    {
+        var maaslar = await _unitOfWork.Repository<Maas>()
+            .Query()
+            .AsNoTracking()
+            .Where(x => !x.Silinib && x.Il == il && x.Ay == ay
+                     && (x.Status == MaasStatus.Tesdiqlendi || x.Status == MaasStatus.Odenildi))
+            .Select(x => new { x.IsciId, x.BrutMebleg })
+            .ToListAsync();
+
+        return maaslar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.BrutMebleg));
     }
 }

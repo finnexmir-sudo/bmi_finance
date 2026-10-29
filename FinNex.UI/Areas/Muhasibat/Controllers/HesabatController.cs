@@ -475,8 +475,8 @@ public class HesabatController : Controller
     }
 
     // DSMF Vahid Hesabat Forması — hub səhifəsi. 6 rəsmi əlavənin hamısını adı ilə
-    // sadalayır, hazır olan 4-ü (Hissə 3, Bölmə 3/4/5) üçün keçid verir, qalan 2-si
-    // (Hissə 1, Bölmə 2) "Hazırlanır" işarəli — bax CLAUDE.md "DSMF — Vahid Hub".
+    // sadalayır. 29.10.2026-da Hissə 1 əlavə olunandan sonra HAMISI "Hazırdır" —
+    // bax CLAUDE.md "DSMF — Vahid Hub" və "Əlavə №1 Hissə 1".
     public async Task<IActionResult> DsmfVahid()
     {
         if (!await IcazeVarAsync())
@@ -485,7 +485,7 @@ public class HesabatController : Controller
         var komponentler = new List<DsmfVahidKomponentDto>
         {
             new() { ResmiAd = "Əlavə №1 — Hissə 1", Tesvir = "İşçilər (sığortaolunanlar) üzrə ümumi məlumat — muzdlu işə aid fəaliyyətlər üzrə (maaş tərkibi)",
-                     Hazirdir = false },
+                     Hazirdir = true, Action = "Dsmf1" },
             new() { ResmiAd = "Əlavə №1 — Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat",
                      Hazirdir = true, Action = "Dsmf3" },
             // 29.10.2026, istifadəçi: "hansını AÇDISA O EXCELƏ AİD OLANI GÖSTƏR" —
@@ -501,6 +501,148 @@ public class HesabatController : Controller
                      Hazirdir = true, Action = "Bolme2345", BolmeNo = 5 },
         };
         return View(komponentler);
+    }
+
+    // ── DSMF Vahid Hesabat Forması — Əlavə №1 Hissə 1 (29.10.2026) ──
+    // İşçilər üzrə ümumi məlumat (maaş tərkibi). İl + Rüb seçimi, Hissə 3 ilə
+    // EYNİ naxış (önizləmə + ayrıca Excel ixracı).
+    public async Task<IActionResult> Dsmf1(int? il, int? rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var bugun = DateTime.Today;
+        var cariRub = (bugun.Month - 1) / 3 + 1;
+        var m = await _dsmf.Hissesi1HazirlaAsync(il ?? bugun.Year, rub ?? cariRub);
+        return View(m);
+    }
+
+    public async Task<IActionResult> Dsmf1Excel(int il, int rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var m = await _dsmf.Hissesi1HazirlaAsync(il, rub);
+
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "dsmf",
+                                       "UNIFIED_APPENDIX_1_EMPLOYEE_LIST.xlsx");
+        var adı = $"DSMF_Elave1_Hisse1_{il}_R{rub}.xlsx";
+
+        if (System.IO.File.Exists(sablonPath))
+        {
+            var dolu = Dsmf1SablonDoldur(sablonPath, m);
+            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+        }
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Əlavə №1 - Hissə 1");
+        int r = 0;
+        sh.CreateRow(r++).CreateCell(0).SetCellValue(
+            $"Əlavə №1 - Hissə 1. İşçilər (sığortaolunanlar) üzrə ümumi məlumat — {il}, Rüb {rub}");
+        r++;
+        var h = sh.CreateRow(r++);
+        var basliq = new List<string> { "Sıra №", "Soyadı, adı, atasının adı", "FİN" };
+        foreach (var ayAdi in new[] { m.Ay1Adi, m.Ay2Adi, m.Ay3Adi })
+        {
+            basliq.Add($"{ayAdi} — faktiki iş günü");
+            basliq.Add($"{ayAdi} — hesablanmış məbləğ");
+            basliq.Add($"{ayAdi} — azad güzəşt cəmi");
+            basliq.Add($"{ayAdi} — DSMF azad cəmi");
+            basliq.Add($"{ayAdi} — işsizlik azad cəmi");
+            basliq.Add($"{ayAdi} — İTSS azad cəmi");
+        }
+        for (int i = 0; i < basliq.Count; i++) h.CreateCell(i).SetCellValue(basliq[i]);
+
+        foreach (var s in m.Setirler)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(s.SiraNo);
+            row.CreateCell(1).SetCellValue(s.AdSoyadAta);
+            row.CreateCell(2).SetCellValue(s.Fin);
+            int c = 3;
+            foreach (var ay in new[] { s.Ay1, s.Ay2, s.Ay3 })
+            {
+                row.CreateCell(c++).SetCellValue(ay.FaktikiIsGunu);
+                row.CreateCell(c++).SetCellValue((double)ay.HesablananMebleg);
+                row.CreateCell(c++).SetCellValue((double)ay.AzadGuzestCemi);
+                row.CreateCell(c++).SetCellValue((double)ay.DsmfAzadCemi);
+                row.CreateCell(c++).SetCellValue((double)ay.IssizlikAzadCemi);
+                row.CreateCell(c++).SetCellValue((double)ay.ItssAzadCemi);
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel", $"DSMF_Elave1_Hisse1_{il}_R{rub}.xls");
+    }
+
+    // Rəsmi şablonu (UNIFIED_APPENDIX_1_EMPLOYEE_LIST.xlsx) doldur. ⚠️ Vərəqin
+    // öz adı "Əlavə1_Hissə1_Muzdlu işə"dir (hüceyrə A1-dəki mətn "Hissə 1" deyir,
+    // vərəq adı da bu dəfə mətnlə UYĞUNDUR — Bölmə 2-nin "Hissə 1" adlı tab-ı
+    // ilə QARIŞDIRMA, o AYRI bir fayldır). Data 10-cu sətirdən (0-əsaslı 9)
+    // başlayır. Şablon artıq 27 REAL işçinin (mühasibin özünün doldurduğu)
+    // Sıra№+Əsas iş yeri sətirlərini daşıyır — bunlar bizim real nəticəmizlə
+    // ÜST-ÜSTƏ DÜŞMƏYƏ BİLƏR (sayı fərqli ola bilər), ona görə Bölmə 2345-in
+    // "sızma qoruyucusu" naxışı (yazılan sətirdən SONRA, hələ Sıra№-si dolu
+    // qalan HƏR sətri təmizlə) tətbiq olunur — sabit "numuneSetirSayi" YOX.
+    private static byte[] Dsmf1SablonDoldur(string sablonPath, DsmfHissesi1Dto m)
+    {
+        IWorkbook wb;
+        using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
+            wb = new XSSFWorkbook(fs);
+
+        var ws = wb.GetSheet("Əlavə1_Hissə1_Muzdlu işə");
+        if (ws != null)
+        {
+            const int basSetir = 9; // NPOI 0-əsaslı — şablonun 10-cu sətri
+            // Ay bloklarının başlanğıc sütunu (0-əsaslı): D=3 (1-ci ay), O=14
+            // (2-ci ay), Z=25 (3-cü ay) — hər blokda 11 sütun (2.1..6.1).
+            var ayBazlari = new[] { 3, 14, 25 };
+
+            for (int i = 0; i < m.Setirler.Count; i++)
+            {
+                var s = m.Setirler[i];
+                var row = ws.GetRow(basSetir + i) ?? ws.CreateRow(basSetir + i);
+                row.CreateCell(0).SetCellValue(s.SiraNo);
+                row.CreateCell(1).SetCellValue(s.AdSoyadAta);
+                row.CreateCell(2).SetCellValue(s.Fin);
+
+                var aylar = new[] { s.Ay1, s.Ay2, s.Ay3 };
+                for (int a = 0; a < 3; a++)
+                {
+                    var ay = aylar[a];
+                    var baz = ayBazlari[a];
+                    row.CreateCell(baz).SetCellValue(ay.EsasIsYeri ? "Bəli" : "Xeyr");  // 2.1
+                    row.CreateCell(baz + 1).SetCellValue(ay.FaktikiIsGunu);              // 2.2
+                    row.CreateCell(baz + 2).SetCellValue((double)ay.HesablananMebleg);   // 2.3
+                    row.CreateCell(baz + 3).SetBlank();                                  // 2.3.1 — həmişə boş
+                    row.CreateCell(baz + 4).SetBlank();                                  // 2.5 — həmişə boş
+                    row.CreateCell(baz + 5).SetBlank();                                  // 2.6 — N/A (bank)
+                    row.CreateCell(baz + 6).SetCellValue((double)ay.AzadGuzestCemi);      // 3.1
+                    row.CreateCell(baz + 7).SetCellValue((double)ay.DsmfAzadCemi);        // 4.1
+                    row.CreateCell(baz + 8).SetBlank();                                  // 4.5 — həmişə boş
+                    row.CreateCell(baz + 9).SetCellValue((double)ay.IssizlikAzadCemi);    // 5.1
+                    row.CreateCell(baz + 10).SetCellValue((double)ay.ItssAzadCemi);       // 6.1
+                }
+            }
+
+            int sonrakiSetir = basSetir + m.Setirler.Count;
+            while (true)
+            {
+                var row = ws.GetRow(sonrakiSetir);
+                var siraXana = row?.GetCell(0);
+                if (row == null || siraXana == null || string.IsNullOrWhiteSpace(siraXana.ToString()))
+                    break;
+                for (int c = 0; c <= 36; c++)
+                    row.GetCell(c)?.SetBlank();
+                sonrakiSetir++;
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return ms.ToArray();
     }
 
     // ── DSMF Vahid Hesabat Forması — Əlavə №1 Hissə 3 (29.10.2026, pilot) ──

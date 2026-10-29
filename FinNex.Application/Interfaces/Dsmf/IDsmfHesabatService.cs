@@ -4,11 +4,18 @@ namespace FinNex.Application.Interfaces.Dsmf;
 
 // DSMF Vahid Hesabat Forması — rüblük hesabatlar (29.10.2026, istifadəçi tapşırığı:
 // "indi atdigim excellerdeki melumatlari hazirlamaq lazimdir, il ve rub secilsin").
-// Pilot əhatə YALNIZ Əlavə №1 Hissə 3-dür (istifadəçi qərarı: "mexanikdir, HR
-// modullarından dəqiq hesablana bilər" — bax yuxarı CLAUDE.md qeydi). Qalan 5 cədvəl
-// (Hissə 1 — maaş tərkibi, Bölmə 2-5 — vergi güzəşti cədvəlləri) ayrıca mərhələdir.
+// Altı rəsmi əlavədən BEŞİ qurulub (Hissə 1/3, Bölmə 2/3/4/5) — Hissə 1 bu
+// sessiyanın son parçasıdır, qalanı yoxdur.
 public interface IDsmfHesabatService
 {
+    /// <summary>
+    /// Əlavə №1 Hissə 1 — işçilər üzrə ümumi məlumat (maaş tərkibi). Hər işçinin
+    /// hər ay üzrə 11 göstəricisi (iş günü, hesablanmış məbləğ, Bölmə 2/3/4/5-in
+    /// bu işçiyə aid cəmləri) — bax DsmfHesabatService.Hissesi1HazirlaAsync-in
+    /// öz şərhi (sütun xəritəsi).
+    /// </summary>
+    Task<DsmfHissesi1Dto> Hissesi1HazirlaAsync(int il, int rub);
+
     /// <summary>
     /// Əlavə №1 Hissə 3 — işçinin işləmədiyi iş günləri. <paramref name="rub"/> 1-4
     /// (1=Yan-Mar, 2=Apr-İyun, 3=İyul-Sen, 4=Okt-Dek). Yalnız həmin rübdə İSTƏNİLƏN

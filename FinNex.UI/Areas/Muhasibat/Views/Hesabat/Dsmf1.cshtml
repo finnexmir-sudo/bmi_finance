@@ -1,0 +1,120 @@
+@using FinNex.Application.DTOs.Dsmf
+@model DsmfHissesi1Dto
+@{
+    ViewData["Title"] = "DSMF — Əlavə №1 Hissə 1";
+    var rubAdlari = new[] { "", "Yanvar–Mart", "Aprel–İyun", "İyul–Sentyabr", "Oktyabr–Dekabr" };
+    var cariIl = DateTime.Today.Year;
+    string N(decimal v) => v > 0 ? v.ToString("N2") : "—";
+    string G(int v) => v > 0 ? v.ToString() : "—";
+}
+
+<partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
+
+@* Dsmf3.cshtml-dəki eyni "paylaşılan faylda yoxdur" problemi — eyni yerli nüsxə. *@
+<style>
+    .mh-hero--dsmf { background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%); }
+    .pr-warn { display: flex; gap: 10px; padding: 13px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; font-size: 12.5px; color: #713f12; line-height: 1.55; }
+    .pr-warn i { color: #d97706; font-size: 17px; margin-top: 1px; }
+    .pr-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; }
+    .pr-card-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; color: #1e293b; }
+</style>
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--dsmf">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-people"></i> Mühasibat / Hesabatlar / DSMF</div>
+            <h1 class="mh-title">Əlavə №1 — Hissə 1</h1>
+            <div class="mh-sub"><i class="bi bi-info-circle"></i> İşçilər üzrə ümumi məlumat (maaş tərkibi) — @Model.Il, Rüb @Model.Rub (@rubAdlari[Model.Rub])</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a asp-action="Dsmf1Excel" asp-route-il="@Model.Il" asp-route-rub="@Model.Rub" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə ixrac et</a>
+                <a asp-action="Index" class="mh-xls"><i class="bi bi-arrow-left"></i> Hesabatlar siyahısına qayıt</a>
+            </div>
+        </div>
+        <form method="get" class="mh-datef">
+            <label>İl</label>
+            <select name="il">
+                @for (int y = cariIl - 2; y <= cariIl + 1; y++)
+                {
+                    <option value="@y" selected="@(y == Model.Il)">@y</option>
+                }
+            </select>
+            <label>Rüb</label>
+            <select name="rub">
+                @for (int r = 1; r <= 4; r++)
+                {
+                    <option value="@r" selected="@(r == Model.Rub)">Rüb @r (@rubAdlari[r])</option>
+                }
+            </select>
+            <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
+        </form>
+    </div>
+
+    <div class="pr-warn" style="margin-top:14px;">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div>
+            <b>Diqqət:</b> "Əsas iş yeri olması" sütunu sistemdə izlənilmir, ona görə
+            hamısına sabit <b>Bəli</b> yazılır. "Əmək haqqının tərkibinə daxil olmayan
+            gəlirlər", "HYS — vaxtından əvvəl müqaviləyə xitam" və "Texnologiyalar
+            parkı seçimi" sütunları (bu bank üçün aidiyyatsız/izlənilməyən) həmişə
+            boş qalır — bu, SƏHV DEYİL, mühasibin öz şablon qeydinə əsaslanır.
+        </div>
+    </div>
+
+    <div class="pr-card" style="margin-top:14px;">
+        <div class="pr-card-h"><i class="bi bi-table"></i> Önizləmə — @Model.Setirler.Count sətir</div>
+        @if (Model.Setirler.Count == 0)
+        {
+            <div style="padding:22px; text-align:center; color:#64748b; font-size:13.5px;">
+                <i class="bi bi-inbox" style="font-size:22px; display:block; margin-bottom:6px;"></i>
+                Bu rübdə (@Model.Il, @rubAdlari[Model.Rub]) heç bir işçi aktiv olmayıb.
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto;">
+                <table class="hj-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">№</th>
+                            <th rowspan="2">Soyadı, adı, atasının adı</th>
+                            <th rowspan="2">FİN</th>
+                            <th colspan="5" style="text-align:center;">@Model.Ay1Adi</th>
+                            <th colspan="5" style="text-align:center;">@Model.Ay2Adi</th>
+                            <th colspan="5" style="text-align:center;">@Model.Ay3Adi</th>
+                        </tr>
+                        <tr>
+                            @for (int i = 0; i < 3; i++)
+                            {
+                                <th style="text-align:right;">İş günü</th>
+                                <th style="text-align:right;">Hesablanmış</th>
+                                <th style="text-align:right;">Azad güzəşt</th>
+                                <th style="text-align:right;">DSMF azad</th>
+                                <th style="text-align:right;">İşsizlik/İTSS azad</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Setirler)
+                        {
+                            <tr>
+                                <td>@s.SiraNo</td>
+                                <td>@s.AdSoyadAta</td>
+                                <td>@s.Fin</td>
+                                @foreach (var ay in new[] { s.Ay1, s.Ay2, s.Ay3 })
+                                {
+                                    <td style="text-align:right;">@G(ay.FaktikiIsGunu)</td>
+                                    <td style="text-align:right;">@N(ay.HesablananMebleg)</td>
+                                    <td style="text-align:right;">@N(ay.AzadGuzestCemi)</td>
+                                    <td style="text-align:right;">@N(ay.DsmfAzadCemi)</td>
+                                    <td style="text-align:right;">@N(ay.IssizlikAzadCemi) / @N(ay.ItssAzadCemi)</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton.css" />

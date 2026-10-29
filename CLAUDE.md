@@ -8309,3 +8309,97 @@ açıq tələb olunanda (route parametri verilmədikdə) ehtiyat kimi qalmalıd�
 düyməsinə basanda YALNIZ Bölmə 2 cədvəlinin göründüyünü, "Bölmə 3"ə basanda
 YALNIZ Bölmə 3-ün, İl/Rüb dəyişib "Göstər"ə basanda eyni bölmədə qaldığını
 (4-ə geri düşmədiyini).
+
+## DSMF Vahid Hesabat Forması — Son Parça: Əlavə №1 Hissə 1 (29.10.2026)
+
+Altı rəsmi əlavədən SONUNCUSU quruldu — "qur" əmri ilə başladı. Mənbə şablon:
+`UNIFIED_APPENDIX_1_EMPLOYEE_LIST.xlsx`, vərəq `Əlavə1_Hissə1_Muzdlu işə`.
+Hissə 3 kimi İŞÇİ-sətridir (qanun-maddəsi-sətri YOX), amma hər işçinin hər ay
+üzrə **11 göstəricisi** var (2.1–6.1, real başlıq sətirlərindən (3-5) və
+mühasibin öz nümunə sətrindəki (10-cu sətir) "e/h dan S+O", "e/h M+T+U" kimi
+daxili cross-ref qeydlərdən çıxarıldı — bu qeydlər HƏRFİ İMPLEMENTASİYA ÜÇÜN
+DEYİL, yalnız hansı sütunun NƏYƏ uyğun olduğunu təsdiqləmək üçün oxundu).
+
+### Sütun xəritəsi — 4-dən 2-si YENİ hesablama, 4-ü MÖVCUD Bölmə 2-5-in cəmi
+
+| Kod | Sütun | Mənbə |
+|---|---|---|
+| 2.1 | Əsas iş yeri olması | **HƏMİŞƏ "Bəli"** — aşağı bax |
+| 2.2 | Faktiki iş günü | Ayın real iş günü − **Hissə 3-ün** bu işçinin işləmədiyi gün cəmi |
+| 2.3 | Hesablanmış əmək haqqı | `Maas.BrutMebleg` |
+| 2.3.1 | …tərkibinə daxil olmayan gəlirlər | **HƏMİŞƏ boş** (mühasibin öz "bos" qeydi) |
+| 2.5 | HYS — erkən xitam | **HƏMİŞƏ boş** (mühasibin öz "bos" qeydi, sistemdə iz yoxdur) |
+| 2.6 | Texnologiya parkı seçimi | **HƏMİŞƏ boş** (N/A — bank, texnologiya parkı deyil) |
+| 3.1 | Azadolunan/güzəşt cəmi | **Bölmə 2**-nin bu işçi üçün CƏMİ (5 sətrin hamısı) |
+| 4.1 | DSMF azad cəmi | **Bölmə 3**-ün bu işçi üçün CƏMİ |
+| 4.5 | HYS-DSMF əlaqəli | **HƏMİŞƏ boş** (2.5 ilə əlaqəli, "bos") |
+| 5.1 | İşsizlik azad cəmi | **Bölmə 4**-ün bu işçi üçün CƏMİ |
+| 6.1 | İTSS azad cəmi | **Bölmə 5**-in bu işçi üçün CƏMİ |
+
+**3.1/4.1/5.1/6.1 üçün YENİ DÜSTUR YAZILMADI** — Bölmə 2/3/4/5-in artıq
+qurulmuş per-işçi hesablayıcıları (`HysIsciPayiAsync`, `StandartGuzestAsync`,
+`GuzestNovuUzreAsync`, `ManualGelirVergiIstisnasiAsync`, `XestelikSirketOdenisiAsync`,
+`ManualGelirIstisnasiAsync`) elə Hissə 1-də DƏ çağırılır. Bu, həm dəqiqlik
+(eyni rəqəm hər iki yerdə), həm "Bir Kəmiyyətə Üç Yazıcı" riskinin qarşısını
+alır.
+
+### Refaktor — `(HashSet<int>, decimal)` → `Dictionary<int, decimal>`
+
+Bölmə 2/3/4/5-in 6 köməkçi metodu əvvəl `(HashSet<int> Iscilər, decimal Cemi)`
+(aqreqat) qaytarırdı — Hissə 1-ə hər işçinin ÖZ PAYI lazım olduğu üçün hamısı
+`Dictionary<int, decimal>` (IsciId → Mebleg) qaytaracaq şəkildə dəyişdirildi.
+Bölmə 2/3/4/5-in özü `dict.Count`/`dict.Values.Sum()` ilə əvvəlki aqreqat
+nəticəni DƏQIQ eyni formada alır — **rəqəmlərdə heç bir dəyişiklik yoxdur**,
+yalnız görüntü forması. Bu, 29.10.2026-ın özündə TƏKRAR-TƏKRAR işlənən bir
+naxışdır (əvvəlcə "sirket yox" düzəlişi ilə HYS metodu Bölmə 2 İLƏ Bölmə 3
+arasında paylaşıldı, indi HAMISI Hissə 1 İLƏ də paylaşılır).
+
+### Faktiki iş günü — Hissə 3-ün ÖZ nəticəsini TƏKRAR HESABLAMADAN istifadə
+
+`Hissesi1HazirlaAsync` birbaşa `await Hissesi3HazirlaAsync(il, rub)` çağırır
+və onun `Setirler`-ini (hər işçinin hər ay üzrə işləmədiyi gün CƏMİNİ, bütün
+səbəb kodları üzrə toplanmış) bir `Dictionary<(IsciId,AyIndex), int>`-ə yığır.
+Sonra: `FaktikiIsGunu = Ayın_real_iş_günü − bu_cəm`. Yeni "gün sayma" məntiqi
+YAZILMADI — gün-təsnifatının ÖZÜ (`HaqiqiIsGunuSayAsync`, `OzHesabinaIsGunuSayAsync`
+və s.) Hissə 3-dən bəri dəyişməz qalır, bura yalnız ONUN NƏTİCƏSİNİ ƏKS
+ÇEVİRİR. "Rübdə aktiv işçi" sorğusu da (`IscilərRubdeAktivAsync`, yeni şərhi)
+Hissə 3-dən ÇIXARILIB PAYLAŞILAN helper edildi — iki yerdə eyni sorğu
+YAZILMASIN deyə.
+
+### "Əsas iş yeri olması" — HƏMİŞƏ "Bəli", AÇIQ QƏBUL EDİLMİŞ FƏRZİYYƏ
+
+Real şablonda 27 işçidən 2-sinin bəzi aylarda "Xeyr" olduğu aşkarlandı, amma
+B (Ad)/C (FİN) sütunları şablonda BOŞ idi — KONKRET kimin "Xeyr" olduğu
+bilinmir. Sistemdə "əsas/əlavə iş yeri" bayrağı HEÇ VAXT olmayıb (`Isci`
+entity-sində belə sahə yoxdur). İstifadəçiyə birbaşa soruşuldu —
+**"Hamısına Bəli yaz"** cavabı aldı. Bu, ~7% (2/27) real nümunədə YANLIŞ
+nəticə verəcək bir fərziyyədir, amma sistemdə izi olmadığı üçün başqa yol
+yoxdur — açıq qeyd olunub, gizlədilməyib.
+
+### Excel ixracı — Vərəq adı BU DƏFƏ EKRAN başlığı ilə UYĞUNDUR
+
+`Bölmə 2`-nin şablonunda (`UNIFIED_APPENDIX_4_DISCOUNTS.xlsx`) vərəq adı
+yanıltıcı idi ("Hissə 1" yazırdı, amma Bölmə 2 idi) — bu, AYRI bir fayldır,
+QARIŞDIRILMASIN. Hissə 1-in ÖZ şablonunda vərəq adı `Əlavə1_Hissə1_Muzdlu işə`
+— həm ekran başlığına, həm məzmuna UYĞUNDUR, heç bir tələ yoxdur.
+
+Data **10-cu sətirdən** (NPOI 0-əsaslı 9) başlayır. Şablon artıq 27 REAL
+işçinin (mühasibin özünün qismən doldurduğu) sətirlərini daşıyır — bizim
+real nəticəmizin sətir sayı bundan FƏRQLİ ola bilər (çoxala/azala bilər),
+ona görə `Bolme2345`-in "sızma qoruyucusu" naxışı tətbiq olundu: yazdığımız
+sətirdən SONRA, hələ **Sıra№ (A sütunu) dolu qalan** HƏR sətri açıq təmizləyir
+— sabit "numuneSetirSayi=27" ƏDƏDİNƏ GÜVƏNMƏDİ (şablon versiyası dəyişsə belə
+işləməyə davam edir).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — bax yuxarı eyni qayda (persist edilmiş
+`HesablamaIzahi` JSON-dan oxunan sütunlar, keçmiş aylarda dəyişmir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə 5 dəyişən/yeni faylda, DTO↔servis↔controller↔view
+dörd qatı sahə-adı-adı əl ilə tutuşduruldu — `FaktikiIsGunu`/`HesablananMebleg`/
+`AzadGuzestCemi`/`DsmfAzadCemi`/`IssizlikAzadCemi`/`ItssAzadCemi`/`EsasIsYeri`).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: hub-da indi 6/6 "Hazırdır" olduğunu, Hissə 1-i açıb bir neçə
+işçinin sətirinin (faktiki iş günü, brüt maaş, Bölmə 2/3/4/5 cəmləri) düzgün
+göründüyünü, Excel ixracının rəsmi şablona (27 köhnə nümunə sətiri qalmadan)
+uyğun çıxdığını.
