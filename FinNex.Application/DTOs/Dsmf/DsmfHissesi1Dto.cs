@@ -19,6 +19,15 @@ public class DsmfHissesi1Dto
     public string Ay3Adi { get; set; } = "";
 
     public List<DsmfHissesi1SetirDto> Setirler { get; set; } = new();
+
+    /// <summary>
+    /// Rübün ilk ayı BUGÜNDƏN sonradırsa (hələ başlamayıb) — true. Bax
+    /// DsmfHesabatService.RubGelecekdedir şərhi — real hadisə (29.10.2026):
+    /// 2027 seçiləndə hər "aktiv" (işdən çıxmamış) işçi üçün tam-ay təqvim
+    /// iş günü (21/22/23) göstərilirdi, baxmayaraq ki, "Hesablanmış" sütunu
+    /// (Maas yoxdur) onsuz da "—" idi — yarım-dolu, çaşdırıcı sətirlər.
+    /// </summary>
+    public bool GelecekRubdur { get; set; }
 }
 
 public class DsmfHissesi1SetirDto

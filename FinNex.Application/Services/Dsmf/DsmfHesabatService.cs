@@ -53,6 +53,17 @@ public class DsmfHesabatService : IDsmfHesabatService
                 .Select(k => DsmfIslemeyenGunSebebi.Metinler[k]).ToList(),
         };
 
+        // Gələcək rüb — bax RubGelecekdedir şərhi. Burada atlanmasaq, "aktiv"
+        // (işdən çıxmamış) işçilər üçün hələ baş verməmiş Mezuniyyet/Xəstəlik
+        // axtarışı aparılar (adətən boş qalır), amma garantisi yoxdur —
+        // mühasib gələcəyə planlaşdırılmış məzuniyyət yaza bilər və bu, rübün
+        // hələ "yaşanmadığı" faktını gizlədər.
+        if (RubGelecekdedir(il, ay1))
+        {
+            dto.GelecekRubdur = true;
+            return dto;
+        }
+
         var iscilər = await IscilərRubdeAktivAsync(il, ay1, ay3);
 
         var ayLar = new[] { ay1, ay2, ay3 };
@@ -215,6 +226,18 @@ public class DsmfHesabatService : IDsmfHesabatService
         }
         return gunler.Count;
     }
+
+    // Rübün ilk ayı BUGÜNDƏN sonradırsa (hələ başlamayıb). DSMF yalnız
+    // keçmiş/davam edən dövrü hesabat edir — gələcək rübdə heç bir Maas
+    // (payroll) qeydi OLA BİLMƏZ, amma təqvim-əsaslı "iş günü" sayğacları
+    // (HaqiqiIsGunuSayAsync) bunu bilmir, HƏR halda tam-ay dəyəri qaytarır.
+    // Real hadisə (29.10.2026): 2027 seçiləndə hər işçi üçün "İş günü" sütunu
+    // 21/22/23 göstərirdi, "Hesablanmış" isə "—" idi — yarım-dolu, çaşdırıcı
+    // sətirlər. Qayda layihənin "İlin Son Günü Aşkarlanması" prinsipinin
+    // əksidir: tək tarix-müqayisəsinə güvənmə demək YOX, BU DƏFƏ əksinə —
+    // saf tarix-müqayisəsi KİFAYƏTDİR, çünki sual "bu dövr artıq başlayıbmı?"
+    // sualıdır, "data varmı?" sualı deyil.
+    private static bool RubGelecekdedir(int il, int ay1) => new DateTime(il, ay1, 1) > DateTime.Today;
 
     // Rübdə (ay1..ay3) İSTƏNİLƏN gün aktiv olmuş işçilər — Hissə 3-ün və Hissə
     // 1-in ORTAQ "kimi daxil et" sorğusu (əvvəl yalnız Hissə 3-ün öz daxilində
@@ -636,6 +659,17 @@ public class DsmfHesabatService : IDsmfHesabatService
             Ay2Adi = AyAdlari[ay2],
             Ay3Adi = AyAdlari[ay3],
         };
+
+        // Gələcək rüb — bax RubGelecekdedir şərhi. Hissə 3 özü də eyni
+        // şərtlə erkən qayıdır, amma ONA GÜVƏNMƏK KİFAYƏT ETMƏZ: bura hələ
+        // DƏ öz "ayinRealIsGunu"nu (saf təqvim) HESABLAYACAQDI — Hissə 3-ün
+        // boş "işləməyib" cəmi ilə birləşəndə "tam ay işləyib" kimi YANLIŞ
+        // bir nəticə verərdi. Ona görə BURADA DA AÇIQ YOXLANIR.
+        if (RubGelecekdedir(il, ay1))
+        {
+            dto.GelecekRubdur = true;
+            return dto;
+        }
 
         // Hissə 3-ün ÖZ nəticəsi — "faktiki iş günü" elə onun "işləməyib"
         // cəminin ƏKSİDİR, TƏKRAR gün-sayma məntiqi YAZILMADI.

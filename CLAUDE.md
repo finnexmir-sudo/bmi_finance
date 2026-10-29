@@ -8403,3 +8403,62 @@ yoxlamalıdır: hub-da indi 6/6 "Hazırdır" olduğunu, Hissə 1-i açıb bir ne
 işçinin sətirinin (faktiki iş günü, brüt maaş, Bölmə 2/3/4/5 cəmləri) düzgün
 göründüyünü, Excel ixracının rəsmi şablona (27 köhnə nümunə sətiri qalmadan)
 uyğun çıxdığını.
+
+### DSMF — Gələcək Rüb Üçün Yarım-Dolu, Yanlış Rəqəmlər Göstərirdi (29.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real ekranda (Hissə 1) İl-i qəsdən **2027**-yə dəyişdi — hələ
+başlamamış, tamamilə gələcək bir il/rüb. Gözlənilən nəticə boş cədvəl idi
+("belə dövr hələ yaşanmayıb"), amma səhifə 24 işçi üçün sətir göstərdi: **İş
+günü** sütunu real ay təqviminə görə tam qiymət (21/22/23) yazırdı, eyni
+sətrin **Hesablanmış** sütunu isə "—" idi (Maas qeydi yoxdur, hələ hesablanmayıb).
+Sual: *"2027 yaziram melumat gelir, sehvdir axi"* — haqlı idi.
+
+**Kök səbəb:** `Hissesi1HazirlaAsync`-in (və onun daxilən çağırdığı
+`Hissesi3HazirlaAsync`-in) "aktiv işçi" filtri (`IscilərRubdeAktivAsync`)
+yalnız işə-qəbul/işdən-çıxma tarixinə baxır — işdən çıxmamış işçi HƏR rübə
+(keçmiş, cari, gələcək) "aktiv" sayılır, ÜMUMİYYƏTLƏ. "Faktiki iş günü" isə
+saf TƏQVİM hesabıdır (`HaqiqiIsGunuSayAsync`, bayram/həftəsonu çıxılmış) —
+Maas, Mezuniyyet, Xəstəlik kimi HEÇ BİR real data mənbəyinə baxmır, HƏR ayın
+real iş günü sayını qaytarır, ay hələ baş verməmiş olsa belə. Nəticədə
+gələcək bir rübdə "iş günü" DOLU, "Hesablanmış" BOŞ — yarım-dolu, çaşdırıcı
+bir sətir.
+
+**Niyə Bölmə 2/3/4/5 bu buga düşmür:** onların hər sətri `Maas.Il==il &&
+Maas.Ay==ay` üzərindən REAL Maas qeydinə bağlıdır (`HysIsciPayiAsync`,
+`StandartGuzestAsync`, `XestelikSirketOdenisiAsync` və s.) — gələcək dövrdə
+Maas yoxdur, bu dict-lər təbii olaraq BOŞ qalır, "0 işçi / 0 ₼" göstərir. Bug
+YALNIZ saf-təqvim əsaslı "iş günü" hesablayıcılarında idi (Hissə 1/3).
+
+**Düzəliş — `DsmfHesabatService.RubGelecekdedir(il, ay1)`** (yeni, `static`,
+`new DateTime(il, ay1, 1) > DateTime.Today`): HƏM `Hissesi3HazirlaAsync`, HƏM
+`Hissesi1HazirlaAsync` öz əvvəlində bu şərti yoxlayır, `true`-dursa ağır
+per-işçi hesablamanı (DB sorğuları daxil) BAŞLAMADAN `GelecekRubdur=true`
+ilə boş nəticə qaytarır. **Hissə 1-in ÖZ ayrıca yoxlaması MƏCBURİDİR** — Hissə
+3-ün erkən qayıtması kifayət etməzdi: Hissə 1 öz "ayinRealIsGunu"-nu (saf
+təqvim) MÜSTƏQİL hesablayır, Hissə 3-ün boş "işləməyib" cəmi ilə birləşəndə
+"tam ay işləyib" kimi YANLIŞ nəticəyə gələrdi.
+
+**Yeni DTO sahəsi — `GelecekRubdur`** (`DsmfHissesi1Dto`, `DsmfHissesi3Dto`)
+— görüntü qatı bunu `Model.Setirler.Count == 0`-dan AYRI, ÖNCƏLİKLİ şərt kimi
+yoxlayır: "heç bir işçi aktiv olmayıb" (yanlış, çaşdırıcı mesaj — işçilər
+aktivdir, sadəcə dövr hələ yoxdur) ƏVƏZİNƏ **"bu rüb hələ başlamayıb — gələcək
+dövrdür"** göstərir.
+
+**Qayda (layihənin "İlin Son Günü" prinsipinin GÜZGÜ forması):** "son gün"
+aşkarlanmasında tək tarix-müqayisəsinə güvənmək SƏHVDİR (real DATA şərti
+lazımdır) — BURADA isə ƏKSİNƏ, saf tarix-müqayisəsi ("bu dövr hələ
+başlamayıbmı?") elə DOĞRU, kifayət edən yoxlamadır, çünki sual data varlığı
+haqqında DEYİL, dövrün ÖZÜNÜN baş verib-vermədiyi haqqındadır. Təqvim-əsaslı
+(Maas/Mezuniyyet-dən MÜSTƏQİL) bir hesablayıcı yazanda, onu HƏR ZAMAN "bu
+dövr artıq başlayıbmı?" sualı ilə qoruyun — əks halda gələcək bir tarix
+seçimi saf riyazi cəhətdən "düzgün" (amma mənasız) rəqəmlər istehsal edər.
+
+⚠️ **Bölmə 2/3/4/5-ə TOXUNULMADI** — onlar artıq Maas-a bağlı olduğu üçün
+gələcək dövrdə təbii olaraq boş/sıfır göstərir, əlavə qoruyucu lazım deyil.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, DTO↔servis↔view sahə adı `GelecekRubdur`
+üç yerdə də tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real brauzerdə yoxlamalıdır: 2027 (və ya hər hansı hələ başlamamış
+rüb) seçəndə Hissə 1 və Hissə 3-ün hər ikisinin "hələ başlamayıb" mesajını
+göstərdiyini, keçmiş/cari bir rübün isə əvvəlki kimi düzgün işlədiyini.

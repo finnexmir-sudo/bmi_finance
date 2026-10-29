@@ -18,6 +18,15 @@ public class DsmfHissesi3Dto
     public List<DsmfHissesi3SetirDto> Setirler { get; set; } = new();
 
     /// <summary>
+    /// Rübün ilk ayı BUGÜNDƏN sonradırsa (hələ başlamayıb) — true. DSMF yalnız
+    /// keçmiş/davam edən dövrü hesabat edir; gələcək rüb üçün "işçi aktiv
+    /// deyil" DEYİL, "bu dövr hələ YAŞANMAYIB" deyilir — fərqli görüntü üçün
+    /// (29.10.2026, real hadisə: 2027 seçiləndə "boş" yerinə anlamsız tam-ay
+    /// iş günü rəqəmləri göründü, bax Hissesi1Dto.GelecekRubdur).
+    /// </summary>
+    public bool GelecekRubdur { get; set; }
+
+    /// <summary>
     /// DSMF-in "işləməyən gün səbəbi" siyahısındaki 12 koddan sistemin
     /// AVTOMATİK aşkarlaya BİLMƏDİYİ kodların mətni (2,4,7,10,12) — bunlar
     /// sistemdə qarşılığı olan modul/sahə YOXDUR (sosial məzuniyyət, təhsil

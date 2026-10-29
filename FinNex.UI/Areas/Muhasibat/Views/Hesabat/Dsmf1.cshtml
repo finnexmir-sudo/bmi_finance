@@ -62,7 +62,15 @@
 
     <div class="pr-card" style="margin-top:14px;">
         <div class="pr-card-h"><i class="bi bi-table"></i> Önizləmə — @Model.Setirler.Count sətir</div>
-        @if (Model.Setirler.Count == 0)
+        @if (Model.GelecekRubdur)
+        {
+            <div style="padding:22px; text-align:center; color:#64748b; font-size:13.5px;">
+                <i class="bi bi-calendar-x" style="font-size:22px; display:block; margin-bottom:6px;"></i>
+                <b>@Model.Il, Rüb @Model.Rub (@rubAdlari[Model.Rub])</b> hələ başlamayıb — gələcək dövrdür.
+                DSMF yalnız artıq keçmiş/davam edən bir rüb üçün hesablana bilər.
+            </div>
+        }
+        else if (Model.Setirler.Count == 0)
         {
             <div style="padding:22px; text-align:center; color:#64748b; font-size:13.5px;">
                 <i class="bi bi-inbox" style="font-size:22px; display:block; margin-bottom:6px;"></i>
