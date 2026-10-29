@@ -8553,3 +8553,20 @@ tək bir mənbə yoxdur — sadə, statik siyahı olduğu üçün qəsdən belə
 yoxlanıldı** (mötərizə/div balansı skriptlə). İstifadəçi Visual Studio-da
 **Rebuild All** ilə, sonra real brauzerdə yoxlamalıdır: hər 6 kartın
 altında düzgün `.xlsx` adının göründüyünü.
+
+### DSMF Hub — "Hazırdır" Pill Lazımsız Təkrar İdi (29.10.2026)
+
+İstifadəçi: *"hazirdir ve tesdiq isaresi neye lazimdirki burda?"* — haqlı
+sual. Hər sətirdə HƏM sol tərəfdəki yaşıl ✓ ikonu, HƏM sağdakı yaşıl
+"Hazırdır" pill-i, HƏM "Aç" düyməsi eyni şeyi ("bu komponent hazırdır")
+**üç dəfə** deyirdi. "Hazırlanır" tərəfi (hourglass ikon + pill) bu
+tələkamına düşmür — orada "Aç" düyməsi YOXDUR, pill yeganə mətn-izahdır.
+
+**Düzəliş — `DsmfVahid.cshtml`:** `Hazirdir=true` qolundan `<span
+class="dv-status dv-status--ready">Hazırdır</span>` SİLİNDİ, yalnız ✓ ikon +
+"Aç" düyməsi qaldı. Ölü CSS qaydası (`.dv-status--ready`) da silindi.
+`Hazirdir=false` qolu TOXUNULMADI.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı**. İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+brauzerdə yoxlamalıdır.

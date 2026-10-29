@@ -20,7 +20,6 @@
     .dv-tesvir { font-size: 12.5px; color: #64748b; margin-top: 2px; }
     .dv-sablon { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-family: "SFMono-Regular", Consolas, monospace; color: #0f766e; background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 6px; padding: 2px 8px; margin-top: 6px; }
     .dv-status { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-    .dv-status--ready { background: #ecfdf5; color: #0f766e; }
     .dv-status--pending { background: #f1f5f9; color: #94a3b8; }
     .dv-ac { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; background: #0f766e; color: #fff; border-radius: 8px; font-size: 12.5px; font-weight: 600; text-decoration: none; }
     .dv-ac:hover { background: #0d5f58; color: #fff; }
@@ -52,11 +51,18 @@
                 </div>
                 @if (k.Hazirdir)
                 {
-                    <span class="dv-status dv-status--ready">Hazırdır</span>
+                    @* 29.10.2026, istifadəçi: "hazirdir ve tesdiq isaresi neye
+                       lazimdirki burda?" — sol tərəfdəki yaşıl ✓ ikonu ilə bu
+                       "Hazırdır" pill-i EYNİ şeyi İKİ DƏFƏ deyirdi (üstəlik
+                       "Aç" düyməsinin ÖZÜ onsuz da "hazırdır" deməkdir — üçü
+                       birlikdə). Pill SİLİNDİ, ✓ ikon + "Aç" düyməsi kifayətdir. *@
                     <a asp-action="@k.Action" asp-route-bolmeNo="@k.BolmeNo" class="dv-ac"><i class="bi bi-box-arrow-up-right"></i> Aç</a>
                 }
                 else
                 {
+                    @* Burada pill QALDI — "Hazırlanır" olan sətirdə "Aç" düyməsi
+                       yoxdur, ona görə bu, sol hourglass ikonundan BAŞQA YEGANƏ
+                       mətn-izahdır, silinsə statusu anlamaq çətinləşərdi. *@
                     <span class="dv-status dv-status--pending">Hazırlanır</span>
                 }
             </div>
