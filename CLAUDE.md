@@ -7758,3 +7758,50 @@ Likvidlik tab-zolağının görünmədiyini, kataloqda yalnız IFRS 9 ECL/AMB
 MHBS 9/Xərc Hesabatının qaldığını, Balans İcmalı (`/Muhasibat`) kimi
 digər Dashboard səhifələrində isə tab-zolağının əvvəlki kimi işlək
 qaldığını.
+
+### DÜZƏLİŞ #2 — Kateqoriyalar HƏMİŞƏ Göstərilir + IFRS9-un Özündə də Tab-Zolağı Qalmışdı (29.10.2026)
+
+İstifadəçi iki əlavə tələb verdi:
+
+1. *"indi gunluk,ayliq ve rubluk secimide goster,cunki hesabatlar bunun
+   icinde olacaq"* — Günlük/Aylıq/Rüblük pill-ləri əvvəl yalnız kartı olan
+   kateqoriyalarda görünürdü (`Where(k => Model.Any(...))`), yəni BMI-dən
+   hesabat köçürülənə qədər **heç biri görünmürdü** — struktur özü gizli
+   qalırdı. Düzəliş: `Index.cshtml`-də filtr çıxarıldı, bütün 5 kateqoriya
+   (Günlük/Aylıq/Rüblük/Risk/Xərclər) **HƏMİŞƏ**, hər birinin yanında real
+   say nişanı ilə göstərilir; boş kateqoriya kəsik haşiyə ilə fərqlənir,
+   seçiləndə siyahı öz "Bu kateqoriyada hələ hesabat yoxdur" boş-nəticə
+   mesajını göstərir (`#hsEmpty`) — boş `.hs-list` deyil.
+
+2. *"ifrs 9 burda acilacaq? burda istemirem axi"* (ekran-görüntüsü, IFRS9
+   səhifəsi açıq, üstündə İcmal/Kreditlər/Depozit & Müştəri/Mənfəət-Zərər/
+   Likvidlik & Bazar/Hesabatlar tab-zolağı görünür) — Birinci düzəlişdə
+   (yuxarı) `_MhTabs` YALNIZ `Hesabat/Index.cshtml`-dən çıxarılmışdı,
+   `Hesabat/Ifrs9.cshtml` VƏ `Hesabat/Ifrs9Parametr.cshtml` hələ eyni
+   partial-ı çağırırdı (hər ikisi `grep` ilə tapıldı) — yəni IFRS9 "hesabat"
+   kimi təqdim edilsə də, görüntüdə hələ canlı Dashboard ailəsinin bir
+   hissəsi kimi görünürdü, bu da elə əvvəlki düzəlişin arxasındakı "sorğu ≠
+   hesabat" ayrımını pozurdu. Düzəliş: `_MhTabs` partial-ı hər iki fayldan
+   da çıxarıldı — naviqasiya itmir, çünki hər ikisinin öz hero-sundakı
+   düymələr (ECL detalı/İş kağızları/AMB/Metodologiya/Parametrlər/"IFRS 9
+   səhifəsinə qayıt") onsuz da `_MhTabs`-dan müstəqildir.
+
+**Kataloqdan silinən "Xərc Hesabatı" kartı** — istifadəçi: *"xerc hesabati
+onu gizlet,heleki isledilmir"* (hələ real istifadədə deyil). `HesabatController.
+Katalog`-dan `xerc-hesabati` sətri silindi, yerinə necə geri əlavə
+ediləcəyini göstərən şərh qoyuldu — modul (`HR/XercHesabat`) özü SİLİNMƏDİ,
+yalnız kataloqdan (göstərişdən) çıxarıldı ("İşlək Funksiyanı Silmək" qaydası —
+burada "funksiya" artıq əvvəldən işlək DEYİLDİ, ona görə silinməsi "açıq
+icazə" tələb etmədi, sadəcə yeni, hələ istifadəyə verilməmiş bir kataloq
+qeydinin geri götürülməsidir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real brauzerdə yoxlamalıdır: "Maliyyə
+Hesabatları" səhifəsində Günlük/Aylıq/Rüblük/Risk/Xərclər pill-lərinin
+(sayları ilə) həmişə göründüyünü, boş kateqoriya seçiləndə "hələ hesabat
+yoxdur" mesajının çıxdığını, "Xərc Hesabatı" kartının artıq görünmədiyini,
+IFRS 9 (həm əsas, həm "Floor parametrləri") səhifələrində artıq İcmal/
+Kreditlər/Depozit/Mənfəət-Zərər/Likvidlik tab-zolağının göstərilmədiyini —
+AMMA hər iki səhifənin öz hero düymələrinin (ECL detalı, AMB, Parametrlər,
+"IFRS 9 səhifəsinə qayıt") əvvəlki kimi işlədiyini.

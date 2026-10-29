@@ -60,8 +60,10 @@ public class HesabatController : Controller
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
         new() { Kod = "amb-mhbs9", Ad = "AMB MHBS 9", Tesvir = "Cədvəl A1 — rəsmi Mərkəzi Bank hesabatı",
                 Kateqoriya = "Risk", Ikon = "bi-bank2", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
-        new() { Kod = "xerc-hesabati", Ad = "Xərc Hesabatı", Tesvir = "Kateqoriyalar üzrə xərclər",
-                Kateqoriya = "Xərclər", Ikon = "bi-bar-chart-line", Area = "HR", Controller = "XercHesabat", Action = "Index" },
+        // ⚠️ "Xərc Hesabatı" (HR/XercHesabat) 29.10.2026-da BURADAN ÇIXARILDI —
+        // istifadəçi: "heleki islenilmir" (modul hələ real istifadədə deyil).
+        // Yenidən lazım olsa, yalnız bura geri əlavə et (Kod="xerc-hesabati",
+        // Kateqoriya="Xərclər", Area="HR", Controller="XercHesabat", Action="Index").
     };
 
     private async Task<bool> IcazeVarAsync()
