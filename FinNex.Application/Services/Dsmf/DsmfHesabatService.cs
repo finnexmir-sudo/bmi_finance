@@ -329,20 +329,12 @@ public class DsmfHesabatService : IDsmfHesabatService
     // Üç Yazıcı" riski olmasın deyə bu, DÖRD YERDƏ YOX, İKİ YERDƏ (bölmə
     // cədvəli + Hissə 1 sətri) EYNİ dict-dən oxunur.
 
-    // HYS — YALNIZ işçi payı (IsciHYS.Mebleg), işəgötürən payı DAXİL DEYİL.
-    // ⚠️ 29.10.2026-da "sirket yox" istifadəçi qərarı İLKİN olaraq bunu HƏM
-    // Bölmə 2-nin (102.1.8) HƏM Bölmə 3-ün (5.2.9) ortaq qaydası sayırdı —
-    // EYNİ GÜN SONRADAN istifadəçi bunu Bölmə 2 üçün DÜZƏLTDİ ("Azad güzəşt
-    // — mən burda sənə səhv dedim + şirkətin ödədiyi [...]"): Bölmə 2-nin
-    // 4.2.6 sətri artıq bu metodun nəticəsini `HysIsegoturenMapAsync`-in
-    // (işəgötürən payı) nəticəsi ilə TOPLAYIR (bax `Bolme2HazirlaAsync`).
-    // Bu metodun ÖZÜ dəyişmədi (hələ də SIRF işçi payını qaytarır) — YALNIZ
-    // ÇAĞIRANLAR fərqlənir:
-    //   - Bölmə 2 (`Bolme2HazirlaAsync`) VƏ Hissə 1-in 3.1 "Azad güzəşt"-i →
-    //     bu metod + `HysIsegoturenMapAsync` BİRLİKDƏ;
-    //   - Bölmə 3 (`Bolme3HazirlaAsync`, 5.2.9) VƏ Hissə 1-in 4.1 "DSMF azad"-ı →
-    //     YALNIZ bu metod (işəgötürən payı DAXİL DEYİL, çünki DSMF bazası
-    //     ona heç vaxt toxunmayıb — bax `HysIsegoturenMapAsync`-in şərhi).
+    // HYS — işçi payı (IsciHYS.Mebleg). Bu metodun ÖZÜ SIRF işçi payını
+    // qaytarır — HƏR DÖRD çağıran (Bölmə 2/3 + Hissə 1-in 3.1/4.1) onu
+    // `HysIsegoturenMapAsync`-in (işəgötürən payı) nəticəsi İLƏ BİRLİKDƏ
+    // toplayır (29.10.2026, ÜÇÜNCÜ dalğa — bax `HysIsegoturenMapAsync`-in
+    // şərhi: rəsmi şablonun K10 qeydi "e/h M+T+U" Bölmə 3-ə də işəgötürən
+    // payını tələb etdi, "sirket yox" qərarı TAM TƏRSİNƏ ÇEVRİLDİ).
     // Dondurulmuş aylar (IIsciHYSDondurmaService) TƏK mənbədən xaric edilir —
     // bax CLAUDE.md "HYS — Bir Aylıq Dondurma".
     private async Task<Dictionary<int, decimal>> HysIsciPayiAsync(int il, int ay)
@@ -367,23 +359,24 @@ public class DsmfHesabatService : IDsmfHesabatService
 
     // İşəgötürən tərəfindən ödənilən HYS haqqı (29.10.2026, istifadəçi düzəlişi:
     // "Azad güzəşt — mən burda sənə səhv dedim + şirkətin ödədiyi [...]").
-    // ⚠️ YALNIZ Bölmə 2 (gəlir vergisi güzəşti, 4.2.6/102.1.8) VƏ Hissə 1-in
-    // 3.1 "Azad güzəşt" sütununda işlədilir — Bölmə 3-ün 5.2.9-una (DSMF azad,
-    // 4.1) QARIŞDIRILMIR, çünki ikisi fərqli əsasdadır:
+    // İstifadə yerləri (29.10.2026, ÜÇÜNCÜ dalğa — İKİSİ DƏ işlədir):
+    //   - Bölmə 2 (gəlir vergisi güzəşti, 4.2.6/102.1.8) VƏ Hissə 1-in 3.1
+    //     "Azad güzəşt" sütunu;
+    //   - Bölmə 3 (DSMF azad, 5.2.9) VƏ Hissə 1-in 4.1 "DSMF azad" sütunu —
+    //     rəsmi şablonun (UNIFIED_APPENDIX_1_EMPLOYEE_LIST___.xlsx) K10
+    //     xanasındakı mühasib qeydi "e/h M+T+U" (= Xəstəlik + işçi HYS +
+    //     işəgötürən HYS) bunu TƏLƏB EDİR, istifadəçi təsdiqlədi.
+    // Riyazi fon (niyə ikisi də düzgündür, baxmayaraq ki `dsmfBazasi` düsturu
+    // `hysIsegoturen`-ə heç vaxt toxunmur):
     //   - `MaasHesablamaService.FerdiHesabla`-da `brutMaas = esasBrut +
     //     hysIsegoturen` — işəgötürən HYS-i BRÜT-Ə (deməli Hissə1-in 2.3
     //     "Hesablanmış" sütununa) DAXİLDİR;
-    //   - eyni zamanda `vergiBazasi` düsturu (`esasBrut + ... - hysMebleg +
-    //     ...`) `hysIsegoturen`-i HEÇ VAXT əlavə etmir (nə +, nə -) — çünki
-    //     `esasBrut` onsuz da onu daşımır. Yəni işəgötürən HYS-i gəlir
-    //     vergisi bazasına HEÇ VAXT DÜŞMƏYİB (kodun öz şərhi: "İşəgötürən
-    //     HYS payı: Gəlir vergisi və DSMF-dən AZAD"). 2.3 (BrütMebleg) onu
-    //     DAŞIYIR, vergi bazası DAŞIMIR — bu fərq DSMF Bölmə 2-də "gəlir
-    //     vergisindən azad olan məbləğ" kimi GÖRÜNMƏLİDİR, yoxsa 2.3−3.1
-    //     real vergi bazası ilə uzlaşmır;
-    //   - `dsmfBazasi` isə AYRI düsturdur, `hysIsegoturen`-ə heç toxunmur —
-    //     Bölmə 3-ün 5.2.9-u ona görə YALNIZ işçi payını (hysMebleg) göstərir,
-    //     bu, 29.10.2026-dakı "sirket yox" düzəlişi İLƏ DƏ UYĞUNDUR, dəyişmir.
+    //   - `vergiBazasi`/`dsmfBazasi` düsturları `esasBrut`-dan başlayır,
+    //     `hysIsegoturen`-i HEÇ VAXT əlavə etmir (nə +, nə -) — yəni işəgötürən
+    //     HYS nə gəlir vergisi, nə DSMF bazasına DAXİL OLUB. Amma 2.3 onu
+    //     DAŞIYIR (BrütMebleg-in tərkibində) — rəsmi hesabatın öz məntiqinə
+    //     görə bu, 2.3-ün "izahı" kimi HƏM 3.1-də, HƏM 4.1-də "azad" sətri
+    //     kimi göstərilməlidir, yoxsa 2.3−(3.1+4.1) real bazalarla uzlaşmaz.
     // Mənbə: `MaasHesablamaService.cs:1436`-dakı `DetayEkle("HYS (İşəgötürən)",
     // MaasDetayTipi.IsegoturenXerci, hysIsegoturen, ...)` — yeni hesablama
     // YAZILMADI, artıq persist edilmiş sətir oxunur.
@@ -543,18 +536,27 @@ public class DsmfHesabatService : IDsmfHesabatService
 
         for (int i = 0; i < 3; i++)
         {
-            // 29.10.2026, istifadəçi düzəlişi: "sirket yox" — 5.2.9 YALNIZ
-            // işçi payını (IsciHYS.Mebleg) göstərir, işəgötürən 15%-i artıq
-            // DAXİL DEYİL (əvvəlki versiya birləşdirirdi — düzəldildi).
-            // ⚠️ Bölmə 2-nin VM 102.1.8 sətri EYNİ GÜN SONRADAN BAŞQA İSTİQAMƏTDƏ
-            // düzəldildi — o, bu metoda (HysIsciPayiAsync) ƏLAVƏ OLARAQ
-            // `HysIsegoturenMapAsync`-i DƏ çağırır, yəni artıq "yalnız işçi"
-            // QAYDASINDA DEYİL (bax Bolme2HazirlaAsync + HysIsegoturenMapAsync-in
-            // şərhi: DSMF bazası işəgötürən HYS-ə heç vaxt toxunmayıb, gəlir
-            // vergisi bazası isə onu AZAD sayır — iki fərqli qanuni əsas).
+            // 29.10.2026, ÜÇÜNCÜ dalğa — "sirket yox" qərarı BÖLMƏ 3 ÜÇÜN DƏ
+            // TƏRSİNƏ ÇEVRİLDİ. Səbəb: rəsmi şablonun (UNIFIED_APPENDIX_1_
+            // EMPLOYEE_LIST___.xlsx, "Əlavə1_Hissə1_Mudzlu işə" vərəqi) K10
+            // xanasında mühasibin öz qeydi "e/h M+T+U" idi — 4.1 (DSMF azad)
+            // İKİ yox, ÜÇ komponentdən ibarətdir: Xəstəlik vərəqəsi + Ödənilmiş
+            // (işçi) HYS + İşgötürən ödənilən HYS. İstifadəçi bunu AÇIQ
+            // TƏSDİQLƏDİ (AskUserQuestion, 29.10.2026) — eyni günün əvvəlki
+            // "yalnız işçi" qərarını (bax aşağı HysIsciPayiAsync-in şərhi,
+            // hələ köhnə qalıb) bununla ÜSTƏLƏYİR.
+            // Riyazi əsas da tutarlıdır: Hissə 1-in 2.3 (Hesablanmış) sütunu
+            // `Maas.BrutMebleg`-dən oxunur, o isə `brutMaas = esasBrut +
+            // hysIsegoturen` düsturuna görə İŞGÖTÜRƏN HYS-i ONSUZ DA DAŞIYIR —
+            // deməli 4.1-in onu "DSMF-dən azaddır" deyə göstərməsi, 2.3-ün
+            // tərkibini izah etmək üçün MƏCBURİDİR (əks halda 2.3−4.1 real
+            // DSMF bazası ilə uzlaşmazdı).
             var hys = await HysIsciPayiAsync(il, ayLar[i]);
+            var hysIseg = await HysIsegoturenMapAsync(il, ayLar[i]);
+            var hysIscilər = new HashSet<int>(hys.Keys);
+            hysIscilər.UnionWith(hysIseg.Keys);
             var xst = await XestelikSirketOdenisiAsync(il, ayLar[i]);
-            SetirAyaYaz(hysSetir, i, hys.Count, hys.Values.Sum());
+            SetirAyaYaz(hysSetir, i, hysIscilər.Count, hys.Values.Sum() + hysIseg.Values.Sum());
             SetirAyaYaz(xstSetir, i, xst.Count, xst.Values.Sum());
         }
 
@@ -704,9 +706,10 @@ public class DsmfHesabatService : IDsmfHesabatService
     //                                        işçi VƏ işəgötürən, 29.10.2026
     //                                        düzəlişi, bax HysIsegoturenMapAsync)
     //   4.1 DSMF azad cəmi                → Bölmə 3-ün bu işçi üçün CƏMİ
-    //                                        (HYS-in YALNIZ işçi payı — DSMF
-    //                                        bazası işəgötürən HYS-ə heç vaxt
-    //                                        toxunmayıb, dəyişmədi)
+    //                                        (HYS-in İKİ PAYI da daxildir —
+    //                                        işçi VƏ işəgötürən, 29.10.2026
+    //                                        ÜÇÜNCÜ dalğa düzəlişi, bax
+    //                                        HysIsegoturenMapAsync)
     //   5.1 İşsizlik azad cəmi            → Bölmə 4-ün bu işçi üçün CƏMİ
     //   6.1 İTSS azad cəmi                → Bölmə 5-in bu işçi üçün CƏMİ
     //
@@ -819,15 +822,16 @@ public class DsmfHesabatService : IDsmfHesabatService
                     // VM9821 brütə DAXİL EDİLMİR, amma sütunun öz başlığı "...VƏ
                     // DİGƏR GƏLİRLƏR"dir, DSMF-in bütün bazaları onu özündə daşıyır).
                     HesablananMebleg = brutMaplar[i].GetValueOrDefault(isci.Id) + vm9821[i].GetValueOrDefault(isci.Id),
-                    // ⚠️ AzadGuzestCemi (3.1) `hysIseg`-i DƏ əlavə edir (29.10.2026
-                    // düzəlişi), DsmfAzadCemi (4.1) İSƏ YOX — bax HysIsegoturenMapAsync-in
-                    // şərhi: işəgötürən HYS-i gəlir vergisi bazasından azaddır (3.1-ə aid),
-                    // DSMF bazasına isə heç vaxt toxunmayıb (4.1 üçün əlavə lazım deyil).
+                    // ⚠️ AzadGuzestCemi (3.1) VƏ DsmfAzadCemi (4.1) HƏR İKİSİ
+                    // `hysIseg`-i daxil edir (29.10.2026, ÜÇÜNCÜ dalğa — bax
+                    // HysIsegoturenMapAsync-in şərhi, rəsmi şablonun K10 qeydi
+                    // "e/h M+T+U" əsasında).
                     AzadGuzestCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
                                      + standart[i].GetValueOrDefault(isci.Id)
                                      + qacqin[i].GetValueOrDefault(isci.Id) + elillik[i].GetValueOrDefault(isci.Id)
                                      + esger[i].GetValueOrDefault(isci.Id),
-                    DsmfAzadCemi = hys[i].GetValueOrDefault(isci.Id) + xst[i].GetValueOrDefault(isci.Id),
+                    DsmfAzadCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
+                                     + xst[i].GetValueOrDefault(isci.Id),
                     IssizlikAzadCemi = xst[i].GetValueOrDefault(isci.Id) + manualIssizlik[i].GetValueOrDefault(isci.Id),
                     ItssAzadCemi = xst[i].GetValueOrDefault(isci.Id) + manualItss[i].GetValueOrDefault(isci.Id),
                 };

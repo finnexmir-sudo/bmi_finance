@@ -8699,3 +8699,87 @@ Hesablama-dakı "VM 98.2.1" sahəsindən daxil edilmiş) bir işçinin Hissə 1-
 "Hesablanmış" (2.3) rəqəminin `BrutMebleg`-dən DƏQIQ VM9821 məbləği qədər
 BÖYÜK çıxdığını, VM9821 heç olmayan ayda isə rəqəmin əvvəlki kimi
 (`BrutMebleg`-ə bərabər) qaldığını təsdiqləməli.
+
+### DSMF Bölmə 3 (5.2.9) / Hissə 1 (4.1) — "sirket yox" Qərarı RƏSMİ ŞABLONLA TƏRSİNƏ ÇEVRİLDİ (29.10.2026, KRİTİK — DÜZƏLDİLDİ, ÜÇÜNCÜ DALĞA)
+
+Eyni günün əvvəlki iki düzəlişindən (yuxarı: "DSMF Bölmə 2... İşəgötürən HYS
+Payı ƏSKİK İDİ" və "DSMF Hissə 1 (2.3)... VM 98.2.1") sonra istifadəçi rəsmi
+şablonun (`UNIFIED_APPENDIX_1_EMPLOYEE_LIST___.xlsx`, vərəq
+`Əlavə1_Hissə1_Mudzlu işə`) ekran-görüntüsünü göstərdi: xana **K10** (sütun
+4.1 — "Məcburi Dövlət Sosial Sığorta haqqına cəlb olunmayan cəmi məbləğ",
+yəni DSMF azad) mühasibin öz qeydini daşıyır — **"e/h M+T+U"**. Qonşu **N10**
+(6.1 — İTSS azad) isə sadəcə **"e/h M"**. Bu fərq (ÜÇ komponent vs BİR)
+K10-un (4.1) İKİ yox, ÜÇ şeydən ibarət olduğunu göstərdi.
+
+İstifadəçi bunu 9-sütunlu bir arayış cədvəli ilə (Xəstəlik vərəqəsi, Yalnız
+mdss haqqı hesablanan digər gəlirlər, VM 98.2.1, VM 98.2.3, Əlavə əmək haqqı,
+HYS 3-il-tamam-olmamış-qayıdan, Cəmi hesablanmış aylıq ödənişlər, Ödənilmiş
+(işçi) HYS, İşgötürən ödənilən HYS) müşayiət etdi — *"bunlarin toplami
+olmalidir Məcburi Dövlət Sosial Sığorta haqqına cəlb olunmayan cəmi
+məbləğ"*. `AskUserQuestion` ilə dəqiqləşdirildi (dövlət hesabatı olduğu, həm
+də elə HƏMİN GÜN əvvəlcə "sirket yox" sonra "sirket var" (Bölmə 2 üçün) kimi
+iki dəfə dəyişmiş bir qərarın ÜÇÜNCÜ dəfə TƏRS İSTİQAMƏTDƏ dəyişməsi tələb
+olunduğu üçün) — istifadəçi təsdiqlədi: **M+T+U = Xəstəlik vərəqəsi + Ödənilmiş
+(işçi) HYS + İşgötürən ödənilən HYS**. Qalan 4 yeni anlayış (VM 98.2.3, HYS
+3-il-erkən-xitam, Əlavə əmək haqqı, "yalnız mdss") **bu dəfə MODELLƏŞDİRİLMİR**
+— istifadəçi: *"Hələlik yox — yalnız M+T+U sualını həll et, qalanı sonraya
+saxla"*.
+
+**Nəticə — "sirket yox" qərarı Bölmə 3 üçün DƏ TƏRSİNƏ ÇEVRİLDİ:**
+`Bolme3HazirlaAsync`-in 5.2.9 sətri (və onunla Hissə 1-in `DsmfAzadCemi`,
+4.1 sütunu) indi `HysIsciPayiAsync` (işçi) + `HysIsegoturenMapAsync`
+(işəgötürən) CƏMİDİR — Bölmə 2-nin 4.2.6 sətri (bir əvvəlki dalğada
+düzəldilmiş) İLƏ EYNİ naxış, həm işçi həm işəgötürən dəstinin `UnionWith`
+ilə birləşdirilməsi daxil.
+
+**Riyazi dəstək (hesablama DÜSTURUNA güvənməkdən istifadəçinin göndərdiyi
+RƏSMİ ŞABLONUN qeydinə üstünlük verildi, amma bu, təsadüfi deyil — ikisi
+üst-üstə düşür):** Hissə 1-in 2.3 ("Hesablanmış") sütunu `Maas.BrutMebleg`-dən
+oxunur, o isə `brutMaas = esasBrut + hysIsegoturen` düsturuna görə İŞGÖTÜRƏN
+HYS-i ONSUZ DA DAŞIYIR. `dsmfBazasi` düsturunun özü `hysIsegoturen`-ə heç vaxt
+toxunmasa da (nə əlavə, nə çıxma — çünki `esasBrut` onu onsuz da daşımır),
+RƏSMİ HESABATIN məqsədi "2.3-ün tərkibini izah etmək"dir: 2.3-ün bir hissəsi
+(işəgötürən HYS) DSMF-dən AZADDIR — bu, daxili `dsmfBazasi` dəyərini
+dəyişdirmir, amma hesabatın "2.3 − (3.1+4.1+5.1+6.1)" özü-özünü yoxlayan
+strukturunu tələb edir. Beləcə əvvəlki "dsmfBazasi heç vaxt toxunmayıb, demək
+exempt sayılmağa ehtiyac yoxdur" məntiqi YARIMÇIQ idi — "baza nəyi daşıyır"
+sualı ilə "hesabat NƏYİ necə izah edir" sualı EYNİ ŞEY DEYİL.
+
+**Dəyişən fayllar:**
+- `DsmfHesabatService.cs` — `Bolme3HazirlaAsync` (5.2.9 sətri), `Hissesi1HazirlaAsync`
+  (`DsmfAzadCemi`), `HysIsciPayiAsync`/`HysIsegoturenMapAsync`-in öz baş şərhləri
+  (hər ikisi İNDİ dörd çağıranın hamısının eyni cəmi işlətdiyini əks etdirir).
+- `Views/Hesabat/Bolme2345.cshtml` — `bolmeEhate[3]` mətni "yalnız işçi
+  payı" → "işçi + işəgötürən payı".
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRA çağırılan Bölmə 3/Hissə 1
+hesablamalarına təsir edir; bu gün daha əvvəl (bu düzəlişdən əvvəl) ixrac
+edilmiş Bölmə 3/Hissə 1 Excel-ləri YENİDƏN ixrac edilməlidir.
+
+⚠️ **Qayda (bu sessiyanın özündə ÜÇÜNCÜ dəfə təkrarlanan dərs):** eyni
+HYS-in iki fərqli DSMF sütununa (burada: Bölmə 2 gəlir-vergisi vs Bölmə 3
+DSMF) "eyni qaydayla" (bura: "sirket yox") tabe olacağını FƏRZ ETMƏ — hər
+sütunun öz qanuni/hesabat əsasını (ilk növbədə rəsmi şablonun ÖZÜNDƏKİ
+nümunə/qeydləri, yalnız daxili düstur araşdırmasını YOX) AYRI-AYRI yoxla.
+Rəsmi dövlət şablonunun öz worked-example qeydi (K10/N10-dakı "e/h M+T+U"/
+"e/h M"), daxili `dsmfBazasi` düsturunun "bu məbləğ heç vaxt bazaya
+toxunmayıb" məntiqindən DAHA GÜCLÜ bir dəlildir — ikisi arasında ziddiyyət
+görünəndə şablonun özünə üstünlük ver, amma dövlətə gedən hesabat olduğu
+üçün HƏMİŞƏ `AskUserQuestion` ilə təsdiqlədikdən sonra kodu dəyiş.
+
+⚠️ **Açıq qalan (istifadəçi qərarı: sonraya saxlanıldı) — VM 98.2.3,
+"HYS müqavilələri üzrə 3 il tamam olmamış qayıdan məbləğlər", "Əlavə əmək
+haqqı", "Yalnız mdss haqqı hesablanan digər gəlirlər".** Bu 4 anlayışın
+sistemdə HEÇ BİR qarşılığı (MaasNovu/MaasDetay sahəsi) yoxdur — araşdırılmadı,
+modelləşdirilmədi. Toxunulanda əvvəlcə HƏR BİRİNİN BMI-də real mövcud olub-
+olmadığını, sonra hansı `MaasDetay`/yeni entity sahəsinə uyğun gəldiyini
+müəyyənləşdirmək lazımdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, Bölmə 2/Bölmə 3-ün yeni eyni-naxışlı
+`HashSet.UnionWith` bloklarının bir-biri ilə eyniliyi əl ilə tutuşduruldu).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: işəgötürən HYS-i olan bir işçinin Bölmə 3 (5.2.9) və Hissə 1
+(4.1) sütunlarındakı məbləğin indi İŞÇİ+İŞGÖTÜRƏN cəmini göstərdiyini
+(əvvəlkindən böyük çıxmalıdır), Bölmə 2 (4.2.6)/Hissə 1 (3.1)-in artıq
+dəyişmədiyini (əvvəlki dalğada düzəlmişdi) təsdiqləməlidir.
