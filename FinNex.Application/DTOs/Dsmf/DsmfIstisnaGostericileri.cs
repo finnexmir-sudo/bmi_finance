@@ -14,7 +14,7 @@ public static class DsmfIstisnaGostericileri
     public const string Bolme2Basliq =
         "Əlavə №4 - Bölmə 2. Gəlir vergisi üzrə güzəşt və azadolmalar barədə məlumat";
 
-    public const string Madde1018 = "4.2.6 - VM-nin 102.1.8-ci maddəsi";      // HYS — yalnız işçi payı (istifadəçi qərarı, 29.10.2026)
+    public const string Madde1018 = "4.2.6 - VM-nin 102.1.8-ci maddəsi";      // HYS — işçi VƏ işəgötürən payı birlikdə (istifadəçi qərarı, 29.10.2026 — bax DsmfHesabatService.HysIsegoturenMapAsync)
     public const string Madde1016 = "4.2.5 - VM-nin 102.1.6-cı maddəsi";      // standart 200 AZN güzəşt (brüt ≤ 2500)
     public const string Madde10245 = "4.5.3 - VM-nin 102.4.5-ci maddəsi";     // Qaçqın → GuzestNovu.MecburiKockun (istifadəçi qərarı)
     public const string Madde1023 = "4.4 - VM-nin 102.3-cü maddəsi üzrə";     // Əlillik → GuzestNovu.Elillik

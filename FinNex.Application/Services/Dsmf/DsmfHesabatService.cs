@@ -263,7 +263,10 @@ public class DsmfHesabatService : IDsmfHesabatService
     // 3-dən FƏRQLİ struktur: işçi-sətri YOX, qanun-maddəsi-sətridir. İstifadəçi
     // ilə təsdiqlənmiş əhatə (yalnız bu bəndlər, qalanı bu banka aid deyil —
     // bax DsmfIstisnaGostericileri.cs):
-    //   Bölmə 2: 4.2.6/102.1.8 (HYS, yalnız işçi) + 4.2.5/102.1.6 (200 AZN) +
+    //   Bölmə 2: 4.2.6/102.1.8 (HYS, işçi VƏ işəgötürən payı — 29.10.2026-da
+    //            "sirket yox" qərarı İKİNCİ dəfə, bu dəfə ƏKS istiqamətdə
+    //            düzəldildi: Bölmə 2 üçün işəgötürən payı DA daxildir, bax
+    //            HysIsegoturenMapAsync-in şərhi) + 4.2.5/102.1.6 (200 AZN) +
     //            4.5.3/102.4.5 (Qaçqın) + 4.4/102.3 (Əlillər) +
     //            4.2.7.7/102.1.14.16 (əsgər pulu)
     //   Bölmə 3: 5.2.9 (HYS, yalnız işçi — 29.10.2026-da düzəldildi) + 5.2.12 (xəstəlik)
@@ -287,8 +290,19 @@ public class DsmfHesabatService : IDsmfHesabatService
 
         for (int i = 0; i < 3; i++)
         {
+            // 29.10.2026, istifadəçi düzəlişi: "Azad güzəşt — mən burda sənə
+            // səhv dedim + şirkətin ödədiyi [...]" — 4.2.6/102.1.8 İNDİ işçi
+            // VƏ işəgötürən HYS paylarının CƏMİDİR (bax HysIsegoturenMapAsync-
+            // in şərhi — ikisi fərqli qanuni əsasdadır, amma eyni "HYS gəlir
+            // vergisindən azaddır" sətrinə düşür). İşəgötürən payı HƏMİŞƏ
+            // işçi payından (hysMebleg-dən) hesablandığı üçün (bax
+            // MaasHesablamaService "8.6") işçi dəsti artıq işəgötürən dəstini
+            // örtür — amma `UnionWith` yenə də qoyulub, defensiv.
             var hys = await HysIsciPayiAsync(il, ayLar[i]);
-            SetirAyaYaz(hysSetir, i, hys.Count, hys.Values.Sum());
+            var hysIseg = await HysIsegoturenMapAsync(il, ayLar[i]);
+            var hysIscilər = new HashSet<int>(hys.Keys);
+            hysIscilər.UnionWith(hysIseg.Keys);
+            SetirAyaYaz(hysSetir, i, hysIscilər.Count, hys.Values.Sum() + hysIseg.Values.Sum());
 
             var standart = await StandartGuzestAsync(il, ayLar[i]);
             SetirAyaYaz(standartSetir, i, standart.Count, standart.Values.Sum());
@@ -315,12 +329,22 @@ public class DsmfHesabatService : IDsmfHesabatService
     // Üç Yazıcı" riski olmasın deyə bu, DÖRD YERDƏ YOX, İKİ YERDƏ (bölmə
     // cədvəli + Hissə 1 sətri) EYNİ dict-dən oxunur.
 
-    // HYS — YALNIZ işçi payı (IsciHYS.Mebleg), işəgötürən payı DAXİL DEYİL
-    // (istifadəçi qərarı, 29.10.2026: "sirket yox" — bu qayda Bölmə 2-nin
-    // VM 102.1.8 sətrinə VƏ Bölmə 3-ün 5.2.9-una EYNİ dərəcədə aiddir, ikisi
-    // də bu metodu çağırır — əvvəlki "5.2.9 = işçi+işəgötürən" versiyası
-    // səhv idi, düzəldildi). Dondurulmuş aylar (IIsciHYSDondurmaService) TƏK
-    // mənbədən xaric edilir — bax CLAUDE.md "HYS — Bir Aylıq Dondurma".
+    // HYS — YALNIZ işçi payı (IsciHYS.Mebleg), işəgötürən payı DAXİL DEYİL.
+    // ⚠️ 29.10.2026-da "sirket yox" istifadəçi qərarı İLKİN olaraq bunu HƏM
+    // Bölmə 2-nin (102.1.8) HƏM Bölmə 3-ün (5.2.9) ortaq qaydası sayırdı —
+    // EYNİ GÜN SONRADAN istifadəçi bunu Bölmə 2 üçün DÜZƏLTDİ ("Azad güzəşt
+    // — mən burda sənə səhv dedim + şirkətin ödədiyi [...]"): Bölmə 2-nin
+    // 4.2.6 sətri artıq bu metodun nəticəsini `HysIsegoturenMapAsync`-in
+    // (işəgötürən payı) nəticəsi ilə TOPLAYIR (bax `Bolme2HazirlaAsync`).
+    // Bu metodun ÖZÜ dəyişmədi (hələ də SIRF işçi payını qaytarır) — YALNIZ
+    // ÇAĞIRANLAR fərqlənir:
+    //   - Bölmə 2 (`Bolme2HazirlaAsync`) VƏ Hissə 1-in 3.1 "Azad güzəşt"-i →
+    //     bu metod + `HysIsegoturenMapAsync` BİRLİKDƏ;
+    //   - Bölmə 3 (`Bolme3HazirlaAsync`, 5.2.9) VƏ Hissə 1-in 4.1 "DSMF azad"-ı →
+    //     YALNIZ bu metod (işəgötürən payı DAXİL DEYİL, çünki DSMF bazası
+    //     ona heç vaxt toxunmayıb — bax `HysIsegoturenMapAsync`-in şərhi).
+    // Dondurulmuş aylar (IIsciHYSDondurmaService) TƏK mənbədən xaric edilir —
+    // bax CLAUDE.md "HYS — Bir Aylıq Dondurma".
     private async Task<Dictionary<int, decimal>> HysIsciPayiAsync(int il, int ay)
     {
         var ayBaslangic = new DateTime(il, ay, 1);
@@ -339,6 +363,42 @@ public class DsmfHesabatService : IDsmfHesabatService
             qeydler = qeydler.Where(x => !dondurulmus.Contains(x.Id)).ToList();
 
         return qeydler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
+    }
+
+    // İşəgötürən tərəfindən ödənilən HYS haqqı (29.10.2026, istifadəçi düzəlişi:
+    // "Azad güzəşt — mən burda sənə səhv dedim + şirkətin ödədiyi [...]").
+    // ⚠️ YALNIZ Bölmə 2 (gəlir vergisi güzəşti, 4.2.6/102.1.8) VƏ Hissə 1-in
+    // 3.1 "Azad güzəşt" sütununda işlədilir — Bölmə 3-ün 5.2.9-una (DSMF azad,
+    // 4.1) QARIŞDIRILMIR, çünki ikisi fərqli əsasdadır:
+    //   - `MaasHesablamaService.FerdiHesabla`-da `brutMaas = esasBrut +
+    //     hysIsegoturen` — işəgötürən HYS-i BRÜT-Ə (deməli Hissə1-in 2.3
+    //     "Hesablanmış" sütununa) DAXİLDİR;
+    //   - eyni zamanda `vergiBazasi` düsturu (`esasBrut + ... - hysMebleg +
+    //     ...`) `hysIsegoturen`-i HEÇ VAXT əlavə etmir (nə +, nə -) — çünki
+    //     `esasBrut` onsuz da onu daşımır. Yəni işəgötürən HYS-i gəlir
+    //     vergisi bazasına HEÇ VAXT DÜŞMƏYİB (kodun öz şərhi: "İşəgötürən
+    //     HYS payı: Gəlir vergisi və DSMF-dən AZAD"). 2.3 (BrütMebleg) onu
+    //     DAŞIYIR, vergi bazası DAŞIMIR — bu fərq DSMF Bölmə 2-də "gəlir
+    //     vergisindən azad olan məbləğ" kimi GÖRÜNMƏLİDİR, yoxsa 2.3−3.1
+    //     real vergi bazası ilə uzlaşmır;
+    //   - `dsmfBazasi` isə AYRI düsturdur, `hysIsegoturen`-ə heç toxunmur —
+    //     Bölmə 3-ün 5.2.9-u ona görə YALNIZ işçi payını (hysMebleg) göstərir,
+    //     bu, 29.10.2026-dakı "sirket yox" düzəlişi İLƏ DƏ UYĞUNDUR, dəyişmir.
+    // Mənbə: `MaasHesablamaService.cs:1436`-dakı `DetayEkle("HYS (İşəgötürən)",
+    // MaasDetayTipi.IsegoturenXerci, hysIsegoturen, ...)` — yeni hesablama
+    // YAZILMADI, artıq persist edilmiş sətir oxunur.
+    private async Task<Dictionary<int, decimal>> HysIsegoturenMapAsync(int il, int ay)
+    {
+        var detallar = await _unitOfWork.Repository<MaasDetay>()
+            .Query()
+            .AsNoTracking()
+            .Where(x => !x.Silinib && x.MaasNovu.Ad == "HYS (İşəgötürən)"
+                     && x.Maas.Il == il && x.Maas.Ay == ay && !x.Maas.Silinib
+                     && (x.Maas.Status == MaasStatus.Tesdiqlendi || x.Maas.Status == MaasStatus.Odenildi))
+            .Select(x => new { x.Maas.IsciId, x.Mebleg })
+            .ToListAsync();
+
+        return detallar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
     }
 
     // Standart 200 AZN gəlir vergisi güzəşti (VM 102.1.6, brüt ≤ 2500 — bax
@@ -486,8 +546,12 @@ public class DsmfHesabatService : IDsmfHesabatService
             // 29.10.2026, istifadəçi düzəlişi: "sirket yox" — 5.2.9 YALNIZ
             // işçi payını (IsciHYS.Mebleg) göstərir, işəgötürən 15%-i artıq
             // DAXİL DEYİL (əvvəlki versiya birləşdirirdi — düzəldildi).
-            // Bölmə 2-nin VM 102.1.8 sətri ilə EYNİ metodu (HysIsciPayiAsync)
-            // çağırır — iki ayrı qanun maddəsi, amma eyni "yalnız işçi" qaydası.
+            // ⚠️ Bölmə 2-nin VM 102.1.8 sətri EYNİ GÜN SONRADAN BAŞQA İSTİQAMƏTDƏ
+            // düzəldildi — o, bu metoda (HysIsciPayiAsync) ƏLAVƏ OLARAQ
+            // `HysIsegoturenMapAsync`-i DƏ çağırır, yəni artıq "yalnız işçi"
+            // QAYDASINDA DEYİL (bax Bolme2HazirlaAsync + HysIsegoturenMapAsync-in
+            // şərhi: DSMF bazası işəgötürən HYS-ə heç vaxt toxunmayıb, gəlir
+            // vergisi bazası isə onu AZAD sayır — iki fərqli qanuni əsas).
             var hys = await HysIsciPayiAsync(il, ayLar[i]);
             var xst = await XestelikSirketOdenisiAsync(il, ayLar[i]);
             SetirAyaYaz(hysSetir, i, hys.Count, hys.Values.Sum());
@@ -624,20 +688,31 @@ public class DsmfHesabatService : IDsmfHesabatService
     //                                        bu işçinin işləmədiyi gün cəmi
     //                                        (Hissesi3HazirlaAsync-in ÖZ
     //                                        nəticəsindən, TƏKRAR hesablanmır)
-    //   2.3 Hesablanmış əmək haqqı        → Maas.BrutMebleg
+    //   2.3 Hesablanmış əmək haqqı        → Maas.BrutMebleg + VM 98.2.1
+    //                                        gəlirləri (29.10.2026 düzəlişi,
+    //                                        bax Vm9821MapAsync-in şərhi —
+    //                                        VM9821 brütə daxil edilmir, amma
+    //                                        sütunun öz başlığı "...VƏ DİGƏR
+    //                                        GƏLİRLƏR"dir)
     //   2.3.1, 2.5, 2.6, 4.5              → HƏMİŞƏ boş (mühasibin öz "bos"
     //                                        qeydi — sistemdə izi yoxdur:
     //                                        xaric gəlir, HYS-erkən-xitam,
     //                                        texnologiya parkı seçimi [bank
     //                                        üçün N/A])
     //   3.1 Azadolunan/güzəşt cəmi        → Bölmə 2-nin bu işçi üçün CƏMİ
+    //                                        (HYS-in İKİ PAYI da daxildir —
+    //                                        işçi VƏ işəgötürən, 29.10.2026
+    //                                        düzəlişi, bax HysIsegoturenMapAsync)
     //   4.1 DSMF azad cəmi                → Bölmə 3-ün bu işçi üçün CƏMİ
+    //                                        (HYS-in YALNIZ işçi payı — DSMF
+    //                                        bazası işəgötürən HYS-ə heç vaxt
+    //                                        toxunmayıb, dəyişmədi)
     //   5.1 İşsizlik azad cəmi            → Bölmə 4-ün bu işçi üçün CƏMİ
     //   6.1 İTSS azad cəmi                → Bölmə 5-in bu işçi üçün CƏMİ
     //
     // Son dördü (3.1/4.1/5.1/6.1) Bölmə 2-5-in ARTIQ QURULMUŞ per-işçi
     // dict-lərinin cəmidir — YENİ DÜSTUR YAZILMAYIB, elə yuxarıdakı
-    // HysIsciPayiAsync/StandartGuzestAsync/GuzestNovuUzreAsync/
+    // HysIsciPayiAsync/HysIsegoturenMapAsync/StandartGuzestAsync/GuzestNovuUzreAsync/
     // ManualGelirVergiIstisnasiAsync/XestelikSirketOdenisiAsync/
     // ManualGelirIstisnasiAsync-dən oxunur.
     public async Task<DsmfHissesi1Dto> Hissesi1HazirlaAsync(int il, int rub)
@@ -690,7 +765,9 @@ public class DsmfHesabatService : IDsmfHesabatService
 
         var ayinRealIsGunu = new int[3];
         var brutMaplar = new Dictionary<int, decimal>[3];
+        var vm9821 = new Dictionary<int, decimal>[3];
         var hys = new Dictionary<int, decimal>[3];
+        var hysIseg = new Dictionary<int, decimal>[3];
         var standart = new Dictionary<int, decimal>[3];
         var qacqin = new Dictionary<int, decimal>[3];
         var elillik = new Dictionary<int, decimal>[3];
@@ -705,7 +782,9 @@ public class DsmfHesabatService : IDsmfHesabatService
             ayinRealIsGunu[i] = await HaqiqiIsGunuSayAsync(
                 new[] { (new DateTime(il, ay, 1), new DateTime(il, ay, 1).AddMonths(1).AddDays(-1)) }, il, ay);
             brutMaplar[i] = await MaasBrutMapAsync(il, ay);
+            vm9821[i] = await Vm9821MapAsync(il, ay);
             hys[i] = await HysIsciPayiAsync(il, ay);
+            hysIseg[i] = await HysIsegoturenMapAsync(il, ay);
             standart[i] = await StandartGuzestAsync(il, ay);
             qacqin[i] = await GuzestNovuUzreAsync(il, ay, GuzestNovu.MecburiKockun);
             elillik[i] = await GuzestNovuUzreAsync(il, ay, GuzestNovu.Elillik);
@@ -736,8 +815,16 @@ public class DsmfHesabatService : IDsmfHesabatService
                 aylar[i] = new DsmfHissesi1AyDto
                 {
                     FaktikiIsGunu = Math.Max(0, ayinRealIsGunu[i] - islememisGun),
-                    HesablananMebleg = brutMaplar[i].GetValueOrDefault(isci.Id),
-                    AzadGuzestCemi = hys[i].GetValueOrDefault(isci.Id) + standart[i].GetValueOrDefault(isci.Id)
+                    // 2.3 = BrutMebleg + VM 98.2.1 (bax Vm9821MapAsync-in şərhi —
+                    // VM9821 brütə DAXİL EDİLMİR, amma sütunun öz başlığı "...VƏ
+                    // DİGƏR GƏLİRLƏR"dir, DSMF-in bütün bazaları onu özündə daşıyır).
+                    HesablananMebleg = brutMaplar[i].GetValueOrDefault(isci.Id) + vm9821[i].GetValueOrDefault(isci.Id),
+                    // ⚠️ AzadGuzestCemi (3.1) `hysIseg`-i DƏ əlavə edir (29.10.2026
+                    // düzəlişi), DsmfAzadCemi (4.1) İSƏ YOX — bax HysIsegoturenMapAsync-in
+                    // şərhi: işəgötürən HYS-i gəlir vergisi bazasından azaddır (3.1-ə aid),
+                    // DSMF bazasına isə heç vaxt toxunmayıb (4.1 üçün əlavə lazım deyil).
+                    AzadGuzestCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
+                                     + standart[i].GetValueOrDefault(isci.Id)
                                      + qacqin[i].GetValueOrDefault(isci.Id) + elillik[i].GetValueOrDefault(isci.Id)
                                      + esger[i].GetValueOrDefault(isci.Id),
                     DsmfAzadCemi = hys[i].GetValueOrDefault(isci.Id) + xst[i].GetValueOrDefault(isci.Id),
@@ -770,5 +857,35 @@ public class DsmfHesabatService : IDsmfHesabatService
             .ToListAsync();
 
         return maaslar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.BrutMebleg));
+    }
+
+    // VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər (29.10.2026,
+    // istifadəçi: "Əlavə №1 — Hissə 1-bu hesabatda + VM-nin 98.2.1-ci maddəsinə
+    // əsasən vergiyə cəlb olunan gəlirlər"). `MaasHesablamaService.FerdiHesabla`-da
+    // bu, `input.VM9821Meblegi` kimi BÜTÜN 4 bazaya (vergi, DSMF, İşsizlik, İTSS)
+    // ƏLAVƏ OLUNUR, AMMA `brutMaas`-a (deməli `Maas.BrutMebleg`-ə) HEÇ VAXT DAXİL
+    // EDİLMİR (kodun öz şərhi: "VM 98.2.1 gəlirləri BRÜT-ə DAXİL EDİLMİR [...]
+    // gəlir kimi maaşı ARTIRMIR"). Yəni DSMF-in real hesabladığı baza
+    // `BrutMebleg`-dən BÖYÜKDÜR — bu fərq 2.3 "Hesablanmış əmək haqqı VƏ DİGƏR
+    // GƏLİRLƏR" sütununun ÖZ başlığında onsuz da nəzərdə tutulub (bax yuxarı
+    // MaasBrutMapAsync-in şərhi). Mənbə: `MaasHesablamaService.cs:1417`-dəki
+    // `DetayEkle("VM 98.2.1 Gəlirləri", MaasDetayTipi.Gelir, input.VM9821Meblegi,
+    // ...)` — yeni hesablama YAZILMADI, artıq persist edilmiş sətir oxunur.
+    //
+    // ⚠️ Yalnız 2.3-ə (Hesablanmış) əlavə olunur — 3.1/4.1/5.1/6.1 "azad"
+    // sütunlarına HEÇ TOXUNMUR, çünki VM 98.2.1 "azadolma/güzəşt" DEYİL, əksinə
+    // HƏR DÖRD bazaya BİLƏRƏKDƏN vergiyə-cəlb-olunan kimi ƏLAVƏ olunan gəlirdir.
+    private async Task<Dictionary<int, decimal>> Vm9821MapAsync(int il, int ay)
+    {
+        var detallar = await _unitOfWork.Repository<MaasDetay>()
+            .Query()
+            .AsNoTracking()
+            .Where(x => !x.Silinib && x.MaasNovu.Ad == "VM 98.2.1 Gəlirləri"
+                     && x.Maas.Il == il && x.Maas.Ay == ay && !x.Maas.Silinib
+                     && (x.Maas.Status == MaasStatus.Tesdiqlendi || x.Maas.Status == MaasStatus.Odenildi))
+            .Select(x => new { x.Maas.IsciId, x.Mebleg })
+            .ToListAsync();
+
+        return detallar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
     }
 }

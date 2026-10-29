@@ -8570,3 +8570,132 @@ class="dv-status dv-status--ready">Hazırdır</span>` SİLİNDİ, yalnız ✓ ik
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
 yoxlanıldı**. İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
 brauzerdə yoxlamalıdır.
+
+### DSMF Bölmə 2 (4.2.6/102.1.8) — İşəgötürən HYS Payı ƏSKİK İDİ (29.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı "Bölmə 2-nin 5.2.9-u kimi, sirket yox" düzəlişindən (bax yuxarı
+"'sirket yox'" bölməsi) dərhal sonra, EYNİ GÜN, istifadəçi geri döndü:
+*"Azad güzəşt-men burda sene sehv dedime + sirketin odediyi (İşgötürən
+tərəfindən ödənilən həyatın yığım sığortası haqqları)"* — yəni həmin "sirket
+yox" qərarı Bölmə 3-ün (5.2.9, DSMF-dən azad) 5.2.9-u üçün **düzgün** idi,
+amma Bölmə 2-nin (4.2.6, VM 102.1.8, gəlir vergisindən azad) eyni "HYS" sətri
+üçün **səhv** idi — ikisi eyni görünən, amma fərqli hüquqi əsasda olan sətirlərdir.
+
+**Riyazi sübut — `MaasHesablamaService.FerdiHesabla`-nın öz düsturlarından:**
+```
+brutMaas   = esasBrut + hysIsegoturen                     // 2.3-ə (Hesablanmış) DAXİLDİR
+vergiBazasi = esasBrut + ... - hysMebleg + ...             // hysIsegoturen HEÇ VAXT yoxdur (nə +, nə -)
+dsmfBazasi  = esasBrut + ... - hysMebleg - ... + ...        // eyni, hysIsegoturen heç vaxt yoxdur
+```
+`esasBrut` özü `hysIsegoturen`-i daşımır (`brutMaas = esasBrut + hysIsegoturen`
+düsturunun özü bunu göstərir) — yəni işəgötürən HYS payı **gəlir vergisi
+bazasına HEÇ VAXT DÜŞMƏYİB**, kodun öz şərhi (MaasHesablamaService.cs ~1132)
+bunu açıq deyir: *"İşəgötürən HYS payı: Gəlir vergisi və DSMF-dən AZAD"*.
+Amma eyni məbləğ `BrutMebleg`-in (və deməli DSMF Hissə 1-in 2.3 "Hesablanmış"
+sütununun) İÇİNDƏDİR — yəni 2.3 onu göstərir, vergi bazası onu göstərmir.
+Bu fərq DSMF Bölmə 2-də **"gəlir vergisindən azad olan məbləğ"** kimi
+GÖRÜNMƏLİDİR, əks halda 2.3 − 3.1 real vergi bazası ilə uzlaşmır.
+
+`dsmfBazasi` isə AYRI düsturdur — `hysIsegoturen`-ə heç bir sətirdə toxunmur
+(nə əlavə, nə çıxma). Yəni Bölmə 3-ün 5.2.9-u üçün "sirket yox" qərarı
+**riyazi olaraq həmişə doğru olub** — DSMF bazası işəgötürən HYS-ə heç vaxt
+toxunmayıb, ona görə onu "azad" kimi göstərməyə ehtiyac yoxdur (artıq
+BAZADA yoxdur). Bölmə 2-nin VM 102.1.8-i isə tam fərqli bir qanuni əsasdır
+(gəlir vergisi, 2.3-ün içindəki BrütMebleg-dən çıxılma) — iki sətir eyni
+söz (HYS) daşısa da, konseptual olaraq EYNİ DEYİL.
+
+**Düzəliş — `FinNex.Application/Services/Dsmf/DsmfHesabatService.cs`:**
+1. Yeni `HysIsegoturenMapAsync(il, ay)` — `MaasDetay`-dan (`MaasNovu.Ad ==
+   "HYS (İşəgötürən)"`, `Tip = IsegoturenXerci` — `MaasHesablamaService.cs:1436`-
+   dakı `DetayEkle` çağırışının ÖZÜ) işəgötürənin ödədiyi HYS məbləğini
+   işçi üzrə oxuyur. Yeni hesablama YAZILMADI, artıq persist edilmiş sətir
+   oxunur (digər Bölmə 2-5 köməkçiləri ilə EYNİ "Maas.HesablamaIzahi/
+   MaasDetay-dan oxu, təkrar hesablama" prinsipi).
+2. `Bolme2HazirlaAsync`-in 4.2.6 (HYS) sətri artıq `HysIsciPayiAsync`
+   (işçi) + `HysIsegoturenMapAsync` (işəgötürən) **cəmini** göstərir.
+3. `Hissesi1HazirlaAsync`-in **3.1 "Azad güzəşt"** sütunu da eyni cəmi
+   (hys + hysIseg) daxil edir.
+4. `Hissesi1HazirlaAsync`-in **4.1 "DSMF azad"** sütunu İSƏ **TOXUNULMADI**
+   — hələ də YALNIZ `hys[i]` (işçi payı), çünki DSMF bazası işəgötürən
+   HYS-ə heç vaxt toxunmayıb (yuxarıdakı riyazi sübut).
+5. `DsmfIstisnaGostericileri.Madde1018`-in şərhi və `Bolme2345.cshtml`-dəki
+   "Əhatə" izah mətni ("4.2.6 (HYS, yalnız işçi payı)") yeniləndi.
+
+**Qayda (bu sessiyanın özündə İKİ DƏFƏ təkrarlanan tələ):** eyni termini
+("HYS") daşıyan, amma FƏRQLİ DSMF bölmələrinə aid iki sətir (burada: Bölmə 2
+VM 102.1.8 vs Bölmə 3 5.2.9) eyni qaydaya (burada: "yalnız işçi payı")
+avtomatik tabe sayılmasın — hər sətrin öz qanuni əsasını (hansı VERGİ BAZASI-
+na aid olduğunu) ARAŞDIR, əks halda bir düzəliş başqa, konseptual oxşar
+görünən sətri **səhvən** eyni istiqamətə çəkə bilər (bax "Bölmə 3-dəki 5.2.9
+kimi" tələsi, yuxarıdakı "sirket yox" bölməsinin özündəki qayda).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRA çağırılan
+hesablamalara təsir edir; bu gün daha əvvəl (bu düzəlişdən əvvəl) ixrac
+edilmiş Bölmə 2/Hissə 1 Excel-ləri YENİDƏN ixrac edilməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, `MaasDetay.MaasNovu` naviqasiyasının
+EF Core-da `x.Maas.Il` ilə EYNİ qaydada (implicit join, `.Include` lazım
+deyil) işlədiyi, artıq mövcud `x.Maas.Il == il` istifadələri ilə
+tutuşdurularaq təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real ssenari ilə yoxlamalıdır: HYS-i olan bir işçinin Bölmə 2
+cədvəlindəki (4.2.6) məbləğinin artıq həm işçi, həm işəgötürən payını
+EHTİVA ETDİYİNİ (əvvəlkindən böyük çıxmalıdır), Hissə 1-in "Azad güzəşt"
+(3.1) sütununun da uyğun artdığını, "DSMF azad" (4.1) sütununun İSƏ
+DƏYİŞMƏDİYİNİ təsdiqləməli.
+
+### DSMF Hissə 1 (2.3) — VM 98.2.1 Gəlirləri ƏSKİK İDİ (29.10.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi: *"Əlavə №1 — Hissə 1-bu hesabatda + VM-nin 98.2.1-ci maddəsinə
+əsasən vergiyə cəlb olunan gəlirlər"* — ekran-görüntüsü "HESABLANMIŞ" sütununu
+göstərirdi. Araşdırmada tapıldı: `Hissesi1HazirlaAsync`-in 2.3 "Hesablanmış"
+sütunu YALNIZ `Maas.BrutMebleg`-dən oxuyurdu, halbuki eyni metodun öz
+şərhində sütun artıq **"Hesablanmış əmək haqqı VƏ DİGƏR GƏLİRLƏR"** adlanırdı —
+"digər gəlirlər" hissəsi faktiki olaraq heç nə daşımırdı.
+
+**Səbəb — `MaasHesablamaService.FerdiHesabla`-nın öz şərhi (1099-1100):**
+*"VM 98.2.1 gəlirləri BRÜT-ə DAXİL EDİLMİR (gəlir kimi maaşı ARTIRMIR)"* —
+VM9821 (işçi kreditləri üzrə hesabi/imputed gəlir) `BrutMebleg`-ə HEÇ VAXT
+yazılmır, AMMA `input.VM9821Meblegi` BÜTÜN 4 vergi/sığorta bazasına
+(`vergiBazasi`, `dsmfBazasi`, `issizlikBazasi`, `itssBazasi`) **ƏLAVƏ OLUNUR**
+(kodun öz şərhi: *"VM 98.2.1 gəlirləri [...] BÜTÜN 4 bazaya əlavə olunur —
+brüt-ə YOX"*). Yəni real DSMF/vergi bazası `BrutMebleg`-dən **böyükdür** — bu
+fərq DSMF Hissə 1-in 2.3 sütununda görünməlidir, çünki Hissə 1 DSMF-ə təqdim
+edilən, DSMF-in öz baxışından olan bir rəqəmdir — bankın daxili "brüt maaş"
+konsepti ilə eyni olmaq MƏCBURİ DEYİL.
+
+**Düzəliş — `DsmfHesabatService.cs`:** yeni `Vm9821MapAsync(il, ay)` —
+`MaasDetay`-dan (`MaasNovu.Ad == "VM 98.2.1 Gəlirləri"`, `Tip = Gelir` —
+`MaasHesablamaService.cs:1417`-dəki `DetayEkle` çağırışının ÖZÜ) oxuyur.
+`Hissesi1HazirlaAsync`-in 2.3 ("Hesablanmış") sütunu indi `brutMaplar[i] +
+vm9821[i]` cəmidir.
+
+⚠️ **YALNIZ 2.3-ə əlavə olunur — 3.1/4.1/5.1/6.1 "azad" sütunlarına
+TOXUNULMUR.** VM9821 "güzəşt/azadolma" DEYİL — əksinə, qəsdən HƏR DÖRD bazaya
+vergiyə-cəlb-olunan gəlir kimi əlavə edilən bir məbləğdir (adı da bunu deyir:
+"vergiyə cəlb olunan gəlirlər"). Onu hər hansı "azad" sütununa yazmaq
+TAMAMİLƏ YANLIŞ olardı.
+
+⚠️ **Bu, 08.10.2026-da sənədləşmiş "VM9821 brütə düşmür" qaydası İLƏ
+ZİDDİYYƏT DEYİL** — o qayda (yuxarı, "Yekun Zolaq" bölməsindəki "Əmək Haqqı
+Tarixçəsi" düzəlişi) VM9821-in `Maas.BrutMebleg`/`NetMebleg`-ə (bankın öz
+"brüt/net maaş" göstərişinə) DAXİL EDİLMƏDİYİNİ təsdiqləyir — bu, DƏYİŞMİR,
+`BrutMebleg`-in özünə TOXUNULMADI. DSMF-in 2.3 sütunu isə bankın öz brüt
+konseptindən AYRI, DSMF-in TƏLƏB etdiyi "hesablanmış əmək haqqı və digər
+gəlirlər" tərifidir — ikisi FƏRQLİ MƏQSƏD üçün FƏRQLİ rəqəmlər ola bilər,
+eynilə "Qabaqcadan Məzuniyyət Pulu" bölməsindəki "iki ekran, iki əhatə"
+prinsipi kimi (bax yuxarı, "Net Qabaqcadan Məzuniyyət Pulunu Göstərmirdi").
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRA çağırılan Hissə 1
+hesablamalarına təsir edir; bu gün daha əvvəl ixrac edilmiş Excel-lər
+YENİDƏN ixrac edilməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, `MaasDetay.MaasNovu.Ad` filtri
+yuxarıdakı HYS düzəlişi ilə EYNİ, artıq təsdiqlənmiş naxışla yazıldı).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: VM 98.2.1 gəliri olan (işçi kreditləri üzrə, HR → Toplu
+Hesablama-dakı "VM 98.2.1" sahəsindən daxil edilmiş) bir işçinin Hissə 1-dəki
+"Hesablanmış" (2.3) rəqəminin `BrutMebleg`-dən DƏQIQ VM9821 məbləği qədər
+BÖYÜK çıxdığını, VM9821 heç olmayan ayda isə rəqəmin əvvəlki kimi
+(`BrutMebleg`-ə bərabər) qaldığını təsdiqləməli.
