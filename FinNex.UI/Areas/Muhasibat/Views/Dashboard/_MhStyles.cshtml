@@ -12,10 +12,28 @@
     .mh-sub { font-size: 13.5px; opacity: .92; }
     .mh-xls { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; background: rgba(255,255,255,.16); color: #fff; text-decoration: none; padding: 7px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; }
     .mh-xls:hover { background: rgba(255,255,255,.26); color: #fff; }
-    .mh-datef { display: flex; align-items: flex-end; gap: 8px; background: rgba(255,255,255,.12); padding: 12px 14px; border-radius: 14px; }
-    .mh-datef label { display: block; font-size: 11px; opacity: .85; margin-bottom: 3px; width: 100%; }
+    .mh-datef { display: flex; align-items: flex-end; gap: 10px; background: rgba(255,255,255,.12); padding: 12px 16px; border-radius: 14px; flex-wrap: wrap; }
+    .mh-datef label { display: block; font-size: 11px; opacity: .85; margin-bottom: 4px; width: 100%; }
     .mh-datef input { border: none; border-radius: 9px; padding: 8px 10px; font-size: 13px; }
-    .mh-datef button { border: none; background: #ffb703; color: #1a1a1a; font-weight: 700; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .mh-datef button { border: none; background: #ffb703; color: #1a1a1a; font-weight: 700; border-radius: 9px; padding: 9px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 36px; }
+
+    /* .mh-datef-f — label+select cütünü ŞAQULİ YIĞIR (29.10.2026). Əvvəl
+       label/select .mh-datef-in BİRBAŞA uşaqları idi; .mh-datef flex-row
+       olduğu üçün label-in `display:block;width:100%` qaydası heç nəyə
+       xidmət etmirdi (növbəti sibling-i aşağı itələmir) — "İl"/"Rüb"
+       etiketləri selectlərin yanında bir sətirdə sıxışırdı. Bu wrapper
+       hər cütü öz sütununa salır, label artıq selectin ÜSTÜNDƏ dayanır.
+       select-in özü əvvəl ÜMUMİYYƏTLƏ stil almırdı (yalnız `input` seçicisi
+       var idi) — brauzerin çılpaq, kəskin-künclü ağ qutusu görünürdü. */
+    .mh-datef-f { display: flex; flex-direction: column; }
+    .mh-datef select {
+        border: none; border-radius: 9px; padding: 8px 30px 8px 12px; font-size: 13px;
+        font-family: inherit; color: #0f2f3d; background-color: #fff; height: 36px;
+        min-width: 118px; cursor: pointer; appearance: none; -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23475569'%3E%3Cpath d='M4.646 6.146a.5.5 0 0 1 .708 0L8 8.793l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 10px center; background-size: 13px;
+    }
+    .mh-datef select:focus, .mh-datef input:focus { outline: 2px solid rgba(255,255,255,.55); outline-offset: 1px; }
     .mh-alert { margin-top: 18px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; }
 
     .mh-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }

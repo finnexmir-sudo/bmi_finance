@@ -8462,3 +8462,55 @@ yoxlanıldı** (mötərizə balansı skriptlə, DTO↔servis↔view sahə adı `
 sonra real brauzerdə yoxlamalıdır: 2027 (və ya hər hansı hələ başlamamış
 rüb) seçəndə Hissə 1 və Hissə 3-ün hər ikisinin "hələ başlamayıb" mesajını
 göstərdiyini, keçmiş/cari bir rübün isə əvvəlki kimi düzgün işlədiyini.
+
+### DSMF — İl/Rüb Seçim Qutusu Səliqəsiz İdi — `<select>` Heç Stil Almırdı (29.10.2026)
+
+İstifadəçi (Hissə 1 hero banner-indəki İl/Rüb/Göstər bloku göstərib): *"rub
+yazilan yeride seliqeye sal"*, sonra dəqiq eyni bloku yaxından göstərib:
+*"buranidi duzeltde, ag fon ile seliqesizdir axi"*.
+
+**Kök səbəb — İKİ qat:**
+1. **`.mh-datef select` CSS QAYDASI ÜMUMİYYƏTLƏ YOX İDİ** — paylaşılan
+   `_MhStyles.cshtml`-də yalnız `.mh-datef input` (digər Dashboard
+   səhifələrinin `<input type="date">`-i üçün) var idi. DSMF-in İl/Rüb
+   `<select>`-ləri heç bir stil almadan, brauzerin ÇILPAQ, kəskin-künclü ağ
+   qutusu kimi göründü — tünd-yaşıl hero fonunun üstündə "yad" cisim.
+2. **Label-lər select-in ÜSTÜNDƏ dayanmırdı, YANINDA sıxışırdı.** Markup
+   `<label>İl</label><select>...</select><label>Rüb</label>...` idi —
+   `.mh-datef` özü `display:flex` (sətir istiqamətində) olduğu üçün hər
+   `<label>`/`<select>` AYRI, bərabər flex-uşağı idi; `label`-in `display:
+   block; width:100%` qaydası heç nəyə xidmət etmirdi (flex sətirdə
+   "növbəti sibling-i aşağı itələmək" effekti vermir, sadəcə flex-shrink
+   ilə öz mətninə sıxılır). Nəticə: "İl [2027] Rüb [Rüb 4...]" hamısı bir
+   sətirdə, label-lər balaca, sıxışmış görünürdü.
+
+**Düzəliş — `_MhStyles.cshtml`-ə əlavə (başqa heç bir səhifəyə TOXUNULMADI,
+tamamilə ADDİTİV):** `.mh-datef select` qaydası (`input`-la EYNİ ağ/rounded
+görünüş + özəl SVG chevron ikonu, `appearance:none` ilə OS-defolt oxu
+götürülüb) + yeni `.mh-datef-f` sinfi (`flex-direction:column` — label+select
+cütünü öz sütununa yığır). Üç DSMF formu (`Dsmf1.cshtml`, `Dsmf3.cshtml`,
+`Bolme2345.cshtml`, hamısı EYNİ markup-u paylaşır) hər İl/Rüb cütünü
+`<div class="mh-datef-f">`-ə alacaq şəkildə yeniləndi.
+
+⚠️ **Dashboard-un təkfield `<input type="date">` formaları (Icmal/Kredit/
+Depozit/Menfeet/Likvidlik/Ifrs9 və s., 13 fayl) TOXUNULMADI** — onlarda
+`.mh-datef-f` wrapper yoxdur, `.mh-datef select` qaydası da onlara aid deyil
+(select işlətmirlər) — yeni CSS tamamilə additiv olduğu üçün bu səhifələrin
+görünüşü dəyişmədi.
+
+⚠️ **Qayda: `display:block` + `width:100%` olan bir label, yalnız öz
+valideyni VERTIKAL axında (və ya ayrıca flex-column konteynerdə) olanda
+"select-dən əvvəl öz sətrini tutur".** Eyni label həmin `display:flex`
+(sətir istiqamətli) bir konteynerin DİRƏKT uşağıdırsa, bu qayda sükutla
+effektsiz qalır — hər uşaq öz MƏZMUNUNA görə sıxılır, label select-in
+YANINDA qalır, ÜSTÜNDƏ yox. Flex-sətir konteynerində "label üstdə, control
+altda" düzümü istəyirsənsə, cütü AYRI, `flex-direction:column` bir wrapper-ə
+al — CSS-in `display:block` qaydasına güvənmə kifayət etmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/div balansı skriptlə). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real brauzerdə yoxlamalıdır: Hissə 1/Hissə 3/
+Bölmə 2-5 səhifələrinin HƏR ÜÇÜNDƏ "İl" və "Rüb" etiketlərinin indi öz
+seçimlərinin ÜSTÜNDƏ dayandığını, select qutularının rounded/ağ/oxlu
+göründüyünü, digər Mühasibat Dashboard səhifələrinin (tarix inputu olan)
+əvvəlki kimi qaldığını.

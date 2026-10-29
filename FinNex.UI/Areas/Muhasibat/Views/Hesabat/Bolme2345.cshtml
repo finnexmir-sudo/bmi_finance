@@ -45,20 +45,24 @@
             {
                 <input type="hidden" name="bolmeNo" value="@tekBolme" />
             }
-            <label>İl</label>
-            <select name="il">
-                @for (int y = cariIl - 2; y <= cariIl + 1; y++)
-                {
-                    <option value="@y" selected="@(y == basNumune?.Il)">@y</option>
-                }
-            </select>
-            <label>Rüb</label>
-            <select name="rub">
-                @for (int r = 1; r <= 4; r++)
-                {
-                    <option value="@r" selected="@(r == basNumune?.Rub)">Rüb @r (@rubAdlari[r])</option>
-                }
-            </select>
+            <div class="mh-datef-f">
+                <label>İl</label>
+                <select name="il">
+                    @for (int y = cariIl - 2; y <= cariIl + 1; y++)
+                    {
+                        <option value="@y" selected="@(y == basNumune?.Il)">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="mh-datef-f">
+                <label>Rüb</label>
+                <select name="rub">
+                    @for (int r = 1; r <= 4; r++)
+                    {
+                        <option value="@r" selected="@(r == basNumune?.Rub)">Rüb @r (@rubAdlari[r])</option>
+                    }
+                </select>
+            </div>
             <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
         </form>
     </div>
