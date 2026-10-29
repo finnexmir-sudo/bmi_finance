@@ -1,0 +1,64 @@
+@using FinNex.Application.DTOs.Muhasibat
+@model List<DsmfVahidKomponentDto>
+@{
+    ViewData["Title"] = "DSMF — Vahid Hesabat Forması";
+    var hazirSay = Model.Count(x => x.Hazirdir);
+}
+
+<partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
+
+<style>
+    .mh-hero--dsmf { background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%); }
+    .dv-list { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; margin-top: 14px; }
+    .dv-row { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #eef2f7; }
+    .dv-row:last-child { border-bottom: none; }
+    .dv-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .dv-icon--ready { background: #ecfdf5; color: #0f766e; }
+    .dv-icon--pending { background: #f1f5f9; color: #94a3b8; }
+    .dv-body { flex: 1; min-width: 0; }
+    .dv-ad { font-weight: 700; font-size: 14px; color: #1e293b; }
+    .dv-tesvir { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+    .dv-status { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .dv-status--ready { background: #ecfdf5; color: #0f766e; }
+    .dv-status--pending { background: #f1f5f9; color: #94a3b8; }
+    .dv-ac { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; background: #0f766e; color: #fff; border-radius: 8px; font-size: 12.5px; font-weight: 600; text-decoration: none; }
+    .dv-ac:hover { background: #0d5f58; color: #fff; }
+</style>
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--dsmf">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-bank2"></i> Mühasibat / Hesabatlar</div>
+            <h1 class="mh-title">DSMF — Vahid Hesabat Forması</h1>
+            <div class="mh-sub"><i class="bi bi-info-circle"></i> Dövlət Sosial Müdafiə Fonduna rüblük hesabat — 6 rəsmi əlavədən @hazirSay-ı hazırdır</div>
+        </div>
+    </div>
+
+    <div class="dv-list">
+        @foreach (var k in Model)
+        {
+            <div class="dv-row">
+                <div class="dv-icon @(k.Hazirdir ? "dv-icon--ready" : "dv-icon--pending")">
+                    <i class="bi @(k.Hazirdir ? "bi-check-lg" : "bi-hourglass-split")"></i>
+                </div>
+                <div class="dv-body">
+                    <div class="dv-ad">@k.ResmiAd</div>
+                    <div class="dv-tesvir">@k.Tesvir</div>
+                </div>
+                @if (k.Hazirdir)
+                {
+                    <span class="dv-status dv-status--ready">Hazırdır</span>
+                    <a asp-action="@k.Action" class="dv-ac"><i class="bi bi-box-arrow-up-right"></i> Aç</a>
+                }
+                else
+                {
+                    <span class="dv-status dv-status--pending">Hazırlanır</span>
+                }
+            </div>
+        }
+    </div>
+
+    <div style="margin-top:16px;">
+        <a asp-action="Index" class="mh-xls"><i class="bi bi-arrow-left"></i> Hesabatlar siyahısına qayıt</a>
+    </div>
+</div>

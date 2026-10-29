@@ -8090,3 +8090,56 @@ oxşar, İşsizlik/İTSS-dən azad bir manual gəlir növü) məbləği daxil ed
 maaşı TƏSDİQLƏNMİŞ işçi (6.3/7.2-də görünsün, 5.2.12-də YOX) — hər üçünün
 düzgün bölmədə, düzgün "işçi sayı"+"məbləğ" ilə göründüyünü, HƏLƏ "Layihə"
 statuslu (hesablanmamış) ayın heç yerdə görünmədiyini təsdiqləməli.
+
+### DSMF — Vahid Hub (29.10.2026) + Rəsmi Şablonların DMS-ə Köçürülməsi
+
+İstifadəçi real mühitdə sınadı — iki şey üzə çıxdı:
+
+1. **Bölmə 5 export-u `.xls` fallback (generik) formatda çıxdı, bütün rəqəmlər
+   0 idi.** Səbəb: `C:\FinNex_DMS\hesabat-sablonlari\muhasibat\dsmf\` qovluğunda
+   rəsmi şablon fayllar hələ yox idi — kod avtomatik `HSSFWorkbook` fallback-a
+   keçdi (gözlənilən davranış, bax Hissə 3-ün "varsa… yoxdursa…" şərhi). 0
+   dəyərlərin ÖZÜ ayrıca sualdır (rüb üçün real DSMF-istisna datası olub-
+   olmaması DB-dən asılıdır, bu mühitdən yoxlana bilmədi) — istifadəçi "1-ci
+   şablon exceldir, eyni çıxmalıdır, o şablonlardan istifadə et hamısında"
+   dedi, yəni ƏN AZI formatın rəsmi şablona uyğun çıxmasını istədi. Dörd rəsmi
+   fayl (bu sessiyanın əvvəlində artıq inspeksiya üçün oxunmuş, scratchpad-da
+   saxlanılan nüsxələr) **istifadəçiyə geri göndərildi** (`SendUserFile`,
+   dəqiq DMS yolu ilə) — `UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx`,
+   `_4_NON_INVOLVED_{MDSS,UNEMPLOYED,ITS}.xlsx`. Kod özü DƏYİŞMƏDİ — problem
+   faylların YERLƏŞDİYİ yer idi, kodun məntiqi deyil.
+2. **"Vahid hesabat adını yaz, hazırladıqlarını onun içində göstər, altısını
+   da"** — kataloqda İKİ ayrı DSMF kartı ("Əlavə №1 Hissə 3" + "Əlavə №4
+   Bölmə 3-4-5") əvəzinə **TƏK kart** ("DSMF — Vahid Hesabat Forması") və
+   onun açdığı **hub səhifəsi** (`DsmfVahid.cshtml`) — 6 rəsmi əlavənin
+   HAMISINI adı ilə sadalayır (Hissə 1, Hissə 3, Bölmə 2, 3, 4, 5), hazır
+   olan 4-ü (Hissə 3 + Bölmə 3/4/5, Bölmə 3/4/5 eyni `Bolme345` səhifəsinə
+   açılır) yaşıl "Hazırdır" + "Aç" düyməsi ilə, hələ qurulmayan 2-si (Hissə 1,
+   Bölmə 2) boz "Hazırlanır" nişanı ilə.
+
+**Katalogdan silinən iki köhnə Kod ("dsmf-hisse3", "dsmf-bolme345")
+TƏHLÜKƏSİZDİR** — `HesabatController.Index()` yalnız CARİ `Katalog`
+siyahısını iterasiya edir, saxlanmış ★ seçimdə (`HesabatSecilmis`) bu
+kodlardan biri qalsa belə, kataloqda olmadığı üçün sadəcə görünməz qalır
+(mövcud qoruyucu şərh: "Kataloqda olmayan kod göndərilsə belə zərərsizdir").
+
+**Yeni DTO** — `DsmfVahidKomponentDto` (`FinNex.Application/DTOs/Muhasibat/`,
+`HesabatKartDto` ilə eyni qovluq/konvensiya): `ResmiAd`/`Tesvir`/`Hazirdir`/
+`Action` (nullable — hazır deyilsə keçid göstərilmir). `DsmfVahid()` action-u
+bu 6 sətiri STATİK siyahı kimi (Katalog prinsipi, DB-də saxlanmır) qaytarır.
+
+⚠️ **Bölmə 3/4/5 sətirlərinin ÜÇÜ DƏ EYNİ `Bolme345` action-una açılır** —
+qəsdən: istifadəçi "altısını da [adı ilə göstər]" dedi, amma onların ÜÇÜ
+TƏK səhifədə birlikdədir (bax yuxarı "DÜZƏLİŞ #3" — eyni destinasiyaya çox
+qapı açmaqdan çəkinmə qaydası) — bu, həmin qaydanı POZMUR, çünki bura bir
+NAVİQASİYA qəfəsi deyil, STATUS SİYAHISIDIR (checklist), üç adın ayrı-ayrı
+görünməsi "6-nın hamısını göstər" tələbinə xidmət edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, `HesabatKartDto` qovluğu ilə eyni konvensiya əl ilə
+təsdiqləndi). İstifadəçi göndərilən 4 faylı dəqiq adı ilə DMS yoluna qoyub
+Visual Studio-da **Rebuild All** ilə yoxlamalıdır: "Maliyyə Hesabatları"nda
+indi TƏK "DSMF — Vahid Hesabat Forması" kartının olduğunu, onu açanda 6
+sətirin (4 "Hazırdır" + 2 "Hazırlanır") göründüyünü, "Aç" düymələrinin düzgün
+səhifəyə keçdiyini, Excel ixracının bu dəfə RƏSMİ şablon formatında (generik
+fallback yox) və real rəqəmlərlə çıxdığını.

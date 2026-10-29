@@ -75,16 +75,16 @@ public class HesabatController : Controller
     {
         new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli) · AMB MHBS 9 A1 ixracı da buradadır",
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
-        // DSMF Vahid Hesabat Forması — pilot (29.10.2026, bax "DSMF" bölməsi).
-        // İl+Rüb seçimi ilə işləyir, ona görə "Rüblük" kateqoriyasına düşür.
-        new() { Kod = "dsmf-hisse3", Ad = "DSMF — Əlavə №1 Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat (il + rüb üzrə, 3 ay)",
-                Kateqoriya = "Rüblük", Ikon = "bi-calendar3-week", Area = "Muhasibat", Controller = "Hesabat", Action = "Dsmf3" },
-        // Əlavə №4 Bölmə 3/4/5 — eyni (il+rüb) seçimi, EYNİ struktur (qanun maddəsi-
-        // sətri), ona görə TƏK səhifədə birlikdə (3 ayrı kart YOX — bax "DÜZƏLİŞ #3"
-        // bölməsindəki "eyni destinasiyaya iki qapı" qaydası, burada əksinə, üç
-        // YAXIN məzmun süni şəkildə üç kart kimi çoxaldılmır).
-        new() { Kod = "dsmf-bolme345", Ad = "DSMF — Əlavə №4 Bölmə 3-4-5", Tesvir = "Sığorta-istisna gəlirlər: DSMF/İşsizlik/İTSS haqqına cəlb olunmayan məbləğlər",
-                Kateqoriya = "Rüblük", Ikon = "bi-shield-check", Area = "Muhasibat", Controller = "Hesabat", Action = "Bolme345" },
+        // DSMF Vahid Hesabat Forması — TƏK kataloq kartı (29.10.2026, istifadəçi
+        // tələbi: "Vahid hesabat adini yaz, hazirladiqlarini onun icinde goster,
+        // altisinida" — altı rəsmi əlavədən ikisi hazırdır). Əvvəl burada İKİ ayrı
+        // kart var idi ("DSMF — Əlavə №1 Hissə 3" + "DSMF — Əlavə №4 Bölmə 3-4-5") —
+        // istifadəçi bunları bir "Vahid Hesabat" girişi altında, daxilində 6-nın da
+        // statusunu göstərən bir "hub" səhifəsi istədi. `DsmfVahid` action-u həmin
+        // hub-dır, Dsmf3/Bolme345-ə buradan keçid verilir — KATALOQDA artıq ikisi
+        // AYRI görünmür (bax CLAUDE.md "DSMF — Vahid Hub" bölməsi).
+        new() { Kod = "dsmf-vahid", Ad = "DSMF — Vahid Hesabat Forması", Tesvir = "Dövlət Sosial Müdafiə Fonduna rüblük hesabat — 6 rəsmi əlavə, hazır olanlar işarəli",
+                Kateqoriya = "Rüblük", Ikon = "bi-bank2", Area = "Muhasibat", Controller = "Hesabat", Action = "DsmfVahid" },
         // ⚠️ "AMB MHBS 9" ayrıca kart kimi 29.10.2026-da BURADAN ÇIXARILDI —
         // yuxarıdaki şərhə bax. AMB A1 Excel ixracı yuxarıdakı "IFRS 9 — ECL"
         // kartının səhifəsindəki düymədən əlçatandır. Ayrıca kart kimi geri
@@ -472,6 +472,32 @@ public class HesabatController : Controller
         var bytes = await System.IO.File.ReadAllBytesAsync(yol);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "AMB_Metodoloji_Rehberlik_23122025.docx");
+    }
+
+    // DSMF Vahid Hesabat Forması — hub səhifəsi. 6 rəsmi əlavənin hamısını adı ilə
+    // sadalayır, hazır olan 4-ü (Hissə 3, Bölmə 3/4/5) üçün keçid verir, qalan 2-si
+    // (Hissə 1, Bölmə 2) "Hazırlanır" işarəli — bax CLAUDE.md "DSMF — Vahid Hub".
+    public async Task<IActionResult> DsmfVahid()
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var komponentler = new List<DsmfVahidKomponentDto>
+        {
+            new() { ResmiAd = "Əlavə №1 — Hissə 1", Tesvir = "İşçilər (sığortaolunanlar) üzrə ümumi məlumat — muzdlu işə aid fəaliyyətlər üzrə (maaş tərkibi)",
+                     Hazirdir = false },
+            new() { ResmiAd = "Əlavə №1 — Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat",
+                     Hazirdir = true, Action = "Dsmf3" },
+            new() { ResmiAd = "Əlavə №4 — Bölmə 2", Tesvir = "Gəlir vergisi üzrə güzəşt və azadolmalar barədə məlumat",
+                     Hazirdir = false },
+            new() { ResmiAd = "Əlavə №4 — Bölmə 3", Tesvir = "Məcburi dövlət sosial sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
+                     Hazirdir = true, Action = "Bolme345" },
+            new() { ResmiAd = "Əlavə №4 — Bölmə 4", Tesvir = "İşsizlikdən sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
+                     Hazirdir = true, Action = "Bolme345" },
+            new() { ResmiAd = "Əlavə №4 — Bölmə 5", Tesvir = "İcbari tibbi sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
+                     Hazirdir = true, Action = "Bolme345" },
+        };
+        return View(komponentler);
     }
 
     // ── DSMF Vahid Hesabat Forması — Əlavə №1 Hissə 3 (29.10.2026, pilot) ──
