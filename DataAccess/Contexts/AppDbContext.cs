@@ -6,6 +6,7 @@ using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Marif;
 using FinNex.Domain.Entities.Mektub;
+using FinNex.Domain.Entities.Muhasibat;
 using FinNex.Domain.Entities.Hevale;
 using FinNex.Domain.Entities.Emeliyyat;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
@@ -190,6 +191,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<PaylasimSonHedefKitlesi> PaylasimSonHedefKitlesi { get; set; }
     public DbSet<PaylasimKateqoriyasi> PaylasimKateqoriyalari { get; set; }
     public DbSet<PaylasimBaxis> PaylasimBaxisler { get; set; }
+
+    // Mühasibat — Hesabatlar (Seçilmişlər)
+    public DbSet<HesabatSecilmis> HesabatSecilmisler { get; set; }
 
     // =====================
     // Motivasiya / Jeton Modulu

@@ -7599,3 +7599,102 @@ ssenari ilə yoxlamalıdır: yeni paylaşım yaradanda "Üz qabığı şəkli" s
 şəkil yükləyib ayrıca mətn yazsın → işçi lentində düzgün miniatür+banner
 göründüyünü, köhnə ("İlk bankomat") postun hələ əvvəlki kimi işlədiyini,
 "Şəkli sil" düyməsinin sahəni təmizlədiyini təsdiqləməli.
+
+## Mühasibat — "Hesabatlar" Balans İcmalının Tab-Dropdown-undan Ayrıca Sidebar Səhifəsinə Köçürüldü (29.10.2026)
+
+İstifadəçi tələbi: *"men isteyiremki muhasibatliqda tam ayri hesabatlar sehifesi
+edek, cunki hesabatlar artmaga baslayir. indiki yerini beyenmirem."* Araşdırma
+göstərdi ki, ayrıca bir "Hesabatlar" kart-grid səhifəsi (`Areas/Muhasibat/
+Controllers/HesabatController.cs` + `Views/Hesabat/Index.cshtml`) **artıq
+mövcud idi** — problem konseptual yox, **yer** problemi idi: bu səhifəyə YEGANƏ
+giriş yolu Balans İcmalının üfüqi tab-zolağındakı ("İcmal / Kreditlər / Depozit
+& Müştəri / Mənfəət-Zərər / Likvidlik & Bazar / **Hesabatlar**") dropdown idi —
+sol sidebar-da heç bir bəndi yox idi.
+
+**"Hesabatlar" adı TƏTBİQDƏ ARTIQ İKİ YERDƏ işlənirdi** — üst naviqasiyadakı
+top-level "Hesabatlar" (ekranda ən görünən) əslində `User/HesabatController`-dir,
+**Məzuniyyət/İcazə** hesabatıdır, maliyyə ilə heç bir əlaqəsi yoxdur; əlavə
+olaraq **HR-in öz "HR Hesabatları"** sidebar bəndi də var
+(`Areas/HR/Controllers/HesabatController.cs`). Üçüncü bir "Hesabatlar" əlavə
+etsək istifadəçi "hansı Hesabatlar?" sualı verəcəkdi — ona görə Mühasibat
+sidebar bəndinin adı **"Maliyyə Hesabatları"** seçildi (URL/controller eyni
+qalıb — `Muhasibat/Hesabat/Index`, yalnız giriş yolu dəyişib, "İşlək Funksiyanı
+Silmək" qaydasına uyğun heç nə silinmədi).
+
+### Qərarlar (istifadəçi ilə 4 sualda birbaşa razılaşıb)
+
+1. **Ad: "Maliyyə Hesabatları"** (yuxarıdakı qarışıqlığa görə).
+2. **Balans İcmalının canlı tabları (Balans icmalı, Mənfəət/Zərər, Kredit
+   portfeli, Depozit & Müştəri, Likvidlik) yeni səhifədə QISAYOL KARTI kimi
+   görünür** — heç bir yeni məntiq/səhifə YARADILMADI, kartlar sadəcə mövcud
+   `Dashboard/{Index,Menfeet,Kredit,Depozit,Likvidlik}` action-larına birbaşa
+   keçiddir (bu action-lar artıq ayrıca, addresslənə bilən URL-lərdir —
+   `_MhTabs.cshtml`-dən təsdiqləndi, query-param əsaslı tab DEYİL).
+3. **DSMF Vahid Hesabat Forması (gələcək iş) bu yeni səhifədə yerləşəcək** —
+   nəticə etibarı ilə mühasibatlıq/vergi sənədidir, hesablama məntiqi HR-in
+   `MaasHesablamaService`-ində qalsa da, hesabatın ÖZÜ bura aiddir. ⚠️ **Bu
+   sessiyada DSMF hesabatının ÖZÜ (6 Excel generasiyası) HƏLƏ QURULMADI** —
+   yalnız gələcəkdə buraya əlavə olunacaq kataloq yeri hazırlandı.
+4. **"Seçilmişlər" (★) funksiyası İNDİ QURULDU** (istifadəçi "sonraya saxla"
+   tövsiyəsini rədd etdi, "İndi qur" seçdi).
+
+### Struktur
+
+**Kataloq KODDADIR, DB-DƏ DEYİL** — `HesabatController.Katalog` (statik
+`List<HesabatKartDto>`), Kassa-nın `Valyutalar` massivi/Qara Jetonun statik
+siyahı prinsipi ilə EYNİ: Kod, Ad, Təsvir, Kateqoriya, İkon, Area/Controller/
+Action. Yeni hesabat əlavə etmək lazımdırsa, YALNIZ bu siyahıya əlavə et.
+8 başlanğıc kart: Balans İcmalı/Mənfəət-Zərər/Depozit (Maliyyə), Kredit
+Portfeli (Kreditlər), Likvidlik/IFRS 9 ECL/AMB MHBS 9 (Risk), Xərc Hesabatı
+(Xərclər, `HR/XercHesabat`-a keçid).
+
+⚠️ **"AMB MHBS 9" kartı "IFRS 9 ECL" kartı İLƏ EYNİ URL-ə gedir**
+(`Hesabat/Ifrs9`) — bu, kopyalama SƏHVİ DEYİL: AMB A1 Excel export-u (`AmbA1
+Excel`) elə IFRS9 səhifəsinin daxilindəki bir düymədir, ayrıca səhifəsi
+YOXDUR (köhnə kod yoxlanılıb təsdiqləndi).
+
+**★ Seçilmişlər — `HesabatSecilmis` entity** (`FinNex.Domain/Entities/
+Muhasibat/`), migration `20261029090000_HesabatSecilmis.cs` (`InsertData`
+YOXDUR). `MailIzlemeUnvani` ilə EYNİ "Yumşaq Silinmiş Sətir + Unikal İndeks"
+qaydası: `(AppUserId, HesabatKod)` üzərində unikal indeks `Silinib`-i
+FİLTRLƏMİR, ona görə `HesabatSecilmisService.SecVeyaCixarAsync`
+`QueryAll()`-la (filtrsiz) axtarır — "aktiv → yumşaq silinmiş (dirilt) → yeni
+yarat" sırası ilə (CLAUDE.md-dəki sənədləşmiş tələyə düşmədən).
+
+**Star klikində AJAX → `SeciliDeyis` POST → uğurlu olanda `location.reload()`**
+— Mail modulunun "Hamısını oxundu et" düyməsindəki sadəlik prinsipi ("AJAX-la
+yenidən render etmək əvəzinə sadə reload") burada da seçildi, çünki "Seçilmişlər"
+siyahısının client-side yenidən qurulması (kart əlavə/çıxarma + say yeniləmə)
+iki paralel render yolunu (siyahı + sayğac) sinxron saxlamağı tələb edərdi —
+reload ən sadə, ən təhlükəsiz yoldur.
+
+### Naviqasiya
+
+`_UserLayout.cshtml`-in "Maliyyə" sidebar qrupuna (və `panelYalniz`
+— Rəhbər/risk-icazəli — qrupuna) "Maliyyə & Risk Paneli"nin DƏRHAL ardınca
+yeni bir sətir əlavə olundu. **Bu, eyni zamanda GİZLİ BİR BUGU da üzə
+çıxardı və düzəltdi:** "Maliyyə & Risk Paneli" linkinin `active` şərti əvvəl
+yalnız `currentArea == "Muhasibat"` idi — yəni yeni "Maliyyə Hesabatları"
+(eyni Area-da, fərqli Controller) səhifəsindəykən İKİ sətir eyni anda
+"aktiv" görünərdi. Hər iki linkin şərtinə indi `&& currentController ==
+"Dashboard"` / `"Hesabat"` əlavə edildi.
+
+`_MhTabs.cshtml`-dəki "Hesabatlar" dropdown-unun "Bütün hesabatlar" sətri
+"Maliyyə Hesabatları"na çevrildi (eyni URL, sadəcə ad uyğunlaşdırıldı) —
+iki giriş nöqtəsi (sidebar + tab-dropdown) eyni səhifəyə aparır, bu, qəsdən
+saxlanıldı (Mail/Paylaşımlar modullarında da "eyni hədəfə iki giriş"
+zərərsiz sayılıb).
+
+⚠️ **Top-nav-dakı "Departamentlər" dropdown-undakı tək "Mühasibatlıq" sətrinə
+TOXUNULMADI** — CLAUDE.md-nin "TƏK giriş sırası" qaydasına uyğun (Kassa/Kurs
+təsdiqi presedenti), bir modula bir dropdown sətri kifayətdir, Dashboard-dan
+içəri girəndən sonra tab-bar/sidebar naviqasiya edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə bütün dəyişən fayllarda, JS Node ilə
+sintaksis yoxlaması, interfeys↔implementasiya↔DI↔controller↔view beş qatı
+əl ilə tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild All**,
+`Update-Database`, sonra real ssenari ilə yoxlamalıdır: sidebar-da "Maliyyə
+Hesabatları" bəndinin göründüyünü, kartların/sətirlərin düzgün keçid
+verdiyini, axtarış+kateqoriya filtrinin işlədiyini, ★ klikinin seçimi
+yadda saxlayıb "Seçilmişlər" bölməsində göstərdiyini.

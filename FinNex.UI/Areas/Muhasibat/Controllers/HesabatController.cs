@@ -24,18 +24,44 @@ public class HesabatController : Controller
     private readonly IUserPermissionService _perm;
     private readonly UserManager<AppUser> _userManager;
     private readonly IConfiguration _config;
+    private readonly IHesabatSecilmisService _secilmis;
 
     public HesabatController(
         IMuhasibatService service,
         IUserPermissionService perm,
         UserManager<AppUser> userManager,
-        IConfiguration config)
+        IConfiguration config,
+        IHesabatSecilmisService secilmis)
     {
         _service = service;
         _perm = perm;
         _userManager = userManager;
         _config = config;
+        _secilmis = secilmis;
     }
+
+    // "Maliyyə Hesabatları" kataloqu — TƏK yerdə saxlanılır (29.10.2026, "Kassa
+    // valyutaları"/"Qara Jeton" ilə eyni "statik siyahı" prinsipi). Yeni hesabat
+    // əlavə etmək lazımdırsa, YALNIZ bura əlavə et.
+    private static readonly List<HesabatKartDto> Katalog = new()
+    {
+        new() { Kod = "balans-icmali", Ad = "Balans İcmalı", Tesvir = "Aktivlər, öhdəliklər və kapital",
+                Kateqoriya = "Maliyyə", Ikon = "bi-clipboard-data", Area = "Muhasibat", Controller = "Dashboard", Action = "Index" },
+        new() { Kod = "menfeet-zerer", Ad = "Mənfəət və Zərər", Tesvir = "Gəlirlər və xərclərin icmalı",
+                Kateqoriya = "Maliyyə", Ikon = "bi-graph-up-arrow", Area = "Muhasibat", Controller = "Dashboard", Action = "Menfeet" },
+        new() { Kod = "depozit-musteri", Ad = "Depozit və Müştəri", Tesvir = "Depozit strukturu və rezidentlik",
+                Kateqoriya = "Maliyyə", Ikon = "bi-safe2", Area = "Muhasibat", Controller = "Dashboard", Action = "Depozit" },
+        new() { Kod = "kredit-portfeli", Ad = "Kredit Portfeli", Tesvir = "Kreditlərin bölgüsü və qalıqları",
+                Kateqoriya = "Kreditlər", Ikon = "bi-credit-card", Area = "Muhasibat", Controller = "Dashboard", Action = "Kredit" },
+        new() { Kod = "likvidlik", Ad = "Likvidlik Hesabatı", Tesvir = "Likvid vəsaitlərin icmalı",
+                Kateqoriya = "Risk", Ikon = "bi-droplet", Area = "Muhasibat", Controller = "Dashboard", Action = "Likvidlik" },
+        new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli)",
+                Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
+        new() { Kod = "amb-mhbs9", Ad = "AMB MHBS 9", Tesvir = "Cədvəl A1 — rəsmi Mərkəzi Bank hesabatı",
+                Kateqoriya = "Risk", Ikon = "bi-bank2", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
+        new() { Kod = "xerc-hesabati", Ad = "Xərc Hesabatı", Tesvir = "Kateqoriyalar üzrə xərclər",
+                Kateqoriya = "Xərclər", Ikon = "bi-bar-chart-line", Area = "HR", Controller = "XercHesabat", Action = "Index" },
+    };
 
     private async Task<bool> IcazeVarAsync()
     {
@@ -49,13 +75,45 @@ public class HesabatController : Controller
         return res.Success && res.Data == true;
     }
 
-    // Hesabatlar açılış səhifəsi — mövcud hesabatların siyahısı.
+    // Hesabatlar açılış səhifəsi — mövcud hesabatların siyahısı + istifadəçinin ★ seçimi.
     public async Task<IActionResult> Index()
     {
         if (!await IcazeVarAsync())
             return Forbid();
 
-        return View();
+        var u = await _userManager.GetUserAsync(User);
+        var secili = u != null ? await _secilmis.SeciliKodlarAsync(u.Id) : new HashSet<string>();
+
+        var model = Katalog.Select(k => new HesabatKartDto
+        {
+            Kod = k.Kod,
+            Ad = k.Ad,
+            Tesvir = k.Tesvir,
+            Kateqoriya = k.Kateqoriya,
+            Ikon = k.Ikon,
+            Area = k.Area,
+            Controller = k.Controller,
+            Action = k.Action,
+            Secilib = secili.Contains(k.Kod)
+        }).ToList();
+
+        return View(model);
+    }
+
+    // ★ Seçilmişlər — toggle. Kataloqda olmayan kod göndərilsə belə zərərsizdir
+    // (sadəcə heç bir kartda görünməyən boş bir sətir qalar) — əlavə yoxlama lazım deyil.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SeciliDeyis(string kod)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var u = await _userManager.GetUserAsync(User);
+        if (u == null) return Json(new { ok = false });
+
+        var secilib = await _secilmis.SecVeyaCixarAsync(u.Id, kod);
+        return Json(new { ok = true, secilib });
     }
 
     // IFRS 9 ECL — gözlənilən kredit itkiləri (roll-rate stage keçid modeli).

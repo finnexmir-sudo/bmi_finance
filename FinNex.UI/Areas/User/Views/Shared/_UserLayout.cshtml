@@ -1141,8 +1141,16 @@
                             </button>
                             <div class="fn-nav-g-body">
                                 <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Index"
-                                   class="fn-nav-item @(currentArea == "Muhasibat" ? "active" : "")">
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentController == "Dashboard" ? "active" : "")">
                                     <i class="bi bi-bank2"></i> Maliyyə & Risk Paneli
+                                </a>
+                                @* "Hesabatlar" adı top-nav-dakı (Məzuniyyət/İcazə) və HR-in "HR Hesabatları" ilə
+                                   qarışmasın deyə "Maliyyə Hesabatları" — bax CLAUDE.md, 29.10.2026. Əvvəl Balans
+                                   İcmalının tab-dropdown-unda basdırılmışdı, indi öz sidebar bəndidir
+                                   (kod/URL eyni qalıb — `Muhasibat/Hesabat/Index`, yalnız giriş yolu dəyişib). *@
+                                <a asp-area="Muhasibat" asp-controller="Hesabat" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentController == "Hesabat" ? "active" : "")">
+                                    <i class="bi bi-file-earmark-bar-graph"></i> Maliyyə Hesabatları
                                 </a>
                             </div>
                         </div>
@@ -1157,8 +1165,12 @@
                             </button>
                             <div class="fn-nav-g-body">
                                 <a asp-area="Muhasibat" asp-controller="Dashboard" asp-action="Index"
-                                   class="fn-nav-item @(currentArea == "Muhasibat" ? "active" : "")">
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentController == "Dashboard" ? "active" : "")">
                                     <i class="bi bi-bank2"></i> Maliyyə & Risk Paneli
+                                </a>
+                                <a asp-area="Muhasibat" asp-controller="Hesabat" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "Muhasibat" && currentController == "Hesabat" ? "active" : "")">
+                                    <i class="bi bi-file-earmark-bar-graph"></i> Maliyyə Hesabatları
                                 </a>
                                 <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">
