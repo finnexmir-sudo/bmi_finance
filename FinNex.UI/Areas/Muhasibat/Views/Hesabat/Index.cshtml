@@ -2,10 +2,12 @@
 @{
     ViewData["Title"] = "Mühasibat — Maliyyə Hesabatları";
 
-    // Pill sırası sabitdir (kateqoriyanın kataloqdakı sırası ilə qarışmasın) —
-    // yalnız real kartı olan kateqoriyalar göstərilir.
+    // Pill sırası sabitdir — Günlük/Aylıq/Rüblük BMI-nin köhnə "Maliyyə DP →
+    // Hesabatlar" menyusundakı bölgüdür (29.10.2026, istifadəçi qərarı:
+    // "hesabatlari yavaş yavaş bura getireceyik"). HAMISI göstərilir, hələ
+    // kartı olmayan kateqoriya da — bu, gələcək əlavələr üçün hazır bir
+    // struktur, boş kateqoriya seçiləndə siyahı öz boş-nəticə mesajını göstərir.
     var kateqoriyaSirasi = new[] { "Günlük", "Aylıq", "Rüblük", "Risk", "Xərclər" };
-    var kateqoriyalar = kateqoriyaSirasi.Where(k => Model.Any(x => x.Kateqoriya == k)).ToList();
     var secilmisler = Model.Where(x => x.Secilib).ToList();
 }
 
@@ -29,9 +31,10 @@
         </div>
         <div class="hs-pills" id="hsPills">
             <button type="button" class="hs-pill on" data-kat="">Hamısı</button>
-            @foreach (var k in kateqoriyalar)
+            @foreach (var k in kateqoriyaSirasi)
             {
-                <button type="button" class="hs-pill" data-kat="@k">@k</button>
+                var say = Model.Count(x => x.Kateqoriya == k);
+                <button type="button" class="hs-pill @(say == 0 ? "hs-pill--bos" : "")" data-kat="@k">@k <span class="hs-pill-say">@say</span></button>
             }
         </div>
     </div>
@@ -78,6 +81,12 @@
             </div>
         }
     </div>
+
+    <div class="hs-empty" id="hsEmpty" style="display:none">
+        <i class="bi bi-hourglass-split"></i>
+        <div class="hs-empty-t">Bu kateqoriyada hələ hesabat yoxdur</div>
+        <div class="hs-empty-d">Hesabatlar buraya tədricən əlavə olunacaq.</div>
+    </div>
 </div>
 
 <style>
@@ -95,6 +104,16 @@
         padding: 7px 15px; border-radius: 999px; cursor: pointer; transition: .15s; }
     .hs-pill:hover { border-color: #cbd5e1; }
     .hs-pill.on { background: #16478a; border-color: #16478a; color: #fff; }
+    .hs-pill-say { opacity: .65; font-weight: 500; }
+    .hs-pill.on .hs-pill-say { opacity: .85; }
+    .hs-pill--bos:not(.on) { color: #94a3b8; border-style: dashed; }
+
+    .hs-empty { display: flex; flex-direction: column; align-items: center; text-align: center;
+        gap: 6px; padding: 46px 20px; color: #94a3b8; background: #fff; border: 1px dashed #dbe3ec;
+        border-radius: 16px; margin-top: 14px; }
+    .hs-empty i { font-size: 26px; color: #c7d2e0; }
+    .hs-empty-t { font-weight: 700; font-size: 14px; color: #64748b; }
+    .hs-empty-d { font-size: 12.5px; }
 
     .hs-section-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700;
         color: #475569; margin: 22px 0 10px; }
@@ -148,16 +167,22 @@
     var searchEl = document.getElementById('hsSearch');
     var pillsEl = document.getElementById('hsPills');
     var listEl = document.getElementById('hsList');
+    var emptyEl = document.getElementById('hsEmpty');
     var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
     var aktivKat = '';
 
     function suz() {
         var q = (searchEl.value || '').trim().toLowerCase();
+        var gorunen = 0;
         listEl.querySelectorAll('.hs-row').forEach(function (row) {
             var katOk = !aktivKat || row.dataset.kat === aktivKat;
             var qOk = !q || row.dataset.ad.indexOf(q) !== -1 || row.dataset.desc.indexOf(q) !== -1;
-            row.style.display = (katOk && qOk) ? '' : 'none';
+            var goster = katOk && qOk;
+            row.style.display = goster ? '' : 'none';
+            if (goster) gorunen++;
         });
+        listEl.style.display = gorunen === 0 ? 'none' : '';
+        emptyEl.style.display = gorunen === 0 ? 'flex' : 'none';
     }
 
     searchEl.addEventListener('input', suz);
