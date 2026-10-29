@@ -4,7 +4,7 @@
 
     // Pill sırası sabitdir (kateqoriyanın kataloqdakı sırası ilə qarışmasın) —
     // yalnız real kartı olan kateqoriyalar göstərilir.
-    var kateqoriyaSirasi = new[] { "Maliyyə", "Kreditlər", "Risk", "Xərclər" };
+    var kateqoriyaSirasi = new[] { "Günlük", "Aylıq", "Rüblük", "Risk", "Xərclər" };
     var kateqoriyalar = kateqoriyaSirasi.Where(k => Model.Any(x => x.Kateqoriya == k)).ToList();
     var secilmisler = Model.Where(x => x.Secilib).ToList();
 }
@@ -21,8 +21,6 @@
             <div class="mh-sub"><i class="bi bi-clipboard-check"></i> Requlyativ, analitik və idarəetmə hesabatları — bir yerdə</div>
         </div>
     </div>
-
-    <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhTabs.cshtml" />
 
     <div class="hs-toolbar">
         <div class="hs-search">
@@ -131,8 +129,9 @@
     .hs-row-t { font-weight: 700; font-size: 13.5px; color: #1e293b; }
     .hs-row-d { font-size: 12px; color: #64748b; margin-top: 2px; }
     .hs-row-kat { flex: none; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-    .hs-kat--maliyyə { background: #e0ecff; color: #1d4ed8; }
-    .hs-kat--kreditlər { background: #ede9fe; color: #6d28d9; }
+    .hs-kat--günlük { background: #e0ecff; color: #1d4ed8; }
+    .hs-kat--aylıq { background: #ede9fe; color: #6d28d9; }
+    .hs-kat--rüblük { background: #fdf2e9; color: #c2540a; }
     .hs-kat--risk { background: #fee2e2; color: #b91c1c; }
     .hs-kat--xərclər { background: #dcfce7; color: #15803d; }
     .hs-row-aç { flex: none; font-size: 12.5px; font-weight: 700; color: #16478a; white-space: nowrap; }

@@ -43,18 +43,19 @@ public class HesabatController : Controller
     // "Maliyyə Hesabatları" kataloqu — TƏK yerdə saxlanılır (29.10.2026, "Kassa
     // valyutaları"/"Qara Jeton" ilə eyni "statik siyahı" prinsipi). Yeni hesabat
     // əlavə etmək lazımdırsa, YALNIZ bura əlavə et.
+    //
+    // ⚠️ 29.10.2026 — DÜZƏLİŞ: canlı Balans İcmalı tab-larının (Balans İcmalı,
+    // Mənfəət/Zərər, Depozit & Müştəri, Kredit Portfeli, Likvidlik) qısayol
+    // kartları BURADAN ÇIXARILDI. İstifadəçi ekranda görəndə fikrini dəyişdi:
+    // "icmal, kreditler olan hisseni tekrar niye gosterdin ki? burda yalniz
+    // hesabatlarin hazirlanmasi olacq, o biriler ise sorgular idi, qatisdirma"
+    // — yəni bu səhifə YALNIZ həqiqi HESABAT (sənəd/export hazırlanan) üçündür,
+    // canlı KPI/sorğu dashboard-ları (Dashboard controller-in tabları) bura
+    // qarışdırılmır. BMI-nin köhnə "Maliyyə DP → Hesabatlar → Günlük/Aylıq/
+    // Rüblük" menyusu (əmsal nümunə kimi göstərildi) bu kataloqun gələcək
+    // doldurulma istiqamətidir — hesabatlar oradan "yavaş-yavaş" bura köçürüləcək.
     private static readonly List<HesabatKartDto> Katalog = new()
     {
-        new() { Kod = "balans-icmali", Ad = "Balans İcmalı", Tesvir = "Aktivlər, öhdəliklər və kapital",
-                Kateqoriya = "Maliyyə", Ikon = "bi-clipboard-data", Area = "Muhasibat", Controller = "Dashboard", Action = "Index" },
-        new() { Kod = "menfeet-zerer", Ad = "Mənfəət və Zərər", Tesvir = "Gəlirlər və xərclərin icmalı",
-                Kateqoriya = "Maliyyə", Ikon = "bi-graph-up-arrow", Area = "Muhasibat", Controller = "Dashboard", Action = "Menfeet" },
-        new() { Kod = "depozit-musteri", Ad = "Depozit və Müştəri", Tesvir = "Depozit strukturu və rezidentlik",
-                Kateqoriya = "Maliyyə", Ikon = "bi-safe2", Area = "Muhasibat", Controller = "Dashboard", Action = "Depozit" },
-        new() { Kod = "kredit-portfeli", Ad = "Kredit Portfeli", Tesvir = "Kreditlərin bölgüsü və qalıqları",
-                Kateqoriya = "Kreditlər", Ikon = "bi-credit-card", Area = "Muhasibat", Controller = "Dashboard", Action = "Kredit" },
-        new() { Kod = "likvidlik", Ad = "Likvidlik Hesabatı", Tesvir = "Likvid vəsaitlərin icmalı",
-                Kateqoriya = "Risk", Ikon = "bi-droplet", Area = "Muhasibat", Controller = "Dashboard", Action = "Likvidlik" },
         new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli)",
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
         new() { Kod = "amb-mhbs9", Ad = "AMB MHBS 9", Tesvir = "Cədvəl A1 — rəsmi Mərkəzi Bank hesabatı",

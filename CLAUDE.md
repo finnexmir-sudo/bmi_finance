@@ -7698,3 +7698,63 @@ sintaksis yoxlaması, interfeys↔implementasiya↔DI↔controller↔view beş q
 Hesabatları" bəndinin göründüyünü, kartların/sətirlərin düzgün keçid
 verdiyini, axtarış+kateqoriya filtrinin işlədiyini, ★ klikinin seçimi
 yadda saxlayıb "Seçilmişlər" bölməsində göstərdiyini.
+
+### DÜZƏLİŞ — Canlı Dashboard Tabları "Hesabatlar" DEYİL, Bura QARIŞMIR (29.10.2026, EYNİ GÜN)
+
+Yuxarıdakı 2-ci qərar ("Balans İcmalının canlı tabları QISAYOL KARTI kimi
+görünsün") canlı nəticəni görəndən DƏRHAL SONRA istifadəçi tərəfindən
+**tərsinə çevrildi**. İstifadəçi: *"icmal, kreditler olan hisseni tekrar niye
+gosterdin ki? burda yalniz hesabatlarin hazirlanmasi olacq, o biriler ise
+sorgular idi, qatisdirma."* Fərq konseptualdır: Dashboard-un tabları (İcmal,
+Kreditlər, Depozit & Müştəri, Mənfəət/Zərər, Likvidlik & Bazar) **canlı
+SORĞU/KPI ekranlarıdır** — "Hesabatlar" səhifəsi isə YALNIZ **hazırlanan,
+export olunan** sənədlər üçün nəzərdə tutulub (IFRS 9 ECL, AMB MHBS 9, Xərc
+Hesabatı, gələcəkdə DSMF). AskUserQuestion-da verilən cavab canlı ekranı
+görmədən alınmışdı — "qısayol kartı" ideyası kağız üzərində məntiqli
+görünsə də, real nəticədə iki fərqli məqsədi (sorğu vs hesabat) eyni
+səhifədə qarışdırırdı.
+
+**Düzəliş — iki yer:**
+1. `Views/Hesabat/Index.cshtml` — `<partial name="…/_MhTabs.cshtml" />`
+   (yuxarıdakı tab-zolağı) səhifədən TAMAMİLƏ ÇIXARILDI. `_MhTabs.cshtml`-in
+   özü TOXUNULMADI — Dashboard-un digər səhifələrində (Balans İcmalı, Kredit
+   Portfeli və s.) hələ də göstərilir, çünki O ailənin naviqasiyasıdır;
+   problem YALNIZ bu tab-zolağının YENİ, MÜSTƏQİL "Hesabatlar" səhifəsində
+   TƏKRARLANMASI idi.
+2. `HesabatController.Katalog`-dan **5 qısayol kartı SİLİNDİ**: `balans-icmali`,
+   `menfeet-zerer`, `depozit-musteri`, `kredit-portfeli`, `likvidlik`. Kataloq
+   indi YALNIZ həqiqi hesabatları daşıyır: `ifrs9-ecl`, `amb-mhbs9`,
+   `xerc-hesabati` (+ gələcəkdə DSMF).
+
+**BMI-nin köhnə menyu strukturu gələcək istiqaməti göstərdi.** İstifadəçi
+BMI-nin "Maliyyə DP → Hesabatlar" menyusunun ekran-görüntüsünü göstərdi —
+**Günlük / Aylıq / Rüblük** (Daily/Monthly/Quarterly) alt-kateqoriyaları,
+hər birinin öz hesabat siyahısı (Daily Report, Daily comments, Tələbli və
+müddətli depozitlər və s.): *"bizde o hesabatlari yavaş yavaş bura
+geitireceyik"* — yəni bu kataloq GƏLƏCƏKDƏ BMI-dən köçürülən hesabatlarla
+dolacaq. Bu səbəbdən `Index.cshtml`-dəki kateqoriya pill sırası (`kateqoriya
+Sirasi`) əvvəlcədən BMI-nin öz sxeminə uyğunlaşdırıldı: `{ "Günlük", "Aylıq",
+"Rüblük", "Risk", "Xərclər" }` (əvvəlki `{ "Maliyyə", "Kreditlər", "Risk",
+"Xərclər" }` əvəzinə) — filtr yalnız MODEL-də REAL mövcud olan kateqoriyaları
+göstərdiyi üçün (`Where(k => Model.Any(x => x.Kateqoriya == k))`) bu, indi
+boş pill göstərmir, sadəcə gələcək əlavələr üçün hazır sıra qoyur. Uyğun CSS
+badge sinifləri də əlavə olundu: `.hs-kat--günlük`, `.hs-kat--aylıq`,
+`.hs-kat--rüblük` (köhnə `.hs-kat--maliyyə`/`.hs-kat--kreditlər` sinifləri
+hazırda heç bir kartda işlənmir, amma zərərsiz olduğu üçün silinmədi —
+"Maliyyə" kateqoriyalı qeyri-BMI mənşəli bir hesabat gələcəkdə əlavə olunsa
+hazır qalır).
+
+⚠️ **DSMF Vahid Hesabat Forması HƏLƏ DƏ QURULMADI** — yuxarıdakı 3-cü qərar
+(yeri bu səhifədir) dəyişmədi, yalnız BMI-nin Günlük/Aylıq/Rüblük bölgüsü
+onun (və gələcək BMI-mənşəli digər hesabatların) hansı kateqoriyaya
+düşəcəyini aydınlaşdırdı — DSMF rüblük bir hesabatdır, deməli "Rüblük"
+kateqoriyasına düşəcək.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real brauzerdə yoxlamalıdır: "Maliyyə
+Hesabatları" səhifəsində artıq İcmal/Kreditlər/Depozit/Mənfəət-Zərər/
+Likvidlik tab-zolağının görünmədiyini, kataloqda yalnız IFRS 9 ECL/AMB
+MHBS 9/Xərc Hesabatının qaldığını, Balans İcmalı (`/Muhasibat`) kimi
+digər Dashboard səhifələrində isə tab-zolağının əvvəlki kimi işlək
+qaldığını.
