@@ -1,0 +1,114 @@
+@using FinNex.Application.DTOs.Dsmf
+@model DsmfHissesi3Dto
+@{
+    ViewData["Title"] = "DSMF — Əlavə №1 Hissə 3";
+    var rubAdlari = new[] { "", "Yanvar–Mart", "Aprel–İyun", "İyul–Sentyabr", "Oktyabr–Dekabr" };
+    var cariIl = DateTime.Today.Year;
+}
+
+<partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
+
+@* Bu üç sinif _MhStyles.cshtml-də YOXDUR — Ifrs9Parametr.cshtml-in öz səhifə-daxili
+   <style> blokunda idi, paylaşılan fayla köçürülməyib. Dsmf3 öz nüsxəsini saxlayır. *@
+<style>
+    .mh-hero--dsmf { background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%); }
+    .pr-warn { display: flex; gap: 10px; padding: 13px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; font-size: 12.5px; color: #713f12; line-height: 1.55; }
+    .pr-warn i { color: #d97706; font-size: 17px; margin-top: 1px; }
+    .pr-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 4px 14px rgba(2,6,23,.05); overflow: hidden; }
+    .pr-card-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; color: #1e293b; }
+</style>
+
+<div class="mh-wrap">
+    <div class="mh-hero mh-hero--dsmf">
+        <div class="mh-hero-l">
+            <div class="mh-badge"><i class="bi bi-calendar3-week"></i> Mühasibat / Hesabatlar / DSMF</div>
+            <h1 class="mh-title">Əlavə №1 — Hissə 3</h1>
+            <div class="mh-sub"><i class="bi bi-info-circle"></i> İşçinin işləmədiyi iş günləri haqqında məlumat — @Model.Il, Rüb @Model.Rub (@rubAdlari[Model.Rub])</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a asp-action="Dsmf3Excel" asp-route-il="@Model.Il" asp-route-rub="@Model.Rub" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə ixrac et</a>
+                <a asp-action="Index" class="mh-xls"><i class="bi bi-arrow-left"></i> Hesabatlar siyahısına qayıt</a>
+            </div>
+        </div>
+        <form method="get" class="mh-datef">
+            <label>İl</label>
+            <select name="il">
+                @for (int y = cariIl - 2; y <= cariIl + 1; y++)
+                {
+                    <option value="@y" selected="@(y == Model.Il)">@y</option>
+                }
+            </select>
+            <label>Rüb</label>
+            <select name="rub">
+                @for (int r = 1; r <= 4; r++)
+                {
+                    <option value="@r" selected="@(r == Model.Rub)">Rüb @r (@rubAdlari[r])</option>
+                }
+            </select>
+            <button type="submit"><i class="bi bi-arrow-repeat"></i> Göstər</button>
+        </form>
+    </div>
+
+    @if (Model.AvtomatikAskarlanmayanSebebler.Count > 0)
+    {
+        <div class="pr-warn" style="margin-top:14px;">
+            <i class="bi bi-exclamation-triangle"></i>
+            <div>
+                <b>Diqqət:</b> sistem yalnız HR modullarında (Məzuniyyət/Xəstəlik/işə qəbul-çıxma tarixi)
+                qarşılığı olan səbəbləri avtomatik aşkarlayır. Aşağıdaki
+                <b>@Model.AvtomatikAskarlanmayanSebebler.Count</b> səbəb növü sistemdə HEÇ BİR modulla
+                əlaqəli deyil — belə hal bu rübdə baş veribsə, mühasib bu sətri Excel-ə ÖZÜ əl ilə əlavə etməlidir:
+                <ul style="margin:6px 0 0 18px; padding:0;">
+                    @foreach (var s in Model.AvtomatikAskarlanmayanSebebler)
+                    {
+                        <li style="font-size:12.5px;">@s</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+
+    <div class="pr-card" style="margin-top:14px;">
+        <div class="pr-card-h"><i class="bi bi-table"></i> Önizləmə — @Model.Setirler.Count sətir</div>
+        @if (Model.Setirler.Count == 0)
+        {
+            <div style="padding:22px; text-align:center; color:#64748b; font-size:13.5px;">
+                <i class="bi bi-inbox" style="font-size:22px; display:block; margin-bottom:6px;"></i>
+                Bu rübdə (@Model.Il, @rubAdlari[Model.Rub]) sistem tərəfindən aşkarlanan "işləmədiyi gün" yoxdur.
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto;">
+                <table class="hj-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Soyadı, adı, atasının adı</th>
+                            <th>FİN</th>
+                            <th style="text-align:right;">@Model.Ay1Adi</th>
+                            <th style="text-align:right;">@Model.Ay2Adi</th>
+                            <th style="text-align:right;">@Model.Ay3Adi</th>
+                            <th>Səbəb</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Setirler)
+                        {
+                            <tr>
+                                <td>@s.SiraNo</td>
+                                <td>@s.AdSoyadAta</td>
+                                <td>@s.Fin</td>
+                                <td style="text-align:right;">@(s.Ay1Gun > 0 ? s.Ay1Gun.ToString() : "—")</td>
+                                <td style="text-align:right;">@(s.Ay2Gun > 0 ? s.Ay2Gun.ToString() : "—")</td>
+                                <td style="text-align:right;">@(s.Ay3Gun > 0 ? s.Ay3Gun.ToString() : "—")</td>
+                                <td style="font-size:12px;">@s.SebebMetni</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton.css" />

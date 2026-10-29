@@ -14,6 +14,8 @@ using FinNex.Application.Services;
 using FinNex.Application.Interfaces.Kredit;
 using FinNex.Application.Interfaces.Kassa;
 using FinNex.Application.Services.Kassa;
+using FinNex.Application.Interfaces.Dsmf;
+using FinNex.Application.Services.Dsmf;
 using FinNex.Application.Services.Communication;
 using FinNex.Application.Services.HR;
 using FinNex.Application.Services.Kredit;
@@ -168,6 +170,9 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IKassaKursService, KassaKursService>();
         services.AddScoped<IKassaTesdiqEdiciService, KassaTesdiqEdiciService>();
         services.AddScoped<IKassaBildirisAlaniService, KassaBildirisAlaniService>();
+
+        // ── DSMF Vahid Hesabat Forması (29.10.2026, pilot: Əlavə №1 Hissə 3) ──
+        services.AddScoped<IDsmfHesabatService, DsmfHesabatService>();
 
         // ── Kredit Modul Servisləri ─────────────────────────
         services.AddScoped<IKreditBaxanIsciService, KreditBaxanIsciService>();

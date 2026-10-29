@@ -7852,3 +7852,125 @@ yoxlamalıdır: "Maliyyə Hesabatları" səhifəsində "Risk" kateqoriyasında i
 YALNIZ BİR kartın ("IFRS 9 — ECL") olduğunu, kartı açanda hələ də "AMB MHBS 9 ·
 A1" ixrac düyməsinin səhifənin öz daxilində göründüyünü (funksiya itməyib)
 təsdiqləməli.
+
+## DSMF Vahid Hesabat Forması — Pilot: Əlavə №1 Hissə 3 (29.10.2026)
+
+İstifadəçi tapşırığı: *"indi atdigim excellerdeki melumatlari hazirlamaq
+lazimdir. teklifim il ve rub secilsin. hemin rub uzre 3 ayin melumatlari
+istenilir."* DSMF (Dövlət Sosial Müdafiə Fondu) rüblük Vahid Hesabat Forması
+**6 rəsmi Excel əlavəsindən** ibarətdir — biri maaş tərkibinin mürəkkəb
+kompozit düsturu (Əlavə №1 Hissə 1), dördü vergi-güzəşti cədvəlləri
+(Əlavə №4 Bölmə 2-5), biri isə **işçinin işləmədiyi iş günləri** (Əlavə №1
+Hissə 3). Dövlətə təqdim olunan rəsmi sənəd olduğu üçün (vergi/sosial
+sığorta hüquqi nəticəli) `AskUserQuestion` ilə əhatə dəqiqləşdirildi —
+istifadəçi **"Əlavə №1 Hissə 3-dən başla"** seçdi, çünki bu, HR modullarından
+(Məzuniyyət/Xəstəlik/işə qəbul-çıxma tarixi) **mexaniki olaraq** dəqiq
+çıxarıla bilər, Hissə 1/Bölmə 2-5 isə hələ ayrıca, gələcək mərhələlərdir.
+
+Eyni müzakirə zamanı istifadəçi *"18 yas meselesi lazim deyil,onu nezere
+alma"* dedi — bu, Hissə 1-in (hələ QURULMAYIB) mürəkkəb düstur qeydlərindəki
+uşaq-əlilliyi yaş-18 həddi ilə bağlıdır, BU sessiyada tikilən Hissə 3-ə aid
+DEYİL. **Qeyd gələcək üçün saxlanılır** — Hissə 1 işinə başlananda bu
+göstərişə əməl edilməlidir (yaş-18 həddi MODELLƏŞDİRİLMƏMƏLİDİR).
+
+### Şablonun özü — "combo" vərəqində 12 rəsmi səbəb kodu
+
+`UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx` iki vərəqdən ibarətdir: **"Əlavə
+№1 - Hissə 3"** (data) və **"combo"** (12 səbəbin rəsmi mətni, dropdown
+mənbəyi). Sütunlar (1-based): A=Sıra№, B=Ad-soyad-ata, C=FİN, D/E/F=1-2-3-cü
+ayın gün sayı, G=Səbəb mətni (dropdown). Data **7-ci sətirdən** başlayır
+(0-əsaslı NPOI-də sətir 6) — şablonun özündə YALNIZ **iki nümunə sətir**
+(Sıra№=1,2, Səbəb="1-İşçinin ödənişli əsas məzuniyyətdən...") var, qalan
+~80 sətir boşdur.
+
+**12 səbəbdən YALNIZ 6-sı** mövcud HR modullarına birbaşa uyğundur:
+
+| Kod | DSMF mətni | Mənbə |
+|---|---|---|
+| 1 | Ödənişli əsas məzuniyyət | `Mezuniyyet.Nov == Illik`, real iş günü |
+| 3 | Ödənişsiz məzuniyyət (Ə.M. 129) | `IMaasHesablamaService.OzHesabinaIsGunuSayAsync` (mövcud, sınanmış) |
+| 5 | Xəstələnmə | `IMaasHesablamaService.XestelikHaqiqiIsGunuSayAsync` (mövcud, sınanmış) |
+| 6 | Ay ərzində əmək müqaviləsinə xitam | `Isci.IsdenAyrilmaTarixi` (ayın son günü deyil) |
+| 8 | Ayın ortasında işə qəbul | `Isci.IsheQebulTarixi` (ayın 1-ci günü deyil) |
+| 9 | Həmin ay üzrə müqavilə ümumiyyətlə bağlanmayıb | tarix-kəsişməsinin olmaması |
+| 11 | Dövlət/ictimai vəzifə | `Mezuniyyet.Nov == DovletVezifelerininIcrasi`, real iş günü |
+
+**Qalan 5 kod (2,4,7,10,12 — sosial məzuniyyət, təhsil məzuniyyəti, növbəli
+iş, işəmuzd, məhkəmə hökmü) sistemdə HEÇ BİR modula uyğun gəlmir** — belə
+status/entity YOXDUR. Bu, **səssizcə buraxılmır**: `DsmfHissesi3Dto.
+AvtomatikAskarlanmayanSebebler` siyahısı önizləmə ekranında açıq, sarı
+xəbərdarlıq kimi göstərilir ("bu 5 səbəb avtomatik aşkarlanmır, belə hal
+varsa mühasib bu sətri Excel-ə ÖZÜ əl ilə əlavə etsin").
+
+### Niyə `MaasHesablamaService`-in özünə TOXUNULMADI
+
+Payroll-un "real iş günü" hesablayıcıları (`OzHesabinaIsGunuSayAsync`,
+`HaqiqiIsGunuSayHelperAsync`, `XestelikHaqiqiIsGunuSayAsync`) **private**-dir
+və maaş hesablamasının əsl (yazılan) mənbəyidir — CLAUDE.md-nin "Maliyyəyə
+toxunan hər dəyişiklik xüsusi diqqət tələb edir" qaydasına görə bu metodlara
+toxunmaq/onlara yeni asılılıq əlavə etmək **risk** daşıyır, baxmayaraq ki
+DSMF yalnız OXUYUR, yazmır. **Həll:** `DsmfHesabatService` öz, tam
+MÜSTƏQİL, OXU-YALNIZ gün-təsnifatı helper-ini (`HaqiqiIsGunuSayAsync`,
+`BayramGunu`-ya əsaslanan) yazır — Kod 1/6/8/9/11 bu nüsxəni işlədir. YALNIZ
+Kod 3 və 5-də, artıq **PUBLIC** və sınanmış iki metod (`OzHesabinaIsGunuSayAsync`,
+`XestelikHaqiqiIsGunuSayAsync`) birbaşa çağırılır — bunlar artıq payroll-un
+öz hesablamasında işlək, təkrar yazmaq "Bir Kəmiyyətə Üç Yazıcı" riski
+yaradardı.
+
+⚠️ **Kod 1 üçün `MezuniyyetGunleriniSayGenisAsync` İŞLƏDİLMƏDİ** — o metod
+Illik+Ezamiyyəti BİRLİKDƏ qaytarır, Ezamiyyət isə DSMF-in 12 səbəbindən biri
+DEYİL (işçi ezamiyyətdə İŞLƏYİR, "işləmədiyi gün" sayılmır). Ona görə Kod
+1/11 üçün ayrıca, `Mezuniyyet.Nov`-a görə süzülmüş bir sorğu yazıldı
+(`NovUzreHaqiqiIsGunuAsync`).
+
+### Struktur
+
+`FinNex.Application/DTOs/Dsmf/` — `DsmfHissesi3Dto`/`DsmfHissesi3SetirDto`
+(nəticə), `DsmfIslemeyenGunSebebi` (12 mətn, "combo" vərəqindən HƏRFİ
+köçürülüb, `AvtomatikAskarlanmayanKodlar = {2,4,7,10,12}`). `IDsmfHesabatService`/
+`DsmfHesabatService` (`FinNex.Application/Interfaces|Services/Dsmf/`) —
+TƏK metod: `Hissesi3HazirlaAsync(il, rub)`. DI: `AddApplicationServices.cs`-ə
+`AddScoped<IDsmfHesabatService, DsmfHesabatService>()`. Controller/View —
+mövcud `Areas/Muhasibat/Controllers/HesabatController.cs`-ə əlavə action-lar
+(`Dsmf3` önizləmə, `Dsmf3Excel` ixrac), `Views/Hesabat/Dsmf3.cshtml` (yeni),
+kataloqa `"dsmf-hisse3"` kartı ("Rüblük" kateqoriyası — yuxarıdakı BMI
+Günlük/Aylıq/Rüblük sxeminə uyğun).
+
+**İşçi seçimi rüb-səviyyəlidir, "aktiv status" YOX** — rüb ərzində İSTƏNİLƏN
+gün aktiv olmuş (işə qəbul/çıxma tarixi rüblə kəsişən) işçi daxil edilir,
+`IsciStatus.Aktiv` kanonik filtri BURAYA YARAMAZ (çıxmış işçi də Kod 6 üçün
+lazımdır). Hər ay üçün ayrıca tarix-kəsişməsi yoxlanır; heç bir səbəb günü
+tapılmayan işçi sətir ALMIR (boş sətirlər Excel-ə düşmür).
+
+**Excel ixracı — mövcud `AmbA1Excel` naxışının təkrarı**: DMS-dəki rəsmi
+şablonu (`C:\FinNex_DMS\hesabat-sablonlari\muhasibat\dsmf\
+UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx`) `XSSFWorkbook` ilə doldurur (varsa),
+yoxdursa sadə `HSSFWorkbook` fallback. **Şablonun 2 nümunə sətiri (7,8-ci
+sətirlər) açıq təmizlənir** — real sətir sayı 0 və ya 1-dirsə, örtülməyən
+nümunə sətir (Sıra№ dolu, Səbəb mətni dolu, amma ad/FİN boş) sakitcə Excel-ə
+düşərdi, bu, Dsmf3SablonDoldur-da `numuneSetirSayi=2` dövrü ilə qarşısı
+alınıb.
+
+⚠️ **GƏLƏCƏK İŞ (bu sessiyada edilmədi)**: Əlavə №1 Hissə 1 (maaş tərkibi —
+yuxarıdakı "18 yaş" qeydinə görə bu məntiq MODELLƏŞDİRİLMƏMƏLİDİR), Əlavə №4
+Bölmə 2-5 (vergi güzəşti cədvəlləri). Bu dörd/beş cədvəl istifadəçinin öz
+sözü ilə *"yavaş-yavaş"* əlavə olunacaq — kataloqa yeni `Kod`/Action əlavə
+etmək kifayətdir, mövcud "Rüblük" kateqoriyası onları da əhatə edəcək.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə bütün 6 yeni/dəyişən faylda,
+interfeys↔implementasiya↔DI↔controller↔view beş qatı əl ilə tutuşduruldu,
+hər istifadə olunan entity sahəsi/enum dəyəri — `Isci.FIN/AtaAdi/Sira`,
+`Mezuniyyet.Nov/Status/JetonIleOdendi`, `BayramGunu.Tip/Tarix`,
+`MezuniyyetNovu.Illik/DovletVezifelerininIcrasi`, `MezuniyyetStatus.
+Tesdiqlenib` — mənbə fayllarından təsdiqləndi). Bir `@model DsmfHissesi3Dto`
+üçün lazım olan `@using FinNex.Application.DTOs.Dsmf` sətri bu yoxlamada
+unudulmuşdu (Muhasibat Area-nın `_ViewImports.cshtml`-i yalnız `DTOs.
+Muhasibat`-ı idxal edir) — tapılıb düzəldildi, bu, "RZ1031"/"CS0246" kimi
+yalnız real Rebuild-də üzə çıxan tələlərin başqa bir nümunəsi idi. İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+(1) bir rübdə illik məzuniyyəti olan işçi, (2) rüb ərzində işə qəbul olunan
+işçi, (3) rüb ərzində işdən çıxan işçi, (4) iki ayı əhatə edən xəstəlik
+bülleteni olan işçi — hər dördünün düzgün sütunda/sətirdə, düzgün gün sayı
+ilə göründüyünü, Excel ixracının (şablon DMS-ə qoyulandan sonra) iki
+nümunə sətiri səssizcə saxlamadığını təsdiqləməli.

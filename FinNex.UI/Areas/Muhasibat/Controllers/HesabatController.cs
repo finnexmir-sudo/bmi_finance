@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.IO;
+using FinNex.Application.DTOs.Dsmf;
 using FinNex.Application.DTOs.Muhasibat;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Dsmf;
 using FinNex.Application.Interfaces.Muhasibat;
 using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -25,19 +27,22 @@ public class HesabatController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly IConfiguration _config;
     private readonly IHesabatSecilmisService _secilmis;
+    private readonly IDsmfHesabatService _dsmf;
 
     public HesabatController(
         IMuhasibatService service,
         IUserPermissionService perm,
         UserManager<AppUser> userManager,
         IConfiguration config,
-        IHesabatSecilmisService secilmis)
+        IHesabatSecilmisService secilmis,
+        IDsmfHesabatService dsmf)
     {
         _service = service;
         _perm = perm;
         _userManager = userManager;
         _config = config;
         _secilmis = secilmis;
+        _dsmf = dsmf;
     }
 
     // "Maliyyə Hesabatları" kataloqu — TƏK yerdə saxlanılır (29.10.2026, "Kassa
@@ -70,6 +75,10 @@ public class HesabatController : Controller
     {
         new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli) · AMB MHBS 9 A1 ixracı da buradadır",
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
+        // DSMF Vahid Hesabat Forması — pilot (29.10.2026, bax "DSMF" bölməsi).
+        // İl+Rüb seçimi ilə işləyir, ona görə "Rüblük" kateqoriyasına düşür.
+        new() { Kod = "dsmf-hisse3", Ad = "DSMF — Əlavə №1 Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat (il + rüb üzrə, 3 ay)",
+                Kateqoriya = "Rüblük", Ikon = "bi-calendar3-week", Area = "Muhasibat", Controller = "Hesabat", Action = "Dsmf3" },
         // ⚠️ "AMB MHBS 9" ayrıca kart kimi 29.10.2026-da BURADAN ÇIXARILDI —
         // yuxarıdaki şərhə bax. AMB A1 Excel ixracı yuxarıdakı "IFRS 9 — ECL"
         // kartının səhifəsindəki düymədən əlçatandır. Ayrıca kart kimi geri
@@ -457,6 +466,111 @@ public class HesabatController : Controller
         var bytes = await System.IO.File.ReadAllBytesAsync(yol);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "AMB_Metodoloji_Rehberlik_23122025.docx");
+    }
+
+    // ── DSMF Vahid Hesabat Forması — Əlavə №1 Hissə 3 (29.10.2026, pilot) ──
+    // İl + Rüb seçimi, rüb = 3 ay. Önizləmə ekranı — Excel ixracı ayrıca action-dadır.
+    public async Task<IActionResult> Dsmf3(int? il, int? rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var bugun = DateTime.Today;
+        var cariRub = (bugun.Month - 1) / 3 + 1;
+        var m = await _dsmf.Hissesi3HazirlaAsync(il ?? bugun.Year, rub ?? cariRub);
+        return View(m);
+    }
+
+    // Hissə 3-ü Excel-ə ixrac et — DMS-dəki rəsmi şablonu doldurur (varsa),
+    // yoxdursa sadə, formatlanmamış cədvəl yaradır (fallback, AmbA1Excel ilə eyni naxış).
+    public async Task<IActionResult> Dsmf3Excel(int il, int rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var m = await _dsmf.Hissesi3HazirlaAsync(il, rub);
+
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "dsmf",
+                                       "UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx");
+        var adı = $"DSMF_Elave1_Hisse3_{il}_R{rub}.xlsx";
+
+        if (System.IO.File.Exists(sablonPath))
+        {
+            var dolu = Dsmf3SablonDoldur(sablonPath, m);
+            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+        }
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Əlavə №1 - Hissə 3");
+        int r = 0;
+        sh.CreateRow(r++).CreateCell(0).SetCellValue(
+            $"Əlavə №1 - Hissə 3. İşçinin işləmədiyi iş günləri haqqında məlumat — {il}, Rüb {rub}");
+        r++;
+        var h = sh.CreateRow(r++);
+        string[] basliq = { "Sıra №", "Soyadı, adı, atasının adı", "FİN", m.Ay1Adi, m.Ay2Adi, m.Ay3Adi, "Səbəb" };
+        for (int i = 0; i < basliq.Length; i++) h.CreateCell(i).SetCellValue(basliq[i]);
+        foreach (var s in m.Setirler)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(s.SiraNo);
+            row.CreateCell(1).SetCellValue(s.AdSoyadAta);
+            row.CreateCell(2).SetCellValue(s.Fin);
+            row.CreateCell(3).SetCellValue(s.Ay1Gun);
+            row.CreateCell(4).SetCellValue(s.Ay2Gun);
+            row.CreateCell(5).SetCellValue(s.Ay3Gun);
+            row.CreateCell(6).SetCellValue(s.SebebMetni);
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel", $"DSMF_Elave1_Hisse3_{il}_R{rub}.xls");
+    }
+
+    // Rəsmi DSMF şablonunu (UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx) doldur.
+    // Vərəqin öz sətirləri 7-dən başlayır (1-6 başlıq/sub-nömrələmə) — şablonun
+    // özü artıq 986 sətirlik yer ayırıb, formatlaşdırma/data validation-a toxunulmur.
+    private static byte[] Dsmf3SablonDoldur(string sablonPath, DsmfHissesi3Dto m)
+    {
+        IWorkbook wb;
+        using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
+            wb = new XSSFWorkbook(fs);
+
+        var ws = wb.GetSheet("Əlavə №1 - Hissə 3");
+        if (ws != null)
+        {
+            const int basSetir = 6; // NPOI 0-əsaslı — şablonun 7-ci sətri
+            // Şablonun özü 7-8-ci sətirlərdə (0-əsaslı 6-7) nümunə "sıra №=1/2,
+            // səbəb=1-İşçinin ödənişli əsas məzuniyyətdən..." mətni ilə doldurulmuş
+            // GƏLİR — bu, real data DEYİL, yalnız nümunədir. Real sətir sayı 0 və ya
+            // 1-dirsə, bu iki nümunə sətirdən örtülməyəni AÇIQ TƏMİZLƏMƏK lazımdır,
+            // yoxsa yarımçıq/yalançı bir sətir (ad/FİN boş, səbəb mətni dolu) ixrac
+            // olunan Excel-ə düşər.
+            const int numuneSetirSayi = 2;
+            for (int i = 0; i < m.Setirler.Count; i++)
+            {
+                var s = m.Setirler[i];
+                var row = ws.GetRow(basSetir + i) ?? ws.CreateRow(basSetir + i);
+                row.CreateCell(0).SetCellValue(s.SiraNo);
+                row.CreateCell(1).SetCellValue(s.AdSoyadAta);
+                row.CreateCell(2).SetCellValue(s.Fin);
+                row.CreateCell(3).SetCellValue(s.Ay1Gun);
+                row.CreateCell(4).SetCellValue(s.Ay2Gun);
+                row.CreateCell(5).SetCellValue(s.Ay3Gun);
+                row.CreateCell(6).SetCellValue(s.SebebMetni);
+            }
+            for (int i = m.Setirler.Count; i < numuneSetirSayi; i++)
+            {
+                var row = ws.GetRow(basSetir + i);
+                if (row == null) continue;
+                for (int c = 0; c <= 6; c++)
+                    row.GetCell(c)?.SetBlank();
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return ms.ToArray();
     }
 
     // Bir A1 alt-cədvəlini yaz (17 sətir: cəmi, biznes+1.1–1.7, istehlak+2.1–2.5, daşınmaz əmlak, digər).
