@@ -14,5 +14,14 @@ namespace FinNex.Application.DTOs.Muhasibat
 
         /// <summary>Hazırdırsa keçid üçün — boşdursa (hələ qurulmayıbsa) keçid göstərilmir.</summary>
         public string? Action { get; set; }
+
+        /// <summary>
+        /// Bölmə 2/3/4/5 EYNİ `Bolme2345` action-unu paylaşır — bu sahə ona
+        /// `bolmeNo` route dəyəri kimi ötürülür ki, "hansını AÇDISA O EXCELƏ
+        /// AİD OLANI GÖSTƏR" (29.10.2026, istifadəçi tələbi) işləsin: hər
+        /// sətir YALNIZ öz bölməsini açır, 4-ü BİRLİKDƏ yox. Digər komponentlər
+        /// (Hissə 1/3) üçün null — onların öz, ayrıca action-u var.
+        /// </summary>
+        public int? BolmeNo { get; set; }
     }
 }

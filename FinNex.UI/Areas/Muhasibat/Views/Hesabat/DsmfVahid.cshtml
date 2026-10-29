@@ -48,7 +48,7 @@
                 @if (k.Hazirdir)
                 {
                     <span class="dv-status dv-status--ready">Hazırdır</span>
-                    <a asp-action="@k.Action" class="dv-ac"><i class="bi bi-box-arrow-up-right"></i> Aç</a>
+                    <a asp-action="@k.Action" asp-route-bolmeNo="@k.BolmeNo" class="dv-ac"><i class="bi bi-box-arrow-up-right"></i> Aç</a>
                 }
                 else
                 {

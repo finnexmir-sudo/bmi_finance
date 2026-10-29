@@ -1,11 +1,23 @@
 @using FinNex.Application.DTOs.Dsmf
 @model List<DsmfIstisnaBolmesiDto>
 @{
-    ViewData["Title"] = "DSMF — Əlavə №4 Bölmə 2-3-4-5";
+    // 29.10.2026, istifadəçi: "hansını AÇDISA O EXCELƏ AİD OLANI GÖSTƏR" —
+    // Model indi ADƏTƏN tək elementlidir (hub-dan konkret bir bölmə açılıb);
+    // yalnız kimsə köhnə/parametrsiz URL-ə girsə 4-ü BİRLİKDƏ görünür (bax
+    // controller-dəki `bolmeNo == null` qolu).
+    var tekBolme = Model.Count == 1 ? (int?)Model[0].BolmeNo : null;
+    ViewData["Title"] = tekBolme.HasValue ? $"DSMF — Əlavə №4 Bölmə {tekBolme}" : "DSMF — Əlavə №4 Bölmə 2-3-4-5";
     var rubAdlari = new[] { "", "Yanvar–Mart", "Aprel–İyun", "İyul–Sentyabr", "Oktyabr–Dekabr" };
     var cariIl = DateTime.Today.Year;
     var basNumune = Model.FirstOrDefault();
     var excelAction = new Dictionary<int, string> { [2] = "Bolme2Excel", [3] = "Bolme3Excel", [4] = "Bolme4Excel", [5] = "Bolme5Excel" };
+    var bolmeEhate = new Dictionary<int, string>
+    {
+        [2] = "4.2.6 (HYS, yalnız işçi payı) + 4.2.5 (standart 200 AZN güzəşt) + 4.5.3 (Qaçqın) + 4.4 (Əlillər) + 4.2.7.7 (əsgər pulu)",
+        [3] = "5.2.9 (HYS, yalnız işçi payı) + 5.2.12 (xəstəlik şirkət ödənişi)",
+        [4] = "6.3 (xəstəlik + \"Hərbi Xidmət\" kimi İşsizlikdən azad manual gəlirlər)",
+        [5] = "7.2 (xəstəlik + İTSS-dən azad manual gəlirlər)",
+    };
 }
 
 <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
@@ -25,10 +37,14 @@
     <div class="mh-hero mh-hero--dsmf">
         <div class="mh-hero-l">
             <div class="mh-badge"><i class="bi bi-shield-check"></i> Mühasibat / Hesabatlar / DSMF</div>
-            <h1 class="mh-title">Əlavə №4 — Bölmə 2-3-4-5</h1>
-            <div class="mh-sub"><i class="bi bi-info-circle"></i> Güzəşt/azadolma cədvəlləri — @basNumune?.Il, Rüb @basNumune?.Rub (@rubAdlari[basNumune?.Rub ?? 1])</div>
+            <h1 class="mh-title">@(tekBolme.HasValue ? $"Əlavə №4 — Bölmə {tekBolme}" : "Əlavə №4 — Bölmə 2-3-4-5")</h1>
+            <div class="mh-sub"><i class="bi bi-info-circle"></i> @(tekBolme.HasValue ? "Güzəşt/azadolma cədvəli" : "Güzəşt/azadolma cədvəlləri") — @basNumune?.Il, Rüb @basNumune?.Rub (@rubAdlari[basNumune?.Rub ?? 1])</div>
         </div>
         <form method="get" class="mh-datef">
+            @if (tekBolme.HasValue)
+            {
+                <input type="hidden" name="bolmeNo" value="@tekBolme" />
+            }
             <label>İl</label>
             <select name="il">
                 @for (int y = cariIl - 2; y <= cariIl + 1; y++)
@@ -49,17 +65,26 @@
 
     <div class="pr-warn" style="margin-top:14px;">
         <i class="bi bi-exclamation-triangle"></i>
-        <div>
-            <b>Əhatə:</b> yalnız sistemdə qarşılığı olan maddələr avtomatik hesablanır —
-            Bölmə 2: 4.2.6 (HYS, yalnız işçi payı) + 4.2.5 (standart 200 AZN güzəşt) +
-            4.5.3 (Qaçqın) + 4.4 (Əlillər) + 4.2.7.7 (əsgər pulu); Bölmə 3: 5.2.9
-            (HYS, yalnız işçi payı) + 5.2.12 (xəstəlik şirkət ödənişi); Bölmə 4: 6.3
-            (xəstəlik + "Hərbi Xidmət" kimi İşsizlikdən azad manual gəlirlər); Bölmə 5:
-            7.2 (xəstəlik + İTSS-dən azad manual gəlirlər). Qanunun qalan maddələri
-            (neft-qaz podratçısı, texnologiya parkı, diplomatik xidmət və s.) bu banka
-            aid olmadığı üçün bura DAXİL EDİLMƏYİB — belə hal yaranarsa mühasib əl ilə
-            əlavə etməlidir.
-        </div>
+        @if (tekBolme.HasValue)
+        {
+            <div>
+                <b>Əhatə:</b> yalnız sistemdə qarşılığı olan maddə(lər) avtomatik
+                hesablanır — @bolmeEhate[tekBolme.Value]. Qanunun qalan maddələri
+                (neft-qaz podratçısı, texnologiya parkı, diplomatik xidmət və s.)
+                bu banka aid olmadığı üçün bura DAXİL EDİLMƏYİB — belə hal
+                yaranarsa mühasib əl ilə əlavə etməlidir.
+            </div>
+        }
+        else
+        {
+            <div>
+                <b>Əhatə:</b> yalnız sistemdə qarşılığı olan maddələr avtomatik hesablanır —
+                Bölmə 2: @bolmeEhate[2]; Bölmə 3: @bolmeEhate[3]; Bölmə 4: @bolmeEhate[4];
+                Bölmə 5: @bolmeEhate[5]. Qanunun qalan maddələri (neft-qaz podratçısı,
+                texnologiya parkı, diplomatik xidmət və s.) bu banka aid olmadığı üçün
+                bura DAXİL EDİLMƏYİB — belə hal yaranarsa mühasib əl ilə əlavə etməlidir.
+            </div>
+        }
     </div>
 
     @foreach (var b in Model)

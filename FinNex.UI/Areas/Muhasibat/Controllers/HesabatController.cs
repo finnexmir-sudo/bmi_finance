@@ -488,14 +488,17 @@ public class HesabatController : Controller
                      Hazirdir = false },
             new() { ResmiAd = "Əlavə №1 — Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat",
                      Hazirdir = true, Action = "Dsmf3" },
+            // 29.10.2026, istifadəçi: "hansını AÇDISA O EXCELƏ AİD OLANI GÖSTƏR" —
+            // hər "Aç" indi `bolmeNo` route dəyəri ilə YALNIZ öz bölməsini açır
+            // (əvvəl hamısı eyni, dördünü BİRLİKDƏ göstərən səhifəyə gedirdi).
             new() { ResmiAd = "Əlavə №4 — Bölmə 2", Tesvir = "Gəlir vergisi üzrə güzəşt və azadolmalar barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345" },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 2 },
             new() { ResmiAd = "Əlavə №4 — Bölmə 3", Tesvir = "Məcburi dövlət sosial sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345" },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 3 },
             new() { ResmiAd = "Əlavə №4 — Bölmə 4", Tesvir = "İşsizlikdən sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345" },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 4 },
             new() { ResmiAd = "Əlavə №4 — Bölmə 5", Tesvir = "İcbari tibbi sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345" },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 5 },
         };
         return View(komponentler);
     }
@@ -606,9 +609,14 @@ public class HesabatController : Controller
     }
 
     // ── DSMF Vahid Hesabat Forması — Əlavə №4 Bölmə 2/3/4/5 (29.10.2026) ──
-    // Dördü EYNİ struktur (qanun maddəsi-sətri), ona görə TƏK önizləmə səhifəsi,
-    // AMMA Excel ixracı HƏR biri üçün AYRI (4 fərqli rəsmi şablon faylı).
-    public async Task<IActionResult> Bolme2345(int? il, int? rub)
+    // Dördü EYNİ struktur (qanun maddəsi-sətri) işlətdiyi üçün TƏK controller
+    // action/view paylaşılır, AMMA 29.10.2026-da istifadəçi aydın tələb etdi:
+    // "hansını AÇDISA O EXCELƏ AİD OLANI GÖSTƏR" — yəni hub-dan "Bölmə 2" açanda
+    // YALNIZ Bölmə 2, "Bölmə 3" açanda YALNIZ Bölmə 3 görünməlidir, dördü BİRLİKDƏ
+    // YOX. `bolmeNo` route dəyəri bunu həll edir: veriləndə (2/3/4/5) modelə TƏK
+    // elementli siyahı qoyulur; verilməyəndə (əl ilə URL-ə girilsə) köhnə "hamısı
+    // birlikdə" davranışı qalır — geriyə uyğunluq üçün.
+    public async Task<IActionResult> Bolme2345(int? bolmeNo, int? il, int? rub)
     {
         if (!await IcazeVarAsync())
             return Forbid();
@@ -618,12 +626,19 @@ public class HesabatController : Controller
         var yil = il ?? bugun.Year;
         var r = rub ?? cariRub;
 
-        var model = new List<DsmfIstisnaBolmesiDto>
+        var model = bolmeNo switch
         {
-            await _dsmf.Bolme2HazirlaAsync(yil, r),
-            await _dsmf.Bolme3HazirlaAsync(yil, r),
-            await _dsmf.Bolme4HazirlaAsync(yil, r),
-            await _dsmf.Bolme5HazirlaAsync(yil, r),
+            2 => new List<DsmfIstisnaBolmesiDto> { await _dsmf.Bolme2HazirlaAsync(yil, r) },
+            3 => new List<DsmfIstisnaBolmesiDto> { await _dsmf.Bolme3HazirlaAsync(yil, r) },
+            4 => new List<DsmfIstisnaBolmesiDto> { await _dsmf.Bolme4HazirlaAsync(yil, r) },
+            5 => new List<DsmfIstisnaBolmesiDto> { await _dsmf.Bolme5HazirlaAsync(yil, r) },
+            _ => new List<DsmfIstisnaBolmesiDto>
+            {
+                await _dsmf.Bolme2HazirlaAsync(yil, r),
+                await _dsmf.Bolme3HazirlaAsync(yil, r),
+                await _dsmf.Bolme4HazirlaAsync(yil, r),
+                await _dsmf.Bolme5HazirlaAsync(yil, r),
+            },
         };
         return View(model);
     }

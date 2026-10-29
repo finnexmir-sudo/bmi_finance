@@ -8255,3 +8255,57 @@ Məcburi Köçkün güzəşti olan, (4) "əsgər pulu" kimi gəlir vergisi azadl
 manual gəlir aldığı işçilərin Bölmə 2-də düzgün sətirdə göründüyünü; Bölmə 3-ün
 HYS sətrinin artıq işəgötürən payını DAXİL ETMƏDİYİNİ (əvvəlki ixracla
 müqayisə edərək) təsdiqləməlidir.
+
+### Hub-dan "Aç" — HƏR Bölmə ÖZ Cədvəlini Göstərməlidir, 4-ü BİRLİKDƏ YOX (29.10.2026)
+
+İstifadəçi real ekranda (`Bolme2345`) dörd cədvəlin (Bölmə 2/3/4/5) BİRLİKDƏ,
+üst-üstə göründüyünü görüb qarışdı — bir neçə dəfə "bu nədi, neçə Excel var,
+mən 6 göndərmişəm" sualı ilə geri döndü, son olaraq AYDIN tələb etdi:
+**"hansını AÇDISA O EXCELƏ AİD OLANI GÖSTƏR"** — hub-da "Bölmə 2" sətrinin
+"Aç" düyməsinə basanda YALNIZ Bölmə 2 görünsün, "Bölmə 3"ə basanda YALNIZ
+Bölmə 3, və s. — dördü eyni səhifədə BİRLİKDƏ YOX.
+
+**Kök səbəb:** `DsmfVahidKomponentDto`-nun 4 sətrinin (Bölmə 2/3/4/5) `Action`
+sahəsi hamısı `"Bolme2345"` idi, AMMA heç bir fərqləndirici route dəyəri
+ötürülmürdü — controller də HƏMİŞƏ bütün 4 bölməni eyni `List`-ə yığıb
+qaytarırdı. Bir obyektiv baxımdan "bu, qəsdən status-checklist dizaynıdır,
+DÜZƏLİŞ #3-ü pozmur" deyə əsaslandırılmışdı (bax yuxarı, eyni günün əvvəlki
+qeydi) — amma istifadəçinin REAL gözləntisi fərqli idi: "Aç" bir NAVİQASİYA
+düyməsidir, status-siyahısı deyil, ona görə YALNIZ klikləniləni açmalıdır.
+
+**Düzəliş — `bolmeNo` route dəyəri:**
+- `DsmfVahidKomponentDto.BolmeNo` (yeni, nullable `int?`) — Bölmə 2/3/4/5
+  sətirlərinə `2`/`3`/`4`/`5` yazılır, Hissə 1/3 üçün `null` qalır (onların
+  öz ayrıca action-u var, bu sahəyə ehtiyac yoxdur).
+- `DsmfVahid.cshtml` — "Aç" linkinə `asp-route-bolmeNo="@k.BolmeNo"` əlavə
+  olundu. `BolmeNo` `null`-dursa tag helper parametri URL-ə ÜMUMİYYƏTLƏ
+  qoşmur (standart ASP.NET Core davranışı) — Hissə 1/3 linklərinə təsir
+  etmir.
+- `HesabatController.Bolme2345(int? bolmeNo, int? il, int? rub)` — `bolmeNo`
+  veriləndə (2/3/4/5) YALNIZ o bölmənin `BolmeXHazirlaAsync`-ini çağırıb
+  **TƏK elementli** siyahı qaytarır; `bolmeNo` verilmədikdə (kimsə köhnə/
+  təmiz URL-ə əl ilə girsə) köhnə "4-ü birlikdə" davranış **geriyə uyğunluq
+  üçün** qalır (`switch` ifadəsinin `_` qolu).
+- `Bolme2345.cshtml` — `tekBolme` (`Model.Count==1` olanda `Model[0].BolmeNo`)
+  dəyişəninə görə: başlıq ("Bölmə 2" vs "Bölmə 2-3-4-5"), "Əhatə" xəbərdarlıq
+  qutusu (yalnız həmin bölmənin maddələri, lüğət `bolmeEhate`) VƏ İl/Rüb
+  filtrindəki **gizli `bolmeNo` input-u** (filtri dəyişib "Göstər"ə basanda
+  eyni bölmədə qalsın, 4-ə geri düşməsin) dinamik dəyişir.
+
+**Qayda: "status-siyahısı" ilə "naviqasiya" eyni görünə bilər, amma İSTİFADƏÇİ
+ÜÇÜN eyni şey DEYİL.** Hub-da "bu 6 şeydən hansı hazırdır" sualına cavab
+tapmaq (status) ilə "bu KONKRET şeyə bax" demək (naviqasiya) iki fərqli
+niyyətdir — bir "Aç" düyməsi İKİNCİSİNİ vəd edir, bu səbəbdən klikləndiyi
+elementdən FƏRQLİ, daha geniş bir nəticə göstərməsi (bura: 4-ü birlikdə)
+baxmayaraq "düzgün əsaslandırılmış dizayn qərarı" olsa da, istifadəçini
+"bu nədir, niyə başqa şeylər də var" sualına sürükləyir. Bir neçə komponent
+EYNİ görüntü səhifəsini paylaşırsa, həmin səhifə HƏMİŞƏ "hansı elementdən
+açıldığını" BİLMƏLİ və YALNIZ ONU göstərməlidir — ümumi/bütöv görünüş YALNIZ
+açıq tələb olunanda (route parametri verilmədikdə) ehtiyat kimi qalmalıdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə 4 dəyişən faylda). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: hub-da "Bölmə 2"nin "Aç"
+düyməsinə basanda YALNIZ Bölmə 2 cədvəlinin göründüyünü, "Bölmə 3"ə basanda
+YALNIZ Bölmə 3-ün, İl/Rüb dəyişib "Göstər"ə basanda eyni bölmədə qaldığını
+(4-ə geri düşmədiyini).
