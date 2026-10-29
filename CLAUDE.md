@@ -7805,3 +7805,50 @@ IFRS 9 (həm əsas, həm "Floor parametrləri") səhifələrində artıq İcmal/
 Kreditlər/Depozit/Mənfəət-Zərər/Likvidlik tab-zolağının göstərilmədiyini —
 AMMA hər iki səhifənin öz hero düymələrinin (ECL detalı, AMB, Parametrlər,
 "IFRS 9 səhifəsinə qayıt") əvvəlki kimi işlədiyini.
+
+### DÜZƏLİŞ #3 — "IFRS 9 — ECL" vs "AMB MHBS 9" KARTLARI EYNİ SƏHİFƏYƏ AÇILIRDI (29.10.2026)
+
+İstifadəçi "Maliyyə Hesabatları" səhifəsindəki iki kartı (IFRS 9 — ECL, AMB
+MHBS 9) sınayıb hər ikisinin EYNİ nəticəyə — eyni başlıqlı ("IFRS 9 —
+Gözlənilən Kredit İtkiləri (ECL)") səhifəyə — açıldığını gördü:
+*"ikiside eyni seyi acir? biri artiqdir?"*, sonra dəqiqləşdirdi:
+*"1 ci sekildeki iki hasabatdakini acilanidir,ikiside eyni addadir axi,
+gozlenilen kredit itkileri"*.
+
+Bu, **yeni bir bug deyildi** — əvvəlki sessiyada (bax yuxarı, "Mühasibat —
+'Hesabatlar'..." bölməsinin əsas şərhi) bu iki kartın eyni URL-ə getməsi
+AÇIQ VƏ QƏSDƏN belə qurulmuşdu: "AMB A1 Excel ixracı elə IFRS9 səhifəsinin
+daxilindəki bir düymədir, ayrıca səhifəsi YOXDUR". Həmin qərar texniki
+cəhətdən doğru idi (kopyalama səhvi deyildi), amma **istifadəçi təcrübəsi
+baxımından səhv idi** — iki ayrı, eyni görünüşlü kart təqdim edib hər
+ikisinin arxasında FƏRQSİZ bir nəticə göstərmək qarışıqlıq yaradır,
+özəlliklə hər ikisi "eyni adda" (eyni başlıqda) açılanda.
+
+**Həll — AskUserQuestion ilə istifadəçiyə iki seçim təklif edildi, "Kataloqdan
+AMB kartını sil" seçildi.** `HesabatController.Katalog`-dan `amb-mhbs9` sətri
+TAMAMİLƏ ÇIXARILDI — indi kataloqda YALNIZ "IFRS 9 — ECL" kartı var, onun
+təsvirinə *"· AMB MHBS 9 A1 ixracı da buradadır"* qeydi əlavə olundu ki,
+AMB funksiyasının itmədiyi, sadəcə təkrarlanan girişin silindiyi aydın olsun.
+`AmbA1Excel` action-unun ÖZÜ (və `Ifrs9.cshtml`-dəki "AMB MHBS 9 · A1"
+düyməsi) **TOXUNULMADI** — AMB ixracı funksional olaraq əlçatandır, yalnız
+ayrıca, dubl bir kataloq kartı kimi TƏKRAR göstərilmir.
+
+**Qayda:** eyni destinasiyaya (`Area`+`Controller`+`Action`) gedən iki ayrı
+kataloq/menyu kartı yaratmaq — hətta "biri əsas səhifə, biri onun daxilindəki
+bir funksiyanı vurğulamaq üçündür" kimi əsaslandırılsa belə — istifadəçiyə
+"bunlar iki fərqli şeydir" siqnalı verir. Əgər hədəf səhifə HƏR İKİ girişdə
+EYNİ başlıq/görüntü ilə açılırsa (fərqləndirici parametr, scroll-to-section,
+fərqli alt-başlıq YOXDURSA), bu iki giriş BİR kataloq kartına birləşdirilməli,
+ikinci funksiya isə hədəf səhifənin öz daxilində (düymə/bölmə) qalmalıdır —
+"Bir Kəmiyyətə Üç Yazıcı" qaydasının əksi deyil, "Bir Destinasiyaya İKİ Qapı
+Açma" formasıdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə, `amb-mhbs9` kodunun başqa heç bir `.cshtml`/`.cs`
+faylında kataloq-kodu kimi istinad edilmədiyi `grep` ilə təsdiqləndi — yalnız
+DMS fayl-yolu qovluq adı kimi qalan 3 istinad var, kataloqla əlaqəsi yoxdur).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real brauzerdə
+yoxlamalıdır: "Maliyyə Hesabatları" səhifəsində "Risk" kateqoriyasında indi
+YALNIZ BİR kartın ("IFRS 9 — ECL") olduğunu, kartı açanda hələ də "AMB MHBS 9 ·
+A1" ixrac düyməsinin səhifənin öz daxilində göründüyünü (funksiya itməyib)
+təsdiqləməli.

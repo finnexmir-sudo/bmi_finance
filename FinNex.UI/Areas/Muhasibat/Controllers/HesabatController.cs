@@ -54,13 +54,29 @@ public class HesabatController : Controller
     // qarışdırılmır. BMI-nin köhnə "Maliyyə DP → Hesabatlar → Günlük/Aylıq/
     // Rüblük" menyusu (əmsal nümunə kimi göstərildi) bu kataloqun gələcək
     // doldurulma istiqamətidir — hesabatlar oradan "yavaş-yavaş" bura köçürüləcək.
+    //
+    // ⚠️ 29.10.2026 — İKİNCİ DÜZƏLİŞ: "AMB MHBS 9" ayrıca kart olaraq SİLİNDİ.
+    // Səbəb: o, "IFRS 9 — ECL" kartı İLƏ EYNİ səhifəyə (Action="Ifrs9") açılırdı
+    // — AMB A1 Excel ixracı həqiqətən həmin səhifənin daxilindəki bir düymədir
+    // (bax "AmbA1Excel" action-u, Ifrs9.cshtml-dəki "AMB MHBS 9 · A1" düyməsi),
+    // ayrıca məzmunu/başlığı yoxdur. İstifadəçi iki kartın eyni nəticəyə
+    // (eyni başlıqla: "IFRS 9 — Gözlənilən Kredit İtkiləri") açıldığını görüb
+    // bunu qarışıqlıq saydı: "ikiside eyni seyi acir, ikiside eyni addadir axi,
+    // gozlenilen kredit itkileri". Düzgün həll — iki kart yox, BİR kart: AMB
+    // A1 ixracı "IFRS 9 — ECL" kartının öz daxilindəki düymə ilə əlçatandır,
+    // bu, kataloqda təkrarlanmır. AMB export action-unun (`AmbA1Excel`) özü
+    // SİLİNMƏDİ — yalnız kataloqdan (göstərişdən) çıxarıldı.
     private static readonly List<HesabatKartDto> Katalog = new()
     {
-        new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli)",
+        new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli) · AMB MHBS 9 A1 ixracı da buradadır",
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
-        new() { Kod = "amb-mhbs9", Ad = "AMB MHBS 9", Tesvir = "Cədvəl A1 — rəsmi Mərkəzi Bank hesabatı",
-                Kateqoriya = "Risk", Ikon = "bi-bank2", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
-        // ⚠️ "Xərc Hesabatı" (HR/XercHesabat) 29.10.2026-da BURADAN ÇIXARILDI —
+        // ⚠️ "AMB MHBS 9" ayrıca kart kimi 29.10.2026-da BURADAN ÇIXARILDI —
+        // yuxarıdaki şərhə bax. AMB A1 Excel ixracı yuxarıdakı "IFRS 9 — ECL"
+        // kartının səhifəsindəki düymədən əlçatandır. Ayrıca kart kimi geri
+        // qaytarmaq lazımdırsa, əvvəlcə ONA XAS, fərqli bir məzmun/səhifə
+        // (Action) qurulmalıdır — əks halda eyni qarışıqlıq təkrarlanar.
+        //
+        // "Xərc Hesabatı" (HR/XercHesabat) 29.10.2026-da BURADAN ÇIXARILDI —
         // istifadəçi: "heleki islenilmir" (modul hələ real istifadədə deyil).
         // Yenidən lazım olsa, yalnız bura geri əlavə et (Kod="xerc-hesabati",
         // Kateqoriya="Xərclər", Area="HR", Controller="XercHesabat", Action="Index").
