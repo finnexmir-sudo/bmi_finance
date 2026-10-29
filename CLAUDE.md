@@ -8143,3 +8143,115 @@ indi TƏK "DSMF — Vahid Hesabat Forması" kartının olduğunu, onu açanda 6
 sətirin (4 "Hazırdır" + 2 "Hazırlanır") göründüyünü, "Aç" düymələrinin düzgün
 səhifəyə keçdiyini, Excel ixracının bu dəfə RƏSMİ şablon formatında (generik
 fallback yox) və real rəqəmlərlə çıxdığını.
+
+### DSMF Əlavə №4 Bölmə 2 (29.10.2026) + Bölmə 3-ün 5.2.9-u Düzəldildi — "sirket yox"
+
+Yuxarıdakı bölmədə Bölmə 2 "Hazırlanır" idi — bu sessiyada quruldu. Mənbə
+şablon: `UNIFIED_APPENDIX_4_DISCOUNTS.xlsx` ("Əlavə №4 - Bölmə 2. Gəlir
+vergisi üzrə güzəşt və azadolmalar barədə məlumat"). İstifadəçi ilə iki
+ambiguous nöqtə birbaşa həll edildi:
+
+1. **HYS (VM 102.1.8) — yalnız işçi payı** (istifadəçi: "1. yalniz isci.").
+2. **"Qaçqın" (VM 102.4.5) → `GuzestNovu.MecburiKockun`** (istifadəçi:
+   "Məcburi Köçkün").
+
+**5 sətir, kanonik əhatə** (qalan 27/32 VM maddəsi — neft-qaz, texnologiya
+parkı, Ələt AİZ, diplomatik xidmət və s. — bu banka aid deyil):
+
+| Sətir | Maddə | Mənbə |
+|---|---|---|
+| 4.2.6 (102.1.8) | HYS, YALNIZ işçi payı | `IsciHYS.Mebleg`, dondurma ilə (`IIsciHYSDondurmaService`) |
+| 4.2.5 (102.1.6) | Standart 200 AZN güzəşt | `Maas.HesablamaIzahi` JSON-dan oxunur (aşağı bax) |
+| 4.5.3 (102.4.5) | "Qaçqın" | `IsciGuzest`+`Guzest`, `Novu == MecburiKockun` |
+| 4.4 (102.3) | "Əlillər" | `IsciGuzest`+`Guzest`, `Novu == Elillik` |
+| 4.2.7.7 (102.1.14.16) | "əsgər pulu" | manual gəlir, `Min(MaasDetay.Mebleg, MaasNovu.GelirVergisiAzadMebleg)` |
+
+**Standart 200 AZN güzəşti — TƏKRAR YAZILMADI, PERSİST edilmiş JSON-dan
+OXUNUR.** `MaasHesablamaService.FerdiHesabla`-nın "9.2 Standart 200 AZN
+güzəşti" düsturu (`brutMaasGuzestYoxlama ≤ firstBracketMax`) `elaveCemi`/
+`mezuniyyetAvansBrutu`/`VM9821Meblegi` kimi dərin daxili dəyişənlərdən
+asılıdır — DSMF-də müstəqil təkrar yazmaq "Bir Kəmiyyətə Üç Yazıcı" riski
+yaradardı (payroll dəyişsə, DSMF sakitcə köhnə qalardı). Əvəzinə, `FerdiHesabla`
+artıq HƏR ayın nəticəsini `Maas.HesablamaIzahi`-yə (JSON, `List<HesablamaIzahiDto>`,
+`Addim="Vergi Guzesti"` → `Mebleg = standartGuzest + maxIsciGuzesti`, varsa
+`Addim="İşçi güzəştləri"` → `Mebleg = maxIsciGuzesti`) yazır — DSMF servisi bu
+JSON-u `JsonSerializer.Deserialize` ilə oxuyub `standartGuzest = VergiGuzesti.Mebleg
+− İşçiGüzəştləri.Mebleg` fərqini çıxarır. Parse xətası (köhnə/korrupt JSON)
+sakit `0` qaytarır — sətir əskik qalar, səhv rəqəm YAZILMAZ.
+
+**Əlillik/Qaçqın — yalnız HƏQİQƏTƏN QALİB GƏLƏN güzəşt sayılır.** Bir işçidə
+eyni anda İKİ fərqli növdə (məs. həm Əlillik, həm Məcburi Köçkün) aktiv güzəşt
+olsa, vergi hesablamasında yalnız ƏN BÖYÜYÜ tətbiq olunur (Maddə 102 —
+toplanmır). `GuzestNovuUzreAsync` hər növü ayrıca sorğulayır, amma sətrə YALNIZ
+`Maas.HesablamaIzahi`-dəki "İşçi güzəştləri" addımının `Mebleg`-i HƏMİN
+Guzest-in `Mebleg`-inə DƏQİQ bərabərdirsə yazır — əks halda güzəşt qeydiyyatda
+var, amma o AY tətbiq olunmayıb (başqa güzəşt qalib gəlib) deməkdir, DSMF-ə
+yazılmır. Bu, nadir bir edge-case üçün, formula-təkrarından daha etibarlı bir
+cross-validation həllidir.
+
+### "sirket yox" — Bölmə 3-ün 5.2.9-u da düzəldildi (RETROAKTİV KOD DƏYİŞİKLİYİ)
+
+İstifadəçi Bölmə 2-nin HYS sualına "yalniz isci" cavabından SONRA, açıq şəkildə
+əlavə etdi: *"Bölmə 3-dəki 5.2.9 kimi — yalniz iscilerden gedir sohbet, sirket
+yox"* — yəni Bölmə 3-ün ARTIQ COMMIT OLUNMUŞ (əvvəlki, bu sessiyanın öz daxilindəki
+turda) 5.2.9 sətri də (`HysCemiAsync`, işçi `IsciHYS.Mebleg` + işəgötürən 15%
+faizini BİRLİKDƏ göstərirdi) YALNIZ işçi payına düzəldilməlidir. `AskUserQuestion`
+ilə birbaşa təsdiqləndi (ambiguous idi: "sirket yox" Bölmə 2-yə aiddirmi, yoxsa
+Bölmə 3-ü DƏ nəzərdə tutur?) — cavab: **"Bəli, Bölmə 3-ü də düzəlt"**.
+
+**Düzəliş:** `HysCemiAsync` (işçi+işəgötürən, `MaasParametrNovu.HysIsegoturenFaizi`
+15%) VƏ onun `HysIsegoturenFaiziAsync` köməkçisi TAMAMILƏ SİLİNDİ (başqa heç bir
+çağıran qalmadı) — `Bolme3HazirlaAsync` indi Bölmə 2-nin özünün çağırdığı EYNİ
+`HysIsciPayiAsync`-i (yalnız işçi) çağırır. Bu, "Bir Kəmiyyətə Üç Yazıcı"
+qaydasının TƏRSİ — iki fərqli qanun maddəsi (102.1.8 vs 5.2.9) EYNİ "yalnız
+işçi" qaydasını paylaşdığı üçün ortaq metod işlədilir, iki nüsxə saxlanmır.
+
+⚠️ **Qayda: istifadəçinin "X kimi" ("bunun kimi") dediyi bir cavab, "X"-in
+ÖZÜNÜN düzgün olduğu fərziyyəsinə əsaslanmasın** — burada "Bölmə 3-dəki 5.2.9
+kimi" referens nöqtəsi əslində ÖZÜ səhv (köhnə, employee+employer) idi, istifadəçi
+bunu YENİ TƏLƏB kimi işlətdi ("bu da elə O olmalıdır ki, mən artıq düzgün
+bildiyim formadır"), kod isə hələ köhnə vəziyyətdə idi. Analoji istinadlı bir
+cavabda HƏMİŞƏ istinad edilən yerin CARİ koddakı HƏQİQİ vəziyyətini yoxla —
+uyğunsuzluq varsa (bura kimi) AÇIQ sual ver, səssizcə bir tərəfi fərz etmə.
+
+### Hub + Önizləmə Səhifəsi Yeniləndi
+
+`HesabatController.DsmfVahid()`-də Bölmə 2 sətri `Hazirdir = false` →
+`Hazirdir = true, Action = "Bolme2345"` (indi 5/6 "Hazırdır", yalnız Hissə 1
+qalır). **`Bolme345` action/view `Bolme2345`-ə YENİDƏN ADLANDIRILDI** (Bölmə
+3/4/5 sətirlərinin `Action`-u da `Bolme2345`-ə köçürüldü) — səhifə indi 4
+bölməni (2, 3, 4, 5) EYNİ `@foreach (var b in Model)` döngəsində göstərir,
+çünki `DsmfIstisnaBolmesiDto`/`DsmfIstisnaSetirDto` strukturu Bölmə 2 üçün
+DƏ eynən uyğun gəldi (yeni DTO yazılmadı). Yeni `Bolme2Excel` action-u
+`Bolme3/4/5Excel` ilə EYNİ `BolmeExcelQaytar` helper-ini çağırır.
+
+⚠️ **KRİTİK — Bölmə 2 şablonunun VƏRƏQ TAB ADI, EKRANDAKI başlıqdan
+FƏRQLİDİR.** `UNIFIED_APPENDIX_4_DISCOUNTS.xlsx`-in A1 xanasında "Əlavə №4 -
+**Bölmə 2**..." yazsa da, Excel-in ÖZ vərəq sekmesinin adı **"Əlavə №4 -
+Hissə 1"**-dir (dövlət şablonunun özündə qalan köhnə/səhv ad — başqa bir
+əlavədən kopyalanıb unudulmuş görünür). `BolmeSablonDoldur` `wb.GetSheet(vereqAdi)`
+ilə TAB ADINA görə axtarır, hüceyrə mətninə görə YOX — `Bolme2Excel`
+çağırışında `vereqAdi = "Əlavə №4 - Hissə 1"` yazılıb (EKRANDAKI "Bölmə 2"
+mətni DEYİL). Səhv tab adı ilə çağırılsaydı `GetSheet` `null` qaytarardı,
+`if (ws != null)` qoruyucusu doldurma blokunu TAMAMILƏ ATLAYARDI və fayl
+SƏSSİZCƏ boş (yalnız şablonun öz nümunə sətirləri ilə) enərdi — heç bir xəta.
+
+**Qayda: rəsmi dövlət Excel şablonunda vərəq SEKMESİNİN adı ilə hüceyrə
+İÇİNDƏKİ başlıq mətni EYNİ OLACAĞINA GÜVƏNMƏ** — hər ikisini AYRI-AYRI yoxla
+(`openpyxl`-la `wb.sheetnames` VƏ `ws['A1'].value`), xüsusilə şablon başqa bir
+əlavədən kopyalanıb redaktə edilmiş görünürsə.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — Bölmə 3-ün 5.2.9 düzəlişi yalnız BUNDAN SONRA
+çağırılan hesablamalara təsir edir; bu sessiyada əvvəllər (əgər varsa) real
+mühitdə test edilmiş/ixrac olunmuş Bölmə 3 Excel-ləri YENİDƏN ixrac edilməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə bütün 5 dəyişən/yeni faylda, `HesablamaIzahiDto`-nun
+namespace-i (`FinNex.Application.DTOs.HR.Maas`) və `Addim`/`Mebleg` sahə adları
+`MaasHesablamaService.cs`-in öz yazma kodundan hərfi təsdiqləndi). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: (1)
+HYS-i olan, (2) brüt maaşı ≤2500 olan (standart güzəşt), (3) aktiv Əlillik/
+Məcburi Köçkün güzəşti olan, (4) "əsgər pulu" kimi gəlir vergisi azadlığı olan
+manual gəlir aldığı işçilərin Bölmə 2-də düzgün sətirdə göründüyünü; Bölmə 3-ün
+HYS sətrinin artıq işəgötürən payını DAXİL ETMƏDİYİNİ (əvvəlki ixracla
+müqayisə edərək) təsdiqləməlidir.

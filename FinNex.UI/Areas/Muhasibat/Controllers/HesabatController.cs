@@ -81,7 +81,7 @@ public class HesabatController : Controller
         // kart var idi ("DSMF — Əlavə №1 Hissə 3" + "DSMF — Əlavə №4 Bölmə 3-4-5") —
         // istifadəçi bunları bir "Vahid Hesabat" girişi altında, daxilində 6-nın da
         // statusunu göstərən bir "hub" səhifəsi istədi. `DsmfVahid` action-u həmin
-        // hub-dır, Dsmf3/Bolme345-ə buradan keçid verilir — KATALOQDA artıq ikisi
+        // hub-dır, Dsmf3/Bolme2345-ə buradan keçid verilir — KATALOQDA artıq ikisi
         // AYRI görünmür (bax CLAUDE.md "DSMF — Vahid Hub" bölməsi).
         new() { Kod = "dsmf-vahid", Ad = "DSMF — Vahid Hesabat Forması", Tesvir = "Dövlət Sosial Müdafiə Fonduna rüblük hesabat — 6 rəsmi əlavə, hazır olanlar işarəli",
                 Kateqoriya = "Rüblük", Ikon = "bi-bank2", Area = "Muhasibat", Controller = "Hesabat", Action = "DsmfVahid" },
@@ -489,13 +489,13 @@ public class HesabatController : Controller
             new() { ResmiAd = "Əlavə №1 — Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat",
                      Hazirdir = true, Action = "Dsmf3" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 2", Tesvir = "Gəlir vergisi üzrə güzəşt və azadolmalar barədə məlumat",
-                     Hazirdir = false },
+                     Hazirdir = true, Action = "Bolme2345" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 3", Tesvir = "Məcburi dövlət sosial sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme345" },
+                     Hazirdir = true, Action = "Bolme2345" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 4", Tesvir = "İşsizlikdən sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme345" },
+                     Hazirdir = true, Action = "Bolme2345" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 5", Tesvir = "İcbari tibbi sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme345" },
+                     Hazirdir = true, Action = "Bolme2345" },
         };
         return View(komponentler);
     }
@@ -605,10 +605,10 @@ public class HesabatController : Controller
         return ms.ToArray();
     }
 
-    // ── DSMF Vahid Hesabat Forması — Əlavə №4 Bölmə 3/4/5 (29.10.2026) ──
-    // Üçü EYNİ struktur (qanun maddəsi-sətri), ona görə TƏK önizləmə səhifəsi,
-    // AMMA Excel ixracı HƏR biri üçün AYRI (3 fərqli rəsmi şablon faylı).
-    public async Task<IActionResult> Bolme345(int? il, int? rub)
+    // ── DSMF Vahid Hesabat Forması — Əlavə №4 Bölmə 2/3/4/5 (29.10.2026) ──
+    // Dördü EYNİ struktur (qanun maddəsi-sətri), ona görə TƏK önizləmə səhifəsi,
+    // AMMA Excel ixracı HƏR biri üçün AYRI (4 fərqli rəsmi şablon faylı).
+    public async Task<IActionResult> Bolme2345(int? il, int? rub)
     {
         if (!await IcazeVarAsync())
             return Forbid();
@@ -620,11 +620,25 @@ public class HesabatController : Controller
 
         var model = new List<DsmfIstisnaBolmesiDto>
         {
+            await _dsmf.Bolme2HazirlaAsync(yil, r),
             await _dsmf.Bolme3HazirlaAsync(yil, r),
             await _dsmf.Bolme4HazirlaAsync(yil, r),
             await _dsmf.Bolme5HazirlaAsync(yil, r),
         };
         return View(model);
+    }
+
+    // ⚠️ Rəsmi şablonun (UNIFIED_APPENDIX_4_DISCOUNTS.xlsx) VƏRƏQ TAB ADI
+    // "Əlavə №4 - Hissə 1"-dir (hüceyrə A1-dəki başlıq mətni "Bölmə 2" desə
+    // də) — dövlət şablonunun özündə qalan köhnə/səhv ad, DÜZƏLDİLMƏSİN.
+    // `BolmeSablonDoldur` `wb.GetSheet(vereqAdi)` ilə tab ADINA görə axtarır —
+    // "Bölmə 2" yazsaq heç nə tapılmaz, ws==null, şablon SƏSSİZCƏ boş qalar.
+    public async Task<IActionResult> Bolme2Excel(int il, int rub)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+        var m = await _dsmf.Bolme2HazirlaAsync(il, rub);
+        return BolmeExcelQaytar(m, "UNIFIED_APPENDIX_4_DISCOUNTS.xlsx", "Əlavə №4 - Hissə 1", "Bolme2");
     }
 
     public async Task<IActionResult> Bolme3Excel(int il, int rub)

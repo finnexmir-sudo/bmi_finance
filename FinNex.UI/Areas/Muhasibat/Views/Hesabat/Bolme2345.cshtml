@@ -1,11 +1,11 @@
 @using FinNex.Application.DTOs.Dsmf
 @model List<DsmfIstisnaBolmesiDto>
 @{
-    ViewData["Title"] = "DSMF — Əlavə №4 Bölmə 3-4-5";
+    ViewData["Title"] = "DSMF — Əlavə №4 Bölmə 2-3-4-5";
     var rubAdlari = new[] { "", "Yanvar–Mart", "Aprel–İyun", "İyul–Sentyabr", "Oktyabr–Dekabr" };
     var cariIl = DateTime.Today.Year;
     var basNumune = Model.FirstOrDefault();
-    var excelAction = new Dictionary<int, string> { [3] = "Bolme3Excel", [4] = "Bolme4Excel", [5] = "Bolme5Excel" };
+    var excelAction = new Dictionary<int, string> { [2] = "Bolme2Excel", [3] = "Bolme3Excel", [4] = "Bolme4Excel", [5] = "Bolme5Excel" };
 }
 
 <partial name="~/Areas/Muhasibat/Views/Dashboard/_MhStyles.cshtml" />
@@ -25,8 +25,8 @@
     <div class="mh-hero mh-hero--dsmf">
         <div class="mh-hero-l">
             <div class="mh-badge"><i class="bi bi-shield-check"></i> Mühasibat / Hesabatlar / DSMF</div>
-            <h1 class="mh-title">Əlavə №4 — Bölmə 3-4-5</h1>
-            <div class="mh-sub"><i class="bi bi-info-circle"></i> Sığorta-istisna gəlirlər — @basNumune?.Il, Rüb @basNumune?.Rub (@rubAdlari[basNumune?.Rub ?? 1])</div>
+            <h1 class="mh-title">Əlavə №4 — Bölmə 2-3-4-5</h1>
+            <div class="mh-sub"><i class="bi bi-info-circle"></i> Güzəşt/azadolma cədvəlləri — @basNumune?.Il, Rüb @basNumune?.Rub (@rubAdlari[basNumune?.Rub ?? 1])</div>
         </div>
         <form method="get" class="mh-datef">
             <label>İl</label>
@@ -51,7 +51,9 @@
         <i class="bi bi-exclamation-triangle"></i>
         <div>
             <b>Əhatə:</b> yalnız sistemdə qarşılığı olan maddələr avtomatik hesablanır —
-            Bölmə 3: 5.2.9 (HYS) + 5.2.12 (xəstəlik şirkət ödənişi); Bölmə 4: 6.3
+            Bölmə 2: 4.2.6 (HYS, yalnız işçi payı) + 4.2.5 (standart 200 AZN güzəşt) +
+            4.5.3 (Qaçqın) + 4.4 (Əlillər) + 4.2.7.7 (əsgər pulu); Bölmə 3: 5.2.9
+            (HYS, yalnız işçi payı) + 5.2.12 (xəstəlik şirkət ödənişi); Bölmə 4: 6.3
             (xəstəlik + "Hərbi Xidmət" kimi İşsizlikdən azad manual gəlirlər); Bölmə 5:
             7.2 (xəstəlik + İTSS-dən azad manual gəlirlər). Qanunun qalan maddələri
             (neft-qaz podratçısı, texnologiya parkı, diplomatik xidmət və s.) bu banka
