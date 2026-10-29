@@ -16,6 +16,17 @@ namespace FinNex.Application.DTOs.Muhasibat
         public string? Action { get; set; }
 
         /// <summary>
+        /// Rəsmi DSMF Excel şablonunun fayl adı (məs. "UNIFIED_APPENDIX_1_
+        /// EMPLOYEE_LIST.xlsx") — bax HesabatController.Dsmf1/Dsmf3/Bolme2/
+        /// Bolme3/Bolme4/Bolme5Excel-in öz `"...xlsx"` sabitləri. İstifadəçi
+        /// tələbi (29.10.2026): "exceldeki adlar vare, onlar hansina aiddirse
+        /// onu yaz, bilek ki hansi exceldi" — hər kart hansı fiziki faylı
+        /// (DMS-dəki `hesabat-sablonlari/muhasibat/dsmf/` qovluğunda) doldurub
+        /// ixrac etdiyini açıq göstərsin.
+        /// </summary>
+        public string? SablonFaylAdi { get; set; }
+
+        /// <summary>
         /// Bölmə 2/3/4/5 EYNİ `Bolme2345` action-unu paylaşır — bu sahə ona
         /// `bolmeNo` route dəyəri kimi ötürülür ki, "hansını AÇDISA O EXCELƏ
         /// AİD OLANI GÖSTƏR" (29.10.2026, istifadəçi tələbi) işləsin: hər

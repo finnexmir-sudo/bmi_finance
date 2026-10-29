@@ -485,20 +485,20 @@ public class HesabatController : Controller
         var komponentler = new List<DsmfVahidKomponentDto>
         {
             new() { ResmiAd = "Əlavə №1 — Hissə 1", Tesvir = "İşçilər (sığortaolunanlar) üzrə ümumi məlumat — muzdlu işə aid fəaliyyətlər üzrə (maaş tərkibi)",
-                     Hazirdir = true, Action = "Dsmf1" },
+                     Hazirdir = true, Action = "Dsmf1", SablonFaylAdi = "UNIFIED_APPENDIX_1_EMPLOYEE_LIST.xlsx" },
             new() { ResmiAd = "Əlavə №1 — Hissə 3", Tesvir = "İşçinin işləmədiyi iş günləri haqqında məlumat",
-                     Hazirdir = true, Action = "Dsmf3" },
+                     Hazirdir = true, Action = "Dsmf3", SablonFaylAdi = "UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx" },
             // 29.10.2026, istifadəçi: "hansını AÇDISA O EXCELƏ AİD OLANI GÖSTƏR" —
             // hər "Aç" indi `bolmeNo` route dəyəri ilə YALNIZ öz bölməsini açır
             // (əvvəl hamısı eyni, dördünü BİRLİKDƏ göstərən səhifəyə gedirdi).
             new() { ResmiAd = "Əlavə №4 — Bölmə 2", Tesvir = "Gəlir vergisi üzrə güzəşt və azadolmalar barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 2 },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 2, SablonFaylAdi = "UNIFIED_APPENDIX_4_DISCOUNTS.xlsx" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 3", Tesvir = "Məcburi dövlət sosial sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 3 },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 3, SablonFaylAdi = "UNIFIED_APPENDIX_4_NON_INVOLVED_MDSS.xlsx" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 4", Tesvir = "İşsizlikdən sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 4 },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 4, SablonFaylAdi = "UNIFIED_APPENDIX_4_NON_INVOLVED_UNEMPLOYED.xlsx" },
             new() { ResmiAd = "Əlavə №4 — Bölmə 5", Tesvir = "İcbari tibbi sığorta haqqına cəlb olunmayan gəlirlər barədə məlumat",
-                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 5 },
+                     Hazirdir = true, Action = "Bolme2345", BolmeNo = 5, SablonFaylAdi = "UNIFIED_APPENDIX_4_NON_INVOLVED_ITS.xlsx" },
         };
         return View(komponentler);
     }

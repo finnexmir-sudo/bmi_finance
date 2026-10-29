@@ -18,6 +18,7 @@
     .dv-body { flex: 1; min-width: 0; }
     .dv-ad { font-weight: 700; font-size: 14px; color: #1e293b; }
     .dv-tesvir { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+    .dv-sablon { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-family: "SFMono-Regular", Consolas, monospace; color: #0f766e; background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 6px; padding: 2px 8px; margin-top: 6px; }
     .dv-status { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
     .dv-status--ready { background: #ecfdf5; color: #0f766e; }
     .dv-status--pending { background: #f1f5f9; color: #94a3b8; }
@@ -44,6 +45,10 @@
                 <div class="dv-body">
                     <div class="dv-ad">@k.ResmiAd</div>
                     <div class="dv-tesvir">@k.Tesvir</div>
+                    @if (!string.IsNullOrEmpty(k.SablonFaylAdi))
+                    {
+                        <div class="dv-sablon"><i class="bi bi-file-earmark-excel"></i> @k.SablonFaylAdi</div>
+                    }
                 </div>
                 @if (k.Hazirdir)
                 {

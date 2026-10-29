@@ -8514,3 +8514,42 @@ Bölmə 2-5 səhifələrinin HƏR ÜÇÜNDƏ "İl" və "Rüb" etiketlərinin ind
 seçimlərinin ÜSTÜNDƏ dayandığını, select qutularının rounded/ağ/oxlu
 göründüyünü, digər Mühasibat Dashboard səhifələrinin (tarix inputu olan)
 əvvəlki kimi qaldığını.
+
+### DSMF Hub — Hər Kartda Rəsmi Excel Şablonunun Fayl Adı (29.10.2026)
+
+İstifadəçi (Visual Studio-dakı `C:\...\2026-3\` qovluğunu göstərib): *"bir
+seyide elave et, exceldeki adlar vare, employee, discount, onlar hansina
+aiddirse onu yaz, bilek ki hansi exceldi"* — "DSMF — Vahid Hesabat Forması"
+hub-ında hər kartın hansı rəsmi `UNIFIED_APPENDIX_*.xlsx` faylını
+doldurub ixrac etdiyini görmək istədi.
+
+**Yeni sahə — `DsmfVahidKomponentDto.SablonFaylAdi`** — `HesabatController.
+DsmfVahid()`-in statik siyahısına əlavə olundu, `Dsmf1/Dsmf3/Bolme2/3/4/
+5Excel`-in ÖZ `"...xlsx"` sabitlərindən HƏRFİ köçürülüb (yeni araşdırma
+aparılmadı, elə həmin action-ların kodunda artıq var idi):
+
+| Kart | Fayl |
+|---|---|
+| Əlavə №1 — Hissə 1 | `UNIFIED_APPENDIX_1_EMPLOYEE_LIST.xlsx` |
+| Əlavə №1 — Hissə 3 | `UNIFIED_APPENDIX_1_UNEMPLOYED_DAYS.xlsx` |
+| Əlavə №4 — Bölmə 2 | `UNIFIED_APPENDIX_4_DISCOUNTS.xlsx` |
+| Əlavə №4 — Bölmə 3 | `UNIFIED_APPENDIX_4_NON_INVOLVED_MDSS.xlsx` |
+| Əlavə №4 — Bölmə 4 | `UNIFIED_APPENDIX_4_NON_INVOLVED_UNEMPLOYED.xlsx` |
+| Əlavə №4 — Bölmə 5 | `UNIFIED_APPENDIX_4_NON_INVOLVED_ITS.xlsx` |
+
+Görüntü — `DsmfVahid.cshtml`-də hər kartın təsvirindən dərhal sonra kiçik,
+yaşıl/mono-şrift bir "etiket" (`.dv-sablon`) kimi göstərilir — sırf oxunuşluq
+üçün, keçid/filtr mənası daşımır.
+
+⚠️ **Bu, SADƏCƏ GÖSTƏRİŞDİR — hansı faylın hansı DMS yoluna qoyulacağına
+(`hesabat-sablonlari/muhasibat/dsmf/`) TƏSİR ETMİR**, sadəcə istifadəçiyə
+("bilək ki hansı excel-dir") əvvəlcədən mövcud olan `Dsmf*Excel` action-
+larının öz sabit fayl adını əks etdirir — iki yerdə (controller-in daxili
+sabiti və hub-dakı bu DTO sahəsi) eyni ad TƏKRAR yazılıb; gələcəkdə fayl
+adı dəyişsə, HƏR İKİSİ yenilənməlidir (hal-hazırda avtomatik sinxronlaşan
+tək bir mənbə yoxdur — sadə, statik siyahı olduğu üçün qəsdən belə saxlanıldı).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/div balansı skriptlə). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real brauzerdə yoxlamalıdır: hər 6 kartın
+altında düzgün `.xlsx` adının göründüyünü.
