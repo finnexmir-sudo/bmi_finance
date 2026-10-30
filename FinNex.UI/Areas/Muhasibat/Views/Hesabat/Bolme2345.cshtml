@@ -31,6 +31,18 @@
     .pr-card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 14px; padding: 13px 18px; border-bottom: 1px solid #eef2f7; color: #1e293b; }
     .bolme-xls { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #0f766e; color: #fff; border-radius: 8px; font-size: 12.5px; font-weight: 600; text-decoration: none; }
     .bolme-xls:hover { background: #0d5f58; color: #fff; }
+
+    /* 30.10.2026 — hero daha nazik + cədvəl ÖZ-DAXİLİ scroll alır — Dsmf1.cshtml
+       və Dsmf3.cshtml-dəki eyni yerli nüsxə, hamısına EYNİ dəyişiklik. */
+    .mh-hero--dsmf { padding: 16px 26px; }
+    .mh-hero--dsmf .mh-badge { margin-bottom: 6px; }
+    .mh-hero--dsmf .mh-title { font-size: 20px; margin: 0 0 3px; }
+    .mh-hero--dsmf .mh-sub { font-size: 12px; }
+    .mh-hero--dsmf .mh-datef { padding: 7px 12px; gap: 8px; }
+    .mh-hero--dsmf .mh-datef select,
+    .mh-hero--dsmf .mh-datef button { height: 30px; font-size: 12px; }
+    .dsmf-scroll { overflow: auto; max-height: 60vh; border-radius: 0 0 14px 14px; }
+    .dsmf-scroll table.hj-table thead th { position: sticky; top: 0; z-index: 2; background: var(--hj-bg); }
 </style>
 
 <div class="mh-wrap">
@@ -109,7 +121,7 @@
             }
             else
             {
-                <div style="overflow-x:auto;">
+                <div class="dsmf-scroll">
                     <table class="hj-table" style="width:100%;">
                         <thead>
                             <tr>

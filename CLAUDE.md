@@ -8783,3 +8783,81 @@ yoxlamalıdır: işəgötürən HYS-i olan bir işçinin Bölmə 3 (5.2.9) və H
 (4.1) sütunlarındakı məbləğin indi İŞÇİ+İŞGÖTÜRƏN cəmini göstərdiyini
 (əvvəlkindən böyük çıxmalıdır), Bölmə 2 (4.2.6)/Hissə 1 (3.1)-in artıq
 dəyişmədiyini (əvvəlki dalğada düzəlmişdi) təsdiqləməlidir.
+
+## DSMF Önizləmə Səhifələri — Üfüqi Scroll AŞAĞIDA, Hero HÜNDÜR İdi (30.10.2026)
+
+İstifadəçi iki ekran-görüntüsü göndərdi (Əlavə №1 Hissə 1 səhifəsi): *"burda
+ede bilerikki, cedveli saga cevirmek ucun gerekki sehifeni tam asagi edesen
+sobra scrolu gorunur, hemde yuxardiki 2 ci sekil, bu hisseni biraz
+hundurluynude azalda bilerik"* — (1) cədvəli SAĞA sürüşdürmək üçün ƏVVƏLCƏ
+BÜTÖV SƏHİFƏNİ aşağı düşürmək lazım gəlirdi (yalnız onda üfüqi scrollbar
+görünürdü), (2) yaşıl hero qutusunun hündürlüyü azaldılsın.
+
+**Kök səbəb (1) — `overflow-x:auto` TƏK BAŞINA kifayət etmirdi, çünki
+konteynerin HÜNDÜRLÜYÜ məhdud deyildi.** `Dsmf1.cshtml` (18 sütun × 26 sətir),
+`Dsmf3.cshtml`, `Bolme2345.cshtml` hər üçündə cədvəl `<div
+style="overflow-x:auto;">` ilə örtülmüşdü — bu, `hr-jeton.css`-in "BEŞİNCİ
+DALĞA" qeydindəki qaydaya (`overflow:hidden` YOX, `overflow-x:auto`) riayət
+edirdi və sütunları KƏSMİRDİ, AMMA konteynerin özü sərbəst hündürlükdə
+olduğu üçün cədvəlin BÜTÜN sətirləri (uzun siyahılarda onlarla sətir) adi
+səhifə axınında göstərilirdi — üfüqi scrollbar YALNIZ konteynerin ən
+ALTINDA (demək ki, bütün sətirlərdən SONRA) çıxırdı. Uzun bir cədvəldə bu,
+elə `hr-jeton.css`-in "ALTINCI DALĞA" qeydindəki simptomun EYNİSİ idi
+("scroll edilə bilən, amma TAPILA bilməyən") — fərq yalnız istiqamətdə idi
+(orada şaquli scroll-un altında itən üfüqi scroll, burada bütöv səhifənin
+altında itən üfüqi scroll).
+
+**Düzəliş — `.dsmf-scroll` (yeni sinif, HƏR ÜÇ səhifənin öz yerli `<style>`
+blokunda, "paylaşılan faylda yoxdur, yerli nüsxə" konvensiyasına uyğun):**
+```css
+.dsmf-scroll { overflow: auto; max-height: 60vh; border-radius: 0 0 14px 14px; }
+.dsmf-scroll table.hj-table thead th { position: sticky; top: 0; z-index: 2; background: var(--hj-bg); }
+```
+`overflow-x:auto;` inline stili olan hər `<div>` (Dsmf1: 1 yer, Dsmf3: 1 yer,
+Bolme2345: `@foreach`-in İÇİNDƏ, bütün bölmələr üçün 1 yer) `class="dsmf-scroll"`-a
+keçirildi. `max-height:60vh` konteyneri PƏNCƏRƏYƏ GÖRƏ məhdudlaşdırır — nəticə:
+üfüqi scrollbar artıq cədvəlin ÖZÜNÜN altında (görünən sahədə) çıxır, bütöv
+səhifəni aşağı düşürməyə ehtiyac yoxdur; sətir sayı çoxdursa, indi həmin
+qutunun DAXİLİNDƏ şaquli scroll əmələ gəlir (bu da əlavə fayda — səhifənin
+özü də artıq uzanmır). `thead th`-ə əlavə olunan `position:sticky` isə bu
+daxili şaquli scrollun təbii nəticəsidir — sütun başlıqları aşağı sürüşəndə
+yox olmasın deyə (`background: var(--hj-bg)` AÇIQ yazıldı, çünki sticky-ə
+keçən `<th>` öz arxa fonunu `<tr>`-dən MİRAS GÖTÜRMƜ zəmanəti yoxdur —
+`hr-jeton.css`-də fon yalnız `.hj-table thead tr`-ə verilib, `th`-in özünə
+yox).
+
+**Kök səbəb (2) + Düzəliş — hər üç səhifənin yerli `<style>` blokuna
+`.mh-hero--dsmf` üçün daraldılmış override:** `padding:26px 30px` (paylaşılan
+`_MhStyles.cshtml`-dəki `.mh-hero` defolt dəyəri — BÜTÜN Dashboard
+səhifələrində, toxunulmadı) → DSMF-ə xas `padding:16px 26px`, başlıq
+`font-size:28px` → `20px`, alt-mətn `13.5px` → `12px`, badge/başlıq arası
+boşluqlar sıxıldı, İl/Rüb seçim qutusunun öz paddingi/hündürlüyü də (36px →
+30px) azaldıldı. **`_MhStyles.cshtml`-in ÖZÜNƏ TOXUNULMADI** — o, Balans
+İcmalı/Kredit/Depozit/Mənfəət-Zərər/Likvidlik/Ifrs9 kimi onlarla başqa
+Dashboard səhifəsində paylaşılır, qlobal dəyişiklik həmin səhifələrin
+görünüşünü də (sorğusuz) dəyişdirərdi — düzəliş YALNIZ `.mh-hero--dsmf`
+sinfinə (indiyədək də yalnız DSMF səhifələrində işlənən, fon rəngini
+dəyişdirən bir modifier-dir) bağlı, page-scoped qaldı.
+
+**Qayda (təkrar, YENİ forması):** `overflow-x:auto` (və ya `overflow-y:auto`)
+olan bir konteyner sınırsız (auto) HÜNDÜRLÜKDƏdirsə, tərs-istiqamətli scrollbar
+konteynerin ÖZ SONUNDA çıxır — çox sətirli/sütunlu cədvəllərdə bu, "scroll
+edilə bilən, amma görünən sahədən kənarda, tapıla bilməyən" vəziyyətinə
+aparır (eyni sinif, `hr-jeton.css`-in "ALTINCI DALĞA" qeydindəki kimi).
+Konteynerə bir `max-height` (və `overflow:auto`, hər iki istiqamətdə) qoymaq
+scrollbar(lar)ı HƏMİŞƏ görünən sahənin kənarında saxlayır — bu, "min-width ilə
+genişləndirmə" həllindən (əvvəlki dalğalarda sınanmış, sonra tərsinə
+çevrilmiş) FƏRQLİDİR: BURADA problem "sütun genişliyi" deyil, "konteynerin
+HÜNDÜRLÜYÜ sərbəstdir" idi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə hər üç faylda, `<style>`/`</style>`
+və `<div>`/`</div>` sayları tutuşduruldu — Dsmf3.cshtml-dəki "style-open=2"
+görüntüsü Razor ŞƏRHİ içindəki `<style>` sözündən irəli gəlirdi, real
+mötərizə balanssız deyil). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real brauzerdə yoxlamalıdır: Hissə 1 (və Hissə 3, Bölmə 2-5) cədvəlinin
+indi öz altında (bütöv səhifəni aşağı düşürmədən) üfüqi scrollbar göstərdiyini,
+çox sətirli nəticədə qutunun daxilində şaquli scroll olanda sütun başlıqlarının
+yuxarıda yapışıb qaldığını, yaşıl hero qutusunun hündürlüyünün azaldığını,
+AMMA digər Mühasibat Dashboard səhifələrinin (Balans İcmalı və s.) öz
+hero-sunun ƏVVƏLKİ kimi qaldığını (çünki `_MhStyles.cshtml`-ə toxunulmayıb).
