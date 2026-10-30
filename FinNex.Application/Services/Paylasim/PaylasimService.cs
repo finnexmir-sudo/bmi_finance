@@ -39,7 +39,12 @@ namespace FinNex.Application.Services.Paylasim
                 .Select(g => new { MelumatId = g.Key, Say = g.Count() })
                 .ToDictionaryAsync(g => g.MelumatId, g => g.Say);
 
-            return lista.Select(m => Map(m, hedefSaylari.GetValueOrDefault(m.Id))).ToList();
+            var oxuyanSaylari = await _uow.Repository<MelumatOxunma>().Query().AsNoTracking()
+                .GroupBy(x => x.MelumatId)
+                .Select(g => new { MelumatId = g.Key, Say = g.Count() })
+                .ToDictionaryAsync(g => g.MelumatId, g => g.Say);
+
+            return lista.Select(m => Map(m, hedefSaylari.GetValueOrDefault(m.Id), oxuyanSaylari.GetValueOrDefault(m.Id))).ToList();
         }
 
         public async Task<List<PaylasimListDto>> AktivLentAsync(int isciId)
@@ -101,6 +106,37 @@ namespace FinNex.Application.Services.Paylasim
             }
 
             await _uow.YaddaSaxlaAsync();
+        }
+
+        public async Task OxunduIsaretleAsync(int melumatId, int appUserId)
+        {
+            // İdempotent — eyni (post, işçi) cütü üçün ikinci çağırış heç nə etmir,
+            // ilk oxunma vaxtı qalır. Unikal indeks (migration) son qoruyucudur.
+            var movcud = await _uow.Repository<MelumatOxunma>().Query()
+                .AnyAsync(x => x.MelumatId == melumatId && x.AppUserId == appUserId);
+            if (movcud) return;
+
+            await _uow.Repository<MelumatOxunma>().YaratAsync(new MelumatOxunma
+            {
+                MelumatId = melumatId,
+                AppUserId = appUserId,
+                OxunmaTarixi = DateTime.Now
+            });
+            await _uow.YaddaSaxlaAsync();
+        }
+
+        public async Task<List<PaylasimOxuyanDto>> OxuyanlarAsync(int melumatId)
+        {
+            return await _uow.Repository<MelumatOxunma>().Query().AsNoTracking()
+                .Include(x => x.AppUser)
+                .Where(x => x.MelumatId == melumatId)
+                .OrderByDescending(x => x.OxunmaTarixi)
+                .Select(x => new PaylasimOxuyanDto
+                {
+                    AdSoyad = x.AppUser.Ad + " " + x.AppUser.Soyad,
+                    OxunmaTarixi = x.OxunmaTarixi
+                })
+                .ToListAsync();
         }
 
         public async Task<PaylasimListDto?> DetailGetirAsync(int id)
@@ -334,7 +370,7 @@ namespace FinNex.Application.Services.Paylasim
             return null;
         }
 
-        private static PaylasimListDto Map(Melumat m, int hedefSayi = 0) => new()
+        private static PaylasimListDto Map(Melumat m, int hedefSayi = 0, int oxuyanSayi = 0) => new()
         {
             Id = m.Id,
             Basliq = m.Basliq,
@@ -346,7 +382,8 @@ namespace FinNex.Application.Services.Paylasim
             HedefSayi = hedefSayi,
             KateqoriyaId = m.KateqoriyaId,
             KateqoriyaAdi = m.Kateqoriya?.Ad,
-            Qaralamadir = m.Qaralamadir
+            Qaralamadir = m.Qaralamadir,
+            OxuyanSayi = oxuyanSayi
         };
     }
 }

@@ -191,6 +191,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<PaylasimSonHedefKitlesi> PaylasimSonHedefKitlesi { get; set; }
     public DbSet<PaylasimKateqoriyasi> PaylasimKateqoriyalari { get; set; }
     public DbSet<PaylasimBaxis> PaylasimBaxisler { get; set; }
+    public DbSet<MelumatOxunma> MelumatOxunmalari { get; set; }
 
     // Mühasibat — Hesabatlar (Seçilmişlər)
     public DbSet<HesabatSecilmis> HesabatSecilmisler { get; set; }

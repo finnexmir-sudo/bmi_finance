@@ -8861,3 +8861,59 @@ indi öz altında (bütöv səhifəni aşağı düşürmədən) üfüqi scrollba
 yuxarıda yapışıb qaldığını, yaşıl hero qutusunun hündürlüyünün azaldığını,
 AMMA digər Mühasibat Dashboard səhifələrinin (Balans İcmalı və s.) öz
 hero-sunun ƏVVƏLKİ kimi qaldığını (çünki `_MhStyles.cshtml`-ə toxunulmayıb).
+
+## Paylaşımlar — Admin-ə "Kim Oxudu?" Göstərişi (30.10.2026)
+
+İstifadəçi tapşırığı: *"bizim paylaşdıqlarımızı kimlər oxudu, biləm ki maraq
+varmı buna, admin kimi görə bilim"*.
+
+**`MelumatOxunma` (yeni cədvəl) — `PaylasimBaxis`-dan QƏSDƏN AYRI.**
+`PaylasimBaxis` (27.10.2026) hər `AppUser` üçün TƏK sətirdir, "lentə SON NƏ
+VAXT baxdı" sualına cavab verir (yalnız sidebar sayğacı üçün) — bu, HANSI
+KONKRET postu oxuduğunu bilmir. Yeni `MelumatOxunmalari` isə bir sətir =
+bir **(Post, İşçi)** cütü — hər postun kim tərəfindən açıldığını ayrıca
+saxlayır. İki cədvəl fərqli sualın cavabıdır, biri o birini əvəz etmir.
+
+**"Oxundu" SİQNALI — lentdə görünmək YOX, sətri AÇMAQ.** `/User/Paylasim`-in
+sıx-siyahı görünüşündə (28.10.2026-dan) hər post əvvəlcə qısa önizləmə kimi
+gəlir, tam mətn YALNIZ sətrə klikləyəndə (`.py-row-summary` → `.py-row-full`)
+açılır. "Oxundu" qeydi məhz BU klikdə yazılır (`pyOxunduIsaretle`,
+`User/Views/Paylasim/Index.cshtml`) — sırf lentdə görünən bir başlıq
+"oxunmuş" sayılmır, işçi həqiqətən açıb baxmalıdır.
+
+**Server tərəfi:** `IPaylasimService.OxunduIsaretleAsync(melumatId, appUserId)`
+— İDEMPOTENT (eyni cütü ikinci dəfə yazmır, ilk oxunma vaxtı qalır), unikal
+indeks (`MelumatId`+`AppUserId`) son sədd kimi qoruyur. Endpoint
+(`User/PaylasimController.Oxundu`) `RehberHrLegv`-lə EYNİ konvensiya ilə
+`[ValidateAntiForgeryToken]` DAŞIMIR — səhifədə heç bir forma/token yoxdur,
+JS sadə `fetch(...).catch(()=>{})` ilə fire-and-forget çağırır.
+
+**Admin görüntüsü:** `Admin/Paylasim/Index.cshtml`-dəki hər kartda (yalnız
+Qaralama OLMAYAN postlarda) "👁 N nəfər oxudu" linki — `Admin/Paylasim/
+Oxuyanlar/{id}` səhifəsinə aparır, orada ad-soyad + oxunma tarixi siyahısı
+var (ən sondan əvvələ sıralı). `HamisiniGetirAsync` bu sayı `MelumatOxunma`-
+dan **bir dəfəlik qruplaşdırılmış sorğu** ilə doldurur (`oxuyanSaylari`
+dictionary-si — `hedefSaylari`-nin elə yanında, N+1 yoxdur).
+
+⚠️ **"Hədəf sayı" (kimə göndərilib) ilə "oxuyan sayı" (kim açıb baxıb)
+QƏSDƏN NİSBƏTLƏNDİRİLMİR (faiz/"N-dən M nəfər" göstərilmir).** Səbəb —
+hədəfləmə (`MelumatHedef`) **Isci.Id** üzərindən, oxuma izi isə
+**AppUser.Id** üzərindən gedir (istifadəçi login edəndə AppUser kimi
+tanınır, Isci-yə bağlantı — `AppUser.IsciId` — boş ola bilər). İki fərqli
+kimlik sistemini süni şəkildə bir nisbətə sıxışdırmaq (məs. "12/45 oxudu")
+yanlış dəqiqlik təəssüratı yaradardı — ona görə YALNIZ xam "N nəfər oxudu"
+sayı göstərilir, məxrəcsiz.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — bu düzəlişdən ƏVVƏL açılmış postlar üçün heç
+bir oxuma izi yoxdur (cədvəl boş başlayır), "0 nəfər oxudu" göstərəcək,
+baxmayaraq ki real olaraq kimsə görmüş ola bilər — yalnız BUNDAN SONRAKI
+açılışlar izlənir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə bütün 11 yeni/dəyişən faylda,
+interfeys↔implementasiya↔DI↔controller↔view beş qatı əl ilə tutuşduruldu,
+`AppUser.Ad/Soyad` sahələrinin birbaşa mövcudluğu mənbə fayldan təsdiqləndi).
+İstifadəçi Visual Studio-da **Rebuild All**, `Update-Database`, sonra real
+ssenari ilə yoxlamalıdır: bir paylaşımı işçi kimi açıb oxu → Admin → həmin
+postun kartında "1 nəfər oxudu" göründüyünü, linkə basanda ad-soyad +
+vaxtın düzgün göründüyünü təsdiqləməli.

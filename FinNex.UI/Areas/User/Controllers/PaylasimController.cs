@@ -52,4 +52,17 @@ public class PaylasimController : Controller
         var say = await _paylasim.YeniSayAsync(appUser.IsciId ?? 0, appUser.Id);
         return Json(new { say });
     }
+
+    // ── POST /User/Paylasim/Oxundu/5 (AJAX, sətir açılanda) — 30.10.2026 ──
+    // RehberHrLegv-lə EYNİ konvensiya (bax CLAUDE.md) — ValidateAntiForgeryToken
+    // QƏSDƏN yoxdur, JS fetch token ötürmür; servis idempotent olduğu üçün risk yoxdur.
+    [HttpPost]
+    public async Task<IActionResult> Oxundu(int id)
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        await _paylasim.OxunduIsaretleAsync(id, appUser.Id);
+        return Json(new { success = true });
+    }
 }

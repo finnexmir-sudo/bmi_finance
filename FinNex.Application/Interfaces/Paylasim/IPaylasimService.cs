@@ -55,5 +55,15 @@ namespace FinNex.Application.Interfaces.Paylasim
 
         /// <summary>İşçinin "son baxış" tarixini indiyə yeniləyir (/User/Paylasim açılanda çağırılır).</summary>
         Task GorulduIsaretleAsync(int appUserId);
+
+        /// <summary>
+        /// İşçi postu HƏQİQƏTƏN açıb oxuyanda (30.10.2026) çağırılır — eyni
+        /// (melumatId, appUserId) üçün İDEMPOTENTDİR, ikinci çağırış yeni sətir
+        /// yaratmır (ilk oxunma vaxtı qalır).
+        /// </summary>
+        Task OxunduIsaretleAsync(int melumatId, int appUserId);
+
+        /// <summary>Admin-in "Kim oxudu?" siyahısı — ən son oxuyandan əvvəlinə.</summary>
+        Task<List<PaylasimOxuyanDto>> OxuyanlarAsync(int melumatId);
     }
 }

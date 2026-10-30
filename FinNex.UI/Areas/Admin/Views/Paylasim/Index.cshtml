@@ -83,6 +83,12 @@
                                     </span>
                                 }
                             </div>
+                            @if (!p.Qaralamadir)
+                            {
+                                <a asp-action="Oxuyanlar" asp-route-id="@p.Id" class="small text-decoration-none mb-2">
+                                    <i class="bi bi-eye-fill me-1"></i>@p.OxuyanSayi nəfər oxudu
+                                </a>
+                            }
                             <div class="flex-grow-1"></div>
                             <div class="d-flex gap-2 mt-2">
                                 <a asp-action="Redakte" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary flex-fill">

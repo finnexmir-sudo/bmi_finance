@@ -21,6 +21,16 @@ namespace FinNex.Application.DTOs.Paylasim
 
         /// <summary>true — hələ "Qaralama"dır, heç kimə görünmür (bax Melumat.Qaralamadir).</summary>
         public bool Qaralamadir { get; set; }
+
+        /// <summary>Bu postu neçə fərqli işçi həqiqətən AÇIB OXUYUB (30.10.2026, Admin siyahısı).</summary>
+        public int OxuyanSayi { get; set; }
+    }
+
+    /// <summary>Admin-in "Kim oxudu?" siyahısında bir sətir (30.10.2026).</summary>
+    public class PaylasimOxuyanDto
+    {
+        public string AdSoyad { get; set; } = "";
+        public DateTime OxunmaTarixi { get; set; }
     }
 
     public class PaylasimYaratDto

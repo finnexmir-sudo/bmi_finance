@@ -130,6 +130,22 @@ public class PaylasimController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // ── GET /Admin/Paylasim/Oxuyanlar/5 — "kim oxudu, maraq varmı" (30.10.2026) ──
+    public async Task<IActionResult> Oxuyanlar(int id)
+    {
+        var post = await _paylasim.DetailGetirAsync(id);
+        if (post == null)
+        {
+            TempData["Error"] = "Paylaşım tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        ViewData["Title"] = "Kim oxudu?";
+        ViewBag.Post = post;
+        var oxuyanlar = await _paylasim.OxuyanlarAsync(id);
+        return View(oxuyanlar);
+    }
+
     // ── POST /Admin/Paylasim/Payla/5 — qaralamanı dərc edir ──────────
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Payla(int id)

@@ -186,6 +186,15 @@
             }
         });
 
+        // Admin-ə "kim oxudu" göstərmək üçün — sətir TAM AÇILANDA (yalnız lentdə
+        // görünmək deyil) bir dəfə qeyd olunur (30.10.2026). Səhifədə forma/token
+        // yoxdur — `RehberHrLegv`-lə EYNİ konvensiya (bax CLAUDE.md), endpoint
+        // ValidateAntiForgeryToken tələb etmir. Server idempotentdir, təkrar
+        // klikdə yenidən çağırmaq zərərsizdir — əlavə JS-keşə ehtiyac yoxdur.
+        function pyOxunduIsaretle(melumatId) {
+            fetch('/User/Paylasim/Oxundu/' + melumatId, { method: 'POST' }).catch(function () {});
+        }
+
         document.addEventListener('click', function (e) {
             var summary = e.target.closest('.py-row-summary');
             if (summary) {
@@ -193,6 +202,7 @@
                 if (!row) return;
                 row.querySelector('.py-row-summary').style.display = 'none';
                 row.querySelector('.py-row-full').style.display = 'block';
+                pyOxunduIsaretle(row.id.replace('pyRow_', ''));
                 return;
             }
 
