@@ -1,0 +1,101 @@
+@using FinNex.Application.DTOs.Structur
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Görüşlər";
+    var departamentler = ViewBag.Departamentler as IList<DepartmentListDto> ?? new List<DepartmentListDto>();
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Görüşlər</div>
+            <div class="fn-page-sub">Şirkət daxili tədbirlər — təşkilatçı, iştirakçılar, status (yalnız baxış)</div>
+        </div>
+    </div>
+
+    @* ── KPI ── *@
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="grFilterStatus('')">
+            <div style="font-size:22px;font-weight:700;color:#6366f1" id="grKpiCemi">—</div>
+            <div style="font-size:12px;color:#64748b">Cəmi</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="grFilterStatus('1')">
+            <div style="font-size:22px;font-weight:700;color:#0ea5e9" id="grKpiPlan">—</div>
+            <div style="font-size:12px;color:#64748b">Planlanıb</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="grFilterStatus('3')">
+            <div style="font-size:22px;font-weight:700;color:#22c55e" id="grKpiBitdi">—</div>
+            <div style="font-size:12px;color:#64748b">Bitdi</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="grFilterStatus('4')">
+            <div style="font-size:22px;font-weight:700;color:#ef4444" id="grKpiLegv">—</div>
+            <div style="font-size:12px;color:#64748b">Ləğv edildi</div>
+        </div>
+    </div>
+
+    @* ── Filtrlər ── *@
+    <div class="fn-card" style="padding:14px;margin-bottom:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+                <label class="fn-label">Başlıq / Təşkilatçı</label>
+                <input type="text" id="grAxtaris" class="fn-input" style="min-width:220px"
+                       placeholder="Axtar…" oninput="grAxtarisDebounce()" />
+            </div>
+            <div>
+                <label class="fn-label">Status</label>
+                <select id="grStatus" class="fn-input" style="min-width:150px" onchange="grYukle()">
+                    <option value="">Hamısı</option>
+                    <option value="1">Planlanıb</option>
+                    <option value="2">Başladı</option>
+                    <option value="3">Bitdi</option>
+                    <option value="4">Ləğv edildi</option>
+                </select>
+            </div>
+            <div>
+                <label class="fn-label">Departament</label>
+                <select id="grDep" class="fn-input" style="min-width:180px" onchange="grYukle()">
+                    <option value="">Hamısı</option>
+                    @foreach (var d in departamentler)
+                    {
+                        <option value="@d.Id">@d.Ad</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="fn-label">Tarixdən</label>
+                <input type="date" id="grTarixFrom" class="fn-input" onchange="grYukle()" />
+            </div>
+            <div>
+                <label class="fn-label">Tarixə</label>
+                <input type="date" id="grTarixTo" class="fn-input" onchange="grYukle()" />
+            </div>
+            <button class="fn-btn fn-btn--ghost" onclick="grSifirla()">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    @* ── Cədvəl ── *@
+    <div class="fn-card" style="padding:0">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="background:#f8fafc">
+                <tr>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Başlıq</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Təşkilatçı</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Tarix / Saat</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Yer</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">İştirakçı</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Status</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569"></th>
+                </tr>
+            </thead>
+            <tbody id="grTbody">
+                <tr><td colspan="7" style="padding:30px;text-align:center;color:#94a3b8">Yüklənir…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="~/js/hr/hr-gorush.js" asp-append-version="true"></script>
+<script>document.addEventListener('DOMContentLoaded', grYukle);</script>

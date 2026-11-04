@@ -18,5 +18,11 @@ namespace FinNex.Application.Interfaces.Communication
         Task<Result> EditAsync(GorushEditDto dto);
 
         Task<Result<IList<GorushDetailDto>>> GetYaxinlasanlarAsync(DateTime tarix);
+
+        /// <summary>
+        /// HR → Görüşlər idarəetməsi (04.11.2026) — təşkilatçıdan asılı olmayaraq
+        /// BÜTÜN görüşlər, filtrlə. Yalnız oxuma — `GetDetayAsync(id, 0)` detalı verir.
+        /// </summary>
+        Task<Result<IList<GorushListDto>>> GetHamisiniAsync(GorushFiltrDto? filtr = null);
     }
 }

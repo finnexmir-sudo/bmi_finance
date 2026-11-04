@@ -8917,3 +8917,85 @@ interfeys↔implementasiya↔DI↔controller↔view beş qatı əl ilə tutuşdu
 ssenari ilə yoxlamalıdır: bir paylaşımı işçi kimi açıb oxu → Admin → həmin
 postun kartında "1 nəfər oxudu" göründüyünü, linkə basanda ad-soyad +
 vaxtın düzgün göründüyünü təsdiqləməli.
+
+## HR → Görüşlər İdarəetməsi — İlk Dəfə HR-ın Baxış Ekranı (04.11.2026)
+
+İstifadəçi Davamiyyət səhifəsindəki "Tədbirdə" statusunu araşdırarkən
+(«Rüfət Camalzadə — 09:00 · Ağacəkmə aksiyası») suala gəldi: *"tədbirdə olanı
+işçi özü yazır yoxsa HR? və bunları hardansa izləmək olur?"* Kod araşdırması
+göstərdi ki, bu status **Ezamiyyət DEYİL** — tamam başqa, `GorushIshtirakci`
+(Görüşlər) modulundan gəlir (`HR/DavamiyyetController`-in prioritet zənciri:
+*İcazəli > Xəstəlik > Ezamiyyət > Tədbirdə*, "Tədbirdə" elə bu modulun
+qeydidir). **Görüşlər modulunun HR tərəfdə HEÇ bir baxış/idarəetmə ekranı
+yox idi** — yalnız `/User/Gorush` (işçinin özü, təşkilatçı və ya iştirakçı
+kimi) var idi, HR bunu yalnız Davamiyyət sətrindəki kiçik mətndən görürdü,
+detallara (gündəm, iştirakçılar, status) baxacağı yer yox idi.
+
+**Qərar — YALNIZ OXUMA ekranı qurulur, yaratma/redaktə/ləğv HƏLƏ DƏ yalnız
+işçinin (təşkilatçının) öz səhifəsindən.** Görüş yaratma/status-dəyişmə
+məntiqinə (`GorushService.YaratAsync/StatusYenileAsync/EditAsync/SilAsync`,
+hamısı `TeshkilatciIsciId != isciId` şərti ilə qorunur) TOXUNULMADI — HR-ın
+bu əməliyyatlara nəzarəti sorulmayıb, əlavə etsək icazə modelini dəyişmək
+lazım gələrdi (ayrıca qərar).
+
+**Yeni servis metodu — `IGorushService.GetHamisiniAsync(GorushFiltrDto?)`.**
+Mövcud `GetMenimGorushlerimAsync`/`GetTeshkilEtdiklerimAsync`-dən FƏRQLİ —
+təşkilatçıdan ASILI OLMADAN BÜTÜN görüşləri gətirir (tarix aralığı, status,
+departament — `TeshkilatciIsci.IsciTeyinatlari` üzərindən, Ezamiyyət-in
+departament filtri ilə EYNİ naxış — və başlıq/təşkilatçı adı üzrə axtarışla).
+Detal üçün YENİ metod YAZILMADI — mövcud `GetDetayAsync(id, isciId)` artıq
+`isciId`-yə görə BLOKLAMIR (yalnız "mənim statusum" göstərişi üçün işlədir),
+ona görə HR `GetDetayAsync(id, 0)` ilə birbaşa çağırır — `0` heç bir real
+`Isci.Id`-yə uyğun gəlmir, sentinel kimi təhlükəsizdir.
+
+**`Areas/HR/Controllers/GorushController.cs`** (yeni) — `[Authorize(Roles =
+"Admin,HR,Rehber,SobeReisi")]`, Ezamiyyət İdarəetməsi ilə EYNİ rol dəstəsi
+(bu, artıq "bütün şirkət üzrə baxış" səhifələri üçün qəbul edilmiş qaydadır).
+`Index` (filtr+KPI səhifəsi) + `GetGorushler` (AJAX JSON) + `Detay` (tam
+səhifə, redaktə YOXDUR). Controller yalnız `IGorushService`/`IDepartmentService`
+inject edir — `IUnitOfWork` YOXDUR (Clean Architecture qaydası; `EzamiyyetController`-in
+özü bunu pozur — departament siyahısını birbaşa `IUnitOfWork`-dan çəkir — amma
+bu, KÖHNƏ kodun miras qalmış İNKONSİSTENTLİYİDİR, YENİ kod onu TƏKRARLAMADI,
+əvəzinə mövcud `IDepartmentService.HamisiniGetirAsync()` çağırıldı).
+
+**Görüntü — `Areas/HR/Views/Gorush/{Index,Detay}.cshtml` + `js/hr/hr-gorush.js`.**
+`Index` Ezamiyyət İdarəetməsinin (`fn-card`/KPI/filtr/cədvəl) eyni naxışını
+təkrarlayır, amma modal YOXDUR — "Bax" düyməsi tam səhifəyə (`Detay`) aparır
+(read-only olduğu üçün modal-da redaktə düyməsi saxlamaq mənasız olardı).
+`Detay` isə `/User/Gorush/Detay.cshtml`-in HAZIR, artıq gözəl dizaynlı
+hero/sidebar markup-unu (`.td-*` siniflər) TƏKRARLADI — yeni CSS yazılmadı,
+`gorush.css` (`.grsh-status`/`.grsh-btn`) elə həmişəki kimi linkləndi.
+
+⚠️ **TAPILAN, DÜZƏLDİLƏN YAN BUG — User-in ÖZ `Gorush/Detay.cshtml`-i
+`tsk-detay-grid` sinfini İŞLƏDİR, AMMA onu DAŞIYAN `tapshiriq.css`-i HEÇ VAXT
+LİNKLƏMƏYİB** (`@section Styles` yalnız `gorush.css`-i yükləyir) — yəni həmin
+səhifə indiyə qədər 2-sütunlu grid-SİZ, tək sütunlu görünüb, kodda heç bir
+xəta vermədən (sadəcə `tsk-detay-grid` naməlum sinif kimi sükutla keçilir).
+**YENİ HR səhifəmdə bu unudulma TƏKRARLANMASIN deyə `tapshiriq.css` AÇIQ
+LİNKLƏNDİ** — HR-ın Görüşlər detalı indi düzgün 2-sütunlu grid-dədir.
+**`User/Gorush/Detay.cshtml`-in ÖZÜ TOXUNULMADI** (bu sessiyanın əhatəsi
+xaricində — tapılan, amma HƏLƏ düzəldilməyən bir bug kimi qeyd olunur,
+istifadəçi ayrıca tələb etsə düzəldilə bilər).
+
+**Sidebar:** `_UserLayout.cshtml`-də "Ezamiyyət İzləmə"nin DƏRHAL ardınca,
+eyni "MƏZUNİYYƏT" qrupunda (HR naviqasiyası bu paylaşılan layout-dadır —
+`_HRLayout.cshtml`-də DEYİL, bax "`_ViewStart.cshtml` bütün HR səhifələrini
+`_UserLayout.cshtml`-ə bağlayır" qeydi yuxarıda) yeni "Görüşlər" sətri.
+
+⚠️ **GenişLƏNDİRİLMƏ FİKRİ, EDİLMƏDİ:** "idarəetmə" sözü istifadəçinin öz
+tələbində var idi, amma HR-ın görüşü LƏĞV/REDAKTƏ edə bilməsi AÇIQ
+soruşulmadı — bu, icazə modelinin (`StatusYenileAsync`-in `TeshkilatciIsciId
+!= isciId` şərti) HR/Admin üçün ayrıca bir qol tələb edərdi (Ezamiyyət-in
+`RehberHrLegvEtAsync`-i kimi). İstifadəçi bunu AYRICA istəsə, həmin naxış
+tətbiq oluna bilər — bu sessiyada YALNIZ baxış qurulub.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/div balansı skriptlə, `node -c` ilə JS sintaksisi, interfeys↔
+implementasiya↔DI↔controller↔view beş qatı əl ilə tutuşduruldu — `IDepartmentService`/
+`IGorushService`-in hər ikisinin artıq `AddApplicationServices.cs`-də qeydiyyatdan
+keçdiyi təsdiqləndi, yeni DI əlavəsi lazım olmadı). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: sidebar-da "Görüşlər"
+sətrinin göründüyünü, siyahının filtrlərlə (axtarış/status/departament/tarix)
+düzgün işlədiyini, "Bax"a basanda detalın (gündəm, iştirakçı statusları,
+təşkilatçı) düzgün göründüyünü — xüsusilə "Ağacəkmə aksiyası" kimi real bir
+görüşü tapıb.

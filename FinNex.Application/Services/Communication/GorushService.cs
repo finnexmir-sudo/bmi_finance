@@ -356,6 +356,50 @@ namespace FinNex.Application.Services.Communication
                 return Result.Fail($"Xəta: {ex.Message}");
             }
         }
+        public async Task<Result<IList<GorushListDto>>> GetHamisiniAsync(GorushFiltrDto? filtr = null)
+        {
+            try
+            {
+                var query = _unitOfWork.Repository<Gorush>()
+                    .Query()
+                    .AsNoTracking()
+                    .Where(x => !x.Silinib)
+                    .Include(g => g.TeshkilatciIsci)
+                    .Include(g => g.Ishtirakcılar)
+                    .AsQueryable();
+
+                if (filtr != null)
+                {
+                    if (filtr.TarixFrom.HasValue)
+                        query = query.Where(x => x.Tarix >= filtr.TarixFrom.Value.Date);
+                    if (filtr.TarixTo.HasValue)
+                        query = query.Where(x => x.Tarix <= filtr.TarixTo.Value.Date);
+                    if (filtr.Status.HasValue)
+                        query = query.Where(x => x.Status == filtr.Status.Value);
+                    if (filtr.DepartamentId.HasValue)
+                        query = query.Where(x => x.TeshkilatciIsci.IsciTeyinatlari
+                            .Any(t => !t.Silinib && t.DepartamentId == filtr.DepartamentId.Value));
+                    if (!string.IsNullOrWhiteSpace(filtr.Axtaris))
+                    {
+                        var a = filtr.Axtaris.Trim();
+                        query = query.Where(x => x.Bashliq.Contains(a) || x.TeshkilatciIsci.TamAd.Contains(a));
+                    }
+                }
+
+                var list = await query
+                    .OrderByDescending(x => x.Tarix)
+                    .ThenByDescending(x => x.BaslamaSaati)
+                    .ToListAsync();
+
+                return Result<IList<GorushListDto>>.Ok(
+                    list.Select(g => ToListDto(g, 0, null)).ToList());
+            }
+            catch (Exception ex)
+            {
+                return Result<IList<GorushListDto>>.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
         public async Task<Result<IList<GorushDetailDto>>> GetYaxinlasanlarAsync(DateTime tarix)
         {
             try

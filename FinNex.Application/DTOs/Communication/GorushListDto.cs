@@ -87,4 +87,19 @@ namespace FinNex.Application.DTOs.Communication
         public GorushNovu Nov { get; set; }
         public List<int> IshtirakciIsciIdler { get; set; } = new();
     }
+
+    /// <summary>
+    /// HR-in bütün görüşlərə baxış (idarəetmə) siyahısı üçün filtr (04.11.2026).
+    /// `GetMenimGorushlerimAsync`/`GetTeshkilEtdiklerimAsync`-dən FƏRQLİ — işçi ilə
+    /// məhdudlaşmır, təşkilatçıdan asılı olmayaraq BÜTÜN görüşləri gətirir.
+    /// </summary>
+    public class GorushFiltrDto
+    {
+        public DateTime? TarixFrom { get; set; }
+        public DateTime? TarixTo { get; set; }
+        public GorushStatus? Status { get; set; }
+        public int? DepartamentId { get; set; }
+        /// <summary>Başlıq VƏ YA təşkilatçı adı üzrə axtarış.</summary>
+        public string? Axtaris { get; set; }
+    }
 }
