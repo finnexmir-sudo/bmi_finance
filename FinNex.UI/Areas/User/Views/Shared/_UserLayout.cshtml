@@ -58,6 +58,20 @@
         }
     }
 
+    // GOAML — Risk/AML şübhəli əməliyyat hesabatı (05.11.2026). Şərt
+    // `[Icaze(IcazeKodlari.GoamlBax)]` (DashboardController-in üstündə) ilə
+    // EYNİ olmalıdır, yoxsa istifadəçi linki görüb 403 alar (və ya əksinə).
+    var hasGoaml = isAdmin;
+    if (!hasGoaml && User.Identity?.IsAuthenticated == true)
+    {
+        var _gid = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(_gid, out var _guid))
+        {
+            var _gr = await _permSvc.HasPermissionAsync(_guid, FinNex.Domain.IcazeKodlari.GoamlBax);
+            hasGoaml = _gr.Success && _gr.Data;
+        }
+    }
+
     var hasAvtoparkIdare = isAdmin;
     if (!hasAvtoparkIdare && User.Identity?.IsAuthenticated == true)
     {
@@ -127,6 +141,7 @@
         if (currentArea == "Emeliyyat") return "emeliyyat";
         if (currentArea == "Kassa") return "kassa";
         if (currentArea == "Avtopark") return "avtopark";
+        if (currentArea == "Goaml") return "goaml";
         if (currentArea == "Risk") return "risk";
         if (currentArea == "Muhasibat") return "muhasibat";
         if (currentController == "Tesdiq") return "tesdiq";
@@ -342,6 +357,18 @@
             <a asp-area="Avtopark" asp-controller="Muraciet" asp-action="Index" class="@TabCls("avtopark")">
                 <i class="bi bi-car-front"></i><span>Avtopark</span>
             </a>
+
+            @* GOAML — Risk/AML şübhəli əməliyyat hesabatı (05.11.2026). Avtopark kimi
+               "departament deyil" DEYİL — əksinə, QƏSDƏN dar bir komandaya aiddir, elə
+               ona görə «Departamentlər» dropdown-unda YOX, görünən/gizlənən ayrıca
+               tab kimidir (icazəsi olmayan heç görmür — dropdown-un əksinə, orada hər
+               sətir hamıya görünür). *@
+            @if (hasGoaml)
+            {
+                <a asp-area="Goaml" asp-controller="Dashboard" asp-action="Index" class="@TabCls("goaml")">
+                    <i class="bi bi-shield-lock"></i><span>GOAML</span>
+                </a>
+            }
 
             @if (isMuhasib || isRehberRol)
             {
@@ -1498,6 +1525,20 @@
                             <i class="bi bi-calendar-check"></i> Müddətlər
                         </a>
                     }
+                }
+                break;
+
+            case "goaml":
+                {
+                    @* Hələ yalnız "Əməliyyatlar" tabı yolda — qalan 14-ü (Risk, Keçməyən
+                       əməliyyat, Hesab risk, Risk Progress, Cash IN, Card To Card, 18% 4%,
+                       Setup, SİYAHI, kassa >30, Təhlil, MMX, SCORING, Export to file)
+                       ekran-ekran gəldikcə buraya əlavə olunacaq — bax Dashboard/Index.cshtml. *@
+                    <div class="fn-nav-label">GOAML</div>
+                    <a asp-area="Goaml" asp-controller="Dashboard" asp-action="Index"
+                       class="fn-nav-item @(currentController == "Dashboard" && currentArea == "Goaml" ? "active" : "")">
+                        <i class="bi bi-grid-1x2"></i> Əsas
+                    </a>
                 }
                 break;
 

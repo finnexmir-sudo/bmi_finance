@@ -20,6 +20,9 @@ public class SistemIcazeController : Controller
     // Muhasibat / Maliyyə & Risk Paneli icazəsi — səhifə açılanda mövcudluğu təmin olunur.
     private const string PanelKod = "muhasibat_dashboard_bax";
 
+    // GOAML icazəsi (05.11.2026) — eyni "turnkey" qaydası.
+    private const string GoamlKod = FinNex.Domain.IcazeKodlari.GoamlBax;
+
     private readonly IPermissionService _perm;
     private readonly IUserPermissionService _userPerm;
     private readonly UserManager<AppUser> _userManager;
@@ -45,6 +48,15 @@ public class SistemIcazeController : Controller
                 Kod = PanelKod,
                 Ad = "Maliyyə & Risk Paneli",
                 Aciqlama = "Maliyyə & Risk Panelinə (Mühasibat Dashboard) baxış icazəsi"
+            });
+
+        var goamlPerm = await _perm.GetByKodAsync(GoamlKod);
+        if (goamlPerm.Data == null)
+            await _perm.YaratAsync(new PermissionCreateDto
+            {
+                Kod = GoamlKod,
+                Ad = "GOAML",
+                Aciqlama = "GOAML (Risk/AML şübhəli əməliyyat hesabatı) modulu — giriş icazəsi"
             });
 
         var perms = (await _perm.HamisiniGetirAsync()).Data ?? new List<PermissionDto>();

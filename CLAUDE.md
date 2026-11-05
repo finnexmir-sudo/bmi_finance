@@ -8999,3 +8999,116 @@ sətrinin göründüyünü, siyahının filtrlərlə (axtarış/status/departame
 düzgün işlədiyini, "Bax"a basanda detalın (gündəm, iştirakçı statusları,
 təşkilatçı) düzgün göründüyünü — xüsusilə "Ağacəkmə aksiyası" kimi real bir
 görüşü tapıb.
+
+## GOAML — Risk/AML Şübhəli Əməliyyat Hesabatı (05.11.2026, İŞ BAŞLANĞICI)
+
+İstifadəçi BMI-nin köhnə Oracle Forms "AYSEL/GOAML" ekranının FinNex-ə
+köçürülməsini istədi — 15 sol-menyu tablı (Əməliyyatlar, Risk, Keçməyən
+əməliyyat, Hesab risk, Risk Progress, Cash IN, Card To Card, 18% 4%, Setup,
+SİYAHI, kassa >30, Təhlil, MMX, SCORING, Export to file) böyük bir sistem.
+Bu, "goAML" (BMFX/FIU-lara şübhəli əməliyyat hesabatı üçün beynəlxalq standart)
+anlayışına uyğundur.
+
+**Qərar: bmi_finance-in DAXİLİNDƏ, ayrı bir Area kimi.** TV-slayd layihəsindən
+(ayrıca repo — kənar internetdən əlçatan olmalı idi) FƏRQLİ olaraq, GOAML
+TAM ƏKSİNƏ — daxili, həssas maliyyə-cinayət məlumatıdır, heç vaxt kənar
+şəbəkədən əlçatan olmamalıdır. Üstəlik layihədə artıq güclü AML/Risk
+infrastrukturu var (Oracle `IOracleService`, `RiskService`, "AML → Məlumat
+Bazası" modulu) — ayrı layihə qursaq bunların hamısını təkrar qurmaq
+lazım gələrdi.
+
+### İcazə — Risk-in ÖZÜNDƏN QƏSDƏN AYRI
+
+Kod araşdırılanda üzə çıxdı: Risk Area-nın 4 controller-inin (Dashboard, Aml,
+EmeliyyatRiski, EmeliyyatRiskiParametrleri) heç birində rol/icazə şərti
+YOXDUR — sadəcə `[Authorize]`, yəni **istənilən giriş etmiş işçi** hazırda
+`/Risk/*`-ə daxil ola bilər. "Mövcud Risk icazəsi ilə idarə edək" tələbi
+əslində "bütün şirkətə aç" demək olardı — GOAML-in daşıdığı məlumat (PİN,
+şəxsiyyət sənədi, tam ünvan, telefon) buna uyğun deyil. İstifadəçi qərarı:
+**yeni, dar bir icazə açarı** — `IcazeKodlari.GoamlBax` ("goaml_bax") —
+yarat, Risk-in özünə TOXUNMA (ayrıca, gələcək qərardır).
+
+**İstifadə olunan mexanizm — layihədə ARTIQ hazır, bir sətirlik sistem**
+(`FinNex.UI/Filters/IcazeAttribute.cs`, Mail/Avtopark-ın da işlətdiyi):
+
+```csharp
+[Authorize]
+[Icaze(IcazeKodlari.GoamlBax)]
+public class DashboardController : Controller
+```
+
+`IcazeAttribute.OnAuthorizationAsync` daxilən: Admin HƏMİŞƏ keçir (əlavə kod
+lazım deyil), `ElaveRol` veriləndə o rol da keçir (GOAML-də BU PARAMETR
+QƏSDƏN BOŞ qoyuldu — istifadəçi qərarı: "yalnız Admin avtomatik keçsin,
+Rəhbər daxil hər kəs açıq icazə alsın"), qalanı `IUserPermissionService.
+HasPermissionAsync(userId, kod)`-a baxır. Bu, Mühasibatlığın köhnə, əl ilə
+yazılmış `IcazeVarAsync()` üsulundan DAHA TƏMİZDİR — Avtopark/Mail bunu
+artıq işlədir, GOAML üçüncü istifadəçisidir.
+
+### Struktur (bu mərhələdə yalnız QABIQ — real data/forma YOXDUR)
+
+- `FinNex.Domain/IcazeKodlari.cs` — `GoamlBax = "goaml_bax"` sabiti əlavə edildi.
+- `FinNex.UI/Areas/Goaml/Controllers/DashboardController.cs` (yeni) — `[Area("Goaml")]
+  [Authorize] [Icaze(IcazeKodlari.GoamlBax)]`, tək `Index()` action.
+- `FinNex.UI/Areas/Goaml/Views/_ViewStart.cshtml` + `_ViewImports.cshtml` —
+  Kassa/Muhasibat-ın EYNİ naxışı (`Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml"`).
+  **Ayrıca Area-xüsusi layout faylı YOXDUR** — layihədə HEÇ bir Area-nın yoxdur,
+  hamısı TƏK `_UserLayout.cshtml`-in daxilindəki `DetectActiveModule()` switch-casei
+  ilə fərqli sidebar məzmunu göstərir.
+- `FinNex.UI/Areas/Goaml/Views/Dashboard/Index.cshtml` (yeni) — sadə qarşılama
+  kartı, 15 tabın statik siyahısı (Hesabat kataloqunun "statik siyahı, DB-də
+  saxlanmır" naxışı ilə eyni) — "Hazır"/"Hələ yoxdur" ikonu ilə, ekran-ekran
+  təsdiqləndikcə `Hazir = true`-ya keçiriləcək.
+
+### Naviqasiya
+
+İstifadəçi qərarı: **top-nav-da "Avtopark"ın yanında, görünən/gizlənən ayrıca
+düymə** — "Departamentlər" dropdown-unda DEYİL (orada hər sətir icazəsiz də
+görünür, GOAML isə dar bir komandaya aiddir). `hasGoaml` dəyişəni (Avtopark-ın
+`hasAvtoparkIdare`-i ilə EYNİ naxış) `@if (hasGoaml)` ilə düyməni gizlədir —
+icazəsi olmayan işçi heç görmür.
+
+`_UserLayout.cshtml`-də dörd dəyişiklik:
+1. `DetectActiveModule()` — `if (currentArea == "Goaml") return "goaml";`
+2. `hasGoaml` hesablanması (Admin + `GoamlBax` icazəsi).
+3. Top-nav-da "Avtopark"dan dərhal sonra, `@if (hasGoaml)` ilə qorunan "GOAML" düyməsi.
+4. Sidebar-a `case "goaml":` bloku — hələlik yalnız "Əsas" sətri (Dashboard/Index-ə),
+   qalan tablar gəldikcə bura əlavə olunacaq.
+
+### Admin tərəfi
+
+`Admin/SistemIcaze/Index.cshtml`-dəki "turnkey" naxış (Mühasibatlığın
+`muhasibat_dashboard_bax`-ı özbaşına yaratdığı kimi) GOAML üçün də tətbiq
+edildi — `SistemIcazeController.Index()` açılanda `"goaml_bax"` icazəsi
+yoxdursa avtomatik yaradılır. Admin əl ilə "Yeni icazə" formasını doldurmaq
+MƏCBURİ DEYİL — Sistem İcazələri səhifəsini açan kimi "GOAML" sətri artıq
+görünür, Admin ora kimin girə biləcəyini seçə bilər (checkbox siyahı,
+mövcud `Idare`/`Saxla` action-ları — kod YAZILMADI, hazır mexanizm təkrar
+işlədildi).
+
+### Açıq qalan (qəsdən bu mərhələdə edilmədi)
+
+- **"Əməliyyatlar" tabının ÖZÜ (əsas forma, 11+ sahə qrupu — Nümayəndə,
+  Hesab imza hüququ olan şəxs, Hüquqi şəxs, Alan fiziki şəxs, Banka aid
+  olmayan hüquqi şəxs) HƏLƏ QURULMADI** — istifadəçi ilə açıq qalan sual:
+  data (Debet/Kredit/məbləğ) operator tərəfindən ƏL İLƏ yazılır, yoxsa
+  Oracle BMI-dən (bizim real əməliyyat cədvəllərimizdən) AVTOMATİK gəlir?
+  Bu, entity dizaynını kökündən dəyişir (standalone forma vs. mövcud
+  əməliyyata "əlavə KYC qatı") — cavablanmadan struktur qurulmayacaq.
+- **Qalan 14 tab** (Risk, Keçməyən əməliyyat, Hesab risk, Risk Progress,
+  Cash IN, Card To Card, 18% 4%, Setup, SİYAHI, kassa >30, Təhlil, MMX,
+  SCORING, Export to file) — istifadəçi ekran-ekran göndərəcək, hər biri
+  təsdiqləndikcə planlaşdırılacaq.
+- **Entity/DB sxemi HƏLƏ YOXDUR** — yalnız giriş nöqtəsi (icazə + boş səhifə)
+  quruldu. Migration YAZILMADI, çünki hələ hansı sahələrin lazım olduğu
+  (xüsusilə yuxarıdakı "data haradan gəlir" sualı) bilinmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, `IcazeAttribute`/`IcazeKodlari`-nin
+mövcud çağırış nümunələri — Mail/Avtopark — ilə sahə-sahə tutuşduruldu).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real mühitdə
+yoxlamalıdır: Admin olaraq top-nav-da "GOAML" düyməsinin göründüyünü,
+klikləyəndə boş (15 tablı) qarşılama səhifəsinin açıldığını; Admin → Sistem
+İcazələri-də "GOAML" sətrinin avtomatik göründüyünü; icazəsi olmayan adi
+işçi ilə girəndə düymənin HEÇ görünmədiyini (və birbaşa URL yazılsa 403
+alındığını).

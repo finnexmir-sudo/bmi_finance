@@ -24,4 +24,12 @@ public static class IcazeKodlari
 
     /// <summary>Avtopark idarəetməsi — Maşınlar və Müddətlər səhifələri.</summary>
     public const string AvtoparkIdare = "avtopark_idare";
+
+    /// <summary>
+    /// GOAML modulu (05.11.2026) — Risk/AML şübhəli əməliyyat hesabatı. Bilərəkdən
+    /// Risk-in öz (hazırda icazəsiz) sahəsindən AYRI — Risk gələcəkdə fərqli
+    /// qaydaya keçsə belə, GOAML buna bağlı qalmasın. Yalnız Admin avtomatik
+    /// keçir (`ElaveRol` YOXDUR) — qalan hər kəs, Rəhbər daxil, açıq icazə alır.
+    /// </summary>
+    public const string GoamlBax = "goaml_bax";
 }

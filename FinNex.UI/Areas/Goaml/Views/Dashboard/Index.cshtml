@@ -1,0 +1,49 @@
+@{
+    ViewData["Title"] = "GOAML";
+
+    // BMI-nin köhnə "AYSEL/GOAML" Oracle Forms ekranındakı 15 sol-menyu tabı —
+    // ekran-ekran təsdiqləndikcə "Hazır"a keçəcək. Sırf izləmə siyahısıdır,
+    // koda bağlı DEYİL (DB-də saxlanmır) — Risk Hesabatları kataloqunun eyni
+    // "statik siyahı" naxışı.
+    var tablar = new (string Ad, bool Hazir)[]
+    {
+        ("Əməliyyatlar", false),
+        ("Risk", false),
+        ("Keçməyən əməliyyat", false),
+        ("Hesab risk", false),
+        ("Risk Progress", false),
+        ("Cash IN", false),
+        ("Card To Card", false),
+        ("18% 4%", false),
+        ("Setup", false),
+        ("SİYAHI", false),
+        ("kassa >30", false),
+        ("Təhlil", false),
+        ("MMX", false),
+        ("SCORING", false),
+        ("Export to file", false),
+    };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div class="fn-page-title">GOAML</div>
+        <div class="fn-page-sub">Risk/AML şübhəli əməliyyat hesabatı — qurulma mərhələsindədir</div>
+    </div>
+
+    <div class="fn-card" style="padding:24px">
+        <p style="color:#6b7280;margin-bottom:16px">
+            Bu modul BMI-nin köhnə Oracle Forms "AYSEL/GOAML" ekranının FinNex-ə köçürülməsidir.
+            Hər bölmə ekran-ekran təsdiqləndikdən sonra qurulur — aşağıdakı siyahı hazırkı vəziyyəti göstərir.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+            @foreach (var t in tablar)
+            {
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;background:@(t.Hazir ? "#ecfdf5" : "#f9fafb");border:1px solid @(t.Hazir ? "#a7f3d0" : "#e5e7eb")">
+                    <i class="bi @(t.Hazir ? "bi-check-circle-fill" : "bi-hourglass-split")" style="color:@(t.Hazir ? "#22c55e" : "#9ca3af")"></i>
+                    <span style="font-size:.88rem;font-weight:600;color:@(t.Hazir ? "#065f46" : "#6b7280")">@t.Ad</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
