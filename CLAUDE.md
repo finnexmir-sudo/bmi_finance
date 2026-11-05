@@ -9112,3 +9112,16 @@ klikləyəndə boş (15 tablı) qarşılama səhifəsinin açıldığını; Admi
 İcazələri-də "GOAML" sətrinin avtomatik göründüyünü; icazəsi olmayan adi
 işçi ilə girəndə düymənin HEÇ görünmədiyini (və birbaşa URL yazılsa 403
 alındığını).
+
+✅ **TƏSDİQLƏNDİ (05.11.2026, eyni gün).** İstifadəçi real mühitdə (Admin
+hesabı) yoxladı — ilk cəhddə düymə görünmürdü, səbəb kodda DEYİL, yalnız
+`git pull` edilməmiş olması idi (Package Manager Console-da səhvən `add pull`
+yazılmışdı, `git pull` YOX). Düzgün pull + **Rebuild All**-dan sonra: top-nav-da
+"GOAML" düyməsi, sidebar-da "Əsas" sətri, 15 tablıq siyahı (hamısı "Hazır
+deyil" saat-ikonu ilə) tam gözlənildiyi kimi göründü — giriş nöqtəsi uçdan-uca
+işlək təsdiqləndi.
+
+**Qayda:** "kod düzgün görünür, amma istifadəçi gözlədiyini görmür" halında —
+xüsusən bu layihədə `dotnet build` BU mühitdə mümkün olmadığı üçün — İLK
+yoxlanacaq şey HƏMİŞƏ "istifadəçi real mühitdə son commiti çəkib (pull) və
+yenidən qurubmu (Rebuild All)" sualıdır, kodun özündə səhv axtarmazdan ƏVVƏL.
