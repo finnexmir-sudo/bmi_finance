@@ -6,7 +6,7 @@
 
 @section Styles {
     <style>
-        .gml-sub { font-size:.86rem; color:#64748b; margin-bottom:14px; }
+        .gml-sub { font-size:.76rem; color:#94a3b8; margin-bottom:8px; }
         .gml-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end; }
         .gml-filter-lbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
         .gml-filter-actions { display:flex; align-items:center; gap:10px; margin-top:16px; }
@@ -21,6 +21,10 @@
         .gml-table th, .gml-table td { border-right:1px solid #e2e8f0; }
         .gml-table th:last-child, .gml-table td:last-child { border-right:none; }
         .gml-table tbody tr:hover { background:#fafbff; }
+        .gml-table th[data-sort-key] { cursor:pointer; user-select:none; }
+        .gml-table th[data-sort-key]:hover { background:#f1f5f9; }
+        .gml-sort-ind { display:inline-block; margin-left:4px; font-size:10px; opacity:.35; }
+        .gml-sort-ind.gml-sort-active { opacity:1; color:#2563eb; }
         .gml-empty { padding:40px; text-align:center; color:#9ca3af; font-size:.9rem; }
         .gml-loading { padding:40px; text-align:center; color:#6b7280; font-size:.88rem; }
         .gml-num { text-align:right; font-variant-numeric:tabular-nums; }
@@ -75,15 +79,15 @@
                 <table class="gml-table">
                     <thead>
                         <tr>
-                            <th>Tarix</th>
-                            <th>Fil.</th>
-                            <th>Debet</th>
-                            <th>Debet sahibi</th>
-                            <th>Kredit</th>
-                            <th>Kredit sahibi</th>
-                            <th class="gml-num">Məbləğ (AZN)</th>
+                            <th data-sort-key="dateOper" data-sort-type="date">Tarix <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="filialNumber" data-sort-type="number">Fil. <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="debet" data-sort-type="text">Debet <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="nameLicschDe" data-sort-type="text">Debet sahibi <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="kredit" data-sort-type="text">Kredit <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="nameLicschKre" data-sort-type="text">Kredit sahibi <span class="gml-sort-ind">↕</span></th>
+                            <th class="gml-num" data-sort-key="summaVNacval" data-sort-type="number">Məbləğ (AZN) <span class="gml-sort-ind">↕</span></th>
                             <th>Xarici val.</th>
-                            <th>Qeyd</th>
+                            <th data-sort-key="primechanie" data-sort-type="text">Qeyd <span class="gml-sort-ind">↕</span></th>
                             <th>Əməliyyat</th>
                         </tr>
                     </thead>
@@ -115,6 +119,99 @@
         // sorğunun cavabı tətbiq olunur, gec qayıdan köhnə cavab yeni nəticəni
         // üstələməsin deyə.
         var gmlSonAcar = 0;
+
+        // Sütun başlığına klik — SERVERƏ YENİDƏN MÜRACİƏT ETMİR, artıq gətirilmiş
+        // naminzəd siyahısını (gmlRows) öz üzərində sıralayır.
+        var gmlRows = [];
+        var gmlSortKey = null;
+        var gmlSortDir = 1;
+
+        function gmlRenderRows(setirler) {
+            gmlBody.innerHTML = '';
+            setirler.forEach(function (s) {
+                var tr = document.createElement('tr');
+
+                var qeyd = s.primechanie ? s.primechanie : '—';
+                var xaricVal = s.summaVInval ? (gmlNum(s.summaVInval) + ' (kod ' + (s.kodValuti ?? '—') + ')') : '—';
+
+                var actionHtml;
+                if (s.artiqTesdiqlenib) {
+                    actionHtml = '<span class="gml-ok-badge"><i class="bi bi-check-circle-fill"></i> Təsdiqlənib</span>';
+                } else {
+                    var params = new URLSearchParams({
+                        filialNumber: s.filialNumber,
+                        dateOper: s.dateOper,
+                        recNum: s.recNum,
+                        debet: s.debet || '',
+                        kredit: s.kredit || '',
+                        summaVNacval: s.summaVNacval ?? '',
+                        kodValuti: s.kodValuti ?? '',
+                        innDebet: s.innLicschDe || '',
+                        innKredit: s.innLicschKre || '',
+                        primechanie: s.primechanie || '',
+                        nameLicschDe: s.nameLicschDe || '',
+                        nameLicschKre: s.nameLicschKre || ''
+                    });
+                    actionHtml = '<a class="gml-tesdiqle-btn" href="@Url.Action("Tesdiq")?' + params.toString() + '">' +
+                        '<i class="bi bi-pencil-square"></i> Təsdiqlə</a>';
+                }
+
+                tr.innerHTML =
+                    '<td>' + new Date(s.dateOper).toLocaleDateString('az-AZ') + '</td>' +
+                    '<td>' + s.filialNumber + '</td>' +
+                    '<td class="gml-hesab">' + (s.debet || '—') + '</td>' +
+                    '<td class="gml-sahib">' + (s.nameLicschDe || '—') + '</td>' +
+                    '<td class="gml-hesab">' + (s.kredit || '—') + '</td>' +
+                    '<td class="gml-sahib">' + (s.nameLicschKre || '—') + '</td>' +
+                    '<td class="gml-mebleg">' + gmlNum(s.summaVNacval) + '</td>' +
+                    '<td>' + xaricVal + '</td>' +
+                    '<td>' + qeyd + '</td>' +
+                    '<td>' + actionHtml + '</td>';
+                gmlBody.appendChild(tr);
+            });
+        }
+
+        function gmlSiralaVeCek() {
+            if (!gmlSortKey) return;
+            var key = gmlSortKey, type = gmlSortKey ? document.querySelector('[data-sort-key="' + gmlSortKey + '"]').dataset.sortType : 'text';
+            gmlRows.sort(function (a, b) {
+                var va = a[key], vb = b[key];
+                if (type === 'date') {
+                    va = va ? new Date(va).getTime() : 0;
+                    vb = vb ? new Date(vb).getTime() : 0;
+                } else if (type === 'number') {
+                    va = va === null || va === undefined ? -Infinity : Number(va);
+                    vb = vb === null || vb === undefined ? -Infinity : Number(vb);
+                } else {
+                    va = (va || '').toString().toLowerCase();
+                    vb = (vb || '').toString().toLowerCase();
+                }
+                if (va < vb) return -1 * gmlSortDir;
+                if (va > vb) return 1 * gmlSortDir;
+                return 0;
+            });
+            gmlRenderRows(gmlRows);
+        }
+
+        document.querySelectorAll('#gmlResultWrap thead th[data-sort-key]').forEach(function (th) {
+            th.addEventListener('click', function () {
+                var key = th.dataset.sortKey;
+                if (gmlSortKey === key) {
+                    gmlSortDir *= -1;
+                } else {
+                    gmlSortKey = key;
+                    gmlSortDir = 1;
+                }
+                document.querySelectorAll('#gmlResultWrap thead .gml-sort-ind').forEach(function (ind) {
+                    ind.textContent = '↕';
+                    ind.classList.remove('gml-sort-active');
+                });
+                var ind = th.querySelector('.gml-sort-ind');
+                ind.textContent = gmlSortDir === 1 ? '▲' : '▼';
+                ind.classList.add('gml-sort-active');
+                gmlSiralaVeCek();
+            });
+        });
 
         gmlForm.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -151,57 +248,24 @@
                     return;
                 }
 
-                var setirler = data.setirler || [];
-                gmlSetirSayi.textContent = setirler.length + ' namizəd tapıldı';
+                gmlRows = data.setirler || [];
+                gmlSetirSayi.textContent = gmlRows.length + ' namizəd tapıldı';
 
-                if (setirler.length === 0) {
+                // Yeni axtarış — köhnə sıralama vəziyyətini sıfırla (server onsuz
+                // da tarixə görə azalan sırada qaytarır).
+                gmlSortKey = null;
+                gmlSortDir = 1;
+                document.querySelectorAll('#gmlResultWrap thead .gml-sort-ind').forEach(function (ind) {
+                    ind.textContent = '↕';
+                    ind.classList.remove('gml-sort-active');
+                });
+
+                if (gmlRows.length === 0) {
                     gmlEmpty.style.display = 'block';
                     return;
                 }
 
-                gmlBody.innerHTML = '';
-                setirler.forEach(function (s) {
-                    var tr = document.createElement('tr');
-
-                    var qeyd = s.primechanie ? s.primechanie : '—';
-                    var xaricVal = s.summaVInval ? (gmlNum(s.summaVInval) + ' (kod ' + (s.kodValuti ?? '—') + ')') : '—';
-
-                    var actionHtml;
-                    if (s.artiqTesdiqlenib) {
-                        actionHtml = '<span class="gml-ok-badge"><i class="bi bi-check-circle-fill"></i> Təsdiqlənib</span>';
-                    } else {
-                        var params = new URLSearchParams({
-                            filialNumber: s.filialNumber,
-                            dateOper: s.dateOper,
-                            recNum: s.recNum,
-                            debet: s.debet || '',
-                            kredit: s.kredit || '',
-                            summaVNacval: s.summaVNacval ?? '',
-                            kodValuti: s.kodValuti ?? '',
-                            innDebet: s.innLicschDe || '',
-                            innKredit: s.innLicschKre || '',
-                            primechanie: s.primechanie || '',
-                            nameLicschDe: s.nameLicschDe || '',
-                            nameLicschKre: s.nameLicschKre || ''
-                        });
-                        actionHtml = '<a class="gml-tesdiqle-btn" href="@Url.Action("Tesdiq")?' + params.toString() + '">' +
-                            '<i class="bi bi-pencil-square"></i> Təsdiqlə</a>';
-                    }
-
-                    tr.innerHTML =
-                        '<td>' + new Date(s.dateOper).toLocaleDateString('az-AZ') + '</td>' +
-                        '<td>' + s.filialNumber + '</td>' +
-                        '<td class="gml-hesab">' + (s.debet || '—') + '</td>' +
-                        '<td class="gml-sahib">' + (s.nameLicschDe || '—') + '</td>' +
-                        '<td class="gml-hesab">' + (s.kredit || '—') + '</td>' +
-                        '<td class="gml-sahib">' + (s.nameLicschKre || '—') + '</td>' +
-                        '<td class="gml-mebleg">' + gmlNum(s.summaVNacval) + '</td>' +
-                        '<td>' + xaricVal + '</td>' +
-                        '<td>' + qeyd + '</td>' +
-                        '<td>' + actionHtml + '</td>';
-                    gmlBody.appendChild(tr);
-                });
-
+                gmlRenderRows(gmlRows);
                 gmlWrap.style.display = 'block';
             } catch (err) {
                 if (acar !== gmlSonAcar) return;
