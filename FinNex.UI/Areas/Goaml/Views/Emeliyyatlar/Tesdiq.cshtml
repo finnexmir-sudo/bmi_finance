@@ -49,10 +49,16 @@
         <input type="hidden" name="CandidateDateOper" value="@Model.CandidateDateOper.ToString("yyyy-MM-dd")" />
         <input type="hidden" asp-for="CandidateRecNum" />
 
-        @* ── Tip + Məlumatın növü — AYSEL-də "Bir-bir Təsdiq" zəncirinin ƏN KRİTİK iki sahəsi ── *@
+        @* ── Operatorun HƏQIQƏTƏN doldurduğu sahələr — 06.11.2026, işçinin özündən
+             alınmış siyahı. Qalan ~100 sahə (Hüquqi şəxsin bloku, Alan fiziki şəxsin
+             tam detalı, Banka aid olmayan... SWIFT/Hesab, Əlavə sahələr) BU FORMADAN
+             ÇIXARILIB — amma GoamlEmeliyyat/GoamlTesdiqDto-dan SİLİNMƏYİB. Gələcəkdə
+             AYSEL-in "Update New" kaskadının ekvivalenti quruləndə həmin sahələr
+             bank reyestrlərindən AVTOMATİK doldurulacaq, operator onları əl ilə
+             bir daha doldurmayacaq. ── *@
         <div class="gml-critical">
             <div class="gml-section-title"><i class="bi bi-exclamation-triangle-fill" style="color:#d97706"></i> Təsnifat (məcburi)</div>
-            <div class="gml-grid-2">
+            <div class="gml-grid-3">
                 <div>
                     <label class="gml-flbl">Tip <span class="gml-req">*</span></label>
                     <select name="Tip" class="fn-select" required>
@@ -73,61 +79,10 @@
                         }
                     </select>
                 </div>
-            </div>
-        </div>
-
-        @* ── Əməliyyatın özü ── *@
-        <div class="fn-card" style="padding:20px;margin-bottom:14px">
-            <div class="gml-section-title"><i class="bi bi-arrow-left-right"></i> Əməliyyatın özü</div>
-            <div class="gml-grid-3">
-                <div><label class="gml-flbl">Debet</label><input asp-for="Debet" class="fn-input" /></div>
-                <div><label class="gml-flbl">Kredit</label><input asp-for="Kredit" class="fn-input" /></div>
-                <div><label class="gml-flbl">VIP/NET</label><input asp-for="VipNetDa" class="fn-input" /></div>
-                <div><label class="gml-flbl">Məbləğ (xarici val.)</label><input type="number" step="any" name="SummaVInval" class="fn-input" value="@Model.SummaVInval?.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div><label class="gml-flbl">Məbləğ (milli val.)</label><input type="number" step="any" name="SummaVNacval" class="fn-input" value="@Model.SummaVNacval?.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div><label class="gml-flbl">Valyuta kodu</label><input asp-for="KodValuti" type="number" class="fn-input" /></div>
-                <div><label class="gml-flbl">Məzənnə</label><input type="number" step="any" name="KursValuti" class="fn-input" value="@Model.KursValuti?.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div><label class="gml-flbl">Əməl. nömrəsi</label><input asp-for="TransactionNumber" class="fn-input" /></div>
                 <div>
-                    <label class="gml-flbl">Əməl. tarixi</label>
+                    <label class="gml-flbl">Əməliyyat tarixi</label>
                     <input type="date" name="DateOper" class="fn-input" value="@Model.DateOper?.ToString("yyyy-MM-dd")" />
                 </div>
-                <div><label class="gml-flbl">Vəsaitin növü (kod)</label><input asp-for="TransmodeCode" class="fn-input" /></div>
-                <div><label class="gml-flbl">Əməliyyatın növün izahatı</label><input asp-for="TransmodeComment" class="fn-input" /></div>
-                <div><label class="gml-flbl">Manat ekvivalenti</label><input type="number" step="any" name="AmountLocal" class="fn-input" value="@Model.AmountLocal?.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div><label class="gml-flbl">Əməliyyatın növü (vəsait mənbəyi)</label><input asp-for="FromFundsCode" class="fn-input" /></div>
-                <div><label class="gml-flbl">Mədaxil valyutası</label><input asp-for="ForeignCurrencyCode" class="fn-input" /></div>
-                <div><label class="gml-flbl">Mənbə valyutası</label><input asp-for="ForeignCurrencyCodeFrom" class="fn-input" /></div>
-                <div><label class="gml-flbl">Xarici valyutada məbləğ</label><input type="number" step="any" name="ForeignAmount" class="fn-input" value="@Model.ForeignAmount?.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div><label class="gml-flbl">Xarici məzənnə</label><input type="number" step="any" name="ForeignExchangeRate" class="fn-input" value="@Model.ForeignExchangeRate?.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div><label class="gml-flbl">To funds code</label><input asp-for="ToFundsCode" class="fn-input" /></div>
-                <div><label class="gml-flbl">Əməliyyatı başladığı ölkə</label><input asp-for="FromCountry" class="fn-input" /></div>
-                <div><label class="gml-flbl">Business</label><input asp-for="Business" class="fn-input" /></div>
-                <div><label class="gml-flbl">Qeydiyyat nömrəsi</label><input asp-for="RegistracNomer" class="fn-input" /></div>
-                <div><label class="gml-flbl">Filial</label><input asp-for="Branch" class="fn-input" /></div>
-                <div><label class="gml-flbl">IBAN</label><input asp-for="Iban" class="fn-input" /></div>
-                <div><label class="gml-flbl">Hesab növü (şəxsi)</label><input asp-for="PersonalAccountType" class="fn-input" /></div>
-                <div><label class="gml-flbl">Gəlir mənbəyi</label><input asp-for="GelirMenbeyi" class="fn-input" /></div>
-                <div>
-                    <label class="gml-flbl">Hesabın açılma tarixi</label>
-                    <input type="date" name="HesabinAcilmaTarixi" class="fn-input" value="@Model.HesabinAcilmaTarixi?.ToString("yyyy-MM-dd")" />
-                </div>
-                <div>
-                    <label class="gml-flbl">İcra edilib (Opened)</label>
-                    <input type="date" name="Opened" class="fn-input" value="@Model.Opened?.ToString("yyyy-MM-dd")" />
-                </div>
-            </div>
-            <div style="margin-top:14px">
-                <label class="gml-flbl">Qeydlər</label>
-                <textarea asp-for="Primechanie" class="fn-textarea" rows="2"></textarea>
-            </div>
-            <div class="gml-grid-2" style="margin-top:14px">
-                <div><label class="gml-flbl">ACTION</label><input asp-for="Action" class="fn-input" /></div>
-                <div><label class="gml-flbl">Səbəb</label><input asp-for="Reason" class="fn-input" /></div>
-            </div>
-            <div style="margin-top:14px">
-                <label class="gml-flbl">URL</label>
-                <input asp-for="Url" class="fn-input" />
             </div>
         </div>
 
@@ -215,110 +170,23 @@
             </div>
         </details>
 
-        @* ── BLOK 3 — Hüquqi şəxsin (göndərən tərəf, suffikssiz) ── *@
+        @* ── BLOK 3 — Banka aid olmayan müştəri (fiziki/hüquqi/sahibkar) — Blok 4+5-in
+             sadələşdirilmiş birləşməsi. Checkbox + VÖEN/Ölkə/ADI/Bankın adı — işçinin
+             dediyinə görə YALNIZ bunlar işlənir; qalan (Alan fiziki şəxsin tam detalı,
+             SWIFT/Hesab/Əlaqə növü) formadan çıxarılıb, entity-də qalır. ── *@
         <details class="gml-block">
-            <summary>Hüquqi şəxsin (göndərən tərəf) <i class="bi bi-chevron-down gml-chevron"></i></summary>
-            <div class="gml-block-body">
-                <div class="gml-grid-3">
-                    <div><label class="gml-flbl">Adı</label><input asp-for="NameUr" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Bankın adı</label><input asp-for="InstitutionName" class="fn-input" /></div>
-                    <div><label class="gml-flbl">SWIFT</label><input asp-for="Swift" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Hesab</label><input asp-for="Account" class="fn-input" /></div>
-                    <div><label class="gml-flbl">VÖEN</label><input asp-for="IncorporationNumber" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Ölkə</label><input asp-for="IncorporationCountryCode" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Bankın adı (2)</label><input asp-for="BankinAdi" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Şəhərin kodu</label><input asp-for="SeherinKodu" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Fəaliyyət istiqaməti</label><input asp-for="FealiyyatIstiqameti" class="fn-input" /></div>
-                </div>
-            </div>
-        </details>
-
-        @* ── BLOK 4 — Alan fiziki şəxsin (Oracle: _TO, fiziki hissə) ── *@
-        <details class="gml-block">
-            <summary>Alan fiziki şəxsin <i class="bi bi-chevron-down gml-chevron"></i></summary>
+            <summary>Banka aid olmayan müştəri <i class="bi bi-chevron-down gml-chevron"></i></summary>
             <div class="gml-block-body">
                 <div class="gml-checks" style="margin-bottom:16px">
                     <label><input type="checkbox" name="ToFizik" value="true" checked="@(Model.ToFizik == true)" /> Fizik</label>
-                    <label><input type="checkbox" name="ToYurik" value="true" checked="@(Model.ToYurik == true)" /> Hüquqi</label>
                     <label><input type="checkbox" name="ToPred" value="true" checked="@(Model.ToPred == true)" /> Sahibkar</label>
-                    <div style="flex:1;min-width:160px">
-                        <label class="gml-flbl" style="margin-bottom:0">Pan To</label>
-                        <input asp-for="PanTo" class="fn-input" />
-                    </div>
+                    <label><input type="checkbox" name="ToYurik" value="true" checked="@(Model.ToYurik == true)" /> Hüquqi</label>
                 </div>
                 <div class="gml-grid-3">
-                    <div><label class="gml-flbl">Adı</label><input asp-for="ToAdi" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Atasının adı</label><input asp-for="ToAtasininAdi" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Soyadı</label><input asp-for="ToSoyadi" class="fn-input" /></div>
-                    <div>
-                        <label class="gml-flbl">Doğulduğu tarix</label>
-                        <input type="date" name="ToDogulduguTarix" class="fn-input" value="@Model.ToDogulduguTarix?.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <div><label class="gml-flbl">Doğulduğu yer</label><input asp-for="ToDogulduguYer" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Vətəndaşlığı</label><input asp-for="ToVetendasligi" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Telefon növü</label><input asp-for="ToTelefonNovu" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Rabitə növü</label><input asp-for="ToRabiteNovu" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Telefon nömrəsi</label><input asp-for="ToTelefonNomresi" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Ünvanın növü</label><input asp-for="ToUnvaninNovu" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Ünvan</label><input asp-for="ToUnvan" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Şəhər</label><input asp-for="ToSeher" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Ölkə (kod)</label><input asp-for="ToOlke" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Ölkə (adı)</label><input asp-for="ToOlkeAdi" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Sənədin növü</label><input asp-for="ToSenedinNovu" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Sənədin seriya/nömrəsi</label><input asp-for="ToSenedinSeriyaNomresi" class="fn-input" /></div>
-                    <div>
-                        <label class="gml-flbl">Sənədin verilmə tarixi</label>
-                        <input type="date" name="ToSenedinVerilmeTarixi" class="fn-input" value="@Model.ToSenedinVerilmeTarixi?.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <div>
-                        <label class="gml-flbl">Sənədin etibarlılıq müddəti</label>
-                        <input type="date" name="ToSenedinEtibarliliqMuddeti" class="fn-input" value="@Model.ToSenedinEtibarliliqMuddeti?.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <div><label class="gml-flbl">Verən orqan</label><input asp-for="ToVerenOrqan" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Verildiyi ölkə</label><input asp-for="ToVerildiyiOlke" class="fn-input" /></div>
-                </div>
-            </div>
-        </details>
-
-        @* ── BLOK 5 — Banka aid olmayan müş. Hüquqi şəxsin (Oracle: _TO, hüquqi hissə) ── *@
-        <details class="gml-block">
-            <summary>Banka aid olmayan müş. hüquqi şəxsin <i class="bi bi-chevron-down gml-chevron"></i></summary>
-            <div class="gml-block-body">
-                <div class="gml-grid-3">
-                    <div><label class="gml-flbl">Adı</label><input asp-for="NameUrTo" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Bankın adı</label><input asp-for="InstitutionNameTo" class="fn-input" /></div>
-                    <div><label class="gml-flbl">SWIFT</label><input asp-for="SwiftTo" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Hesab nömrəsi</label><input asp-for="AccountTo" class="fn-input" /></div>
                     <div><label class="gml-flbl">VÖEN</label><input asp-for="IncorporationNumberTo" class="fn-input" /></div>
                     <div><label class="gml-flbl">Ölkə</label><input asp-for="IncorporationCountryCodeTo" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Əlaqə növü</label><input asp-for="AlaqeNovuTo" class="fn-input" /></div>
-                </div>
-            </div>
-        </details>
-
-        @* ── Əlavə sahələr — blok təyini dəqiqləşdirilməyib ── *@
-        <details class="gml-block">
-            <summary>Əlavə sahələr <i class="bi bi-chevron-down gml-chevron"></i></summary>
-            <div class="gml-block-body">
-                <div class="gml-extra-note">
-                    <i class="bi bi-info-circle"></i>
-                    Bu sahələrin HANSI yuxarıdakı blokа aid olduğu AYSEL-in görünən
-                    formasından tam aydınlaşmayıb — Oracle adı ilə saxlanılır, səhv
-                    aid edilmə riski olmasın deyə (bax <code>GoamlEmeliyyat.cs</code> baş şərhi).
-                </div>
-                <div class="gml-grid-3">
-                    <div><label class="gml-flbl">Gender</label><input asp-for="Gender" class="fn-input" /></div>
-                    <div><label class="gml-flbl">SNN</label><input asp-for="Snn" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Gender (To)</label><input asp-for="GenderTo" class="fn-input" /></div>
-                    <div><label class="gml-flbl">SNN (To)</label><input asp-for="SnnTo" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Occupation</label><input asp-for="Occupation" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Employer name</label><input asp-for="EmployerName" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Sender ID type</label><input asp-for="SenderIdType" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Sender ID seriya</label><input asp-for="SenderIdSerial" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Sender ID nömrə</label><input asp-for="SenderIdNumber" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Rec ID type</label><input asp-for="RecIdType" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Rec ID seriya</label><input asp-for="RecIdSerial" class="fn-input" /></div>
-                    <div><label class="gml-flbl">Rec ID nömrə</label><input asp-for="RecIdNumber" class="fn-input" /></div>
+                    <div><label class="gml-flbl">Adı</label><input asp-for="NameUrTo" class="fn-input" /></div>
+                    <div><label class="gml-flbl">Bankın adı</label><input asp-for="InstitutionNameTo" class="fn-input" /></div>
                 </div>
             </div>
         </details>
