@@ -1539,6 +1539,10 @@
                        class="fn-nav-item @(currentController == "Dashboard" && currentArea == "Goaml" ? "active" : "")">
                         <i class="bi bi-grid-1x2"></i> Əsas
                     </a>
+                    <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index"
+                       class="fn-nav-item @(currentController == "Emeliyyatlar" && currentArea == "Goaml" ? "active" : "")">
+                        <i class="bi bi-list-check"></i> Əməliyyatlar
+                    </a>
                 }
                 break;
 

@@ -104,6 +104,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<FinNex.Application.Interfaces.Risk.IEmeliyyatRiskiParametrleriService, FinNex.Application.Services.Risk.EmeliyyatRiskiParametrleriService>();
         services.AddScoped<FinNex.Application.Interfaces.Aml.IAmlHesabatService, FinNex.Application.Services.Aml.AmlHesabatService>();
         services.AddScoped<FinNex.Application.Interfaces.Aml.IMelumatBazasiService, FinNex.Application.Services.Aml.MelumatBazasiService>();
+        services.AddScoped<FinNex.Application.Interfaces.Goaml.IGoamlService, FinNex.Application.Services.Goaml.GoamlService>();
         services.AddScoped<FinNex.Application.Interfaces.Muhasibat.IMuhasibatService, FinNex.Application.Services.Muhasibat.MuhasibatService>();
         services.AddScoped<FinNex.Application.Interfaces.Muhasibat.IHesabatSecilmisService, FinNex.Application.Services.Muhasibat.HesabatSecilmisService>();
         services.AddScoped<IVezifeService, VezifeService>();

@@ -7,7 +7,7 @@
     // "statik siyahı" naxışı.
     var tablar = new (string Ad, bool Hazir)[]
     {
-        ("Əməliyyatlar", false),
+        ("Əməliyyatlar", true),
         ("Risk", false),
         ("Keçməyən əməliyyat", false),
         ("Hesab risk", false),
@@ -39,10 +39,27 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
             @foreach (var t in tablar)
             {
-                <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;background:@(t.Hazir ? "#ecfdf5" : "#f9fafb");border:1px solid @(t.Hazir ? "#a7f3d0" : "#e5e7eb")">
-                    <i class="bi @(t.Hazir ? "bi-check-circle-fill" : "bi-hourglass-split")" style="color:@(t.Hazir ? "#22c55e" : "#9ca3af")"></i>
-                    <span style="font-size:.88rem;font-weight:600;color:@(t.Hazir ? "#065f46" : "#6b7280")">@t.Ad</span>
-                </div>
+                var icStil = "display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;background:"
+                    + (t.Hazir ? "#ecfdf5" : "#f9fafb") + ";border:1px solid " + (t.Hazir ? "#a7f3d0" : "#e5e7eb")
+                    + (t.Hazir ? ";cursor:pointer;text-decoration:none" : "");
+                var icIcon = "bi " + (t.Hazir ? "bi-check-circle-fill" : "bi-hourglass-split");
+                var icIconStil = "color:" + (t.Hazir ? "#22c55e" : "#9ca3af");
+                var icTextStil = "font-size:.88rem;font-weight:600;color:" + (t.Hazir ? "#065f46" : "#6b7280");
+
+                if (t.Ad == "Əməliyyatlar" && t.Hazir)
+                {
+                    <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index" style="@icStil">
+                        <i class="@icIcon" style="@icIconStil"></i>
+                        <span style="@icTextStil">@t.Ad</span>
+                    </a>
+                }
+                else
+                {
+                    <div style="@icStil">
+                        <i class="@icIcon" style="@icIconStil"></i>
+                        <span style="@icTextStil">@t.Ad</span>
+                    </div>
+                }
             }
         </div>
     </div>
