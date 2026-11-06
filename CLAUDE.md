@@ -9418,3 +9418,33 @@ iki şey üzə çıxdı, HƏR İKİSİ 92-ci fayla düzəldilib:**
 "Təsdiqlə"yə girib "Geri" basanda ƏVVƏLKİ filtr+nəticənin AVTOMATİK (yenidən
 Axtar basmadan) göründüyünü, "Təsdiqlə" formasında yeni "Debet sahibi"/"Kredit
 sahibi" sətirinin göründüyünü.
+
+**ÜÇÜNCÜ DALĞA (06.11.2026, eyni gün) — NƏTİCƏ: TƏSDİQLƏNDİ, "Təsdiq et" + Save
+ÖZÜ reyestr-KYC doldurmur.** İstifadəçi `C` sorğusunu (SID=1014) İKİ dəfə işlətdi:
+
+- **1-ci dəfə** — nəticə göndərildikdən SONRA üzə çıxdı ki, bu əslində "Təsdiq
+  et"+Save edilmədən ÇƏKİLMİŞ bir AYSEL-in sadəcə AÇIQ olduğu an idi (operator
+  heç bir əməliyyat etməmişdi) — mən bunu bilmədən "reyestr doldurma yoxdur"
+  qənaətinə gəldim, istifadəçi düzəltdi: *"bunu etmeden atmisam sene"*.
+- **2-ci dəfə** — bu dəfə HƏQİQƏTƏN "Təsdiq et" + Save edildikdən DƏRHAL sonra
+  (16:34:05–16:34:34 aralığı, dublikat yoxlaması → 3 əsl sorğu → statistika)
+  işlədildi. Görünən YALNIZ: `GOAML_CLIENTS` dublikat yoxlaması, `ODB.
+  LICSCH_ALL_2` (hesab sahibinin adı+INN-i — bizim artıq namizəd siyahısında
+  göstərdiyimiz "Debet/Kredit sahibi" ilə EYNİ, fərdi KYC DEYİL) və Save-dən
+  sonra formanı yenidən göstərmək üçün `GOAML_CLIENTS`-in bütöv sətrinin geri-
+  oxunması. **`V_FIZIKI`/`REGNOM`/`HUQUQI_SHEXS`/`LICSCH_ALL`/`DOCFIO` HEÇ
+  YERDƏ yoxdur** — ikinci (bu dəfə həqiqətən doğru) testdə də.
+
+**Qəti nəticə: "Təsdiq et" + Save AYSEL-in ÖZÜNDƏ reyestr-əsaslı şəxsi KYC
+doldurma TRİGER ETMİR.** Bu, yuxarıdakı "AÇIQ QALAN İŞ" qeydini DƏQİQLƏŞDİRİR
+(dəyişdirmir — o qeyd onsuz da "hələ qurulmayıb" deyirdi): avtomatik doldurma
+("Update New" kaskadı) normal təsdiq axınının bir hissəsi DEYİL, tamamilə AYRI
+(çox güman toplu/əl ilə tətiklənən) bir addımdır — əvvəlki sessiyada görülən,
+AYSEL-in əsas pəncərəsi ilə yanaşı açılan konsol/applet pəncərəsi buna uyğun
+gəlir, amma HƏLƏ TƏSDİQLƏNMƏYİB (işə salınıb SID-i tapılıb izlənməyib).
+
+**İstifadəçi qərarı (06.11.2026): araşdırma BURADA DAYANDIRILDI** — "Update
+New"-un öz tetikləyicisini tapmaq ARTIQ bu sessiyanın işi deyil, gələcək bir
+mərhələdə (FinNex-in öz avtomatik-doldurma mexanizmini qurarkən) aparılacaq.
+`92_Goaml_Avtomatik_Doldurma_Diaqnostikasi.sql` hazır qalır — o mərhələdə eyni
+`C` üsulu (bu dəfə konsol/applet pəncərəsinin öz SID-i ilə) təkrar işlədilə bilər.
