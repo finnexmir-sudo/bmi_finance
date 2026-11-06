@@ -6,17 +6,25 @@
 
 @section Styles {
     <style>
+        .gml-sub { font-size:.86rem; color:#64748b; margin-bottom:14px; }
         .gml-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end; }
         .gml-filter-lbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
-        .gml-filter-actions { display:flex; gap:10px; margin-top:16px; }
-        .gml-table-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:10px; margin-top:18px; }
-        .gml-table { width:100%; border-collapse:collapse; font-size:.82rem; min-width:1100px; }
-        .gml-table th, .gml-table td { padding:9px 12px; border-bottom:1px solid #eef0f4; text-align:left; white-space:nowrap; }
-        .gml-table th { background:#f9fafb; font-weight:700; color:#4b5563; font-size:.74rem; text-transform:uppercase; letter-spacing:.02em; }
+        .gml-filter-actions { display:flex; align-items:center; gap:10px; margin-top:16px; }
+        .gml-setir-sayi { color:#64748b; font-size:.82rem; font-weight:600; }
+
+        /* PID "Ödənişə Nəzarət" (Aktiv müştərilər) səhifəsinin dizaynı ilə EYNİ dil */
+        .gml-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-top:18px; }
+        .gml-table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 420px); }
+        .gml-table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
+        .gml-table thead th { background:#f8fafc; padding:9px 12px; text-align:left; font-weight:700; color:#475569; border-bottom:2px solid #e2e8f0; white-space:nowrap; position:sticky; top:0; z-index:2; }
+        .gml-table td { padding:7px 12px; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
+        .gml-table th, .gml-table td { border-right:1px solid #e2e8f0; }
+        .gml-table th:last-child, .gml-table td:last-child { border-right:none; }
         .gml-table tbody tr:hover { background:#fafbff; }
         .gml-empty { padding:40px; text-align:center; color:#9ca3af; font-size:.9rem; }
         .gml-loading { padding:40px; text-align:center; color:#6b7280; font-size:.88rem; }
-        .gml-mebleg { font-weight:700; color:#111827; }
+        .gml-num { text-align:right; font-variant-numeric:tabular-nums; }
+        .gml-mebleg { font-weight:700; color:#0f172a; }
         .gml-ok-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; background:#ecfdf5; color:#065f46; font-size:.74rem; font-weight:600; }
         .gml-tesdiqle-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:7px; background:#2563eb; color:#fff; font-size:.78rem; font-weight:600; text-decoration:none; }
         .gml-tesdiqle-btn:hover { background:#1d4ed8; color:#fff; }
@@ -26,15 +34,7 @@
 }
 
 <div class="fn-page">
-    <div class="fn-page-head">
-        <div>
-            <div class="fn-page-title">GOAML — Əməliyyatlar</div>
-            <div class="fn-page-sub">Oracle-dan (yalnız oxuma) namizəd əməliyyatlar — seçib Təsdiqlə ilə öz bazamıza yazılır</div>
-        </div>
-        <a asp-action="Siyahi" class="fn-btn fn-btn--outline">
-            <i class="bi bi-list-check"></i> Təsdiqlənmiş siyahı
-        </a>
-    </div>
+    <div class="gml-sub">Oracle-dan (yalnız oxuma) namizəd əməliyyatlar — seçib Təsdiqlə ilə öz bazamıza yazılır</div>
 
     <div class="fn-card" style="padding:20px">
         <form id="gmlAxtarForm">
@@ -63,28 +63,33 @@
                 <button type="submit" class="fn-btn fn-btn--primary">
                     <i class="bi bi-search"></i> Axtar
                 </button>
-                <span id="gmlSetirSayi" style="align-self:center;color:#6b7280;font-size:.82rem"></span>
+                <span id="gmlSetirSayi" class="gml-setir-sayi"></span>
+                <a asp-action="Siyahi" class="fn-btn fn-btn--outline" style="margin-left:auto">
+                    <i class="bi bi-list-check"></i> Təsdiqlənmiş siyahı
+                </a>
             </div>
         </form>
 
-        <div class="gml-table-wrap" id="gmlResultWrap" style="display:none">
-            <table class="gml-table">
-                <thead>
-                    <tr>
-                        <th>Tarix</th>
-                        <th>Fil.</th>
-                        <th>Debet</th>
-                        <th>Debet sahibi</th>
-                        <th>Kredit</th>
-                        <th>Kredit sahibi</th>
-                        <th>Məbləğ (AZN)</th>
-                        <th>Xarici val.</th>
-                        <th>Qeyd</th>
-                        <th>Əməliyyat</th>
-                    </tr>
-                </thead>
-                <tbody id="gmlResultBody"></tbody>
-            </table>
+        <div class="gml-card" id="gmlResultWrap" style="display:none">
+            <div class="gml-table-wrap">
+                <table class="gml-table">
+                    <thead>
+                        <tr>
+                            <th>Tarix</th>
+                            <th>Fil.</th>
+                            <th>Debet</th>
+                            <th>Debet sahibi</th>
+                            <th>Kredit</th>
+                            <th>Kredit sahibi</th>
+                            <th class="gml-num">Məbləğ (AZN)</th>
+                            <th>Xarici val.</th>
+                            <th>Qeyd</th>
+                            <th>Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gmlResultBody"></tbody>
+                </table>
+            </div>
         </div>
         <div id="gmlLoading" class="gml-loading" style="display:none">Axtarılır...</div>
         <div id="gmlEmpty" class="gml-empty" style="display:none">Bu filtrə uyğun namizəd əməliyyat tapılmadı.</div>
