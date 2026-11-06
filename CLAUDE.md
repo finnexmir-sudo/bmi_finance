@@ -9267,3 +9267,68 @@ sonra real ssenari ilə yoxlamalıdır: "Əməliyyatlar"da bir tarix aralığı 
 blok + məcburi Tip/Məlumat növü) dolduraraq göndərdiyini, "Təsdiqlənmiş
 siyahı"da yeni sətrin göründüyünü, eyni namizədi İKİNCİ dəfə açmağa cəhd
 edəndə "Təsdiqlənib" bədgisinin göründüyünü (təkrar yazıla bilmədiyini).
+
+## GOAML — Təsdiq Forması 130 Sahədən 6 Qrupa Endirildi (06.11.2026, KRİTİK)
+
+İstifadəçi real AML operatorundan soruşub cavabı gətirdi: *"burda olanlardan
+hansılarını sən işlədirsənsə onu göstərək, bir şeyi ki işlənmirsə boş yerə
+niyə göstərək. onsuzda json ətraflı şəkildə hazırlanacaq."*
+
+**Bu, AYSEL-in real iş axınını tam aydınlaşdırdı — mənim əvvəlki 130-sahəlik
+Təsdiq formam SƏHV fərziyyə üzərində qurulmuşdu** ("operator hər sahəni əl
+ilə doldurur"). Həqiqi axın:
+
+1. Operator YALNIZ 6 qrupu doldurub **Təsdiqlə**yir (aşağıda).
+2. AYSEL-in ÖZÜ (06.11.2026-dakı əvvəlki araşdırmada tapılan "Update New"
+   kaskadı — 150+ UPDATE, `V_FIZIKI`/`VIEW_HUQUQI_SHEXS_ALL`/`LICSCH_ALL_2`
+   bank reyestrlərindən) **qalan BÜTÜN sahələri AVTOMATİK doldurur**.
+3. Proqram əmin olmadığı yerləri **boş qoyur** — operator bunları ƏL İLƏ
+   düzəldir (yaxud səhv olanda düzəldib yenidən təsdiqləyir).
+4. Son olaraq qeydlər **Tip üzrə qruplaşdırılıb** JSON/XML-ə ixrac olunur
+   (bu, əvvəlki sessiyada tapılan `XML_GOAML_*_NEW` prosedur ailəsidir).
+
+**İşçinin verdiyi 6 qrup** (`Tesdiq.cshtml`-də SAXLANILAN YEGANƏ sahələr):
+1. Əməliyyat tarixi (`DateOper`)
+2. Əməl növü (`Tip`)
+3. Məlumat növü (`ReportCode`)
+4. Nümayəndənin VƏ Hesab imza hüququ olan şəxsin (Blok 1 + Blok 2, tam)
+5. Vəzifə + İş yerinin adı (Blok 2-nin daxilində, `SigVezife`/`SigIsYeriAdi`)
+6. Fiziki/Sahibkar/Hüquqi checkbox **+ VÖEN/Ölkə/ADI/Bankın adı** (istifadəçi
+   açıq təsdiqlədi: tək checkbox mənasız qalardı, kimin olduğunu bilmək
+   üçün bu 4 sahə lazımdır)
+
+**Çıxarılan (~100 sahə) — FORMADAN, DB-DƏN YOX:** "Hüquqi şəxsin (göndərən
+tərəf)" bloku tam, "Alan fiziki şəxsin"in tam şəxsi detalı (Doğulduğu tarix/
+yer, Vətəndaşlıq, Telefon, Ünvan, Sənəd məlumatları), "Banka aid olmayan..."un
+SWIFT/Hesab/Əlaqə növü sahələri, "Əlavə sahələr" bloku tam, "Əməliyyatın özü"
+kartının 24 digər sahəsi (Valyuta kodu, Məzənnə, Manat ekvivalenti, Xarici
+valyutada məbləğ, Qeydlər, ACTION, Səbəb, URL və s.).
+
+⚠️ **`GoamlEmeliyyat` entity, `GoamlTesdiqDto`, migration — HEÇ BİRİNƏ
+TOXUNULMADI.** Yalnız `Tesdiq.cshtml` (görüntü qatı) dəyişdi. Səbəb: istifadəçinin
+öz sözü — "onsuzda json ətraflı şəkildə hazırlanacaq" — yəni gələcəkdə AYSEL-in
+"Update New" kaskadının ekvivalenti qurulanda (hələ EDİLMƏYİB, "Export to file"
+tabı ilə birlikdə gələcək iş kimi qalır) bu sahələr bank reyestrlərindən
+avtomatik doldurulacaq — indi silinsəydi, həmin iş üçün sxemi yenidən qurmaq
+lazım gələrdi.
+
+**Qayda:** köhnə sistemdən bir ekranı "tam, hərfi" köçürmək (hər görünən sahəni
+formaya əlavə etmək) TƏHLÜKƏLİDİR — AYSEL kimi köhnə Oracle Forms ekranları
+onilliklər boyu YIĞILMIŞ sahələr daşıya bilər, onların çoxu HEÇ VAXT əl ilə
+doldurulmayıb (proqramın öz avtomatikası doldurub). Köçürmədən ƏVVƏL real
+istifadəçidən **"bunlardan hansını SƏN özün yazırsan?"** soruşmaq — "ekranda
+nə var" sualından tamamilə fərqli, daha doğru bir sualdır.
+
+⚠️ **AÇIQ QALAN İŞ** — AYSEL-in "Update New" kaskadının FinNex-dəki ekvivalenti
+(bank reyestrlərindən avtomatik doldurma) hələ qurulmayıb. Operator hazırda
+Təsdiqlədikdən sonra qalan ~100 sahə `GoamlEmeliyyat`-da `NULL` qalır — gələcək
+iş budur ki, Təsdiq anında (və ya ayrıca bir "Doldur" düyməsi ilə) bu sahələr
+VÖEN/FİN/hesab üzrə uyğun Oracle reyestrlərindən (analoji: `regnom`, `licsch`,
+`docfio` — AML "Məlumat Bazası" modulunda artıq oxunan cədvəllər) axtarılıb
+avtomatik doldurulsun, operator yalnız YOXLASIN/DÜZƏLTSİN.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı skriptlə). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real ssenari ilə yoxlamalıdır: "Təsdiqlə"yə basanda indi YALNIZ 3 blokun
+(Təsnifat + Nümayəndə + İmza hüququ olan şəxs + Banka aid olmayan müştəri)
+göründüyünü, formanın köhnə 5-blok/130-sahə halından qat-qat qısa olduğunu.
