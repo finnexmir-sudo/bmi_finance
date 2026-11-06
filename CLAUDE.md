@@ -9125,3 +9125,145 @@ işlək təsdiqləndi.
 xüsusən bu layihədə `dotnet build` BU mühitdə mümkün olmadığı üçün — İLK
 yoxlanacaq şey HƏMİŞƏ "istifadəçi real mühitdə son commiti çəkib (pull) və
 yenidən qurubmu (Rebuild All)" sualıdır, kodun özündə səhv axtarmazdan ƏVVƏL.
+
+## GOAML — "Əməliyyatlar" Tabı TAMAMLANDI: Entity+Servis+Ekranlar (06.11.2026)
+
+Yuxarıdakı "açıq qalan" sualın cavabı bu sessiyada tapıldı: **canlı Oracle
+araşdırması** (`v$sql` ilə AYSEL-in real "Təsdiq+Save+Update New" zəncirini
+izləyərək — bax aşağıdakı "GOAML Arxitekturası — AYSEL-in Üç Addımlı Zənciri"
+bölməsi) göstərdi ki, namizəd əməliyyat **Oracle-dan (`DOC_DNA_ALL_TAB` +
+`DOC_DNA_ALL_RISK`, `DATE_OPER+FILIALNUMBER+RECNUM` açarı ilə JOIN) OXUNUR**,
+operator KYC-ni doldurub təsdiqləyəndə isə **bizim ÖZ SQL Server bazamıza**
+yazılır — Oracle-un `GOAML_CLIENTS`-inin güzgüsü, amma FinNex-in daxilində.
+
+**Struktur** (hamısı bu sessiyada quruldu): `GoamlEmeliyyat` entity
+(`FinNex.Domain/Entities/Goaml/`, Oracle-un 124 sütununu BİR-BİR güzgüləyir,
+hər sahənin şərhində əsl Oracle adı saxlanılır), migration
+`20261106090000_GoamlEmeliyyat.cs` (`InsertData` yoxdur), `GoamlTipi` (13
+dəyər, Oracle `TIP_GOAML.TIP`-dən RƏQƏMLƏRİ EYNİ saxlayaraq köçürülüb) və
+`GoamlHesabatNovu` (16 dəyər, "Məlumatın növü") enum-ları, `IGoamlService`/
+`GoamlService`, `EmeliyyatlarController` (`[Icaze(IcazeKodlari.GoamlBax)]`).
+
+**Namizəd sorğusu `docs/sql/goaml/90_Goaml_OracleSorgular.sql`-dədir**
+(`OracleSorgular.SorguAdi='GOAML_EMELIYYAT_NAMIZED'`) — AYSEL-in
+`P_DOC_DNA_GOAML` prosedurundan `v$sql` ilə çıxarılan ƏSL biznes qaydalarını
+daşıyır (GL texniki hesabları xaric etmə, `BALCH_NET` netting-cütlərini xaric
+etmə). ⚠️ **Fayl "FAZA 1 (paralel dövr)" üçündür** — AYSEL hələ işlədiyi
+müddətcə `DOC_DNA_ALL_TAB`-ı O doldurur, biz YALNIZ oxuyuruq; AYSEL
+dayandırılandan sonra sorğu `odb.arh_dd`-dən yenidən qurulmalıdır (edilmədi).
+
+**Eyni namizəd İKİNCİ dəfə təsdiqlənə bilməz** — unikal olmayan, amma
+sorğulanan indeks (`IX_GoamlEmeliyyatlar_Candidate`,
+`CandidateFilialNumber+CandidateDateOper+CandidateRecNum`), `TesdiqleAsync`
+yazmazdan ƏVVƏL `MovcuddurmuAsync` ilə yoxlayır. Axtarış nəticəsində də hər
+sətrə `ArtiqTesdiqlenib` bayrağı qoyulur (eyni 3-hissəli açarla) ki, operator
+artıq təsdiqlənmiş sətri siyahıda görsün, təkrar klikləməsin.
+
+### Üç ekran (bu sessiyada yazıldı)
+
+1. **`Index.cshtml`** — tarix aralığı + minimum məbləğ + VÖEN/hesab filtri,
+   **AJAX POST** (`Axtar` endpoint) ilə nəticə cədvəli JS-dən doldurulur
+   (server-render YOX — sorğu hər dəfə Oracle-a canlı gedir). Artıq
+   təsdiqlənmiş sətirdə "Təsdiqlənib" bədgi, əks halda "Təsdiqlə" düyməsi
+   (namizədin bütün açar+ilkin sahələrini query-string ilə `Tesdiq` GET-inə
+   ötürür — controller-in mövcud parametr siyahısı ilə BİR-BİR tutuşduruldu).
+2. **`Tesdiq.cshtml`** — ~130 sahəlik KYC forması. **Tip + Məlumatın növü**
+   (məcburi, servis bunları yoxlayır) ayrıca, vurğulanmış kartda; qalan 5 blok
+   (Nümayəndənin/_CON, Hesab imza hüququ olan şəxsin/_SIG, Hüquqi şəxsin,
+   Alan fiziki şəxsin/_TO fiziki, Banka aid olmayan hüquqi şəxsin/_TO hüquqi)
+   `<details>`/`<summary>`-lə qatlanan bloklardadır ("İşçiyə Tapşır" bölməsinin
+   eyni JS-siz naxışı) — entity-nin öz baş şərhindəki 5-blok xəritəsi BİRƏ-BİR
+   təkrarlanıb. Entity şərhinin "tam bloka aid edilməməyib" dediyi sahələr
+   (Gender/Snn/Occupation/SenderId*/RecId* və s.) AYRICA "Əlavə sahələr"
+   blokunda, açıq xəbərdarlıqla göstərilir — gizlədilmir.
+3. **`Siyahi.cshtml`** — təsdiqlənmiş qeydlərin sadə cədvəli (`Tip.Etiket()`/
+   `ReportCode.Kod()` ilə insan-oxunan görüntü).
+
+**Enum görüntü mətni DOMAIN QATINDA, Razor-da DEYİL** — `GoamlTipiExtensions.
+Etiket()` və `GoamlHesabatNovuExtensions.Aciqlama()` (`GoamlEnums.cs`-ə bu
+sessiyada əlavə edildi) — "bir kəmiyyətə bir yazıcı" prinsipinin əksi:
+BİR mənbə, BİR NEÇƏ OXUYUCU (Tesdiq-in dropdown-u, Siyahi-nin cədvəli,
+gələcəkdə hər hansı başqa ekran) — etiket mətni Razor-da səpələnməsin deyə.
+
+⚠️ **Decimal input-larda InvariantCulture tələsi ƏVVƏLCƏDƏN tutuldu.**
+`asp-for` + `type="number"` decimal sahələrdə (`SummaVInval`, `SummaVNacval`,
+`KursValuti`, `AmountLocal`, `ForeignAmount`, `ForeignExchangeRate`) az-AZ
+mədəniyyəti ilə vergüllü render edərdi — CLAUDE.md-dəki "Dəyər Sahəsi — step
+və decimal(p,s)" tələsinin elə özüdür (`<input type="number">` yalnız NÖQTƏ
+qəbul edir). Bu altı sahə `asp-for`-dan çıxarılıb, `value="@Model.X?.
+ToString(CultureInfo.InvariantCulture)"` ilə əl ilə yazıldı — `KodValuti`
+(`int?`) toxunulmadı, tam ədəddə ayırıcı riski yoxdur.
+
+⚠️ **Açıq qalan — `DetalGetirAsync(int id)` servisdə VAR, controller-dən
+ÇAĞIRILMIR.** `Siyahi.cshtml` yalnız siyahı göstərir, tək qeydin tam detalına
+baxan "Bax" action/view HƏLƏ yazılmayıb — gələcəkdə asanlıqla əlavə oluna
+bilər (servis metodu hazırdır).
+
+⚠️ **Qalan 14 tab (Risk, Keçməyən əməliyyat, Hesab risk, Risk Progress, Cash
+IN, Card To Card, 18% 4%, Setup, SİYAHI, kassa >30, Təhlil, MMX, SCORING,
+Export to file) HƏLƏ QURULMAYIB** — istifadəçi ekran-ekran göndərəcək.
+
+### GOAML Arxitekturası — AYSEL-in Üç Addımlı Zənciri (canlı Oracle araşdırması, 06.11.2026)
+
+Köhnə BMI Oracle Forms "AYSEL/GOAML" modulunun **Əməliyyatlar** VƏ **Risk**
+tablarının necə işlədiyi `v$sql` ilə CANLI izlənərək tapıldı (heç bir
+fərziyyə yox — hər addım real Oracle sorğusu ilə sübut olundu):
+
+1. **Təsdiq** — operator ekranda namizədin KYC sahələrini doldurur.
+2. **Save** — `ODB.GOAML_CLIENTS`-ə **124-sütunlu parametrli INSERT**
+   (`INSERT INTO odb.GOAML_CLIENTS(DEBET,FILIALNUMBER,KREDIT,...)
+   VALUES(:1,:2,...)`) yazılır — bu, YALNIZ Save-dən sonra baş verir (Təsdiq
+   təkbaşına COMMIT ETMİR, `count(*)` ilə sübut olundu).
+3. **Update New** — **150-dən çox AYRI UPDATE əmrindən ibarət nəhəng kaskad**,
+   HAMISI eyni saniyədə, HƏR BİRİ `WHERE DATE_OPER BETWEEN :tarix1 AND :tarix2
+   AND VIP_NET_DA=1` şərti ilə — yəni TƏK sətri yox, bütün dövrdəki namizədləri
+   bir anda emal edir: `TIP`-i hesab prefiksindən təyin edir, `REPORT_CODE`-u
+   (`STR`/`PEP`/`BLR`) qara siyahı/PEP/sanksiya cədvəllərinə baxıb avtomatik
+   qoyur, KYC-ni (ad/soyad/ünvan/sənəd) `V_FIZIKI`/`VIEW_HUQUQI_SHEXS_ALL`/
+   `LICSCH_ALL_2` kimi ƏSAS bank reyestrlərindən köçürür.
+
+**Risk VƏ Əməliyyatlar EYNİ `GOAML_CLIENTS`-ə, AMMA FƏRQLİ sütun sırası ilə
+yazır** (iki ayrı literal INSERT mətni `v$sql`-də tapıldı — Risk-in
+`foreign_currency_code_from` sütunu yoxdur, Əməliyyatlar-ınkı var) — demək
+AYSEL-in bu iki tabının HƏR BİRİNİN öz yazma yolu var, ortaq yalnız hədəf
+cədvəldir. `GOAML_DOCNVA` adlı YEGANƏ DB-saxlanmış prosedur (`all_source`
+axtarışı ilə tapıldı) isə bunların heç biri DEYİL — o, `doc_dna_all_risk`-dən
+≥20.000 AZN əməliyyatları "skelet" (12 sütun, `VIP_NET_DA=1`) olaraq
+`GOAML_CLIENTS`-ə ƏVVƏLCƏDƏN doldurur; nə `DBMS_SCHEDULER`-də, nə `DBMS_JOB`-da
+planlaşdırılmayıb — əl ilə, bir düymədən çağırılır.
+
+**`GOAML_CLIENTS`-in HƏQİQİ məqsədi — `XML_GOAML_*_NEW` prosedur ailəsinin
+(hər `TIP` dəyəri üçün AYRI, ~13 prosedur) oxuduğu mənbədir.** Bir prosedurun
+(`XML_GOAML_FIZIKI_FIZIKIYA_new`) TAM mətni oxunub təsdiqləndi:
+`xmlelement(...)` ilə goAML-in (UNODC-nin BEYNƏLXALQ FIU hesabat standartının)
+RƏSMİ XML teqlərini (`<t_conductor>`, `<reporting_person>`, `<identification>`,
+`<source_of_wealth>` və s.) qurur, `UTL_FILE` ilə `D:\GOAML\XML\...xml`
+yoluna REAL fayl yazır. Ekrandakı "Səbəb"/"ACTION" xanaları da birbaşa bu
+XML-in `<reason>`/`<action>` teqlərinə düşür.
+
+**"Bir-bir Təsdiq" olmasının səbəbi hesabat FORMATI DEYİL** — XML/kaskad
+TOPLU (bütün dövr üçün bir anda) işləyir, "bir-bir" olmasının səbəbi İNSAN AML
+nəzarətidir: hər namizədin HƏQİQƏTƏN şübhəli olub-olmadığını, Tip-ini,
+Səbəbini YALNIZ analitik qiymətləndirə bilər — bu, qanunvericilik tələbidir.
+
+**FinNex-ə köçürmə qərarı:** Oracle-a YAZI qadağan olduğu üçün (layihənin kök
+qaydası) bütün "yazma" tərəfi (Təsdiq+Save+Update New kaskadı+XML generasiyası)
+FinNex-in ÖZ SQL Server bazasında TƏKRARLANMALIDIR, namizəd oxuması isə Oracle-
+da QALIR. "150+ UPDATE" kaskadı 6 məntiqi qrupa bölünür (TIP təyini, REPORT_CODE/
+Səbəb, KYC-nin bank reyestrlərindən doldurulması — ən böyük qrup, valyuta/
+məzənnə, TRANSMODE_CODE, təmizlik/defolt dəyərlər) — İLK MƏRHƏLƏDƏ (bu sessiya)
+YALNIZ struktur (entity+Tesdiq forması) quruldu, kaskadın ÖZÜ HƏLƏ KÖÇÜRÜLMƏYİB
+— operator hazırda TIP/REPORT_CODE/KYC-ni ƏL İLƏ seçir, Oracle-dakı kimi
+avtomatik doldurma YOXDUR. Gələcək mərhələdə (istifadəçi "yavaş-yavaş" dedi)
+bu avtomatikanı C#/SQL Server-də təkrarlamaq planlaşdırılır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə hər 5 yeni/dəyişən faylda,
+`asp-for`/manual name="" uyğunluğu DTO sahə adları ilə bir-bir tutuşduruldu,
+Index.cshtml-in JS-dəki camelCase sahə adları `Json()` helper-inin default
+casing-i ilə təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real ssenari ilə yoxlamalıdır: "Əməliyyatlar"da bir tarix aralığı axtar
+→ nəticə cədvəlinin gəldiyini, "Təsdiqlə"yə basıb KYC formasını (bütün 5
+blok + məcburi Tip/Məlumat növü) dolduraraq göndərdiyini, "Təsdiqlənmiş
+siyahı"da yeni sətrin göründüyünü, eyni namizədi İKİNCİ dəfə açmağa cəhd
+edəndə "Təsdiqlənib" bədgisinin göründüyünü (təkrar yazıla bilmədiyini).

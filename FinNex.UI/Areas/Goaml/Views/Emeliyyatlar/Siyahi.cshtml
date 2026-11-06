@@ -1,0 +1,82 @@
+@using FinNex.Domain.Entities.Goaml
+@model List<FinNex.Application.DTOs.Goaml.GoamlEmeliyyatListDto>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "GOAML — Təsdiqlənmiş əməliyyatlar";
+}
+
+@section Styles {
+    <style>
+        .gml-table-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:10px; }
+        .gml-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+        .gml-table th, .gml-table td { padding:10px 12px; border-bottom:1px solid #eef0f4; text-align:left; }
+        .gml-table th { background:#f9fafb; font-weight:700; color:#4b5563; font-size:.74rem; text-transform:uppercase; letter-spacing:.02em; }
+        .gml-table tbody tr:hover { background:#fafbff; }
+        .gml-mebleg { font-weight:700; color:#111827; }
+        .gml-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.74rem; font-weight:600; background:#eef2ff; color:#3730a3; }
+        .gml-pill--report { background:#fef3c7; color:#92400e; }
+        .gml-empty { padding:40px; text-align:center; color:#9ca3af; font-size:.9rem; }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">GOAML — Təsdiqlənmiş əməliyyatlar</div>
+            <div class="fn-page-sub">Operatorun "Təsdiqlə" ilə bizim öz bazamıza yazdığı qeydlər (@Model.Count)</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--primary">
+            <i class="bi bi-search"></i> Yeni namizəd axtar
+        </a>
+    </div>
+
+    <div class="fn-card" style="padding:0">
+        @if (!Model.Any())
+        {
+            <div class="gml-empty">Hələ heç bir əməliyyat təsdiqlənməyib.</div>
+        }
+        else
+        {
+            <div class="gml-table-wrap">
+                <table class="gml-table">
+                    <thead>
+                        <tr>
+                            <th>Əməl. tarixi</th>
+                            <th>Debet</th>
+                            <th>Kredit</th>
+                            <th>Məbləğ (AZN)</th>
+                            <th>Tip</th>
+                            <th>Məlumatın növü</th>
+                            <th>Təsdiqləyən</th>
+                            <th>Yaradılma tarixi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model)
+                        {
+                            <tr>
+                                <td>@e.DateOper.ToString("dd.MM.yyyy")</td>
+                                <td style="font-family:ui-monospace,Consolas,monospace">@(e.Debet ?? "—")</td>
+                                <td style="font-family:ui-monospace,Consolas,monospace">@(e.Kredit ?? "—")</td>
+                                <td class="gml-mebleg">@(e.SummaVNacval?.ToString("N2") ?? "—")</td>
+                                <td>@(e.Tip.HasValue ? e.Tip.Value.Etiket() : "—")</td>
+                                <td>
+                                    @if (e.ReportCode.HasValue)
+                                    {
+                                        <span class="gml-pill gml-pill--report">@e.ReportCode.Value.Kod()</span>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td>@(e.TesdiqleyenAdi ?? "—")</td>
+                                <td>@e.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

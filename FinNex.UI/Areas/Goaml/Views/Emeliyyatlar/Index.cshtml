@@ -1,0 +1,196 @@
+@model FinNex.Application.DTOs.Goaml.GoamlAxtarisDto
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "GOAML — Əməliyyatlar";
+}
+
+@section Styles {
+    <style>
+        .gml-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end; }
+        .gml-filter-lbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
+        .gml-filter-actions { display:flex; gap:10px; margin-top:16px; }
+        .gml-table-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:10px; margin-top:18px; }
+        .gml-table { width:100%; border-collapse:collapse; font-size:.82rem; min-width:1100px; }
+        .gml-table th, .gml-table td { padding:9px 12px; border-bottom:1px solid #eef0f4; text-align:left; white-space:nowrap; }
+        .gml-table th { background:#f9fafb; font-weight:700; color:#4b5563; font-size:.74rem; text-transform:uppercase; letter-spacing:.02em; }
+        .gml-table tbody tr:hover { background:#fafbff; }
+        .gml-empty { padding:40px; text-align:center; color:#9ca3af; font-size:.9rem; }
+        .gml-loading { padding:40px; text-align:center; color:#6b7280; font-size:.88rem; }
+        .gml-mebleg { font-weight:700; color:#111827; }
+        .gml-ok-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; background:#ecfdf5; color:#065f46; font-size:.74rem; font-weight:600; }
+        .gml-tesdiqle-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:7px; background:#2563eb; color:#fff; font-size:.78rem; font-weight:600; text-decoration:none; }
+        .gml-tesdiqle-btn:hover { background:#1d4ed8; color:#fff; }
+        .gml-sahib { font-size:.78rem; color:#4b5563; }
+        .gml-hesab { font-family:ui-monospace,Consolas,monospace; font-size:.78rem; color:#374151; }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">GOAML — Əməliyyatlar</div>
+            <div class="fn-page-sub">Oracle-dan (yalnız oxuma) namizəd əməliyyatlar — seçib Təsdiqlə ilə öz bazamıza yazılır</div>
+        </div>
+        <a asp-action="Siyahi" class="fn-btn fn-btn--outline">
+            <i class="bi bi-list-check"></i> Təsdiqlənmiş siyahı
+        </a>
+    </div>
+
+    <div class="fn-card" style="padding:20px">
+        <form id="gmlAxtarForm">
+            @Html.AntiForgeryToken()
+            <div class="gml-filter-grid">
+                <div>
+                    <label class="gml-filter-lbl">Tarixdən</label>
+                    <input type="date" name="BasTarix" id="gmlBasTarix" class="fn-input"
+                           value="@Model.BasTarix.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div>
+                    <label class="gml-filter-lbl">Tarixə qədər</label>
+                    <input type="date" name="SonTarix" id="gmlSonTarix" class="fn-input"
+                           value="@Model.SonTarix.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div>
+                    <label class="gml-filter-lbl">Minimum məbləğ (AZN)</label>
+                    <input type="number" step="any" name="MinMebleg" id="gmlMinMebleg" class="fn-input" placeholder="məs. 20000" />
+                </div>
+                <div>
+                    <label class="gml-filter-lbl">VÖEN və ya hesab №</label>
+                    <input type="text" name="VoenVeyaHesab" id="gmlVoenHesab" class="fn-input" placeholder="axtarış..." />
+                </div>
+            </div>
+            <div class="gml-filter-actions">
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-search"></i> Axtar
+                </button>
+                <span id="gmlSetirSayi" style="align-self:center;color:#6b7280;font-size:.82rem"></span>
+            </div>
+        </form>
+
+        <div class="gml-table-wrap" id="gmlResultWrap" style="display:none">
+            <table class="gml-table">
+                <thead>
+                    <tr>
+                        <th>Tarix</th>
+                        <th>Fil.</th>
+                        <th>Debet</th>
+                        <th>Debet sahibi</th>
+                        <th>Kredit</th>
+                        <th>Kredit sahibi</th>
+                        <th>Məbləğ (AZN)</th>
+                        <th>Xarici val.</th>
+                        <th>Qeyd</th>
+                        <th>Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody id="gmlResultBody"></tbody>
+            </table>
+        </div>
+        <div id="gmlLoading" class="gml-loading" style="display:none">Axtarılır...</div>
+        <div id="gmlEmpty" class="gml-empty" style="display:none">Bu filtrə uyğun namizəd əməliyyat tapılmadı.</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const gmlForm = document.getElementById('gmlAxtarForm');
+        const gmlWrap = document.getElementById('gmlResultWrap');
+        const gmlBody = document.getElementById('gmlResultBody');
+        const gmlLoading = document.getElementById('gmlLoading');
+        const gmlEmpty = document.getElementById('gmlEmpty');
+        const gmlSetirSayi = document.getElementById('gmlSetirSayi');
+
+        function gmlNum(v) {
+            if (v === null || v === undefined) return '';
+            return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        gmlForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            gmlWrap.style.display = 'none';
+            gmlEmpty.style.display = 'none';
+            gmlLoading.style.display = 'block';
+            gmlSetirSayi.textContent = '';
+
+            var token = document.querySelector('#gmlAxtarForm input[name="__RequestVerificationToken"]').value;
+            var body = new URLSearchParams({
+                __RequestVerificationToken: token,
+                BasTarix: document.getElementById('gmlBasTarix').value,
+                SonTarix: document.getElementById('gmlSonTarix').value,
+                MinMebleg: document.getElementById('gmlMinMebleg').value || '',
+                VoenVeyaHesab: document.getElementById('gmlVoenHesab').value || ''
+            });
+
+            try {
+                var resp = await fetch('@Url.Action("Axtar")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+                var data = await resp.json();
+                gmlLoading.style.display = 'none';
+
+                if (!data.success) {
+                    alert(data.message || 'Axtarış uğursuz oldu.');
+                    return;
+                }
+
+                var setirler = data.setirler || [];
+                gmlSetirSayi.textContent = setirler.length + ' namizəd tapıldı';
+
+                if (setirler.length === 0) {
+                    gmlEmpty.style.display = 'block';
+                    return;
+                }
+
+                gmlBody.innerHTML = '';
+                setirler.forEach(function (s) {
+                    var tr = document.createElement('tr');
+
+                    var qeyd = s.primechanie ? s.primechanie : '—';
+                    var xaricVal = s.summaVInval ? (gmlNum(s.summaVInval) + ' (kod ' + (s.kodValuti ?? '—') + ')') : '—';
+
+                    var actionHtml;
+                    if (s.artiqTesdiqlenib) {
+                        actionHtml = '<span class="gml-ok-badge"><i class="bi bi-check-circle-fill"></i> Təsdiqlənib</span>';
+                    } else {
+                        var params = new URLSearchParams({
+                            filialNumber: s.filialNumber,
+                            dateOper: s.dateOper,
+                            recNum: s.recNum,
+                            debet: s.debet || '',
+                            kredit: s.kredit || '',
+                            summaVNacval: s.summaVNacval ?? '',
+                            kodValuti: s.kodValuti ?? '',
+                            innDebet: s.innLicschDe || '',
+                            innKredit: s.innLicschKre || '',
+                            primechanie: s.primechanie || '',
+                            nameLicschDe: s.nameLicschDe || '',
+                            nameLicschKre: s.nameLicschKre || ''
+                        });
+                        actionHtml = '<a class="gml-tesdiqle-btn" href="@Url.Action("Tesdiq")?' + params.toString() + '">' +
+                            '<i class="bi bi-pencil-square"></i> Təsdiqlə</a>';
+                    }
+
+                    tr.innerHTML =
+                        '<td>' + new Date(s.dateOper).toLocaleDateString('az-AZ') + '</td>' +
+                        '<td>' + s.filialNumber + '</td>' +
+                        '<td class="gml-hesab">' + (s.debet || '—') + '</td>' +
+                        '<td class="gml-sahib">' + (s.nameLicschDe || '—') + '</td>' +
+                        '<td class="gml-hesab">' + (s.kredit || '—') + '</td>' +
+                        '<td class="gml-sahib">' + (s.nameLicschKre || '—') + '</td>' +
+                        '<td class="gml-mebleg">' + gmlNum(s.summaVNacval) + '</td>' +
+                        '<td>' + xaricVal + '</td>' +
+                        '<td>' + qeyd + '</td>' +
+                        '<td>' + actionHtml + '</td>';
+                    gmlBody.appendChild(tr);
+                });
+
+                gmlWrap.style.display = 'block';
+            } catch (err) {
+                gmlLoading.style.display = 'none';
+                alert('Xəta: ' + err);
+            }
+        });
+    </script>
+}

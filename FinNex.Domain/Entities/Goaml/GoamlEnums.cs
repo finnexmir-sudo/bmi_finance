@@ -72,6 +72,29 @@ namespace FinNex.Domain.Entities.Goaml
         Unr = 16,
     }
 
+    public static class GoamlTipiExtensions
+    {
+        /// <summary>AYSEL-in canlı "Tip" kombobox-undan (06.11.2026, ekran-görüntüsü)
+        /// köçürülmüş insan-oxunan etiket.</summary>
+        public static string Etiket(this GoamlTipi t) => t switch
+        {
+            GoamlTipi.FizikOut => "Fiziki (OUT)",
+            GoamlTipi.FizikIn => "Fiziki (IN)",
+            GoamlTipi.HuquqiOut => "Hüquqi (OUT)",
+            GoamlTipi.HuquqiIn => "Hüquqi (IN)",
+            GoamlTipi.HToH => "H TO H",
+            GoamlTipi.HToHIn => "H TO H in",
+            GoamlTipi.HToFIn => "H to F in",
+            GoamlTipi.FToF => "F to F",
+            GoamlTipi.HToFOut => "H to F out",
+            GoamlTipi.FToHIn => "F to H in",
+            GoamlTipi.C2cOut => "Card to Card (OUT)",
+            GoamlTipi.FToHOut => "F to H out",
+            GoamlTipi.C2cIn => "Card to Card (IN)",
+            _ => t.ToString(),
+        };
+    }
+
     public static class GoamlHesabatNovuExtensions
     {
         /// <summary>Oracle `REPORT_CODE` sütununa yazılan əsl kod (məs. "STR").</summary>
@@ -94,6 +117,30 @@ namespace FinNex.Domain.Entities.Goaml
             GoamlHesabatNovu.Tpr3 => "TPR3",
             GoamlHesabatNovu.Unr => "UNR",
             _ => n.ToString().ToUpperInvariant(),
+        };
+
+        /// <summary>İnsan-oxunan qısa izah — "Tesdiq" formasındakı dropdown üçün
+        /// (eyni mətn yuxarıdakı XML şərhlərindədir, təkrar yazılmasın deyə burda
+        /// TƏK yerdə saxlanılır).</summary>
+        public static string Aciqlama(this GoamlHesabatNovu n) => n switch
+        {
+            GoamlHesabatNovu.Aar => "Anonim əməliyyatlara dair məlumat",
+            GoamlHesabatNovu.Aif => "Sorğular əsasında əlavə məlumat",
+            GoamlHesabatNovu.Blr => "Qara siyahıda olan ölkələr üzrə əməliyyatlara dair məlumat",
+            GoamlHesabatNovu.Ctr => "Cari əməliyyatlara dair məlumat (101)",
+            GoamlHesabatNovu.Etr => "Elektron köçürülməsi əməliyyatlarına dair məlumat",
+            GoamlHesabatNovu.Fir => "Saxta eyniləşdirmə halları üzrə əməliyyatlara dair məlumat",
+            GoamlHesabatNovu.Fmr => "Üçüncü şəxslər vasitəsilə əməliyyatlara dair məlumat",
+            GoamlHesabatNovu.Pep => "Siyasi xadimlərin əməliyyatlarına dair məlumat",
+            GoamlHesabatNovu.Qht => "Qeyri Hökumət Təşkilatı",
+            GoamlHesabatNovu.Str => "Şübhəli əməliyyatlara dair məlumat (201)",
+            GoamlHesabatNovu.Tf => "Mənşəyi Ermənistan",
+            GoamlHesabatNovu.Tfr => "Məbləğindən asılı olmayaraq pul vəsaitləri (TM)",
+            GoamlHesabatNovu.Tpr1 => "ƏDV (30 000 AZN-dən artıq nağd məxaric əməliyyatları)",
+            GoamlHesabatNovu.Tpr2 => "Təsviri dəqiqləşdirilməyib",
+            GoamlHesabatNovu.Tpr3 => "Digər vergi ödəyiciləri üzrə 15 000 AZN-dən artıq nağd məxaric əməliyyatları",
+            GoamlHesabatNovu.Unr => "BMT siyahıları üzrə əməliyyatlara dair məlumat",
+            _ => "",
         };
     }
 }
