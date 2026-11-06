@@ -105,8 +105,16 @@
             return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        // Köhnəlmiş cavab qoruyucusu — "Axtar" bir neçə dəfə (və ya tez-tez)
+        // basılanda cavablar sıra ilə qayıtmaya bilər. Yalnız ƏN SON göndərilən
+        // sorğunun cavabı tətbiq olunur, gec qayıdan köhnə cavab yeni nəticəni
+        // üstələməsin deyə.
+        var gmlSonAcar = 0;
+
         gmlForm.addEventListener('submit', async function (e) {
             e.preventDefault();
+            var acar = ++gmlSonAcar;
+
             gmlWrap.style.display = 'none';
             gmlEmpty.style.display = 'none';
             gmlLoading.style.display = 'block';
@@ -128,6 +136,9 @@
                     body: body
                 });
                 var data = await resp.json();
+
+                if (acar !== gmlSonAcar) return; // bu, artıq köhnəlmiş sorğudur — tətbiq etmə
+
                 gmlLoading.style.display = 'none';
 
                 if (!data.success) {
@@ -188,6 +199,7 @@
 
                 gmlWrap.style.display = 'block';
             } catch (err) {
+                if (acar !== gmlSonAcar) return;
                 gmlLoading.style.display = 'none';
                 alert('Xəta: ' + err);
             }
