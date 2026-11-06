@@ -9394,6 +9394,24 @@ Developer-də, əvvəlki v$sql araşdırmasında işlətdiyi EYNİ hesabla icra 
 nəticəni göndərməlidir — bu sessiyada İCRA EDİLMƏDİ (Oracle-a bu mühitdən
 bağlantı yoxdur).
 
+**İKİNCİ DALĞA (06.11.2026, eyni gün) — skript real Oracle-a qarşı işlədildi,
+iki şey üzə çıxdı, HƏR İKİSİ 92-ci fayla düzəldilib:**
+
+1. **`ORA-00904: "S"."PROGRAM": invalid identifier`** — mənim öz səhvim:
+   `PROGRAM` **`V$SESSION`**-un sütunudur, **`V$SQL`**-də BELƏ BİR SÜTUN
+   YOXDUR (`V$SQL`-də yalnız `MODULE` var). A hissəsindən `s.program`
+   çıxarıldı.
+2. **B hissəsi (`v$sql_bind_capture`) 0 sətir qaytardı** — gözlənilən (sənəddə
+   artıq qeyd olunmuşdu), Oracle bind dəyərini HƏR sorğuda saxlamır. Bundan
+   sonra B **son çarə** sayılır, ƏSAS üsul İNDİ **C hissəsidir**: əvvəlcə
+   `v$session`-dan AYSEL-in öz SID-i tapılır (öz PL/SQL Developer sessiyasını —
+   `USERNAME='ODB'`, `PROGRAM='plsqldev.exe'` — çıxarıb qalanlardan), sonra
+   `v$open_cursor` (HƏMİN sessiyanın öz açıq kursorları, bind capture-dan
+   ASILI DEYİL, Oracle Forms kursorları aqressiv keşlədiyi üçün zəngin nəticə
+   verir) `v$sql` ilə join edilib SID-ə görə süzülür — bu, "hansı sorğu bu
+   konkret sessiyada icra olunub" sualına bind capture-un FLAKİ cavabından
+   daha etibarlı cavab verir.
+
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
 (mötərizə balansı + JS sintaksisi skriptlə). İstifadəçi Visual Studio-da
 **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: axtarış edib
