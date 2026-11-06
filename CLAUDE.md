@@ -9332,3 +9332,71 @@ avtomatik doldurulsun, operator yalnız YOXLASIN/DÜZƏLTSİN.
 sonra real ssenari ilə yoxlamalıdır: "Təsdiqlə"yə basanda indi YALNIZ 3 blokun
 (Təsnifat + Nümayəndə + İmza hüququ olan şəxs + Banka aid olmayan müştəri)
 göründüyünü, formanın köhnə 5-blok/130-sahə halından qat-qat qısa olduğunu.
+
+## GOAML — "Geri" Qayıdışda Axtarış İtirdi + Namizəddən Bilinən Ad SƏSSİZCƏ İtirilirdi (06.11.2026, KRİTİK)
+
+İstifadəçi iki konkret qüsur bildirdi: (1) «Təsdiqlə»də "Geri"yə basanda
+Əməliyyatlar siyahısı BOŞ açılır, filtri/nəticəni yenidən axtarmaq lazım gəlir;
+(2) "Təsdiqlə"yə girəndə "Nümayəndənin" blokundakı sahələr HƏR DƏFƏ boşdur —
+sual verdi ki, bu belə QALACAQ?
+
+**(1) Kök səbəb — `EmeliyyatlarController.Index()` HƏR GET-də sabit default
+qaytarır** (`BasTarix = DateTime.Today, SonTarix = DateTime.Today`), axtarış
+isə TAMAMİLƏ AJAX-dır (`POST /Axtar`, nəticə yalnız DOM-a yazılır, heç yerə
+saxlanmır). `Tesdiq.cshtml`-dəki "Geri"/"Ləğv et" linkləri sadə `<a asp-action=
+"Index">`-dir (tam GET naviqasiya) — geri qayıdanda `Index()` yenidən sıfırdan
+işə düşür, əvvəlki axtarış izsiz itir.
+
+**Düzəliş — `sessionStorage`, Mail modulundakı `gmIzlemeFilter` ilə EYNİ
+prinsip (localStorage YOX — bu, giriş sessiyaları arasında qalmamalıdır, tab
+bağlananda təbii təmizlənsin):** hər uğurlu "Axtar" filtri
+`sessionStorage['gmlSonAxtaris']`-ə yazılır; səhifə açılanda (`gmlBerpaEt`
+IIFE) saxlanmış filtr varsa, xanalara geri yazılır VƏ **avtomatik yenidən
+axtarılır** (`gmlAxtar()`, köhnə `submit` handler-indən bir funksiyaya çıxarıldı,
+`gmlSonAcar` köhnəlmiş-cavab qoruyucusu TOXUNULMADI). Keşlənmiş NƏTİCƏ (sətirlər)
+YOX, yalnız FİLTR saxlanılır — geri qayıdanda sorğu YENİDƏN Oracle-a gedir ki,
+indicə təsdiqlənən sətir "Təsdiqlənib" bədgisi ilə TƏZƏ görünsün, köhnə DOM
+keşi ilə yalançı "hələ təsdiqlənməyib" göstərməsin.
+
+**(2) Cavab — BƏLİ, hələlik həmişə boş gələcək, AMMA bir hissəsi SƏSSİZCƏ
+ATILIRDI, bu HİSSƏSİ düzəldi.** `Tesdiq(int filialNumber, ...)` GET action-ı
+namizəddən gələn hesab sahibi adlarını (`nameLicschDe`/`nameLicschKre` —
+axtarış cədvəlindəki "Debet sahibi"/"Kredit sahibi" sütunları) `GoamlTesdiqDto.
+NameUr`/`ToAdi`-ə yazırdı — AMMA bu iki sahə 06.11.2026-dakı "130→6 qrup"
+trimm-indən sonra formada HEÇ BİR `<input>`-ə bağlı DEYİLDİ: dəyər DTO-da var
+idi, ekranda HEÇ GÖRÜNMÜRDÜ. Bu, "Şərtli Render Olunan Form Sahəsi" bölməsindəki
+tələnin güzgüsüdür — fərq orada POST-da itirdi, burada isə hələ GÖSTƏRİLMƏDƏN
+(heç POST-a çatmadan) itirdi.
+
+**Düzəliş — `Tesdiq.cshtml`-ə yeni, SIRF OXUNUŞ `gml-info-strip`** (Tarix,
+Debet, Debet sahibi, Kredit, Kredit sahibi, Məbləğ, Qeyd) — heç bir `name`/
+`<input>` daşımır, formaya GÖNDƏRİLMİR, YALNIZ operatora "sistem artıq bunları
+bilir" kontekstini verir. Şəxsi KYC sahələri (ad/soyad/ünvan/sənəd —
+Nümayəndə/İmza hüququ/Banka aid olmayan müştərinin "Adı") isə **HƏQİQƏTƏN
+hələ də həmişə boş gələcək** — bu, AYSEL-in "Update New" kaskadının (bax yuxarı
+"AÇIQ QALAN İŞ") hələ qurulmaması deməkdir, YANLIŞLIQ DEYİL, gözlənilən,
+sənədləşmiş vəziyyətdir.
+
+**(3) Üçüncü sual — AYSEL "Təsdiq et" edəndə özü nə tapdığını göstərir, "o
+selectləri" necə tapaq?** Əvvəlki sessiyada AYSEL-in "Update New" kaskadının
+(150+ UPDATE, bax yuxarı "GOAML Arxitekturası") INSERT/UPDATE mətni `v$sql`
+ilə (canlı Oracle SQL keşindən) tutulmuşdu — eyni ÜSUL indi "Təsdiq et" anında
+işə düşən reyestr-SELECT-ləri tapmaq üçün də tətbiq edilə bilər. Yeni
+**`docs/sql/goaml/92_Goaml_Avtomatik_Doldurma_Diaqnostikasi.sql`** yazıldı:
+A hissəsi son 10 dəqiqədə `V_FIZIKI`/`HUQUQI_SHEXS`/`LICSCH_ALL`/`REGNOM`/
+`DOCFIO`/`PINCODE`/`GOAML_CLIENTS` açar sözlərinə uyğun gələn bütün `v$sql`
+sətirlərini (schema-ya görə süzmədən — AYSEL-in hansı hesabla bağlandığı
+bilinmir) göstərir; B hissəsi isə `v$sql_bind_capture`-la DƏQIQ bir FİN/VÖEN/
+hesab dəyərini bağlı parametr kimi oxuyan sorğu(lar)ı tapır (`SQL_TEXT`-də
+`:B1` kimi yer tutucu olsa belə işləyir). İstifadəçi skripti AYSEL-də bir
+namizədi "Təsdiq et"+Save edəndən DƏRHAL sonra (keş tez köçürülür) PL/SQL
+Developer-də, əvvəlki v$sql araşdırmasında işlətdiyi EYNİ hesabla icra edib
+nəticəni göndərməlidir — bu sessiyada İCRA EDİLMƏDİ (Oracle-a bu mühitdən
+bağlantı yoxdur).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı + JS sintaksisi skriptlə). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: axtarış edib
+"Təsdiqlə"yə girib "Geri" basanda ƏVVƏLKİ filtr+nəticənin AVTOMATİK (yenidən
+Axtar basmadan) göründüyünü, "Təsdiqlə" formasında yeni "Debet sahibi"/"Kredit
+sahibi" sətirinin göründüyünü.

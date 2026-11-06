@@ -219,8 +219,13 @@
             });
         });
 
-        gmlForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
+        // Axtarış filtrini sessionStorage-da saxlayırıq ki, "Təsdiqlə"-dən
+        // "Geri" qayıdanda (yeni GET, Index() həmişə default Tarixdən/Tarixə
+        // qədər=bugün qaytarır) nəticə yenidən itməsin — tab bağlanana qədər
+        // qalır, giriş sessiyaları arasında keçmir (localStorage YOX, qəsdən).
+        var GML_SEARCH_KEY = 'gmlSonAxtaris';
+
+        async function gmlAxtar() {
             var acar = ++gmlSonAcar;
 
             gmlWrap.style.display = 'none';
@@ -229,13 +234,13 @@
             gmlSetirSayi.textContent = '';
 
             var token = document.querySelector('#gmlAxtarForm input[name="__RequestVerificationToken"]').value;
-            var body = new URLSearchParams({
-                __RequestVerificationToken: token,
+            var filtr = {
                 BasTarix: document.getElementById('gmlBasTarix').value,
                 SonTarix: document.getElementById('gmlSonTarix').value,
                 MinMebleg: document.getElementById('gmlMinMebleg').value || '',
                 VoenVeyaHesab: document.getElementById('gmlVoenHesab').value || ''
-            });
+            };
+            var body = new URLSearchParams(Object.assign({ __RequestVerificationToken: token }, filtr));
 
             try {
                 var resp = await fetch('@Url.Action("Axtar")', {
@@ -253,6 +258,9 @@
                     alert(data.message || 'Axtarış uğursuz oldu.');
                     return;
                 }
+
+                // Uğurlu axtarışın filtrini yadda saxla.
+                try { sessionStorage.setItem(GML_SEARCH_KEY, JSON.stringify(filtr)); } catch (e) { }
 
                 gmlRows = data.setirler || [];
                 gmlSetirSayi.textContent = gmlRows.length + ' namizəd tapıldı';
@@ -278,6 +286,29 @@
                 gmlLoading.style.display = 'none';
                 alert('Xəta: ' + err);
             }
+        }
+
+        gmlForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            gmlAxtar();
         });
+
+        // Səhifə açılanda — əvvəlki uğurlu axtarışın filtri varsa (bu, "Geri"/
+        // "Ləğv et" ilə Təsdiqlə-dən qayıdışda da işə düşür), onu bərpa et VƏ
+        // AVTOMATİK yenidən axtar: həm əl ilə Axtar basmağa ehtiyac qalmır, həm
+        // də nəticə TƏZƏ gəlir (indicə təsdiqlənən sətir "Təsdiqlənib" bədgisi
+        // ilə görünsün deyə — köhnə, keşlənmiş sətirlər YOX, canlı sorğu).
+        (function gmlBerpaEt() {
+            var saxlanmis;
+            try { saxlanmis = sessionStorage.getItem(GML_SEARCH_KEY); } catch (e) { return; }
+            if (!saxlanmis) return;
+            var f;
+            try { f = JSON.parse(saxlanmis); } catch (e) { return; }
+            if (f.BasTarix) document.getElementById('gmlBasTarix').value = f.BasTarix;
+            if (f.SonTarix) document.getElementById('gmlSonTarix').value = f.SonTarix;
+            document.getElementById('gmlMinMebleg').value = f.MinMebleg || '';
+            document.getElementById('gmlVoenHesab').value = f.VoenVeyaHesab || '';
+            gmlAxtar();
+        })();
     </script>
 }
