@@ -6,10 +6,12 @@
 
 @section Styles {
     <style>
-        .gml-sub { font-size:.76rem; color:#94a3b8; margin-bottom:8px; }
-        .gml-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end; }
+        .gml-sub { font-size:.76rem; color:#94a3b8; }
+        .gml-bar { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }
+        .gml-fld { display:flex; flex-direction:column; gap:5px; }
+        .gml-fld-grow { flex:1 1 200px; max-width:340px; }
+        .gml-inp-date, .gml-inp-num { width:140px; }
         .gml-filter-lbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
-        .gml-filter-actions { display:flex; align-items:center; gap:10px; margin-top:16px; }
         .gml-setir-sayi { color:#64748b; font-size:.82rem; font-weight:600; }
 
         /* PID "Ödənişə Nəzarət" (Aktiv müştərilər) səhifəsinin dizaynı ilə EYNİ dil */
@@ -43,27 +45,26 @@
     <div class="fn-card" style="padding:20px">
         <form id="gmlAxtarForm">
             @Html.AntiForgeryToken()
-            <div class="gml-filter-grid">
-                <div>
+            <div class="gml-bar">
+                <div class="gml-fld">
                     <label class="gml-filter-lbl">Tarixdən</label>
-                    <input type="date" name="BasTarix" id="gmlBasTarix" class="fn-input"
+                    <input type="date" name="BasTarix" id="gmlBasTarix" class="fn-input gml-inp-date"
                            value="@Model.BasTarix.ToString("yyyy-MM-dd")" required />
                 </div>
-                <div>
+                <div class="gml-fld">
                     <label class="gml-filter-lbl">Tarixə qədər</label>
-                    <input type="date" name="SonTarix" id="gmlSonTarix" class="fn-input"
+                    <input type="date" name="SonTarix" id="gmlSonTarix" class="fn-input gml-inp-date"
                            value="@Model.SonTarix.ToString("yyyy-MM-dd")" required />
                 </div>
-                <div>
-                    <label class="gml-filter-lbl">Minimum məbləğ (AZN)</label>
-                    <input type="number" step="any" name="MinMebleg" id="gmlMinMebleg" class="fn-input" placeholder="məs. 20000" />
+                <div class="gml-fld">
+                    <label class="gml-filter-lbl">Min. məbləğ (AZN)</label>
+                    <input type="number" step="any" name="MinMebleg" id="gmlMinMebleg" class="fn-input gml-inp-num" placeholder="20000" />
                 </div>
-                <div>
+                <div class="gml-fld gml-fld-grow">
                     <label class="gml-filter-lbl">VÖEN və ya hesab №</label>
                     <input type="text" name="VoenVeyaHesab" id="gmlVoenHesab" class="fn-input" placeholder="axtarış..." />
                 </div>
-            </div>
-            <div class="gml-filter-actions">
+
                 <button type="submit" class="fn-btn fn-btn--primary">
                     <i class="bi bi-search"></i> Axtar
                 </button>
