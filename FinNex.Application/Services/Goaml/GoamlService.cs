@@ -257,6 +257,7 @@ namespace FinNex.Application.Services.Goaml
                 SwiftTo = dto.SwiftTo,
                 AccountTo = dto.AccountTo,
                 AlaqeNovuTo = dto.AlaqeNovuTo,
+                InstitutionNameBranchTo = dto.InstitutionNameBranchTo,
                 Gender = dto.Gender,
                 Snn = dto.Snn,
                 GenderTo = dto.GenderTo,
@@ -270,6 +271,12 @@ namespace FinNex.Application.Services.Goaml
                 RecIdSerial = dto.RecIdSerial,
                 RecIdNumber = dto.RecIdNumber,
             };
+
+            // AYSEL-in "Update New" düyməsinin ekvivalenti — operator "Təsdiqlə"
+            // basan kimi, HƏMİN KONKRET qeyd üçün avtomatik tətbiq olunur (ayrıca
+            // düymə YOXDUR — istifadəçi qərarı, 06-07.11.2026). Yalnız Oracle-dan
+            // OXUYUR, bu sətrin özünə (hələ DB-yə yazılmamış) yazır.
+            await AvtoDolduruAsync(e, CancellationToken.None);
 
             await _unitOfWork.Repository<GoamlEmeliyyat>().YaratAsync(e);
             await _unitOfWork.YaddaSaxlaAsync();
@@ -440,6 +447,7 @@ namespace FinNex.Application.Services.Goaml
                 SwiftTo = e.SwiftTo,
                 AccountTo = e.AccountTo,
                 AlaqeNovuTo = e.AlaqeNovuTo,
+                InstitutionNameBranchTo = e.InstitutionNameBranchTo,
                 Gender = e.Gender,
                 Snn = e.Snn,
                 GenderTo = e.GenderTo,
@@ -456,6 +464,338 @@ namespace FinNex.Application.Services.Goaml
 
             return Result<GoamlEmeliyyatDetalDto>.Ok(dto);
         }
+
+        // ── "Update New" ekvivalenti — avtomatik doldurma (07.11.2026) ─────────
+        //
+        // AYSEL-in "Update New" düyməsinin (06-07.11.2026-da v$sql ilə tapılan,
+        // 49 Oracle UPDATE-dən ibarət kaskadın) PORTU — TƏK fərqlə: AYSEL bütün
+        // bir DATE_OPER aralığını toplu emal edir, bura isə YALNIZ bu KONKRET
+        // qeydi (operator "Təsdiqlə" basan kimi, TesdiqleAsync-dən çağırılır).
+        // Oracle-a YALNIZ OXUYUR (BALSCHT_FIZ/BALSCHT_UR/MMX_ID_SERIAL/
+        // TYPES_OF_DOCUMENTS/BIC_CODES/ATTRIB/VIEW_LICSCH_ALL/LICSCH_ALL_2/MFO),
+        // nəticəni `e`-nin (hələ DB-yə yazılmamış) sahələrinə yazır.
+        //
+        // 49 qaydadan BİLƏRƏKDƏN TƏTBİQ OLUNMAYAN 23-ü:
+        //   - TIP təyin edən 15 qayda — bizdə TIP operatorun ƏL İLƏ seçdiyi,
+        //     MƏCBURİ sahədir (yuxarı, TesdiqleAsync-in başındakı yoxlama).
+        //     AYSEL-də TIP boş başlayır, bu kaskad onu HESABLAYIR; bizdə əksinə,
+        //     TIP artıq operatordan gəlib — yenidən hesablamaq onun AÇIQ seçimini
+        //     SƏSSİZCƏ üstələyərdi. Eyni səbəbdən "TIP=6 xüsusi qaydası"
+        //     (dch73bdggbkrn) da atlanıb.
+        //   - REPORT_CODE təyin edən 4 qayda (CTR ×3, ETR fallback) — eyni səbəb,
+        //     "Məlumatın növü" də operatorun məcburi seçimidir.
+        //   - 3 "no-op" qayda (`SET X=0 WHERE X=0`) — Oracle-un ÖZÜNDƏ də heç nə
+        //     etmir, kodda qarşılığı yoxdur.
+        //   - 7 qayda `ID_VD`-yə (DOC_VNESH_SWIFT/INVAL/POSTUPL/NACVAL/
+        //     DOC_INTERNAL_INVAL) bağlıdır — bizim namizəd sorğumuzda bu açar
+        //     YOXDUR, haradan gəldiyi araşdırılmayıb (gələcək iş, CLAUDE.md-də
+        //     qeyd olunub).
+        //
+        // Bu metod "ən yaxşı cəhd"dir — Oracle əlçatmaz olsa belə TƏSDİQ əməliyyatı
+        // UĞURSUZ OLMAMALIDIR (operator artıq özü doldurduğu KYC-ni itirməsin),
+        // ona görə HƏR Oracle sorğusu öz köməkçisində try/catch-lə əhatə olunub.
+        private async Task AvtoDolduruAsync(GoamlEmeliyyat e, CancellationToken ct)
+        {
+            // ── 1) VÖEN-in 10-cu rəqəminə görə Fiziki/Hüquqi/Sahibkar — YALNIZ
+            //      operator HEÇ BİRİNİ işarələməyibsə (əks halda onun seçimi
+            //      toxunulmaz qalır). Oracle: 58hwazj6jxj4q / 5x3d8n7bth8aq /
+            //      9gh5b10zb284n. ──────────────────────────────────────────────
+            if (e.ToYurik != true && e.ToPred != true && e.ToFizik != true &&
+                string.Equals(e.IncorporationCountryCodeTo, "AZ", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(e.IncorporationNumberTo) && e.IncorporationNumberTo!.Trim().Length >= 10)
+            {
+                var reqem = e.IncorporationNumberTo.Trim()[9];
+                if (reqem == '1') e.ToYurik = true;
+                else if (reqem == '2') e.ToPred = true;
+                else e.ToFizik = true;
+            }
+
+            // ── 2) Sənəd seriya/nömrəsinin parçalanması (CON/SIG/TO) —
+            //      MMX_ID_SERIAL-dan ƏN UZUN uyğun gələn prefiksi seçirik (AYSEL-in
+            //      özündə 1/2/3-char qaydaları eyni şərtlə, sırasız işləyirdi —
+            //      "ən uzun uyğunluq qalib" bunun təhlükəsiz, deterministik
+            //      qarşılığıdır). Oracle: 026fz39mr7as3/4ybzrfvr6f1hj/5jnvxwbx51r9y
+            //      (CON), 1a0h8d7fqx74s/c36az8naz33vr/gfcpk6qsx9t3h (SIG),
+            //      2wcj7fg4u6hcz/cf70ryjttg2vk/8vuah1ppks3s8 (TO). ────────────────
+            var serialler = await MmxIdSerialSiyahisiAsync(ct);
+            if (serialler.Count > 0)
+            {
+                if (ParcalaSenedNomresi(e.ConSenedinSeriyaNomresi, serialler, out var reprSer, out var reprNum))
+                { e.ReprIdSerial = reprSer; e.ReprIdNumber = reprNum; }
+
+                if (ParcalaSenedNomresi(e.SigSenedinSeriyaNomresi, serialler, out var sendSer, out var sendNum))
+                { e.SenderIdSerial = sendSer; e.SenderIdNumber = sendNum; }
+
+                if (ParcalaSenedNomresi(e.ToSenedinSeriyaNomresi, serialler, out var recSer, out var recNum))
+                { e.RecIdSerial = recSer; e.RecIdNumber = recNum; }
+            }
+
+            // ── 3) Sənəd növünün goAML MMX kodu — TYPES_OF_DOCUMENTS.ISARE →
+            //      MMX_ID (CON/SIG/TO). Oracle: 0r10bu036mrxr / f35ct0dr8tvtz /
+            //      1qx5pc7pd6p7x. ──────────────────────────────────────────────
+            var senedNovleri = await TypesOfDocumentsXeritesiAsync(ct);
+            if (senedNovleri.Count > 0)
+            {
+                if (!string.IsNullOrWhiteSpace(e.ConSenedinNovu) && senedNovleri.TryGetValue(e.ConSenedinNovu!.Trim(), out var reprType))
+                    e.ReprIdType = reprType;
+                if (!string.IsNullOrWhiteSpace(e.SigSenedinNovu) && senedNovleri.TryGetValue(e.SigSenedinNovu!.Trim(), out var sendType))
+                    e.SenderIdType = sendType;
+                if (!string.IsNullOrWhiteSpace(e.ToSenedinNovu) && senedNovleri.TryGetValue(e.ToSenedinNovu!.Trim(), out var recType))
+                    e.RecIdType = recType;
+            }
+
+            // ── 4) Alan tərəfin (TO) KYC-si boşdursa — ƏVVƏLCƏ imza hüququ olan
+            //      şəxsdən (SIG) köçür, YENƏ DƏ boşdursa ADI (NAME_UR_TO) mətnindən
+            //      parçala. İKİ AYRI `if` (AYSEL-də bunlar İKİ MÜSTƏQİL UPDATE-dir —
+            //      "else if" yazsaq TIP=FToF-da, SIG özü boş olanda, fallback-in
+            //      işə düşməsinin qarşısını səhvən kəsərdik). Oracle: 11m7u3wqnmcku,
+            //      21cr0xunnyhpz. ──────────────────────────────────────────────
+            if (string.IsNullOrWhiteSpace(e.ToAdi) && e.Tip is GoamlTipi.FizikOut or GoamlTipi.FizikIn
+                or GoamlTipi.HuquqiOut or GoamlTipi.HuquqiIn or GoamlTipi.FToF)
+            {
+                e.ToAdi = e.SigAdi;
+                e.ToAtasininAdi = e.SigAtasininAdi;
+                e.ToSoyadi = e.SigSoyadi;
+                e.ToDogulduguTarix = e.SigDogulduguTarix;
+                e.ToDogulduguYer = e.SigDogulduguYer;
+                e.ToVetendasligi = e.SigVetendasligi;
+                e.ToTelefonNovu = e.SigTelefonNovu;
+                e.ToRabiteNovu = e.SigRabiteNovu;
+                e.ToTelefonNomresi = e.SigTelefonNomresi;
+                e.ToUnvaninNovu = e.SigUnvaninNovu;
+                e.ToUnvan = e.SigUnvan;
+                e.ToSeher = e.SigSeher;
+                e.ToOlke = e.SigOlke;
+                e.ToSenedinNovu = e.SigSenedinNovu;
+                e.ToSenedinSeriyaNomresi = e.SigSenedinSeriyaNomresi;
+                e.ToSenedinVerilmeTarixi = e.SigSenedinVerilmeTarixi;
+                e.ToSenedinEtibarliliqMuddeti = e.SigSenedinEtibarliliqMuddeti;
+                e.ToVerenOrqan = e.SigVerenOrqan;
+                e.ToVerildiyiOlke = e.SigVerildiyiOlke;
+                e.GenderTo = e.Gender;
+                e.SnnTo = e.Snn;
+                // AYSEL-in öz qaydası — SIG-dən köçürüləndə TO-nun öz
+                // (əvvəllər 2-ci addımda doldurulmuş) seriyası təmizlənir.
+                e.RecIdNumber = null;
+                e.RecIdSerial = null;
+            }
+
+            if (string.IsNullOrWhiteSpace(e.ToAdi) && e.Tip is GoamlTipi.FToHIn or GoamlTipi.FToF
+                && (e.ToFizik == true || e.ToPred == true) && !string.IsNullOrWhiteSpace(e.NameUrTo))
+            {
+                // AYSEL-in REGEXP_SUBSTR naxışı: "SOYAD AD ATA_ADI" sırası —
+                // 1-ci söz Ad, 2-ci söz Soyad, 3-cü söz Ata adı.
+                var hisseler = e.NameUrTo!.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                e.ToAdi = hisseler.Length > 0 ? Kes(hisseler[0], 100) : null;
+                e.ToSoyadi = hisseler.Length > 1 ? Kes(hisseler[1], 100) : null;
+                e.ToAtasininAdi = hisseler.Length > 2 ? Kes(hisseler[2], 100) : null;
+            }
+
+            // ── 5) Alan tərəf bizim ÖZ bankımızın hesabıdırsa (DEBET prefiksi
+            //      hüquqi şəxs balans sinfindədirsə VƏ TIP Hüquqi-Hüquqi/Fiziki
+            //      istiqamətindədirsə) — NAME_UR_TO/ACCOUNT_TO/VÖEN LICSCH_ALL_2-dən,
+            //      bank adı/SWIFT/ölkə kodu bizim ÖZ ATTRIB sətrimizdən, filial adı
+            //      MFO-dan doldurulur. Oracle: 25ga6yfpu7j4z. ─────────────────────
+            if (string.IsNullOrWhiteSpace(e.NameUrTo) && e.Tip is GoamlTipi.HToHIn or GoamlTipi.HToFIn or GoamlTipi.HToH
+                && !string.IsNullOrWhiteSpace(e.Debet) && await BalschtDaxilindedirAsync("balscht_ur", e.Debet!, ct))
+            {
+                var licsch = await LicschAdiVeVoeniAsync(e.CandidateFilialNumber, e.Debet!, ct);
+                if (licsch != null)
+                {
+                    e.NameUrTo = licsch.Value.Adi;
+                    e.AccountTo = e.Debet;
+                    e.IncorporationNumberTo = licsch.Value.Voen;
+                }
+
+                var ozBankimiz = await OzBankimizinAttributlariAsync(ct);
+                if (ozBankimiz != null)
+                {
+                    e.InstitutionNameTo = ozBankimiz.Value.AdSoyad;
+                    // ⚠️ AYSEL-in ÖZ sorğusu bunu belə yazır (ATTRIB.INN_BANK →
+                    // INCORPORATION_COUNTRY_CODE_TO) — semantik qəribə görünsə də,
+                    // BİRƏ-BİR köçürülüb, dəyişdirilmədi.
+                    e.IncorporationCountryCodeTo = ozBankimiz.Value.InnBank;
+                    e.SwiftTo = ozBankimiz.Value.BicSwift;
+                }
+
+                var filialAdi = await MfoFilialAdiAsync(e.CandidateFilialNumber, e.Debet!, ct);
+                if (filialAdi != null) e.InstitutionNameBranchTo = filialAdi;
+            }
+
+            // ── 6) Bank adı SWIFT koduna görə (BIC_CODES) — yalnız 5-ci addım
+            //      doldurmayıbsa (fərqli TIP) və SWIFT_TO operatorun özü tərəfindən
+            //      daxil edilibsə. Oracle: 597z46xbd85t4. ────────────────────────
+            if (string.IsNullOrWhiteSpace(e.InstitutionNameTo) && !string.IsNullOrWhiteSpace(e.SwiftTo))
+            {
+                var bankAdi = await BicBankAdiAsync(e.SwiftTo!, ct);
+                if (bankAdi != null) e.InstitutionNameTo = bankAdi;
+            }
+
+            // ── 7) Vəsaitin növü (TRANSMODE_CODE) — DEBET fiziki şəxs hesabıdırsa
+            //      VƏ hər iki tərəf "41" balans sinfindədirsə (kassa/nəğd keçid
+            //      hesabları). Oracle: fgy83sfv5x5a7 (filial şərti ÇIXARILIB —
+            //      tək filial, bax CLAUDE.md). ─────────────────────────────────
+            if (string.IsNullOrWhiteSpace(e.TransmodeCode) &&
+                RequemSertiVar(e.Debet, 2, "41") && RequemSertiVar(e.Kredit, 2, "41") &&
+                !string.IsNullOrWhiteSpace(e.Debet) && await BalschtDaxilindedirAsync("balscht_fiz", e.Debet!, ct))
+            {
+                e.TransmodeCode = "1002";
+                e.TransmodeComment = "Pul vəsaitinin hesabdan köçürülməsi";
+            }
+
+            // ── 8) Defolt sahələr (NVL-tipli, Oracle sorğusuna ehtiyac yoxdur) —
+            //      Oracle: 2d2br1x497137 / 76b2tupjc44ga / bb14x3a2db6v6 /
+            //      908gtupuhh4wp / gpkvxqm3arh94 / ckjaz0k9r8tf9. ────────────────
+            e.FromCountry ??= "AZ";
+            e.ToOlkeAdi ??= "AZ";
+            e.IncorporationCountryCode ??= "AZ";
+            if (e.Snn == "-") e.Snn = null;
+            if (e.SnnTo == "-") e.SnnTo = null;
+            e.ToFundsCode ??= "A";
+        }
+
+        /// <summary>CON/SIG/TO sənəd seriya+nömrəsini (məs. "AZE1234567")
+        /// `MMX_ID_SERIAL`-dakı ƏN UZUN uyğun gələn prefiksə görə seriya/nömrə
+        /// hissələrinə ayırır. 1, 2, 3 simvollu prefikslər sınanır — uzun olan
+        /// üstün tutulur (AYSEL-in özündə sıra qeyri-müəyyən idi, bax yuxarı).</summary>
+        private static bool ParcalaSenedNomresi(string? xam, List<string> serialler, out string? seriya, out string? nomre)
+        {
+            seriya = null; nomre = null;
+            if (string.IsNullOrWhiteSpace(xam)) return false;
+            var temiz = xam.Trim();
+
+            for (var uzunluq = Math.Min(3, temiz.Length); uzunluq >= 1; uzunluq--)
+            {
+                var prefiks = temiz.Substring(0, uzunluq);
+                if (serialler.Any(s => string.Equals(s, prefiks, StringComparison.OrdinalIgnoreCase)))
+                {
+                    seriya = prefiks;
+                    nomre = temiz.Length > uzunluq ? temiz.Substring(uzunluq, Math.Min(30, temiz.Length - uzunluq)).Trim() : null;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>DEBET/KREDIT kimi hesab kodlarının ilk N simvolunun verilmiş
+        /// sabit mətnə bərabər olub-olmadığını yoxlayır (xana boşdursa/qısadırsa
+        /// `false`).</summary>
+        private static bool RequemSertiVar(string? deyer, int uzunluq, string gozlenilen) =>
+            !string.IsNullOrWhiteSpace(deyer) && deyer!.Trim().Length >= uzunluq &&
+            string.Equals(deyer.Trim().Substring(0, uzunluq), gozlenilen, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Oracle hesab kodunu (DEBET/KREDIT, daxili məlumatdır, amma
+        /// ehtiyat üçün) SQL-ə yapışdırmazdan əvvəl təmizləyir.</summary>
+        private static string HesabTehlukesiz(string xam) =>
+            Regex.Replace(xam.Trim(), "[^A-Za-z0-9]", "");
+
+        private static object? DVal(Dictionary<string, object?> row, string kolon) =>
+            row.FirstOrDefault(kv => string.Equals(kv.Key, kolon, StringComparison.OrdinalIgnoreCase)).Value;
+
+        private async Task<List<string>> MmxIdSerialSiyahisiAsync(CancellationToken ct)
+        {
+            try
+            {
+                var setirler = await _oracle.SelectAsync("select id_serial from odb.mmx_id_serial", 500, ct);
+                return setirler
+                    .Select(r => DVal(r, "ID_SERIAL") as string)
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => s!.Trim())
+                    .ToList();
+            }
+            catch { return new List<string>(); }
+        }
+
+        private async Task<Dictionary<string, string>> TypesOfDocumentsXeritesiAsync(CancellationToken ct)
+        {
+            var xerite = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var setirler = await _oracle.SelectAsync("select isare, mmx_id from odb.types_of_documents", 500, ct);
+                foreach (var r in setirler)
+                {
+                    var isare = DVal(r, "ISARE") as string;
+                    var mmxId = DVal(r, "MMX_ID");
+                    if (!string.IsNullOrWhiteSpace(isare) && mmxId != null)
+                        xerite[isare.Trim()] = mmxId.ToString()!;
+                }
+            }
+            catch { /* best-effort — Oracle əlçatmazdırsa bu addım sakitcə ötürülür */ }
+            return xerite;
+        }
+
+        private async Task<bool> BalschtDaxilindedirAsync(string cedvel, string hesab, CancellationToken ct)
+        {
+            var temiz = HesabTehlukesiz(hesab);
+            if (temiz.Length < 5) return false;
+            var prefiks = temiz.Substring(0, 5);
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select 1 from odb.{cedvel} where balscht = '{prefiks}'", 1, ct);
+                return setirler.Count > 0;
+            }
+            catch { return false; }
+        }
+
+        private async Task<(string? Adi, string? Voen)?> LicschAdiVeVoeniAsync(int filial, string hesab, CancellationToken ct)
+        {
+            var temiz = HesabTehlukesiz(hesab);
+            if (temiz.Length == 0) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select name_licsch, inn_licsch from odb.licsch_all_2 where filialnumber = {filial} and licsch = '{temiz}'", 1, ct);
+                if (setirler.Count == 0) return null;
+                return (DVal(setirler[0], "NAME_LICSCH") as string, DVal(setirler[0], "INN_LICSCH") as string);
+            }
+            catch { return null; }
+        }
+
+        private async Task<(string? AdSoyad, string? InnBank, string? BicSwift)?> OzBankimizinAttributlariAsync(CancellationToken ct)
+        {
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select naimen_uchrej, inn_bank, bic_swift from odb.attrib", 1, ct);
+                if (setirler.Count == 0) return null;
+                return (DVal(setirler[0], "NAIMEN_UCHREJ") as string, DVal(setirler[0], "INN_BANK") as string, DVal(setirler[0], "BIC_SWIFT") as string);
+            }
+            catch { return null; }
+        }
+
+        private async Task<string?> MfoFilialAdiAsync(int filial, string hesab, CancellationToken ct)
+        {
+            var temiz = HesabTehlukesiz(hesab);
+            if (temiz.Length == 0) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select m.bank_shot_name from odb.view_licsch_all b join odb.mfo m on b.mfo = m.mfo " +
+                    $"where b.filialnumber = {filial} and b.licsch = '{temiz}'", 1, ct);
+                return setirler.Count > 0 ? DVal(setirler[0], "BANK_SHOT_NAME") as string : null;
+            }
+            catch { return null; }
+        }
+
+        private async Task<string?> BicBankAdiAsync(string swift, CancellationToken ct)
+        {
+            var temiz = HesabTehlukesiz(swift).ToUpperInvariant();
+            if (temiz.Length == 0) return null;
+            var rpad = temiz.PadRight(11, 'X').Substring(0, 11);
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select distinct bank_name from odb.bic_codes where bic_code = '{rpad}'", 1, ct);
+                return setirler.Count > 0 ? DVal(setirler[0], "BANK_NAME") as string : null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>Mətni max uzunluğa kəsir (Oracle `SUBSTR(...,1,N)` ilə eyni) —
+        /// `NAME_UR_TO`-nun ad-parçalanması nəticəsi 100 simvoldan uzun ola bilməz.</summary>
+        private static string? Kes(string? xam, int maxUzunluq) =>
+            string.IsNullOrEmpty(xam) ? xam : (xam.Length <= maxUzunluq ? xam : xam.Substring(0, maxUzunluq));
 
         // ── Köməkçilər ──────────────────────────────────────────────────────
 

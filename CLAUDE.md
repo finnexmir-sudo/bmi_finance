@@ -9482,3 +9482,124 @@ sahələr avtomatik dolacaq.
 tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
 mühitdə yoxlamalıdır: "Təsdiqlənmiş əməliyyatlar" siyahısında "Bax" düyməsinin
 tam KYC detalını (bütün 3 blok + yeni "Əlavə sahələr" bloku) düzgün göstərdiyini.
+
+
+## GOAML — "Update New" Avtomatik Doldurma Mexanizmi Köçürüldü (07.11.2026)
+
+05-06.11.2026-dakı araşdırma (bax yuxarı, "GOAML Arxitekturası" və sonrakı
+bölmələr) AYSEL-in "UPDATE NEW" düyməsinin **49 UPDATE** əmrindən ibarət
+kaskadını `v$sql`/`v$open_cursor` ilə TAM, kəsilməmiş mətnlə tapmışdı. Bu
+sessiyada bunun FinNex ekvivalenti quruldu: **`GoamlService.AvtoDolduruAsync`**
+— operator "Təsdiqlə" basan kimi, HƏMİN KONKRET qeyd üçün avtomatik işə düşür
+(AYSEL-dəki kimi ayrıca "Update New" düyməsi YOXDUR — istifadəçi qərarı).
+
+### 49 qaydadan 26-sı köçürüldü, 23-ü BİLƏRƏKDƏN ATLANDI
+
+İlk planda "42 qayda" deyilmişdi (yalnız ID_VD-yə bağlı 7-ni çıxaraq), amma
+kodu yazarkən İKİNCİ bir, daha mühüm fərq üzə çıxdı: **AYSEL-də TIP və
+REPORT_CODE BOŞ başlayır, bu kaskad onları HESABLAYIR — FinNex-də isə əksinə,
+hər ikisi operatorun "Təsdiqlə" formasında ƏL İLƏ seçdiyi, MƏCBURİ sahədir**
+(`TesdiqleAsync`-in başındakı yoxlama: `if (dto.Tip == null) return Fail(...)`).
+Bu 19 qaydanı (TIP təyini ×15 + REPORT_CODE ×4) avtomatik yenidən hesablamaq
+operatorun artıq etdiyi AÇIQ seçimi SƏSSİZCƏ üstələyərdi — buna görə bunlar
+ATLANDI, istifadəçiyə bu RAPORTUN özündə açıq bildirildi (əvvəlki "42" rəqəmi
+TƏSHİH edildi).
+
+| Kateqoriya | Say | Səbəb |
+|---|---|---|
+| **Köçürülüb** | **26** | aşağı bax |
+| TIP təyini | 15 | operator ƏL İLƏ seçir (məcburi sahə) |
+| REPORT_CODE (CTR ×3, ETR fallback) | 4 | eyni səbəb, "Məlumatın növü" də məcburidir |
+| "No-op" (`SET X=0 WHERE X=0`) | 3 | Oracle-un ÖZÜNDƏ də heç nə etmir |
+| `ID_VD`-yə bağlı (SWIFT/İnvaluta/Postupl/Nacval/Daxili İnvaluta) | 7 | bizim namizəd sorğumuzda bu açar YOXDUR |
+
+### Köçürülən 26 qayda — qruplar üzrə
+
+1. **VÖEN-in 10-cu rəqəminə görə Fiziki/Hüquqi/Sahibkar** (3 qayda:
+   `58hwazj6jxj4q`/`5x3d8n7bth8aq`/`9gh5b10zb284n`) — **YALNIZ operator HEÇ
+   BİR checkbox-ı (Fizik/Sahibkar/Hüquqi) işarələməyibsə** tətbiq olunur (bu
+   3 sahə də `Tesdiq.cshtml`-də operatorun ƏL İLƏ işarələyə biləcəyi
+   checkbox-lardır — TIP/ReportCode ilə EYNİ "operator seçimi toxunulmaz
+   qalır" prinsipi). `Tesdiq.cshtml`-də plain `<input type="checkbox">`
+   (hidden fallback-sız) olduğu üçün işarələnməyəndə dəyər `null` gəlir
+   (`false` YOX) — "heç biri seçilməyib" ilə "Fiziki seçilib" fərqi bununla
+   ayırd edilir.
+2. **Sənəd seriya/nömrəsinin parçalanması** (CON/SIG/TO, 9 qayda) —
+   `MMX_ID_SERIAL`-dan canlı oxunan siyahıya görə **ƏN UZUN uyğun gələn
+   prefiksi** (1/2/3 simvol) seçir. AYSEL-in özündə bu 3 uzunluq AYRI,
+   sırasız UPDATE idi (hamısı eyni şərtlə) — "ən uzun uyğunluq qalib"
+   bunun TƏK, deterministik ekvivalentidir.
+3. **Sənəd növünün goAML MMX kodu** (CON/SIG/TO, 3 qayda) —
+   `TYPES_OF_DOCUMENTS.ISARE → MMX_ID` xəritəsi, canlı oxunur.
+4. **Alan tərəfin (TO) KYC-si** — ƏVVƏLCƏ imza hüququ olan şəxsdən (SIG)
+   köçür (TIP Fizik/Hüquqi IN/OUT və ya F-to-F olduqda), YENƏ DƏ boşdursa
+   `NAME_UR_TO` mətnindən ("SOYAD AD ATA_ADI" sırası) parçalayır (TIP
+   F-to-H-in/F-to-F, alan fiziki/sahibkar olduqda). **İKİ AYRI `if`** —
+   `else if` YAZILMADI, çünki AYSEL-də bunlar İKİ MÜSTƏQİL UPDATE-dir: TIP=
+   FToF-da SIG özü boş olsa, fallback YENƏ işə düşməlidir.
+5. **Alan tərəf bizim ÖZ bankımızın hesabıdırsa** (DEBET prefiksi
+   `BALSCHT_UR`-da, TIP Hüquqi-Hüquqi/Fiziki istiqamətində) — adı/VÖEN
+   `LICSCH_ALL_2`-dən, bank adı/SWIFT/ölkə kodu bizim ÖZ `ATTRIB`
+   sətrimizdən (bu cədvəl TƏK sətirlik — bankın ÖZ profilidir), filial adı
+   `MFO`-dan. ⚠️ AYSEL-in öz sorğusu `ATTRIB.INN_BANK`-ı
+   `INCORPORATION_COUNTRY_CODE_TO`-ya yazır (semantik qəribə görünür) —
+   BİRƏ-BİR köçürüldü, dəyişdirilmədi.
+6. **Bank adı SWIFT koduna görə** (`BIC_CODES`, `RPAD(SWIFT,11,'X')` açarı) —
+   yalnız 5-ci addım doldurmayıbsa.
+7. **TRANSMODE_CODE** — DEBET fiziki şəxs hesabıdırsa VƏ hər iki tərəf "41"
+   balans sinfindədirsə (kassa/nəğd keçid hesabları). AYSEL-in öz
+   `GOAML_NAME_FIL` filial şərti **ÇIXARILDI** — bank tək filialdır
+   (istifadəçi təsdiqi).
+8. **Defolt sahələr** (NVL-tipli, Oracle sorğusu lazım deyil) — `FROM_COUNTRY`/
+   `TO_COUNTRY_TO`/`INCORPORATION_COUNTRY_CODE` = 'AZ' (boşdursa), `SNN`/
+   `SNN_TO`-dakı `'-'` placeholder-i `NULL`-a çevirir, `TO_FUNDS_CODE` = 'A'.
+
+### Yeni sahə — `InstitutionNameBranchTo`
+
+Entity-də çatışmırdı (5-ci qrup onu doldurur) — migration
+`20261107080000_GoamlInstitutionBranch.cs` (yalnız `AddColumn`, `InsertData`
+YOXDUR). `GoamlTesdiqDto`-ya da əlavə olundu (`GoamlEmeliyyatDetalDto` ondan
+miras aldığı üçün "Bax" ekranında da avtomatik görünür) — operator-input
+DEYİL, YALNIZ `AvtoDolduruAsync` yazır, `Tesdiq.cshtml` formasına `<input>`
+ƏLAVƏ EDİLMƏDİ (operatorun doldura biləcəyi sahə deyil).
+
+### Arxitektura — "ən yaxşı cəhd", Oracle-a YALNIZ OXUMA
+
+`AvtoDolduruAsync` Oracle-a **yeddi AYRI canlı, YALNIZ-OXU sorğu** göndərir
+(`MMX_ID_SERIAL`, `TYPES_OF_DOCUMENTS`, `BALSCHT_UR`/`BALSCHT_FIZ` üzvlük
+yoxlaması, `LICSCH_ALL_2`, `ATTRIB`, `MFO`+`VIEW_LICSCH_ALL`, `BIC_CODES`) —
+İSTİNAD CƏDVƏLLƏRİNİN MƏZMUNU HARDCODE EDİLMƏYİB, hər çağırışda canlı
+sorğulanır ki, Oracle-dakı dəyişiklik koda toxunmadan əks olunsun. **Hər bir
+Oracle çağırışı ÖZ köməkçisində try/catch-lə əhatə olunub** — Oracle əlçatmaz
+olsa belə "Təsdiqlə" ƏMƏLİYYATI UĞURSUZ OLMUR (operator artıq doldurduğu
+KYC-ni itirməsin deyə), sadəcə həmin addım(lar) sakitcə ötürülür.
+
+⚠️ **Oracle-a HEÇ NƏ YAZILMIR** — bütün hesablanmış dəyərlər bizim ÖZ
+`GoamlEmeliyyat` sətrinə (hələ `SaveChanges`-ə getməmiş, yaddaşdakı obyektə)
+yazılır, `TesdiqleAsync`-in `YaratAsync`+`YaddaSaxlaAsync`-ından ƏVVƏL
+çağırılır — tək DB round-trip-də (bizim öz bazamıza) yekunlaşır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — bu düzəlişdən ƏVVƏL təsdiqlənmiş qeydlər
+(bu sessiyaya qədər, əgər varsa) yenidən emal edilmir, yalnız BUNDAN SONRAKI
+"Təsdiqlə" çağırışları avtomatik dolur.
+
+⚠️ **Açıq qalan iş (gələcək, 06.11.2026-dan)**: 7 `ID_VD`-asılı qayda
+(SWIFT/xarici invaluta/"postupl"/"nacval"/daxili invaluta ×2) — bu açarın
+bizim namizəd sorğumuzda (`DOC_DNA_ALL_TAB`/`_RISK`) haradan gəldiyi hələ
+araşdırılmayıb, ayrıca Oracle araşdırması (`v$sql`/`v$open_cursor`, 93-94-cü
+fayllardakı üsulla) tələb edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/brace balansı Python skriptlə — şərh/mətn daxilindəki
+dekorativ mötərizələr çıxarılıb YENİDƏN yoxlanıldı, kodun özü balanslıdır;
+`GoamlTipi`/`GoamlHesabatNovu` enum dəyərləri `GoamlEnums.cs`-dən bir-bir
+təsdiqləndi — TIP=88 bizim enum-da YOXDUR, ona görə həmin dəyərli IN-siyahı
+üzvləri kodda ÇIXARILDI, çünki operator onu HEÇ VAXT seçə bilməz). İstifadəçi
+Visual Studio-da **Rebuild All**, `Update-Database`, sonra real ssenari ilə
+yoxlamalıdır: (1) VÖEN-i daxil edib heç bir Fizik/Sahibkar/Hüquqi checkbox-u
+İŞARƏLƏMƏDƏN "Təsdiqlə" et → "Bax" ekranında müvafiq checkbox-un avtomatik
+işarələndiyini; (2) "Hesab imza hüququ olan şəxs" bloku dolu, "Alan fiziki
+şəxs" bloku BOŞ saxlanmış, TIP=Fiziki (OUT/IN) seçilmiş bir namizədi təsdiqlə
+→ "Alan fiziki şəxs" məlumatlarının SIG-dən köçürüldüyünü; (3) öz bankımızın
+DEBET hesabı ilə, TIP=H to H olan bir namizədi təsdiqlə → "Bankın adı"/SWIFT/
+"Bank filialı"-nın doldurulduğunu təsdiqləməlidir.

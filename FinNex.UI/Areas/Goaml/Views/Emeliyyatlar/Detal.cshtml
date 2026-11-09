@@ -163,21 +163,27 @@
                 <div><label class="gml-flbl">Ölkə</label><div class="gml-ro-val">@V(Model.IncorporationCountryCodeTo)</div></div>
                 <div><label class="gml-flbl">Adı</label><div class="gml-ro-val">@V(Model.NameUrTo)</div></div>
                 <div><label class="gml-flbl">Bankın adı</label><div class="gml-ro-val">@V(Model.InstitutionNameTo)</div></div>
+                <div><label class="gml-flbl">Bank filialı</label><div class="gml-ro-val">@V(Model.InstitutionNameBranchTo)</div></div>
             </div>
         </div>
     </details>
 
-    @* ── Qalan, hələ avtomatik doldurulmayan sahələr — "Update New" kaskadının
-         ekvivalenti qurulanda bank reyestrlərindən doldurulacaq (bax CLAUDE.md,
-         GOAML bölməsi). Hamısı NULL/"—" görünür — bu, gözlənilən vəziyyətdir,
-         xəta deyil. Bağlı başlayır ki, boş sahələr ekranı doldurmasın. ── *@
+    @* ── Qalan sahələr — 07.11.2026-da "Update New" kaskadının 26/49 qaydası
+         köçürüldü (AvtoDolduruAsync), ona görə bu bölmədəki BƏZİ sahələr
+         (Ölkə kodları, SWIFT/Hesab (_TO), TRANSMODE_CODE, Gender/SNN, Alan
+         fiziki şəxsin KYC-si müəyyən TIP şərtlərində) ARTIQ avtomatik dolur —
+         "hamısı həmişə boşdur" demək DÜZGÜN DEYİL. Hələ TAMAMİLƏ boş qalan
+         yeganə qrup: SWIFT/İnvaluta/Postupl/Nacval-dan gələn sahələr (ID_VD
+         açarı bizim namizəd sorğumuzda yoxdur — CLAUDE.md, GOAML bölməsi). ── *@
     <details class="gml-block">
-        <summary>Əlavə sahələr (hələ avtomatik doldurulmur) <i class="bi bi-chevron-down gml-chevron"></i></summary>
+        <summary>Əlavə sahələr (qismən avtomatik doldurulur) <i class="bi bi-chevron-down gml-chevron"></i></summary>
         <div class="gml-block-body">
             <div class="gml-extra-note">
-                Bu bölmədəki sahələr AYSEL-in "Update New" avtomatik doldurma kaskadının
-                ekvivalenti qurulanda bank reyestrlərindən doldurulacaq — hazırda boş
-                görünmələri gözlənilən vəziyyətdir.
+                Bu bölmədəki sahələrin bir hissəsi artıq avtomatik doldurulur (TIP-dən,
+                VÖEN-dən, hesab prefiksindən asılı olaraq) — görünmələri məlumatın
+                konkret bu əməliyyata aid olub-olmamasından asılıdır. Yalnız SWIFT/
+                xarici köçürmə sənədlərindən gələn sahələr (ID_VD açarı çatışmır)
+                HƏLƏ həmişə boşdur.
             </div>
 
             <div class="gml-subsection-title">Əməliyyatın əlavə sahələri</div>

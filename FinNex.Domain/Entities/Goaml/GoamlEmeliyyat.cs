@@ -195,6 +195,11 @@ namespace FinNex.Domain.Entities.Goaml
         public string? SwiftTo { get; set; }                    // SWIFT_TO
         public string? AccountTo { get; set; }                  // ACCOUNT_TO — "HESAB nömrəsi"
         public string? AlaqeNovuTo { get; set; }                // "Əlaqə növü" — Oracle adı tutulmayıb
+        /// <summary>Avtomatik doldurma (07.11.2026) ilə əlavə edilib — Oracle-un
+        /// `INSTITUTION_NAME_BRANCH_TO` sütunu, bankın filial adı. Formada ƏL İLƏ
+        /// doldurulmur, YALNIZ <see cref="FinNex.Application.Services.Goaml.GoamlService.AvtoDolduruAsync"/>
+        /// tərəfindən yazılır.</summary>
+        public string? InstitutionNameBranchTo { get; set; }    // INSTITUTION_NAME_BRANCH_TO
 
         // ── Tam dəqiq bloka aid edilməmiş, Oracle adı ilə saxlanılan sahələr ──
         public string? Gender { get; set; }                   // gender (suffikssiz)

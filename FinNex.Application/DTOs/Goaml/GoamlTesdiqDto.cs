@@ -142,6 +142,7 @@ namespace FinNex.Application.DTOs.Goaml
         public string? SwiftTo { get; set; }
         public string? AccountTo { get; set; }
         public string? AlaqeNovuTo { get; set; }
+        public string? InstitutionNameBranchTo { get; set; }
 
         public string? Gender { get; set; }
         public string? Snn { get; set; }
