@@ -10004,3 +10004,15 @@ tapılmazdı, sadəcə "sistem işləmir" qalardı.
 hesabının özündə) YOXDUR** — istifadəçi bunu DBA/Oracle admin hesabı ilə
 (və ya `odb` sxeminin sahibi ilə) özü icra etməlidir. Kod tərəfində başqa heç
 bir dəyişiklik lazım deyil.
+
+✅ **TƏSDİQLƏNDİ (09.11.2026, eyni gün).** İstifadəçi GRANT-ları tətbiq etdi,
+EYNİ namizədi (DR.ESS MMC) TƏZƏDƏN (yeni GET sorğusu ilə) açdı — "Nümayəndənin"
+VƏ "Hesab imza hüququ olan şəxsin" blokları artıq AVTOMATİK DOLU gəldi.
+Diqqət: ARTIQ AÇIQ olan köhnə (GRANT-dan əvvəl yüklənmiş) səhifədə "Saxla"ya
+basmaq kifayət ETMƏDİ — ilk sınaqda hələ boş dəyərlər saxlanıldı, çünki GRANT
+geriyə, artıq brauzerdə yüklü olan formaya təsir etmir; YALNIZ səhifəni
+TƏZƏDƏN açmaq (yeni GET → yeni Oracle sorğusu, indi icazəli) düzgün nəticə
+verdi. Bütöv zəncir bununla TAM bağlandı: `odb.regnom`-un bəzi hüquqi
+şəxslərdə sətri olmaması → `BalschtDaxilindedirAsync` əsaslı yenidən dizayn →
+bunun da ORA-01031 ilə səssiz uğursuzluğu → loglama ilə kök səbəbin tapılması →
+GRANT SELECT → iş axını uçdan-uca işlək.
