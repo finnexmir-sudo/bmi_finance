@@ -9448,3 +9448,37 @@ New"-un öz tetikləyicisini tapmaq ARTIQ bu sessiyanın işi deyil, gələcək 
 mərhələdə (FinNex-in öz avtomatik-doldurma mexanizmini qurarkən) aparılacaq.
 `92_Goaml_Avtomatik_Doldurma_Diaqnostikasi.sql` hazır qalır — o mərhələdə eyni
 `C` üsulu (bu dəfə konsol/applet pəncərəsinin öz SID-i ilə) təkrar işlədilə bilər.
+
+
+## GOAML — Əməliyyatlar Tabının "Bax" Detal Ekranı Bağlandı (09.11.2026)
+
+İstifadəçinin sıra tələbi: Əməliyyatlar → Risk → Export to file əvvəlcə bitsin,
+Setup sonraya qalsın. İlk addım olaraq "Əməliyyatlar"ın qalıq işi — `IGoamlService.
+DetalGetirAsync(int id)` servisdə var idi, amma heç bir controller action/view-a
+bağlı deyildi (bax yuxarı, "GOAML — 'Əməliyyatlar' Tabı TAMAMLANDI" bölməsindəki
+"Açıq qalan" qeydi).
+
+**Dəyişiklik — yeni, ayrıca DTO (`GoamlEmeliyyatDetalDto : GoamlTesdiqDto`).**
+`DetalGetirAsync`-ın qaytardığı tip `GoamlTesdiqDto`-dan (yalnız KYC sahələri,
+Tesdiq formunun POST-u üçün) `GoamlEmeliyyatDetalDto`-ya (+ `Id`/`Status`/
+`TesdiqleyenAdi`/`YaradilmaTarixi`) dəyişdi — "Metod İmzası Dəyişikliyi" qaydasına
+uyğun interfeys+implementasiya+controller eyni anda yeniləndi. `TesdiqleyenAdi`
+`HamisiniGetirAsync`-ın işlətdiyi EYNİ naxışla (`Isci`-dən ad+soyad) doldurulur.
+
+**`EmeliyyatlarController.Detal(int id)`** (yeni GET action) → `Siyahi.cshtml`-ə
+hər sətrə "Bax" düyməsi əlavə edildi. **`Detal.cshtml`** (yeni, sırf oxunuş) —
+`Tesdiq.cshtml`-in eyni 3 blok strukturunu (Nümayəndə/_CON, İmza hüququ/_SIG,
+Banka aid olmayan müştəri) təkrarlayır, amma `<input>` əvəzinə sadə mətn
+göstərir. Üstəlik bağlı başlayan **4-cü, "Əlavə sahələr" bloku** — formadan
+06.11.2026-da çıxarılmış, hələ avtomatik doldurulmayan ~100 sahəni (Hüquqi
+şəxsin göndərən tərəf, Alan fiziki şəxsin tam detalı, qalan _TO hüquqi sahələr,
+əməliyyatın digər sahələri) göstərir — hazırda hamısı "—" (NULL) görünür, bu
+GÖZLƏNİLƏN vəziyyətdir (AYSEL-in "Update New" ekvivalenti hələ qurulmayıb) —
+gələcəkdə həmin mexanizm quruləndə bu ekran ƏLAVƏ DƏYİŞİKLİK TƏLƏB ETMİR,
+sahələr avtomatik dolacaq.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/div balansı skriptlə, DTO↔servis↔controller↔view sahə adları bir-bir
+tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+mühitdə yoxlamalıdır: "Təsdiqlənmiş əməliyyatlar" siyahısında "Bax" düyməsinin
+tam KYC detalını (bütün 3 blok + yeni "Əlavə sahələr" bloku) düzgün göstərdiyini.

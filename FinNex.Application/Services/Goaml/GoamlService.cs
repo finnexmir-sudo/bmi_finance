@@ -305,13 +305,20 @@ namespace FinNex.Application.Services.Goaml
             return Result<List<GoamlEmeliyyatListDto>>.Ok(neice);
         }
 
-        public async Task<Result<GoamlTesdiqDto>> DetalGetirAsync(int id)
+        public async Task<Result<GoamlEmeliyyatDetalDto>> DetalGetirAsync(int id)
         {
             var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);
-            if (e == null) return Result<GoamlTesdiqDto>.Fail("Qeyd tapılmadı.");
+            if (e == null) return Result<GoamlEmeliyyatDetalDto>.Fail("Qeyd tapılmadı.");
 
-            var dto = new GoamlTesdiqDto
+            var tesdiqleyen = (await _unitOfWork.Repository<Isci>()
+                .HamisiniGetirAsync(x => x.Id == e.TesdiqleyenIsciId)).FirstOrDefault();
+
+            var dto = new GoamlEmeliyyatDetalDto
             {
+                Id = e.Id,
+                Status = e.Status,
+                TesdiqleyenAdi = tesdiqleyen == null ? null : $"{tesdiqleyen.Ad} {tesdiqleyen.Soyad}",
+                YaradilmaTarixi = e.YaradilmaTarixi,
                 CandidateFilialNumber = e.CandidateFilialNumber,
                 CandidateDateOper = e.CandidateDateOper,
                 CandidateRecNum = e.CandidateRecNum,
@@ -447,7 +454,7 @@ namespace FinNex.Application.Services.Goaml
                 RecIdNumber = e.RecIdNumber,
             };
 
-            return Result<GoamlTesdiqDto>.Ok(dto);
+            return Result<GoamlEmeliyyatDetalDto>.Ok(dto);
         }
 
         // ── Köməkçilər ──────────────────────────────────────────────────────

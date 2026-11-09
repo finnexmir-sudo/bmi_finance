@@ -115,4 +115,18 @@ public class EmeliyyatlarController : Controller
         var netice = await _goaml.HamisiniGetirAsync();
         return View(netice.Data ?? new List<GoamlEmeliyyatListDto>());
     }
+
+    // ── GET /Goaml/Emeliyyatlar/Detal/{id} — TƏK qeydin tam (sırf oxunuş) detalı ──
+    public async Task<IActionResult> Detal(int id)
+    {
+        ViewData["Title"] = "GOAML — Əməliyyat detalı";
+        var netice = await _goaml.DetalGetirAsync(id);
+        if (!netice.Success || netice.Data == null)
+        {
+            TempData["Error"] = netice.Message ?? "Qeyd tapılmadı.";
+            return RedirectToAction(nameof(Siyahi));
+        }
+
+        return View(netice.Data);
+    }
 }

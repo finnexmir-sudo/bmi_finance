@@ -49,6 +49,7 @@
                             <th>Məlumatın növü</th>
                             <th>Təsdiqləyən</th>
                             <th>Yaradılma tarixi</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,6 +73,11 @@
                                 </td>
                                 <td>@(e.TesdiqleyenAdi ?? "—")</td>
                                 <td>@e.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>
+                                    <a asp-action="Detal" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm">
+                                        <i class="bi bi-eye"></i> Bax
+                                    </a>
+                                </td>
                             </tr>
                         }
                     </tbody>

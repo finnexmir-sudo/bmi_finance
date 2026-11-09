@@ -1,0 +1,271 @@
+@using FinNex.Domain.Entities.Goaml
+@model FinNex.Application.DTOs.Goaml.GoamlEmeliyyatDetalDto
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "GOAML — Əməliyyat detalı";
+}
+
+@functions {
+    string V(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+    string Vd(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy") : "—";
+    string Vb(bool? b) => b == true ? "Bəli" : (b == false ? "Xeyr" : "—");
+}
+
+@section Styles {
+    <style>
+        .gml-grid-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
+        .gml-flbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
+        .gml-ro-val { font-size:.86rem; font-weight:600; color:#111827; min-height:20px; word-break:break-word; }
+        .gml-section-title { font-size:1rem; font-weight:700; color:#111827; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+        .gml-subsection-title { font-size:.86rem; font-weight:700; color:#374151; margin:18px 0 10px; }
+        .gml-block { border:1px solid #e5e7eb; border-radius:10px; margin-bottom:14px; background:#fff; overflow:hidden; }
+        .gml-block > summary { list-style:none; cursor:pointer; padding:14px 18px; font-weight:700; color:#1f2937; font-size:.92rem;
+            display:flex; align-items:center; justify-content:space-between; background:#f9fafb; }
+        .gml-block > summary::-webkit-details-marker { display:none; }
+        .gml-block > summary .gml-chevron { transition:transform .15s; color:#9ca3af; }
+        .gml-block[open] > summary .gml-chevron { transform:rotate(180deg); }
+        .gml-block-body { padding:18px; }
+        .gml-extra-note { font-size:.78rem; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; margin-bottom:14px; }
+
+        .gml-info-strip { display:flex; flex-wrap:wrap; gap:18px 28px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 18px; margin-bottom:18px; }
+        .gml-info-item { display:flex; flex-direction:column; gap:2px; }
+        .gml-info-lbl { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.03em; }
+        .gml-info-val { font-size:.85rem; font-weight:600; color:#1e293b; }
+
+        .gml-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.74rem; font-weight:600; background:#eef2ff; color:#3730a3; }
+        .gml-pill--report { background:#fef3c7; color:#92400e; }
+        .gml-pill--status { background:#dcfce7; color:#166534; }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">GOAML — Əməliyyat detalı</div>
+            <div class="fn-page-sub">#@Model.Id — sırf oxunuş, redaktə bu ekrandan aparılmır</div>
+        </div>
+        <a asp-action="Siyahi" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="fn-alert fn-alert--error" style="margin-bottom:16px">@TempData["Error"]</div>
+    }
+
+    <div class="gml-info-strip">
+        <div class="gml-info-item"><span class="gml-info-lbl">Status</span><span class="gml-pill gml-pill--status">@Model.Status</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Tip</span><span class="gml-info-val">@(Model.Tip.HasValue ? Model.Tip.Value.Etiket() : "—")</span></div>
+        <div class="gml-info-item">
+            <span class="gml-info-lbl">Məlumatın növü</span>
+            <span class="gml-info-val">
+                @if (Model.ReportCode.HasValue)
+                {
+                    <span class="gml-pill gml-pill--report">@Model.ReportCode.Value.Kod()</span>
+                }
+                else
+                {
+                    <text>—</text>
+                }
+            </span>
+        </div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Təsdiqləyən</span><span class="gml-info-val">@V(Model.TesdiqleyenAdi)</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Yaradılma tarixi</span><span class="gml-info-val">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</span></div>
+    </div>
+
+    <div class="gml-info-strip">
+        <div class="gml-info-item"><span class="gml-info-lbl">Əməliyyat tarixi</span><span class="gml-info-val">@Vd(Model.DateOper)</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Debet</span><span class="gml-info-val" style="font-family:ui-monospace,Consolas,monospace">@V(Model.Debet)</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Kredit</span><span class="gml-info-val" style="font-family:ui-monospace,Consolas,monospace">@V(Model.Kredit)</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Məbləğ (AZN)</span><span class="gml-info-val">@(Model.SummaVNacval?.ToString("N2") ?? "—")</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Məbləğ (xarici valyuta)</span><span class="gml-info-val">@(Model.SummaVInval?.ToString("N2") ?? "—")</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Valyuta kodu</span><span class="gml-info-val">@(Model.KodValuti?.ToString() ?? "—")</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Kurs</span><span class="gml-info-val">@(Model.KursValuti?.ToString("0.####") ?? "—")</span></div>
+        <div class="gml-info-item"><span class="gml-info-lbl">Qeyd</span><span class="gml-info-val">@V(Model.Primechanie)</span></div>
+    </div>
+
+    @* ── BLOK 1 — Nümayəndənin (Oracle: _CON) ── *@
+    <details class="gml-block" open>
+        <summary>Nümayəndənin (əməliyyatı aparan şəxs) <i class="bi bi-chevron-down gml-chevron"></i></summary>
+        <div class="gml-block-body">
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">Adı</label><div class="gml-ro-val">@V(Model.ConAdi)</div></div>
+                <div><label class="gml-flbl">Atasının adı</label><div class="gml-ro-val">@V(Model.ConAtasininAdi)</div></div>
+                <div><label class="gml-flbl">Soyadı</label><div class="gml-ro-val">@V(Model.ConSoyadi)</div></div>
+                <div><label class="gml-flbl">Doğulduğu tarix</label><div class="gml-ro-val">@Vd(Model.ConDogulduguTarix)</div></div>
+                <div><label class="gml-flbl">Doğulduğu yer</label><div class="gml-ro-val">@V(Model.ConDogulduguYer)</div></div>
+                <div><label class="gml-flbl">Vətəndaşlığı</label><div class="gml-ro-val">@V(Model.ConVetendasligi)</div></div>
+                <div><label class="gml-flbl">Cinsi</label><div class="gml-ro-val">@V(Model.ConCinsi)</div></div>
+                <div><label class="gml-flbl">PİN</label><div class="gml-ro-val">@V(Model.ConPin)</div></div>
+                <div><label class="gml-flbl">Telefon növü</label><div class="gml-ro-val">@V(Model.ConTelefonNovu)</div></div>
+                <div><label class="gml-flbl">Rabitə növü</label><div class="gml-ro-val">@V(Model.ConRabiteNovu)</div></div>
+                <div><label class="gml-flbl">Telefon nömrəsi</label><div class="gml-ro-val">@V(Model.ConTelefonNomresi)</div></div>
+                <div><label class="gml-flbl">Ünvanın növü</label><div class="gml-ro-val">@V(Model.ConUnvaninNovu)</div></div>
+                <div><label class="gml-flbl">Ünvan</label><div class="gml-ro-val">@V(Model.ConUnvan)</div></div>
+                <div><label class="gml-flbl">Şəhər</label><div class="gml-ro-val">@V(Model.ConSeher)</div></div>
+                <div><label class="gml-flbl">Ölkə</label><div class="gml-ro-val">@V(Model.ConOlke)</div></div>
+                <div><label class="gml-flbl">Sənədin növü</label><div class="gml-ro-val">@V(Model.ConSenedinNovu)</div></div>
+                <div><label class="gml-flbl">Sənədin seriya/nömrəsi</label><div class="gml-ro-val">@V(Model.ConSenedinSeriyaNomresi)</div></div>
+                <div><label class="gml-flbl">Sənədin verilmə tarixi</label><div class="gml-ro-val">@Vd(Model.ConSenedinVerilmeTarixi)</div></div>
+                <div><label class="gml-flbl">Sənədin etibarlılıq müddəti</label><div class="gml-ro-val">@Vd(Model.ConSenedinEtibarliliqMuddeti)</div></div>
+                <div><label class="gml-flbl">Verən orqan</label><div class="gml-ro-val">@V(Model.ConVerenOrqan)</div></div>
+                <div><label class="gml-flbl">Verildiyi ölkə</label><div class="gml-ro-val">@V(Model.ConVerildiyiOlke)</div></div>
+            </div>
+            <div class="gml-subsection-title">Nümayəndəni səlahiyyətləndirən sənəd</div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">Sənəd növü</label><div class="gml-ro-val">@V(Model.ReprIdType)</div></div>
+                <div><label class="gml-flbl">Seriya</label><div class="gml-ro-val">@V(Model.ReprIdSerial)</div></div>
+                <div><label class="gml-flbl">Nömrə</label><div class="gml-ro-val">@V(Model.ReprIdNumber)</div></div>
+            </div>
+        </div>
+    </details>
+
+    @* ── BLOK 2 — Hesab imza hüququ olan şəxsin (Oracle: _SIG) ── *@
+    <details class="gml-block">
+        <summary>Hesab imza hüququ olan şəxsin <i class="bi bi-chevron-down gml-chevron"></i></summary>
+        <div class="gml-block-body">
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">Adı</label><div class="gml-ro-val">@V(Model.SigAdi)</div></div>
+                <div><label class="gml-flbl">Atasının adı</label><div class="gml-ro-val">@V(Model.SigAtasininAdi)</div></div>
+                <div><label class="gml-flbl">Soyadı</label><div class="gml-ro-val">@V(Model.SigSoyadi)</div></div>
+                <div><label class="gml-flbl">Doğulduğu tarix</label><div class="gml-ro-val">@Vd(Model.SigDogulduguTarix)</div></div>
+                <div><label class="gml-flbl">Doğulduğu yer</label><div class="gml-ro-val">@V(Model.SigDogulduguYer)</div></div>
+                <div><label class="gml-flbl">Vətəndaşlığı</label><div class="gml-ro-val">@V(Model.SigVetendasligi)</div></div>
+                <div><label class="gml-flbl">Vəzifə</label><div class="gml-ro-val">@V(Model.SigVezife)</div></div>
+                <div><label class="gml-flbl">İş yerinin adı</label><div class="gml-ro-val">@V(Model.SigIsYeriAdi)</div></div>
+                <div><label class="gml-flbl">Telefon növü</label><div class="gml-ro-val">@V(Model.SigTelefonNovu)</div></div>
+                <div><label class="gml-flbl">Rabitə növü</label><div class="gml-ro-val">@V(Model.SigRabiteNovu)</div></div>
+                <div><label class="gml-flbl">Telefon nömrəsi</label><div class="gml-ro-val">@V(Model.SigTelefonNomresi)</div></div>
+                <div><label class="gml-flbl">Ünvanın növü</label><div class="gml-ro-val">@V(Model.SigUnvaninNovu)</div></div>
+                <div><label class="gml-flbl">Ünvan</label><div class="gml-ro-val">@V(Model.SigUnvan)</div></div>
+                <div><label class="gml-flbl">Şəhər</label><div class="gml-ro-val">@V(Model.SigSeher)</div></div>
+                <div><label class="gml-flbl">Ölkə</label><div class="gml-ro-val">@V(Model.SigOlke)</div></div>
+                <div><label class="gml-flbl">Sənədin növü</label><div class="gml-ro-val">@V(Model.SigSenedinNovu)</div></div>
+                <div><label class="gml-flbl">Sənədin seriya/nömrəsi</label><div class="gml-ro-val">@V(Model.SigSenedinSeriyaNomresi)</div></div>
+                <div><label class="gml-flbl">Sənədin verilmə tarixi</label><div class="gml-ro-val">@Vd(Model.SigSenedinVerilmeTarixi)</div></div>
+                <div><label class="gml-flbl">Sənədin etibarlılıq müddəti</label><div class="gml-ro-val">@Vd(Model.SigSenedinEtibarliliqMuddeti)</div></div>
+                <div><label class="gml-flbl">Verən orqan</label><div class="gml-ro-val">@V(Model.SigVerenOrqan)</div></div>
+                <div><label class="gml-flbl">Verildiyi ölkə</label><div class="gml-ro-val">@V(Model.SigVerildiyiOlke)</div></div>
+            </div>
+        </div>
+    </details>
+
+    @* ── BLOK 3 — Banka aid olmayan müştəri (fiziki/hüquqi/sahibkar) ── *@
+    <details class="gml-block">
+        <summary>Banka aid olmayan müştəri <i class="bi bi-chevron-down gml-chevron"></i></summary>
+        <div class="gml-block-body">
+            <div class="gml-grid-3" style="margin-bottom:16px">
+                <div><label class="gml-flbl">Fizik</label><div class="gml-ro-val">@Vb(Model.ToFizik)</div></div>
+                <div><label class="gml-flbl">Sahibkar</label><div class="gml-ro-val">@Vb(Model.ToPred)</div></div>
+                <div><label class="gml-flbl">Hüquqi</label><div class="gml-ro-val">@Vb(Model.ToYurik)</div></div>
+            </div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">VÖEN</label><div class="gml-ro-val">@V(Model.IncorporationNumberTo)</div></div>
+                <div><label class="gml-flbl">Ölkə</label><div class="gml-ro-val">@V(Model.IncorporationCountryCodeTo)</div></div>
+                <div><label class="gml-flbl">Adı</label><div class="gml-ro-val">@V(Model.NameUrTo)</div></div>
+                <div><label class="gml-flbl">Bankın adı</label><div class="gml-ro-val">@V(Model.InstitutionNameTo)</div></div>
+            </div>
+        </div>
+    </details>
+
+    @* ── Qalan, hələ avtomatik doldurulmayan sahələr — "Update New" kaskadının
+         ekvivalenti qurulanda bank reyestrlərindən doldurulacaq (bax CLAUDE.md,
+         GOAML bölməsi). Hamısı NULL/"—" görünür — bu, gözlənilən vəziyyətdir,
+         xəta deyil. Bağlı başlayır ki, boş sahələr ekranı doldurmasın. ── *@
+    <details class="gml-block">
+        <summary>Əlavə sahələr (hələ avtomatik doldurulmur) <i class="bi bi-chevron-down gml-chevron"></i></summary>
+        <div class="gml-block-body">
+            <div class="gml-extra-note">
+                Bu bölmədəki sahələr AYSEL-in "Update New" avtomatik doldurma kaskadının
+                ekvivalenti qurulanda bank reyestrlərindən doldurulacaq — hazırda boş
+                görünmələri gözlənilən vəziyyətdir.
+            </div>
+
+            <div class="gml-subsection-title">Əməliyyatın əlavə sahələri</div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">VIP NET DA</label><div class="gml-ro-val">@V(Model.VipNetDa)</div></div>
+                <div><label class="gml-flbl">Transaction number</label><div class="gml-ro-val">@V(Model.TransactionNumber)</div></div>
+                <div><label class="gml-flbl">Transmode code</label><div class="gml-ro-val">@V(Model.TransmodeCode)</div></div>
+                <div><label class="gml-flbl">Transmode comment</label><div class="gml-ro-val">@V(Model.TransmodeComment)</div></div>
+                <div><label class="gml-flbl">Amount local</label><div class="gml-ro-val">@(Model.AmountLocal?.ToString("N2") ?? "—")</div></div>
+                <div><label class="gml-flbl">From funds code</label><div class="gml-ro-val">@V(Model.FromFundsCode)</div></div>
+                <div><label class="gml-flbl">Foreign currency code</label><div class="gml-ro-val">@V(Model.ForeignCurrencyCode)</div></div>
+                <div><label class="gml-flbl">Foreign currency code (from)</label><div class="gml-ro-val">@V(Model.ForeignCurrencyCodeFrom)</div></div>
+                <div><label class="gml-flbl">Foreign amount</label><div class="gml-ro-val">@(Model.ForeignAmount?.ToString("N2") ?? "—")</div></div>
+                <div><label class="gml-flbl">Foreign exchange rate</label><div class="gml-ro-val">@(Model.ForeignExchangeRate?.ToString("0.####") ?? "—")</div></div>
+                <div><label class="gml-flbl">To funds code</label><div class="gml-ro-val">@V(Model.ToFundsCode)</div></div>
+                <div><label class="gml-flbl">Action</label><div class="gml-ro-val">@V(Model.Action)</div></div>
+                <div><label class="gml-flbl">Reason (Səbəb)</label><div class="gml-ro-val">@V(Model.Reason)</div></div>
+                <div><label class="gml-flbl">URL</label><div class="gml-ro-val">@V(Model.Url)</div></div>
+                <div><label class="gml-flbl">Opened</label><div class="gml-ro-val">@Vd(Model.Opened)</div></div>
+                <div><label class="gml-flbl">Business</label><div class="gml-ro-val">@V(Model.Business)</div></div>
+                <div><label class="gml-flbl">Qeydiyyat nömrəsi</label><div class="gml-ro-val">@V(Model.RegistracNomer)</div></div>
+                <div><label class="gml-flbl">Branch</label><div class="gml-ro-val">@V(Model.Branch)</div></div>
+                <div><label class="gml-flbl">IBAN</label><div class="gml-ro-val">@V(Model.Iban)</div></div>
+                <div><label class="gml-flbl">Personal account type</label><div class="gml-ro-val">@V(Model.PersonalAccountType)</div></div>
+                <div><label class="gml-flbl">Gəlir mənbəyi</label><div class="gml-ro-val">@V(Model.GelirMenbeyi)</div></div>
+                <div><label class="gml-flbl">PAN (to)</label><div class="gml-ro-val">@V(Model.PanTo)</div></div>
+            </div>
+
+            <div class="gml-subsection-title">Hüquqi şəxsin (göndərən tərəf)</div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">Adı</label><div class="gml-ro-val">@V(Model.NameUr)</div></div>
+                <div><label class="gml-flbl">Bankın adı</label><div class="gml-ro-val">@V(Model.InstitutionName)</div></div>
+                <div><label class="gml-flbl">SWIFT</label><div class="gml-ro-val">@V(Model.Swift)</div></div>
+                <div><label class="gml-flbl">Hesab</label><div class="gml-ro-val">@V(Model.Account)</div></div>
+                <div><label class="gml-flbl">VÖEN</label><div class="gml-ro-val">@V(Model.IncorporationNumber)</div></div>
+                <div><label class="gml-flbl">Ölkə</label><div class="gml-ro-val">@V(Model.IncorporationCountryCode)</div></div>
+                <div><label class="gml-flbl">Ölkə (from)</label><div class="gml-ro-val">@V(Model.FromCountry)</div></div>
+                <div><label class="gml-flbl">Hesabın açılma tarixi</label><div class="gml-ro-val">@Vd(Model.HesabinAcilmaTarixi)</div></div>
+                <div><label class="gml-flbl">Şəhərin kodu</label><div class="gml-ro-val">@V(Model.SeherinKodu)</div></div>
+                <div><label class="gml-flbl">Fəaliyyət istiqaməti</label><div class="gml-ro-val">@V(Model.FealiyyatIstiqameti)</div></div>
+            </div>
+
+            <div class="gml-subsection-title">Alan fiziki şəxsin (tam detal)</div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">Adı</label><div class="gml-ro-val">@V(Model.ToAdi)</div></div>
+                <div><label class="gml-flbl">Atasının adı</label><div class="gml-ro-val">@V(Model.ToAtasininAdi)</div></div>
+                <div><label class="gml-flbl">Soyadı</label><div class="gml-ro-val">@V(Model.ToSoyadi)</div></div>
+                <div><label class="gml-flbl">Doğulduğu tarix</label><div class="gml-ro-val">@Vd(Model.ToDogulduguTarix)</div></div>
+                <div><label class="gml-flbl">Doğulduğu yer</label><div class="gml-ro-val">@V(Model.ToDogulduguYer)</div></div>
+                <div><label class="gml-flbl">Vətəndaşlığı</label><div class="gml-ro-val">@V(Model.ToVetendasligi)</div></div>
+                <div><label class="gml-flbl">Telefon növü</label><div class="gml-ro-val">@V(Model.ToTelefonNovu)</div></div>
+                <div><label class="gml-flbl">Rabitə növü</label><div class="gml-ro-val">@V(Model.ToRabiteNovu)</div></div>
+                <div><label class="gml-flbl">Telefon nömrəsi</label><div class="gml-ro-val">@V(Model.ToTelefonNomresi)</div></div>
+                <div><label class="gml-flbl">Ünvanın növü</label><div class="gml-ro-val">@V(Model.ToUnvaninNovu)</div></div>
+                <div><label class="gml-flbl">Ünvan</label><div class="gml-ro-val">@V(Model.ToUnvan)</div></div>
+                <div><label class="gml-flbl">Şəhər</label><div class="gml-ro-val">@V(Model.ToSeher)</div></div>
+                <div><label class="gml-flbl">Ölkə</label><div class="gml-ro-val">@V(Model.ToOlke)</div></div>
+                <div><label class="gml-flbl">Ölkə adı</label><div class="gml-ro-val">@V(Model.ToOlkeAdi)</div></div>
+                <div><label class="gml-flbl">Sənədin növü</label><div class="gml-ro-val">@V(Model.ToSenedinNovu)</div></div>
+                <div><label class="gml-flbl">Sənədin seriya/nömrəsi</label><div class="gml-ro-val">@V(Model.ToSenedinSeriyaNomresi)</div></div>
+                <div><label class="gml-flbl">Sənədin verilmə tarixi</label><div class="gml-ro-val">@Vd(Model.ToSenedinVerilmeTarixi)</div></div>
+                <div><label class="gml-flbl">Sənədin etibarlılıq müddəti</label><div class="gml-ro-val">@Vd(Model.ToSenedinEtibarliliqMuddeti)</div></div>
+                <div><label class="gml-flbl">Verən orqan</label><div class="gml-ro-val">@V(Model.ToVerenOrqan)</div></div>
+                <div><label class="gml-flbl">Verildiyi ölkə</label><div class="gml-ro-val">@V(Model.ToVerildiyiOlke)</div></div>
+            </div>
+
+            <div class="gml-subsection-title">Banka aid olmayan hüquqi şəxsin (qalan)</div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">SWIFT</label><div class="gml-ro-val">@V(Model.SwiftTo)</div></div>
+                <div><label class="gml-flbl">Hesab</label><div class="gml-ro-val">@V(Model.AccountTo)</div></div>
+                <div><label class="gml-flbl">Əlaqə növü</label><div class="gml-ro-val">@V(Model.AlaqeNovuTo)</div></div>
+            </div>
+
+            <div class="gml-subsection-title">Digər</div>
+            <div class="gml-grid-3">
+                <div><label class="gml-flbl">Gender</label><div class="gml-ro-val">@V(Model.Gender)</div></div>
+                <div><label class="gml-flbl">SNN</label><div class="gml-ro-val">@V(Model.Snn)</div></div>
+                <div><label class="gml-flbl">Gender (to)</label><div class="gml-ro-val">@V(Model.GenderTo)</div></div>
+                <div><label class="gml-flbl">SNN (to)</label><div class="gml-ro-val">@V(Model.SnnTo)</div></div>
+                <div><label class="gml-flbl">Occupation</label><div class="gml-ro-val">@V(Model.Occupation)</div></div>
+                <div><label class="gml-flbl">Employer name</label><div class="gml-ro-val">@V(Model.EmployerName)</div></div>
+                <div><label class="gml-flbl">Sender id type</label><div class="gml-ro-val">@V(Model.SenderIdType)</div></div>
+                <div><label class="gml-flbl">Sender id serial</label><div class="gml-ro-val">@V(Model.SenderIdSerial)</div></div>
+                <div><label class="gml-flbl">Sender id number</label><div class="gml-ro-val">@V(Model.SenderIdNumber)</div></div>
+                <div><label class="gml-flbl">Rec id type</label><div class="gml-ro-val">@V(Model.RecIdType)</div></div>
+                <div><label class="gml-flbl">Rec id serial</label><div class="gml-ro-val">@V(Model.RecIdSerial)</div></div>
+                <div><label class="gml-flbl">Rec id number</label><div class="gml-ro-val">@V(Model.RecIdNumber)</div></div>
+            </div>
+        </div>
+    </details>
+</div>

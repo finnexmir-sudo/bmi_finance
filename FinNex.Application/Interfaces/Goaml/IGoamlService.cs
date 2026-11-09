@@ -17,6 +17,7 @@ namespace FinNex.Application.Interfaces.Goaml
 
         Task<Result<List<GoamlEmeliyyatListDto>>> HamisiniGetirAsync();
 
-        Task<Result<GoamlTesdiqDto>> DetalGetirAsync(int id);
+        /// <summary>Təsdiqlənmiş TƏK qeydin tam (KYC + audit) detalı — "Bax" ekranı.</summary>
+        Task<Result<GoamlEmeliyyatDetalDto>> DetalGetirAsync(int id);
     }
 }
