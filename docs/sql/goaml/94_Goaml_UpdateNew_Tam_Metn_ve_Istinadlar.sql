@@ -29,15 +29,20 @@
 -- ============================================================================
 
 -- ── 1) BÜTÜN görülən sql_id-lərin TAM mətni (AYSEL-in SID-i ilə) ───────────
-select oc.sid,
-       s.sql_id,
+-- DÜZƏLİŞ: `GROUP BY`-da CLOB (sql_fulltext) sütunu YOXDUR — Oracle
+-- ORA-00932 ("inconsistent datatypes") verir. Dublikatları (open_cursor-un
+-- özü yaradır) `sql_id`-ni ƏVVƏLCƏ alt-sorğuda süzüb, sonra v$sql-dən
+-- BİR DƏFƏ oxumaqla aradan qaldırırıq — GROUP BY heç lazım deyil.
+select s.sql_id,
        s.executions,
        s.sql_fulltext
-from   v$open_cursor oc
-join   v$sql s on s.sql_id = oc.sql_id
-where  oc.sid = <BURAYA_SID_YAZ>
+from   v$sql s
+where  s.sql_id in (
+         select distinct oc.sql_id
+         from   v$open_cursor oc
+         where  oc.sid = <BURAYA_SID_YAZ>
+       )
   and  upper(s.sql_text) like 'UPDATE%GOAML_CLIENTS%'
-group by oc.sid, s.sql_id, s.executions, s.sql_fulltext
 order by s.sql_id;
 
 -- ============================================================================
