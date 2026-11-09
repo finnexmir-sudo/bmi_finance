@@ -29,13 +29,20 @@
 -- ============================================================================
 
 -- ── 1) BÜTÜN görülən sql_id-lərin TAM mətni (AYSEL-in SID-i ilə) ───────────
--- DÜZƏLİŞ: `GROUP BY`-da CLOB (sql_fulltext) sütunu YOXDUR — Oracle
+-- DÜZƏLİŞ #1: `GROUP BY`-da CLOB (sql_fulltext) sütunu YOXDUR — Oracle
 -- ORA-00932 ("inconsistent datatypes") verir. Dublikatları (open_cursor-un
 -- özü yaradır) `sql_id`-ni ƏVVƏLCƏ alt-sorğuda süzüb, sonra v$sql-dən
 -- BİR DƏFƏ oxumaqla aradan qaldırırıq — GROUP BY heç lazım deyil.
+-- DÜZƏLİŞ #2: PL/SQL Developer-in "Export Results" funksiyası CLOB sütununu
+-- GRİDDƏ GÖRÜNƏN "<CLOB>" yerişarəsi kimi ixrac edir, ƏSL MƏTNİ YOX. Bunu
+-- `DBMS_LOB.SUBSTR(..., 4000, 1)` ilə ADİ VARCHAR2-yə çeviririk — nəticə indi
+-- GÖRÜNƏN, İXRAC OLUNA BİLƏN mətndir (4000 bayta qədər — bizim UPDATE
+-- sətirlərinin böyük əksəriyyəti bundan qısadır; daha uzun çıxsa, həmin
+-- KONKRET sql_id üçün ayrıca, SUBSTR-in 2-ci parametrini dəyişib (məs.
+-- `DBMS_LOB.SUBSTR(s.sql_fulltext, 4000, 4001)`) QALAN hissəni ayrıca al).
 select s.sql_id,
        s.executions,
-       s.sql_fulltext
+       dbms_lob.substr(s.sql_fulltext, 4000, 1) as sql_text_tam
 from   v$sql s
 where  s.sql_id in (
          select distinct oc.sql_id
