@@ -9769,3 +9769,75 @@ bir namizəd aç → SIG-in "Rəhbər"dən avtomatik dolduğunu, CON bloku üzə
 (rol etiketi ilə) göstərdiyini, seçimdən sonra CON xanalarının dolduğunu
 təsdiqləməli; (3) xarici/başqa bankın hesabı olan namizəddə heç bir avtomatik
 doldurma/banner/dropdown ÇIXMADIĞINI (əvvəlki kimi tam əl ilə doldurma) yoxlamalı.
+
+## GOAML — CON/SIG Avtomatik Doldurma `odb.regnom`-un ÖZÜ TAPILMASA, TAM BLOKLANIRDI (09.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı CON/SIG avtomatik doldurma mexanizmi (eyni günün əvvəlki bölməsi) real
+mühitdə sınandı — hüquqi şəxsin (Kredit sahibi "DR.ESS" MMC) hesabı olan bir
+namizəddə "Nümayəndənin" VƏ "Hesab imza hüququ olan şəxsin" blokları HƏR İKİSİ
+boş qaldı, baxmayaraq ki `imza_huquqi_olan_shexsler`-də bu şirkətin aktiv (1
+sətir) qeydi VAR idi.
+
+**Diaqnoz — istifadəçi PL/SQL Developer-də dörd ayrı yoxlama apardı:**
+
+| Sorğu | Nəticə |
+|---|---|
+| `substr(kredit, 10, 6)` | `019843` |
+| `odb.balscht_ur` üzvlüyü (Kredit) | **BİZİMDİR (1)** |
+| `odb.imza_huquqi_olan_shexsler where regnom='019843'` | **1 sətir, 1 aktiv** (`imza_bitme IS NULL`) |
+| `odb.balscht_fiz`/`balscht_ur` üzvlüyü (Debet) | 0 sətir — bizim deyil |
+
+Yəni Kredit hesabı bizim bankın hüquqi şəxs hesabıdır VƏ onun aktiv imza hüququ
+olan şəxsi var — amma ekranda heç nə görünmürdü.
+
+**Kök səbəb:** `GoamlService.HesabSahibiKycAsync` FİZİKİ/HÜQUQİ ayrımını
+`odb.regnom.FIZIK` sütunundan təyin edirdi — AMMA bundan ƏVVƏL **ƏVVƏLCƏ
+`odb.regnom where regnom=X` sorğusunu icra edirdi**, sıfır sətir qayıdanda
+isə `if (regnomSetirler.Count == 0) return null;` ilə **BÜTÖV metodu
+dayandırırdı** — `imza_huquqi_olan_shexsler`-ə ÇATMADAN. `odb.regnom`
+əsasən FİZİKİ şəxs profilləri üçün nəzərdə tutulmuş görünür — hüquqi
+şəxslərin çoxu (DR.ESS daxil) orada HEÇ BİR sətrə malik deyil. Nəticə:
+BALSCHT_UR-da tanınan, `imza_huquqi_olan_shexsler`-də real data olan BİR
+hüquqi şəxs belə, `odb.regnom`-da sətri olmadığı üçün bütün axın səssizcə
+`null` qayıdırdı.
+
+**Düzəliş — FİZİKİ/HÜQUQİ ayrımı artıq `odb.regnom`-a GÜVƏNMİR, BİRBAŞA
+`BALSCHT_FIZ`/`BALSCHT_UR` üzvlüyündən götürülür** (bu, onsuz da `bizimdirmi`
+yoxlamasında ARTIQ hesablanırdı, sadəcə İKİ AYRI sual kimi işlənirdi — "bizim
+hesabımızdırmı" VƏ "FİZİKİDİRMİ" — halbuki BİR sorğu hər ikisinə cavab
+verir):
+
+```csharp
+var fizPrefiksdir = await BalschtDaxilindedirAsync("balscht_fiz", temiz, ct);
+var urPrefiksdir = !fizPrefiksdir && await BalschtDaxilindedirAsync("balscht_ur", temiz, ct);
+if (!fizPrefiksdir && !urPrefiksdir) return null;
+```
+
+`fizPrefiksdir=true` olanda YENƏ DƏ `odb.regnom`-dan KYC oxunur (fiziki
+şəxslərin profili həqiqətən orada saxlanılır — bu qol dəyişmədi). `urPrefiksdir=
+true` olanda isə artıq **`odb.regnom`-a HEÇ TOXUNMUR**, birbaşa
+`imza_huquqi_olan_shexsler`-ə keçir — "sətir tapılmadı" halı artıq YALNIZ
+"bu şirkətin əlaqəli şəxsi qeydə alınmayıb" (`hamisi.Count == 0` →
+`new GoamlHesabSahibiKycDto { Fiziki = false }`, boş CON siyahısı, boş SIG)
+mənasına gəlir — "odb.regnom-da sətir yoxdur deyə hər şeyi dayandır" artıq
+MÜMKÜN DEYİL.
+
+**Qayda:** bir "bu şəxs fiziki, ya hüquqidir?" sualını cavablamaq üçün İKİ
+AYRI mənbə varsa (burada: `BALSCHT_FIZ/UR` üzvlüyü VƏ `odb.regnom.FIZIK`
+sütunu) — əgər BİRİ artıq ETİBARLI VƏ TAM (BALSCHT, hesab prefiksinə görə
+HƏR hesabı əhatə edir) İSƏ, İKİNCİSİNİ (regnom, YALNIZ QİSMƏN əhatəli) yalnız
+ƏLAVƏ MƏLUMAT üçün (KYC-nin özünü oxumaq) işlət, YOX "bu şəxs mövcuddurmu"
+sualının ÖZÜNÜ ona bağlama — əks halda ikinci mənbənin boşluğu (bir sətrinin
+olmaması) birinci, etibarlı mənbənin verdiyi müsbət cavabı SƏSSİZCƏ ləğv edər.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — yalnız BUNDAN SONRAKI "Təsdiqlə" GET-lərinə
+TƏSİR EDİR.** Artıq açılmış/təsdiqlənmiş formalar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — dəyişikliyin ÖZÜ balanslıdır, `git diff`-in əlavə/silinən
+sətirləri ayrıca yoxlanıldı: 9/9 və 10/10 mötərizə, fayl-ümumi -8 fərqi əvvəldən
+mövcud şərh mətnindəndir, dəyişməyib). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra EYNİ namizədi (Kredit sahibi DR.ESS MMC) yenidən açıb
+yoxlamalıdır: "Nümayəndənin əlaqəli şəxslərindən seçin" dropdown-unun artıq
+göründüyünü, "Hesab imza hüququ olan şəxsin" blokunun "Rəhbər"dən avtomatik
+dolduğunu.

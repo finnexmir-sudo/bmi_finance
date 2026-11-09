@@ -789,26 +789,29 @@ namespace FinNex.Application.Services.Goaml
             var temiz = HesabTehlukesiz(hesab ?? "");
             if (temiz.Length < 15) return null; // substr(hesab,10,6) üçün ən azı 15 simvol lazımdır
 
-            // Bizim bankın hesabı deyilsə (xarici/başqa bank) — toxunma.
-            var bizimdirmi = await BalschtDaxilindedirAsync("balscht_fiz", temiz, ct)
-                || await BalschtDaxilindedirAsync("balscht_ur", temiz, ct);
-            if (!bizimdirmi) return null;
+            // Fiziki/hüquqi ayrımını BİRBAŞA BALSCHT üzvlüyündən götürürük —
+            // `odb.regnom`-a GÜVƏNMİRİK, çünki o cədvəl hər hüquqi şəxsin öz
+            // sətrini daşımır (09.11.2026-da real hadisə: BALSCHT_UR-da
+            // tanınan, imza_huquqi_olan_shexsler-də aktiv sətri OLAN bir
+            // şirkət üçün regnom-da sətir TAPILMADI, köhnə kod bunu "heç nə
+            // tapılmadı" sayıb erkən `null` qaytarırdı, əslində data var idi).
+            var fizPrefiksdir = await BalschtDaxilindedirAsync("balscht_fiz", temiz, ct);
+            var urPrefiksdir = !fizPrefiksdir && await BalschtDaxilindedirAsync("balscht_ur", temiz, ct);
+            if (!fizPrefiksdir && !urPrefiksdir) return null;
 
             var regnomKodu = temiz.Substring(9, 6);
 
             try
             {
-                var regnomSetirler = await _oracle.SelectAsync(
-                    "select fizik, name, surname, patronymic, birthdate, birthaddress, gender, " +
-                    "registrationaddress, citizenship, employer, pin, documentnumber, givendate, " +
-                    "expiredate, givenorganizatoin from odb.regnom where regnom = '" + regnomKodu + "'", 1, ct);
-                if (regnomSetirler.Count == 0) return null;
-
-                var r = regnomSetirler[0];
-                var fizikdirmi = ToLong(DVal(r, "FIZIK")) == 1;
-
-                if (fizikdirmi)
+                if (fizPrefiksdir)
                 {
+                    var regnomSetirler = await _oracle.SelectAsync(
+                        "select name, surname, patronymic, birthdate, birthaddress, gender, " +
+                        "registrationaddress, citizenship, employer, pin, documentnumber, givendate, " +
+                        "expiredate, givenorganizatoin from odb.regnom where regnom = '" + regnomKodu + "'", 1, ct);
+                    if (regnomSetirler.Count == 0) return null;
+
+                    var r = regnomSetirler[0];
                     return new GoamlHesabSahibiKycDto
                     {
                         Fiziki = true,
@@ -832,8 +835,9 @@ namespace FinNex.Application.Services.Goaml
                     };
                 }
 
-                // Hüquqi şəxs — bütün (hazırda aktiv) əlaqəli şəxslər CON seçimi
-                // üçün, "Rəhbər" olanı isə SIG-ə birbaşa yazılır.
+                // Hüquqi şəxs (BALSCHT_UR) — BİRBAŞA imza_huquqi_olan_shexsler-ə
+                // baxılır, odb.regnom-a toxunmur. Bütün (hazırda aktiv) əlaqəli
+                // şəxslər CON seçimi üçün, "Rəhbər" olanı isə SIG-ə birbaşa yazılır.
                 var hamisi = await _oracle.SelectAsync(
                     "select s.id_aml, s.adi, s.soyadi, s.ata_adi, s.doguldugu_tarix, s.doguldugu_yer, " +
                     "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
