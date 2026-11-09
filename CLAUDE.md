@@ -9841,3 +9841,97 @@ All** ilə, sonra EYNİ namizədi (Kredit sahibi DR.ESS MMC) yenidən açıb
 yoxlamalıdır: "Nümayəndənin əlaqəli şəxslərindən seçin" dropdown-unun artıq
 göründüyünü, "Hesab imza hüququ olan şəxsin" blokunun "Rəhbər"dən avtomatik
 dolduğunu.
+
+### Yuxarıdakı Düzəliş REBUILD OLUNUB SINANDI — Yenə BOŞ ÇIXDI, SƏBƏB TAPILMADI (09.11.2026, EYNİ GÜN, KRİTİK — DİAQNOSTİKA DAVAM EDİR)
+
+İstifadəçi real Visual Studio-da **Rebuild All** etdi (Output: "0 Errors, 136
+Warnings — Rebuild completed", köhnə/əlaqəsiz xəbərdarlıqlar), tətbiqi yenidən
+işə saldı və EYNİ namizədi (DR.ESS MMC, regnom=019843) YENİDƏN açdı —
+**"Nümayəndənin"** VƏ **"Hesab imza hüququ olan şəxsin"** blokları HƏR İKİSİ
+YENƏ TAM BOŞ idi, heç bir yaşıl "avtomatik dolduruldu" banner-i, heç bir
+"əlaqəli şəxslərdən seçin" dropdown-u görünmürdü.
+
+**Diaqnoz:** `HesabSahibiKycTapAsync` → Debet (2501900000000300007) bizim
+bankın hesabı DEYİL (əvvəlki diaqnostik bunu təsdiqləmişdi, `fizPrefiksdir`/
+`urPrefiksdir` hər ikisi `false` → erkən `null`, heç bir exception YOXDUR) →
+Kredit-ə keçir (4006000000198430000, `urPrefiksdir=true`, BALSCHT_UR-da
+TƏSDİQLƏNMİŞ) → **`odb.imza_huquqi_olan_shexsler` sorğusunun ÖZÜ** (LISTAGG
+alt-sorğusu ilə, `odb.aml_related_persons`/`odb.aml_setup_related_persons`-ə
+join edərək) icra olunur. Köhnə `catch { return null; }` bu sorğunun
+NƏTİCƏSİNDƏN (uğurlu, 0 sətir, yoxsa ORA-xətası) **heç bir iz saxlamırdı** —
+nəticə hər iki halda eyni görünürdü: tam boş ekran.
+
+**Kök şübhə — SQL-dəki ÇOXLU sütun adı HEÇ VAXT canlı Oracle-a qarşı
+TƏK-TƏK YOXLANILMAYIB.** Əvvəlki sessiyada `odb.imza_huquqi_olan_shexsler`-in
+YALNIZ `ADI/SOYADI/ATA_ADI/FİN/DOGULDUGU_TARİX/VEZIFESI/ISH_YERININ_ADI`
+sütunları canlı sorğu ilə TƏSDİQLƏNMİŞDİ (bax yuxarı, "GOAML Arxitekturası"
+bölməsi). Bu düzəlişdə əlavə edilən **12 sütun** (`telefon_nomresi`,
+`unvanin_teyinati`, `kuchenin_adi_ve_nomresi`, `sheher`, `olke`,
+`senedin_novu`, `seriyasi_ve_nomresi`, `verilme_tarixi`, `etibarliliq_muddeti`,
+`veren_orqanin_adi`, `verildiyi_olke`, `doguldugu_yer`, `cinsi`) VƏ LISTAGG
+alt-sorğusundakı `aml_related_persons.id_related_persons`/
+`aml_setup_related_persons.descript` sütunları — Tesdiq formunun özündəki sahə
+adlarından (ad oxşarlığı ilə) **TƏXMİN EDİLMİŞDİ**, canlı Oracle-a qarşı
+ayrıca YOXLANILMAMIŞDI. CLAUDE.md-nin "Oracle Verilənlər Bazası" bölməsindəki
+əsas qaydanın (sütun adını canlı sorğu ilə TƏSDİQLƏMƏDƏN yazma) pozulduğu
+yer məhz budur — nəticə isə `OracleService.SelectAsync`-in ORA-00904 kimi
+sintaksis xətalarını (`KeciciXetalar` siyahısında olmadığı üçün) BİLƏRƏKDƏN
+İSTİSNA ATMASI, sonra `GoamlService`-in öz `catch { return null; }`-inin bu
+istisnani SƏSSİZCƏ UDMASI idi — "`ex.Message` TƏK BAŞINA HEÇ NƏ DEMİR" /
+"AI Çağırışları — CallApiAsync ƏSL XƏTANI UDURDU" bölmələrindəki EYNİ
+tələnin, bu dəfə Oracle sorğusu formasında təkrarı.
+
+**Düzəliş (bu dalğada edilən, DİQQƏT: Oracle sorğusunun ÖZÜ DƏYİŞMƏDİ) —
+`GoamlService`-ə `ILogger<GoamlService>` inject edildi** (layihənin artıq
+`MarifAiService`/`SenedAiService`/`HRMeslehetciService`-də işlətdiyi EYNİ
+konvensiya — konstruktor injection, `_logger.LogWarning`/`LogError`),
+`BalschtDaxilindedirAsync`-in VƏ `HesabSahibiKycAsync`-in silinmiş
+`catch { return null/false; }` bloklarına **`_logger.LogError(ex, ...)` /
+`LogWarning(ex, ...)`** əlavə olundu — davranış DƏYİŞMİR (hələ də səssizcə
+`null`/`false` qaytarır, "Təsdiqlə" GET-i sınmır), YALNIZ SƏBƏB artıq
+`Logs\log-<bugünkü-tarix>.txt`-ə yazılır.
+
+⚠️ **BU, İCAD YERİNƏ DİAQNOSTİKA ADDIMIDIR — real kök səbəb HƏLƏ
+TƏSDİQLƏNMƏYİB.** İstifadəçi Visual Studio-da Rebuild All edib EYNİ namizədi
+yenidən açdıqdan sonra `Logs\log-<bugünkü-tarix>.txt` faylında "GOAML
+HesabSahibiKycAsync uğursuz oldu" sətrini (varsa) tapıb göndərməlidir —
+`InnerException`/Oracle-un əsl mesajı (məs. `ORA-00904: "S"."TELEFON_NOMRESI":
+invalid identifier`) orada görünəcək.
+
+**PARALEL, DAHA SÜRƏTLİ YOL — birbaşa PL/SQL Developer-də test:** rebuild
+gözləmədən, aşağıdakı sorğunu (C#-ın ÖZÜNÜN göndərdiyi mətnin HƏRFİ eynisi,
+`regnomKodu='019843'` ilə) PL/SQL Developer-də icra etmək səbəbi DƏRHAL
+göstərəcək:
+
+```sql
+select s.id_aml, s.adi, s.soyadi, s.ata_adi, s.doguldugu_tarix, s.doguldugu_yer,
+       s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi,
+       s.sheher, s.olke, s.senedin_novu, s.seriyasi_ve_nomresi, s.verilme_tarixi,
+       s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi,
+       s.ish_yerinin_adi,
+       (select listagg(st.descript, ', ') within group (order by st.id)
+        from odb.aml_related_persons rp
+        join odb.aml_setup_related_persons st on st.id = rp.id_related_persons
+        where rp.id_aml = s.id_aml) as rollar
+from odb.imza_huquqi_olan_shexsler s
+where s.regnom = '019843' and s.imza_bitme is null;
+```
+
+Xəta çıxarsa (ən güman: `ORA-00904`), Oracle **dəqiq hansı sütun adının
+səhv olduğunu** mesajın özündə göstərəcək — növbəti addım o sütunu `select *
+from odb.imza_huquqi_olan_shexsler where rownum <= 1` (bütün sütunları, əsl
+adları ilə) sorğusu ilə düzəltmək olacaq. Sorğu XƏTASIZ icra olunub sıfır
+sətir qaytararsa, problem sütun adında deyil — onda `regnomKodu`/`imza_bitme`
+şərtinin özü araşdırılmalıdır (məs. tarix sahəsinin əslində `imza_bitme`
+yox, başqa bir sütun olması).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — `git diff` əlavə 6/6, silinən 1/1 mötərizə; əlavə 6/6,
+silinən 2/2 fiqurlu mötərizə, balanslıdır; `ILogger<GoamlService>`-in DI
+qeydiyyatı lazım deyil — `GoamlService` heç yerdə əl ilə `new` edilmir,
+`AddApplicationServices.cs`-dəki `AddScoped` konteynerin öz framework-daxili
+`ILogger<T>`-ni avtomatik inject edəcək). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra EYNİ namizədi yenidən açıb (1) ya yuxarıdakı SQL-i
+PL/SQL Developer-də dərhal işlədib göndərməli, (2) ya da `Logs\log-<bugünkü-
+tarix>.txt`-dəki "GOAML HesabSahibiKycAsync uğursuz oldu" sətrini tapıb
+göndərməlidir.

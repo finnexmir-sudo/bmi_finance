@@ -9,6 +9,7 @@ using FinNex.Application.Interfaces.Sorgular;
 using FinNex.Domain.Entities.Goaml;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace FinNex.Application.Services.Goaml
 {
@@ -22,14 +23,16 @@ namespace FinNex.Application.Services.Goaml
         private readonly IOracleService _oracle;
         private readonly IOracleSorguService _sorgu;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<GoamlService> _logger;
 
         private const string SorguAdi = "GOAML_EMELIYYAT_NAMIZED";
 
-        public GoamlService(IOracleService oracle, IOracleSorguService sorgu, IUnitOfWork unitOfWork)
+        public GoamlService(IOracleService oracle, IOracleSorguService sorgu, IUnitOfWork unitOfWork, ILogger<GoamlService> logger)
         {
             _oracle = oracle;
             _sorgu = sorgu;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task<Result<List<GoamlNamizedSetirDto>>> NamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default)
@@ -735,7 +738,11 @@ namespace FinNex.Application.Services.Goaml
                     $"select 1 from odb.{cedvel} where balscht = '{prefiks}'", 1, ct);
                 return setirler.Count > 0;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML BalschtDaxilindedirAsync({Cedvel}) uğursuz oldu — prefiks={Prefiks}", cedvel, prefiks);
+                return false;
+            }
         }
 
         private async Task<(string? Adi, string? Voen)?> LicschAdiVeVoeniAsync(int filial, string hesab, CancellationToken ct)
@@ -874,7 +881,11 @@ namespace FinNex.Application.Services.Goaml
                     ElaqaliSexsler = siyahi,
                 };
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GOAML HesabSahibiKycAsync uğursuz oldu — regnomKodu={RegnomKodu}, fizPrefiksdir={FizPrefiksdir}", regnomKodu, fizPrefiksdir);
+                return null;
+            }
         }
 
         private GoamlElaqaliSexsDto ImzaHuququSetirdenQur(Dictionary<string, object?> r) => new()
