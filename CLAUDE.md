@@ -9603,3 +9603,80 @@ işarələndiyini; (2) "Hesab imza hüququ olan şəxs" bloku dolu, "Alan fiziki
 → "Alan fiziki şəxs" məlumatlarının SIG-dən köçürüldüyünü; (3) öz bankımızın
 DEBET hesabı ilə, TIP=H to H olan bir namizədi təsdiqlə → "Bankın adı"/SWIFT/
 "Bank filialı"-nın doldurulduğunu təsdiqləməlidir.
+
+## GOAML — Təsdiqlə Formunda Debet/Kredit/Məbləğ HƏR DƏFƏ "—" Yazılırdı (09.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real mühitdə ilk tam sınağı (Tip, ReportCode, "Hesab imza hüququ
+olan şəxs" doldurub "Təsdiqlə və Saxla") apardı — "Bax" detal ekranında
+**Debet, Kredit, Məbləğ (AZN) hamısı "—"** göründü, halbuki axtarış siyahısında
+(və Tesdiq formunun özünün yuxarısındakı boz info-zolağında) bu dəyərlər
+AÇIQ görünürdü.
+
+**Kök səbəb — "Geri Qayıdışda Axtarış İtirdi" düzəlişinin (06.11.2026)
+özündə yaranmış, həmin vaxtdan qalan reqressiya.** O düzəliş `Tesdiq.cshtml`-ə
+sırf-OXUNUŞ `gml-info-strip` əlavə edərkən, köhnə formada bu dəyərləri
+(Debet/Kredit/NameUr/ToAdi/SummaVNacval/Primechanie) daşıyan `<input>`-ları
+**SİLİB, əvəzinə heç bir `name` atributu olmayan `<span>` göstərişi** qoymuşdu
+— şərhin özü bunu "formaya göndərilmir, yalnız göstəriş üçündür" deyə
+AÇIQ YAZMIŞDI, amma bu fərziyyə SƏHV idi: bu altı sahə `GoamlEmeliyyat`-ın
+ÖZÜNDƏ daimi saxlanan sütunlardır (ekran göstərişi üçün YOX), ona görə
+göndərilməli idi. Nəticə: `TesdiqleAsync`-ə POST olunan `GoamlTesdiqDto`-da
+bu altı sahə HƏR DƏFƏ `null` gəlirdi, entity-yə `null` yazılırdı, SaveChanges
+uğurla keçirdi (bu sahələr nullable olduğu üçün) — **HEÇ BİR XƏTA ÇIXMADAN**.
+
+Bu, CLAUDE.md-nin "Şərtli Render Olunan Form Sahəsi + Default Parametr =
+Səssiz Data İtkisi" bölməsindəki qaydanın EYNİ, YALNIZ daha geniş formasıdır —
+fərq: o qaydada sahə ŞƏRTLƏ render olunmurdu, burada isə SAHƏ
+ÜMUMİYYƏTLƏ (heç bir şərtsiz) `<input>`-dən MƏHRUM EDİLMİŞDİ.
+
+**Niyə "Əməliyyat tarixi" sütunu düz görünürdü, Debet/Kredit yox:**
+`DateOper`-in öz görünən `<input type="date" name="DateOper">`-i var idi
+(forma yuxarısında, "Əməliyyat tarixi" sahəsi) — o, düzgün göndərilirdi.
+Siyahı (`Siyahi.cshtml`) səhifəsindəki "ƏMƏL. TARİXİ" sütunu isə ayrıca
+`DateOper ?? CandidateDateOper` fallback-i daşıyır (`HamisiniGetirAsync`,
+sətir 300) — CandidateDateOper hər zaman hidden input-la gəldiyi üçün tarix
+sütunu YALANDAN "düzgün" görünürdü, halbuki `DetalGetirAsync`-ın özündə
+belə fallback YOXDUR (`DateOper = e.DateOper`, sətir 343) — DateOper-in
+əslində düz göndərildiyi üçün bu fərq praktikada görünmədi, amma Debet/
+Kredit/Məbləğ üçün HEÇ bir fallback yoxdur, ona görə onlar çılpaq "—" qaldı.
+
+**Düzəliş — `Tesdiq.cshtml`-in formasına 7 hidden input əlavə edildi**
+(`Debet`, `Kredit`, `NameUr`, `ToAdi`, `Primechanie`, `KodValuti` — hamısı
+`asp-for`, + `SummaVNacval` — `decimal?` olduğu üçün InvariantCulture ilə əl
+ilə yazıldı, "Razor → CSS/JS Rəqəm — Mədəniyyət" qaydasına uyğun, az-AZ
+vergülü hidden input-a düşməsin deyə). `gml-info-strip`-in ÖZÜ TOXUNULMADI —
+o, yenə də sırf göstərmə qatıdır, indi yanında AYRI, görünməz hidden
+input-lar var.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR, VƏ RETROAKTİV DÜZƏLİŞ MÜMKÜN DEYİL.** Bu
+düzəlişdən ƏVVƏL (06.11.2026 — 09.11.2026 arası) təsdiqlənmiş HƏR qeydin
+Debet/Kredit/NameUr/ToAdi/SummaVNacval/Primechanie sütunları artıq `NULL`-dur
+— Oracle-un öz namizəd mənbəyi (`DOC_DNA_ALL_TAB`) bu məlumatı saxlamır,
+yalnız AXTARIŞ ANINDA canlı sorğulanır, ona görə köhnə qeydə GERİ QAYIDIB
+bu sahələri doldurmaq mümkün deyil (əməliyyat artıq axtarış pəncərəsindən
+çıxıb). Belə qeydlər (test mühitində İlkanə Mahmudova-nın #1 qeydi daxil)
+YALNIZ silinib YENİDƏN, düzgün formadan təsdiqlənə bilər — GOAML modulunda
+silmə/redaktə funksiyası YOXDUR (qəsdən, "sırf oxunuş" dizaynı), bu səbəbdən
+korrupt test qeydləri SQL Server-dən ƏL İLƏ (`DELETE FROM GoamlEmeliyyatlar
+WHERE Id=...`) təmizlənməlidir — yalnız TEST qeydləri üçün, production
+datası üçün belə bir silmə HEÇ VAXT edilməməlidir.
+
+**Qayda (təkrar, bu dəfə "görüntü üçün ayrı span" formasında):** bir dəyəri
+"sırf göstərmə üçündür, formaya göndərilmir" deyə `<input>`-dən MƏHRUM
+EDƏRKƏN, əvvəlcə O DƏYƏRİN hədəf entity-də DAİMİ SAXLANAN bir sütun olub
+olmadığını yoxla. Yalnız HESABLANMIŞ/TƏKRAR-ÇIXARILA BİLƏN göstərişlər
+(məs. "N nəfər oxudu" sayğacı) təhlükəsiz şəkildə inputsuz qala bilər —
+entity-nin ÖZ sütununa yazılası bir dəyər isə, ekranda "sadəcə göstərmək
+üçündür" düşüncəsi ilə YAZILMAZSA, SaveChanges-i sındırmaz (nullable olduğu
+üçün) və buna görə XƏTASIZ, SƏSSİZCƏ itər — bu, ən çətin aşkarlanan növdür,
+çünki heç bir log/xəbərdarlıq yaranmır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı, DTO sahə adlarının (`Debet`/`Kredit`/
+`NameUr`/`ToAdi`/`Primechanie`/`KodValuti`/`SummaVNacval`) `GoamlTesdiqDto`
+ilə bir-bir tutuşdurulması). İstifadəçi Visual Studio-da **Rebuild All**
+ilə, sonra YENİDƏN eyni ssenarini (Tip+ReportCode seç, bir KYC bloku doldur,
+Təsdiqlə) sınamalıdır — bu dəfə "Bax" ekranındakı Debet/Kredit/Məbləğ (AZN)
+sütunlarının axtarış siyahısındakı dəyərlərlə DƏQIQ üst-üstə düşdüyünü
+təsdiqləməli, həmçinin köhnə (bu düzəlişdən əvvəlki) test qeydini silib
+yenidən sınamalıdır.

@@ -54,13 +54,24 @@
         <input type="hidden" name="CandidateDateOper" value="@Model.CandidateDateOper.ToString("yyyy-MM-dd")" />
         <input type="hidden" asp-for="CandidateRecNum" />
 
-        @* ── Namizədin Oracle-dan ARTIQ BİLİNƏN sahələri — SIRF OXUNUŞ üçün,
-             formaya göndərilmir (heç bir <input>/name yoxdur), yalnız operatora
-             kontekst versin deyə. 06.11.2026-ya qədər bu dəyərlər (Debet/Kredit
-             sahibinin adı daxil) `NameUr`/`ToAdi` DTO sahələrinə yazılırdı, amma
-             həmin sahələr trimmed formadan çıxarılandan sonra heç bir <input>-ə
-             bağlı qalmamışdı — nəticə: artıq bilinən məlumat EKRANDA HEÇ GÖRÜNMƏDƏN
-             itirdi. İndi bura açıq göstərilir. ── *@
+        @* ── Namizədin Oracle-dan ARTIQ BİLİNƏN sahələri (09.11.2026, KRİTİK
+             DÜZƏLİŞ) — bu yeddi sahə HƏR TƏSDİQLƏNMİŞ qeyddə Debet/Kredit/
+             Məbləğ/Qeyd/hesab-sahibi adları olaraq PERMANENT YAZILIR, sadəcə
+             ekranda göstərilmir deyə. Köhnə versiyada bunlar YALNIZ aşağıdakı
+             `gml-info-strip`-də OXUNUR, heç bir <input>-ə bağlı DEYİLDİ —
+             "formaya göndərilmir" şərhi yanlış idi: bu sahələr GÖNDƏRİLMƏLİ
+             idi (GoamlEmeliyyat-ın özündə saxlanan sütunlardır), sadəcə
+             göndərilmirdi. Nəticə: HƏR təsdiqlənmiş qeyd Debet/Kredit/Məbləğ
+             "—" (NULL) yazırdı — real hadisə (09.11.2026), ekran-görüntüsü
+             ilə tapıldı. İndi hidden input-larla göndərilir, info-strip
+             dəyişmədən qalır (yenə sırf göstərmə üçündür). ── *@
+        <input type="hidden" asp-for="Debet" />
+        <input type="hidden" asp-for="Kredit" />
+        <input type="hidden" asp-for="NameUr" />
+        <input type="hidden" asp-for="ToAdi" />
+        <input type="hidden" asp-for="Primechanie" />
+        <input type="hidden" asp-for="KodValuti" />
+        <input type="hidden" name="SummaVNacval" value="@(Model.SummaVNacval?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
         <div class="gml-info-strip">
             <div class="gml-info-item"><span class="gml-info-lbl">Tarix</span><span class="gml-info-val">@Model.CandidateDateOper.ToString("dd.MM.yyyy")</span></div>
             <div class="gml-info-item"><span class="gml-info-lbl">Debet</span><span class="gml-info-val">@(Model.Debet ?? "—")</span></div>
