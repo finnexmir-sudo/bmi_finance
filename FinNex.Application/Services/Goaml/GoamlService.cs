@@ -315,6 +315,24 @@ namespace FinNex.Application.Services.Goaml
             return Result<List<GoamlEmeliyyatListDto>>.Ok(neice);
         }
 
+        public async Task<Result> SilAsync(int id)
+        {
+            var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);
+            if (e == null) return Result.Fail("Qeyd tapılmadı.");
+
+            // İxrac edilmiş (gələcəkdə Status.İxracEdilib) qeydi silmirik — audit
+            // izi qalmalıdır. Hazırda yalnız "Qaralama" statusu mövcuddur, ona
+            // görə bu şərt indi HƏR ZAMAN keçir — gələcəkdə "Export to file"
+            // (tapşırıq #15) yeni status əlavə edəndə bu qoruyucu AVTOMATİK işə
+            // düşəcək, kodda əlavə dəyişiklik lazım olmayacaq.
+            if (e.Status != GoamlEmeliyyatStatusu.Qaralama)
+                return Result.Fail("Bu qeyd artıq ixrac edilib — silinə bilməz.");
+
+            await _unitOfWork.Repository<GoamlEmeliyyat>().YumshakSilAsync(id);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Qeyd silindi.");
+        }
+
         public async Task<Result<GoamlEmeliyyatDetalDto>> DetalGetirAsync(int id)
         {
             var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);

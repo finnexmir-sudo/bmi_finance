@@ -173,4 +173,14 @@ public class EmeliyyatlarController : Controller
 
         return View(netice.Data);
     }
+
+    // ── POST /Goaml/Emeliyyatlar/Sil/{id} — təsdiqlənmiş qeydi geri götürür ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Sil(int id)
+    {
+        var netice = await _goaml.SilAsync(id);
+        TempData[netice.Success ? "Success" : "Error"] = netice.Message;
+        return RedirectToAction(nameof(Siyahi));
+    }
 }

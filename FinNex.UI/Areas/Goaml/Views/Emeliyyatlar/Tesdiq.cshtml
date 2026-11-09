@@ -134,13 +134,21 @@
 
         @* ── BLOK 1 — Nümayəndənin (Oracle: _CON) ── *@
         <details class="gml-block" open>
-            <summary>Nümayəndənin (əməliyyatı aparan şəxs) <i class="bi bi-chevron-down gml-chevron"></i></summary>
+            <summary>
+                Nümayəndənin (əməliyyatı aparan şəxs)
+                <span style="display:flex; align-items:center; gap:10px">
+                    <button type="button" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-danger" onclick="event.preventDefault(); gmlBlokTemizle(this);">
+                        <i class="bi bi-eraser"></i> Təmizlə
+                    </button>
+                    <i class="bi bi-chevron-down gml-chevron"></i>
+                </span>
+            </summary>
             <div class="gml-block-body">
                 @if (gmlElaqaliSexsler.Count > 0)
                 {
                     <div style="margin-bottom:16px">
                         <label class="gml-flbl">Hüquqi şəxsin əlaqəli şəxslərindən seçin (sistem CON-u avtomatik tapa bilmir)</label>
-                        <select class="fn-select" onchange="gmlConSec(this)">
+                        <select class="fn-select gml-con-select" onchange="gmlConSec(this)">
                             <option value="">— əl ilə doldur —</option>
                             @foreach (var s in gmlElaqaliSexsler)
                             {
@@ -192,7 +200,15 @@
 
         @* ── BLOK 2 — Hesab imza hüququ olan şəxsin (Oracle: _SIG) ── *@
         <details class="gml-block">
-            <summary>Hesab imza hüququ olan şəxsin <i class="bi bi-chevron-down gml-chevron"></i></summary>
+            <summary>
+                Hesab imza hüququ olan şəxsin
+                <span style="display:flex; align-items:center; gap:10px">
+                    <button type="button" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-danger" onclick="event.preventDefault(); gmlBlokTemizle(this);">
+                        <i class="bi bi-eraser"></i> Təmizlə
+                    </button>
+                    <i class="bi bi-chevron-down gml-chevron"></i>
+                </span>
+            </summary>
             <div class="gml-block-body">
                 <div class="gml-grid-3">
                     <div><label class="gml-flbl">Adı</label><input asp-for="SigAdi" class="fn-input" /></div>
@@ -256,6 +272,23 @@
         </div>
     </form>
 </div>
+
+<script>
+    // ── "Təmizlə" — Nümayəndə (CON) və İmza hüququ (SIG) blokları, 09.11.2026 ──
+    // İstifadəçi qərarı: operator dropdown-dan SƏHV şəxs seçib sonra fərqli
+    // (ya da tamamilə əl ilə) şəxs yazmaq istəsə, ~20 xananı tək-tək silmək
+    // əvəzinə bir kliklə bütün blok (və "əlaqəli şəxsdən seç" dropdown-u da
+    // varsa) sıfırlanır. HƏR blok ÖZ `.gml-block-body`-sini təmizləyir —
+    // digər bloka TOXUNMUR.
+    function gmlBlokTemizle(btn) {
+        var blok = btn.closest('.gml-block');
+        if (!blok) return;
+        var body = blok.querySelector('.gml-block-body');
+        if (!body) return;
+        body.querySelectorAll('input').forEach(function (el) { el.value = ''; });
+        body.querySelectorAll('select').forEach(function (el) { el.selectedIndex = 0; });
+    }
+</script>
 
 @if (gmlElaqaliSexsler.Count > 0)
 {

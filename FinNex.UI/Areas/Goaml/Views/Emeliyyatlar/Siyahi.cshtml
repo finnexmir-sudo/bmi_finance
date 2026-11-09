@@ -16,6 +16,8 @@
         .gml-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.74rem; font-weight:600; background:#eef2ff; color:#3730a3; }
         .gml-pill--report { background:#fef3c7; color:#92400e; }
         .gml-empty { padding:40px; text-align:center; color:#9ca3af; font-size:.9rem; }
+        .gml-btn-danger { color:#dc2626 !important; border-color:#fecaca !important; }
+        .gml-btn-danger:hover { background:#fef2f2 !important; }
     </style>
 }
 
@@ -73,10 +75,16 @@
                                 </td>
                                 <td>@(e.TesdiqleyenAdi ?? "—")</td>
                                 <td>@e.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td>
+                                <td style="display:flex; gap:6px">
                                     <a asp-action="Detal" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm">
                                         <i class="bi bi-eye"></i> Bax
                                     </a>
+                                    <form method="post" asp-action="Sil" asp-route-id="@e.Id"
+                                          onsubmit="return confirm('Bu təsdiqlənmiş əməliyyatı silmək istədiyinizə əminsiniz? Yalnız hələ ixrac edilməyib qeydlər silinə bilər.');">
+                                        <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-danger">
+                                            <i class="bi bi-trash"></i> Sil
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }

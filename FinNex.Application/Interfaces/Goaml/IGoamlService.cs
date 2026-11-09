@@ -20,6 +20,13 @@ namespace FinNex.Application.Interfaces.Goaml
         /// <summary>Təsdiqlənmiş TƏK qeydin tam (KYC + audit) detalı — "Bax" ekranı.</summary>
         Task<Result<GoamlEmeliyyatDetalDto>> DetalGetirAsync(int id);
 
+        /// <summary>Təsdiqlənmiş qeydi yumşaq silir — YALNIZ hələ ixrac edilməmiş
+        /// (Status==Qaralama) qeydlər üçün (09.11.2026, istifadəçi qərarı: operator
+        /// səhvən seçdiyi/artıq lazım olmayan sətri geri götürə bilsin). Silinmiş
+        /// qeyd (Candidate açarı) MovcuddurmuAsync-dən çıxır — eyni namizəd lazım
+        /// olsa YENİDƏN təsdiqlənə bilər.</summary>
+        Task<Result> SilAsync(int id);
+
         /// <summary>Təsdiqlə formasının GET-i açılanda çağırılır (09.11.2026, istifadəçi
         /// qərarı: "sistem gətirə bilmirsə, işçi doldurur"). Debet, sonra Kredit
         /// hesabı — hansı BİZİM bankın hesabıdırsa (BALSCHT_FIZ/BALSCHT_UR üzvlüyü) —

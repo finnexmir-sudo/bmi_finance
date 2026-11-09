@@ -10016,3 +10016,74 @@ verdi. Bütöv zəncir bununla TAM bağlandı: `odb.regnom`-un bəzi hüquqi
 şəxslərdə sətri olmaması → `BalschtDaxilindedirAsync` əsaslı yenidən dizayn →
 bunun da ORA-01031 ilə səssiz uğursuzluğu → loglama ilə kök səbəbin tapılması →
 GRANT SELECT → iş axını uçdan-uca işlək.
+
+## GOAML — "Təmizlə" Düymələri + Təsdiqlənmiş Qeydin Silinməsi (09.11.2026)
+
+CON/SIG avtomatik doldurma işə düşəndən dərhal sonra istifadəçi real ekranda
+(hüquqi şəxsin "əlaqəli şəxslərdən seçin" dropdown-u) narahat oldu: *"işçi
+birini seçdi, amma yadına düşdükü başqa adam idi, əl ilə yazmalıdır, onda
+gərək bütün məlumatı əl ilə silə"* — ~20 xananı tək-tək təmizləmək əvəzinə
+bir kliklik "Təmizlə" düyməsi istədi. Əlavə olaraq: *"təsdiqlə siyahısından
+silmək olsun, bəlkə sonra bildi ki ehtiyac yoxdur"*.
+
+**"Təmizlə" — hər bloka ÖZ düyməsi, ortaq JS funksiyası.** `Tesdiq.cshtml`-in
+"Nümayəndənin" VƏ "Hesab imza hüququ olan şəxsin" bloklarının hər ikisinin
+`<summary>` başlığına (sağda, chevron-dan əvvəl) bir "Təmizlə" düyməsi əlavə
+olundu. `gmlBlokTemizle(btn)` — `btn.closest('.gml-block')` ilə HANSI blokda
+basıldığını tapır, YALNIZ o blokun `.gml-block-body`-sindəki bütün
+`<input>`-ları boşaldır, `<select>`-ləri (CON blokundakı "əlaqəli şəxsdən
+seç" daxil) ilk seçimə qaytarır — QONŞU BLOKA TOXUNMUR. `onclick="event.
+preventDefault(); ..."` MƏCBURİDİR — düymə `<summary>`-nin DAXİLİNDƏDİR,
+`preventDefault` olmasa klik native `<details>` aç/bağla davranışını da
+işə salardı (blok bağlanardı, təmizlənmədən).
+
+⚠️ `fn-btn--danger` sinfi layihədə VAR, amma YALNIZ `hr/xerc.css`/`hr/isci.css`-
+də tərif olunub — GOAML bu faylları keçirmədiyi üçün işlətsəydik sinif
+stilsiz qalardı (bu sessiyada dəfələrlə rast gəlinən "paylaşılan sinif,
+keçirilməyən CSS" tələsinin eyni forması). Əvəzinə `Siyahi.cshtml`-in ÖZ
+`<style>` blokuna kiçik, yerli `.gml-btn-danger` əlavə edildi.
+
+**Silmə — YALNIZ hələ ixrac edilməmiş qeydlər üçün, yumşaq.**
+`IGoamlService.SilAsync(int id)` — `GoamlEmeliyyat.Status != Qaralama`
+olarsa rədd edir (`"Bu qeyd artıq ixrac edilib — silinə bilməz"`) — hazırda
+`GoamlEmeliyyatStatusu`-da YALNIZ `Qaralama` dəyəri olduğu üçün bu qoruyucu
+İNDİ HƏR ZAMAN keçir, AMMA "Export to file" (tapşırıq #15) yeni status
+(ixrac edilib) əlavə edəndə kodda HEÇ BİR DƏYİŞİKLİK LAZIM OLMADAN avtomatik
+işə düşəcək. `YumshakSilAsync(id)` (`EfRepositoryAsync`-in standart
+`Silinib=true` metodu) çağırılır — `MovcuddurmuAsync`/`HamisiniGetirAsync`
+avtomatik `!Silinib` filtrlədiyi üçün silinmiş qeyd nə siyahıda görünür, nə
+də eyni namizədin YENİDƏN təsdiqlənməsini bloklayır (`TesdiqleAsync`-in
+dublikat yoxlaması).
+
+### Sual: "İşçi ixrac faylını hazırlayıb göndərdi, bir neçə gün sonra yenə buradadırsa, təkrar göndərilməyəcək?"
+
+**Cavab: Bu artıq dizaynın özündə nəzərdə tutulub, AMMA ÖZÜ HƏLƏ qurulmayıb
+(tapşırıq #15).** `GoamlEmeliyyatStatusu` enum-unun ÖZ şərhi
+(`FinNex.Domain/Entities/Goaml/GoamlEnums.cs:6`) bunu açıq deyir: *"Operator
+təsdiqləyib, hələ heç bir ixraca daxil edilməyib"* — yəni bu status sahəsi
+məhz BU sual üçün əvvəlcədən hazırlanıb, sadəcə hələ YALNIZ "Qaralama" dəyəri
+var. "Export to file" qurulanda:
+1. İxrac YALNIZ `Status == Qaralama` olan qeydləri götürəcək;
+2. Fayl yaradıldıqdan SONRA həmin qeydlərin statusu yeni bir dəyərə (məs.
+   `IxracEdilib`) keçiriləcək;
+3. Növbəti ixrac artıq bu qeydləri GÖRMƏYƏCƏK — təkrar göndərmə riski
+   STRUKTUR SƏVİYYƏSİNDƏ bağlanmış olacaq, əlavə "göndərilmiş siyahı" saxlamaq
+   lazım gəlməyəcək.
+
+Yəni HAZIRDA (Export to file hələ qurulmayıb) bütün təsdiqlənmiş qeydlər
+"Qaralama" olaraq qalır — gələcəkdə bu statusu dəyişdirən məxsusi mexanizm
+yazılana qədər TƏKRAR İXRAC RİSKİ VAR (əgər kimsə eyni siyahını əl ilə iki
+dəfə Excel-ə köçürsə). Bu, tapşırıq #15-in QURULMASI ilə avtomatik həll
+olunacaq, bu sessiyada EDİLMƏDİ.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/tag balansı Python skriptlə — `<details>`/`<summary>`/`<span>`/
+`<form>`/`<script>` hər biri cüt sayda tapıldı, `git diff`-in yalnız YENİ
+sətirləri 13/13 mötərizə, 1/1 fiqurlu mötərizə ilə balanslıdır). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+(1) "Nümayəndə" blokunda dropdown-dan birini seçib sonra "Təmizlə"yə basanda
+BÜTÜN CON sahələrinin (və dropdown-un özünün) boşaldığını, "Hesab imza
+hüququ" blokuna TOXUNULMADIĞINI; (2) "Təsdiqlənmiş əməliyyatlar" siyahısında
+"Sil"ə basıb təsdiq pəncərəsini keçəndə qeydin siyahıdan yoxa çıxdığını və
+EYNİ namizədi YENİDƏN axtarıb təsdiqləyə bildiyini (dublikat bloku
+olmadığını).
