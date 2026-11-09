@@ -19,5 +19,13 @@ namespace FinNex.Application.Interfaces.Goaml
 
         /// <summary>Təsdiqlənmiş TƏK qeydin tam (KYC + audit) detalı — "Bax" ekranı.</summary>
         Task<Result<GoamlEmeliyyatDetalDto>> DetalGetirAsync(int id);
+
+        /// <summary>Təsdiqlə formasının GET-i açılanda çağırılır (09.11.2026, istifadəçi
+        /// qərarı: "sistem gətirə bilmirsə, işçi doldurur"). Debet, sonra Kredit
+        /// hesabı — hansı BİZİM bankın hesabıdırsa (BALSCHT_FIZ/BALSCHT_UR üzvlüyü) —
+        /// sahibinin KYC-sini Oracle-dan (YALNIZ OXUYUR) tapıb qaytarır. Heç biri
+        /// bizim deyilsə (xarici/başqa bank) və ya Oracle əlçatmazdırsa `null`
+        /// qaytarır — operator formanı özü doldurur.</summary>
+        Task<GoamlHesabSahibiKycDto?> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default);
     }
 }

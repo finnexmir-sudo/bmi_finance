@@ -1,5 +1,6 @@
 @using FinNex.Domain.Entities.Goaml
-@model FinNex.Application.DTOs.Goaml.GoamlTesdiqDto
+@using FinNex.Application.DTOs.Goaml
+@model GoamlTesdiqDto
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "GOAML — Təsdiqlə";
@@ -47,6 +48,18 @@
     @if (TempData["Error"] != null)
     {
         <div class="fn-alert fn-alert--error" style="margin-bottom:16px">@TempData["Error"]</div>
+    }
+
+    @{
+        var gmlElaqaliSexsler = (ViewBag.ElaqaliSexsler as List<GoamlElaqaliSexsDto>) ?? new List<GoamlElaqaliSexsDto>();
+        var gmlAvtoDolduruldu = ViewBag.AvtoDolduruldu == true;
+    }
+    @if (gmlAvtoDolduruldu)
+    {
+        <div class="fn-alert fn-alert--info" style="margin-bottom:16px">
+            <i class="bi bi-info-circle-fill"></i>
+            Hesab sahibinin məlumatı sistem tərəfindən avtomatik gətirildi (Oracle) — yoxlayın, lazım olsa düzəldin.
+        </div>
     }
 
     <form method="post" asp-action="Tesdiq">
@@ -123,6 +136,19 @@
         <details class="gml-block" open>
             <summary>Nümayəndənin (əməliyyatı aparan şəxs) <i class="bi bi-chevron-down gml-chevron"></i></summary>
             <div class="gml-block-body">
+                @if (gmlElaqaliSexsler.Count > 0)
+                {
+                    <div style="margin-bottom:16px">
+                        <label class="gml-flbl">Hüquqi şəxsin əlaqəli şəxslərindən seçin (sistem CON-u avtomatik tapa bilmir)</label>
+                        <select class="fn-select" onchange="gmlConSec(this)">
+                            <option value="">— əl ilə doldur —</option>
+                            @foreach (var s in gmlElaqaliSexsler)
+                            {
+                                <option value="@s.IdAml">@($"{s.Adi} {s.Soyadi}".Trim()) @(string.IsNullOrWhiteSpace(s.Rollar) ? "" : $"({s.Rollar})")</option>
+                            }
+                        </select>
+                    </div>
+                }
                 <div class="gml-grid-3">
                     <div><label class="gml-flbl">Adı</label><input asp-for="ConAdi" class="fn-input" /></div>
                     <div><label class="gml-flbl">Atasının adı</label><input asp-for="ConAtasininAdi" class="fn-input" /></div>
@@ -230,3 +256,46 @@
         </div>
     </form>
 </div>
+
+@if (gmlElaqaliSexsler.Count > 0)
+{
+    <script>
+        // ── "Əlaqəli şəxslərdən seç" — Nümayəndə (CON) bloku, 09.11.2026 ────
+        // Server GET-də şirkətin bütün aktiv əlaqəli şəxslərini (imza hüququ,
+        // rəhbər, təsisçi...) Oracle-dan oxuyub JSON kimi göndərir — operator
+        // siyahıdan seçəndə heç bir əlavə sorğu getmir, mövcud datadan doldurur.
+        const gmlElaqaliSexsler = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(gmlElaqaliSexsler,
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+        function gmlDoldur(ad, deyer) {
+            const el = document.querySelector('[name="' + ad + '"]');
+            if (el) el.value = deyer || '';
+        }
+
+        function gmlConSec(sel) {
+            const idAml = parseInt(sel.value, 10);
+            if (!idAml) return;
+            const s = gmlElaqaliSexsler.find(x => x.idAml === idAml);
+            if (!s) return;
+            gmlDoldur('ConAdi', s.adi);
+            gmlDoldur('ConAtasininAdi', s.ataAdi);
+            gmlDoldur('ConSoyadi', s.soyadi);
+            gmlDoldur('ConDogulduguTarix', s.dogulduguTarix ? s.dogulduguTarix.substring(0, 10) : '');
+            gmlDoldur('ConDogulduguYer', s.dogulduguYer);
+            gmlDoldur('ConVetendasligi', s.vetendasligi);
+            gmlDoldur('ConCinsi', s.cinsi);
+            gmlDoldur('ConPin', s.pin);
+            gmlDoldur('ConTelefonNomresi', s.telefonNomresi);
+            gmlDoldur('ConUnvaninNovu', s.unvaninNovu);
+            gmlDoldur('ConUnvan', s.unvan);
+            gmlDoldur('ConSeher', s.seher);
+            gmlDoldur('ConOlke', s.olke);
+            gmlDoldur('ConSenedinNovu', s.senedinNovu);
+            gmlDoldur('ConSenedinSeriyaNomresi', s.senedinSeriyaNomresi);
+            gmlDoldur('ConSenedinVerilmeTarixi', s.senedinVerilmeTarixi ? s.senedinVerilmeTarixi.substring(0, 10) : '');
+            gmlDoldur('ConSenedinEtibarliliqMuddeti', s.senedinEtibarliliqMuddeti ? s.senedinEtibarliliqMuddeti.substring(0, 10) : '');
+            gmlDoldur('ConVerenOrqan', s.verenOrqan);
+            gmlDoldur('ConVerildiyiOlke', s.verildiyiOlke);
+        }
+    </script>
+}

@@ -60,7 +60,7 @@ public class EmeliyyatlarController : Controller
     }
 
     // ── GET /Goaml/Emeliyyatlar/Tesdiq — seçilmiş namizəd üçün KYC forması ──
-    public IActionResult Tesdiq(int filialNumber, DateTime dateOper, long recNum,
+    public async Task<IActionResult> Tesdiq(int filialNumber, DateTime dateOper, long recNum,
         string? debet, string? kredit, decimal? summaVNacval, int? kodValuti,
         string? innDebet, string? innKredit, string? primechanie,
         string? nameLicschDe, string? nameLicschKre)
@@ -81,6 +81,50 @@ public class EmeliyyatlarController : Controller
             NameUr = nameLicschDe,
             ToAdi = nameLicschKre,
         };
+
+        // ── "Sistem gətirə bilmirsə, işçi doldurur" (09.11.2026, istifadəçi
+        //    qərarı) — bizim bankın hesabı olanın sahibi fiziki şəxsdirsə
+        //    CON+SIG-in hər ikisinə, hüquqi şəxsdirsə YALNIZ SIG-ə ("Rəhbər")
+        //    avtomatik yazılır. CON-u hüquqi şəxsdə operator özü seçir —
+        //    ViewBag.ElaqaliSexsler ilə görüntüyə ötürülür. ────────────────
+        var kyc = await _goaml.HesabSahibiKycTapAsync(filialNumber, debet, kredit);
+        if (kyc?.TekSexs != null)
+        {
+            if (kyc.Fiziki)
+            {
+                dto.ConAdi = kyc.TekSexs.Adi;
+                dto.ConSoyadi = kyc.TekSexs.Soyadi;
+                dto.ConAtasininAdi = kyc.TekSexs.AtaAdi;
+                dto.ConDogulduguTarix = kyc.TekSexs.DogulduguTarix;
+                dto.ConDogulduguYer = kyc.TekSexs.DogulduguYer;
+                dto.ConCinsi = kyc.TekSexs.Cinsi;
+                dto.ConUnvan = kyc.TekSexs.Unvan;
+                dto.ConVetendasligi = kyc.TekSexs.Vetendasligi;
+                dto.ConPin = kyc.TekSexs.Pin;
+                dto.ConSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
+                dto.ConSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
+                dto.ConSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
+                dto.ConVerenOrqan = kyc.TekSexs.VerenOrqan;
+            }
+
+            dto.SigAdi = kyc.TekSexs.Adi;
+            dto.SigSoyadi = kyc.TekSexs.Soyadi;
+            dto.SigAtasininAdi = kyc.TekSexs.AtaAdi;
+            dto.SigDogulduguTarix = kyc.TekSexs.DogulduguTarix;
+            dto.SigDogulduguYer = kyc.TekSexs.DogulduguYer;
+            dto.SigVetendasligi = kyc.TekSexs.Vetendasligi;
+            dto.SigUnvan = kyc.TekSexs.Unvan;
+            dto.SigSenedinNovu = kyc.TekSexs.SenedinNovu;
+            dto.SigSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
+            dto.SigSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
+            dto.SigSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
+            dto.SigVerenOrqan = kyc.TekSexs.VerenOrqan;
+            dto.SigVezife = kyc.TekSexs.Vezife;
+            dto.SigIsYeriAdi = kyc.TekSexs.IsYeriAdi;
+        }
+
+        ViewBag.ElaqaliSexsler = kyc != null && !kyc.Fiziki ? kyc.ElaqaliSexsler : new List<GoamlElaqaliSexsDto>();
+        ViewBag.AvtoDolduruldu = kyc?.TekSexs != null;
 
         return View(dto);
     }

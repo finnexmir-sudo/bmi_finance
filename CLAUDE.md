@@ -9680,3 +9680,92 @@ Təsdiqlə) sınamalıdır — bu dəfə "Bax" ekranındakı Debet/Kredit/Məbl�
 sütunlarının axtarış siyahısındakı dəyərlərlə DƏQIQ üst-üstə düşdüyünü
 təsdiqləməli, həmçinin köhnə (bu düzəlişdən əvvəlki) test qeydini silib
 yenidən sınamalıdır.
+
+## GOAML — CON/SIG Avtomatik Doldurma Tapıldı: Hüquqi Şəxsin Öz AML KYC Bazası (09.11.2026)
+
+İstifadəçi "sistem gətirə bilmirsə, işçi doldurur — hesab melumatları bazadan gəlməlidir"
+tapşırığı üzərinə, canlı Oracle araşdırması (istifadəçinin özü PL/SQL Developer-də
+işlədib nəticəni göndərdi) "Nümayəndənin" (CON) və "Hesab imza hüququ olan şəxsin"
+(SIG) bloklarının ƏSL mənbəyini tapdı — bu, 06.11.2026-dakı "Update New" kaskadından
+TAMAMİLƏ AYRI, bankın öz **AML/KYC** modulunun bazasıdır.
+
+### Mənbə cədvəllər
+
+| Hesab növü | Mənbə | Açar |
+|---|---|---|
+| **Fiziki** (`regnom.fizik=1`) | `odb.regnom`-un İNGİLİSCƏ sütunları — `NAME`/`SURNAME`/`PATRONYMIC`/`BIRTHDATE`/`BIRTHADDRESS`/`GENDER`/`REGISTRATIONADDRESS`/`CITIZENSHIP`/`EMPLOYER`/`PIN`/`DOCUMENTNUMBER`/`GIVENDATE`/`EXPIREDATE`/`GIVENORGANIZATOIN` — HAMISI `VARCHAR2`, tarix sahələri DAXİL | `substr(hesab,10,6) = regnom.regnom` |
+| **Hüquqi** | `odb.imza_huquqi_olan_shexsler` — ADI/SOYADI/ATA_ADI/FİN/DOGULDUGU_TARİX/VEZIFESI/ISH_YERININ_ADI və s. (hamısı `VARCHAR2`) | `regnom = regnomKodu` (eyni substr) |
+
+**Rol — `odb.aml_related_persons`(ID_AML, ID_RELATED_PERSONS) → `odb.aml_setup_related_persons`
+(ID, DESCRIPT)** — sabit açar cədvəl: 0=boş, **1=Hesaba imza hüququ olan şəxslər**,
+**2=Rəhbər**, 3=Təsisçi, 4=Benefisiar, 5=Digər. İstifadəçi qərarı: **SIG-ə "Rəhbər"
+(id=2) yazılır**, "Hesaba imza hüququ olan şəxslər" (id=1) kateqoriyası birbaşa
+İŞLƏNMİR (ekran-görüntüsündə açıq göstərilib). `IMZA_BITME IS NULL` = hazırda aktiv
+imza hüququ (istifadəçi təsdiqi) — köhnə/bitmiş qeydlər avtomatik doldurmaya daxil
+edilmir.
+
+### Niyə CON avtomatik doldurulmur — operator ÖZÜ seçir
+
+İstifadəçi qərarı: "nümayəndə"ni (əməliyyatı FİZİKİ olaraq aparan şəxs) etibarlı
+müəyyən etmək mümkün deyil — şirkətin HƏR hansı əlaqəli şəxsi (rəhbər, mühasib,
+əməkdaş) sayğaca gələ bilər. Ona görə CON ÜÇÜN sistem **seçim veriri**: şirkətin
+BÜTÜN (hazırda aktiv) `imza_huquqi_olan_shexsler` sətirləri rol etiketi ilə
+(`LISTAGG`-lə, `AML_RELATED_PERSONS`+`AML_SETUP_RELATED_PERSONS`-dən) bir
+`<select>`-ə doldurulur, operator kimi seçsə o şəxsin tam KYC-si JS ilə (əlavə
+server sorğusu OLMADAN, GET-də artıq gətirilmiş JSON-dan) CON-un bütün xanalarına
+yazılır. Fiziki hesabda isə bu sualın özü yoxdur — hesab sahibi ÖZÜ həm CON, həm
+SIG-dir, ikisi də birbaşa doldurulur.
+
+### Struktur
+
+`GoamlElaqaliSexsDto`/`GoamlHesabSahibiKycDto` (`FinNex.Application/DTOs/Goaml/`) —
+`Fiziki` bayrağı, `TekSexs` (fizikidə CON+SIG-in hər ikisi, hüquqidə YALNIZ
+"Rəhbər" → SIG), `ElaqaliSexsler` (hüquqidə CON seçimi üçün tam siyahı).
+`IGoamlService.HesabSahibiKycTapAsync(filial, debet, kredit)` — Debet-ə baxır,
+FAYDALI nəticə (TekSexs VAR **və ya** ElaqaliSexsler boş DEYİL) tapılmasa Kredit-ə
+keçir (istifadəçinin "hansı olursa" qərarına uyğun — iki hesabdan BOŞ çıxanı
+qaytarmaq əvəzinə digərini sına).
+
+`EmeliyyatlarController.Tesdiq` (GET) indi **async**-dır — namizəd açılan kimi bu
+metodu çağırır, tapılanı `GoamlTesdiqDto`-nun Con*/Sig* sahələrinə yazır,
+`ViewBag.ElaqaliSexsler`-i CON seçim dropdown-u üçün ötürür. `Tesdiq.cshtml`-də
+avtomatik dolduğunda yaşıl info-banner ("sistem avtomatik gətirdi, yoxlayın") —
+HƏR sahə yenə də REDAKTƏ OLUNA BİLƏR, bu yalnız BAŞLANĞIC nöqtəsidir, operator
+səhv/köhnə gördüyünü düzəldə bilər.
+
+⚠️ **Tarix sahələri (`DOGULDUGU_TARIX`, `VERILME_TARIXI`, `ETIBARLILIQ_MUDDETI`,
+REGNOM-un `BIRTHDATE`/`GIVENDATE`/`EXPIREDATE`-i DAXİL) Oracle-da HAMISI `VARCHAR2`
+— `DATE` tipi DEYİL.** `GoamlService.TarixiParseEt` bir neçə formatı (`dd.MM.yyyy`,
+`yyyy-MM-dd`, `dd-MM-yyyy`, `dd/MM/yyyy` və s.) sırayla sınayır, heç biri tutmasa
+(mətn boş/naməlum formatdadırsa) **sakitcə `null` qaytarır** — parse xətası
+`TesdiqleAsync`-i sındırmır, sadəcə o sahə boş qalır, operator özü yazır.
+
+⚠️ **`IMZA_BASHLAMA`/`IMZA_BITME` — bunlar əsl `DATE` tipindədir** (yeganə real
+DATE sütunları bu iki cədvəldə) — `IMZA_BITME IS NULL` şərti birbaşa SQL-də
+yoxlanılır, C#-da əlavə parse lazım deyil.
+
+⚠️ **Bu, 06-07.11.2026-dakı "Update New" mexanizmindən (AvtoDolduruAsync) TAM
+MÜSTƏQİLDİR** — o, POST-da (TesdiqleAsync daxilində) işləyir və sənəd
+seriya/nömrə parçalama, TO-nun SIG-dən köçürülməsi kimi İKİNCİ DƏRƏCƏLİ
+sahələri doldurur; bu YENİ mexanizm isə GET-də (forma AÇILANDA) işləyir və
+CON/SIG-in ƏSAS şəxsiyyət sahələrini doldurur. İkisi EYNİ sahəyə YAZMIR —
+toqquşma yoxdur.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR, YALNIZ BUNDAN SONRAKI "Təsdiqlə" GET-lərinə
+TƏSİR EDİR** — artıq təsdiqlənmiş qeydlər dəyişmir (bu modulda redaktə/silmə
+funksiyası yoxdur, yenidən təsdiqləmək lazımdır).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı Python skriptlə, həm ümumi fayl, həm YALNIZ yeni əlavə olunan
+sətirlər ayrıca yoxlanıldı — hər ikisi balanslı çıxdı; interfeys↔implementasiya↔
+controller↔view dörd qatı sahə adı-adı əl ilə tutuşduruldu, JSON casing-i
+`JsonNamingPolicy.CamelCase` ilə açıq təyin edildi — "Razor-da JsonSerializer.Serialize
+casing tələsi" qaydasına uyğun). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra real ssenari ilə yoxlamalıdır: (1) bizim bankın fiziki müştərisinin hesabı
+olan bir namizəd aç → CON+SIG-in hər ikisinin avtomatik (yaşıl banner ilə) dolduğunu
+təsdiqlə; (2) hüquqi şəxsin (AML bazasında "Rəhbər"i qeydiyyatda olan) hesabı olan
+bir namizəd aç → SIG-in "Rəhbər"dən avtomatik dolduğunu, CON bloku üzərindəki
+"Əlaqəli şəxslərdən seçin" dropdown-unun şirkətin bütün aktiv əlaqəli şəxslərini
+(rol etiketi ilə) göstərdiyini, seçimdən sonra CON xanalarının dolduğunu
+təsdiqləməli; (3) xarici/başqa bankın hesabı olan namizəddə heç bir avtomatik
+doldurma/banner/dropdown ÇIXMADIĞINI (əvvəlki kimi tam əl ilə doldurma) yoxlamalı.

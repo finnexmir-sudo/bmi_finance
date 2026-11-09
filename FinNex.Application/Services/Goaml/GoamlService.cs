@@ -752,6 +752,164 @@ namespace FinNex.Application.Services.Goaml
             catch { return null; }
         }
 
+        // ── Hesab sahibinin KYC-si — CON/SIG avtomatik doldurma (09.11.2026) ────
+        //
+        // İstifadəçi qərarı: Debet/Kredit-dən BİZİM BANKIN hesabı olanının sahibi
+        // fiziki şəxsdirsə CON+SIG-in hər ikisinə, hüquqi şəxsdirsə YALNIZ SIG-ə
+        // (şirkətin "Rəhbər"i) avtomatik yazılır; CON isə operatorun özü, bu
+        // şirkətin əlaqəli şəxslər siyahısından seçir ("sistem gətirə bilmirsə,
+        // işçi doldurur" — istifadəçi qərarı). Mənbə (canlı Oracle araşdırması,
+        // 09.11.2026, PL/SQL Developer-dən əl ilə təsdiqlənib):
+        //   - Fiziki: `odb.regnom` (açar: substr(hesab,10,6) = regnom.regnom),
+        //     ingiliscə sütunlar — NAME/SURNAME/PATRONYMIC/BIRTHDATE/BIRTHADDRESS/
+        //     GENDER/REGISTRATIONADDRESS/CITIZENSHIP/EMPLOYER/PIN/DOCUMENTNUMBER/
+        //     GIVENDATE/EXPIREDATE/GIVENORGANIZATOIN — HAMISI VARCHAR2 (tarix
+        //     sahələri DAXİL, DATE tipi DEYİL).
+        //   - Hüquqi: `odb.imza_huquqi_olan_shexsler` (REGNOM-a görə, bütün
+        //     sahələr də VARCHAR2), rolu `odb.aml_related_persons`(ID_AML,
+        //     ID_RELATED_PERSONS) → `odb.aml_setup_related_persons`(ID, DESCRIPT)
+        //     ilə tapılır. ID_RELATED_PERSONS=2 = "Rəhbər" (sabit açar cədvəl,
+        //     istifadəçinin öz ekran-görüntüsü ilə təsdiqlənib). `IMZA_BITME IS
+        //     NULL` = hazırda aktiv imza hüququ (istifadəçi təsdiqi, 09.11.2026).
+        public async Task<GoamlHesabSahibiKycDto?> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default)
+        {
+            var debetNeticesi = await HesabSahibiKycAsync(debet, ct);
+            // Debet bizim hesabımızdırsa, amma heç bir şəxs tapılmayıbsa (TekSexs
+            // yoxdur VƏ əlaqəli şəxslər siyahısı boşdur) — Kredit-ə də bax, bəlkə
+            // ORADA faydalı bir nəticə var. Faydalı nəticə varsa, dərhal qaytar.
+            if (debetNeticesi != null && (debetNeticesi.TekSexs != null || debetNeticesi.ElaqaliSexsler.Count > 0))
+                return debetNeticesi;
+
+            var kreditNeticesi = await HesabSahibiKycAsync(kredit, ct);
+            return kreditNeticesi ?? debetNeticesi;
+        }
+
+        private async Task<GoamlHesabSahibiKycDto?> HesabSahibiKycAsync(string? hesab, CancellationToken ct)
+        {
+            var temiz = HesabTehlukesiz(hesab ?? "");
+            if (temiz.Length < 15) return null; // substr(hesab,10,6) üçün ən azı 15 simvol lazımdır
+
+            // Bizim bankın hesabı deyilsə (xarici/başqa bank) — toxunma.
+            var bizimdirmi = await BalschtDaxilindedirAsync("balscht_fiz", temiz, ct)
+                || await BalschtDaxilindedirAsync("balscht_ur", temiz, ct);
+            if (!bizimdirmi) return null;
+
+            var regnomKodu = temiz.Substring(9, 6);
+
+            try
+            {
+                var regnomSetirler = await _oracle.SelectAsync(
+                    "select fizik, name, surname, patronymic, birthdate, birthaddress, gender, " +
+                    "registrationaddress, citizenship, employer, pin, documentnumber, givendate, " +
+                    "expiredate, givenorganizatoin from odb.regnom where regnom = '" + regnomKodu + "'", 1, ct);
+                if (regnomSetirler.Count == 0) return null;
+
+                var r = regnomSetirler[0];
+                var fizikdirmi = ToLong(DVal(r, "FIZIK")) == 1;
+
+                if (fizikdirmi)
+                {
+                    return new GoamlHesabSahibiKycDto
+                    {
+                        Fiziki = true,
+                        TekSexs = new GoamlElaqaliSexsDto
+                        {
+                            Adi = DVal(r, "NAME") as string,
+                            Soyadi = DVal(r, "SURNAME") as string,
+                            AtaAdi = DVal(r, "PATRONYMIC") as string,
+                            DogulduguTarix = TarixiParseEt(DVal(r, "BIRTHDATE") as string),
+                            DogulduguYer = DVal(r, "BIRTHADDRESS") as string,
+                            Cinsi = DVal(r, "GENDER") as string,
+                            Unvan = DVal(r, "REGISTRATIONADDRESS") as string,
+                            Vetendasligi = DVal(r, "CITIZENSHIP") as string,
+                            IsYeriAdi = DVal(r, "EMPLOYER") as string,
+                            Pin = DVal(r, "PIN") as string,
+                            SenedinSeriyaNomresi = DVal(r, "DOCUMENTNUMBER") as string,
+                            SenedinVerilmeTarixi = TarixiParseEt(DVal(r, "GIVENDATE") as string),
+                            SenedinEtibarliliqMuddeti = TarixiParseEt(DVal(r, "EXPIREDATE") as string),
+                            VerenOrqan = DVal(r, "GIVENORGANIZATOIN") as string,
+                        },
+                    };
+                }
+
+                // Hüquqi şəxs — bütün (hazırda aktiv) əlaqəli şəxslər CON seçimi
+                // üçün, "Rəhbər" olanı isə SIG-ə birbaşa yazılır.
+                var hamisi = await _oracle.SelectAsync(
+                    "select s.id_aml, s.adi, s.soyadi, s.ata_adi, s.doguldugu_tarix, s.doguldugu_yer, " +
+                    "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
+                    "s.sheher, s.olke, s.senedin_novu, s.seriyasi_ve_nomresi, s.verilme_tarixi, " +
+                    "s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi, " +
+                    "s.ish_yerinin_adi, " +
+                    "(select listagg(st.descript, ', ') within group (order by st.id) " +
+                    " from odb.aml_related_persons rp join odb.aml_setup_related_persons st on st.id = rp.id_related_persons " +
+                    " where rp.id_aml = s.id_aml) as rollar " +
+                    "from odb.imza_huquqi_olan_shexsler s " +
+                    "where s.regnom = '" + regnomKodu + "' and s.imza_bitme is null", 50, ct);
+
+                if (hamisi.Count == 0) return new GoamlHesabSahibiKycDto { Fiziki = false };
+
+                var siyahi = hamisi.Select(ImzaHuququSetirdenQur).ToList();
+
+                var rehberSetirleri = await _oracle.SelectAsync(
+                    "select s.id_aml from odb.imza_huquqi_olan_shexsler s " +
+                    "where s.regnom = '" + regnomKodu + "' and s.imza_bitme is null " +
+                    "and exists (select 1 from odb.aml_related_persons rp where rp.id_aml = s.id_aml and rp.id_related_persons = 2)",
+                    1, ct);
+
+                GoamlElaqaliSexsDto? rehber = null;
+                if (rehberSetirleri.Count > 0)
+                {
+                    var rehberIdAml = (int)ToLong(DVal(rehberSetirleri[0], "ID_AML"));
+                    rehber = siyahi.FirstOrDefault(x => x.IdAml == rehberIdAml);
+                }
+
+                return new GoamlHesabSahibiKycDto
+                {
+                    Fiziki = false,
+                    TekSexs = rehber,
+                    ElaqaliSexsler = siyahi,
+                };
+            }
+            catch { return null; }
+        }
+
+        private GoamlElaqaliSexsDto ImzaHuququSetirdenQur(Dictionary<string, object?> r) => new()
+        {
+            IdAml = (int)ToLong(DVal(r, "ID_AML")),
+            Rollar = DVal(r, "ROLLAR") as string,
+            Adi = DVal(r, "ADI") as string,
+            Soyadi = DVal(r, "SOYADI") as string,
+            AtaAdi = DVal(r, "ATA_ADI") as string,
+            DogulduguTarix = TarixiParseEt(DVal(r, "DOGULDUGU_TARIX") as string),
+            DogulduguYer = DVal(r, "DOGULDUGU_YER") as string,
+            Cinsi = DVal(r, "CINSI") as string,
+            Pin = DVal(r, "FIN") as string,
+            TelefonNomresi = DVal(r, "TELEFON_NOMRESI") as string,
+            UnvaninNovu = DVal(r, "UNVANIN_TEYINATI") as string,
+            Unvan = DVal(r, "KUCHENIN_ADI_VE_NOMRESI") as string,
+            Seher = DVal(r, "SHEHER") as string,
+            Olke = DVal(r, "OLKE") as string,
+            SenedinNovu = DVal(r, "SENEDIN_NOVU") as string,
+            SenedinSeriyaNomresi = DVal(r, "SERIYASI_VE_NOMRESI") as string,
+            SenedinVerilmeTarixi = TarixiParseEt(DVal(r, "VERILME_TARIXI") as string),
+            SenedinEtibarliliqMuddeti = TarixiParseEt(DVal(r, "ETIBARLILIQ_MUDDETI") as string),
+            VerenOrqan = DVal(r, "VEREN_ORQANIN_ADI") as string,
+            VerildiyiOlke = DVal(r, "VERILDIYI_OLKE") as string,
+            Vezife = DVal(r, "VEZIFESI") as string,
+            IsYeriAdi = DVal(r, "ISH_YERININ_ADI") as string,
+        };
+
+        private static DateTime? TarixiParseEt(string? metn)
+        {
+            if (string.IsNullOrWhiteSpace(metn)) return null;
+            var temiz = metn.Trim();
+            string[] formatlar = { "dd.MM.yyyy", "dd.MM.yyyy HH:mm:ss", "yyyy-MM-dd", "dd-MM-yyyy", "dd/MM/yyyy", "yyyy.MM.dd" };
+            foreach (var f in formatlar)
+                if (DateTime.TryParseExact(temiz, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tarix))
+                    return tarix;
+            return DateTime.TryParse(temiz, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tarix2) ? tarix2 : null;
+        }
+
         private async Task<(string? AdSoyad, string? InnBank, string? BicSwift)?> OzBankimizinAttributlariAsync(CancellationToken ct)
         {
             try
