@@ -9935,3 +9935,72 @@ qeydiyyatı lazım deyil — `GoamlService` heç yerdə əl ilə `new` edilmir,
 PL/SQL Developer-də dərhal işlədib göndərməli, (2) ya da `Logs\log-<bugünkü-
 tarix>.txt`-dəki "GOAML HesabSahibiKycAsync uğursuz oldu" sətrini tapıb
 göndərməlidir.
+
+### Əsl Kök Səbəb Tapıldı — `ORA-01031: insufficient privileges`, KOD DEYİL, ORACLE İCAZƏSİ (09.11.2026, EYNİ GÜN, SONA ÇATDI)
+
+Yuxarıdakı loglama düzəlişi SƏBƏBİ nəhayət üzə çıxardı — amma kod BUGU DEYİL
+çıxdı:
+
+```
+GOAML BalschtDaxilindedirAsync(balscht_fiz) uğursuz oldu — prefiks=25019
+Oracle.ManagedDataAccess.Client.OracleException: ORA-01031: insufficient privileges
+```
+
+Tətbiqin Oracle-a qoşulduğu hesab (`appsettings.json → Oracle:ConnectionString`,
+`USER ID=FOXPRO`) **`odb.balscht_fiz` VƏ `odb.balscht_ur` cədvəllərinə SELECT
+icazəsinə malik deyil**. Hər İKİ cədvəl, HƏR İKİ hesab (Debet 25019, Kredit
+40060) üçün eyni xəta verdi — yəni problem KONKRET bir sorğuda/sütunda deyil,
+BÜTÖV İKİ CƏDVƏLƏ İCAZƏ YOXLUĞUNDADIR.
+
+**Bu, həmin günün bütün əvvəlki "SQL-i sına, dotnet build-i yoxla, log axtar"
+araşdırmasının niyə HEÇ NƏ TAPMADIĞINI izah edir:**
+- İstifadəçinin PL/SQL Developer-də işlətdiyi diaqnostik sorğu (`imza_huquqi_
+  olan_shexsler` üzərində) **uğurla 1 sətir qaytardı**, çünki PL/SQL
+  Developer-də **ŞƏXSİ, tam-icazəli Oracle hesabı** ilə bağlanılıb — `FOXPRO`
+  ilə YOX. Sorğunun ÖZÜ həmişə düzgün idi (CLAUDE.md-nin "sütun adını canlı
+  sorğu ilə təsdiqləmədən yazma" qaydası əslində POZULMAMIŞDI) — sadəcə bu
+  sorğu heç vaxt ÇAĞIRILA bilmirdi, çünki ONDAN ƏVVƏLKİ addım
+  (`BalschtDaxilindedirAsync`) FOXPRO-nun icazəsizliyinə görə İSTİSNA ATIB
+  bütün metodu erkən `null` ilə dayandırırdı (09.11.2026-ın əvvəlki "regnom
+  bypass" düzəlişi BU SƏBƏBDƏN TƏSİRSİZ qaldı — o düzəliş düzgün idi, amma
+  `BalschtDaxilindedirAsync`-in özü ARTIQ keçmirdi).
+- Əvvəlki `catch { return false; }` / `catch { return null; }` (loglamadan
+  ƏVVƏLKİ versiya) bu ORA-01031-i SƏSSİZCƏ udurdu — istifadəçinin bir neçə
+  saatlıq "rebuild et, yenidən sına" dövrəsi elə BU SƏBƏBDƏN nəticəsiz qaldı.
+
+**Bu icazə boşluğu YALNIZ bu gün yazılan CON/SIG koduna aid DEYİL — eyni
+`BalschtDaxilindedirAsync("balscht_ur"/"balscht_fiz", ...)` çağırışı
+07.11.2026-da qurulan "Update New" avtomatik doldurma mexanizminin DƏ İKİ
+addımında (5-ci addım: "Alan tərəf bizim öz bankımızdırsa" VƏ 7-ci addım:
+"Vəsaitin növü TRANSMODE_CODE") işlənir** (`GoamlService.cs:603, 643`) — yəni
+bu iki addım da 07.11.2026-dan bəri EYNİ SƏBƏBDƏN sakitcə işləməyib, heç vaxt
+fərq edilməyib (həmin günün "best-effort, Oracle əlçatmaz olsa belə Təsdiqlə
+sınmır" dizaynı buna görə görünməz qalmışdı — bax yuxarı "AvtoDolduruAsync"
+bölməsi).
+
+**Düzəliş — KOD TƏRƏFİNDƏ YOXDUR, DBA/Oracle tərəfindədir:**
+```sql
+GRANT SELECT ON odb.balscht_fiz TO FOXPRO;
+GRANT SELECT ON odb.balscht_ur TO FOXPRO;
+```
+Bu GRANT-lar veriləndən sonra **tətbiqi yenidən başlatmağa ehtiyac yoxdur**
+(hər Oracle sorğusu yeni bağlantı açır, icazə DƏRHAL effektlidir) — CON/SIG
+avtomatik doldurma VƏ yuxarıdakı iki "Update New" addımı eyni anda işə
+düşməlidir.
+
+**Qayda (bu sessiyanın yekun dərsi):** `BalschtDaxilindedirAsync` kimi,
+LAYİHƏNİN ÖZ Oracle istifadəçi hesabının (`FOXPRO`) İLK DƏFƏ toxunduğu bir
+cədvələ sorğu yazanda — hətta cədvəlin ÖZÜ, sütun adları canlı yoxlanılmış
+olsa belə — HESABIN O CƏDVƏLƏ İCAZƏSİ OLUB-OLMADIĞI AYRI BİR SUALDIR, sorğunun
+sintaksisindən TAM MÜSTƏQİL. `ORA-01031` ilə `ORA-00904` eyni "catch"
+blokunda eyni cür tutula bilər, amma səbəbləri KÖKÜNDƏN fərqlidir (biri
+icazə, biri sintaksis) — loglama (`ex.Message`/`LogError(ex, ...)`) OLMADAN
+ikisini ayırd etmək MÜMKÜN DEYİL, bu da "`ex.Message` TƏK BAŞINA HEÇ NƏ DEMİR"
+qaydasının niyə HƏR Oracle/HTTP çağırışında tətbiq olunmalı olduğunun REAL,
+bu sessiyada yaşanmış sübutudur — loglama olmasaydı bu kök səbəb HEÇ VAXT
+tapılmazdı, sadəcə "sistem işləmir" qalardı.
+
+⚠️ **Bu GRANT-ları işlədəcək səlahiyyət bu kod sessiyasında (və FOXPRO
+hesabının özündə) YOXDUR** — istifadəçi bunu DBA/Oracle admin hesabı ilə
+(və ya `odb` sxeminin sahibi ilə) özü icra etməlidir. Kod tərəfində başqa heç
+bir dəyişiklik lazım deyil.
