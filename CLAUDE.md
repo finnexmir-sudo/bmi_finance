@@ -10087,3 +10087,74 @@ hüququ" blokuna TOXUNULMADIĞINI; (2) "Təsdiqlənmiş əməliyyatlar" siyahıs
 "Sil"ə basıb təsdiq pəncərəsini keçəndə qeydin siyahıdan yoxa çıxdığını və
 EYNİ namizədi YENİDƏN axtarıb təsdiqləyə bildiyini (dublikat bloku
 olmadığını).
+
+## GOAML — CON ("Nümayəndə") Mənbəyi Səhv İdi — Düzgünü `odb.NUMAYENDE` (10.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi "Risk" tabını araşdırarkən (`v$open_cursor` diaqnostikası, SID=145)
+AYSEL-in Risk-in namizəd populyasiyasını qurarkən işlətdiyi UNION-da
+(`COUNTRY_CODES_RED/GRAY`-ə uyğunluq yoxlaması) **`ODB.NUMAYENDE`** adlı,
+bizim HƏLƏ TOXUNMADIĞIMIZ bir cədvəl aşkar olundu. İstifadəçi: *"numayende
+olani men sen demisdim, hesabin ayrica numayendelerini saxlayan table var,
+burda regnom var o da REGNOM-dakı regnoma bağlıdır"* — yəni bu, `imza_huquqi_
+olan_shexsler` (imza HÜQUQU — fərqli konsept) ilə QARIŞDIRILMAMALI, AYRI,
+"hesabın öz nümayəndələrini" saxlayan xüsusi reyestrdir.
+
+**Kök səbəb:** 09.11.2026-da qurulan CON ("Nümayəndənin") avtomatik doldurma
+(bax yuxarı "CON/SIG Avtomatik Doldurma Tapıldı" bölməsi) CON-un seçim
+siyahısını **SƏHVƏN `imza_huquqi_olan_shexsler`-dən** qururdu — o sessiyada
+"nümayəndəni" etibarlı tapmaq üçün ayrıca bir cədvəl axtarılmamışdı, ona görə
+mövcud olan (SIG üçün artıq işlənən) cədvəl təkrar istifadə edilmişdi. Canlı
+`SELECT * FROM odb.NUMAYENDE WHERE ROWNUM<=5` (istifadəçi tərəfindən işlədilib)
+göstərdi ki, bu cədvəlin KYC sahələri (tam ünvan parçalanması — Küçə/Şəhər/
+Rayon/Poçt indeksi/Ölkə ayrı-ayrı, sənəd detalları, telefon, **PEP** (`POLITICAL_
+ANKET/PROGRAM/LOCAL/FOREIGN/POSITION`), **`SANCTION_SCREENING`**, `IMZA_BASHLAMA`/
+`IMZA_BITME`) `imza_huquqi_olan_shexsler`-dən (cəmi 7 sahə) QAT-QAT ZƏNGİNDİR.
+
+**Düzəliş — `GoamlService.HesabSahibiKycAsync`, hüquqi-şəxs qolu, İKİ MÜSTƏQİL
+sorğuya ayrıldı:**
+- **SIG** ("Hesab imza hüququ olan şəxs") — **TOXUNULMADI**, hələ də
+  `imza_huquqi_olan_shexsler`-dən, "Rəhbər" rolu (`ID_RELATED_PERSONS=2`).
+- **CON** ("Nümayəndə") seçim siyahısı — yeni `NumayendeSiyahisiAsync(regnomKodu,
+  ct)` metodu, `odb.NUMAYENDE` cədvəlindən (`REGNOM` = hesabın regnom kodu,
+  `IMZA_BITME IS NULL`). Dropdown etiketi (`Rollar` sahəsi) indi NUMAYENDE-nin
+  öz `VEZIFESI` (vəzifə) sütunundan gəlir — əvvəlki `aml_related_persons`/
+  `aml_setup_related_persons` rol-birləşməsi NUMAYENDE üçün ARAŞDIRILMAYIB
+  (`imza_huquqi_olan_shexsler`-in öz ID_AML-i ilə eyni rol cədvəlinə bağlı
+  olub-olmadığı bilinmir, risksiz "vəzifə" etiketi seçildi).
+- Hər iki sorğu **MÜSTƏQİLDİR** — biri boş qayıdarsa o biri YENƏ DƏ doldurulur
+  (əvvəlki kod `imza_huquqi_olan_shexsler` boş olanda bütün metodu erkən
+  `return`lə dayandırırdı, NUMAYENDE-yə heç çatmırdı).
+
+**`TarixiParseEt` möhkəmləndirildi** (`string?` → `object?` parametr) —
+NUMAYENDE-nin tarix sütunlarının VARCHAR2 yoxsa `imza_huquqi_olan_shexsler`-in
+`IMZA_BASHLAMA`/`IMZA_BITME`-si kimi əsl DATE olduğu bilinmədiyi üçün, metod
+indi HƏR İKİ tipi tanıyır (`DateTime` gələrsə birbaşa, `string` gələrsə
+əvvəlki parse zənciri ilə). Mövcud `regnom`/`imza_huquqi_olan_shexsler`
+çağırışlarına (VARCHAR2 olduğu artıq təsdiqlənib) TOXUNULMADI.
+
+⚠️ **Yazı səhvi tapılıb özüm düzəltdim (publish-dən əvvəl):** ilk yazılışda
+sorğuda `n.vezifesi` düzgün yazılmışdı, amma oxuyarkən `DVal(r, "VEZISI")`
+(hərf çatışmazlığı) yazılmışdı — bu, heç bir xəta vermədən `Rollar`-ı HƏMİŞƏ
+boş qoyardı. CLAUDE.md-dəki "sütun adını əl ilə yazanda tutuşdur" qaydasının
+məhz bu özüdür — kodu publish etməzdən əvvəl SQL-dəki sütun adları ilə `DVal`
+çağırışlarını bir-bir tutuşdurub tapıldı.
+
+⚠️ **NUMAYENDE-nin zəngin sahələri (PEP/sanksiya bayraqları, tam ünvan
+parçalanması) HƏLƏ FORMAYA ƏLAVƏ EDİLMƏYİB** — `Tesdiq.cshtml`-in CON bloku
+əvvəlki kimi yalnız əsas KYC sahələrini (ad/soyad/doğum/vətəndaşlıq/sənəd/
+ünvan — bir sətirdə) doldurur. PEP/sanksiya bayraqlarını göstərmək/saxlamaq
+ayrıca qərar tələb edir (yeni forma sahələri + `GoamlEmeliyyat` entity-sinə
+yeni sütunlar) — bu sessiyada EDİLMƏDİ.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRAKI "Təsdiqlə" GET-
+sorğularına təsir edir, artıq təsdiqlənmiş qeydlərin CON-u dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — `git diff`-in əlavə/silinən sətirləri ayrıca ölçüldü: hər
+ikisi eyni +1 fərqlə, yəni düzəlişin ÖZÜ net-neytraldır; SQL-dəki hər sütun
+adı `DVal` çağırışı ilə bir-bir tutuşduruldu). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra NUMAYENDE-də qeydi olan bir hüquqi şəxsin hesabı
+ilə namizəd açıb yoxlamalıdır: "Nümayəndənin" dropdown-unda indi NUMAYENDE-dəki
+şəxslərin (vəzifə etiketi ilə) göründüyünü, seçimdən sonra CON xanalarının
+düzgün dolduğunu, "Hesab imza hüququ olan şəxs"in (Rəhbər) əvvəlki kimi
+avtomatik qaldığını.

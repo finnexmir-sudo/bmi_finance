@@ -1,21 +1,25 @@
 namespace FinNex.Application.DTOs.Goaml
 {
     /// <summary>
-    /// Hesab sahibinin (fiziki şəxsin özü, yaxud hüquqi şəxsin əlaqəli şəxsi —
-    /// Rəhbər/Təsisçi/İmza hüququ) GOAML CON/SIG bloklarına uyğun KYC-si.
-    /// Mənbə: fiziki hesabda `odb.regnom`-un ingiliscə sütunları, hüquqi hesabda
-    /// `odb.imza_huquqi_olan_shexsler` (bax GoamlService.HesabSahibiKycTapAsync,
-    /// 09.11.2026 araşdırması). Sahə adları GoamlTesdiqDto-nun Con*/Sig*
-    /// sahələri ilə EYNİDİR ki, mapping sadə olsun.
+    /// Hesab sahibinin (fiziki şəxsin özü, hüquqi şəxsin "Rəhbər"i, ya da
+    /// "Nümayəndə"si) GOAML CON/SIG bloklarına uyğun KYC-si. Mənbə: fiziki
+    /// hesabda `odb.regnom`-un ingiliscə sütunları; hüquqi hesabda SIG ("Rəhbər")
+    /// üçün `odb.imza_huquqi_olan_shexsler`, CON ("Nümayəndə" seçim siyahısı)
+    /// üçün isə **`odb.NUMAYENDE`** (10.11.2026-da düzəldildi — əvvəl səhvən
+    /// `imza_huquqi_olan_shexsler`-dən gəlirdi, bax GoamlService.
+    /// HesabSahibiKycAsync-in baş şərhi). Sahə adları GoamlTesdiqDto-nun
+    /// Con*/Sig* sahələri ilə EYNİDİR ki, mapping sadə olsun.
     /// </summary>
     public class GoamlElaqaliSexsDto
     {
-        /// <summary>Yalnız hüquqi şəxsin əlaqəli şəxsləri üçün — `imza_huquqi_olan_shexsler.ID_AML`.
+        /// <summary>Hüquqi şəxsin CON namizədləri üçün — `odb.NUMAYENDE.ID_AML`
+        /// (SIG-in "Rəhbər"i üçün isə `imza_huquqi_olan_shexsler.ID_AML`).
         /// CON seçim siyahısında hər namizədi fərqləndirmək üçün.</summary>
         public int? IdAml { get; set; }
 
-        /// <summary>Yalnız seçim siyahısında göstərmək üçün — `aml_setup_related_persons.DESCRIPT`-dən
-        /// (Rəhbər, Təsisçi, Hesaba imza hüququ olan şəxslər və s.), vergüllə ayrılmış.</summary>
+        /// <summary>Yalnız CON seçim siyahısında göstərmək üçün — NUMAYENDE-nin
+        /// öz VEZIFESI (vəzifə) sahəsindən. SIG-in "Rəhbər"i üçün boş qalır
+        /// (yalnız BİR namizəd olduğu üçün etiketə ehtiyac yoxdur).</summary>
         public string? Rollar { get; set; }
 
         public string? Adi { get; set; }

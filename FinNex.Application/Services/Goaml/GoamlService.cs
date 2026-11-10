@@ -777,25 +777,36 @@ namespace FinNex.Application.Services.Goaml
             catch { return null; }
         }
 
-        // ── Hesab sahibinin KYC-si — CON/SIG avtomatik doldurma (09.11.2026) ────
+        // ── Hesab sahibinin KYC-si — CON/SIG avtomatik doldurma (09.11.2026,
+        //    CON mənbəyi 10.11.2026-da NUMAYENDE-yə düzəldildi) ───────────────
         //
         // İstifadəçi qərarı: Debet/Kredit-dən BİZİM BANKIN hesabı olanının sahibi
-        // fiziki şəxsdirsə CON+SIG-in hər ikisinə, hüquqi şəxsdirsə YALNIZ SIG-ə
-        // (şirkətin "Rəhbər"i) avtomatik yazılır; CON isə operatorun özü, bu
-        // şirkətin əlaqəli şəxslər siyahısından seçir ("sistem gətirə bilmirsə,
-        // işçi doldurur" — istifadəçi qərarı). Mənbə (canlı Oracle araşdırması,
-        // 09.11.2026, PL/SQL Developer-dən əl ilə təsdiqlənib):
+        // fiziki şəxsdirsə CON+SIG-in hər ikisinə, hüquqi şəxsdirsə SIG-ə şirkətin
+        // "Rəhbər"i, CON-a isə "Nümayəndə" seçim siyahısı doldurulur (operator
+        // dropdown-dan seçir — "sistem gətirə bilmirsə, işçi doldurur"). Mənbə
+        // (canlı Oracle araşdırması, PL/SQL Developer-dən əl ilə təsdiqlənib):
         //   - Fiziki: `odb.regnom` (açar: substr(hesab,10,6) = regnom.regnom),
         //     ingiliscə sütunlar — NAME/SURNAME/PATRONYMIC/BIRTHDATE/BIRTHADDRESS/
         //     GENDER/REGISTRATIONADDRESS/CITIZENSHIP/EMPLOYER/PIN/DOCUMENTNUMBER/
         //     GIVENDATE/EXPIREDATE/GIVENORGANIZATOIN — HAMISI VARCHAR2 (tarix
         //     sahələri DAXİL, DATE tipi DEYİL).
-        //   - Hüquqi: `odb.imza_huquqi_olan_shexsler` (REGNOM-a görə, bütün
-        //     sahələr də VARCHAR2), rolu `odb.aml_related_persons`(ID_AML,
-        //     ID_RELATED_PERSONS) → `odb.aml_setup_related_persons`(ID, DESCRIPT)
-        //     ilə tapılır. ID_RELATED_PERSONS=2 = "Rəhbər" (sabit açar cədvəl,
-        //     istifadəçinin öz ekran-görüntüsü ilə təsdiqlənib). `IMZA_BITME IS
-        //     NULL` = hazırda aktiv imza hüququ (istifadəçi təsdiqi, 09.11.2026).
+        //   - Hüquqi SIG ("Rəhbər") — `odb.imza_huquqi_olan_shexsler` (REGNOM-a
+        //     görə), rolu `odb.aml_related_persons`(ID_AML, ID_RELATED_PERSONS)
+        //     → `odb.aml_setup_related_persons`(ID, DESCRIPT) ilə tapılır.
+        //     ID_RELATED_PERSONS=2 = "Rəhbər" (sabit açar cədvəl, istifadəçinin
+        //     öz ekran-görüntüsü ilə təsdiqlənib). `IMZA_BITME IS NULL` =
+        //     hazırda aktiv imza hüququ.
+        //   - Hüquqi CON ("Nümayəndə") seçim siyahısı — **`odb.NUMAYENDE`**
+        //     (10.11.2026, canlı Oracle araşdırması + istifadəçi təsdiqi: bu,
+        //     "hesabın ÖZ nümayəndələrini" saxlayan XÜSUSİ cədvəldir,
+        //     `imza_huquqi_olan_shexsler`-dən — imza HÜQUQU, fərqli konsept —
+        //     TAMAMİLƏ AYRIDIR). Əvvəl (09-10.11.2026 arası) CON dropdown-u
+        //     SƏHVƏN `imza_huquqi_olan_shexsler`-dən qurulurdu. `NUMAYENDE.REGNOM`
+        //     hesabın regnom koduna bağlıdır (`imza_huquqi_olan_shexsler`-in
+        //     elə özü kimi), `IMZA_BITME IS NULL` eyni "aktiv dövr" filtridir.
+        //     Sütunları `imza_huquqi_olan_shexsler`-dən DAHA ZƏNGİNDİR (tam
+        //     ünvan parçalanması, PEP/sanksiya bayraqları) — hələ CON formasının
+        //     (Tesdiq.cshtml) özü bu əlavə sahələri DAŞIMIR, gələcək iş.
         public async Task<GoamlHesabSahibiKycDto?> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default)
         {
             var debetNeticesi = await HesabSahibiKycAsync(debet, ct);
@@ -860,43 +871,37 @@ namespace FinNex.Application.Services.Goaml
                     };
                 }
 
-                // Hüquqi şəxs (BALSCHT_UR) — BİRBAŞA imza_huquqi_olan_shexsler-ə
-                // baxılır, odb.regnom-a toxunmur. Bütün (hazırda aktiv) əlaqəli
-                // şəxslər CON seçimi üçün, "Rəhbər" olanı isə SIG-ə birbaşa yazılır.
-                var hamisi = await _oracle.SelectAsync(
+                // Hüquqi şəxs (BALSCHT_UR) — İKİ AYRI, MÜSTƏQİL mənbə (10.11.2026,
+                // canlı Oracle araşdırması: `odb.NUMAYENDE`-nin özü "hesabın öz
+                // nümayəndələrini" saxlayan XÜSUSİ cədvəldir, `imza_huquqi_olan_
+                // shexsler`-dən (imza HÜQUQU) KONSEPTUAL FƏRQLİDİR):
+                //   - SIG ("Hesab imza hüququ olan şəxsin") — imza_huquqi_olan_
+                //     shexsler-dən, "Rəhbər" rolu (ID_RELATED_PERSONS=2). DƏYİŞMİR.
+                //   - CON ("Nümayəndənin") seçim siyahısı — artıq `odb.NUMAYENDE`-dən
+                //     (əvvəl səhvən imza_huquqi_olan_shexsler-dən idi — cədvəl adı
+                //     ilə forma sahəsi indi BİRƏ-BİR üst-üstə düşür).
+                // Biri boş qayıtsa o biri YENƏ DƏ doldurulsun deyə HEÇ BİRİ digərinin
+                // "tapılmadı" halında erkən `return` etmir.
+                var rehberSetirleri = await _oracle.SelectAsync(
                     "select s.id_aml, s.adi, s.soyadi, s.ata_adi, s.doguldugu_tarix, s.doguldugu_yer, " +
                     "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
                     "s.sheher, s.olke, s.senedin_novu, s.seriyasi_ve_nomresi, s.verilme_tarixi, " +
                     "s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi, " +
-                    "s.ish_yerinin_adi, " +
-                    "(select listagg(st.descript, ', ') within group (order by st.id) " +
-                    " from odb.aml_related_persons rp join odb.aml_setup_related_persons st on st.id = rp.id_related_persons " +
-                    " where rp.id_aml = s.id_aml) as rollar " +
+                    "s.ish_yerinin_adi " +
                     "from odb.imza_huquqi_olan_shexsler s " +
-                    "where s.regnom = '" + regnomKodu + "' and s.imza_bitme is null", 50, ct);
-
-                if (hamisi.Count == 0) return new GoamlHesabSahibiKycDto { Fiziki = false };
-
-                var siyahi = hamisi.Select(ImzaHuququSetirdenQur).ToList();
-
-                var rehberSetirleri = await _oracle.SelectAsync(
-                    "select s.id_aml from odb.imza_huquqi_olan_shexsler s " +
                     "where s.regnom = '" + regnomKodu + "' and s.imza_bitme is null " +
                     "and exists (select 1 from odb.aml_related_persons rp where rp.id_aml = s.id_aml and rp.id_related_persons = 2)",
                     1, ct);
 
-                GoamlElaqaliSexsDto? rehber = null;
-                if (rehberSetirleri.Count > 0)
-                {
-                    var rehberIdAml = (int)ToLong(DVal(rehberSetirleri[0], "ID_AML"));
-                    rehber = siyahi.FirstOrDefault(x => x.IdAml == rehberIdAml);
-                }
+                var rehber = rehberSetirleri.Count > 0 ? ImzaHuququSetirdenQur(rehberSetirleri[0]) : null;
+
+                var numayendeler = await NumayendeSiyahisiAsync(regnomKodu, ct);
 
                 return new GoamlHesabSahibiKycDto
                 {
                     Fiziki = false,
                     TekSexs = rehber,
-                    ElaqaliSexsler = siyahi,
+                    ElaqaliSexsler = numayendeler,
                 };
             }
             catch (Exception ex)
@@ -905,6 +910,61 @@ namespace FinNex.Application.Services.Goaml
                 return null;
             }
         }
+
+        /// <summary>CON ("Nümayəndənin") seçim siyahısı — `odb.NUMAYENDE`-dən,
+        /// hesabın regnom koduna görə, hazırda aktiv (IMZA_BITME boş) sətirlər.
+        /// Sütunlar 09.11.2026-da (CLAUDE.md) istifadəçinin canlı `SELECT *`
+        /// nəticəsindən TƏSDİQLƏNİB — `imza_huquqi_olan_shexsler`-dən FƏRQLİ
+        /// olaraq ADRES/SƏNƏD sahələri qat-qat zəngindir, amma CON formasının
+        /// (Tesdiq.cshtml → gmlConSec) oxuduğu sahələr eynidir, əlavə sahə (PEP/
+        /// sanksiya bayraqları) HƏLƏ FORMADA YOXDUR — gələcək iş.</summary>
+        private async Task<List<GoamlElaqaliSexsDto>> NumayendeSiyahisiAsync(string regnomKodu, CancellationToken ct)
+        {
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select n.id_aml, n.adi, n.soyadi, n.ata_adi, n.doguldugu_tarix, n.doguldugu_yer, " +
+                    "n.cinsi, n.fin, n.telefon_nomresi, n.unvanin_teyinati, n.kuchenin_adi_ve_nomresi, " +
+                    "n.sheher, n.olke, n.senedin_novu, n.seriyasi_ve_nomresi, n.verilme_tarixi, " +
+                    "n.etibarliliq_muddeti, n.veren_orqanin_adi, n.verildiyi_olke, n.vezifesi " +
+                    "from odb.numayende n " +
+                    "where n.regnom = '" + regnomKodu + "' and n.imza_bitme is null", 50, ct);
+                return setirler.Select(NumayendeSetirdenQur).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML NumayendeSiyahisiAsync uğursuz oldu — regnomKodu={RegnomKodu}", regnomKodu);
+                return new List<GoamlElaqaliSexsDto>();
+            }
+        }
+
+        private GoamlElaqaliSexsDto NumayendeSetirdenQur(Dictionary<string, object?> r) => new()
+        {
+            IdAml = (int)ToLong(DVal(r, "ID_AML")),
+            // "Rollar" sahəsi burada vəzifəni daşıyır (NUMAYENDE-nin öz rol
+            // cədvəli yoxdur/araşdırılmayıb) — CON dropdown-unda "Adı Soyadı
+            // (Vəzifə)" kimi görünür, imza_huquqi_olan_shexsler-dəki "(Rəhbər)"
+            // etiketi ilə EYNİ yerdə, fərqli mənbədən.
+            Rollar = DVal(r, "VEZIFESI") as string,
+            Adi = DVal(r, "ADI") as string,
+            Soyadi = DVal(r, "SOYADI") as string,
+            AtaAdi = DVal(r, "ATA_ADI") as string,
+            DogulduguTarix = TarixiParseEt(DVal(r, "DOGULDUGU_TARIX")),
+            DogulduguYer = DVal(r, "DOGULDUGU_YER") as string,
+            Cinsi = DVal(r, "CINSI") as string,
+            Pin = DVal(r, "FIN") as string,
+            TelefonNomresi = DVal(r, "TELEFON_NOMRESI") as string,
+            UnvaninNovu = DVal(r, "UNVANIN_TEYINATI") as string,
+            Unvan = DVal(r, "KUCHENIN_ADI_VE_NOMRESI") as string,
+            Seher = DVal(r, "SHEHER") as string,
+            Olke = DVal(r, "OLKE") as string,
+            SenedinNovu = DVal(r, "SENEDIN_NOVU") as string,
+            SenedinSeriyaNomresi = DVal(r, "SERIYASI_VE_NOMRESI") as string,
+            SenedinVerilmeTarixi = TarixiParseEt(DVal(r, "VERILME_TARIXI")),
+            SenedinEtibarliliqMuddeti = TarixiParseEt(DVal(r, "ETIBARLILIQ_MUDDETI")),
+            VerenOrqan = DVal(r, "VEREN_ORQANIN_ADI") as string,
+            VerildiyiOlke = DVal(r, "VERILDIYI_OLKE") as string,
+        };
 
         private GoamlElaqaliSexsDto ImzaHuququSetirdenQur(Dictionary<string, object?> r) => new()
         {
@@ -932,9 +992,15 @@ namespace FinNex.Application.Services.Goaml
             IsYeriAdi = DVal(r, "ISH_YERININ_ADI") as string,
         };
 
-        private static DateTime? TarixiParseEt(string? metn)
+        /// <summary>Oracle-dan gələn tarix dəyərini oxuyur — sütun VARCHAR2 (mətn,
+        /// `imza_huquqi_olan_shexsler`-in bütün tarix sahələri kimi) VƏ ya əsl
+        /// DATE (NUMAYENDE-nin IMZA_BASHLAMA/BITME-si kimi) ola bilər, hər ikisini
+        /// dəstəkləyir — tipi TƏXMİN ETMƏK əvəzinə (10.11.2026, NUMAYENDE
+        /// əlavəsi zamanı möhkəmləndirildi).</summary>
+        private static DateTime? TarixiParseEt(object? deyer)
         {
-            if (string.IsNullOrWhiteSpace(metn)) return null;
+            if (deyer is DateTime dt) return dt;
+            if (deyer is not string metn || string.IsNullOrWhiteSpace(metn)) return null;
             var temiz = metn.Trim();
             string[] formatlar = { "dd.MM.yyyy", "dd.MM.yyyy HH:mm:ss", "yyyy-MM-dd", "dd-MM-yyyy", "dd/MM/yyyy", "yyyy.MM.dd" };
             foreach (var f in formatlar)
