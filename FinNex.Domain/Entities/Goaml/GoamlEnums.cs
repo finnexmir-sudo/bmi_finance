@@ -5,6 +5,10 @@ namespace FinNex.Domain.Entities.Goaml
     {
         /// <summary>Operator təsdiqləyib, hələ heç bir ixraca daxil edilməyib.</summary>
         Qaralama = 1,
+
+        /// <summary>Export to JSON ilə faylda ixrac edilib (12.11.2026) — növbəti
+        /// ixrac bu qeydi TƏKRAR GÖTÜRMƏYƏCƏK, "Qaralama" olanlar üzrə işləyir.</summary>
+        IxracEdilib = 2,
     }
 
     /// <summary>

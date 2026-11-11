@@ -75,6 +75,10 @@ namespace FinNex.Domain.Entities.Goaml
         public string? TransactionNumber { get; set; }      // TRANSACTIONNUMBER — "Əməl. nömrəsi"
         public string? Primechanie { get; set; }            // PRIMECHANIE — "Qeydlər"
         public DateTime? DateOper { get; set; }              // DATE_OPER — "Əməl. tarixi"
+        /// <summary>DOC_DNA_ALL_RISK.DOCUMENT_SOURCE — Təsdiqlə zamanı namizəddən
+        /// köçürülür (əl ilə doldurulmur). YALNIZ Export to JSON-da trn_type/
+        /// trn_payment_system/trn_chanel təyini üçün istifadə olunur — 12.11.2026.</summary>
+        public string? DocumentSource { get; set; }          // DOCUMENT_SOURCE
         public string? TransmodeCode { get; set; }           // TRANSMODE_CODE — "Vəsaitin növü"
         public string? TransmodeComment { get; set; }        // TRANSMODE_COMMENT — "Əməliyyatın növün İzahatı"
         public decimal? AmountLocal { get; set; }            // AMOUNT_LOCAL — "Manat ekvivalenti"

@@ -10378,3 +10378,125 @@ göstərən bir tarixlə (məs. 03.11.2026) axtarış edib indi nəticə gəldiy
 təsdiqləməli, sonra AYSEL-də BAŞQA bir tarixlə filter edib bizim tətbiqə
 qayıdaraq ƏVVƏLKİ tarixin NƏTİCƏSİNİN DƏYİŞMƏDİYİNİ (artıq AYSEL-dən asılı
 olmadığını) yoxlamalıdır.
+
+## GOAML — Export to JSON (#15) — MVP Qurulub, `JSON_MMX_IN`-ə Əsaslanır (12.11.2026)
+
+İstifadəçi: *"baslayaq.\nisci arasdirir,nese olsa deyecek"* (Export-a başlayaq,
+işçi paralel olaraq Əməliyyatlar/Risk datasını yoxlayır). AYSEL-in `JSON_MMX_IN`
+prosedurunun (11.11.2026-da arxivlənmiş `docs/sql/goaml/97_Goaml_JSON_MMX_IN_
+Tam_Metn.sql`) **YALNIZ "_IN" (GƏLƏN əməliyyat) variantı** FinNex-ə köçürüldü —
+"_SEND" (gedən) HƏLƏ YOXDUR, o prosedurun mətni heç araşdırılmayıb.
+
+### Yeni sahə — `DocumentSource`, Təsdiqlə axınına əlavə edildi
+
+Namizəd axtarışı `DOC_DNA_ALL_RISK.DOCUMENT_SOURCE`-u onsuz da daşıyırdı
+(`GoamlNamizedSetirDto.DocumentSource`), amma `GoamlEmeliyyat`-a (Təsdiqlədikdən
+sonra qalıcı yazılan sətir) HEÇ VAXT YAZILMIRDI — bu, Export-un trn_type/
+trn_payment_system/trn_chanel təyini üçün MƏCBURİDİR (`document_source` mətn-
+uyğunluğu). Əlavə olundu: `GoamlEmeliyyat.DocumentSource` (migration
+`20261112080000_GoamlDocumentSource.cs`, yalnız `AddColumn`), `GoamlTesdiqDto.
+DocumentSource`, `EmeliyyatlarController.Tesdiq` GET-in yeni parametri,
+`Tesdiq.cshtml`-də gizli `<input>`, `Index.cshtml`-in "Təsdiqlə" linkinin
+query-string-inə əlavə — beş qat da "Şərtli Render Olunan Form Sahəsi" qaydasına
+uyğun: operator ƏL İLƏ YAZMIR, gizli sahə kimi axır.
+
+### Status — `GoamlEmeliyyatStatusu.IxracEdilib` (yeni, =2)
+
+`SilAsync`-in artıq əvvəldən (09.11.2026-dan) daşıdığı qoruyucu şərh
+(*"YALNIZ hələ ixrac edilməmiş (Status==Qaralama) qeydlər üçün"*) BU DƏYƏRİ
+gözləyirdi — indi həqiqətən işlənir: Export uğurla bitəndə ixrac edilən
+qeydlərin `Status`-u `IxracEdilib`-ə keçir, `JsonIxracAsync`-in öz sorğusu
+YALNIZ `Status==Qaralama` oxuduğu üçün **növbəti ixrac eyni qeydi TƏKRAR
+GÖTÜRMƜZ** — "ikiqat ixrac"ın strukturaca qarşısı alınıb.
+
+### `JSON_MMX_IN`-dən canlı yoxlanmış mapping-lər (hamısı prosedurun ÖZÜNDƏN,
+### faylın 900-1403-cü sətirlərindən, yoxlanıb təsdiqlənib)
+
+| JSON sahə | Mənbə (bizim entity) | Qeyd |
+|---|---|---|
+| `sender_entity_*` | `NameUr`/`IncorporationCountryCode`/`IncorporationNumber` | Sender VƏ Receiver Entity EYNİ `v_goal.Name_Ur`-dan oxunur (Tip-ə görə mütəqabil-eksklüziv) |
+| `sender_first/last/middle_name` | `ToAdi`/`ToSoyadi`/`ToAtasininAdi` | "_IN" prosedurunda "Alan fiziki şəxsin" (To) sahələri Sender kimi yazılır — **sadə görünən, amma TƏSDİQLƏNMİŞ Oracle davranışıdır** |
+| `sender_id_serial/number/type` | `RecIdSerial`/`RecIdNumber`/`RecIdType` | "Rec" = Receiver DEYİL, bu konkret 3 sahədə Sender-in sənəd nömrəsi kimi işlənir (prosedur mətnindən hərfi) |
+| `sender_pin_code` | `SnnTo` | |
+| `sender_tax_id` | `IncorporationNumberTo` | |
+| `receiver_first/last/middle_name` | `SigAdi`/`SigSoyadi`/`SigAtasininAdi` | Receiver = "Hesab imza hüququ olan şəxs" (bizim bankın müştərisi) |
+| `receiver_id_serial/number/type` | `SenderIdSerial`/`SenderIdNumber`/`SenderIdType` | Tərs — bu 3 sahə Receiver üçün işlənir |
+| `receiver_pin_code` | `Snn` | |
+| `receiver_citizenship` | `SigVetendasligi` | Oracle-da `v_goal.nationality1` (suffikssiz) |
+| Correspondence `debet`/`Credit` | `Debet`/`Kredit`-in ilk 5 simvolu | |
+
+**`trn_type`/`trn_payment_system`/`trn_chanel`** — `document_source`-dəki
+`instr(...,'TOKEN')>0` mətn-uyğunluğu birə-bir C#-a köçürüldü (`Has()`/`Pref3()`
+köməkçiləri). `trn_chanel` AYRICA diqqət tələb edir — Oracle-da bunlar **ardıcıl
+`if`-lərdir (elsif DEYİL)**, SON uyğun gələn qalib gəlir — C# kodu da bu
+ardıcıllığı EYNİ sıra ilə təkrarlayır.
+
+### Oracle-a YALNIZ İKİ əlavə canlı sorğu (hər ikisi yalnız-oxu, keşlənir)
+
+- **`odb.kurval.SOKNAMEVALUT`** — hesab nömrəsinin 6-7-ci simvolundan (sabit
+  mövqe) valyuta kodu — `func_get_Ekv`-in ekvivalenti. Bu sessiyanın ƏVVƏLİNDƏ
+  (Proqres "Hesablar" ekranını v$sql ilə araşdırarkən) tapılan STRUCTURE_LICSCH→
+  KURVAL zəncirinin İKİNCİ yarısıdır.
+- **`odb.malumatin_novu`** — REPORT_CODE üzrə `reportType`/`reportReason`
+  (header-in yeganə iki məzmunlu sahəsi).
+
+### ⚠️ BİLƏRƏKDƏN PORT EDİLMƏYƏN (bu artımın qapsamı XARİCİNDƏ, `GoamlService.
+### JsonIxracAsync`-in baş şərhində VƏ `Export.cshtml`-də AÇIQ qeyd olunub)
+
+- **"_SEND" (gedən əməliyyat) proseduru HEÇ ARAŞDIRILMAYIB** — Export hazırda
+  YALNIZ "_IN" məntiqini tətbiq edir. Gedən əməliyyat üçün AYSEL-in ayrıca
+  `JSON_MMX_SEND`/`JSON_MMX_SEND_H_B` prosedurları var (06.11.2026-da adları
+  tapılıb, mətnləri OXUNMAYIB) — bu, gələcək, ayrıca iş.
+- **`dubl_number`** (hüquqi şəxsin VÖEN üzrə ikinci qeydiyyat nömrəsi,
+  `huquqi_shexs.REGISTRATION_NUMBER`) — boş qalır, canlı lookup yazılmayıb.
+- **QHT/PEP/BLR header sahələri** (tin, hrzCountry, customerRiskDegree,
+  typeOfConnectionToPep/Hrz, sphereOfActivity və s.) — bunlar `v_fizik`/
+  `v_imza_huquq`/`v_REGNUMBER`/`v_PV_HUQUQI`/`v_cif`/`v_emitent_benefisiar`
+  kimi ƏLAVƏ altı-yeddi Oracle kursoru tələb edir, heç biri YOXDUR. Header
+  YALNIZ `sendDate`/`reportType`/`reportReason` daşıyır.
+- **`trn_payment_system`-in dəqiq (UTF/XKS/SWF/AZP/AOS) alt-təyini** — `ID_VD`/
+  `OPCODE_2`/`pla_sys` cursoruna bağlıdır, bizim namizəd sorğumuzda (bax
+  11.11.2026-dakı düzəliş) `ID_VD` artıq ƏLÇATANDIR (`DOC_DNA_ALL_RISK`-in
+  nativ sütunu kimi tapıldı), AMMA bu artımda İSTİFADƏ EDİLMƏYİB — defolt
+  `CBB` qalır.
+- **Bizim öz bankımızın hesabına aid V_YURIK__NAME/ATTRIB/C_INN_BANK
+  zənginləşdirilməsi** — Account bloklarının bank-adı/VÖEN sahələri bizim ÖZ
+  entity-mizdəki (InstitutionName/Swift/...) dəyərlərdən qurulur, Oracle-un
+  köməkçi reyestr join-ləri YOXDUR.
+- **Representative-in "SIG" qolu** — Oracle-un öz mənbəyində DEAD CODE-dur
+  (əvvəlki `NRP` şərtinin `OR`-u onsuz da bu halı tutur), bilərəkdən
+  köçürülməyib — yalnız PAT/NRP var.
+
+### Fayllar
+
+`FinNex.Application/DTOs/Goaml/GoamlJsonIxracDto.cs` (yeni — tam goAML JSON
+sxemi, HƏR sahə `[JsonPropertyName]` ilə açıq işarələnib, System.Text.Json-un
+default naming policy-sinə GÜVƏNİLMİR, çünki sxem özü qarışıq-casing-lidir:
+header=camelCase, blok açarları=PascalCase, leaf sahələr=snake_case — bu
+BİZİM seçimimiz deyil, goAML-in xarici sxemidir). `IGoamlService.JsonIxracAsync` +
+`GoamlService.JsonIxracAsync` (+ 10 private köməkçi: `ReportQurAsync`,
+`TransactionQur`, `TrnTipTeyinEt`, `TrnOdenisSistemiTeyinEt`, `TrnKanalTeyinEt`,
+`RepresentativeQur`, `SenderQurAsync`, `ReceiverQurAsync`, `ValyutaVeMeblegAsync`,
+`ValyutaKoduAsync`, `MalumatinNovuTapAsync`). `EmeliyyatlarController.Export`
+(GET+POST) — JSON mətnini **həm** `C:\FinNex_DMS\goaml-ixrac\`-ə yazır (best-
+effort, "Fayl Yükləmə" qaydasına uyğun, `wwwroot`-a YOX), **həm** birbaşa
+brauzer-yükləməsi kimi qaytarır (`File(bytes, "application/json", ad)`).
+`Export.cshtml` (yeni) — tarix aralığı + istəyə bağlı Tip/ReportCode filtri,
+yuxarıdaki qapsam-xaric siyahısını açıq göstərir. Dashboard/Index.cshtml-in
+tab siyahısı + sidebar-a "Export to file" sətri əlavə olundu (`Emeliyyatlar/
+Export`-a keçid).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+— hər DTO sahə adı `97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-in müvafiq sətirləri ilə
+BİR-BİR (xüsusilə Sender/Receiver-in çarpaz Rec/Sender_Id_* qarışıqlığı) təkrar
+oxunub təsdiqləndi, mötərizə balansı yoxlanıldı (yeni əlavə olunan sətirlər
+261/261 açıq/bağlı parentez ilə tam balanslıdır). İstifadəçi Visual Studio-da
+**Rebuild All**, `Update-Database`, sonra real ssenari ilə yoxlamalıdır: bir
+neçə TƏSDİQLƏNMİŞ (Qaralama statusunda) qeyd üçün Export et → JSON-un
+`reports[].transactions[0]`-da Transaction/Sender/Receiver/Correspondence
+bloklarının mənalı dəyərlərlə doldurulduğunu, ixrac edilən qeydlərin
+"Təsdiqlənmiş əməliyyatlar" siyahısında artıq görünmədiyini (və ya statusunun
+"İxrac edilib" göstərdiyini) təsdiqləməli — sonra YENİDƏN Export edib EYNİ
+qeydlərin TƏKRAR gəlmədiyini yoxlamalı. **Yaradılan JSON-u real goAML
+portalına göndərmədən ƏVVƏL mütləq əl ilə, yuxarıdaki qapsam-xaric siyahısına
+görə yoxlamalıdır** — bu, tam, istehsala-hazır ixrac DEYİL, ilk artımdır.

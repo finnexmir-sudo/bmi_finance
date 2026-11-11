@@ -1,3 +1,4 @@
+using System.Text;
 using FinNex.Application.DTOs.Goaml;
 using FinNex.Application.Interfaces.Goaml;
 using FinNex.Domain;
@@ -6,6 +7,7 @@ using FinNex.UI.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace FinNex.UI.Areas.Goaml.Controllers;
 
@@ -20,11 +22,13 @@ public class EmeliyyatlarController : Controller
 {
     private readonly IGoamlService _goaml;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IConfiguration _config;
 
-    public EmeliyyatlarController(IGoamlService goaml, UserManager<AppUser> userManager)
+    public EmeliyyatlarController(IGoamlService goaml, UserManager<AppUser> userManager, IConfiguration config)
     {
         _goaml = goaml;
         _userManager = userManager;
+        _config = config;
     }
 
     private async Task<int?> GetCurrentIsciIdAsync()
@@ -63,7 +67,7 @@ public class EmeliyyatlarController : Controller
     public async Task<IActionResult> Tesdiq(int filialNumber, DateTime dateOper, long recNum,
         string? debet, string? kredit, decimal? summaVNacval, int? kodValuti,
         string? innDebet, string? innKredit, string? primechanie,
-        string? nameLicschDe, string? nameLicschKre)
+        string? nameLicschDe, string? nameLicschKre, string? documentSource)
     {
         ViewData["Title"] = "GOAML — Təsdiqlə";
 
@@ -80,6 +84,7 @@ public class EmeliyyatlarController : Controller
             DateOper = dateOper,
             NameUr = nameLicschDe,
             ToAdi = nameLicschKre,
+            DocumentSource = documentSource,
         };
 
         // ── "Sistem gətirə bilmirsə, işçi doldurur" (09.11.2026, istifadəçi
@@ -182,5 +187,52 @@ public class EmeliyyatlarController : Controller
         var netice = await _goaml.SilAsync(id);
         TempData[netice.Success ? "Success" : "Error"] = netice.Message;
         return RedirectToAction(nameof(Siyahi));
+    }
+
+    // ── GET /Goaml/Emeliyyatlar/Export — tarix/filtr forması ────────────────
+    public IActionResult Export()
+    {
+        ViewData["Title"] = "GOAML — Export to file (JSON)";
+        return View(new GoamlJsonIxracFiltrDto { BasTarix = DateTime.Today, SonTarix = DateTime.Today });
+    }
+
+    // ── POST /Goaml/Emeliyyatlar/Export — JSON hazırlayır, DMS-ə yazır, yükləyir ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Export(GoamlJsonIxracFiltrDto filtr)
+    {
+        if (filtr.SonTarix < filtr.BasTarix)
+        {
+            TempData["Error"] = "Bitmə tarixi başlanğıcdan əvvəl ola bilməz.";
+            return RedirectToAction(nameof(Export));
+        }
+
+        var netice = await _goaml.JsonIxracAsync(filtr);
+        if (!netice.Success || netice.Data == null)
+        {
+            TempData["Error"] = netice.Message ?? "İxrac uğursuz oldu.";
+            return RedirectToAction(nameof(Export));
+        }
+
+        // ── DMS-ə yazmaq (audit/saxlama) — "Fayl Yükləmə" qaydasına uyğun,
+        //    wwwroot-a YOX. Yazma uğursuz olsa belə brauzer-yükləmə davam edir
+        //    (operator faylı əlindən əldə etsin, DMS surəti ikinci dərəcəlidir).
+        try
+        {
+            var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+            var dir = Path.Combine(dmsRoot, "goaml-ixrac");
+            Directory.CreateDirectory(dir);
+            await System.IO.File.WriteAllTextAsync(Path.Combine(dir, netice.Data.TeklifOlunanFaylAdi), netice.Data.JsonMetni, Encoding.UTF8);
+        }
+        catch
+        {
+            // best-effort — DMS yazısı uğursuz olsa belə, operator faylı YENƏ DƏ əldə etsin
+        }
+
+        if (netice.Data.Xeberdarliqlar.Count > 0)
+            TempData["Error"] = string.Join(" | ", netice.Data.Xeberdarliqlar);
+        TempData["Success"] = $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\".";
+
+        return File(Encoding.UTF8.GetBytes(netice.Data.JsonMetni), "application/json", netice.Data.TeklifOlunanFaylAdi);
     }
 }

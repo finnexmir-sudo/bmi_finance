@@ -41,5 +41,15 @@ namespace FinNex.Application.Interfaces.Goaml
         /// bizim deyilsə (xarici/başqa bank) və ya Oracle əlçatmazdırsa `null`
         /// qaytarır — operator formanı özü doldurur.</summary>
         Task<GoamlHesabSahibiKycDto?> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default);
+
+        /// <summary>Export to JSON (#15, 12.11.2026) — verilmiş tarix aralığında (+ istəyə
+        /// bağlı Tip/ReportCode filtri) `Status==Qaralama` olan TƏSDİQLƏNMİŞ qeydləri
+        /// goAML-in rəsmi JSON sxeminə (bax `docs/sql/goaml/97_Goaml_JSON_MMX_IN_
+        /// Tam_Metn.sql`) uyğun mətnə çevirir və onları `IxracEdilib`-ə keçirir —
+        /// NÖVBƏTİ ixrac eyni qeydi TƏKRAR GÖTÜRMƏYƏCƏK. Oracle-a YALNIZ OXU (malumatin_novu,
+        /// kurval) aparılır, heç nə yazılmır. Fayla YAZMAQ bu metodun işi DEYİL —
+        /// nəticə mətn kimi qaytarılır, DMS-ə yazmaq/yükləmək controller-in işidir
+        /// (Kassa/Exchange-in `SablonYolu()` presedentinə uyğun).</summary>
+        Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default);
     }
 }

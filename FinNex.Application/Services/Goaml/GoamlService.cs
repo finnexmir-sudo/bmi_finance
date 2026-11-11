@@ -174,6 +174,7 @@ namespace FinNex.Application.Services.Goaml
                 TransactionNumber = dto.TransactionNumber,
                 Primechanie = dto.Primechanie,
                 DateOper = dto.DateOper,
+                DocumentSource = dto.DocumentSource,
                 TransmodeCode = dto.TransmodeCode,
                 TransmodeComment = dto.TransmodeComment,
                 AmountLocal = dto.AmountLocal,
@@ -382,6 +383,7 @@ namespace FinNex.Application.Services.Goaml
                 TransactionNumber = e.TransactionNumber,
                 Primechanie = e.Primechanie,
                 DateOper = e.DateOper,
+                DocumentSource = e.DocumentSource,
                 TransmodeCode = e.TransmodeCode,
                 TransmodeComment = e.TransmodeComment,
                 AmountLocal = e.AmountLocal,
@@ -1073,6 +1075,418 @@ namespace FinNex.Application.Services.Goaml
         /// `NAME_UR_TO`-nun ad-parçalanması nəticəsi 100 simvoldan uzun ola bilməz.</summary>
         private static string? Kes(string? xam, int maxUzunluq) =>
             string.IsNullOrEmpty(xam) ? xam : (xam.Length <= maxUzunluq ? xam : xam.Substring(0, maxUzunluq));
+
+        // ════════════════════════════════════════════════════════════════════
+        // GOAML — Export to JSON (#15, 12.11.2026)
+        //
+        // `docs/sql/goaml/97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-ın (AYSEL-in
+        // `JSON_MMX_IN` prosedurunun — YALNIZ "_IN" (GƏLƏN əməliyyat) variantı,
+        // "_SEND" (gedən) HƏLƏ PORT EDİLMƏYİB) C#-dəki qarşılığıdır. Oracle
+        // `GOAML_CLIENTS` cədvəlini oxumur — bizim ÖZ `GoamlEmeliyyat` cədvəlimizi
+        // (Təsdiqlə ilə artıq doldurulmuş sətirlər) oxuyur.
+        //
+        // ⚠️ BİLƏRƏKDƏN PORT EDİLMƏYƏN HİSSƏLƏR (gələcək iş, bu artım XARİCİNDƏ):
+        //  - `dubl_number` (huquqi_shexs.REGISTRATION_NUMBER, VÖEN üzrə) — boş qalır.
+        //  - QHT/PEP/BLR-ə xas əlavə header sahələri (tin, hrzCountry,
+        //    customerRiskDegree, typeOfConnectionToPep/Hrz və s.) — bunlar ƏLAVƏ
+        //    canlı KYC/risk sorğuları (pv_regnom_all.Riskler, r_emitent_benefisiar,
+        //    c_PV_HUQUQI) tələb edir, header YALNIZ sendDate/reportType/
+        //    reportReason daşıyır.
+        //  - `ID_VD`/`OPCODE_2`-əsaslı dəqiq trn_payment_system (UTF/XKS/SWF/AZP/
+        //    AOS) — bizim namizəd sorğumuzda bu açarlar yoxdur (06.11.2026-dan
+        //    məlum, "Update New" portunda da eyni səbəbdən atlanıb). Yalnız
+        //    document_source-əsaslı CBB/IAP/PST təyini VAR, defolt 'CBB'.
+        //  - V_YURIK__NAME (bizim öz bankımızın hesabıdırsa KYC-ni ordan çəkmə),
+        //    C_INN_BANK (bank VÖEN-i SWIFT koduna görə) — sender/receiver_account
+        //    sahələri YALNIZ bizim ÖZ entity-mizdəki (InstitutionName/Swift/...)
+        //    dəyərlərdən qurulur, əlavə Oracle join aparılmır.
+        //  - Representative-in "SIG" qolu (Oracle-un öz mənbəyində DEAD CODE-dur
+        //    — `ConAdi null` şərti onsuz da NRP qolunun OR-unda tutulur, SIG
+        //    elsif-i HEÇ VAXT işə düşmür) — ona görə bizdə YALNIZ PAT/NRP var.
+        //
+        // Hər QEYD üçün AYRI bir "report" obyekti yaradılır (header+transactions[1])
+        // — elə AYSEL-in öz c_goal LOOP-u da BELƏ yazır, "reports" massivi N
+        // elementdən ibarətdir, N=ixrac edilən qeyd sayı.
+        // ════════════════════════════════════════════════════════════════════
+
+        public async Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default)
+        {
+            var basTarix = filtr.BasTarix.Date;
+            var sonTarix = filtr.SonTarix.Date.AddDays(1).AddTicks(-1);
+
+            var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync(x =>
+                x.Status == GoamlEmeliyyatStatusu.Qaralama &&
+                x.DateOper != null && x.DateOper >= basTarix && x.DateOper <= sonTarix &&
+                (filtr.Tip == null || x.Tip == filtr.Tip) &&
+                (filtr.ReportCode == null || x.ReportCode == filtr.ReportCode));
+
+            if (setirler.Count == 0)
+                return Result<GoamlJsonIxracNeticeDto>.Fail(
+                    "Seçilmiş aralıqda ixrac ediləcək (hələ ixrac olunmamış) təsdiqlənmiş qeyd yoxdur.");
+
+            var xeberdarliqlar = new List<string>();
+            var malumatinNovuKesi = new Dictionary<string, (int reportType, int reportReason)?>();
+            var valyutaKoduKesi = new Dictionary<string, string?>();
+
+            var root = new GoamlJsonRootDto();
+
+            foreach (var e in setirler.OrderBy(x => x.DateOper))
+            {
+                var reportCodeKod = e.ReportCode?.Kod() ?? "STR";
+
+                if (!malumatinNovuKesi.TryGetValue(reportCodeKod, out var mn))
+                {
+                    mn = await MalumatinNovuTapAsync(reportCodeKod, ct);
+                    malumatinNovuKesi[reportCodeKod] = mn;
+                    if (mn == null)
+                        xeberdarliqlar.Add($"\"{reportCodeKod}\" üçün reportType/reportReason Oracle-dan (malumatin_novu) tapılmadı — 0 yazıldı, əl ilə yoxlayın.");
+                }
+
+                root.Reports.Add(await ReportQurAsync(e, mn, reportCodeKod, valyutaKoduKesi, ct));
+            }
+
+            var json = System.Text.Json.JsonSerializer.Serialize(root,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+            foreach (var e in setirler)
+                e.Status = GoamlEmeliyyatStatusu.IxracEdilib;
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            var faylAdi = $"GOAML_Ixrac_{(filtr.ReportCode?.Kod() ?? "HAMISI")}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json";
+
+            return Result<GoamlJsonIxracNeticeDto>.Ok(new GoamlJsonIxracNeticeDto
+            {
+                JsonMetni = json,
+                TeklifOlunanFaylAdi = faylAdi,
+                SetirSayi = setirler.Count,
+                Xeberdarliqlar = xeberdarliqlar,
+            });
+        }
+
+        private async Task<GoamlJsonReportDto> ReportQurAsync(GoamlEmeliyyat e, (int reportType, int reportReason)? mn,
+            string reportCodeKod, Dictionary<string, string?> valyutaKoduKesi, CancellationToken ct)
+        {
+            var report = new GoamlJsonReportDto
+            {
+                Header = new GoamlJsonHeaderDto
+                {
+                    SendDate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.001Z", CultureInfo.InvariantCulture),
+                    ReportType = mn?.reportType ?? 0,
+                    ReportReason = mn?.reportReason ?? 0,
+                },
+            };
+
+            var bloc = new GoamlJsonTransactionBlocDto
+            {
+                Transaction = TransactionQur(e),
+                Representative = RepresentativeQur(e),
+                Sender = await SenderQurAsync(e, valyutaKoduKesi, ct),
+                Receiver = await ReceiverQurAsync(e, valyutaKoduKesi, ct),
+                Correspondence = new GoamlJsonCorrespondenceDto
+                {
+                    Debet = Kes(e.Debet, 5) ?? "",
+                    Credit = Kes(e.Kredit, 5) ?? "",
+                },
+            };
+            report.Transactions.Add(bloc);
+            return report;
+        }
+
+        private static GoamlJsonTransactionDto TransactionQur(GoamlEmeliyyat e)
+        {
+            var tarix = (e.DateOper ?? e.CandidateDateOper).ToString("yyyy-MM-ddTHH:mm:ss.002Z", CultureInfo.InvariantCulture);
+            return new GoamlJsonTransactionDto
+            {
+                TrnStatus = "EXC",
+                TrnActualDate = tarix,
+                TrnBankDate = tarix,
+                TrnExternalNumber = e.TransactionNumber ?? "",
+                TrnInternalNumber = e.TransactionNumber ?? "",
+                TrnType = TrnTipTeyinEt(e),
+                TrnPaymentSystem = TrnOdenisSistemiTeyinEt(e),
+                TrnPaymentSubSystem = "", // S1CARDSC-əsaslı VIS/MCR/BCC təyini port edilməyib
+                Purpose = new GoamlJsonPurposeDto
+                {
+                    TrnDescription = (e.Primechanie ?? "").Replace("\r", "").Replace("\n", " "),
+                    TrnDetailedId = e.RegistracNomer ?? "",
+                    TrnFundSource = "",
+                },
+                TrnChanel = TrnKanalTeyinEt(e),
+            };
+        }
+
+        private static bool Has(string? menbe, string teq) =>
+            !string.IsNullOrEmpty(menbe) && menbe.Contains(teq, StringComparison.OrdinalIgnoreCase);
+
+        private static bool Pref3(string? hesab, string teq) =>
+            !string.IsNullOrEmpty(hesab) && hesab.Length >= 3 && hesab.Substring(0, 3) == teq;
+
+        /// <summary>Oracle sətir 618-644 — "nağd" (CSH) vs "qeyri-nağd" (NCH) təyini,
+        /// document_source mətn-uyğunluğu + hesab prefiksi + ETR report-kodu ilə.</summary>
+        private static string TrnTipTeyinEt(GoamlEmeliyyat e)
+        {
+            var ds = e.DocumentSource;
+            if (Has(ds, "EXPRESS") || Has(ds, "EMANAT") || Has(ds, "MILLION") || Has(ds, "SWPAY") ||
+                Has(ds, "ATM") || Has(ds, "(CIN)") || Has(ds, "(OC)") || Has(ds, "(POS)") ||
+                Pref3(e.Debet, "100") || Pref3(e.Kredit, "100"))
+                return "CSH";
+
+            if (Has(ds, "IPS") || Has(ds, "XOHKS") || Has(ds, "VSHAPE") || Has(ds, "SWIFT") ||
+                Has(ds, "B2B") || e.ReportCode == GoamlHesabatNovu.Etr)
+                return "NCH";
+
+            return "NCH"; // Oracle-un öz NVL(V_trn_type,'NCH') defolt dəyəri
+        }
+
+        /// <summary>Oracle sətir 647-717 — yalnız document_source-əsaslı hissə (CBB/IAP/PST).
+        /// ID_VD/pla_sys/OPCODE_2-əsaslı (UTF/XKS/SWF/AZP/AOS) dəqiqləşdirmə YOXDUR.</summary>
+        private static string TrnOdenisSistemiTeyinEt(GoamlEmeliyyat e)
+        {
+            var ds = e.DocumentSource;
+            if (Has(ds, "OC") || Pref3(e.Debet, "100") || Pref3(e.Kredit, "100"))
+                return "CBB";
+            if (Has(ds, "EXPRESS") || Has(ds, "EMANAT") || Has(ds, "MILLION") || Has(ds, "SWPAY"))
+                return "IAP";
+            if (Has(ds, "POS") || Has(ds, "ATM") || Has(ds, "(CIN)") || Has(ds, "(CTC)") ||
+                Has(ds, "(RET)") || Has(ds, "(PST)") || Has(ds, "(ELC)"))
+                return "PST";
+            return "CBB";
+        }
+
+        /// <summary>Oracle sətir 728-772 — ardıcıl `if` (elsif DEYİL), SON uyğun gələn
+        /// QALİB gəlir, eynilə AYSEL-in öz davranışı.</summary>
+        private static string TrnKanalTeyinEt(GoamlEmeliyyat e)
+        {
+            var ds = e.DocumentSource;
+            var kanal = "FOT";
+            if (Has(ds, "EXPRESS") || Has(ds, "EMANAT") || Has(ds, "MILLION") || Has(ds, "SWPAY")) kanal = "PTM";
+            if (Has(ds, "EC")) kanal = "ECM";
+            if (Has(ds, "ATM") || Has(ds, "(CIN)")) kanal = "ATM";
+            if (Has(ds, "POS")) kanal = "POS";
+            // Oracle: `if V_MN.REPORTTYPE='CTR'` — REPORT_CODE-un ÖZÜNDƏN oxunur
+            // (digər bütün 'CTR' müqayisələri ilə EYNİ mənbə, ehtimal olunan
+            // Oracle-dakı yazı tutarsızlığının DÜZƏLDİLMİŞ forması).
+            if (e.ReportCode == GoamlHesabatNovu.Ctr) kanal = "FOT";
+            return kanal;
+        }
+
+        /// <summary>Oracle sətir 1009-1067 — Representative (Nümayəndə) blokunun
+        /// PAT/NRP qolları. "SIG" elsif-i Oracle-un öz mənbəyində ÇATILMAZDIR
+        /// (bax yuxarıdakı baş şərh), bura KÖÇÜRÜLMƏYİB.</summary>
+        private static GoamlJsonRepresentativeDto RepresentativeQur(GoamlEmeliyyat e)
+        {
+            var konInstitusional = e.Tip is GoamlTipi.HToH or GoamlTipi.HToHIn or GoamlTipi.HToFIn or GoamlTipi.HToFOut;
+            if (!string.IsNullOrWhiteSpace(e.ConAdi) && !konInstitusional)
+            {
+                return new GoamlJsonRepresentativeDto
+                {
+                    ReprStatus = "PAT",
+                    ReprCitizenship = e.ConVetendasligi ?? "",
+                    ReprIdSerial = e.ConSenedinSeriyaNomresi ?? "",
+                    ReprIdNumber = e.ReprIdNumber ?? "",
+                    ReprIdIssueDate = Tarix(e.ConSenedinVerilmeTarixi),
+                    ReprIdExpiryDate = Tarix(e.ConSenedinEtibarliliqMuddeti),
+                    ReprBirthDate = Tarix(e.ConDogulduguTarix),
+                    ReprPhone = e.ConTelefonNomresi ?? "",
+                    ReprPin = e.ConPin ?? "",
+                    ReprFirstName = (e.ConAdi ?? "").Trim(),
+                    ReprLastName = (e.ConSoyadi ?? "").Trim(),
+                    ReprMiddleName = (e.ConAtasininAdi ?? "").Trim(),
+                    ReprIdType = e.ReprIdType ?? "",
+                };
+            }
+
+            return new GoamlJsonRepresentativeDto { ReprStatus = "NRP" };
+        }
+
+        private static string Tarix(DateTime? d) =>
+            d == null ? "" : d.Value.ToString("yyyy-MM-ddTHH:mm:ss.001Z", CultureInfo.InvariantCulture);
+
+        /// <summary>Oracle sətir 1070-1246 — "_IN" (GƏLƏN əməliyyat) prosedurunda
+        /// Sender.Person/Account ƏSLİNDƏ "To*" (bizim "Alan fiziki şəxsin" bloku)
+        /// sahələrindən doldurulur — xarici tərəf PULU GÖNDƏRƏN kimi qeydə alınır.
+        /// Bu, Oracle mənbəyindən birbaşa götürülüb, SƏHV DEYİL.</summary>
+        private async Task<GoamlJsonSenderDto> SenderQurAsync(GoamlEmeliyyat e, Dictionary<string, string?> valyutaKoduKesi, CancellationToken ct)
+        {
+            var sender = new GoamlJsonSenderDto { SenderCountryName = e.FromCountry ?? "" };
+
+            if (!string.IsNullOrWhiteSpace(e.NameUr))
+            {
+                sender.Entity = new GoamlJsonSenderEntityDto
+                {
+                    SenderEntityName = e.NameUr ?? "",
+                    SenderEntityRegCountry = e.IncorporationCountryCode ?? "",
+                    SenderEntityTaxNumber = e.IncorporationNumber ?? "",
+                };
+            }
+            else if (!string.IsNullOrWhiteSpace(e.ToAdi) || !string.IsNullOrWhiteSpace(e.ToSoyadi))
+            {
+                sender.Person = new GoamlJsonSenderPersonDto
+                {
+                    SenderFirstName = (e.ToAdi ?? "").Trim(),
+                    SenderLastName = (e.ToSoyadi ?? "").Trim(),
+                    SenderMiddleName = (e.ToAtasininAdi ?? "").Trim(),
+                    SenderCitizenship = e.ToVetendasligi ?? "",
+                    SenderIdSerial = e.RecIdSerial ?? "",
+                    SenderIdNumber = e.RecIdNumber ?? "",
+                    SenderPinCode = e.SnnTo ?? "",
+                    SenderIdIssueDate = Tarix(e.ToSenedinVerilmeTarixi),
+                    SenderIdExpiryDate = Tarix(e.ToSenedinEtibarliliqMuddeti),
+                    SenderBirthDate = Tarix(e.ToDogulduguTarix),
+                    SenderPhoneNumber = e.ToTelefonNomresi ?? "",
+                    SenderTaxId = e.IncorporationNumberTo ?? "",
+                    SenderIdType = e.RecIdType ?? "",
+                };
+            }
+
+            var (currType, currAmount) = await ValyutaVeMeblegAsync(e, debetTerefMi: true, valyutaKoduKesi, ct);
+            sender.Funds = new GoamlJsonSenderFundsDto
+            {
+                SenderCurrType = currType,
+                SenderCurrAmount = currAmount,
+                SenderAmountLocal = e.SummaVNacval ?? 0,
+            };
+
+            sender.Account = new GoamlJsonSenderAccountDto
+            {
+                SenderAccountNumber = (e.AccountTo ?? e.Account) ?? "",
+                SenderAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
+                SenderAccountCurrency = currType,
+                SenderAccountFinInstCountry = e.FromCountry ?? "",
+                SenderAccountFinInstBicId = (e.SwiftTo ?? e.Swift) ?? "",
+                SenderAccountFinInstName = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                SenderAccountFinInstBranch = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                SenderAccountFinInstBic = (e.SwiftTo ?? e.Swift) ?? "",
+            };
+
+            return sender;
+        }
+
+        /// <summary>Receiver — Oracle sətir 1251-1403, "Sig" (Hesab imza hüququ olan
+        /// şəxs) sahələrindən doldurulur (alan tərəf BİZİM bankın müştərisidir).</summary>
+        private async Task<GoamlJsonReceiverDto> ReceiverQurAsync(GoamlEmeliyyat e, Dictionary<string, string?> valyutaKoduKesi, CancellationToken ct)
+        {
+            var receiver = new GoamlJsonReceiverDto { ReceiverCountryName = e.ToOlkeAdi ?? "" };
+
+            if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip != GoamlTipi.HuquqiOut)
+            {
+                receiver.Entity = new GoamlJsonReceiverEntityDto
+                {
+                    ReceiverEntityName = e.NameUr ?? "",
+                    ReceiverEntityRegCountry = e.IncorporationCountryCode ?? "",
+                    ReceiverEntityTaxNumber = e.IncorporationNumber ?? "",
+                };
+            }
+            else if (!string.IsNullOrWhiteSpace(e.SigAdi) || !string.IsNullOrWhiteSpace(e.SigSoyadi))
+            {
+                receiver.Person = new GoamlJsonReceiverPersonDto
+                {
+                    ReceiverFirstName = (e.SigAdi ?? "").Trim(),
+                    ReceiverLastName = (e.SigSoyadi ?? "").Trim(),
+                    ReceiverMiddleName = (e.SigAtasininAdi ?? "").Trim(),
+                    ReceiverCitizenship = e.SigVetendasligi ?? "",
+                    ReceiverIdSerial = e.SenderIdSerial ?? "",
+                    ReceiverIdNumber = e.SenderIdNumber ?? "",
+                    ReceiverPinCode = e.Snn ?? "",
+                    ReceiverIdIssueDate = Tarix(e.SigSenedinVerilmeTarixi),
+                    ReceiverIdExpiryDate = Tarix(e.SigSenedinEtibarliliqMuddeti),
+                    ReceiverPhoneNumber = e.SigTelefonNomresi ?? "",
+                    ReceiverTaxId = e.IncorporationNumber ?? "",
+                    ReceiverBirthDate = Tarix(e.SigDogulduguTarix),
+                    ReceiverIdType = e.SenderIdType ?? "",
+                };
+            }
+
+            var (currType, currAmount) = await ValyutaVeMeblegAsync(e, debetTerefMi: false, valyutaKoduKesi, ct);
+            receiver.Funds = new GoamlJsonReceiverFundsDto
+            {
+                ReceiverCurrType = currType,
+                ReceiverCurrAmount = currAmount,
+                ReceiverAmountLocal = e.SummaVNacval ?? 0,
+            };
+
+            receiver.Account = new GoamlJsonReceiverAccountDto
+            {
+                ReceiverAccountNumber = (e.Account ?? e.AccountTo) ?? "",
+                ReceiverAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
+                ReceiverAccountCurrency = currType,
+                // Oracle: V_ATTRIB.NAIMEN_UCHREJ (bizim ÖZ bankımızın adı, ATTRIB-dən) —
+                // bu lookup port edilməyib, Oracle-un ÖZ ŞƏRHƏ ALINMIŞ ehtiyat düsturu
+                // (`NVL(institution_name, institution_name_to)`) işlədilir.
+                ReceiverAccountFinInstName = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                ReceiverAccountFinInstCountry = e.IncorporationCountryCode ?? "",
+                ReceiverAccountFinInstBicId = (e.Swift ?? e.SwiftTo) ?? "",
+                ReceiverAccountFinInstBranch = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                ReceiverAccountFinInstBic = (e.Swift ?? e.SwiftTo) ?? "",
+            };
+
+            return receiver;
+        }
+
+        /// <summary>Oracle sətir 1141-1185/1309-1351 — mübadilə-stolu prefiksləri
+        /// (1005010060/1006010050) xüsusi, qalanı `func_get_Ekv(SUBSTR(hesab,6,2))`
+        /// ilə təyin olunur. `func_get_Ekv` — elə bu SESSİYANIN ƏVVƏLİNDƏ (Proqres
+        /// "Hesablar" ekranını araşdırarkən) tapdığımız STRUCTURE_LICSCH→KURVAL
+        /// zəncirinin IKINCI yarısıdır: `SUBSTR(hesab,6,2)` artıq valyuta koduDUR
+        /// (struktur-axtarışına ehtiyac yoxdur, mövqe SABİTDİR), ona görə YALNIZ
+        /// `KURVAL`-a baxılır.</summary>
+        private async Task<(string currType, decimal amount)> ValyutaVeMeblegAsync(
+            GoamlEmeliyyat e, bool debetTerefMi, Dictionary<string, string?> valyutaKoduKesi, CancellationToken ct)
+        {
+            var prefiks = (e.Debet ?? "").Length >= 5 && (e.Kredit ?? "").Length >= 5
+                ? e.Debet!.Substring(0, 5) + e.Kredit!.Substring(0, 5) : "";
+
+            if (prefiks == "1005010060")
+                return debetTerefMi ? ("AZN", e.SummaVNacval ?? 0) : (e.ForeignCurrencyCode ?? "AZN", e.SummaVInval ?? 0);
+            if (prefiks == "1006010050")
+                return debetTerefMi ? (e.ForeignCurrencyCodeFrom ?? "AZN", e.SummaVInval ?? 0) : ("AZN", e.SummaVNacval ?? 0);
+
+            var hesab = debetTerefMi ? e.Debet : e.Account ?? e.Debet;
+            var valyuta = await ValyutaKoduAsync(hesab, valyutaKoduKesi, ct) ?? "AZN";
+            var meblegde = valyuta == "AZN" ? (e.SummaVNacval ?? 0) : (e.SummaVInval != 0 ? (e.SummaVInval ?? 0) : (e.SummaVNacval ?? 0));
+            return (valyuta, meblegde);
+        }
+
+        /// <summary>`KURVAL.SOKNAMEVALUT` — hesab nömrəsinin 6-7-ci simvolundan
+        /// (sabit mövqe, `func_get_Ekv`-in öz oxuduğu mövqe) oxunur, nəticə
+        /// ixrac boyu keşlənir (eyni kod təkrar sorğulanmır).</summary>
+        private async Task<string?> ValyutaKoduAsync(string? hesab, Dictionary<string, string?> kes, CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(hesab) || hesab.Length < 7) return null;
+            var kod = Tehlukesiz(hesab.Substring(5, 2));
+            if (kes.TryGetValue(kod, out var keshlenen)) return keshlenen;
+            try
+            {
+                var setirler = await _oracle.SelectAsync($"select soknamevalut from kurval where kodvaluti = '{kod}'", 1, ct);
+                var netice = setirler.Count > 0 ? DVal(setirler[0], "SOKNAMEVALUT") as string : null;
+                kes[kod] = netice;
+                return netice;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML Export — KURVAL sorğusu uğursuz oldu (kod={Kod})", kod);
+                kes[kod] = null;
+                return null;
+            }
+        }
+
+        /// <summary>`odb.Malumatin_novu` — REPORT_CODE üzrə reportType/reportReason.</summary>
+        private async Task<(int reportType, int reportReason)?> MalumatinNovuTapAsync(string reportCodeKod, CancellationToken ct)
+        {
+            try
+            {
+                var kod = Tehlukesiz(reportCodeKod);
+                var setirler = await _oracle.SelectAsync(
+                    $"select reporttype, reportreason from odb.malumatin_novu where isare = '{kod}'", 1, ct);
+                if (setirler.Count == 0) return null;
+                return ((int)(ToLong(DVal(setirler[0], "REPORTTYPE"))), (int)(ToLong(DVal(setirler[0], "REPORTREASON"))));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML Export — malumatin_novu sorğusu uğursuz oldu (kod={Kod})", reportCodeKod);
+                return null;
+            }
+        }
 
         // ── Köməkçilər ──────────────────────────────────────────────────────
 

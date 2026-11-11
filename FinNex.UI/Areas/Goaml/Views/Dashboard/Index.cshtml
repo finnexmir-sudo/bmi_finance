@@ -7,23 +7,23 @@
     // "statik siyahı" naxışı. `Controller` yalnız Hazir=true olanda keçid üçün
     // işlənir — hər hazır tab ÖZ controller-inə sahibdir (tab adını kontroller
     // adına görə TƏXMİN ETMƏ).
-    var tablar = new (string Ad, bool Hazir, string? Controller)[]
+    var tablar = new (string Ad, bool Hazir, string? Controller, string Action)[]
     {
-        ("Əməliyyatlar", true, "Emeliyyatlar"),
-        ("Risk", true, "Risk"),
-        ("Keçməyən əməliyyat", false, null),
-        ("Hesab risk", false, null),
-        ("Risk Progress", false, null),
-        ("Cash IN", false, null),
-        ("Card To Card", false, null),
-        ("18% 4%", false, null),
-        ("Setup", false, null),
-        ("SİYAHI", false, null),
-        ("kassa >30", false, null),
-        ("Təhlil", false, null),
-        ("MMX", false, null),
-        ("SCORING", false, null),
-        ("Export to file", false, null),
+        ("Əməliyyatlar", true, "Emeliyyatlar", "Index"),
+        ("Risk", true, "Risk", "Index"),
+        ("Keçməyən əməliyyat", false, null, "Index"),
+        ("Hesab risk", false, null, "Index"),
+        ("Risk Progress", false, null, "Index"),
+        ("Cash IN", false, null, "Index"),
+        ("Card To Card", false, null, "Index"),
+        ("18% 4%", false, null, "Index"),
+        ("Setup", false, null, "Index"),
+        ("SİYAHI", false, null, "Index"),
+        ("kassa >30", false, null, "Index"),
+        ("Təhlil", false, null, "Index"),
+        ("MMX", false, null, "Index"),
+        ("SCORING", false, null, "Index"),
+        ("Export to file", true, "Emeliyyatlar", "Export"),
     };
 }
 
@@ -50,7 +50,7 @@
 
                 if (t.Hazir && t.Controller != null)
                 {
-                    <a asp-area="Goaml" asp-controller="@t.Controller" asp-action="Index" style="@icStil">
+                    <a asp-area="Goaml" asp-controller="@t.Controller" asp-action="@t.Action" style="@icStil">
                         <i class="@icIcon" style="@icIconStil"></i>
                         <span style="@icTextStil">@t.Ad</span>
                     </a>

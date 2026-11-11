@@ -84,6 +84,7 @@
         <input type="hidden" asp-for="ToAdi" />
         <input type="hidden" asp-for="Primechanie" />
         <input type="hidden" asp-for="KodValuti" />
+        <input type="hidden" asp-for="DocumentSource" />
         <input type="hidden" name="SummaVNacval" value="@(Model.SummaVNacval?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
         <div class="gml-info-strip">
             <div class="gml-info-item"><span class="gml-info-lbl">Tarix</span><span class="gml-info-val">@Model.CandidateDateOper.ToString("dd.MM.yyyy")</span></div>

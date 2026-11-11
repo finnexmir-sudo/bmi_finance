@@ -26,6 +26,13 @@ namespace FinNex.Application.DTOs.Goaml
         public string? TransactionNumber { get; set; }
         public string? Primechanie { get; set; }
         public DateTime? DateOper { get; set; }
+        /// <summary>Oracle `DOC_DNA_ALL_RISK.DOCUMENT_SOURCE` — namizəd axtarışından
+        /// (bax <see cref="GoamlNamizedSetirDto.DocumentSource"/>) Təsdiqlə formu ilə
+        /// birlikdə ötürülür. Operator ƏL İLƏ YAZMIR — gizli sahədir, YALNIZ
+        /// Export to JSON zamanı trn_type/trn_payment_system/trn_chanel təyini üçün
+        /// lazımdır (bax `97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-dəki `document_source`
+        /// mətn-uyğunluğu şərtləri).</summary>
+        public string? DocumentSource { get; set; }
         public string? TransmodeCode { get; set; }
         public string? TransmodeComment { get; set; }
         public decimal? AmountLocal { get; set; }
