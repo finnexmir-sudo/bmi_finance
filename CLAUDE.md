@@ -10305,3 +10305,76 @@ atributunu YENİ bir controller-ə köçürəndə, mövcud bir controller-dən
 `using`-lərini (təkcə görünən/işlənən tiplərinkini yox) sətir-sətir
 tutuşdurmaq lazımdır** — mötərizə balansı YALNIZ sintaksisi yoxlayır, bir
 tipin HANSI namespace-dən gəldiyini YOX.
+
+## GOAML — Əməliyyatlar Tabı `DOC_DNA_ALL_TAB`-DAN ASILI İMİŞ — AYSEL BAŞQA TARİXİ FİLTR EDƏNDƏ KÖHNƏ GÜN YOX OLURDU (11.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real mühitdə Əməliyyatlar tabında bir tarixlə axtarış edib "0 namizəd"
+aldı, AYSEL-də EYNİ tarixlə filter edəndən sonra bizim tətbiqə qayıdanda nəticə
+göründü — sual: *"görəsən GOAML hansısa sorğunun əsasında hər filterdə bazaya
+yazır və onu gətirir?"* Haqlı çıxdı.
+
+**Kök səbəb — `P_DOC_DNA_GOAML`-in tam mənbə kodu (`all_source`, 11.11.2026-da
+canlı Oracle-dan çıxarılıb) göstərdi ki, 06.11.2026-dakı "DOC_DNA_ALL_TAB
+biznes qaydaları ilə filtrlənmiş namizəddir" fərziyyəsi SƏHV İDİ:**
+
+```sql
+delete odb.doc_dna_all_tab;   -- ŞƏRTSİZ, BÜTÜN cədvəli boşaldır (öz filialına görə filtr şərhə alınıb)
+commit;
+insert into odb.doc_dna_all_tab (...)
+select distinct ...
+  from odb.doc_dna_all_risk   -- YEGANƏ mənbə, HEÇ BİR GL/netting filtri YOXDUR
+ where date_oper between p_date_s and p_date_po;
+commit;
+```
+
+`DOC_DNA_ALL_TAB` — AYSEL-də **İSTƏNİLƏN istifadəçi İSTƏNİLƏN tarix aralığı
+üçün** bu prosedura müraciət etdikdə TAM SİLİNİR və YALNIZ o tarix aralığının
+sətirləri ilə yenidən doldurulan, **qlobal, paylaşılan, sıfır dayanıqlılıqlı
+"scratch" cədvəldir** — Risk tabının mənbəyi `DOC_DNA_ALL_RISK`-dən (06-11.11.2026-da
+canlı doğrulanıb, sabit/müstəqildir) KƏSKIN FƏRQLİDİR. 06.11.2026-da "GL/netting
+istisna qaydaları `P_DOC_DNA_GOAML`-dən gəlir" deyilmişdi — bu da YANLIŞ idi:
+həmin qaydalar əslində AYSEL-in GÖSTƏRMƏ sorğusundandır (v$sql ilə ayrıca
+tutulub), `P_DOC_DNA_GOAML`-in ÖZÜ heç bir belə filtr tətbiq etmir.
+
+**Niyə əvvəlki "Risk" araşdırması bunu üzə çıxarmadı:** Risk-in sorğusu başdan
+`DOC_DNA_ALL_RISK`-dən oxuyurdu (heç vaxt `DOC_DNA_ALL_TAB`-a toxunmadı), ona
+görə bu problemi görə BİLMƏZDİ — iki tab fərqli mənbədən oxuduğu üçün eyni
+`v$sql`/canlı-doğrulama metodu bir tabda düzgün nəticə verib o birini aşkar
+etməmişdi.
+
+**Həll — mənbə `DOC_DNA_ALL_RISK`-ə dəyişdirildi, `DOC_DNA_ALL_TAB`
+TAMAMİLƏ TƏRK EDİLDİ.** `P_DOC_DNA_GOAML`-in öz kursoru göstərdi ki,
+`DOC_DNA_ALL_RISK`-in ÖZÜ onsuz da bütün lazım olan sütunları (`NAME_LICSCH_DE/KRE`,
+`REGISTRAC_NOMER_DE/KRE`, `DOCUMENT_SOURCE` daxil) NATİV daşıyır — `odb.arh_dd`-yə
+enib P_DOC_DNA_GOAML-in (əslində mövcud olmayan) biznes qaydasını yenidən qurmaq
+lazım olmadı. `docs/sql/goaml/90_Goaml_OracleSorgular.sql` yeniləndi:
+`from odb.doc_dna_all_tab t left join odb.doc_dna_all_risk r on ...` →
+`select distinct ... from odb.doc_dna_all_risk t` (GL/netting istisna şərtləri
+DƏYİŞMƏDİ, `name_licsch_de/kre`/`registrac_nomer_de/kre` indi `r.` yox `t.`-dən
+oxunur). `SELECT DISTINCT` P_DOC_DNA_GOAML-in öz kursorundakı `distinct`-lə EYNİ
+məqsədə xidmət edir — `DOC_DNA_ALL_RISK`-də bir əməliyyat birdən çox risk-səbəbinə
+görə təkrarlana bilər, bizim seçdiyimiz (risk-səbəb sütunu olmayan) sütunlarda
+sadə DISTINCT bunu düzgün toplayır.
+
+**Əlavə tapıntı (gələcək üçün) — `ID_VD` `DOC_DNA_ALL_RISK`-in NATİV
+sütunudur.** "Update New" kaskadının 7 ATLANAN qaydasının (bax yuxarı, "'Update
+New' Avtomatik Doldurma Mexanizmi Köçürüldü" bölməsi) hamısı `ID_VD`-yə bağlı
+idi, mənbəyi bilinmirdi — indi aydındır: `ID_VD` elə `DOC_DNA_ALL_RISK.ID_VD`-dir,
+birbaşa namizəd sorğusundan əlçatandır. Bu qaydalar toxunulanda artıq ayrıca
+Oracle araşdırmasına ehtiyac yoxdur.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — bu düzəlişdən ƏVVƏL "0 namizəd" görünüb keçmiş
+hər hansı axtarış (və onun nəticəsində təsdiqlənməmiş qalmış real əməliyyatlar)
+avtomatik bərpa olunmur, operator sadəcə YENİDƏN axtarış etməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(yeni SQL mətninin sütun sırası `GoamlNamizedSetirDto`-nun sahə sırası ilə
+bir-bir tutuşduruldu — `C#` kodu HEÇ dəyişmədi, yalnız `docs/sql/goaml/
+90_Goaml_OracleSorgular.sql` SQL Server-də YENİDƏN işlədilməlidir ki,
+`OracleSorgular` cədvəlindəki `GOAML_EMELIYYAT_NAMIZED` sətri yenilənsin).
+İstifadəçi faylı SQL Server-də işlətdikdən sonra real ssenari ilə yoxlamalıdır:
+AYSEL-ə HEÇ TOXUNMADAN, birbaşa Əməliyyatlar tabında əvvəllər "0 namizəd"
+göstərən bir tarixlə (məs. 03.11.2026) axtarış edib indi nəticə gəldiyini
+təsdiqləməli, sonra AYSEL-də BAŞQA bir tarixlə filter edib bizim tətbiqə
+qayıdaraq ƏVVƏLKİ tarixin NƏTİCƏSİNİN DƏYİŞMƏDİYİNİ (artıq AYSEL-dən asılı
+olmadığını) yoxlamalıdır.

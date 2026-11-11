@@ -1,9 +1,10 @@
 namespace FinNex.Application.DTOs.Goaml
 {
     /// <summary>
-    /// Oracle-dan (DOC_DNA_ALL_TAB + DOC_DNA_ALL_RISK) oxunan BİR namizəd
-    /// əməliyyat sətri — "Əməliyyatlar" tabının axtarış nəticəsi.
-    /// Oracle-a YAZILMIR, YALNIZ göstərilir/seçilir.
+    /// Oracle-dan (DOC_DNA_ALL_RISK — 11.11.2026-dan, əvvəl DOC_DNA_ALL_TAB
+    /// idi, bax 90_Goaml_OracleSorgular.sql-in baş şərhi) oxunan BİR namizəd
+    /// əməliyyat sətri — "Əməliyyatlar" VƏ "Risk" tablarının ortaq nəticə
+    /// formasıdır. Oracle-a YAZILMIR, YALNIZ göstərilir/seçilir.
     /// </summary>
     public class GoamlNamizedSetirDto
     {

@@ -14,9 +14,11 @@ using Microsoft.Extensions.Logging;
 namespace FinNex.Application.Services.Goaml
 {
     /// <summary>
-    /// GOAML — "Əməliyyatlar" tabı. Namizəd Oracle-dan (DOC_DNA_ALL_TAB+RISK)
-    /// OXUNUR, təsdiqlənən sətir isə bizim ÖZ SQL Server bazamıza (<see cref="GoamlEmeliyyat"/>)
-    /// yazılır — Oracle-a YAZI qadağandır (layihənin kökü qaydası).
+    /// GOAML — "Əməliyyatlar" tabı. Namizəd Oracle-dan (DOC_DNA_ALL_RISK —
+    /// 11.11.2026-dan, AYSEL-dən TAM MÜSTƏQİL, bax 90_Goaml_OracleSorgular.sql-in
+    /// baş şərhi) OXUNUR, təsdiqlənən sətir isə bizim ÖZ SQL Server bazamıza
+    /// (<see cref="GoamlEmeliyyat"/>) yazılır — Oracle-a YAZI qadağandır
+    /// (layihənin kökü qaydası).
     /// </summary>
     public class GoamlService : IGoamlService
     {
