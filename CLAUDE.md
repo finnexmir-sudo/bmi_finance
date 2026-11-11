@@ -10285,3 +10285,23 @@ sətirlərin) bu sessiyada canlı Oracle-da yoxlanmış rəqəmlə (eyni tarix
 aralığında) üst-üstə düşdüyünü, "Təsdiqlə"nin Əməliyyatlar-ın öz Tesdiq
 ekranını düzgün açdığını, oradan təsdiqlədikdən sonra "Təsdiqlənmiş siyahı"da
 göründüyünü təsdiqləməlidir.
+
+### `RiskController.cs` — `using FinNex.Domain;` Unudulub, CS0103 (11.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real Visual Studio-da bu dəyişikliyi açar-açmaz **CS0103**
+(`The name 'IcazeKodlari' does not exist in the current context`) aldı —
+dəqiq CLAUDE.md-nin "Qovluq Adı ≠ Namespace" bölməsindəki tələ. `IcazeKodlari`
+`FinNex.Domain` (kök namespace) daşıyır, `EmeliyyatlarController.cs`-in özü
+artıq `using FinNex.Domain;` yazır (oranı yoxlamışdım), amma `RiskController.cs`-i
+yazarkən həmin konkret sətri köçürməyi UNUTMUŞAM — fayl-ümumi brace/paren
+balansı (yoxladığım yeganə şey, `dotnet build` olmadığı üçün) bu cür SƏHV
+`using`-i HEÇ VAXT tuta bilməz, çünki o, sintaktik olaraq tam düzgün koddur.
+
+**Düzəliş:** `using FinNex.Domain;` əlavə edildi.
+
+**Qayda (təkrar, bu modulda İKİNCİ dəfə): eyni `[Icaze(IcazeKodlari...)]`
+atributunu YENİ bir controller-ə köçürəndə, mövcud bir controller-dən
+(`EmeliyyatlarController.cs`) KOPYALAMAQ əvəzinə YAZANDA onun BÜTÜN
+`using`-lərini (təkcə görünən/işlənən tiplərinkini yox) sətir-sətir
+tutuşdurmaq lazımdır** — mötərizə balansı YALNIZ sintaksisi yoxlayır, bir
+tipin HANSI namespace-dən gəldiyini YOX.
