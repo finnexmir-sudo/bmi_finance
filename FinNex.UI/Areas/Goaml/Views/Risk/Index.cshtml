@@ -1,0 +1,308 @@
+@model FinNex.Application.DTOs.Goaml.GoamlAxtarisDto
+@{
+    ViewData["Title"] = "GOAML — Risk";
+}
+
+@section Styles {
+    <style>
+        .gml-sub { font-size:.76rem; color:#94a3b8; }
+        .gml-bar { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }
+        .gml-fld { display:flex; flex-direction:column; gap:5px; }
+        .gml-fld-grow { flex:1 1 200px; max-width:340px; }
+        .gml-inp-date, .gml-inp-num { width:140px; }
+        .gml-filter-lbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
+        .gml-setir-sayi { color:#64748b; font-size:.82rem; font-weight:600; }
+
+        .gml-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-top:18px; }
+        .gml-table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 420px); }
+        .gml-table { width:100%; border-collapse:collapse; font-size:12.5px; white-space:nowrap; }
+        .gml-table thead th { background:#f8fafc; padding:7px 10px; text-align:left; font-weight:700; color:#475569; border-bottom:2px solid #e2e8f0; white-space:nowrap; position:sticky; top:0; z-index:2; }
+        .gml-table td { padding:4px 10px; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
+        .gml-table th, .gml-table td { border-right:1px solid #e2e8f0; }
+        .gml-table th:last-child, .gml-table td:last-child { border-right:none; }
+        .gml-table tbody tr:hover { background:#fafbff; }
+        .gml-table th.gml-fix, .gml-table td.gml-fix { position:sticky; left:0; z-index:1; box-shadow:4px 0 6px -4px rgba(0,0,0,.15); }
+        .gml-table td.gml-fix { background:#fff; }
+        .gml-table tbody tr:hover td.gml-fix { background:#fafbff; }
+        .gml-table thead th.gml-fix { z-index:3; }
+        .gml-table th[data-sort-key] { cursor:pointer; user-select:none; }
+        .gml-table th[data-sort-key]:hover { background:#f1f5f9; }
+        .gml-sort-ind { display:inline-block; margin-left:4px; font-size:10px; opacity:.35; }
+        .gml-sort-ind.gml-sort-active { opacity:1; color:#2563eb; }
+        .gml-empty { padding:40px; text-align:center; color:#9ca3af; font-size:.9rem; }
+        .gml-loading { padding:40px; text-align:center; color:#6b7280; font-size:.88rem; }
+        .gml-num { text-align:right; font-variant-numeric:tabular-nums; }
+        .gml-mebleg { font-weight:700; color:#0f172a; }
+        .gml-ok-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; background:#ecfdf5; color:#065f46; font-size:.74rem; font-weight:600; }
+        .gml-tesdiqle-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:7px; background:#2563eb; color:#fff; font-size:.78rem; font-weight:600; text-decoration:none; }
+        .gml-tesdiqle-btn:hover { background:#1d4ed8; color:#fff; }
+        .gml-sahib { font-size:.78rem; color:#4b5563; }
+        .gml-hesab { font-family:ui-monospace,Consolas,monospace; font-size:.78rem; color:#374151; }
+        .gml-risk-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; background:#fef2f2; color:#991b1b; font-size:.72rem; font-weight:600; }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="gml-sub">
+        Oracle-dan (yalnız oxuma) ölkə/qara siyahı/hesab-sahibi vətəndaşlığı əsaslı risk namizədləri —
+        AYSEL-in öz staging cədvəlindən ASILI DEYİL (10-11.11.2026-da canlı Oracle ilə dəqiq doğrulanıb).
+        Seçib "Təsdiqlə" ilə öz bazamıza yazılır.
+    </div>
+
+    <div class="fn-card" style="padding:20px">
+        <form id="gmlAxtarForm">
+            @Html.AntiForgeryToken()
+            <div class="gml-bar">
+                <div class="gml-fld">
+                    <label class="gml-filter-lbl">Tarixdən</label>
+                    <input type="date" name="BasTarix" id="gmlBasTarix" class="fn-input gml-inp-date"
+                           value="@Model.BasTarix.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div class="gml-fld">
+                    <label class="gml-filter-lbl">Tarixə qədər</label>
+                    <input type="date" name="SonTarix" id="gmlSonTarix" class="fn-input gml-inp-date"
+                           value="@Model.SonTarix.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div class="gml-fld gml-fld-grow">
+                    <label class="gml-filter-lbl">VÖEN və ya hesab №</label>
+                    <input type="text" name="VoenVeyaHesab" id="gmlVoenHesab" class="fn-input" placeholder="dar axtarış (ixtiyari)..." />
+                </div>
+
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-search"></i> Axtar
+                </button>
+                <span id="gmlSetirSayi" class="gml-setir-sayi"></span>
+                <a asp-controller="Emeliyyatlar" asp-action="Siyahi" class="fn-btn fn-btn--outline" style="margin-left:auto">
+                    <i class="bi bi-list-check"></i> Təsdiqlənmiş siyahı
+                </a>
+            </div>
+        </form>
+
+        <div class="gml-card" id="gmlResultWrap" style="display:none">
+            <div class="gml-table-wrap">
+                <table class="gml-table">
+                    <thead>
+                        <tr>
+                            <th class="gml-fix">Əməliyyat</th>
+                            <th data-sort-key="dateOper" data-sort-type="date">Tarix <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="filialNumber" data-sort-type="number">Fil. <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="debet" data-sort-type="text">Debet <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="nameLicschDe" data-sort-type="text">Debet sahibi <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="kredit" data-sort-type="text">Kredit <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="nameLicschKre" data-sort-type="text">Kredit sahibi <span class="gml-sort-ind">↕</span></th>
+                            <th class="gml-num" data-sort-key="summaVNacval" data-sort-type="number">Məbləğ (AZN) <span class="gml-sort-ind">↕</span></th>
+                            <th>Xarici val.</th>
+                            <th data-sort-key="countryCodeDe" data-sort-type="text">Ölkə (D/K) <span class="gml-sort-ind">↕</span></th>
+                            <th data-sort-key="primechanie" data-sort-type="text">Qeyd <span class="gml-sort-ind">↕</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="gmlResultBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="gmlLoading" class="gml-loading" style="display:none">Axtarılır...</div>
+        <div id="gmlEmpty" class="gml-empty" style="display:none">Bu tarix aralığında risk namizədi tapılmadı.</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const gmlForm = document.getElementById('gmlAxtarForm');
+        const gmlWrap = document.getElementById('gmlResultWrap');
+        const gmlBody = document.getElementById('gmlResultBody');
+        const gmlLoading = document.getElementById('gmlLoading');
+        const gmlEmpty = document.getElementById('gmlEmpty');
+        const gmlSetirSayi = document.getElementById('gmlSetirSayi');
+
+        function gmlNum(v) {
+            if (v === null || v === undefined) return '';
+            return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Köhnəlmiş cavab qoruyucusu — bax Əməliyyatlar/Index.cshtml-in eyni naxışı.
+        var gmlSonAcar = 0;
+
+        var gmlRows = [];
+        var gmlSortKey = null;
+        var gmlSortDir = 1;
+
+        function gmlOlkeHucresi(s) {
+            var d = s.countryCodeDe, k = s.countryCodeKre;
+            if (!d && !k) return '—';
+            var html = '';
+            if (d) html += '<span class="gml-risk-badge">D: ' + d + '</span> ';
+            if (k) html += '<span class="gml-risk-badge">K: ' + k + '</span>';
+            return html;
+        }
+
+        function gmlRenderRows(setirler) {
+            gmlBody.innerHTML = '';
+            setirler.forEach(function (s) {
+                var tr = document.createElement('tr');
+
+                var qeyd = s.primechanie ? s.primechanie : '—';
+                var xaricVal = s.summaVInval ? (gmlNum(s.summaVInval) + ' (kod ' + (s.kodValuti ?? '—') + ')') : '—';
+
+                var actionHtml;
+                if (s.artiqTesdiqlenib) {
+                    actionHtml = '<span class="gml-ok-badge"><i class="bi bi-check-circle-fill"></i> Təsdiqlənib</span>';
+                } else {
+                    var params = new URLSearchParams({
+                        filialNumber: s.filialNumber,
+                        dateOper: s.dateOper,
+                        recNum: s.recNum,
+                        debet: s.debet || '',
+                        kredit: s.kredit || '',
+                        summaVNacval: s.summaVNacval ?? '',
+                        kodValuti: s.kodValuti ?? '',
+                        innDebet: s.innLicschDe || '',
+                        innKredit: s.innLicschKre || '',
+                        primechanie: s.primechanie || '',
+                        nameLicschDe: s.nameLicschDe || '',
+                        nameLicschKre: s.nameLicschKre || ''
+                    });
+                    // Risk-in öz namizədi də EYNİ, ortaq "Təsdiqlə" ekranına (Əməliyyatlar
+                    // controller-i) gedir — iki ayrı Tesdiq ekranı YARADILMAYIB.
+                    actionHtml = '<a class="gml-tesdiqle-btn" href="@Url.Action("Tesdiq", "Emeliyyatlar")?' + params.toString() + '">' +
+                        '<i class="bi bi-pencil-square"></i> Təsdiqlə</a>';
+                }
+
+                tr.innerHTML =
+                    '<td class="gml-fix">' + actionHtml + '</td>' +
+                    '<td>' + new Date(s.dateOper).toLocaleDateString('az-AZ') + '</td>' +
+                    '<td>' + s.filialNumber + '</td>' +
+                    '<td class="gml-hesab">' + (s.debet || '—') + '</td>' +
+                    '<td class="gml-sahib">' + (s.nameLicschDe || '—') + '</td>' +
+                    '<td class="gml-hesab">' + (s.kredit || '—') + '</td>' +
+                    '<td class="gml-sahib">' + (s.nameLicschKre || '—') + '</td>' +
+                    '<td class="gml-mebleg">' + gmlNum(s.summaVNacval) + '</td>' +
+                    '<td>' + xaricVal + '</td>' +
+                    '<td>' + gmlOlkeHucresi(s) + '</td>' +
+                    '<td>' + qeyd + '</td>';
+                gmlBody.appendChild(tr);
+            });
+        }
+
+        function gmlSiralaVeCek() {
+            if (!gmlSortKey) return;
+            var key = gmlSortKey, type = gmlSortKey ? document.querySelector('[data-sort-key="' + gmlSortKey + '"]').dataset.sortType : 'text';
+            gmlRows.sort(function (a, b) {
+                var va = a[key], vb = b[key];
+                if (type === 'date') {
+                    va = va ? new Date(va).getTime() : 0;
+                    vb = vb ? new Date(vb).getTime() : 0;
+                } else if (type === 'number') {
+                    va = va === null || va === undefined ? -Infinity : Number(va);
+                    vb = vb === null || vb === undefined ? -Infinity : Number(vb);
+                } else {
+                    va = (va || '').toString().toLowerCase();
+                    vb = (vb || '').toString().toLowerCase();
+                }
+                if (va < vb) return -1 * gmlSortDir;
+                if (va > vb) return 1 * gmlSortDir;
+                return 0;
+            });
+            gmlRenderRows(gmlRows);
+        }
+
+        document.querySelectorAll('#gmlResultWrap thead th[data-sort-key]').forEach(function (th) {
+            th.addEventListener('click', function () {
+                var key = th.dataset.sortKey;
+                if (gmlSortKey === key) {
+                    gmlSortDir *= -1;
+                } else {
+                    gmlSortKey = key;
+                    gmlSortDir = 1;
+                }
+                document.querySelectorAll('#gmlResultWrap thead .gml-sort-ind').forEach(function (ind) {
+                    ind.textContent = '↕';
+                    ind.classList.remove('gml-sort-active');
+                });
+                var ind = th.querySelector('.gml-sort-ind');
+                ind.textContent = gmlSortDir === 1 ? '▲' : '▼';
+                ind.classList.add('gml-sort-active');
+                gmlSiralaVeCek();
+            });
+        });
+
+        // Risk-in ÖZ sessionStorage açarı — Əməliyyatlar-ın "gmlSonAxtaris" açarı
+        // ilə QARIŞDIRILMIR, hər tab öz filtrini yadda saxlayır.
+        var GML_SEARCH_KEY = 'gmlRiskSonAxtaris';
+
+        async function gmlAxtar() {
+            var acar = ++gmlSonAcar;
+
+            gmlWrap.style.display = 'none';
+            gmlEmpty.style.display = 'none';
+            gmlLoading.style.display = 'block';
+            gmlSetirSayi.textContent = '';
+
+            var token = document.querySelector('#gmlAxtarForm input[name="__RequestVerificationToken"]').value;
+            var filtr = {
+                BasTarix: document.getElementById('gmlBasTarix').value,
+                SonTarix: document.getElementById('gmlSonTarix').value,
+                VoenVeyaHesab: document.getElementById('gmlVoenHesab').value || ''
+            };
+            var body = new URLSearchParams(Object.assign({ __RequestVerificationToken: token }, filtr));
+
+            try {
+                var resp = await fetch('@Url.Action("Axtar")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+                var data = await resp.json();
+
+                if (acar !== gmlSonAcar) return;
+
+                gmlLoading.style.display = 'none';
+
+                if (!data.success) {
+                    alert(data.message || 'Axtarış uğursuz oldu.');
+                    return;
+                }
+
+                try { sessionStorage.setItem(GML_SEARCH_KEY, JSON.stringify(filtr)); } catch (e) { }
+
+                gmlRows = data.setirler || [];
+                gmlSetirSayi.textContent = gmlRows.length + ' risk namizədi tapıldı';
+
+                gmlSortKey = null;
+                gmlSortDir = 1;
+                document.querySelectorAll('#gmlResultWrap thead .gml-sort-ind').forEach(function (ind) {
+                    ind.textContent = '↕';
+                    ind.classList.remove('gml-sort-active');
+                });
+
+                if (gmlRows.length === 0) {
+                    gmlEmpty.style.display = 'block';
+                    return;
+                }
+
+                gmlRenderRows(gmlRows);
+                gmlWrap.style.display = 'block';
+            } catch (err) {
+                if (acar !== gmlSonAcar) return;
+                gmlLoading.style.display = 'none';
+                alert('Xəta: ' + err);
+            }
+        }
+
+        gmlForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            gmlAxtar();
+        });
+
+        (function gmlBerpaEt() {
+            var saxlanmis;
+            try { saxlanmis = sessionStorage.getItem(GML_SEARCH_KEY); } catch (e) { return; }
+            if (!saxlanmis) return;
+            var f;
+            try { f = JSON.parse(saxlanmis); } catch (e) { return; }
+            if (f.BasTarix) document.getElementById('gmlBasTarix').value = f.BasTarix;
+            if (f.SonTarix) document.getElementById('gmlSonTarix').value = f.SonTarix;
+            document.getElementById('gmlVoenHesab').value = f.VoenVeyaHesab || '';
+            gmlAxtar();
+        })();
+    </script>
+}

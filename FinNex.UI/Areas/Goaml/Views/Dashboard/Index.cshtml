@@ -4,24 +4,26 @@
     // BMI-nin köhnə "AYSEL/GOAML" Oracle Forms ekranındakı 15 sol-menyu tabı —
     // ekran-ekran təsdiqləndikcə "Hazır"a keçəcək. Sırf izləmə siyahısıdır,
     // koda bağlı DEYİL (DB-də saxlanmır) — Risk Hesabatları kataloqunun eyni
-    // "statik siyahı" naxışı.
-    var tablar = new (string Ad, bool Hazir)[]
+    // "statik siyahı" naxışı. `Controller` yalnız Hazir=true olanda keçid üçün
+    // işlənir — hər hazır tab ÖZ controller-inə sahibdir (tab adını kontroller
+    // adına görə TƏXMİN ETMƏ).
+    var tablar = new (string Ad, bool Hazir, string? Controller)[]
     {
-        ("Əməliyyatlar", true),
-        ("Risk", false),
-        ("Keçməyən əməliyyat", false),
-        ("Hesab risk", false),
-        ("Risk Progress", false),
-        ("Cash IN", false),
-        ("Card To Card", false),
-        ("18% 4%", false),
-        ("Setup", false),
-        ("SİYAHI", false),
-        ("kassa >30", false),
-        ("Təhlil", false),
-        ("MMX", false),
-        ("SCORING", false),
-        ("Export to file", false),
+        ("Əməliyyatlar", true, "Emeliyyatlar"),
+        ("Risk", true, "Risk"),
+        ("Keçməyən əməliyyat", false, null),
+        ("Hesab risk", false, null),
+        ("Risk Progress", false, null),
+        ("Cash IN", false, null),
+        ("Card To Card", false, null),
+        ("18% 4%", false, null),
+        ("Setup", false, null),
+        ("SİYAHI", false, null),
+        ("kassa >30", false, null),
+        ("Təhlil", false, null),
+        ("MMX", false, null),
+        ("SCORING", false, null),
+        ("Export to file", false, null),
     };
 }
 
@@ -46,9 +48,9 @@
                 var icIconStil = "color:" + (t.Hazir ? "#22c55e" : "#9ca3af");
                 var icTextStil = "font-size:.88rem;font-weight:600;color:" + (t.Hazir ? "#065f46" : "#6b7280");
 
-                if (t.Ad == "Əməliyyatlar" && t.Hazir)
+                if (t.Hazir && t.Controller != null)
                 {
-                    <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index" style="@icStil">
+                    <a asp-area="Goaml" asp-controller="@t.Controller" asp-action="Index" style="@icStil">
                         <i class="@icIcon" style="@icIconStil"></i>
                         <span style="@icTextStil">@t.Ad</span>
                     </a>

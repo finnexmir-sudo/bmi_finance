@@ -27,6 +27,12 @@ namespace FinNex.Application.Services.Goaml
 
         private const string SorguAdi = "GOAML_EMELIYYAT_NAMIZED";
 
+        /// <summary>"Risk" tabının namizəd sorğusu — ölkə/qara siyahı/hesab-sahibi
+        /// vətəndaşlığı əsaslı, AYSEL-in `doc_dna_all_risk_t` staging cədvəlindən
+        /// ASILI OLMAYAN ekvivalent (10-11.11.2026, canlı Oracle ilə doğrulanıb —
+        /// bax docs/sql/goaml/91_Goaml_Risk_OracleSorgular.sql-in baş şərhi).</summary>
+        private const string RiskSorguAdi = "GOAML_RISK_NAMIZED";
+
         public GoamlService(IOracleService oracle, IOracleSorguService sorgu, IUnitOfWork unitOfWork, ILogger<GoamlService> logger)
         {
             _oracle = oracle;
@@ -35,15 +41,27 @@ namespace FinNex.Application.Services.Goaml
             _logger = logger;
         }
 
-        public async Task<Result<List<GoamlNamizedSetirDto>>> NamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default)
+        public Task<Result<List<GoamlNamizedSetirDto>>> NamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default)
+            => NamizedAxtarAsyncCore(SorguAdi, "docs/sql/goaml/90_Goaml_OracleSorgular.sql", dto, ct);
+
+        public Task<Result<List<GoamlNamizedSetirDto>>> RiskNamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default)
+            => NamizedAxtarAsyncCore(RiskSorguAdi, "docs/sql/goaml/91_Goaml_Risk_OracleSorgular.sql", dto, ct);
+
+        /// <summary>Əməliyyatlar VƏ Risk tablarının ORTAQ namizəd-axtarış
+        /// mexanizmi — hər ikisi eyni şəkildə saxlanmış Oracle sorğusunu
+        /// (yalnız SorguAdi fərqli) oxuyub eyni formada (<see cref="GoamlNamizedSetirDto"/>)
+        /// nəticə qaytarır və eyni dublikat-yoxlamasından keçir. Kod TƏKRAR
+        /// YAZILMASIN deyə BİR yerdə saxlanılır.</summary>
+        private async Task<Result<List<GoamlNamizedSetirDto>>> NamizedAxtarAsyncCore(
+            string sorguAdi, string sqlFaylYolu, GoamlAxtarisDto dto, CancellationToken ct)
         {
             var sorgular = await _sorgu.HamisiniGetirAsync();
             var metin = sorgular?.Data?.FirstOrDefault(x =>
-                string.Equals((x.SorguAdi ?? "").Trim(), SorguAdi, StringComparison.OrdinalIgnoreCase))?.SorguMetni;
+                string.Equals((x.SorguAdi ?? "").Trim(), sorguAdi, StringComparison.OrdinalIgnoreCase))?.SorguMetni;
 
             if (string.IsNullOrWhiteSpace(metin))
                 return Result<List<GoamlNamizedSetirDto>>.Fail(
-                    $"Oracle sorğusu ({SorguAdi}) tapılmadı — docs/sql/goaml/90_Goaml_OracleSorgular.sql SQL Server-də işlədilməlidir.");
+                    $"Oracle sorğusu ({sorguAdi}) tapılmadı — {sqlFaylYolu} SQL Server-də işlədilməlidir.");
 
             // Minimum məbləğ — operator yoxdursa şərt söndürülür ("1=1").
             var mebleqSert = dto.MinMebleg is decimal m

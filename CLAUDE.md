@@ -10158,3 +10158,130 @@ ilə namizəd açıb yoxlamalıdır: "Nümayəndənin" dropdown-unda indi NUMAYE
 şəxslərin (vəzifə etiketi ilə) göründüyünü, seçimdən sonra CON xanalarının
 düzgün dolduğunu, "Hesab imza hüququ olan şəxs"in (Rəhbər) əvvəlki kimi
 avtomatik qaldığını.
+
+## GOAML — "Risk" Tabı Quruldu, AYSEL-in Staging Cədvəlindən ASILI DEYİL (11.11.2026)
+
+Növbəti tab (növbə: Əməliyyatlar → **Risk** → Export to file) — BMI-nin
+AYSEL/GOAML-in "Risk" ekranının namizəd-seçim məntiqi `v$sql`/`v$open_cursor`
+ilə canlı tutulub (10.11.2026), sonra isə AYSEL-in öz staging cədvəlindən
+(`ODB.DOC_DNA_ALL_RISK_T`) **ASILI OLMAYAN** bir ekvivalent canlı Oracle-a
+qarşı ADDIM-ADDIM doğrulanıb (11.11.2026).
+
+### Kəşf — AYSEL "Risk" basanda NƏ BAŞ VERİR
+
+Operator tarix daxil edib Filter basanda, HƏMİN tarix aralığı üçün:
+1. `DELETE ODB.DOC_DNA_ALL_RISK_T` — staging TAMAMİLƏ boşaldılır.
+2. `SELECT ... FROM ODB.DOC_DNA_ALL_RISK A, VIEW_LICSCH_ALL LD, VIEW_LICSCH_ALL LK
+   WHERE DATE_OPER BETWEEN :B2 AND :B1 AND ... AND (LD.REGISTRAC_NOMER IN (<5
+   cədvəllik UNION, COUNTRY_CODES_RED/GRAY-ə qarşı>) OR LK.REGISTRAC_NOMER IN (...))`
+   — namizədlər **mənbə** cədvəldən (`DOC_DNA_ALL_RISK`) seçilir.
+3. `INSERT INTO ODB.DOC_DNA_ALL_RISK_T(...) VALUES(..., NVL(NVL(:B11,:B10),:B9), ...)`
+   — staginqə yazarkən `COUNTRYCODE_DE`/`COUNTRYCODE_KRE` sütunları ÜÇ-SƏVİYYƏLİ
+   bir NVL zənciri ilə **zənginləşdirilir** (Oracle Forms-un öz, görünməyən
+   trigger məntiqi — `v$sql`-dən yalnız bind yer tutucuları (`:B9`-`:B11`)
+   görünür, ONLARI nəyin doldurduğu YOX).
+4. `SELECT ... FROM odb.doc_dna_all_risk_t WHERE ... (COUNTRYCODE_KRE IN RED
+   OR COUNTRYCODE_DE IN RED OR CC_DD IN RED OR emitent/benefisiar vətəndaşlığı
+   OR balans-sinif cütü OR qara siyahı) AND DATE_OPER BETWEEN ...` — grid-i
+   bu, staginqdən göstərir.
+
+⚠️ **Staginq cədvəli SABİT KEŞ DEYİL** — hər Filter klikində O ANKI tarix
+aralığı üçün YENİDƏN DELETE+INSERT olunur. FinNex Oracle-a YAZI apara
+bilmədiyi üçün (layihənin kökü qaydası) bu cədvələ GÜVƏNMƏK TƏHLÜKƏLİDİR —
+AYSEL dayandırılsa, ya sadəcə başqa bir tarix üçün işə düşsə, staginq bizim
+üçün köhnə/boş qalar.
+
+### Axtarış — addım-addım, canlı Oracle-da doğrulanıb
+
+1. Mənə məlum WHERE-kriteriyası (#65-in özü) ilk olaraq `doc_dna_all_risk_t`-ə
+   qarşı test edildi — AYSEL-in öz grid-i ilə 3-4 FƏRQLİ tarixdə **1:1 eynilik**
+   verdi.
+2. Eyni kriteriya birbaşa `ODB.DOC_DNA_ALL_RISK` (mənbə, staginq YOX) üzərində
+   işlədildi — **6** sətir (staginqın verdiyi 9-dan AZ).
+3. Fərqi tapmaq üçün staginqdəki 9 sətrin RECNUM-u ilə mənbədəki 6-nı
+   `NOT IN` ilə tutuşduruldu — **3 RECNUM** (iki fərqli REGNOM: `017857`,
+   `016719`) əskik çıxdı.
+4. `ODB.VIEW_LICSCH_ALL.COUNTRYCODE` (hesabın ÖZ bank-tərəfi ölkəsi) ehtiyat
+   mənbə kimi sınandı — say DƏYİŞMƏDİ (hələ 6). Yəni bu sütun deyil.
+5. **Əsl tapıntı:** eyni iki REGNOM-u `ELAQELI_HUQUQI_SHEXSLER`/
+   `imza_huquqi_olan_shexsler`/`NUMAYENDE`/`FIZIKI_SHEXS`-də axtaranda —
+   `ELAQELI_HUQUQI_SHEXSLER.INCORPORATION_COUNTRY_CODE` = **"AZ"** (şirkətin
+   öz qeydiyyat ölkəsi, TƏMİZ), amma `imza_huquqi_olan_shexsler`/`NUMAYENDE`-nin
+   **vətəndaşlıq** (`VETENDASHLIGI`) sahəsində HƏM "AZ", HƏM "**IR**" (İran)
+   qeydləri VAR idi — yəni hesabın öz qeydiyyatı təmiz olsa da, ona bağlı
+   imza sahibi/nümayəndənin vətəndaşlığı risklidir. Bu, #13-ün (candidate-
+   populate sorğusu) ÖZ WHERE şərtinin artıq istifadə etdiyi 4 cədvəldir.
+6. **Kod format tələsi** (iki uğursuz cəhddən sonra tapıldı): `COUNTRY_CODES_RED`-in
+   **İKİ** sütunu var — `VALUE_C` (3-hərfli, "AZE") və `VALUE_C_2` (2-hərfli,
+   "AZ"/"IR"). KYC cədvəllərinin (ELAQELI/IMZA/NUMAYENDE/FIZIKI) dəyərləri
+   2-hərflidir — `VALUE_C_2`-yə baxılmalıdır (`r_emitent_benefisiar`-ın öz
+   vətəndaşlıq şərti artıq bunu belə işlədirdi, mən səhvən əvvəlcə `VALUE_C`
+   yazmışdım). Düzəldikdən sonra say **9** çıxdı — staginqla DƏQIQ EYNİ.
+
+### Həll — `docs/sql/goaml/91_Goaml_Risk_OracleSorgular.sql` (`GOAML_RISK_NAMIZED`)
+
+`ODB.DOC_DNA_ALL_RISK` (mənbə, staginq YOX) üzərində, yuxarıdakı tam doğrulanmış
+WHERE-i daşıyan yeni, MÜSTƏQİL saxlanmış Oracle sorğusu. Sütun sırası
+Əməliyyatlar-ın `GOAML_EMELIYYAT_NAMIZED`-i ilə EYNİDİR (19 sütun,
+`GoamlNamizedSetirDto`-nun sahə sırasına uyğun — POZİSİYA ilə oxunur) ki,
+İKİ tab eyni DTO-nu, eyni "Təsdiqlə" axınını paylaşa bilsin.
+
+**`GoamlService.NamizedAxtarAsyncCore`** — Əməliyyatlar VƏ Risk-in ORTAQ
+namizəd-axtarış mexanizmi (sorğu adı + sql fayl yolu parametrləşdirilib,
+əvvəlki `NamizedAxtarAsync`-in bütün gövdəsi bura köçürülüb) — iki tabın
+kodu TƏKRARLANMASIN deyə. `IGoamlService.RiskNamizedAxtarAsync` yeni action.
+
+**`Areas/Goaml/Controllers/RiskController.cs`** (yeni) — YALNIZ `Index`+`Axtar`
+daşıyır. **"Təsdiqlə"/"Təsdiqlənmiş siyahı"/"Detal"/"Sil" TƏKRARLANMAYIB** —
+Risk-in namizədi `GoamlNamizedSetirDto` ilə EYNİ formada olduğu üçün "Təsdiqlə"
+düyməsi birbaşa `EmeliyyatlarController.Tesdiq`-ə yönləndirir (cross-controller,
+`@Url.Action("Tesdiq", "Emeliyyatlar")`) — iki ayrı Tesdiq ekranı/axını
+YARADILMADI, GoamlEmeliyyat cədvəlinə yazma HƏR İKİ tab üçün TƏK yoldur.
+
+`Areas/Goaml/Views/Risk/Index.cshtml` — Əməliyyatlar/Index.cshtml-in EYNİ
+naxışı (axtarış forması, AJAX, köhnəlmiş-cavab qoruyucusu, sütun sıralama,
+sessionStorage filtr yaddaşı — **AYRI açar** `gmlRiskSonAxtaris`, Əməliyyatlar-ın
+`gmlSonAxtaris`-i ilə QARIŞMASIN deyə), + yeni "Ölkə (D/K)" sütunu
+(`COUNTRYCODE_DE`/`KRE` göstərir, varsa — vətəndaşlıq-əsaslı 3 sətirdə bu
+sütun hələ də BOŞ görünəcək, çünki `COUNTRYCODE_DE/KRE` yalnız bəzi sətirlərdə
+mənbədə birbaşa dolu idi, qalanlar YALNIZ vətəndaşlıq-şərti ilə tutulur —
+görüntüdə "niyə risk?" sualına HƏR zaman tam cavab vermir, yalnız KÖMƏKÇİ
+kontekstdir).
+
+**Dashboard/Index.cshtml** — tab siyahısının tuple-u `Controller` sahəsi
+aldı (əvvəl yalnız "Əməliyyatlar" üçün hardcode `if` idi) — hər hazır tab
+İNDİ öz controller adını daşıyır, `if (t.Hazir && t.Controller != null)` ilə
+ÜMUMİ şəkildə keçid verilir. "Risk" sətri `Hazir=true, Controller="Risk"`.
+
+**Sidebar** (`_UserLayout.cshtml`, `case "goaml"`) — "Əməliyyatlar"ın
+ardınca yeni "Risk" sətri (`bi-shield-exclamation`).
+
+⚠️ **AÇIQ QALAN, KİÇİK UX BOŞLUĞU — "Geri"/"Ləğv et" Risk-dən DEYİL,
+HƏMIŞƏ Əməliyyatlar-ın Index-inə qayıdır.** `Tesdiq.cshtml`-dəki bu linklər
+`asp-action="Index"` (controller-siz, CARİ controller-ə — yəni həmişə
+`EmeliyyatlarController`-ə) yazılıb. Risk-dən bir namizəd təsdiqlənəndə/ləğv
+ediləndə operator Risk/Index-ə YOX, Əməliyyatlar/Index-ə qayıdır (öz Risk
+filtri sessionStorage-da qalır, amma avtomatik bərpa olunmur — yalnız Risk
+səhifəsinə ƏL İLƏ qayıdanda bərpa olunur). Qəsdən DÜZƏLDİLMƏDİ — "Tesdiq/
+Siyahi/Detal/Sil TƏKRARLANMASIN" prinsipi ilə ziddiyyətə düşməmək üçün; lazım
+gələrsə `Tesdiq` GET/POST-a bir `qaynaqTab` query parametri əlavə edib "Geri"
+linkini dinamik (Emeliyyatlar vs Risk) etmək mümkündür — bu sessiyada edilmədi.
+
+⚠️ **FAZA 1 (paralel dövr) qaydası BURADA DA keçərlidir** — AYSEL hələ
+işlədiyi müddətcə `ODB.DOC_DNA_ALL_RISK`-i O doldurur, biz YALNIZ OXUYURUQ.
+AYSEL dayandırılandan sonra bu sorğu yenidən qurulmalı ola bilər (eyni
+Əməliyyatlar sorğusunun qeydi kimi).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə — `git diff`-in TƏK BU faylın əlavə/
+silinən sətirləri ayrıca ölçüldü, hər ikisi eyni -2 paren-imbalance daşıyır,
+yəni düzəlişin ÖZÜ net-neytraldır; interfeys↔implementasiya↔controller↔view
+dörd qatı sahə adı-adı əl ilə tutuşduruldu, RZ1031-ə səbəb ola biləcək "adsız
+bare `@(...)` atribut" nümunəsi hər üç yeni/dəyişən `.cshtml`-də `grep` ilə
+axtarılıb tapılmadı). İstifadəçi Visual Studio-da **Rebuild All** ilə, SQL
+faylını SQL Server-də işlətdikdən sonra real ssenari ilə yoxlamalıdır: "Risk"
+sidebar sətrinə basıb bir tarix aralığı axtarsın → nəticənin sayının (və
+sətirlərin) bu sessiyada canlı Oracle-da yoxlanmış rəqəmlə (eyni tarix
+aralığında) üst-üstə düşdüyünü, "Təsdiqlə"nin Əməliyyatlar-ın öz Tesdiq
+ekranını düzgün açdığını, oradan təsdiqlədikdən sonra "Təsdiqlənmiş siyahı"da
+göründüyünü təsdiqləməlidir.

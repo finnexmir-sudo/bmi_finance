@@ -10,6 +10,13 @@ namespace FinNex.Application.Interfaces.Goaml
         /// Oracle-a HEÇ NƏ yazılmır.</summary>
         Task<Result<List<GoamlNamizedSetirDto>>> NamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default);
 
+        /// <summary>"Risk" tabı — ölkə/qara siyahı/hesab-sahibi vətəndaşlığı əsaslı
+        /// namizəd əməliyyatları `ODB.DOC_DNA_ALL_RISK`-dən oxuyur (AYSEL-in
+        /// staging cədvəlindən ASILI DEYİL — 10-11.11.2026-da canlı doğrulanıb).
+        /// Nəticə eyni <see cref="GoamlNamizedSetirDto"/> formasındadır, ona görə
+        /// "Təsdiqlə" axını Əməliyyatlar ilə EYNİDİR (paylaşılır).</summary>
+        Task<Result<List<GoamlNamizedSetirDto>>> RiskNamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default);
+
         /// <summary>Operator seçdiyi namizədi təsdiqləyir — bizim ÖZ SQL Server-imizə
         /// yazılır (Oracle-a YOX). Eyni namizəd (filial+tarix+recnum) ikinci dəfə
         /// təsdiqlənə bilməz.</summary>

@@ -1530,10 +1530,10 @@
 
             case "goaml":
                 {
-                    @* Hələ yalnız "Əməliyyatlar" tabı yolda — qalan 14-ü (Risk, Keçməyən
-                       əməliyyat, Hesab risk, Risk Progress, Cash IN, Card To Card, 18% 4%,
-                       Setup, SİYAHI, kassa >30, Təhlil, MMX, SCORING, Export to file)
-                       ekran-ekran gəldikcə buraya əlavə olunacaq — bax Dashboard/Index.cshtml. *@
+                    @* Əməliyyatlar + Risk tabları yolda — qalan 13-ü (Keçməyən əməliyyat,
+                       Hesab risk, Risk Progress, Cash IN, Card To Card, 18% 4%, Setup,
+                       SİYAHI, kassa >30, Təhlil, MMX, SCORING, Export to file) ekran-ekran
+                       gəldikcə buraya əlavə olunacaq — bax Dashboard/Index.cshtml. *@
                     <div class="fn-nav-label">GOAML</div>
                     <a asp-area="Goaml" asp-controller="Dashboard" asp-action="Index"
                        class="fn-nav-item @(currentController == "Dashboard" && currentArea == "Goaml" ? "active" : "")">
@@ -1542,6 +1542,10 @@
                     <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index"
                        class="fn-nav-item @(currentController == "Emeliyyatlar" && currentArea == "Goaml" ? "active" : "")">
                         <i class="bi bi-list-check"></i> Əməliyyatlar
+                    </a>
+                    <a asp-area="Goaml" asp-controller="Risk" asp-action="Index"
+                       class="fn-nav-item @(currentController == "Risk" && currentArea == "Goaml" ? "active" : "")">
+                        <i class="bi bi-shield-exclamation"></i> Risk
                     </a>
                 }
                 break;
