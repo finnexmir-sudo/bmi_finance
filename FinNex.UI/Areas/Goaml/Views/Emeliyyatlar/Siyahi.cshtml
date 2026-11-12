@@ -43,6 +43,7 @@
                 <table class="gml-table">
                     <thead>
                         <tr>
+                            <th>Əməliyyat №</th>
                             <th>Əməl. tarixi</th>
                             <th>Debet</th>
                             <th>Kredit</th>
@@ -58,6 +59,7 @@
                         @foreach (var e in Model)
                         {
                             <tr>
+                                <td>@e.CandidateRecNum</td>
                                 <td>@e.DateOper.ToString("dd.MM.yyyy")</td>
                                 <td style="font-family:ui-monospace,Consolas,monospace">@(e.Debet ?? "—")</td>
                                 <td style="font-family:ui-monospace,Consolas,monospace">@(e.Kredit ?? "—")</td>

@@ -321,6 +321,7 @@ namespace FinNex.Application.Services.Goaml
                 .Select(x => new GoamlEmeliyyatListDto
                 {
                     Id = x.Id,
+                    CandidateRecNum = x.CandidateRecNum,
                     DateOper = x.DateOper ?? x.CandidateDateOper,
                     Debet = x.Debet,
                     Kredit = x.Kredit,

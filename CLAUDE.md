@@ -10598,3 +10598,88 @@ aç → sarı banner çıxsın → "Huquqi (IN)" Tip seçib Kredit-in Rəhbərin
 avtomatik dolduğunu, "Huquqi (OUT)" seçəndə Debet-in Rəhbərinin dolduğunu,
 "H TO H" seçəndə heç nəyin avtomatik dəyişmədiyini (yalnız banner-dəki
 düymələrlə seçildiyini) təsdiqləməli.
+
+## GOAML — "Hər İki Tərəf" Banner-i 4 SANİYƏYƏ YOXA ÇIXIRDI + "İmza Boş Qalır" İzahı Yox İdi (12.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı Tip-əsaslı düzəlişi real mühitdə sınayan istifadəçi iki şikayət
+bildirdi: *"ekrana bu cixir biranliq ve gedir"* (banner ekrana çıxır, bir an
+sonra yoxa çıxır) və *"tipi deyisirem ama hecne dolmur imza terefde"* (Tip-i
+dəyişirəm, amma imza (SIG) tərəfində heç nə dolmur).
+
+**Kök səbəb (banner yoxa çıxması) — "Şərh Xülasəsini `.fn-alert` ilə YAZMA"
+qaydasının (CLAUDE.md-də artıq sənədləşmiş, `avtopark.css`-də presedenti olan)
+elə özü, bu dəfə GOAML-də unudulmuşdu.** `user-area.js`-in qlobal "Auto-hide
+alerts" skripti HƏR `.fn-alert` elementini 4 saniyə sonra `el.remove()` ilə
+DOM-dan SİLİR. "Hər iki tərəfdə KYC var" banner-i (`gmlIkiTerefBanner`)
+`class="fn-alert fn-alert--warning"` daşıyırdı — İKİ interaktiv düymə
+("Debet/Kredit tərəfini götür") elə BU banner-in İÇİNDƏ idi, ona görə 4
+saniyə sonra DÜYMƏLƏR DƏ yox olurdu, operator onları klikləyə bilmirdi.
+
+**İkinci, əlaqəli tapıntı:** `.fn-alert--warning` VƏ `.fn-alert--info`
+siniflərinin ÖZÜ layihənin HEÇ bir CSS faylında tərif OLUNMAYIB (yalnız
+`.fn-alert`-in baza padding/radius-u qalırdı, fon/rəng/sərhəd YOX idi) —
+yəni banner "4 saniyəyə yoxa çıxmazdan ƏVVƏL" belə, demək olar rəngsiz,
+çətin seçilən bir qutu idi. "Bir anlıq çıxıb gedir" təəssüratının bir hissəsi
+elə buradan gəlirdi.
+
+**Düzəliş — Tesdiq.cshtml-in ÖZ `@section Styles`-ında (qlobal CSS-ə
+TOXUNULMADI) yeni, `fn-alert`-dən TAMAMİLƏ MÜSTƏQİL siniflər:**
+`.gml-banner` + `.gml-banner--info` + `.gml-banner--warning` — `avtopark.css`-
+dəki `.av-val-summary`-nin elə eyni qaydası (sinif adı QƏSDƏN `fn-alert`
+daşımır ki, qlobal auto-hide onu tutmasın). Hər iki köhnə `fn-alert`
+çağırışı (avtomatik-doldurma info banner-i VƏ "hər iki tərəf" warning
+banner-i) bu yeni siniflərə keçirildi.
+
+**İkinci şikayət ("imza tərəfdə heç nə dolmur") — ARAŞDIRILDI, BU, KOD BUGU
+DEYİL.** `HesabSahibiKycAsync`-in hüquqi-şəxs qolu SIG-i (`TekSexs`) YALNIZ
+`odb.imza_huquqi_olan_shexsler`-də **AKTİV** (`imza_bitme is null`) VƏ **"Rəhbər"**
+rolu (`aml_related_persons.id_related_persons = 2`) ilə işarələnmiş sətir
+tapanda doldurur; CON ("Nümayəndə") isə TAMAMİLƏ AYRI bir cədvəldən
+(`odb.NUMAYENDE`) gəlir. `Faydali()` yoxlaması isə `TekSexs != null **VƏ YA**
+ElaqaliSexsler.Count > 0` şərtidir (OR) — yəni bir hesabda YALNIZ Nümayəndə
+qeydləri olub, aktiv "Rəhbər" olmasa belə, həmin tərəf "faydalı" sayılır
+(banner-i tətikləyir), AMMA SIG üçün doldurulası HEÇ nə yoxdur. Bu, iki ayrı
+hesabın (Debet VƏ Kredit) HƏR İKİSİNDƏ baş verəndə — hər ikisinin Nümayəndə
+siyahısı var, amma heç birinin aktiv "Rəhbər"i yoxdursa — Tip hansı tərəfi
+seçərsə-seçsin SIG HEÇ VAXT dolmayacaq, bu GÖZLƏNİLƏN davranışdır (kodda
+dəyişiklik TƏLƏB ETMİR), sadəcə operator üçün aydın DEYİLDİ.
+
+**Düzəliş — yalnız İZAH, banner-in içinə əlavə edildi:** "Tip seçdikdən/
+düyməyə basdıqdan sonra 'Nümayəndə' sahələri doldu, amma 'Hesab imza hüququ
+olan şəxs' boş qalırsa — bu, xəta DEYİL: o hesab üçün Oracle-da aktiv
+'Rəhbər' qeydi tapılmayıb (yalnız nümayəndə var), imza sahəsini özünüz
+doldurmalısınız." Əgər istifadəçi KONKRET bir hesabda real "Rəhbər"in Oracle-da
+olduğuna əmindirsə (buna baxmayaraq SIG boş qalırsa), yoxlanacaq yer
+`odb.imza_huquqi_olan_shexsler`-də HƏM `imza_bitme is null` ŞƏRTİNİ, HƏM
+`aml_related_persons`-da `id_related_persons=2` tag-ının mövcudluğunu
+birgə yoxlamaqdır — ikisindən biri əskikdirsə kod onu "tapılmadı" sayacaq.
+
+⚠️ **Eyni günün əvvəlki sualı — "əməliyyatın nömrəsi" (RecNum) HEÇ YERDƏ
+görünmürdü, əlavə edildi.** `GoamlNamizedSetirDto.RecNum` (Oracle-un öz
+`RECNUM` açarı, namizəd axtarışının bir hissəsi idi) və `GoamlTesdiqDto.
+CandidateRecNum` (Təsdiqlədikdən sonra `GoamlEmeliyyat`-da daimi saxlanan
+sütun) artıq KODDA var idi, AMMA heç bir ekranda GÖSTƏRİLMİRDİ — yalnız
+"Təsdiqlə" linkinin gizli query-string parametri kimi daşınırdı. Dörd yerə
+"Əməliyyat №" sütunu/sahəsi əlavə edildi:
+- `Emeliyyatlar/Index.cshtml` VƏ `Risk/Index.cshtml` — axtarış nəticəsi
+  cədvəlinə yeni "№" sütunu (`s.recNum`, sıralana bilər).
+- `Tesdiq.cshtml`-in `gml-info-strip`-i — "Tarix"dən ƏVVƏL, `@Model.
+  CandidateRecNum`.
+- `Detal.cshtml`-in `gml-info-strip`-i — "Əməliyyat tarixi"dən ƏVVƏL, EYNİ
+  sahə (`GoamlEmeliyyatDetalDto : GoamlTesdiqDto`-dan miras).
+- **`Siyahi.cshtml`** (təsdiqlənmiş siyahı) — bu YEGANƏ yer idi ki, sahə
+  DTO-da ÜMUMİYYƏTLƏ YOX idi: `GoamlEmeliyyatListDto.CandidateRecNum` (yeni)
+  əlavə edildi, `GoamlService.HamisiniGetirAsync`-in mapping-inə bir sətir
+  (`CandidateRecNum = x.CandidateRecNum`) qoşuldu, cədvələ yeni ilk sütun
+  əlavə olundu.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/div/script/style balansı hər dəyişən faylda ayrıca
+skriptlə yoxlanıldı — `GoamlService.cs`-in fayl-ümumi 737/745 paren fərqi
+əvvəlki sessiyalardan qalan, bu düzəlişdən ASILI OLMAYAN köhnə şərh
+nümunəsidir, `git diff` izolyasiyası ilə təsdiqləndi). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: "hər
+iki tərəf" banner-inin artıq 4 saniyədən sonra da (və ümumiyyətlə aydın
+rəngli/oxunaqlı) qaldığını, Əməliyyatlar/Risk axtarış cədvəllərində,
+Təsdiqlə/Bax ekranlarında və Təsdiqlənmiş siyahıda "Əməliyyat №" sütununun
+göründüyünü.

@@ -84,6 +84,7 @@
                     <thead>
                         <tr>
                             <th class="gml-fix">Əməliyyat</th>
+                            <th data-sort-key="recNum" data-sort-type="number">№ <span class="gml-sort-ind">↕</span></th>
                             <th data-sort-key="dateOper" data-sort-type="date">Tarix <span class="gml-sort-ind">↕</span></th>
                             <th data-sort-key="filialNumber" data-sort-type="number">Fil. <span class="gml-sort-ind">↕</span></th>
                             <th data-sort-key="debet" data-sort-type="text">Debet <span class="gml-sort-ind">↕</span></th>
@@ -169,6 +170,7 @@
 
                 tr.innerHTML =
                     '<td class="gml-fix">' + actionHtml + '</td>' +
+                    '<td class="gml-num">' + s.recNum + '</td>' +
                     '<td>' + new Date(s.dateOper).toLocaleDateString('az-AZ') + '</td>' +
                     '<td>' + s.filialNumber + '</td>' +
                     '<td class="gml-hesab">' + (s.debet || '—') + '</td>' +

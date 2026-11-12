@@ -37,6 +37,18 @@
         .gml-info-item { display:flex; flex-direction:column; gap:2px; }
         .gml-info-lbl { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.03em; }
         .gml-info-val { font-size:.85rem; font-weight:600; color:#1e293b; }
+
+        /* Siniflər QƏSDƏN `fn-alert` DEYİL — `user-area.js` bütün `.fn-alert`
+           elementlərini 4 saniyəyə silir (CLAUDE.md, "ViewModel Required" tələsi
+           ilə eyni tələ) — bu banner isə "hər iki tərəfdə KYC var" xəbərdarlığını
+           İKİ interaktiv düymə ilə göstərir, 4 saniyə sonra yoxa çıxsa operator
+           onları klikləyə bilmir (12.11.2026, real hadisə — "ekrana çıxır,
+           biranlıq, gedir"). `.fn-alert--warning`/`--info`-nin ÖZÜ də heç yerdə
+           tərif olunmayıb (yalnız boş padding/radius qalırdı, rəngsiz) — bu
+           səbəbdən banner həm görünməz kimi, həm də 4 saniyəlik idi. */
+        .gml-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; font-size:.86rem; line-height:1.5; }
+        .gml-banner--info { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
+        .gml-banner--warning { background:#fffbeb; border:1.5px solid #fcd34d; color:#92400e; }
     </style>
 }
 
@@ -63,7 +75,7 @@
     }
     @if (gmlAvtoDolduruldu)
     {
-        <div class="fn-alert fn-alert--info" style="margin-bottom:16px">
+        <div class="gml-banner gml-banner--info">
             <i class="bi bi-info-circle-fill"></i>
             Hesab sahibinin məlumatı sistem tərəfindən avtomatik gətirildi (Oracle) — yoxlayın, lazım olsa düzəldin.
         </div>
@@ -75,7 +87,7 @@
          "H TO H"/"F to F" kimi istiqamətsiz tiplərdə bu düymələrdən özü seçir. ── *@
     @if (gmlHerIkiTerefdeVar)
     {
-        <div class="fn-alert fn-alert--warning" id="gmlIkiTerefBanner" style="margin-bottom:16px">
+        <div class="gml-banner gml-banner--warning" id="gmlIkiTerefBanner">
             <i class="bi bi-exclamation-triangle-fill"></i>
             Debet (@Model.Debet) VƏ Kredit (@Model.Kredit) hesablarının <b>hər ikisində</b> KYC tapıldı —
             hansının "bizim" tərəf olduğunu dəqiq bilmirik. <b>Tip</b>-i seçdikdə (OUT/IN) uyğun tərəf
@@ -87,6 +99,13 @@
                 <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('kredit')">
                     <i class="bi bi-arrow-up-circle"></i> Kredit (@Model.Kredit) tərəfini götür
                 </button>
+            </div>
+            <div style="margin-top:10px; font-size:.78rem; opacity:.9">
+                <i class="bi bi-info-circle"></i>
+                Tip seçdikdən/düyməyə basdıqdan sonra <b>"Nümayəndə"</b> sahələri doldu, amma
+                <b>"Hesab imza hüququ olan şəxs"</b> boş qalırsa — bu, xəta DEYİL: o hesab üçün
+                Oracle-da aktiv "Rəhbər" qeydi tapılmayıb (yalnız nümayəndə var), imza sahəsini
+                özünüz doldurmalısınız.
             </div>
         </div>
     }
@@ -116,6 +135,7 @@
         <input type="hidden" asp-for="DocumentSource" />
         <input type="hidden" name="SummaVNacval" value="@(Model.SummaVNacval?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
         <div class="gml-info-strip">
+            <div class="gml-info-item"><span class="gml-info-lbl">Əməliyyat №</span><span class="gml-info-val">@Model.CandidateRecNum</span></div>
             <div class="gml-info-item"><span class="gml-info-lbl">Tarix</span><span class="gml-info-val">@Model.CandidateDateOper.ToString("dd.MM.yyyy")</span></div>
             <div class="gml-info-item"><span class="gml-info-lbl">Debet</span><span class="gml-info-val">@(Model.Debet ?? "—")</span></div>
             <div class="gml-info-item"><span class="gml-info-lbl">Debet sahibi</span><span class="gml-info-val">@(Model.NameUr ?? "—")</span></div>
