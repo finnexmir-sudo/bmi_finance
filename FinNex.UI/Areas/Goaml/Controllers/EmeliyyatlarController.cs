@@ -88,50 +88,73 @@ public class EmeliyyatlarController : Controller
         };
 
         // ── "Sistem gətirə bilmirsə, işçi doldurur" (09.11.2026, istifadəçi
-        //    qərarı) — bizim bankın hesabı olanın sahibi fiziki şəxsdirsə
-        //    CON+SIG-in hər ikisinə, hüquqi şəxsdirsə YALNIZ SIG-ə ("Rəhbər")
-        //    avtomatik yazılır. CON-u hüquqi şəxsdə operator özü seçir —
-        //    ViewBag.ElaqaliSexsler ilə görüntüyə ötürülür. ────────────────
-        var kyc = await _goaml.HesabSahibiKycTapAsync(filialNumber, debet, kredit);
-        if (kyc?.TekSexs != null)
-        {
-            if (kyc.Fiziki)
-            {
-                dto.ConAdi = kyc.TekSexs.Adi;
-                dto.ConSoyadi = kyc.TekSexs.Soyadi;
-                dto.ConAtasininAdi = kyc.TekSexs.AtaAdi;
-                dto.ConDogulduguTarix = kyc.TekSexs.DogulduguTarix;
-                dto.ConDogulduguYer = kyc.TekSexs.DogulduguYer;
-                dto.ConCinsi = kyc.TekSexs.Cinsi;
-                dto.ConUnvan = kyc.TekSexs.Unvan;
-                dto.ConVetendasligi = kyc.TekSexs.Vetendasligi;
-                dto.ConPin = kyc.TekSexs.Pin;
-                dto.ConSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
-                dto.ConSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
-                dto.ConSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
-                dto.ConVerenOrqan = kyc.TekSexs.VerenOrqan;
-            }
+        //    qərarı) — 12.11.2026-da KRİTİK DÜZƏLİŞ: artıq Debet-i "əsas"
+        //    götürmürük. Debet VƏ Kredit-in HƏR İKİSİ yoxlanır:
+        //      - YALNIZ BİRİNDƏ nəticə varsa — qeyri-müəyyənlik yoxdur,
+        //        Tip-dən asılı olmadan DƏRHAL doldurulur (köhnə davranış).
+        //      - HƏR İKİSİNDƏ nəticə varsa (məs. hüquqi-hüquqi, hər ikisinin
+        //        öz Rəhbəri/Nümayəndəsi) — DOLDURMA, operator "Tip" seçəndə
+        //        (OUT→Debet, IN→Kredit) JS client-side tətbiq edəcək; HToH/
+        //        FToF kimi istiqamətsiz tiplərdə əməliyyatçı özü seçəcək
+        //        (bax Tesdiq.cshtml-dəki "Debet/Kredit tərəfini götür" düymələri).
+        //    Hər iki tərəfin xam datası ViewBag.KycDebet/KycKredit ilə görüntüyə
+        //    ötürülür ki, Tip dəyişəndə əlavə server sorğusu lazım olmasın. ────
+        var herIkiTeref = await _goaml.HesabSahibiKycTapAsync(filialNumber, debet, kredit);
+        var yalnizBirTerefdeVar = (herIkiTeref.Debet != null) ^ (herIkiTeref.Kredit != null);
+        var yeganeKyc = yalnizBirTerefdeVar ? (herIkiTeref.Debet ?? herIkiTeref.Kredit) : null;
+        if (yeganeKyc != null)
+            KycTetbiqEt(dto, yeganeKyc);
 
-            dto.SigAdi = kyc.TekSexs.Adi;
-            dto.SigSoyadi = kyc.TekSexs.Soyadi;
-            dto.SigAtasininAdi = kyc.TekSexs.AtaAdi;
-            dto.SigDogulduguTarix = kyc.TekSexs.DogulduguTarix;
-            dto.SigDogulduguYer = kyc.TekSexs.DogulduguYer;
-            dto.SigVetendasligi = kyc.TekSexs.Vetendasligi;
-            dto.SigUnvan = kyc.TekSexs.Unvan;
-            dto.SigSenedinNovu = kyc.TekSexs.SenedinNovu;
-            dto.SigSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
-            dto.SigSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
-            dto.SigSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
-            dto.SigVerenOrqan = kyc.TekSexs.VerenOrqan;
-            dto.SigVezife = kyc.TekSexs.Vezife;
-            dto.SigIsYeriAdi = kyc.TekSexs.IsYeriAdi;
-        }
-
-        ViewBag.ElaqaliSexsler = kyc != null && !kyc.Fiziki ? kyc.ElaqaliSexsler : new List<GoamlElaqaliSexsDto>();
-        ViewBag.AvtoDolduruldu = kyc?.TekSexs != null;
+        ViewBag.KycDebet = herIkiTeref.Debet;
+        ViewBag.KycKredit = herIkiTeref.Kredit;
+        ViewBag.HerIkiTerefdeKycVar = herIkiTeref.Debet != null && herIkiTeref.Kredit != null;
+        ViewBag.ElaqaliSexsler = yeganeKyc != null && !yeganeKyc.Fiziki
+            ? yeganeKyc.ElaqaliSexsler
+            : new List<GoamlElaqaliSexsDto>();
+        ViewBag.AvtoDolduruldu = yeganeKyc?.TekSexs != null;
 
         return View(dto);
+    }
+
+    /// <summary>Hesab sahibinin KYC-sini (fiziki — CON+SIG-in hər ikisinə; hüquqi —
+    /// YALNIZ "Rəhbər", SIG-ə) <see cref="GoamlTesdiqDto"/>-ya yazır. GET Tesdiq-in
+    /// "yalnız bir tərəfdə nəticə var" qolunda çağırılır — Tip-dən asılı seçimi
+    /// Tesdiq.cshtml-in öz JS-i (eyni sahələri doldurur) edir.</summary>
+    private static void KycTetbiqEt(GoamlTesdiqDto dto, GoamlHesabSahibiKycDto kyc)
+    {
+        if (kyc.TekSexs == null) return;
+
+        if (kyc.Fiziki)
+        {
+            dto.ConAdi = kyc.TekSexs.Adi;
+            dto.ConSoyadi = kyc.TekSexs.Soyadi;
+            dto.ConAtasininAdi = kyc.TekSexs.AtaAdi;
+            dto.ConDogulduguTarix = kyc.TekSexs.DogulduguTarix;
+            dto.ConDogulduguYer = kyc.TekSexs.DogulduguYer;
+            dto.ConCinsi = kyc.TekSexs.Cinsi;
+            dto.ConUnvan = kyc.TekSexs.Unvan;
+            dto.ConVetendasligi = kyc.TekSexs.Vetendasligi;
+            dto.ConPin = kyc.TekSexs.Pin;
+            dto.ConSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
+            dto.ConSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
+            dto.ConSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
+            dto.ConVerenOrqan = kyc.TekSexs.VerenOrqan;
+        }
+
+        dto.SigAdi = kyc.TekSexs.Adi;
+        dto.SigSoyadi = kyc.TekSexs.Soyadi;
+        dto.SigAtasininAdi = kyc.TekSexs.AtaAdi;
+        dto.SigDogulduguTarix = kyc.TekSexs.DogulduguTarix;
+        dto.SigDogulduguYer = kyc.TekSexs.DogulduguYer;
+        dto.SigVetendasligi = kyc.TekSexs.Vetendasligi;
+        dto.SigUnvan = kyc.TekSexs.Unvan;
+        dto.SigSenedinNovu = kyc.TekSexs.SenedinNovu;
+        dto.SigSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
+        dto.SigSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
+        dto.SigSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
+        dto.SigVerenOrqan = kyc.TekSexs.VerenOrqan;
+        dto.SigVezife = kyc.TekSexs.Vezife;
+        dto.SigIsYeriAdi = kyc.TekSexs.IsYeriAdi;
     }
 
     // ── POST /Goaml/Emeliyyatlar/Tesdiq — KYC formunu yaddaşa yazır ─────────

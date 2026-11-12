@@ -65,4 +65,24 @@ namespace FinNex.Application.DTOs.Goaml
         /// bütün (hazırda aktiv, IMZA_BITME boş) əlaqəli şəxsləri.</summary>
         public List<GoamlElaqaliSexsDto> ElaqaliSexsler { get; set; } = new();
     }
+
+    /// <summary>
+    /// `HesabSahibiKycTapAsync`-in nəticəsi (12.11.2026-dan) — Debet VƏ Kredit
+    /// hesablarının HƏR İKİSİNİN KYC-si, MÜSTƏQİL. Köhnə versiya (yalnız bir
+    /// tək <see cref="GoamlHesabSahibiKycDto"/> qaytarırdı, "Debet-ə bax,
+    /// faydalı olsa dayan, olmasa Kredit-ə keç") real hadisədə (35025→40140)
+    /// səhvə düşürdü: Debet-də YALNIZ Nümayəndə (CON) tapılıb Rəhbər (SIG)
+    /// boş qalanda, kod "faydalı" sayıb Kredit-ə HEÇ BAXMIRDI — halbuki əsl
+    /// Rəhbər elə orada idi. İndi hər iki tərəfin nəticəsi ayrıca saxlanır,
+    /// hansının tətbiq olunacağını Tip-in istiqaməti (OUT/IN,
+    /// <see cref="FinNex.Domain.Entities.Goaml.GoamlTipiExtensions.BizimTerefDebetdir"/>)
+    /// həll edir — operator Tip seçən kimi (client-side, əlavə server sorğusu
+    /// olmadan). Hər iki sahə `null`dursa, o tərəfdə heç bir faydalı KYC
+    /// tapılmayıb deməkdir (nə Rəhbər/TekSexs, nə əlaqəli şəxs siyahısı).
+    /// </summary>
+    public class GoamlHesabSahibiKycHerIkiTerefDto
+    {
+        public GoamlHesabSahibiKycDto? Debet { get; set; }
+        public GoamlHesabSahibiKycDto? Kredit { get; set; }
+    }
 }

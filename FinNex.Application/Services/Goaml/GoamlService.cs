@@ -802,6 +802,11 @@ namespace FinNex.Application.Services.Goaml
         // ── Hesab sahibinin KYC-si — CON/SIG avtomatik doldurma (09.11.2026,
         //    CON mənbəyi 10.11.2026-da NUMAYENDE-yə düzəldildi) ───────────────
         //
+        // 12.11.2026 YENİLƏNDİ — bax `HesabSahibiKycTapAsync`-in ÖZ şərhi: artıq
+        // "Debet-ə bax, faydalı olsa dayan" YOXDUR, hər iki tərəf HƏMİŞƏ oxunur,
+        // Tip-in istiqaməti seçimi edir. Aşağıdakı (ilkin) izah YALNIZ bir TƏK
+        // hesabın (`HesabSahibiKycAsync`) KYC-sinin NECƏ tapıldığına aiddir.
+        //
         // İstifadəçi qərarı: Debet/Kredit-dən BİZİM BANKIN hesabı olanının sahibi
         // fiziki şəxsdirsə CON+SIG-in hər ikisinə, hüquqi şəxsdirsə SIG-ə şirkətin
         // "Rəhbər"i, CON-a isə "Nümayəndə" seçim siyahısı doldurulur (operator
@@ -829,18 +834,29 @@ namespace FinNex.Application.Services.Goaml
         //     Sütunları `imza_huquqi_olan_shexsler`-dən DAHA ZƏNGİNDİR (tam
         //     ünvan parçalanması, PEP/sanksiya bayraqları) — hələ CON formasının
         //     (Tesdiq.cshtml) özü bu əlavə sahələri DAŞIMIR, gələcək iş.
-        public async Task<GoamlHesabSahibiKycDto?> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default)
+        // ── 12.11.2026, KRİTİK DÜZƏLİŞ — "Debet-ə bax, faydalı olsa DAYAN"
+        //    SƏHV İDİ. Real hadisə: Debet=35025, Kredit=40140, hər ikisi hüquqi.
+        //    35025-in NUMAYENDE (CON) siyahısı var idi, AMMA aktiv "Rəhbər" (SIG)
+        //    YOX idi — köhnə kod bunu "faydalı nəticə" sayıb DAYANIRDI, Kredit-ə
+        //    (40140, orada əsl Rəhbər ola bilərdi) HEÇ BAXMIRDI. Nəticə: imza
+        //    sahibi boş qaldı, baxmayaraq ki məlumat digər tərəfdə var idi.
+        //
+        //    İndi HƏR İKİ tərəf HƏMİŞƏ oxunur, seçim buraya YOX, çağırana
+        //    (EmeliyyatlarController) həvalə olunur — o da Tip-in istiqamətinə
+        //    (OUT→Debet, IN→Kredit, HToH/FToF→operator seçsin) görə qərar verir.
+        public async Task<GoamlHesabSahibiKycHerIkiTerefDto> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default)
         {
             var debetNeticesi = await HesabSahibiKycAsync(debet, ct);
-            // Debet bizim hesabımızdırsa, amma heç bir şəxs tapılmayıbsa (TekSexs
-            // yoxdur VƏ əlaqəli şəxslər siyahısı boşdur) — Kredit-ə də bax, bəlkə
-            // ORADA faydalı bir nəticə var. Faydalı nəticə varsa, dərhal qaytar.
-            if (debetNeticesi != null && (debetNeticesi.TekSexs != null || debetNeticesi.ElaqaliSexsler.Count > 0))
-                return debetNeticesi;
-
             var kreditNeticesi = await HesabSahibiKycAsync(kredit, ct);
-            return kreditNeticesi ?? debetNeticesi;
+            return new GoamlHesabSahibiKycHerIkiTerefDto
+            {
+                Debet = Faydali(debetNeticesi) ? debetNeticesi : null,
+                Kredit = Faydali(kreditNeticesi) ? kreditNeticesi : null,
+            };
         }
+
+        private static bool Faydali(GoamlHesabSahibiKycDto? d) =>
+            d != null && (d.TekSexs != null || d.ElaqaliSexsler.Count > 0);
 
         private async Task<GoamlHesabSahibiKycDto?> HesabSahibiKycAsync(string? hesab, CancellationToken ct)
         {

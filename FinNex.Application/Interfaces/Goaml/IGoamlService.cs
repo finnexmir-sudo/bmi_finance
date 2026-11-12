@@ -35,12 +35,15 @@ namespace FinNex.Application.Interfaces.Goaml
         Task<Result> SilAsync(int id);
 
         /// <summary>Təsdiqlə formasının GET-i açılanda çağırılır (09.11.2026, istifadəçi
-        /// qərarı: "sistem gətirə bilmirsə, işçi doldurur"). Debet, sonra Kredit
-        /// hesabı — hansı BİZİM bankın hesabıdırsa (BALSCHT_FIZ/BALSCHT_UR üzvlüyü) —
-        /// sahibinin KYC-sini Oracle-dan (YALNIZ OXUYUR) tapıb qaytarır. Heç biri
-        /// bizim deyilsə (xarici/başqa bank) və ya Oracle əlçatmazdırsa `null`
-        /// qaytarır — operator formanı özü doldurur.</summary>
-        Task<GoamlHesabSahibiKycDto?> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default);
+        /// qərarı: "sistem gətirə bilmirsə, işçi doldurur"; 12.11.2026-da HƏR İKİ
+        /// tərəfi MÜSTƏQİL qaytaracaq şəkildə düzəldildi — bax <see cref="GoamlHesabSahibiKycHerIkiTerefDto"/>.
+        /// Debet VƏ Kredit hesablarının HƏR İKİSİ üçün — hansı BİZİM bankın hesabıdırsa
+        /// (BALSCHT_FIZ/BALSCHT_UR üzvlüyü) — sahibinin KYC-sini Oracle-dan (YALNIZ
+        /// OXUYUR) tapıb qaytarır. Heç biri bizim deyilsə (xarici/başqa bank) və ya
+        /// Oracle əlçatmazdırsa həmin tərəf `null` qalır — operator formanı özü doldurur.
+        /// Hansı tərəfin NƏTİCƏDƏ tətbiq olunacağını çağıran tərəf (Tip-in istiqamətinə
+        /// görə) qərar verir — bu metod YALNIZ xam datanı tapır, seçim etmir.</summary>
+        Task<GoamlHesabSahibiKycHerIkiTerefDto> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default);
 
         /// <summary>Export to JSON (#15, 12.11.2026) — verilmiş tarix aralığında (+ istəyə
         /// bağlı Tip/ReportCode filtri) `Status==Qaralama` olan TƏSDİQLƏNMİŞ qeydləri

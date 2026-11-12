@@ -8,6 +8,10 @@
     var tipSecimler = Enum.GetValues<GoamlTipi>().Select(t => new { Value = (int)t, Text = t.Etiket() }).ToList();
     var reportSecimler = Enum.GetValues<GoamlHesabatNovu>()
         .Select(r => new { Value = (int)r, Text = r.Kod() + " — " + r.Aciqlama() }).ToList();
+    // Tip-in İSTİQAMƏTİ (OUT/IN) — "hansı hesab bizimdir" sualının JS-dəki
+    // cavabı. TƏK mənbə `GoamlTipiExtensions.BizimTerefDebetdir()`-dir —
+    // burada YENİDƏN YAZILMIR, sadəcə JSON-a render olunur (12.11.2026).
+    var tipYonleri = Enum.GetValues<GoamlTipi>().ToDictionary(t => (int)t, t => t.BizimTerefDebetdir());
 }
 
 @section Styles {
@@ -53,12 +57,37 @@
     @{
         var gmlElaqaliSexsler = (ViewBag.ElaqaliSexsler as List<GoamlElaqaliSexsDto>) ?? new List<GoamlElaqaliSexsDto>();
         var gmlAvtoDolduruldu = ViewBag.AvtoDolduruldu == true;
+        var gmlKycDebet = ViewBag.KycDebet as GoamlHesabSahibiKycDto;
+        var gmlKycKredit = ViewBag.KycKredit as GoamlHesabSahibiKycDto;
+        var gmlHerIkiTerefdeVar = ViewBag.HerIkiTerefdeKycVar == true;
     }
     @if (gmlAvtoDolduruldu)
     {
         <div class="fn-alert fn-alert--info" style="margin-bottom:16px">
             <i class="bi bi-info-circle-fill"></i>
             Hesab sahibinin məlumatı sistem tərəfindən avtomatik gətirildi (Oracle) — yoxlayın, lazım olsa düzəldin.
+        </div>
+    }
+    @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda (12.11.2026, real
+         hadisə: hüquqi-hüquqi əməliyyat, hər ikisinin öz Rəhbəri/Nümayəndəsi)
+         DƏRHAL doldurmuruq — "hansı bizimdir" sualını Tip (OUT/IN) cavablandırır.
+         Operator Tip seçən kimi (aşağıdakı JS) doğru tərəf avtomatik tətbiq olunur;
+         "H TO H"/"F to F" kimi istiqamətsiz tiplərdə bu düymələrdən özü seçir. ── *@
+    @if (gmlHerIkiTerefdeVar)
+    {
+        <div class="fn-alert fn-alert--warning" id="gmlIkiTerefBanner" style="margin-bottom:16px">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Debet (@Model.Debet) VƏ Kredit (@Model.Kredit) hesablarının <b>hər ikisində</b> KYC tapıldı —
+            hansının "bizim" tərəf olduğunu dəqiq bilmirik. <b>Tip</b>-i seçdikdə (OUT/IN) uyğun tərəf
+            avtomatik doldurulacaq; "H TO H" / "F to F" kimi istiqamətsiz tiplərdə özünüz seçin:
+            <div style="margin-top:10px; display:flex; gap:10px">
+                <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('debet')">
+                    <i class="bi bi-arrow-down-circle"></i> Debet (@Model.Debet) tərəfini götür
+                </button>
+                <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('kredit')">
+                    <i class="bi bi-arrow-up-circle"></i> Kredit (@Model.Kredit) tərəfini götür
+                </button>
+            </div>
         </div>
     }
 
@@ -145,19 +174,19 @@
                 </span>
             </summary>
             <div class="gml-block-body">
-                @if (gmlElaqaliSexsler.Count > 0)
-                {
-                    <div style="margin-bottom:16px">
-                        <label class="gml-flbl">Hüquqi şəxsin əlaqəli şəxslərindən seçin (sistem CON-u avtomatik tapa bilmir)</label>
-                        <select class="fn-select gml-con-select" onchange="gmlConSec(this)">
-                            <option value="">— əl ilə doldur —</option>
-                            @foreach (var s in gmlElaqaliSexsler)
-                            {
-                                <option value="@s.IdAml">@($"{s.Adi} {s.Soyadi}".Trim()) @(string.IsNullOrWhiteSpace(s.Rollar) ? "" : $"({s.Rollar})")</option>
-                            }
-                        </select>
-                    </div>
-                }
+                @* ── HƏMİŞƏ render olunur (əvvəl @if ilə şərtlənmişdi) — Tip
+                     dəyişəndə/"tərəfi götür" düyməsi ilə JS bu dropdown-u
+                     YENİDƏN qurub göstərə/gizlədə bilsin deyə (12.11.2026). ── *@
+                <div id="gmlConSelectWrap" style="margin-bottom:16px; display:@(gmlElaqaliSexsler.Count > 0 ? "block" : "none")">
+                    <label class="gml-flbl">Hüquqi şəxsin əlaqəli şəxslərindən seçin (sistem CON-u avtomatik tapa bilmir)</label>
+                    <select class="fn-select gml-con-select" onchange="gmlConSec(this)">
+                        <option value="">— əl ilə doldur —</option>
+                        @foreach (var s in gmlElaqaliSexsler)
+                        {
+                            <option value="@s.IdAml">@($"{s.Adi} {s.Soyadi}".Trim()) @(string.IsNullOrWhiteSpace(s.Rollar) ? "" : $"({s.Rollar})")</option>
+                        }
+                    </select>
+                </div>
                 <div class="gml-grid-3">
                     <div><label class="gml-flbl">Adı</label><input asp-for="ConAdi" class="fn-input" /></div>
                     <div><label class="gml-flbl">Atasının adı</label><input asp-for="ConAtasininAdi" class="fn-input" /></div>
@@ -291,45 +320,139 @@
     }
 </script>
 
-@if (gmlElaqaliSexsler.Count > 0)
-{
-    <script>
-        // ── "Əlaqəli şəxslərdən seç" — Nümayəndə (CON) bloku, 09.11.2026 ────
-        // Server GET-də şirkətin bütün aktiv əlaqəli şəxslərini (imza hüququ,
-        // rəhbər, təsisçi...) Oracle-dan oxuyub JSON kimi göndərir — operator
-        // siyahıdan seçəndə heç bir əlavə sorğu getmir, mövcud datadan doldurur.
-        const gmlElaqaliSexsler = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(gmlElaqaliSexsler,
-            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
-
-        function gmlDoldur(ad, deyer) {
-            const el = document.querySelector('[name="' + ad + '"]');
-            if (el) el.value = deyer || '';
-        }
-
-        function gmlConSec(sel) {
-            const idAml = parseInt(sel.value, 10);
-            if (!idAml) return;
-            const s = gmlElaqaliSexsler.find(x => x.idAml === idAml);
-            if (!s) return;
-            gmlDoldur('ConAdi', s.adi);
-            gmlDoldur('ConAtasininAdi', s.ataAdi);
-            gmlDoldur('ConSoyadi', s.soyadi);
-            gmlDoldur('ConDogulduguTarix', s.dogulduguTarix ? s.dogulduguTarix.substring(0, 10) : '');
-            gmlDoldur('ConDogulduguYer', s.dogulduguYer);
-            gmlDoldur('ConVetendasligi', s.vetendasligi);
-            gmlDoldur('ConCinsi', s.cinsi);
-            gmlDoldur('ConPin', s.pin);
-            gmlDoldur('ConTelefonNomresi', s.telefonNomresi);
-            gmlDoldur('ConUnvaninNovu', s.unvaninNovu);
-            gmlDoldur('ConUnvan', s.unvan);
-            gmlDoldur('ConSeher', s.seher);
-            gmlDoldur('ConOlke', s.olke);
-            gmlDoldur('ConSenedinNovu', s.senedinNovu);
-            gmlDoldur('ConSenedinSeriyaNomresi', s.senedinSeriyaNomresi);
-            gmlDoldur('ConSenedinVerilmeTarixi', s.senedinVerilmeTarixi ? s.senedinVerilmeTarixi.substring(0, 10) : '');
-            gmlDoldur('ConSenedinEtibarliliqMuddeti', s.senedinEtibarliliqMuddeti ? s.senedinEtibarliliqMuddeti.substring(0, 10) : '');
-            gmlDoldur('ConVerenOrqan', s.verenOrqan);
-            gmlDoldur('ConVerildiyiOlke', s.verildiyiOlke);
-        }
-    </script>
+@{
+    var gmlJsonOpts = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
 }
+<script>
+    // ── "Əlaqəli şəxslərdən seç" — Nümayəndə (CON) bloku, 09.11.2026.
+    //    12.11.2026: `let` oldu (əvvəl `const`) — Tip dəyişəndə/"tərəfi götür"
+    //    düyməsi ilə JS bu siyahını YENİDƏN qura bilsin deyə (Debet və Kredit-in
+    //    öz, FƏRQLİ əlaqəli-şəxs siyahıları ola bilər). ───────────────────────
+    let gmlElaqaliSexsler = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(gmlElaqaliSexsler, gmlJsonOpts));
+
+    // ── Debet VƏ Kredit tərəflərinin xam KYC-si (12.11.2026) — hər ikisi də
+    //    `null` ola bilər (heç birində tapılmayıb) və ya biri/hər ikisi dolu.
+    //    Server-dəki "yalnız bir tərəfdə var" halında dto artıq doldurulub
+    //    gəlir (bu dəyişənlər YALNIZ Tip dəyişəndə/əl ilə seçimdə işlənir). ──
+    const gmlKycDebet = @Html.Raw(gmlKycDebet != null ? System.Text.Json.JsonSerializer.Serialize(gmlKycDebet, gmlJsonOpts) : "null");
+    const gmlKycKredit = @Html.Raw(gmlKycKredit != null ? System.Text.Json.JsonSerializer.Serialize(gmlKycKredit, gmlJsonOpts) : "null");
+
+    // ── Tip-in İSTİQAMƏTİ (OUT/IN) — TƏK mənbə `GoamlTipiExtensions.
+    //    BizimTerefDebetdir()`-dir, server-də hesablanıb, burada YALNIZ
+    //    render olunur (12.11.2026). true="debet", false="kredit",
+    //    null/undefined = istiqamətsiz (HToH/FToF) — operator özü seçsin. ──
+    const gmlTipBizimDebetdir = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(tipYonleri));
+
+    function gmlDoldur(ad, deyer) {
+        const el = document.querySelector('[name="' + ad + '"]');
+        if (el) el.value = deyer || '';
+    }
+
+    // ── CON seçim dropdown-unu YENİDƏN qurur (siyahı Debet/Kredit-ə görə
+    //    dəyişə bilər) — boşdursa bloku gizlədir. ─────────────────────────
+    function gmlConDropdownYenile(siyahi) {
+        gmlElaqaliSexsler = siyahi || [];
+        var wrap = document.getElementById('gmlConSelectWrap');
+        var sel = document.querySelector('.gml-con-select');
+        if (!wrap || !sel) return;
+        sel.innerHTML = '<option value="">— əl ilə doldur —</option>';
+        gmlElaqaliSexsler.forEach(function (s) {
+            var opt = document.createElement('option');
+            opt.value = s.idAml;
+            var ad = ((s.adi || '') + ' ' + (s.soyadi || '')).trim();
+            opt.textContent = s.rollar ? (ad + ' (' + s.rollar + ')') : ad;
+            sel.appendChild(opt);
+        });
+        sel.selectedIndex = 0;
+        wrap.style.display = gmlElaqaliSexsler.length > 0 ? 'block' : 'none';
+    }
+
+    function gmlConSec(sel) {
+        const idAml = parseInt(sel.value, 10);
+        if (!idAml) return;
+        const s = gmlElaqaliSexsler.find(x => x.idAml === idAml);
+        if (!s) return;
+        gmlDoldur('ConAdi', s.adi);
+        gmlDoldur('ConAtasininAdi', s.ataAdi);
+        gmlDoldur('ConSoyadi', s.soyadi);
+        gmlDoldur('ConDogulduguTarix', s.dogulduguTarix ? s.dogulduguTarix.substring(0, 10) : '');
+        gmlDoldur('ConDogulduguYer', s.dogulduguYer);
+        gmlDoldur('ConVetendasligi', s.vetendasligi);
+        gmlDoldur('ConCinsi', s.cinsi);
+        gmlDoldur('ConPin', s.pin);
+        gmlDoldur('ConTelefonNomresi', s.telefonNomresi);
+        gmlDoldur('ConUnvaninNovu', s.unvaninNovu);
+        gmlDoldur('ConUnvan', s.unvan);
+        gmlDoldur('ConSeher', s.seher);
+        gmlDoldur('ConOlke', s.olke);
+        gmlDoldur('ConSenedinNovu', s.senedinNovu);
+        gmlDoldur('ConSenedinSeriyaNomresi', s.senedinSeriyaNomresi);
+        gmlDoldur('ConSenedinVerilmeTarixi', s.senedinVerilmeTarixi ? s.senedinVerilmeTarixi.substring(0, 10) : '');
+        gmlDoldur('ConSenedinEtibarliliqMuddeti', s.senedinEtibarliliqMuddeti ? s.senedinEtibarliliqMuddeti.substring(0, 10) : '');
+        gmlDoldur('ConVerenOrqan', s.verenOrqan);
+        gmlDoldur('ConVerildiyiOlke', s.verildiyiOlke);
+    }
+
+    // ── Verilmiş tərəfin (Debet və ya Kredit) TAM KYC-sini CON+SIG-ə tətbiq
+    //    edir — `EmeliyyatlarController.KycTetbiqEt`-in (C#) JS güzgüsü,
+    //    12.11.2026. Heç nə SİLMİR — yalnız doldurur (boş sahə varsa toxunmur
+    //    demək deyil, mövcud dəyəri ÜSTƏLƏYİR, eyni "avtomatik doldur, lazım
+    //    olsa düzəlt" qaydası). ────────────────────────────────────────────
+    function gmlKycTetbiqEt(kyc) {
+        if (!kyc) return;
+        if (kyc.fiziki && kyc.tekSexs) {
+            var c = kyc.tekSexs;
+            gmlDoldur('ConAdi', c.adi);
+            gmlDoldur('ConAtasininAdi', c.ataAdi);
+            gmlDoldur('ConSoyadi', c.soyadi);
+            gmlDoldur('ConDogulduguTarix', c.dogulduguTarix ? c.dogulduguTarix.substring(0, 10) : '');
+            gmlDoldur('ConDogulduguYer', c.dogulduguYer);
+            gmlDoldur('ConVetendasligi', c.vetendasligi);
+            gmlDoldur('ConCinsi', c.cinsi);
+            gmlDoldur('ConPin', c.pin);
+            gmlDoldur('ConSenedinSeriyaNomresi', c.senedinSeriyaNomresi);
+            gmlDoldur('ConSenedinVerilmeTarixi', c.senedinVerilmeTarixi ? c.senedinVerilmeTarixi.substring(0, 10) : '');
+            gmlDoldur('ConSenedinEtibarliliqMuddeti', c.senedinEtibarliliqMuddeti ? c.senedinEtibarliliqMuddeti.substring(0, 10) : '');
+            gmlDoldur('ConVerenOrqan', c.verenOrqan);
+        }
+        if (kyc.tekSexs) {
+            var s = kyc.tekSexs;
+            gmlDoldur('SigAdi', s.adi);
+            gmlDoldur('SigAtasininAdi', s.ataAdi);
+            gmlDoldur('SigSoyadi', s.soyadi);
+            gmlDoldur('SigDogulduguTarix', s.dogulduguTarix ? s.dogulduguTarix.substring(0, 10) : '');
+            gmlDoldur('SigDogulduguYer', s.dogulduguYer);
+            gmlDoldur('SigVetendasligi', s.vetendasligi);
+            gmlDoldur('SigUnvan', s.unvan);
+            gmlDoldur('SigSenedinNovu', s.senedinNovu);
+            gmlDoldur('SigSenedinSeriyaNomresi', s.senedinSeriyaNomresi);
+            gmlDoldur('SigSenedinVerilmeTarixi', s.senedinVerilmeTarixi ? s.senedinVerilmeTarixi.substring(0, 10) : '');
+            gmlDoldur('SigSenedinEtibarliliqMuddeti', s.senedinEtibarliliqMuddeti ? s.senedinEtibarliliqMuddeti.substring(0, 10) : '');
+            gmlDoldur('SigVerenOrqan', s.verenOrqan);
+            gmlDoldur('SigVezife', s.vezife);
+            gmlDoldur('SigIsYeriAdi', s.isYeriAdi);
+        }
+        gmlConDropdownYenile(kyc.fiziki ? [] : kyc.elaqaliSexsler);
+    }
+
+    // ── "Debet/Kredit tərəfini götür" düymələri (banner-dəki, HToH/FToF üçün) ──
+    function gmlTerefTetbiqEt(teref) {
+        gmlKycTetbiqEt(teref === 'debet' ? gmlKycDebet : gmlKycKredit);
+    }
+
+    // ── Tip seçiləndə (12.11.2026) — İSTİQAMƏT (OUT/IN) məlumdursa uyğun
+    //    tərəf AVTOMATİK tətbiq olunur. O tərəfdə heç nə tapılmayıbsa (null),
+    //    HEÇ NƏ EDİLMİR — mövcud sahələr (boş və ya əvvəldən doldurulmuş)
+    //    SİLİNMİR; operator lazım olsa "Təmizlə" düyməsini özü işlədir.
+    //    İstiqamətsiz tiplərdə (HToH/FToF) avtomatik heç nə baş vermir —
+    //    əməliyyatçı yuxarıdakı banner-in düymələrindən seçir. ─────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        var tipSel = document.querySelector('select[name="Tip"]');
+        if (!tipSel) return;
+        tipSel.addEventListener('change', function () {
+            var bizimDebetdir = gmlTipBizimDebetdir[this.value];
+            if (bizimDebetdir === true && gmlKycDebet) gmlKycTetbiqEt(gmlKycDebet);
+            else if (bizimDebetdir === false && gmlKycKredit) gmlKycTetbiqEt(gmlKycKredit);
+        });
+    });
+</script>

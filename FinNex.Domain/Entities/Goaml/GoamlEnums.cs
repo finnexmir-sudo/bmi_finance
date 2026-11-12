@@ -97,6 +97,32 @@ namespace FinNex.Domain.Entities.Goaml
             GoamlTipi.C2cIn => "Card to Card (IN)",
             _ => t.ToString(),
         };
+
+        /// <summary>Tip-in İSTİQAMƏTİNDƏN (OUT/IN) bizim bankın hesabının Debet,
+        /// yoxsa Kredit tərəfdə olduğunu söyləyir — CON/SIG (Nümayəndə/İmza
+        /// hüququ) üçün "hansı hesabın sahibinə baxaq" sualının cavabı
+        /// (12.11.2026, real hadisə: Debet=35025, Kredit=40140, köhnə kod
+        /// HƏMİŞƏ Debet-ə baxırdı, Kredit-dəki əsl Rəhbəri heç yoxlamırdı).
+        /// true = Debet bizimdir (OUT — biz göndəririk), false = Kredit
+        /// bizimdir (IN — biz alırıq), null = Tip İSTİQAMƏT daşımır (HToH/
+        /// FToF — hər iki tərəf bizim ola bilər, əməliyyatçı özü seçməlidir).</summary>
+        public static bool? BizimTerefDebetdir(this GoamlTipi t) => t switch
+        {
+            GoamlTipi.FizikOut => true,
+            GoamlTipi.HuquqiOut => true,
+            GoamlTipi.HToFOut => true,
+            GoamlTipi.C2cOut => true,
+            GoamlTipi.FToHOut => true,
+            GoamlTipi.FizikIn => false,
+            GoamlTipi.HuquqiIn => false,
+            GoamlTipi.HToHIn => false,
+            GoamlTipi.HToFIn => false,
+            GoamlTipi.FToHIn => false,
+            GoamlTipi.C2cIn => false,
+            GoamlTipi.HToH => null,
+            GoamlTipi.FToF => null,
+            _ => null,
+        };
     }
 
     public static class GoamlHesabatNovuExtensions

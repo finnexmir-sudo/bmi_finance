@@ -10500,3 +10500,101 @@ bloklarının mənalı dəyərlərlə doldurulduğunu, ixrac edilən qeydlərin
 qeydlərin TƏKRAR gəlmədiyini yoxlamalı. **Yaradılan JSON-u real goAML
 portalına göndərmədən ƏVVƏL mütləq əl ilə, yuxarıdaki qapsam-xaric siyahısına
 görə yoxlamalıdır** — bu, tam, istehsala-hazır ixrac DEYİL, ilk artımdır.
+
+## GOAML — CON/SIG "Debet-ə Bax, Faydalı Olsa Dayan" SƏHV İDİ — İndi Tip-in İstiqaməti Seçir (12.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı bir hadisə göstərdi: Debet=35025, Kredit=40140, hər ikisi
+hüquqi şəxs hesabı. "İmza hüququ olan şəxs" (SIG) boş gəldi, baxmayaraq ki
+digər tərəfdə (40140) real Rəhbər var idi. Sual: *"sen bu halda hansi
+hesabin rehberini axtarirsan? ... eger burda 35 esas goturmusukse bu
+sehvdir"*.
+
+**Kök səbəb — `HesabSahibiKycTapAsync` (09-10.11.2026) "Debet-ə bax, faydalı
+nəticə olsa DAYAN" qaydası idi:**
+```
+faydalı = TekSexs (Rəhbər) VAR  VƏ YA  ElaqaliSexsler (Nümayəndə siyahısı) BOŞ DEYİL
+```
+Bu, YANLIŞ idi: 35025-in `NUMAYENDE`-də (CON) bir-iki sətri ola bilər, AMMA
+`imza_huquqi_olan_shexsler`-də aktiv "Rəhbər" (SIG) qeydi OLMAYA bilər — bunlar
+İKİ AYRI cədvəldir. Kod "CON var, demək bu hesab KİFAYƏTDİR" deyib **Kredit-ə
+(40140) HEÇ BAXMIRDI** — halbuki əsl Rəhbər elə orada idi.
+
+### İstifadəçinin təklifi — Tip-in istiqaməti (OUT/IN) qərar versin
+
+İlk təklifim ("hər iki tərəfi yoxla, SIG və CON-u AYRI-AYRI, hansında
+tapılarsa ORADAN götür") natamam idi — istifadəçi haqlı etiraz etdi: *"huquqi
+hesasbdan diger huquqi hesaba emeliyyat olsa sistem hansini goturecek? her
+ikisininde rehberi var"*. Yəni iki tərəf HƏR İKİSİ faydalı nəticə versə,
+"birini seç" sualı "hansı DOĞRU tərəfdir" sualından fərqlidir.
+
+**Düzgün cavab — Tip-in özü artıq bu sualı cavablandırır.** `GoamlTipi`
+enum-u İSTİQAMƏT daşıyır (`...Out` = biz göndəririk = Debet bizimdir,
+`...In` = biz alırıq = Kredit bizimdir). Yeni `GoamlTipiExtensions.
+BizimTerefDebetdir()`:
+
+| Tip | Nəticə |
+|---|---|
+| `FizikOut, HuquqiOut, HToFOut, C2cOut, FToHOut` | `true` (Debet bizimdir) |
+| `FizikIn, HuquqiIn, HToHIn, HToFIn, FToHIn, C2cIn` | `false` (Kredit bizimdir) |
+| `HToH, FToF` (suffikssiz) | `null` — İSTİQAMƏTSİZ, hər iki tərəf bizim ola bilər |
+
+### Memarlıq — Tip operator TƏRƏFDƏN seçilir, GET zamanı YOX
+
+`Tesdiq` GET action-ı Tip-dən ƏVVƏL yüklənir (Tip formanın özündə, operator
+seçir) — ona görə "Tip-ə görə hansı tərəfi götür" qərarı GET-də VERİLƏ BİLMƏZ.
+Həll — server HƏR İKİ tərəfin xam KYC-sini (Oracle-dan) BİR DƏFƏYƏ tapıb
+brauzerə ötürür, Tip dəyişəndə (JS, server sorğusu TƏKRARLANMADAN) doğru
+tərəf tətbiq olunur:
+
+- **`IGoamlService.HesabSahibiKycTapAsync`** imzası dəyişdi: `GoamlHesabSahibiKycDto?`
+  (tək nəticə) → **`GoamlHesabSahibiKycHerIkiTerefDto`** (`Debet`+`Kredit`,
+  hər ikisi müstəqil, `null` ola bilər). Köhnə "Debet-ə bax, dayan" məntiqi
+  SİLİNDİ — hər iki tərəf HƏMİŞƏ oxunur.
+- **`EmeliyyatlarController.Tesdiq` (GET)** — yalnız BİR tərəfdə nəticə varsa
+  (digəri tam boşdursa), qeyri-müəyyənlik yoxdur, DƏRHAL doldurulur (köhnə
+  davranış). HƏR İKİSİNDƏ nəticə varsa — DOLDURMA, `ViewBag.KycDebet`/
+  `KycKredit` ilə hər iki tərəfin xam datası görüntüyə ötürülür,
+  `ViewBag.HerIkiTerefdeKycVar` bayrağı qoyulur.
+- **`Tesdiq.cshtml`** — `HerIkiTerefdeKycVar` olanda sarı xəbərdarlıq banner-i
+  ("Debet VƏ Kredit hər ikisində KYC tapıldı... Tip seçin") + iki düymə
+  ("Debet tərəfini götür" / "Kredit tərəfini götür", HToH/FToF üçün əl ilə
+  seçim). JS: `Tip` select-inin `onchange`-i `gmlTipBizimDebetdir` lüğətinə
+  (server-dən, `BizimTerefDebetdir()`-in ÖZÜNDƏN render olunub — EYNİ qayda
+  iki yerdə YAZILMIR) baxıb uyğun tərəfin KYC-sini (`gmlKycDebet`/`gmlKycKredit`,
+  hər ikisi server-dən JSON kimi gəlir) CON+SIG sahələrinə tətbiq edir.
+  **HEÇ NƏ SİLMİR** — Tip-in göstərdiyi tərəfdə heç nə tapılmayıbsa
+  (`null`), mövcud sahələrə TOXUNULMUR (operator lazım olsa "Təmizlə"
+  düyməsini özü işlədir).
+- CON seçim dropdown-u (`gml-con-select`) artıq HƏMİŞƏ DOM-dadır (əvvəl
+  `@if (gmlElaqaliSexsler.Count > 0)` ilə şərtli idi) — `gmlConDropdownYenile()`
+  onu Tip dəyişəndə/əl ilə seçimdə YENİDƏN qurur (Debet və Kredit-in öz,
+  FƏRQLİ əlaqəli-şəxs siyahıları ola bilər).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRAKI "Təsdiqlə"
+GET-lərinə təsir edir, artıq təsdiqlənmiş qeydlər dəyişmir.
+
+⚠️ **AÇIQ QALAN İŞ (istifadəçi ilə müzakirə edilib, BU SESSİYADA EDİLMƏDİ) —
+Tip-in ÖZÜNÜN avtomatlaşdırılması.** İstifadəçi sual verdi: *"bacara
+bilseydik tipide maximum avtomatlasdirardiq, biz bunu bacara bilerik?"*
+Prinsipcə BƏLİ — AYSEL-in "Update New" kaskadında TIP-i hesab prefiksindən/
+strukturundan hesablayan **15 qayda** var (06-07.11.2026-da tapılıb,
+bax CLAUDE.md "'Update New' Avtomatik Doldurma Mexanizmi Köçürüldü" bölməsi),
+AMMA həmin qaydaların **dəqiq SQL mətni YALNIZ 300 simvola KƏSİLMİŞ önizləmə
+kimi əldə edilib** — tam mətn heç vaxt götürülməyib (o vaxt qərar "operator
+özü seçsin" idi, kəsilmiş mətni port etməyə ehtiyac yox idi). Diaqnostik
+skript artıq hazırdır (`docs/sql/goaml/93-94` faylları) — növbəti addım
+istifadəçinin bunu AYSEL-də YENİDƏN işlədib tam mətni göndərməsidir, sonra
+TIP-i də CON/SIG kimi "avtomatik TƏKLİF et, operator baxıb təsdiqləsin/
+dəyişsin" prinsipi ilə əlavə etmək olar.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/fiqurlu-mötərizə balansı skriptlə, `git diff`-in YALNIZ əlavə
+olunan sətirləri ayrıca ölçülüb — bir yerdə stray `)` tapılıb düzəldildi,
+qalan bütün "imbalans" siqnalları çoxsətrli şərhlərin diff-hunk-dan kəsilməsi
+idi, tam fayl balansı YOXLANILIB TƏSDİQLƏNDİ). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: Debet VƏ Kredit-in
+HƏR İKİSİ hüquqi olan, hər ikisinin öz Rəhbəri/Nümayəndəsi olan bir namizəd
+aç → sarı banner çıxsın → "Huquqi (IN)" Tip seçib Kredit-in Rəhbərinin
+avtomatik dolduğunu, "Huquqi (OUT)" seçəndə Debet-in Rəhbərinin dolduğunu,
+"H TO H" seçəndə heç nəyin avtomatik dəyişmədiyini (yalnız banner-dəki
+düymələrlə seçildiyini) təsdiqləməli.
