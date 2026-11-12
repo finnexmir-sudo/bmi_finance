@@ -10856,3 +10856,43 @@ düymənin YANINDA (onu gizlətmədən) göründüyünü, (2) EYNİ namizədi ə
 istiqamətli Tip ilə YENİDƏN təsdiqləsin → bu dəfə də uğurla keçdiyini, (3)
 EYNİ Tip ilə ÜÇÜNCÜ dəfə cəhd etsin → "eyni Tip ilə artıq təsdiqlənib" xətası
 ilə rədd olunduğunu təsdiqləməlidir.
+
+## GOAML — "Hər İki Tərəf" Banner-i YENƏ DƏ Lazımsız UZUN İDİ (13.11.2026)
+
+Yuxarıdakı dalğada banner "SEÇİM yox, İKİ DƏFƏ GÖNDƏR" izahı ilə BÖYÜDÜLMÜŞDÜ
+(uzun paraqraf + 2 düymə + ayrıca "SIG boş qala bilər" qeydi). İstifadəçi
+(ekran-görüntüsü ilə) bunu RƏDD ETDİ: *"bu nediye bele yazib doldurmusan,
+sehife acilan kimi bele yazilir,buna umumilikde ehtiyac yoxdur mence,sadece
+xirda imkan ver isci ozu secsin vessalamda bu qeder yaziya ne ehtiyac"* —
+mətnin ÖZÜ (AML-in iki dəfə göndərmə tələbi) yox, onun HƏR DƏFƏ, DƏRHAL,
+UZUN formada göstərilməsi narahatlıq idi.
+
+**Düzəliş — izahlı paraqraf VƏ "SIG boş qala bilər" qeydi SİLİNDİ, yalnız
+BİR sətirlik, kompakt bir seçim qaldı:** ikon + qısa mətn ("Hər iki tərəfdə
+KYC var:") + iki kiçik düymə (Debet/Kredit, ad-göstərmədən). Yeni
+`.gml-banner--compact` sinfi (`display:flex; padding:8px 14px; font-size:
+.82rem`) banner-in hündürlüyünü böyük info-qutudan (14-18px padding, geniş
+sətir) vizual olaraq AYIRIR.
+
+**Davranış DƏYİŞMƏDİ** — Tip istiqamətli (OUT/IN) seçiləndə JS (`#gmlIkiTerefBanner`-ə
+`display:none`) bu sətri YENƏ DƏ avtomatik gizlədir; YALNIZ istiqamətsiz
+(HToH/FToF) tiplərdə, operator Tip-i hələ seçməyib ikən görünür qalır.
+`gmlTerefTetbiqEt(teref)` funksiyası TOXUNULMADI — düymələr əvvəlki kimi
+`gmlKycDebet`/`gmlKycKredit`-i tətbiq edir.
+
+**Qayda:** düzgün bir biznes qaydasını (AML-in iki dəfə göndərmə tələbi kimi)
+ÇEVİRİB kodda düzgün tətbiq etmək (dedup-un Tip-i daşıması) ilə onu
+İNTERFEYSDƏ NECƏ TƏQDİM ETMƏK AYRI məsələdir — əvvəlki dalğa birincini
+düzəltdi, amma ikincini "nə qədər çox izah, bir o qədər yaxşı" fərziyyəsi ilə
+HƏDDİNDƏN ARTIQ genişləndirdi. Operatorun HƏR DƏFƏ, HƏR namizəddə görəcəyi bir
+elementdə (bura: hər iki tərəfdə KYC olan namizədlər, nadir DEYİL) uzun izah
+YORUCUDUR — qaydanın ÖZÜ CLAUDE.md-də (bu fayl) sənədləşir, ekranda isə
+YALNIZ əməl üçün lazım olan minimum qalır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/tag balansı Python skriptlə — `{`/`(`/`[` və
+`div`/`button`/`form`/`select`/`span`/`style`/`script` teqlərinin hamısı
+cüt sayda, tam fayl). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra
+hər iki tərəfdə KYC olan bir namizəd aça bilər — banner-in indi kiçik, bir
+sətirlik bir qutu olaraq göründüyünü, Tip-i istiqamətli seçəndə YOXA ÇIXDIĞINI
+təsdiqləməlidir.

@@ -49,6 +49,8 @@
         .gml-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; font-size:.86rem; line-height:1.5; }
         .gml-banner--info { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
         .gml-banner--warning { background:#fffbeb; border:1.5px solid #fcd34d; color:#92400e; }
+        .gml-banner--compact { display:flex; align-items:center; gap:10px; padding:8px 14px; font-size:.82rem; }
+        .gml-banner--compact span { font-weight:600; }
     </style>
 }
 
@@ -81,46 +83,20 @@
         </div>
     }
     @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda (12.11.2026) DƏRHAL
-         doldurmuruq. İLK versiyada bu, "hansı tərəf bizimdir, bilmirik" kimi
-         TƏQDİM OLUNMUŞDU — istifadəçi (AML məsul şəxsdən soruşub) bunu SƏHV
-         çıxardı: "hansının bizim tərəf olduğu" sualının CAVABI Tip-dən (OUT/IN)
-         mexaniki məlumdur, bu, HƏLL OLUNASI bir qeyri-müəyyənlik deyil. Əsl
-         məsələ: məsul şəxsin tələbinə görə belə hallarda əməliyyat ADƏTƏN İKİ
-         AYRI hesabat kimi (bir dəfə bir istiqamətli Tip ilə, bir dəfə əks
-         istiqamətli Tip ilə) göndərilməlidir. Ona görə mətn "seç" DEYİL,
-         "lazım gələrsə iki dəfə təsdiqləyin" kimi yazılıb. Tip istiqamətlidirsə
-         (aşağıdakı JS) doğru tərəf avtomatik tətbiq olunur VƏ bu banner YOXA
-         ÇIXIR (çaşdırıcı olmasın — istifadəçi qərarı); "H TO H"/"F to F" kimi
-         istiqamətsiz tiplərdə (və ya Tip hələ seçilməyibsə) banner görünür
-         qalır, düymələr xam tərəfi ƏL İLƏ tətbiq etmək üçündür. ── *@
+         doldurmuruq. İLK versiya uzun izahlı bir banner idi — istifadəçi
+         (13.11.2026) bunu RƏDD ETDİ: "səhifə açılan kimi belə yazılır, buna
+         ümumilikdə ehtiyac yoxdur, sadəcə xırda imkan ver işçi özü seçsin,
+         bu qədər yazıya nə ehtiyac". Mətn ÇIXARILDI, YALNIZ kompakt bir seçim
+         qalır — Tip istiqamətlidirsə (aşağıdakı JS) bu sətir avtomatik yoxa
+         çıxır, istiqamətsizdirsə (H to H/F to F) operator iki kiçik düymədən
+         birini basır. ── *@
     @if (gmlHerIkiTerefdeVar)
     {
-        <div class="gml-banner gml-banner--warning" id="gmlIkiTerefBanner">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            Debet (@Model.Debet) VƏ Kredit (@Model.Kredit) hesablarının <b>hər ikisində</b> KYC tapıldı.
-            Bu, "hansı bizimdir" sualı DEYİL — <b>Tip</b> (OUT/IN) seçiləndə uyğun tərəf özü avtomatik
-            tətbiq olunur (seçilən kimi bu banner yoxa çıxır). Əsas məsələ budur:
-            <b>AML qaydasına görə belə halda əməliyyat çox vaxt İKİ AYRI hesabat kimi göndərilməlidir</b> —
-            əvvəlcə bir istiqamətli Tip ilə təsdiqləyib göndərin, SONRA bu namizədi yenidən tapıb
-            <b>əks istiqamətli</b> Tip ilə TƏKRAR təsdiqləyin (sistem eyni namizədin fərqli Tip ilə
-            ikinci dəfə göndərilməsinə icazə verir — yalnız EYNİ Tip-in təkrarı bloklanır).
-            "H TO H" / "F to F" kimi istiqamətsiz tiplərdə hansı xam tərəfi görmək istədiyinizi
-            aşağıdaki düymələrlə özünüz seçə bilərsiniz:
-            <div style="margin-top:10px; display:flex; gap:10px">
-                <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('debet')">
-                    <i class="bi bi-arrow-down-circle"></i> Debet (@Model.Debet) tərəfini götür
-                </button>
-                <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('kredit')">
-                    <i class="bi bi-arrow-up-circle"></i> Kredit (@Model.Kredit) tərəfini götür
-                </button>
-            </div>
-            <div style="margin-top:10px; font-size:.78rem; opacity:.9">
-                <i class="bi bi-info-circle"></i>
-                Tip seçdikdən/düyməyə basdıqdan sonra <b>"Nümayəndə"</b> sahələri doldu, amma
-                <b>"Hesab imza hüququ olan şəxs"</b> boş qalırsa — bu, xəta DEYİL: o hesab üçün
-                Oracle-da aktiv "Rəhbər" qeydi tapılmayıb (yalnız nümayəndə var), imza sahəsini
-                özünüz doldurmalısınız.
-            </div>
+        <div class="gml-banner gml-banner--warning gml-banner--compact" id="gmlIkiTerefBanner">
+            <i class="bi bi-arrow-left-right"></i>
+            <span>Hər iki tərəfdə KYC var:</span>
+            <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('debet')">Debet</button>
+            <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('kredit')">Kredit</button>
         </div>
     }
 
