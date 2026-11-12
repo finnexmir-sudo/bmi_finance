@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace FinNex.UI.Areas.Goaml.Controllers;
 
@@ -23,12 +24,15 @@ public class EmeliyyatlarController : Controller
     private readonly IGoamlService _goaml;
     private readonly UserManager<AppUser> _userManager;
     private readonly IConfiguration _config;
+    private readonly ILogger<EmeliyyatlarController> _logger;
 
-    public EmeliyyatlarController(IGoamlService goaml, UserManager<AppUser> userManager, IConfiguration config)
+    public EmeliyyatlarController(IGoamlService goaml, UserManager<AppUser> userManager, IConfiguration config,
+        ILogger<EmeliyyatlarController> logger)
     {
         _goaml = goaml;
         _userManager = userManager;
         _config = config;
+        _logger = logger;
     }
 
     private async Task<int?> GetCurrentIsciIdAsync()
@@ -219,7 +223,30 @@ public class EmeliyyatlarController : Controller
         return View(new GoamlJsonIxracFiltrDto { BasTarix = DateTime.Today, SonTarix = DateTime.Today });
     }
 
-    // ── POST /Goaml/Emeliyyatlar/Export — JSON hazırlayır, DMS-ə yazır, yükləyir ──
+    // ── POST /Goaml/Emeliyyatlar/Onizle — AJAX, "İxrac et"dən ƏVVƏL hansı
+    //    qeydlərin uyğun gələcəyini göstərir (13.11.2026, istifadəçi tələbi:
+    //    "hansı sənədlər ixrac olunacaq onu göstər"). HEÇ NƏYİ dəyişdirmir —
+    //    JsonIxracAsync-in İSTİFADƏ ETDİYİ EYNİ filtr şərtini paylaşır. ───────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Onizle([FromForm] GoamlJsonIxracFiltrDto filtr)
+    {
+        if (filtr.SonTarix < filtr.BasTarix)
+            return Json(new { success = false, message = "Bitmə tarixi başlanğıcdan əvvəl ola bilməz." });
+
+        var netice = await _goaml.IxracOnizlemeAsync(filtr);
+        if (!netice.Success)
+            return Json(new { success = false, message = netice.Message });
+
+        return Json(new { success = true, setirler = netice.Data });
+    }
+
+    // ── POST /Goaml/Emeliyyatlar/Export — JSON hazırlayır, DMS-ə yazır, uğurlu
+    //    olanda GÖRÜNƏN banner + yükləmə linki ilə geri qayıdır (13.11.2026 —
+    //    ƏVVƏL birbaşa File() qaytarırdı, TempData["Success"] HEÇ VAXT görünmürdü,
+    //    çünki fayl-yükləmə cavabı səhifəni YENİDƏN render ETMİR; PRG (Post-
+    //    Redirect-Get) naxışına keçirildi — "Sil" action-unun ÖZÜNÜN artıq
+    //    işlətdiyi EYNİ naxış). ────────────────────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Export(GoamlJsonIxracFiltrDto filtr)
@@ -237,25 +264,57 @@ public class EmeliyyatlarController : Controller
             return RedirectToAction(nameof(Export));
         }
 
-        // ── DMS-ə yazmaq (audit/saxlama) — "Fayl Yükləmə" qaydasına uyğun,
-        //    wwwroot-a YOX. Yazma uğursuz olsa belə brauzer-yükləmə davam edir
-        //    (operator faylı əlindən əldə etsin, DMS surəti ikinci dərəcəlidir).
+        // ── DMS-ə yazmaq İNDİ MƏCBURİDİR (əvvəl best-effort idi) — PRG axınında
+        //    faktiki brauzer-yükləməsi AYRI bir GET sorğusu (IxracFayli) ilə,
+        //    DİSKDƏKİ fayldan gəlir; bu POST cavabı artıq birbaşa bayt qaytarmır.
+        //    Qeydlər ARTIQ "İxracEdilib"ə keçib (JsonIxracAsync-in özündə commit
+        //    olunub) — yazı sınsa belə statusu geri qaytarmırıq, yalnız operatora
+        //    açıq xəbərdarlıq veririk ki, əlaqəli heç nə itməyib.
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var dir = Path.Combine(dmsRoot, "goaml-ixrac");
         try
         {
-            var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
-            var dir = Path.Combine(dmsRoot, "goaml-ixrac");
             Directory.CreateDirectory(dir);
             await System.IO.File.WriteAllTextAsync(Path.Combine(dir, netice.Data.TeklifOlunanFaylAdi), netice.Data.JsonMetni, Encoding.UTF8);
         }
-        catch
+        catch (Exception ex)
         {
-            // best-effort — DMS yazısı uğursuz olsa belə, operator faylı YENƏ DƏ əldə etsin
+            _logger.LogError(ex, "GOAML Export — DMS-ə yazma uğursuz oldu: {Fayl}", netice.Data.TeklifOlunanFaylAdi);
+            TempData["Error"] = $"{netice.Data.SetirSayi} qeyd ixrac edildi (statusu artıq \"İxrac edilib\"-dir), " +
+                "AMMA fayl diskə yazıla bilmədi — DMS qovluğuna (C:\\FinNex_DMS\\goaml-ixrac) çıxış yoxdur. " +
+                "Mühəndisə bildirin, qeydlərin özü İTMƏYİB.";
+            return RedirectToAction(nameof(Export));
         }
 
-        if (netice.Data.Xeberdarliqlar.Count > 0)
-            TempData["Error"] = string.Join(" | ", netice.Data.Xeberdarliqlar);
-        TempData["Success"] = $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\".";
+        TempData["Success"] = netice.Data.Xeberdarliqlar.Count > 0
+            ? $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\". " + string.Join(" | ", netice.Data.Xeberdarliqlar)
+            : $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\".";
+        TempData["IxracFayli"] = netice.Data.TeklifOlunanFaylAdi;
 
-        return File(Encoding.UTF8.GetBytes(netice.Data.JsonMetni), "application/json", netice.Data.TeklifOlunanFaylAdi);
+        return RedirectToAction(nameof(Export));
+    }
+
+    // ── GET /Goaml/Emeliyyatlar/IxracFayli — PRG-dən sonra faylı DMS-dən oxuyub
+    //    endirir (13.11.2026). `fayl` Path.GetFileName ilə TƏMİZLƏNİR — qovluq-
+    //    keçişi (path traversal) riski yoxdur. ───────────────────────────────
+    public IActionResult IxracFayli(string fayl)
+    {
+        var temizAd = Path.GetFileName(fayl ?? "");
+        if (string.IsNullOrWhiteSpace(temizAd))
+        {
+            TempData["Error"] = "Fayl adı etibarsızdır.";
+            return RedirectToAction(nameof(Export));
+        }
+
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var yol = Path.Combine(dmsRoot, "goaml-ixrac", temizAd);
+        if (!System.IO.File.Exists(yol))
+        {
+            TempData["Error"] = "Fayl tapılmadı — DMS-dən silinmiş ola bilər.";
+            return RedirectToAction(nameof(Export));
+        }
+
+        var bytes = System.IO.File.ReadAllBytes(yol);
+        return File(bytes, "application/json", temizAd);
     }
 }

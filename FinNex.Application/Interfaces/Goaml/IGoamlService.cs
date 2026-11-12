@@ -57,5 +57,12 @@ namespace FinNex.Application.Interfaces.Goaml
         /// nəticə mətn kimi qaytarılır, DMS-ə yazmaq/yükləmək controller-in işidir
         /// (Kassa/Exchange-in `SablonYolu()` presedentinə uyğun).</summary>
         Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default);
+
+        /// <summary>"İxrac et (JSON)"-dan ƏVVƏL, həmin filtrlə UYĞUN GƏLƏCƏK (hələ
+        /// ixrac olunmamış, "Qaralama") qeydlərin siyahısını göstərir (13.11.2026,
+        /// istifadəçi tələbi: "hansı sənədlər ixrac olunacaq onu göstər"). HEÇ NƏYİ
+        /// dəyişdirmir — <see cref="JsonIxracAsync"/> ilə EYNİ filtr şərtini paylaşır,
+        /// ona görə nəticə HƏMİŞƏ real ixracla UYĞUN gəlir.</summary>
+        Task<Result<List<GoamlEmeliyyatListDto>>> IxracOnizlemeAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default);
     }
 }

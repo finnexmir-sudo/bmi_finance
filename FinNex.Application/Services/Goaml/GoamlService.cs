@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Goaml;
@@ -330,13 +331,25 @@ namespace FinNex.Application.Services.Goaml
         public async Task<Result<List<GoamlEmeliyyatListDto>>> HamisiniGetirAsync()
         {
             var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync();
+            var neice = (await SetirleriDtoyaCevirAsync(setirler))
+                .OrderByDescending(x => x.YaradilmaTarixi)
+                .ToList();
+
+            return Result<List<GoamlEmeliyyatListDto>>.Ok(neice);
+        }
+
+        /// <summary>"Təsdiqlənmiş siyahı" (<see cref="HamisiniGetirAsync()"/>) VƏ "İxrac
+        /// önizləməsi" (<see cref="IxracOnizlemeAsync"/>) EYNİ xəritələməni paylaşır —
+        /// tək mənbə, iki oxuyucu (13.11.2026).</summary>
+        private async Task<List<GoamlEmeliyyatListDto>> SetirleriDtoyaCevirAsync(IList<GoamlEmeliyyat> setirler)
+        {
             var isciIdler = setirler.Select(x => x.TesdiqleyenIsciId).Distinct().ToList();
-            var isciler = await _unitOfWork.Repository<Isci>()
-                .HamisiniGetirAsync(x => isciIdler.Contains(x.Id));
+            var isciler = isciIdler.Count == 0
+                ? new List<Isci>()
+                : (await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(x => isciIdler.Contains(x.Id))).ToList();
             var isciAdlari = isciler.ToDictionary(x => x.Id, x => $"{x.Ad} {x.Soyad}");
 
-            var neice = setirler
-                .OrderByDescending(x => x.YaradilmaTarixi)
+            return setirler
                 .Select(x => new GoamlEmeliyyatListDto
                 {
                     Id = x.Id,
@@ -347,13 +360,13 @@ namespace FinNex.Application.Services.Goaml
                     SummaVNacval = x.SummaVNacval,
                     Tip = x.Tip,
                     ReportCode = x.ReportCode,
+                    TipEtiketi = x.Tip?.Etiket(),
+                    ReportCodeEtiketi = x.ReportCode != null ? $"{x.ReportCode.Value.Kod()} — {x.ReportCode.Value.Aciqlama()}" : null,
                     Status = x.Status,
                     TesdiqleyenAdi = isciAdlari.TryGetValue(x.TesdiqleyenIsciId, out var ad) ? ad : null,
                     YaradilmaTarixi = x.YaradilmaTarixi,
                 })
                 .ToList();
-
-            return Result<List<GoamlEmeliyyatListDto>>.Ok(neice);
         }
 
         public async Task<Result> SilAsync(int id)
@@ -1157,16 +1170,39 @@ namespace FinNex.Application.Services.Goaml
         // elementdən ibarətdir, N=ixrac edilən qeyd sayı.
         // ════════════════════════════════════════════════════════════════════
 
-        public async Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default)
+        /// <summary>Export-un "hansı qeydlər uyğun gəlir" şərti — TƏK yerdə, həm
+        /// <see cref="JsonIxracAsync"/> (real ixrac), həm <see cref="IxracOnizlemeAsync"/>
+        /// (ixracdan ƏVVƏL göstərilən önizləmə) bunu çağırır ki, "nə göstərilir"
+        /// ilə "nə ixrac olunur" HEÇ VAXT fərqlənməsin (13.11.2026, istifadəçi
+        /// tələbi: "hansı sənədlər ixrac olunacaq onu göstər").</summary>
+        private static Expression<Func<GoamlEmeliyyat, bool>> IxracSertiQur(GoamlJsonIxracFiltrDto filtr)
         {
             var basTarix = filtr.BasTarix.Date;
             var sonTarix = filtr.SonTarix.Date.AddDays(1).AddTicks(-1);
-
-            var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync(x =>
+            return x =>
                 x.Status == GoamlEmeliyyatStatusu.Qaralama &&
                 x.DateOper != null && x.DateOper >= basTarix && x.DateOper <= sonTarix &&
                 (filtr.Tip == null || x.Tip == filtr.Tip) &&
-                (filtr.ReportCode == null || x.ReportCode == filtr.ReportCode));
+                (filtr.ReportCode == null || x.ReportCode == filtr.ReportCode);
+        }
+
+        /// <summary>"İxrac et (JSON)"-dan ƏVVƏL, uyğun gələcək (hələ ixrac olunmamış,
+        /// "Qaralama") qeydlərin siyahısını göstərir — HEÇ NƏYİ dəyişdirmir, Status
+        /// mutasiyası YOXDUR (13.11.2026). <see cref="JsonIxracAsync"/> ilə EYNİ
+        /// <see cref="IxracSertiQur"/> şərtini paylaşır.</summary>
+        public async Task<Result<List<GoamlEmeliyyatListDto>>> IxracOnizlemeAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default)
+        {
+            var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync(IxracSertiQur(filtr));
+            var neice = (await SetirleriDtoyaCevirAsync(setirler))
+                .OrderBy(x => x.DateOper)
+                .ToList();
+
+            return Result<List<GoamlEmeliyyatListDto>>.Ok(neice);
+        }
+
+        public async Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default)
+        {
+            var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync(IxracSertiQur(filtr));
 
             if (setirler.Count == 0)
                 return Result<GoamlJsonIxracNeticeDto>.Fail(

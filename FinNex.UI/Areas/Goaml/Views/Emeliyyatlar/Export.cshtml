@@ -3,6 +3,7 @@
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "GOAML — Export to file (JSON)";
+    var gmlIxracFayli = TempData["IxracFayli"] as string;
 }
 
 @section Styles {
@@ -13,6 +14,31 @@
         .gml-bar { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }
         .gml-warn { margin-top:16px; padding:12px 16px; border-radius:10px; background:#fffbeb; border:1px solid #fde68a; color:#92400e; font-size:.82rem; line-height:1.55; }
         .gml-warn ul { margin:6px 0 0 18px; }
+
+        /* "fn-alert" DEYİL — qlobal 4-saniyəlik auto-hide (user-area.js) onu
+           silməsin deyə, qəsdən fərqli sinif adı (bax CLAUDE.md "Bildirişlər —
+           fn-alert tələsi"). */
+        .gml-success-box { display:flex; align-items:center; gap:14px; margin-top:16px; padding:14px 18px; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+        .gml-success-box > i { font-size:1.5rem; color:#16a34a; flex:none; }
+        .gml-success-text { flex:1; min-width:200px; }
+        .gml-success-title { font-weight:700; font-size:.92rem; }
+
+        .gml-onizleme-hint { margin-top:16px; padding:12px 16px; border-radius:10px; background:#f8fafc; border:1px solid #e2e8f0; color:#64748b; font-size:.82rem; }
+
+        .gml-table-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:10px; margin-top:16px; }
+        .gml-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+        .gml-table th, .gml-table td { padding:9px 12px; border-bottom:1px solid #eef0f4; text-align:left; white-space:nowrap; }
+        .gml-table th { background:#f9fafb; font-weight:700; color:#4b5563; font-size:.74rem; text-transform:uppercase; letter-spacing:.02em; }
+        .gml-table tbody tr:hover { background:#fafbff; }
+        .gml-table td.gml-mebleg { font-weight:700; color:#111827; text-align:right; }
+
+        .gml-limits { margin-top:16px; padding:12px 16px; border-radius:10px; background:#f8fafc; border:1px solid #e2e8f0; }
+        .gml-limits summary { cursor:pointer; font-size:.84rem; font-weight:600; color:#475569; list-style:none; display:flex; align-items:center; gap:7px; }
+        .gml-limits summary::-webkit-details-marker { display:none; }
+        .gml-limits summary .bi { transition:transform .15s; }
+        .gml-limits[open] summary .bi { transform:rotate(90deg); }
+        .gml-limits ul { margin:10px 0 0 18px; font-size:.8rem; color:#64748b; line-height:1.6; }
+        .gml-limits strong { color:#334155; }
     </style>
 }
 
@@ -23,26 +49,35 @@
         "İxrac edilib" statusuna keçir — növbəti ixrac onları TƏKRAR GÖTÜRMƏYƏCƏK.
     </div>
 
-    @if (TempData["Error"] != null)
+    @if (!string.IsNullOrEmpty(gmlIxracFayli))
     {
-        <div class="gml-warn" style="margin-top:14px">@TempData["Error"]</div>
+        <div class="gml-success-box">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="gml-success-text">
+                <div class="gml-success-title">İxrac tamamlandı</div>
+                <div class="gml-sub">Fayl diskə (DMS → <code>goaml-ixrac</code>) yazıldı: <code>@gmlIxracFayli</code></div>
+            </div>
+            <a href="@Url.Action("IxracFayli", new { fayl = gmlIxracFayli })" id="gmlDownloadLink" class="fn-btn fn-btn--primary">
+                <i class="bi bi-download"></i> Faylı yüklə
+            </a>
+        </div>
     }
 
     <div class="fn-card" style="padding:20px; margin-top:16px">
-        <form asp-action="Export" method="post">
+        <form id="gmlExportForm" asp-action="Export" method="post" onsubmit="return gmlIxracTesdiqle();">
             @Html.AntiForgeryToken()
             <div class="gml-bar">
                 <div class="gml-fld">
                     <label class="gml-filter-lbl">Tarixdən</label>
-                    <input type="date" asp-for="BasTarix" class="fn-input" style="width:150px" required />
+                    <input type="date" asp-for="BasTarix" id="gmlBasTarix" class="fn-input" style="width:150px" required onchange="gmlFiltrDeyisdi()" />
                 </div>
                 <div class="gml-fld">
                     <label class="gml-filter-lbl">Tarixə qədər</label>
-                    <input type="date" asp-for="SonTarix" class="fn-input" style="width:150px" required />
+                    <input type="date" asp-for="SonTarix" id="gmlSonTarix" class="fn-input" style="width:150px" required onchange="gmlFiltrDeyisdi()" />
                 </div>
                 <div class="gml-fld">
                     <label class="gml-filter-lbl">Tip (istəyə bağlı)</label>
-                    <select asp-for="Tip" class="fn-input" style="width:220px">
+                    <select asp-for="Tip" id="gmlTip" class="fn-input" style="width:220px" onchange="gmlFiltrDeyisdi()">
                         <option value="">— Hamısı —</option>
                         @foreach (GoamlTipi t in Enum.GetValues(typeof(GoamlTipi)))
                         {
@@ -52,7 +87,7 @@
                 </div>
                 <div class="gml-fld">
                     <label class="gml-filter-lbl">Məlumatın növü (istəyə bağlı)</label>
-                    <select asp-for="ReportCode" class="fn-input" style="width:220px">
+                    <select asp-for="ReportCode" id="gmlReportCode" class="fn-input" style="width:220px" onchange="gmlFiltrDeyisdi()">
                         <option value="">— Hamısı —</option>
                         @foreach (GoamlHesabatNovu r in Enum.GetValues(typeof(GoamlHesabatNovu)))
                         {
@@ -61,20 +96,150 @@
                     </select>
                 </div>
                 <div class="gml-fld">
-                    <button type="submit" class="fn-btn fn-btn--primary">İxrac et (JSON)</button>
+                    <button type="button" id="gmlOnizleBtn" class="fn-btn fn-btn--outline" onclick="gmlOnizle()">
+                        <i class="bi bi-eye"></i> Namizədləri göstər
+                    </button>
+                </div>
+                <div class="gml-fld">
+                    <button type="submit" id="gmlIxracBtn" class="fn-btn fn-btn--primary" disabled>
+                        <i class="bi bi-file-earmark-arrow-down"></i> İxrac et (JSON)
+                    </button>
                 </div>
             </div>
         </form>
+
+        <div id="gmlOnizlemeWrap">
+            <div class="gml-onizleme-hint">Hansı qeydlərin ixrac olunacağını görmək üçün "Namizədləri göstər"ə basın.</div>
+        </div>
     </div>
 
-    <div class="gml-warn">
-        <strong>Diqqət — bu, MVP (ilk artım) ixracıdır, hamısı port edilməyib:</strong>
+    <details class="gml-limits">
+        <summary><i class="bi bi-chevron-right"></i> Hazırlanan faylı göndərmədən əvvəl bilməli olduqlarınız</summary>
         <ul>
-            <li>"<code>dubl_number</code>" sahələri (hüquqi şəxsin VÖEN üzrə ikinci qeydiyyat nömrəsi) boş qalır.</li>
-            <li>QHT/PEP/BLR hesabat növlərinin header-ə əlavə etdiyi sahələr (tin, hrzCountry, customerRiskDegree və s.) YOXDUR — header yalnız sendDate/reportType/reportReason daşıyır.</li>
-            <li>trn_payment_system-in dəqiq (UTF/XKS/SWF/AZP/AOS) təyini YOXDUR — yalnız document_source-əsaslı CBB/IAP/PST, defolt CBB.</li>
-            <li>Bizim öz bankımızın hesabına aid bank-adı/VÖEN zənginləşdirilməsi (V_YURIK__NAME/ATTRIB/C_INN_BANK) YOXDUR.</li>
-            <li><strong>Hazırlanan JSON-u real goAML portalına göndərmədən ƏVVƏL əl ilə yoxlayın.</strong></li>
+            <li>Bəzi az rast gəlinən sahələr (ikinci qeydiyyat nömrəsi, QHT/PEP/BLR-ə xas əlavə sahələr, ödəniş sisteminin dəqiq növü, bizim bankın öz adı/VÖEN-i) hələ avtomatik doldurulmur.</li>
+            <li><strong>Hazırlanan faylı real goAML portalına göndərmədən əvvəl mütləq əl ilə yoxlayın.</strong></li>
         </ul>
-    </div>
+    </details>
 </div>
+
+@section Scripts {
+    <script>
+        // ── "İxrac et"dən ƏVVƏL hansı qeydlərin uyğun gələcəyini göstərir
+        //    (13.11.2026, istifadəçi tələbi) — HEÇ NƏYİ dəyişdirmir, server
+        //    tərəfdəki EYNİ filtr şərtini (IxracSertiQur) çağırır. ────────────
+        var gmlSonOnizlemeSayi = 0;
+
+        function gmlEsc(s) {
+            if (s === null || s === undefined) return '';
+            var d = document.createElement('div');
+            d.textContent = String(s);
+            return d.innerHTML;
+        }
+
+        function gmlTarixGoster(iso) {
+            if (!iso) return '—';
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return '—';
+            var p = function (n) { return String(n).padStart(2, '0'); };
+            return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+        }
+
+        function gmlMeblegGoster(v) {
+            if (v === null || v === undefined) return '—';
+            return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Filtr dəyişəndə köhnə önizləmə artıq ETİBARSIZDIR — "İxrac et" sönür,
+        // operator YENİDƏN "Namizədləri göstər" basmalıdır.
+        function gmlFiltrDeyisdi() {
+            gmlSonOnizlemeSayi = 0;
+            document.getElementById('gmlIxracBtn').disabled = true;
+            document.getElementById('gmlOnizlemeWrap').innerHTML =
+                '<div class="gml-onizleme-hint">Filtr dəyişdi — yenidən "Namizədləri göstər"ə basın.</div>';
+        }
+
+        async function gmlOnizle() {
+            var basTarix = document.getElementById('gmlBasTarix').value;
+            var sonTarix = document.getElementById('gmlSonTarix').value;
+            var wrap = document.getElementById('gmlOnizlemeWrap');
+            var ixracBtn = document.getElementById('gmlIxracBtn');
+
+            if (!basTarix || !sonTarix) {
+                wrap.innerHTML = '<div class="gml-warn">Tarix aralığını seçin.</div>';
+                return;
+            }
+
+            var btn = document.getElementById('gmlOnizleBtn');
+            btn.disabled = true;
+            ixracBtn.disabled = true;
+            wrap.innerHTML = '<div class="gml-onizleme-hint">Axtarılır...</div>';
+
+            try {
+                var fd = new FormData();
+                fd.append('BasTarix', basTarix);
+                fd.append('SonTarix', sonTarix);
+                var tip = document.getElementById('gmlTip').value;
+                var reportCode = document.getElementById('gmlReportCode').value;
+                if (tip) fd.append('Tip', tip);
+                if (reportCode) fd.append('ReportCode', reportCode);
+                fd.append('__RequestVerificationToken', document.querySelector('#gmlExportForm input[name="__RequestVerificationToken"]').value);
+
+                var res = await fetch('@Url.Action("Onizle")', { method: 'POST', body: fd });
+                var d = await res.json();
+
+                if (!d.success) {
+                    gmlSonOnizlemeSayi = 0;
+                    wrap.innerHTML = '<div class="gml-warn">' + gmlEsc(d.message || 'Xəta baş verdi.') + '</div>';
+                    return;
+                }
+
+                var setirler = d.setirler || [];
+                gmlSonOnizlemeSayi = setirler.length;
+
+                if (setirler.length === 0) {
+                    wrap.innerHTML = '<div class="gml-onizleme-hint">Seçilmiş aralıqda ixrac ediləcək (hələ ixrac olunmamış) təsdiqlənmiş qeyd yoxdur.</div>';
+                    return;
+                }
+
+                var rows = setirler.map(function (s) {
+                    return '<tr>' +
+                        '<td>' + gmlEsc(s.candidateRecNum) + '</td>' +
+                        '<td>' + gmlTarixGoster(s.dateOper) + '</td>' +
+                        '<td>' + gmlTarixGoster(s.yaradilmaTarixi) + '</td>' +
+                        '<td>' + gmlEsc(s.debet || '—') + '</td>' +
+                        '<td>' + gmlEsc(s.kredit || '—') + '</td>' +
+                        '<td>' + gmlEsc(s.tipEtiketi || '—') + '</td>' +
+                        '<td>' + gmlEsc(s.reportCodeEtiketi || '—') + '</td>' +
+                        '<td class="gml-mebleg">' + gmlMeblegGoster(s.summaVNacval) + '</td>' +
+                        '<td>' + gmlEsc(s.tesdiqleyenAdi || '—') + '</td>' +
+                    '</tr>';
+                }).join('');
+
+                wrap.innerHTML =
+                    '<div class="gml-sub" style="margin-top:16px">' + setirler.length + ' qeyd bu aralıqda ixrac ediləcək:</div>' +
+                    '<div class="gml-table-wrap"><table class="gml-table"><thead><tr>' +
+                    '<th>Əməliyyat №</th><th>Əməliyyat tarixi</th><th>Yaradılma tarixi</th><th>Debet</th><th>Kredit</th>' +
+                    '<th>Tip</th><th>Məlumat növü</th><th>Məbləğ (AZN)</th><th>Təsdiqləyən</th>' +
+                    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+                ixracBtn.disabled = false;
+            } catch (e) {
+                wrap.innerHTML = '<div class="gml-warn">Server ilə əlaqə uğursuz oldu.</div>';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function gmlIxracTesdiqle() {
+            return confirm(gmlSonOnizlemeSayi + ' qeyd ixrac olunacaq və geri qaytarıla bilməyəcək ("İxrac edilib" statusuna keçəcək). Davam edilsin?');
+        }
+
+        // Uğurlu ixracdan sonra (PRG redirect ilə geri qayıdanda) faylı avtomatik
+        // yükləməyə başla — operator əlavə klikə ehtiyac qalmadan alsın, amma
+        // yuxarıdakı "Faylı yüklə" düyməsi də qalır (avtomatik yükləmə brauzer
+        // tərəfindən bloklansa, operator əl ilə klikləyə bilsin).
+        (function () {
+            var link = document.getElementById('gmlDownloadLink');
+            if (link) link.click();
+        })();
+    </script>
+}

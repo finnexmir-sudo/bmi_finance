@@ -5805,6 +5805,90 @@ seçib sual hazırlat → redaktə et → yadda saxla → işçi seçib göndər
 `/User/Marif`-də görüb sual-sual cavablasın, hər cavabdan sonra izahın dərhal
 göründüyünü təsdiqləsin.
 
+## GOAML — Export: Görünən Təsdiq + Önizləmə Siyahısı (13.11.2026)
+
+İstifadəçi iki şey soruşdu: *"ixracda tarixler neyi bildirir"* (cavablandı: `DateOper`
+— "Əməliyyat tarixi", `CandidateDateOper`-ə fallback YOXDUR Export filtrində) və
+*"bu sari olan yerdeki yazi muveqqetidir? adamin gozune girir, bilinir AI yazib"*
+(aşağıda, ayrıca bəndə bax). Araşdırma zamanı REAL bir UX bugu tapıldı: **uğurlu
+ixracda HEÇ BİR görünən təsdiq mesajı çıxmırdı.**
+
+### Kök səbəb — `File()` qaytaran POST, TempData-nı HEÇ VAXT göstərmir
+
+`EmeliyyatlarController.Export` (POST) uğurlu olanda **birbaşa `File(...)`**
+qaytarırdı, redirect ETMİRDİ:
+```csharp
+TempData["Success"] = $"{netice.Data.SetirSayi} qeyd ixrac edildi — ...";
+return File(Encoding.UTF8.GetBytes(netice.Data.JsonMetni), "application/json", ...);
+```
+`_UserLayout.cshtml` `TempData["Success"]`-u YALNIZ YENİ bir səhifə render
+olunanda göstərir — fayl yükləməsi isə səhifəni YENİDƏN render ETMİR (brauzer
+sadəcə faylı yaddaşa köçürür, ekran olduğu kimi qalır). Nəticə: ixrac
+**UĞURLU OLSA BELƏ** heç bir "N qeyd ixrac edildi" mesajı görünmürdü.
+
+### Həll — PRG (Post-Redirect-Get), "Sil" action-unun ARTIQ işlətdiyi naxış
+
+`Export` POST indi: `JsonIxracAsync` → DMS-ə yaz (**İNDİ MƏCBURİDİR**, əvvəl
+best-effort idi — PRG-də faktiki brauzer-yükləməsi AYRI bir GET-in DİSKDƏKİ
+fayldan oxumasına bağlıdır, yazı sınsa `_logger.LogError` + açıq xəbərdarlıq,
+qeydlərin statusu geri qaytarılmır) → `TempData["Success"]`+`TempData["IxracFayli"]`
+→ `RedirectToAction(nameof(Export))`. Yeni **GET `IxracFayli(string fayl)`** —
+`Path.GetFileName(fayl)` ilə TƏMİZLƏNMİŞ ad, DMS-dən oxuyub `File()` qaytarır
+(qovluq-keçişi riski yoxdur). `Export.cshtml`-də `TempData["IxracFayli"]` varsa
+yaşıl banner (`.gml-success-box` — **`fn-alert` DEYİL**, qlobal 4-saniyəlik
+auto-hide-a düşməsin deyə, bax "Bildirişlər — fn-alert tələsi" qaydası) +
+"Faylı yüklə" düyməsi göstərilir, JS səhifə açılan kimi həmin linkə avtomatik
+klikləyir (brauzer bloklasa, operator əl ilə basa bilsin deyə düymə qalır).
+
+Köhnə, səhifənin öz lokal `@if (TempData["Error"] != null)` bloku **silindi** —
+layout artıq TempData Error/Success-u QLOBAL göstərir, yerli təkrar ikiqat
+mesaj göstərərdi.
+
+### Önizləmə — "hansı sənədlər ixrac olunacaq onu göstər"
+
+Yeni `IGoamlService.IxracOnizlemeAsync(filtr)` — `JsonIxracAsync`-in İSTİFADƏ
+ETDİYİ EYNİ filtr şərtini (`IxracSertiQur`, hər ikisindən çağırılan TƏK private
+metod) paylaşır, **HEÇ NƏYİ dəyişdirmir** (Status mutasiyası yoxdur). "Namizədləri
+göstər" düyməsi (`Onizle` AJAX POST) bu siyahını (Əməliyyat №, Əməliyyat tarixi,
+Yaradılma tarixi, Debet, Kredit, Tip, Məlumat növü, Məbləğ, Təsdiqləyən) cədvəl
+kimi göstərir — **"Yaradılma tarixi" ilə "Əməliyyat tarixi" yan-yana göstərilir**,
+elə bu iki anlayışın FƏRQLİ olduğunu (istifadəçinin əvvəlki sualının səbəbi) əyani
+edir. "İxrac et (JSON)" düyməsi önizləmə BOŞ olmayan nəticə verənə qədər
+`disabled`-dir; filtr sahələrindən biri dəyişəndə (onchange) köhnə önizləmə
+etibarsız sayılır, düymə yenidən sönür.
+
+**`GoamlEmeliyyatListDto`** paylaşılan mapper-ə (`SetirleriDtoyaCevirAsync`,
+`HamisiniGetirAsync`-dən ÇIXARILIB, indi `IxracOnizlemeAsync` da onu çağırır)
+iki yeni string sahə aldı — `TipEtiketi`/`ReportCodeEtiketi`. **Səbəb: `Json()`
+MVC helper-i enum-u DEFOLT RƏQƏM kimi yazır, string YOX** — `Siyahi.cshtml`
+(server-rendered Razor) bunu `@e.Tip.Value.Etiket()` ilə özü həll edir, AMMA
+AJAX/JSON nəticəsində (bu önizləmə kimi) eyni çağırış mümkün deyil; bu iki
+sahə məhz onun AJAX qarşılığıdır, server tərəfdə BİR DƏFƏ hesablanır.
+
+### Sarı "MVP" qutusu — AI-nin öz inkişaf qeydi idi, operator-dilinə çevrildi
+
+İstifadəçi: *"bu sari olan yerdeki yazi muveqqetidir? adamin gozune girir,
+bilinir AI yazib"*. Haqlı idi — köhnə blok (`<strong>Diqqət — bu, MVP (ilk
+artım) ixracıdır...` + daxili sahə adları `dubl_number`/`V_YURIK__NAME`/
+`ATTRIB`/`C_INN_BANK`) sırf mənim (AI-nin) öz inkişaf-zamanı qeydim idi, hər
+zaman AÇIQ görünən böyük sarı qutuda. **Məzmun (bu boşluqlar REAL-dır, JSON-u
+göndərmədən əvvəl yoxlanmalıdır) SAXLANILDI** — silinsəydi, operator qeyri-
+tam bir faylı real portala göndərə bilərdi. Yalnız TƏQDİMAT dəyişdi:
+`<details class="gml-limits">` (qatlanmış, defolt bağlı) — bir sətirlik
+neytral başlıq ("Hazırlanan faylı göndərmədən əvvəl bilməli olduqlarınız"),
+daxili Oracle sahə adları ÇIXARILDI, sadə, operator-dilində 2 bəndə endirildi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in əlavə/silinən sətirləri ayrıca ölçülərək —
+hər ikisi balanslı; `TipEtiketi`/`ReportCodeEtiketi`-nin `Json()`-un camelCase
+qaydasına uyğun JS-dəki `s.tipEtiketi`/`s.reportCodeEtiketi` adları ilə
+tutuşdurulması əl ilə edildi). İstifadəçi Visual Studio-da **Rebuild All**
+ilə, sonra real ssenari ilə yoxlamalıdır: filtr doldurub "Namizədləri göstər"ə
+basanda cədvəlin düzgün gəldiyini (Tip/Məlumat növü mətn kimi, rəqəm YOX),
+filtri dəyişəndə "İxrac et" düyməsinin yenidən sönmüş olduğunu, "İxrac et"ə
+basıb təsdiqlədikdən sonra yaşıl banner+avtomatik fayl-yükləməsinin işlədiyini,
+DMS qovluğuna yazıla bilməyən (məs. ad səhv) halda açıq xəbərdarlıq çıxdığını.
+
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
 Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
