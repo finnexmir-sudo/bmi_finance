@@ -10896,3 +10896,59 @@ cüt sayda, tam fayl). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonr
 hər iki tərəfdə KYC olan bir namizəd aça bilər — banner-in indi kiçik, bir
 sətirlik bir qutu olaraq göründüyünü, Tip-i istiqamətli seçəndə YOXA ÇIXDIĞINI
 təsdiqləməlidir.
+
+## GOAML — "Hər İki Tərəf" Banner ÜÇÜNCÜ DALĞA — TAMAMİLƏ ÇIXARILDI, Seçim SIG Blokunun İçinə Köçürüldü (13.11.2026)
+
+İstifadəçi kompakt banner-i (yuxarıdakı dalğa) sınayıb YENƏ narazı qaldı:
+*"tipi deyisirem hemin butonlar gedir,men helede o butonlar ne is yerayir
+basa dusmedim,cox casdirici geldi mene,bunu ele tip ile idare edekde olmaz?
+eger bilinmeyen tipi secse asagida imza selahiyyeri acanda orda numayende
+kimi secim versin vessalamda"* — yəni problem artıq mətnin uzunluğu DEYİL
+(əvvəlki dalğa onu düzəltmişdi), problem **ayrıca, üzən bir banner elementinin
+ÖZÜ** idi: operator Tip-i dəyişəndə düymələrin yoxa çıxmasını "nə baş verdi?"
+kimi qəbul edirdi, çünki bu, formanın əsas axınından KƏNAR bir element idi.
+
+**Həll — banner TAMAMİLƏ SİLİNDİ, seçim artıq "Hesab imza hüququ olan
+şəxsin" (SIG) blokunun DAXİLİNDƏ, Nümayəndə (CON) blokunun ÖZ "əlaqəli
+şəxslərdən seç" dropdown-u İLƏ EYNİ üslubda bir dropdown-dur** (yeni
+`#gmlTerefSelectWrap`, `gml-con-select`-in elə formatını təkrarlayır) —
+istifadəçinin öz tələbinə görə ("numayende kimi secim versin"). Tip
+istiqamətli (OUT/IN) seçiləndə dropdown eyni JS-lə (`display:none`)
+gizlənir; istiqamətsiz (H to H/F to F) qalanda **SIG blokunun ÖZÜ default
+AÇIQ gəlir** (`<details open="@(gmlHerIkiTerefdeVar ? "open" : null)">`) ki,
+operator bloku əl ilə açmaq məcburiyyətində qalmasın — seçim dərhal görünür.
+
+**`gmlTerefTetbiqEt(teref)` funksiyası TOXUNULMADI** (`gmlKycTetbiqEt`-i
+çağırır, bu da hüquqi şəxsdə CON-un öz dropdown-unu da (`gmlConDropdownYenile`)
+yeniləyir) — seçim YALNIZ SIG-ə görünür, amma tətbiq edəndə CON da (əlaqəli
+şəxs siyahısı ilə) düzgün yenilənir, çünki funksiyanın özü hər iki bloku
+birlikdə doldurur.
+
+**`data-visible` atributu əlavə edildi** (`#gmlTerefSelectWrap`) — Tip
+"bilinmir" halına qayıdanda (JS) dropdown-u YALNIZ ilk renderdə
+`gmlHerIkiTerefdeVar=true` olduğu təqdirdə geri göstərir; əks halda (yalnız
+bir tərəfdə KYC var idisə) heç vaxt görünməz qalır — köhnə banner-in "yalnız
+hər iki tərəf olanda göstər" şərtini dropdown üçün də qoruyur.
+
+⚠️ **Köhnə `.gml-banner--compact` CSS sinfi silindi** (artıq işlənmir),
+`.gml-banner--warning` (yalnız bu banner işlədirdi) hazırda ölü qalıb —
+zərərsiz, gələcək bir xəbərdarlıq üçün saxlanıldı.
+
+**Qayda:** bir UI elementi "düzgün işləyir" olsa da (bu halda: Tip seçiləndə
+doğru tərəfi tapıb tətbiq edirdi), onun YERİ (formanın əsas axınından kənar,
+üzən bir banner) özü QARIŞIQLIQ mənbəyi ola bilər. İkinci rədd mesajı birinci
+ilə EYNİ ŞİKAYƏTİ təkrarlamırdı ("uzundur") — fərqli, daha dərin bir şikayət
+idi ("bu elementin NƏ olduğunu anlamıram"). Belə halda mətni daha da
+qısaltmaq kömək etməz — elementin ÖZÜNÜ formanın təbii axınına (bura: artıq
+mövcud olan, tanış CON-dropdown naxışının yanına, SIG blokunun daxilinə)
+köçürmək lazımdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/tag balansı Python skriptlə — `{`/`(`/`[` və
+`div`/`button`/`select`/`details`/`summary` teqlərinin hamısı cüt sayda, tam
+fayl). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra hər iki tərəfdə
+KYC olan bir namizəd aça bilər — üstdə artıq heç bir banner olmadığını,
+"Hesab imza hüququ olan şəxsin" blokunun default AÇIQ gəldiyini və içində
+Debet/Kredit seçim dropdown-unun göründüyünü, seçimdən sonra HƏM SIG, HƏM
+CON-un dolduğunu, istiqamətli Tip seçəndə dropdown-un yoxa çıxdığını
+təsdiqləməlidir.

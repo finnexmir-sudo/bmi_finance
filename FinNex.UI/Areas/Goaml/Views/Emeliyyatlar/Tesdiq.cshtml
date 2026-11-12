@@ -49,8 +49,6 @@
         .gml-banner { border-radius:10px; padding:14px 18px; margin-bottom:16px; font-size:.86rem; line-height:1.5; }
         .gml-banner--info { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
         .gml-banner--warning { background:#fffbeb; border:1.5px solid #fcd34d; color:#92400e; }
-        .gml-banner--compact { display:flex; align-items:center; gap:10px; padding:8px 14px; font-size:.82rem; }
-        .gml-banner--compact span { font-weight:600; }
     </style>
 }
 
@@ -74,6 +72,12 @@
         var gmlKycDebet = ViewBag.KycDebet as GoamlHesabSahibiKycDto;
         var gmlKycKredit = ViewBag.KycKredit as GoamlHesabSahibiKycDto;
         var gmlHerIkiTerefdeVar = ViewBag.HerIkiTerefdeKycVar == true;
+        // ── 13.11.2026: aşağıdakı "Hesab imza hüququ olan şəxs" blokunun öz
+        //    tərəf-seçim dropdown-u üçün etiket mətnləri — TekSexs varsa adı
+        //    göstərir (operator kimin seçildiyini görsün), yoxdursa sadəcə
+        //    hesab nömrəsi qalır. ──────────────────────────────────────────
+        var gmlDebetAdi = gmlKycDebet?.TekSexs != null ? $"{gmlKycDebet.TekSexs.Adi} {gmlKycDebet.TekSexs.Soyadi}".Trim() : null;
+        var gmlKreditAdi = gmlKycKredit?.TekSexs != null ? $"{gmlKycKredit.TekSexs.Adi} {gmlKycKredit.TekSexs.Soyadi}".Trim() : null;
     }
     @if (gmlAvtoDolduruldu)
     {
@@ -82,23 +86,16 @@
             Hesab sahibinin məlumatı sistem tərəfindən avtomatik gətirildi (Oracle) — yoxlayın, lazım olsa düzəldin.
         </div>
     }
-    @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda (12.11.2026) DƏRHAL
-         doldurmuruq. İLK versiya uzun izahlı bir banner idi — istifadəçi
-         (13.11.2026) bunu RƏDD ETDİ: "səhifə açılan kimi belə yazılır, buna
-         ümumilikdə ehtiyac yoxdur, sadəcə xırda imkan ver işçi özü seçsin,
-         bu qədər yazıya nə ehtiyac". Mətn ÇIXARILDI, YALNIZ kompakt bir seçim
-         qalır — Tip istiqamətlidirsə (aşağıdakı JS) bu sətir avtomatik yoxa
-         çıxır, istiqamətsizdirsə (H to H/F to F) operator iki kiçik düymədən
-         birini basır. ── *@
-    @if (gmlHerIkiTerefdeVar)
-    {
-        <div class="gml-banner gml-banner--warning gml-banner--compact" id="gmlIkiTerefBanner">
-            <i class="bi bi-arrow-left-right"></i>
-            <span>Hər iki tərəfdə KYC var:</span>
-            <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('debet')">Debet</button>
-            <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('kredit')">Kredit</button>
-        </div>
-    }
+    @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda ayrıca bir banner
+         GÖSTƏRMİRİK (13.11.2026, İKİNCİ dəfə sadələşdirildi — istifadəçi
+         hələ də çaşdırıcı tapdı: "tipi dəyişirəm həmin düymələr gedir, nə iş
+         gördüklərini başa düşmədim, bunu elə Tip ilə idarə edə bilmərikmi").
+         İndi seçim YALNIZ "Hesab imza hüququ olan şəxsin" blokunun DAXİLİNDƏ,
+         Nümayəndə (CON) bloku ilə EYNİ üslubda bir dropdown-dur (aşağı bax,
+         "gmlTerefSelectWrap") — Tip istiqamətlidirsə (OUT/IN) JS tərəfi
+         hesab bilib avtomatik tətbiq edir VƏ dropdown-u gizlədir;
+         istiqamətsizdirsə (H to H/F to F) operator ORADA, imza bloku
+         açılanda seçir — ayrıca, hər namizəddə görünən bir banner yoxdur. ── *@
 
     <form method="post" asp-action="Tesdiq">
         <input type="hidden" asp-for="CandidateFilialNumber" />
@@ -239,7 +236,7 @@
         </details>
 
         @* ── BLOK 2 — Hesab imza hüququ olan şəxsin (Oracle: _SIG) ── *@
-        <details class="gml-block">
+        <details class="gml-block" open="@(gmlHerIkiTerefdeVar ? "open" : null)">
             <summary>
                 Hesab imza hüququ olan şəxsin
                 <span style="display:flex; align-items:center; gap:10px">
@@ -250,6 +247,20 @@
                 </span>
             </summary>
             <div class="gml-block-body">
+                @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda (13.11.2026)
+                     CON-dakı "əlaqəli şəxslərdən seç" ilə EYNİ üslubda, bura
+                     YERLƏŞDİRİLMİŞ seçim — Tip istiqamətli (OUT/IN) seçiləndə
+                     JS tərəfi avtomatik tətbiq edib bunu gizlədir, istiqamətsiz
+                     (H to H/F to F) qalanda operator ÖZÜ seçir. HƏMİŞƏ DOM-dadır
+                     ki, Tip dəyişəndə JS göstərib/gizlədə bilsin. ── *@
+                <div id="gmlTerefSelectWrap" data-visible="@(gmlHerIkiTerefdeVar ? "1" : "0")" style="margin-bottom:16px; display:@(gmlHerIkiTerefdeVar ? "block" : "none")">
+                    <label class="gml-flbl">Hər iki tərəfdə KYC var — hansı tərəf götürülsün?</label>
+                    <select class="fn-select" onchange="if (this.value) gmlTerefTetbiqEt(this.value);">
+                        <option value="">— əl ilə doldur —</option>
+                        <option value="debet">Debet (@Model.Debet)@(gmlDebetAdi != null ? $" — {gmlDebetAdi}" : "")</option>
+                        <option value="kredit">Kredit (@Model.Kredit)@(gmlKreditAdi != null ? $" — {gmlKreditAdi}" : "")</option>
+                    </select>
+                </div>
                 <div class="gml-grid-3">
                     <div><label class="gml-flbl">Adı</label><input asp-for="SigAdi" class="fn-input" /></div>
                     <div><label class="gml-flbl">Atasının adı</label><input asp-for="SigAtasininAdi" class="fn-input" /></div>
@@ -455,7 +466,8 @@
     //    HEÇ NƏ EDİLMİR — mövcud sahələr (boş və ya əvvəldən doldurulmuş)
     //    SİLİNMİR; operator lazım olsa "Təmizlə" düyməsini özü işlədir.
     //    İstiqamətsiz tiplərdə (HToH/FToF) avtomatik heç nə baş vermir —
-    //    əməliyyatçı yuxarıdakı banner-in düymələrindən seçir. ─────────────
+    //    operator "Hesab imza hüququ olan şəxsin" blokundakı dropdown-dan
+    //    seçir (13.11.2026, bax `gmlTerefSelectWrap`). ─────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         var tipSel = document.querySelector('select[name="Tip"]');
         if (!tipSel) return;
@@ -464,16 +476,15 @@
             if (bizimDebetdir === true && gmlKycDebet) gmlKycTetbiqEt(gmlKycDebet);
             else if (bizimDebetdir === false && gmlKycKredit) gmlKycTetbiqEt(gmlKycKredit);
 
-            // ── Banner İSTİQAMƏTLİ Tip seçiləndə yoxa çıxır (12.11.2026,
-            //    istifadəçi qərarı: "o hesab söhbəti artıqdır, çaşdırıcıdır").
-            //    Tip artıq "hansı tərəf bizimdir" sualını özü cavablandırdığı
-            //    üçün düymələr/banner lazımsız, çaşdırıcı qalırdı. İstiqamətsiz
+            // ── Tərəf-seçim dropdown-u İSTİQAMƏTLİ Tip seçiləndə yoxa çıxır
+            //    (13.11.2026) — Tip artıq "hansı tərəf bizimdir" sualını özü
+            //    cavablandırdığı üçün ayrıca seçim lazımsız qalır. İstiqamətsiz
             //    (HToH/FToF, yaxud Tip hələ seçilməyib) halda operator hələ
-            //    özü seçməli olduğu üçün banner görünür qalır/geri qayıdır. ──
-            var banner = document.getElementById('gmlIkiTerefBanner');
-            if (banner) {
+            //    özü seçməli olduğu üçün dropdown görünür qalır/geri qayıdır. ──
+            var wrap = document.getElementById('gmlTerefSelectWrap');
+            if (wrap && wrap.dataset.visible === '1') {
                 var bilinir = bizimDebetdir === true || bizimDebetdir === false;
-                banner.style.display = bilinir ? 'none' : '';
+                wrap.style.display = bilinir ? 'none' : 'block';
             }
         });
     });
