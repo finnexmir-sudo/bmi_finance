@@ -921,6 +921,17 @@ namespace FinNex.Application.Services.Goaml
                 //     ilə forma sahəsi indi BİRƏ-BİR üst-üstə düşür).
                 // Biri boş qayıtsa o biri YENƏ DƏ doldurulsun deyə HEÇ BİRİ digərinin
                 // "tapılmadı" halında erkən `return` etmir.
+                //
+                // "AKTİV" = IMZA_BITME BOŞ DEYİL (12.11.2026, KRİTİK): real data
+                // "səlahiyyətin bitmə tarixi"ni HƏMİŞƏ `null` kimi yazmır — bəzi
+                // sətirlərdə uzaq-gələcək bir sentinel tarix (məs. 05-05-2125)
+                // yazılıb, "hələ bitməyib" mənasında. Yalnız `IS NULL` yoxlaması
+                // belə sətirləri "qeyri-aktiv" sayıb KYC-ni TAMAMİLƏ gizlədirdi —
+                // nə CON, nə SIG dolmurdu, nə də "avtomatik gətirildi"/"hər iki
+                // tərəf" banner-lərindən heç biri çıxmırdı (hər iki tərəf boş
+                // qayıtdığı üçün `Faydali()` də `false` idi). Düzgün şərt:
+                // `IMZA_BITME IS NULL OR IMZA_BITME > SYSDATE` — bitmə tarixi
+                // YOXDURSA, VƏ YA hələ KEÇMƏYİBSƏ, səlahiyyət aktivdir.
                 var rehberSetirleri = await _oracle.SelectAsync(
                     "select s.id_aml, s.adi, s.soyadi, s.ata_adi, s.doguldugu_tarix, s.doguldugu_yer, " +
                     "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
@@ -928,7 +939,7 @@ namespace FinNex.Application.Services.Goaml
                     "s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi, " +
                     "s.ish_yerinin_adi " +
                     "from odb.imza_huquqi_olan_shexsler s " +
-                    "where s.regnom = '" + regnomKodu + "' and s.imza_bitme is null " +
+                    "where s.regnom = '" + regnomKodu + "' and (s.imza_bitme is null or s.imza_bitme > sysdate) " +
                     "and exists (select 1 from odb.aml_related_persons rp where rp.id_aml = s.id_aml and rp.id_related_persons = 2)",
                     1, ct);
 
@@ -951,8 +962,9 @@ namespace FinNex.Application.Services.Goaml
         }
 
         /// <summary>CON ("Nümayəndənin") seçim siyahısı — `odb.NUMAYENDE`-dən,
-        /// hesabın regnom koduna görə, hazırda aktiv (IMZA_BITME boş) sətirlər.
-        /// Sütunlar 09.11.2026-da (CLAUDE.md) istifadəçinin canlı `SELECT *`
+        /// hesabın regnom koduna görə, hazırda aktiv (IMZA_BITME boş VƏ YA
+        /// hələ keçməmiş gələcək tarix — bax 12.11.2026 qeydi, CLAUDE.md)
+        /// sətirlər. Sütunlar 09.11.2026-da (CLAUDE.md) istifadəçinin canlı `SELECT *`
         /// nəticəsindən TƏSDİQLƏNİB — `imza_huquqi_olan_shexsler`-dən FƏRQLİ
         /// olaraq ADRES/SƏNƏD sahələri qat-qat zəngindir, amma CON formasının
         /// (Tesdiq.cshtml → gmlConSec) oxuduğu sahələr eynidir, əlavə sahə (PEP/
@@ -967,7 +979,7 @@ namespace FinNex.Application.Services.Goaml
                     "n.sheher, n.olke, n.senedin_novu, n.seriyasi_ve_nomresi, n.verilme_tarixi, " +
                     "n.etibarliliq_muddeti, n.veren_orqanin_adi, n.verildiyi_olke, n.vezifesi " +
                     "from odb.numayende n " +
-                    "where n.regnom = '" + regnomKodu + "' and n.imza_bitme is null", 50, ct);
+                    "where n.regnom = '" + regnomKodu + "' and (n.imza_bitme is null or n.imza_bitme > sysdate)", 50, ct);
                 return setirler.Select(NumayendeSetirdenQur).ToList();
             }
             catch (Exception ex)

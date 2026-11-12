@@ -10683,3 +10683,63 @@ iki tərəf" banner-inin artıq 4 saniyədən sonra da (və ümumiyyətlə aydı
 rəngli/oxunaqlı) qaldığını, Əməliyyatlar/Risk axtarış cədvəllərində,
 Təsdiqlə/Bax ekranlarında və Təsdiqlənmiş siyahıda "Əməliyyat №" sütununun
 göründüyünü.
+
+## GOAML — CON/SIG HEÇ NƏ DOLMURDU — "AKTİV" ŞƏRTİ `IMZA_BITME IS NULL`-A GÜVƏNİRDİ, REAL DATA SENTİNEL TARİX YAZIRDI (12.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi başqa bir namizəddə (Debet=3502020000001600000, Kredit=4014002000167190001,
+Tip="Hüquqi (IN)" artıq seçilmiş) **heç bir avtomatik doldurma, heç bir banner**
+(nə "avtomatik gətirildi" yaşıl, nə "hər iki tərəfdə tapıldı" sarı) görmədiyini
+bildirdi: *"gelmirde"*. Göndərdiyi İKİNCİ ekran-görüntüsü (Oracle-un öz "Əlaqəli
+şəxslər" grid-i) həlledici idi: "Rəhbər" sətrinin "Səlahiyyətinin bitmə tarixi"
+sütunu **boş DEYİL** — **"05-05-2125"** yazırdı (başlama "05-05-2025").
+
+**Kök səbəb:** `HesabSahibiKycAsync`-in SIG sorğusu (`odb.imza_huquqi_olan_
+shexsler`) VƏ `NumayendeSiyahisiAsync`-in CON sorğusu (`odb.NUMAYENDE`) hər
+ikisi "aktiv" şərtini **`imza_bitme is null`** kimi yazmışdı — 09-10.11.2026-da
+test edilən (DR.ESS MMC) hesabda bu sahə HƏQİQƏTƏN `NULL` idi, ona görə şərt
+işləyirdi. Bu YENİ hesabda isə Oracle-a məlumatı daxil edən sistem/operator
+"hələ bitməyib" mənasını `NULL` ƏVƏZİNƏ **uzaq-gələcək bir sentinel tarixlə**
+(2125-ci il) ifadə etmişdi — real data İKİ FƏRQLİ konvensiyanı QARIŞIQ işlədir.
+`IS NULL` yoxlaması bu sətri "bitib, qeyri-aktiv" sayıb TAMAMİLƏ gizlədirdi —
+SIG sorğusu sıfır sətir, CON sorğusu da (eyni problem) sıfır sətir qaytarırdı.
+Hər ikisi boş olduğu üçün `Faydali()` yoxlaması (`TekSexs != null VƏ YA
+ElaqaliSexsler.Count > 0`) hər iki tərəf üçün `false` idi — nə tək-tərəfli
+avtomatik doldurma, nə "hər iki tərəfdə tapıldı" banner-i tətiklənmədi, ekran
+sükutla tam boş qaldı (heç bir xəta, heç bir log — Oracle sorğusu UĞURLA 0
+sətir qaytarmışdı, bu, `catch` bloklarının tutduğu bir İSTİSNA deyildi).
+
+**Düzəliş — hər iki sorğuda bir şərt:**
+```sql
+-- əvvəl:  and s.imza_bitme is null
+-- indi:   and (s.imza_bitme is null or s.imza_bitme > sysdate)
+```
+(`GoamlService.cs`, SIG sorğusu ~sətir 942, CON/`NumayendeSiyahisiAsync`
+sorğusu ~sətir 982). Məntiq: "səlahiyyətin bitmə tarixi" sahəsi bir
+GÖZLƏNİLƏN BİTİŞ tarixidir — boşdursa (heç vaxt bitmir) VƏ YA hələ
+KEÇMƏYİBSƏ (gələcəkdədir, nə qədər uzaq olsa belə), səlahiyyət HAZIRDA
+aktivdir. `> sysdate` AZ-timezone-dan asılı deyil — sadə tarix müqayisəsidir.
+
+**Qayda: Oracle-dan gələn "bitmə tarixi" tipli bir sahədə "aktivdir" şərtini
+YALNIZ `IS NULL` ilə yazma — real data operatorların İKİ fərqli konvensiyası
+(boş = həmişəlik, sentinel uzaq-tarix = həmişəlik) qarışıq işlədə bilər.**
+Bu, "Qara Jeton — Menfi Miqdar" bölməsindəki "işarə NECƏ YAZILIRSA YAZILSIN,
+miqdarı işlədən kod qoruncaqlı olmalıdır" prinsipinin tarix sahəsi üçün
+formasıdır — `IS NULL` tək başına "aktivdir" demək deyil, "bitmə tarixi hələ
+gəlməyib" (`IS NULL OR > SYSDATE`) daha dözümlü, düzgün şərtdir. Simptom
+xüsusilə çaşdırıcı idi, çünki İKİ DÜZGÜN işləyən köhnə test (DR.ESS MMC) ilə
+YENİ, sükutla boş qalan hal arasında KOD HEÇ DƏYİŞMƏMİŞDİ — fərq YALNIZ
+Oracle-dakı data konvensiyasında idi, bu da "əvvəlki test işləyirdi, deməli
+kod düzgündür" fərziyyəsini xüsusilə təhlükəli edir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — yalnız BUNDAN SONRAKI "Təsdiqlə" GET-lərinə
+TƏSİR EDİR.** Artıq açılmış/görülmüş boş formalar dəyişmir, operator
+namizədi YENİDƏN açmalıdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı — `git diff`-in əlavə/silinən sətirləri
+ayrıca ölçülüb, hər ikisi eyni net fərqlə, düzəlişin ÖZÜ balanslıdır).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ namizədi
+(Debet=3502020000001600000, Kredit=4014002000167190001) yenidən açıb
+yoxlamalıdır: "Nümayəndənin" VƏ "Hesab imza hüququ olan şəxs"in indi
+avtomatik (ya tək-tərəfli, ya da "hər iki tərəfdə tapıldı" banner-i ilə)
+dolduğunu təsdiqləməli.
