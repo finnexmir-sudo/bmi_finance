@@ -48,6 +48,18 @@ namespace FinNex.Application.Interfaces.Goaml
         /// görə) qərar verir — bu metod YALNIZ xam datanı tapır, seçim etmir.</summary>
         Task<GoamlHesabSahibiKycHerIkiTerefDto> HesabSahibiKycTapAsync(int filial, string? debet, string? kredit, CancellationToken ct = default);
 
+        /// <summary>"Nümayəndə" (CON) — əməliyyatın ÖZÜNÜN açarı (DOC_ID = RECNUM) ilə
+        /// uyğunlaşan Emitent (E_) tərəfin KYC-si (13.11.2026, istifadəçi tapıntısı:
+        /// `odb.emitent_benefisiar`). Bu açar YENİ DEYİL — `docs/sql/aml/
+        /// 90_AML_OracleSorgular.sql`-dəki mövcud, işlək "AML Hesab üzrə sorğu"nun
+        /// özündə artıq `t.recnum = k.doc_id(+)` kimi istifadə olunur. Hesab-əsaslı
+        /// NUMAYENDE siyahısından (<see cref="HesabSahibiKycTapAsync"/>) TAMAMİLƏ
+        /// MÜSTƏQİLDİR — konkret BU əməliyyatı kim aparıb, hesabın ÜMUMİ nümayəndə
+        /// siyahısından DAHA DƏQİQDİR. Tapılmasa (və ya ad/soyad hər ikisi boşdursa)
+        /// `null` qaytarır — CON forması boş qalır, mövcud NUMAYENDE dropdown-u
+        /// TOXUNULMUR (operator ondan fərqli birini seçə bilər).</summary>
+        Task<GoamlElaqaliSexsDto?> EmitentKycAsync(long recNum, CancellationToken ct = default);
+
         /// <summary>Export to JSON (#15, 12.11.2026) — verilmiş tarix aralığında (+ istəyə
         /// bağlı Tip/ReportCode filtri) `Status==Qaralama` olan TƏSDİQLƏNMİŞ qeydləri
         /// goAML-in rəsmi JSON sxeminə (bax `docs/sql/goaml/97_Goaml_JSON_MMX_IN_

@@ -11036,3 +11036,81 @@ KYC olan bir namizəd aça bilər — üstdə artıq heç bir banner olmadığı
 Debet/Kredit seçim dropdown-unun göründüyünü, seçimdən sonra HƏM SIG, HƏM
 CON-un dolduğunu, istiqamətli Tip seçəndə dropdown-un yoxa çıxdığını
 təsdiqləməlidir.
+
+## GOAML — "Nümayəndə" (CON) Əməliyyatın ÖZÜNÜN DOC_ID=RECNUM-u ilə Doldurulur (13.11.2026, YARIM-YOXLANILMIŞ)
+
+İstifadəçi `odb.emitent_benefisiar` cədvəlinin tam sütun siyahısını (`DESC`
+nəticəsi, 83 sütun, Emitent/`E_*` + Benefisiar/`B_*` cütlüyü, açar `DOC_ID`)
+göndərdi: *"doc_id bu esas acardir, emeliyyatda sened nomresine beraberlik
+ile tapib yazmaliyiq... bize emitent lazimdir yani E_ ile baslayan terefler"*
++ *"numayende hissesi burdan otomatik dolmali bosdursa bos qalacaq, bizim
+hazirladigimiz numayende comboxu oz yerinde qalir"*.
+
+**Açar TƏSDİQLƏNDİ, TƏXMİN EDİLMƏDİ** — `DOC_ID = RECNUM` yeni bir fərziyyə
+deyil, layihənin ARTIQ İŞLƏK, `docs/sql/aml/90_AML_OracleSorgular.sql`
+faylındakı "AML Hesab üzrə sorğu"nun özündə `where t.recnum = k.doc_id(+)`
+(LEFT JOIN, `k` = `odb.emitent_benefisiar`) kimi istifadə olunan bir
+qaydadır — kod yazmazdan əvvəl bu, `grep` ilə TAPILIB, yenidən canlı
+sorğu ilə sınanmadı (artıq sübut olunduğu üçün).
+
+**Struktur — hesab-əsaslı mexanizmdən TAMAMİLƏ MÜSTƏQİL, ONU ƏVƏZ ETMİR:**
+- `IGoamlService.EmitentKycAsync(long recNum)` / `GoamlService.
+  EmitentKycAsync` — `odb.emitent_benefisiar where doc_id = {recNum}`
+  sorğusu, `E_ADI`/`E_SOYADI` hər ikisi boşdursa `null` qaytarır (B_
+  tərəfi dolu, E_ boş sətirlər "faydasız" sayılır). `E_TEVELLUD`/`E_
+  SENEDIN_VERILME_TARIXI`/`E_SENEDIN_ETIBARLIG_MUDDETI` (DATE tipi,
+  istifadəçinin `DESC` çıxışından təsdiqləndi) `TarixiParseEt`-in
+  `object?`-ə geniş alınmış formasından keçir (`imza_huquqi_olan_
+  shexsler`-in bəzi DATE sütunları üçün artıq möhkəmləndirilmişdi).
+- `EmeliyyatlarController.Tesdiq` (GET) — mövcud hesab-əsaslı CON/SIG
+  auto-doldurmasından (`HesabSahibiKycTapAsync`) SONRA çağırılır ki,
+  tapılsa (daha dəqiq, KONKRET bu əməliyyatı aparan şəxs olduğu üçün)
+  hesab-əsaslı CON təxminini ÜSTƏLƏSİN. `ViewBag.EmitentDenDolduruldu`
+  ilə Tesdiq.cshtml-ə ayrıca, "Hesab sahibinin məlumatı..." banner-indən
+  FƏRQLİ bir info-banner əlavə olundu ("Nümayəndənin məlumatı bu KONKRET
+  əməliyyatın öz qeydindən (Emitent) gətirildi").
+- Mövcud `NUMAYENDE`-əsaslı CON dropdown-u (`gmlConSelectWrap`) **TOXUNULMADI**
+  — operator istəsə bu avtomatik doldurmadan fərqli, dropdown-dan əl ilə
+  seçə bilər (iki mexanizm paralel, biri o birini bloklamır).
+- Yalnız CON-a aid sahələr (Adı/Soyadı/Atasının adı/Doğum/Vətəndaşlıq/
+  Cinsi/PİN/Ünvan bloku/Sənəd bloku) tətbiq olunur — `E_ISH_YERININ_ADI`/
+  `E_ISH_YERININ_VEZIFESI` servis metodunun qaytardığı obyektə yazılır,
+  AMMA `GoamlTesdiqDto`-nun CON blokunda iş yeri/vəzifə sahəsi YOXDUR
+  (yalnız SIG-də var, `GoamlElaqaliSexsDto`-nun öz şərhinə görə) — ona
+  görə controller bunları formaya YAZMIR, data itmir, sadəcə hazırda
+  görünən yeri yoxdur.
+
+### ⚠️ AÇIQ QALAN, İSTİFADƏÇİYƏ SORUŞULMUŞ SUALLAR (bu YAZI anında HƏLƏ CAVABSIZ)
+
+1. **İstifadəçi "json fayllarını qatışdırmısan, Riskdə Əməliyyatın faylını
+   doldurursan, Əməliyyatda Riskin [faylını]" dedi** — bu sessiyada
+   `NamizedAxtarAsync`/`RiskNamizedAxtarAsync`-ın `90_Goaml_OracleSorgular.sql`/
+   `91_Goaml_Risk_OracleSorgular.sql`-ə DOĞRU bağlandığı (SorguAdi
+   etiketləri VƏ hər iki faylın WHERE-mətni) yoxlanıldı, `JsonIxracAsync`-in
+   per-sətir export döngüsündə də paylaşılan/köhnəlmiş dəyişən TAPILMADI.
+   **Konkret HANSI iki şeyin (fayl, export, yoxsa Tesdiq ekranı) qarışdığı
+   HƏLƏ İSTİFADƏÇİDƏN DƏQİQLƏŞDİRİLMƏYİB** — ehtimal GUESS EDİLMƏDİ, sual
+   olaraq qaldı.
+2. **`odb.emitent_benefisiar` (bu bölmənin mənbəyi) ilə `odb.
+   r_emitent_benefisiar` (11.11.2026-da `91_Goaml_Risk_OracleSorgular.sql`-ə
+   yazılmış risk-kriteriyasının İÇİNDƏ, `b_vetendashligi`/`e_vetendashligi`
+   üçün istifadə olunan ayrı ad, "r_" prefiksli) EYNİ CƏDVƏLDİRMİ, yoxsa
+   AYRI (məs. "report" prefiksli bir görüntü) cədvəldir?** Bu sualın
+   cavabı gələnə qədər `EmitentKycAsync`-in `odb.emitent_benefisiar`
+   (prefikssiz, istifadəçinin BU GÜN göndərdiyi `DESC` nəticəsinin
+   mənbəyi) işlətməsi DOĞRU qəbul edilib, AMMA Risk tabının öz sorğusunun
+   NİYƏ fərqli adlı bir cədvəl işlətdiyi araşdırılmayıb.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in əlavə/silinən sətirləri ayrıca
+ölçülərək, DTO↔servis↔controller↔view dörd qatının sahə adları — Con*
+prefiksli 16 sahə — bir-bir tutuşduruldu). **İstifadəçinin yuxarıdakı iki
+sualı cavablandırmadan bu dəyişiklik PRODUCTION-da real bir namizədlə
+yoxlanmamalıdır** — `r_emitent_benefisiar`/`emitent_benefisiar` fərqi
+aydınlaşmayana qədər, CON-un tapdığı adın HƏQİQƏTƏN həmin əməliyyatın
+Emitentinə aid olduğuna zəmanət tam deyil. İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra YUXARIDAKI SUALLARA CAVAB VERDİKDƏN SONRA real
+ssenari ilə yoxlamalıdır: `emitent_benefisiar`-da (DOC_ID=RECNUM) real
+sətri olan bir namizəd aç → "Nümayəndənin" blokunun yaşıl banner ilə
+avtomatik dolduğunu, mövcud "Əlaqəli şəxslərdən seçin" dropdown-unun hələ
+işlək qaldığını təsdiqləməli.

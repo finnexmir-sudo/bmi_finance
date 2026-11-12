@@ -891,6 +891,69 @@ namespace FinNex.Application.Services.Goaml
         private static bool Faydali(GoamlHesabSahibiKycDto? d) =>
             d != null && (d.TekSexs != null || d.ElaqaliSexsler.Count > 0);
 
+        /// <summary>"Nümayəndə" (CON) — əməliyyatın ÖZÜNÜN DOC_ID-si (=RECNUM) ilə
+        /// uyğunlaşan Emitent (E_) tərəf (13.11.2026, istifadəçi tapıntısı). Açar
+        /// YENİ DEYİL — `docs/sql/aml/90_AML_OracleSorgular.sql`-dəki artıq işlək
+        /// "AML Hesab üzrə sorğu"nun özündə `t.recnum = k.doc_id(+)` kimi istifadə
+        /// olunur, bura TƏKRAR SINANMADAN köçürülüb. Hesab-əsaslı NUMAYENDE
+        /// siyahısından (HesabSahibiKycAsync) TAMAMİLƏ MÜSTƏQİLDİR — konkret bu
+        /// əməliyyatı kim APARIB, hesabın ÜMUMİ nümayəndə siyahısından DAHA
+        /// DƏQİQDİR. Yalnız ad/soyad VARSA "faydalı" sayılır — boş sətir (və ya
+        /// yalnız B_ tərəfi dolu sətir) `null` qaytarır, CON forması boş qalır.</summary>
+        public async Task<GoamlElaqaliSexsDto?> EmitentKycAsync(long recNum, CancellationToken ct = default)
+        {
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select e_adi, e_soyadi, e_ata_adi, e_tevellud, e_dogum_yeri, e_pincode, " +
+                    "e_vetendashligi, e_unvanin_teyinati, e_unvan, e_unvan_sheher, e_unvan_olke, " +
+                    "e_senedin_novu, e_senedin_seriya_ve_nomresi, e_senedin_verilme_tarixi, " +
+                    "e_senedin_etibarlig_muddeti, e_senedin_veren_organin_adi, e_senedin_verildiyi_olke, " +
+                    "e_cinsi, e_ish_yerinin_adi, e_ish_yerinin_vezifesi " +
+                    "from odb.emitent_benefisiar where doc_id = " + recNum, 1, ct);
+
+                if (setirler.Count == 0) return null;
+                var r = setirler[0];
+
+                var adi = DVal(r, "E_ADI") as string;
+                var soyadi = DVal(r, "E_SOYADI") as string;
+                if (string.IsNullOrWhiteSpace(adi) && string.IsNullOrWhiteSpace(soyadi)) return null;
+
+                return new GoamlElaqaliSexsDto
+                {
+                    Adi = adi,
+                    Soyadi = soyadi,
+                    AtaAdi = DVal(r, "E_ATA_ADI") as string,
+                    DogulduguTarix = TarixiParseEt(DVal(r, "E_TEVELLUD")),
+                    DogulduguYer = DVal(r, "E_DOGUM_YERI") as string,
+                    Pin = DVal(r, "E_PINCODE") as string,
+                    Vetendasligi = DVal(r, "E_VETENDASHLIGI") as string,
+                    UnvaninNovu = DVal(r, "E_UNVANIN_TEYINATI") as string,
+                    Unvan = DVal(r, "E_UNVAN") as string,
+                    Seher = DVal(r, "E_UNVAN_SHEHER") as string,
+                    Olke = DVal(r, "E_UNVAN_OLKE") as string,
+                    SenedinNovu = DVal(r, "E_SENEDIN_NOVU") as string,
+                    SenedinSeriyaNomresi = DVal(r, "E_SENEDIN_SERIYA_VE_NOMRESI") as string,
+                    SenedinVerilmeTarixi = TarixiParseEt(DVal(r, "E_SENEDIN_VERILME_TARIXI")),
+                    SenedinEtibarliliqMuddeti = TarixiParseEt(DVal(r, "E_SENEDIN_ETIBARLIG_MUDDETI")),
+                    VerenOrqan = DVal(r, "E_SENEDIN_VEREN_ORGANIN_ADI") as string,
+                    VerildiyiOlke = DVal(r, "E_SENEDIN_VERILDIYI_OLKE") as string,
+                    Cinsi = DVal(r, "E_CINSI") as string,
+                    // İş yeri/vəzifə cədvəldə var, AMMA GoamlTesdiqDto-nun CON
+                    // blokunda bu ikisi üçün sahə YOXDUR (yalnız SIG-də) —
+                    // obyektin özündə saxlanır (gələcək CON genişlənməsi üçün),
+                    // çağıran tərəf bunları formaya YAZMIR.
+                    IsYeriAdi = DVal(r, "E_ISH_YERININ_ADI") as string,
+                    Vezife = DVal(r, "E_ISH_YERININ_VEZIFESI") as string,
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML EmitentKycAsync uğursuz oldu — recNum={RecNum}", recNum);
+                return null;
+            }
+        }
+
         private async Task<GoamlHesabSahibiKycDto?> HesabSahibiKycAsync(string? hesab, CancellationToken ct)
         {
             var temiz = HesabTehlukesiz(hesab ?? "");

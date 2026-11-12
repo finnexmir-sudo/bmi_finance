@@ -86,6 +86,14 @@
             Hesab sahibinin məlumatı sistem tərəfindən avtomatik gətirildi (Oracle) — yoxlayın, lazım olsa düzəldin.
         </div>
     }
+    @if (ViewBag.EmitentDenDolduruldu == true)
+    {
+        <div class="gml-banner gml-banner--info">
+            <i class="bi bi-info-circle-fill"></i>
+            "Nümayəndənin" məlumatı bu KONKRET əməliyyatın öz qeydindən (Emitent) avtomatik gətirildi —
+            yoxlayın, lazım olsa düzəldin və ya yuxarıdakı "Əlaqəli şəxslərdən seçin" siyahısından fərqli birini seçin.
+        </div>
+    }
     @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda ayrıca bir banner
          GÖSTƏRMİRİK (13.11.2026, İKİNCİ dəfə sadələşdirildi — istifadəçi
          hələ də çaşdırıcı tapdı: "tipi dəyişirəm həmin düymələr gedir, nə iş

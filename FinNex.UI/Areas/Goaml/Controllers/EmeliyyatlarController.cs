@@ -117,6 +117,38 @@ public class EmeliyyatlarController : Controller
             : new List<GoamlElaqaliSexsDto>();
         ViewBag.AvtoDolduruldu = yeganeKyc?.TekSexs != null;
 
+        // ── "Nümayəndə" (CON) — əməliyyatın ÖZÜNÜN DOC_ID=RECNUM-u ilə
+        //    (13.11.2026, istifadəçi tapıntısı: odb.emitent_benefisiar).
+        //    Hesab-əsaslı CON/SIG doldurmasından (yuxarı) TAMAMİLƏ MÜSTƏQİLDİR,
+        //    AMMA tapılsa ONDAN DAHA DƏQİQDİR (konkret bu əməliyyatı aparan
+        //    şəxsdir) — ona görə SONRA çağırılır ki, varsa köhnə hesab-əsaslı
+        //    CON təxminini üstələsin. NUMAYENDE dropdown-u (yuxarıdakı
+        //    gmlConSelectWrap) TOXUNULMUR — operator yenə ondan fərqli
+        //    birini seçə bilər, "bosdursa bos qalacaq" (istifadəçi qərarı).
+        var emitentKyc = await _goaml.EmitentKycAsync(recNum);
+        if (emitentKyc != null)
+        {
+            dto.ConAdi = emitentKyc.Adi;
+            dto.ConSoyadi = emitentKyc.Soyadi;
+            dto.ConAtasininAdi = emitentKyc.AtaAdi;
+            dto.ConDogulduguTarix = emitentKyc.DogulduguTarix;
+            dto.ConDogulduguYer = emitentKyc.DogulduguYer;
+            dto.ConCinsi = emitentKyc.Cinsi;
+            dto.ConVetendasligi = emitentKyc.Vetendasligi;
+            dto.ConPin = emitentKyc.Pin;
+            dto.ConUnvaninNovu = emitentKyc.UnvaninNovu;
+            dto.ConUnvan = emitentKyc.Unvan;
+            dto.ConSeher = emitentKyc.Seher;
+            dto.ConOlke = emitentKyc.Olke;
+            dto.ConSenedinNovu = emitentKyc.SenedinNovu;
+            dto.ConSenedinSeriyaNomresi = emitentKyc.SenedinSeriyaNomresi;
+            dto.ConSenedinVerilmeTarixi = emitentKyc.SenedinVerilmeTarixi;
+            dto.ConSenedinEtibarliliqMuddeti = emitentKyc.SenedinEtibarliliqMuddeti;
+            dto.ConVerenOrqan = emitentKyc.VerenOrqan;
+            dto.ConVerildiyiOlke = emitentKyc.VerildiyiOlke;
+        }
+        ViewBag.EmitentDenDolduruldu = emitentKyc != null;
+
         return View(dto);
     }
 
