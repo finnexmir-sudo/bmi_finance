@@ -18,8 +18,11 @@ namespace FinNex.Application.Interfaces.Goaml
         Task<Result<List<GoamlNamizedSetirDto>>> RiskNamizedAxtarAsync(GoamlAxtarisDto dto, CancellationToken ct = default);
 
         /// <summary>Operator seçdiyi namizədi təsdiqləyir — bizim ÖZ SQL Server-imizə
-        /// yazılır (Oracle-a YOX). Eyni namizəd (filial+tarix+recnum) ikinci dəfə
-        /// təsdiqlənə bilməz.</summary>
+        /// yazılır (Oracle-a YOX). Eyni namizəd (filial+tarix+recnum) EYNİ Tip ilə
+        /// ikinci dəfə təsdiqlənə bilməz, AMMA fərqli (əks istiqamətli) Tip ilə
+        /// TƏKRAR təsdiqlənə bilər (12.11.2026, AML məsul şəxsin tələbi — bax
+        /// <see cref="GoamlNamizedSetirDto.TesdiqlenmisTipler"/>: hər iki tərəfdə
+        /// KYC tapılan əməliyyat adətən iki ayrı hesabat kimi göndərilir).</summary>
         Task<Result> TesdiqleAsync(GoamlTesdiqDto dto, int isciId);
 
         Task<Result<List<GoamlEmeliyyatListDto>>> HamisiniGetirAsync();

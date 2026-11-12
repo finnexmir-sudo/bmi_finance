@@ -10743,3 +10743,116 @@ ayrıca ölçülüb, hər ikisi eyni net fərqlə, düzəlişin ÖZÜ balanslıd
 yoxlamalıdır: "Nümayəndənin" VƏ "Hesab imza hüququ olan şəxs"in indi
 avtomatik (ya tək-tərəfli, ya da "hər iki tərəfdə tapıldı" banner-i ilə)
 dolduğunu təsdiqləməli.
+
+## GOAML — "Hər İki Tərəf" Banner-i İSTİQAMƏTLİ Tip Seçiləndə ÇAŞDIRICI QALIRDI (12.11.2026)
+
+Yuxarıdakı sentinel-tarix düzəlişindən sonra istifadəçi datanın gəldiyini
+təsdiqlədi, sonra sual verdi: *"bu hesab seçilməlidir? yoxsa tip ilə kifayət
+edir?"* — cavab verildi: Tip **istiqamətli** (Out/In) olanda özü kifayətdir,
+`onchange` handler artıq doğru tərəfi avtomatik tətbiq edir; YALNIZ
+istiqamətsiz (`H to H`/`F to F`) Tip-lərdə operator banner-dəki "Debet/Kredit
+tərəfini götür" düymələrindən birini seçməlidir. İstifadəçi bunun ÜSTÜNƏ əlavə
+etdi: *"onda o hesab söhbəti artıqdır mənə, çaşdırıcıdır"* → *"onda, o zaman
+çıxsa yaxşı olmaz?"* — yəni Tip artıq istiqaməti həll edəndə banner/düymələr
+ekranda **görünməməlidir**, yalnız həqiqətən qərarsız (istiqamətsiz) halda
+qalmalıdır.
+
+**Düzəliş — `Tesdiq.cshtml`-in Tip `change` handler-i:** `gmlTipBizimDebetdir`-
+dən oxunan istiqamət (`true`/`false`/`null`) artıq KYC-ni tətbiq etməklə
+yanaşı, `#gmlIkiTerefBanner`-in görünüşünü də idarə edir — istiqamət
+BİLİNİRSƏ (`true` və ya `false`) banner `display:none` olur, BİLİNMİRSƏ
+(HToH/FToF, yaxud Tip hələ seçilməyib) `display` sıfırlanır (`''`, defolt
+görünüş geri qayıdır). Operator Tip-i HToH-dan geri istiqamətli bir tipə
+dəyişsə, banner YENİDƏN gizlənir; əksinə dəyişsə, YENİD�ən görünür — bannerin
+görünüşü HƏR dəfə cari Tip-in istiqamətinə görə yenidən hesablanır, "bir dəfə
+gizlədib unutma" deyil.
+
+⚠️ Server-tərəfli ilkin render (`gmlHerIkiTerefdeVar` → banner DOM-a
+yazılır-yazılmır) DƏYİŞMƏDİ — bu, hələ Tip seçilməmiş GET anında doğru
+qərardır (hər iki tərəfdə KYC var, hələ hansı bizimdir bilinmir). Düzəliş
+YALNIZ klient tərəfdə, Tip seçimindən SONRAKI görünüşü dəqiqləşdirir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə — `(`/`)` 239/239, `{`/`}` 52/52,
+`[`/`]` 9/9, tam fayl). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra hər iki tərəfdə KYC olan bir namizəddə yoxlamalıdır: istiqamətli Tip
+(məs. "Hüquqi (IN)") seçəndə banner-in yoxa çıxdığını, "H to H" seçəndə
+YENİDƏN göründüyünü.
+
+## GOAML — "Hər İki Tərəf" Söhbəti "SEÇİM" Deyil İmiş — AML Məsul Şəxsin Qaydası: EYNİ ƏMƏLİYYAT İKİ DƏFƏ GÖNDƏRİLİR (12.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı banner-i "Tip seçiləndə yoxa çıxsın" kimi düzəltdikdən dərhal sonra
+istifadəçi AML məsul şəxsdən soruşub cavabı gətirdi: *"hansının bizim tərəf
+olduğu yazısı səhvdir, çünki mən soruşdum məsul şəxsdən — dedi ki belə hal
+olsa hər ikisini də göndərməli olacağıq, yəni iki dəfə seçib Tip-ini dəyişib
+faylı hazırlayıb göndərəcək"*.
+
+**Bu, əvvəlki iki dalğanın (sentinel-tarix düzəlişi + banner-i gizlətmə) altında
+duran fərziyyənin ÖZÜNÜ YANLIŞ çıxardı.** Mən "hər iki tərəfdə KYC var" halını
+**"hansı tərəf bizimdir" sualına CAVAB TAPILMALI olan bir qeyri-müəyyənlik**
+kimi modelləşdirmişdim — əslində bu sual mexaniki olaraq Tip-dən (OUT/IN)
+artıq məlumdur, HEÇ BİR qeyri-müəyyənlik yoxdur. Əsl məsələ başqa idi: məsul
+şəxsin qaydasına görə, hər iki tərəfdə KYC tapılan əməliyyat AML baxımından
+HƏR İKİ TƏRƏFDƏN hesabat tələb edə bilər — yəni **EYNİ əməliyyat (eyni
+filial+tarix+recnum) İKİ AYRI dəfə, İKİ FƏRQLİ (əks istiqamətli) Tip ilə
+təsdiqlənib göndərilməlidir**, "bir dəfə seçib bitirmək" deyil.
+
+**Kök problem — dedup şərti bunu TAMAMİLƏ BLOKLAYIRDI.** `TesdiqleAsync`-in
+dublikat yoxlaması (`MovcuddurmuAsync`) yalnız `(FilialNumber, DateOper,
+RecNum)` üçlüyünə baxırdı, `Tip`-i NƏZƏRƏ ALMIRDI — yəni operator bu namizədi
+ARTIQ bir Tip ilə təsdiqləyib göndərmişdisə, EYNİ namizədi əks Tip ilə İKİNCİ
+dəfə təsdiqləməyə çalışanda sistem **"Bu əməliyyat artıq təsdiqlənib"** deyə
+RƏDD EDİRDİ — AML qaydasının tələb etdiyi ikinci hesabatı yarada bilmirdi.
+Eyni şəkildə axtarış siyahısında (`Index.cshtml`/`Risk/Index.cshtml`) "artıq
+təsdiqlənib" bədgisi "Təsdiqlə" düyməsini TAM GİZLƏDİRDİ — operator ikinci
+dəfə heç basa BİLMİRDİ.
+
+**Düzəliş — üç qat:**
+
+1. **`GoamlService.TesdiqleAsync`** — dedup şərtinə `&& x.Tip == dto.Tip`
+   əlavə olundu. İndi EYNİ namizəd EYNİ Tip ilə ikinci dəfə RƏDD edilir (əsl
+   təkrar-klik qoruması qalır), AMMA **fərqli Tip ilə TƏKRAR təsdiqlənə
+   bilər** (ikinci, əks istiqamətli hesabat üçün).
+2. **`GoamlNamizedSetirDto.TesdiqlenmisTipler`** (yeni, `List<string>`) —
+   `NamizedAxtarAsyncCore`-un dedup sorğusu indi `HashSet`-dən
+   `Dictionary<(filial,tarix,recnum), List<string>>`-ə keçdi: hər açar üçün
+   ARTIQ təsdiqlənmiş Tip(lər)in **etiketini** (`GoamlTipiExtensions.
+   Etiket()`) toplayır. `ArtiqTesdiqlenib` sahəsi qalır ("ən azı bir dəfə
+   təsdiqlənib" mənasında), amma TƏK BAŞINA düyməni bloklamır.
+3. **`Index.cshtml` (Əməliyyatlar VƏ Risk)** — "Təsdiqlənib" bədgisi İNDİ
+   "Təsdiqlə" düyməsini ƏVƏZ ETMİR, onun YANINDA göstərilir (bədgidə artıq
+   göndərilmiş Tip-lərin adı), düymənin mətni "Əks tərəfi də təsdiqlə"-yə
+   dəyişir ki, operator bunun İKİNCİ bir təsdiq olduğunu bilsin.
+
+**Banner mətni də düzəldildi (`Tesdiq.cshtml`)** — "hansının bizim tərəf
+olduğunu bilmirik, seçin" çərçivəsi SİLİNDİ, əvəzinə: Tip seçiləndə tərəf
+MEXANİKİ olaraq özü həll olunur (banner yoxa çıxır — əvvəlki dalğa), AMMA
+əsl mesaj indi **"AML qaydasına görə belə halda əməliyyat çox vaxt İKİ AYRI
+hesabat kimi göndərilməlidir — bir istiqamətli Tip ilə təsdiqləyib göndərin,
+SONRA bu namizədi yenidən tapıb ƏKS istiqamətli Tip ilə TƏKRAR təsdiqləyin"**.
+"Debet/Kredit tərəfini götür" düymələri YALNIZ istiqamətsiz (HToH/FToF)
+tiplərdə xam tərəfi əl ilə görmək üçün qalır.
+
+**Qayda:** real biznes/compliance qaydasını (AML məsul şəxs kimi) YALNIZ ekran
+davranışından/kodun strukturundan **təxmin etmə** — "hər iki tərəfdə məlumat
+var" kimi bir texniki şərt, ilk baxışda "hansını seçək" sualı kimi görünsə
+belə, əslində "hər ikisini də et" tələbinin işarəsi ola bilər. Bu fərq
+TEXNİKİ SƏVİYYƏDƏ (dedup açarı Tip-i daşımırmı?) həll olunmalı idi — kod
+"seçim" fərziyyəsinə əsaslanıb YANLIŞ YERDƏ (dedup şərtində) məhdudlaşdırma
+qoymuşdu, bu da əsl tələbi STRUKTUR SƏVİYYƏSİNDƏ qeyri-mümkün edirdi.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəlişdən ƏVVƏL "artıq təsdiqlənib" bədgisi
+ilə BLOKLANMIŞ namizədlər bu düzəlişdən sonra YENİDƏN görünəcək (düymə geri
+qayıdır), əlavə miqrasiya/data düzəlişi lazım deyil — DB-də heç nə pozulmayıb,
+yalnız UI/server qaydası dəyişdi.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı — `git diff`-in əlavə/silinən sətirləri ayrıca
+ölçülüb, hər ikisi eyni net fərqlə, düzəlişin ÖZÜ balanslıdır; JSON casing
+`Json()` helper-inin qlobal camelCase qaydasına uyğun yoxlanıldı). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra hər iki tərəfdə KYC olan bir
+namizədi (1) bir Tip ilə təsdiqləsin → "Təsdiqlənib (...)" bədgisinin
+düymənin YANINDA (onu gizlətmədən) göründüyünü, (2) EYNİ namizədi əks
+istiqamətli Tip ilə YENİDƏN təsdiqləsin → bu dəfə də uğurla keçdiyini, (3)
+EYNİ Tip ilə ÜÇÜNCÜ dəfə cəhd etsin → "eyni Tip ilə artıq təsdiqlənib" xətası
+ilə rədd olunduğunu təsdiqləməlidir.

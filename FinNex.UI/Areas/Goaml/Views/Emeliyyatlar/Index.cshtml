@@ -141,28 +141,39 @@
                 var qeyd = s.primechanie ? s.primechanie : '—';
                 var xaricVal = s.summaVInval ? (gmlNum(s.summaVInval) + ' (kod ' + (s.kodValuti ?? '—') + ')') : '—';
 
-                var actionHtml;
+                // ── "Təsdiqlənib" bədgisi İNDİ "Təsdiqlə" düyməsini GİZLƏTMİR
+                //    (12.11.2026, AML məsul şəxsin tələbi) — hər iki tərəfdə KYC
+                //    tapılan əməliyyat adətən İKİ AYRI hesabat kimi (hər dəfə
+                //    fərqli, əks istiqamətli Tip ilə) göndərilir. Server yalnız
+                //    EYNİ Tip-in təkrarını bloklayır (`TesdiqleAsync`), ona görə
+                //    ekranda da düymə HƏMİŞƏ aktiv qalır — bədgi sadəcə artıq
+                //    hansı Tip(lər)in göndərildiyini göstərir. ──────────────────
+                var badgeHtml = '';
                 if (s.artiqTesdiqlenib) {
-                    actionHtml = '<span class="gml-ok-badge"><i class="bi bi-check-circle-fill"></i> Təsdiqlənib</span>';
-                } else {
-                    var params = new URLSearchParams({
-                        filialNumber: s.filialNumber,
-                        dateOper: s.dateOper,
-                        recNum: s.recNum,
-                        debet: s.debet || '',
-                        kredit: s.kredit || '',
-                        summaVNacval: s.summaVNacval ?? '',
-                        kodValuti: s.kodValuti ?? '',
-                        innDebet: s.innLicschDe || '',
-                        innKredit: s.innLicschKre || '',
-                        primechanie: s.primechanie || '',
-                        nameLicschDe: s.nameLicschDe || '',
-                        nameLicschKre: s.nameLicschKre || '',
-                        documentSource: s.documentSource || ''
-                    });
-                    actionHtml = '<a class="gml-tesdiqle-btn" href="@Url.Action("Tesdiq")?' + params.toString() + '">' +
-                        '<i class="bi bi-pencil-square"></i> Təsdiqlə</a>';
+                    var tipMetni = (s.tesdiqlenmisTipler && s.tesdiqlenmisTipler.length)
+                        ? s.tesdiqlenmisTipler.join(', ') : '';
+                    badgeHtml = '<span class="gml-ok-badge" title="Artıq təsdiqlənmiş Tip(lər)">' +
+                        '<i class="bi bi-check-circle-fill"></i> Təsdiqlənib' +
+                        (tipMetni ? ' (' + tipMetni + ')' : '') + '</span>';
                 }
+                var params = new URLSearchParams({
+                    filialNumber: s.filialNumber,
+                    dateOper: s.dateOper,
+                    recNum: s.recNum,
+                    debet: s.debet || '',
+                    kredit: s.kredit || '',
+                    summaVNacval: s.summaVNacval ?? '',
+                    kodValuti: s.kodValuti ?? '',
+                    innDebet: s.innLicschDe || '',
+                    innKredit: s.innLicschKre || '',
+                    primechanie: s.primechanie || '',
+                    nameLicschDe: s.nameLicschDe || '',
+                    nameLicschKre: s.nameLicschKre || '',
+                    documentSource: s.documentSource || ''
+                });
+                var btnHtml = '<a class="gml-tesdiqle-btn" href="@Url.Action("Tesdiq")?' + params.toString() + '">' +
+                    '<i class="bi bi-pencil-square"></i> ' + (s.artiqTesdiqlenib ? 'Əks tərəfi də təsdiqlə' : 'Təsdiqlə') + '</a>';
+                var actionHtml = '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">' + badgeHtml + btnHtml + '</div>';
 
                 tr.innerHTML =
                     '<td class="gml-fix">' + actionHtml + '</td>' +

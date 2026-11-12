@@ -30,8 +30,19 @@ namespace FinNex.Application.DTOs.Goaml
         /// <summary>Kredit hesabın sahibi (DOC_DNA_ALL_RISK.NAME_LICSCH_KRE).</summary>
         public string? NameLicschKre { get; set; }
 
-        /// <summary>Bu namizəd artıq bizim bazada təsdiqlənibmi (eyni açarla
-        /// GoamlEmeliyyat sətri varmı) — siyahıda "artıq göndərilib" işarəsi üçün.</summary>
+        /// <summary>Bu namizəd artıq (ən azı bir Tip ilə) bizim bazada
+        /// təsdiqlənibmi — siyahıda "artıq göndərilib" işarəsi üçün. 12.11.2026-
+        /// dan "Təsdiqlə" düyməsini TAMAMİLƏ gizlətmir, yalnız yanında kiçik
+        /// bir bədgi göstərir — bax <see cref="TesdiqlenmisTipler"/>.</summary>
         public bool ArtiqTesdiqlenib { get; set; }
+
+        /// <summary>Bu namizəd üçün ARTIQ təsdiqlənmiş Tip(lər)in etiketi
+        /// (12.11.2026, AML məsul şəxsin tələbi: hər iki tərəfdə KYC tapılan
+        /// əməliyyat tez-tez İKİ AYRI hesabat kimi — hər tərəf üçün fərqli Tip
+        /// ilə — göndərilməlidir). Boşdursa heç vaxt təsdiqlənməyib. Eyni
+        /// candidate açarı (filial+tarix+recnum) FƏRQLİ Tip ilə TƏKRAR
+        /// təsdiqlənə bilər — server (`TesdiqleAsync`) yalnız EYNİ Tip-in
+        /// təkrarını bloklayır.</summary>
+        public List<string> TesdiqlenmisTipler { get; set; } = new();
     }
 }

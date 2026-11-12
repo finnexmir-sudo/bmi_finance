@@ -129,11 +129,23 @@ namespace FinNex.Application.Services.Goaml
                 var maxTarix = setirler.Max(x => x.DateOper);
                 var movcud = await _unitOfWork.Repository<GoamlEmeliyyat>()
                     .HamisiniGetirAsync(x => x.CandidateDateOper >= minTarix && x.CandidateDateOper <= maxTarix);
-                var acarlar = movcud
-                    .Select(x => (x.CandidateFilialNumber, x.CandidateDateOper, x.CandidateRecNum))
-                    .ToHashSet();
+                // Açar → artıq hansı Tip(lər)lə təsdiqlənib (12.11.2026, AML məsul
+                // şəxsin tələbi: hər iki tərəfdə KYC olan əməliyyat ADƏTƏN iki
+                // ayrı Tip ilə iki dəfə göndərilir — bax GoamlNamizedSetirDto.
+                // TesdiqlenmisTipler şərhi). Tam "artıq göndərilib, bloklu" DEYİL.
+                var tipleriLuget = movcud
+                    .GroupBy(x => (x.CandidateFilialNumber, x.CandidateDateOper, x.CandidateRecNum))
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(x => x.Tip).Where(t => t != null).Select(t => t!.Value.Etiket()).Distinct().ToList());
                 foreach (var s in setirler)
-                    s.ArtiqTesdiqlenib = acarlar.Contains((s.FilialNumber, s.DateOper, s.RecNum));
+                {
+                    if (tipleriLuget.TryGetValue((s.FilialNumber, s.DateOper, s.RecNum), out var tipler))
+                    {
+                        s.ArtiqTesdiqlenib = true;
+                        s.TesdiqlenmisTipler = tipler;
+                    }
+                }
             }
 
             return Result<List<GoamlNamizedSetirDto>>.Ok(setirler);
@@ -146,15 +158,22 @@ namespace FinNex.Application.Services.Goaml
             if (dto.ReportCode == null)
                 return Result.Fail("Məlumatın növü seçilməlidir.");
 
-            // Eyni namizəd (filial+tarix+recnum) ikinci dəfə təsdiqlənməsin —
-            // operatorun səhvən iki dəfə klikləməsi, ya da fərqli axtarışda
-            // eyni sətrin yenidən seçilməsi.
+            // Eyni namizəd (filial+tarix+recnum) EYNİ Tip ilə ikinci dəfə
+            // təsdiqlənməsin — operatorun səhvən iki dəfə klikləməsi, ya da
+            // fərqli axtarışda eyni sətrin yenidən seçilməsi. ⚠️ ARTIQ `Tip`-ə
+            // BAXMADAN bloklamırıq (12.11.2026, AML məsul şəxsin tələbi): hər
+            // iki tərəfdə (Debet VƏ Kredit) KYC tapılan əməliyyat ADƏTƏN İKİ
+            // AYRI hesabat kimi — bir dəfə bir istiqamətli Tip ilə, bir dəfə
+            // əks istiqamətli Tip ilə — göndərilməlidir. Köhnə şərt (Tip-i
+            // yoxlamadan) bunu BLOKLAYIRDI — ikinci, fərqli Tip-li təsdiq
+            // "artıq təsdiqlənib" xətası ilə rədd olunurdu.
             var movcuddur = await _unitOfWork.Repository<GoamlEmeliyyat>().MovcuddurmuAsync(x =>
                 x.CandidateFilialNumber == dto.CandidateFilialNumber &&
                 x.CandidateDateOper == dto.CandidateDateOper &&
-                x.CandidateRecNum == dto.CandidateRecNum);
+                x.CandidateRecNum == dto.CandidateRecNum &&
+                x.Tip == dto.Tip);
             if (movcuddur)
-                return Result.Fail("Bu əməliyyat artıq təsdiqlənib.");
+                return Result.Fail("Bu əməliyyat eyni Tip ilə artıq təsdiqlənib. Əks tərəfi də göndərmək lazımdırsa, fərqli (əks istiqamətli) Tip seçib yenidən təsdiqləyin.");
 
             var e = new GoamlEmeliyyat
             {

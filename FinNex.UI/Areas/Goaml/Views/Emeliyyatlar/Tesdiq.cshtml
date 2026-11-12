@@ -80,18 +80,32 @@
             Hesab sahibinin məlumatı sistem tərəfindən avtomatik gətirildi (Oracle) — yoxlayın, lazım olsa düzəldin.
         </div>
     }
-    @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda (12.11.2026, real
-         hadisə: hüquqi-hüquqi əməliyyat, hər ikisinin öz Rəhbəri/Nümayəndəsi)
-         DƏRHAL doldurmuruq — "hansı bizimdir" sualını Tip (OUT/IN) cavablandırır.
-         Operator Tip seçən kimi (aşağıdakı JS) doğru tərəf avtomatik tətbiq olunur;
-         "H TO H"/"F to F" kimi istiqamətsiz tiplərdə bu düymələrdən özü seçir. ── *@
+    @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda (12.11.2026) DƏRHAL
+         doldurmuruq. İLK versiyada bu, "hansı tərəf bizimdir, bilmirik" kimi
+         TƏQDİM OLUNMUŞDU — istifadəçi (AML məsul şəxsdən soruşub) bunu SƏHV
+         çıxardı: "hansının bizim tərəf olduğu" sualının CAVABI Tip-dən (OUT/IN)
+         mexaniki məlumdur, bu, HƏLL OLUNASI bir qeyri-müəyyənlik deyil. Əsl
+         məsələ: məsul şəxsin tələbinə görə belə hallarda əməliyyat ADƏTƏN İKİ
+         AYRI hesabat kimi (bir dəfə bir istiqamətli Tip ilə, bir dəfə əks
+         istiqamətli Tip ilə) göndərilməlidir. Ona görə mətn "seç" DEYİL,
+         "lazım gələrsə iki dəfə təsdiqləyin" kimi yazılıb. Tip istiqamətlidirsə
+         (aşağıdakı JS) doğru tərəf avtomatik tətbiq olunur VƏ bu banner YOXA
+         ÇIXIR (çaşdırıcı olmasın — istifadəçi qərarı); "H TO H"/"F to F" kimi
+         istiqamətsiz tiplərdə (və ya Tip hələ seçilməyibsə) banner görünür
+         qalır, düymələr xam tərəfi ƏL İLƏ tətbiq etmək üçündür. ── *@
     @if (gmlHerIkiTerefdeVar)
     {
         <div class="gml-banner gml-banner--warning" id="gmlIkiTerefBanner">
             <i class="bi bi-exclamation-triangle-fill"></i>
-            Debet (@Model.Debet) VƏ Kredit (@Model.Kredit) hesablarının <b>hər ikisində</b> KYC tapıldı —
-            hansının "bizim" tərəf olduğunu dəqiq bilmirik. <b>Tip</b>-i seçdikdə (OUT/IN) uyğun tərəf
-            avtomatik doldurulacaq; "H TO H" / "F to F" kimi istiqamətsiz tiplərdə özünüz seçin:
+            Debet (@Model.Debet) VƏ Kredit (@Model.Kredit) hesablarının <b>hər ikisində</b> KYC tapıldı.
+            Bu, "hansı bizimdir" sualı DEYİL — <b>Tip</b> (OUT/IN) seçiləndə uyğun tərəf özü avtomatik
+            tətbiq olunur (seçilən kimi bu banner yoxa çıxır). Əsas məsələ budur:
+            <b>AML qaydasına görə belə halda əməliyyat çox vaxt İKİ AYRI hesabat kimi göndərilməlidir</b> —
+            əvvəlcə bir istiqamətli Tip ilə təsdiqləyib göndərin, SONRA bu namizədi yenidən tapıb
+            <b>əks istiqamətli</b> Tip ilə TƏKRAR təsdiqləyin (sistem eyni namizədin fərqli Tip ilə
+            ikinci dəfə göndərilməsinə icazə verir — yalnız EYNİ Tip-in təkrarı bloklanır).
+            "H TO H" / "F to F" kimi istiqamətsiz tiplərdə hansı xam tərəfi görmək istədiyinizi
+            aşağıdaki düymələrlə özünüz seçə bilərsiniz:
             <div style="margin-top:10px; display:flex; gap:10px">
                 <button type="button" class="fn-btn fn-btn--outline fn-btn--sm" onclick="gmlTerefTetbiqEt('debet')">
                     <i class="bi bi-arrow-down-circle"></i> Debet (@Model.Debet) tərəfini götür
@@ -473,6 +487,18 @@
             var bizimDebetdir = gmlTipBizimDebetdir[this.value];
             if (bizimDebetdir === true && gmlKycDebet) gmlKycTetbiqEt(gmlKycDebet);
             else if (bizimDebetdir === false && gmlKycKredit) gmlKycTetbiqEt(gmlKycKredit);
+
+            // ── Banner İSTİQAMƏTLİ Tip seçiləndə yoxa çıxır (12.11.2026,
+            //    istifadəçi qərarı: "o hesab söhbəti artıqdır, çaşdırıcıdır").
+            //    Tip artıq "hansı tərəf bizimdir" sualını özü cavablandırdığı
+            //    üçün düymələr/banner lazımsız, çaşdırıcı qalırdı. İstiqamətsiz
+            //    (HToH/FToF, yaxud Tip hələ seçilməyib) halda operator hələ
+            //    özü seçməli olduğu üçün banner görünür qalır/geri qayıdır. ──
+            var banner = document.getElementById('gmlIkiTerefBanner');
+            if (banner) {
+                var bilinir = bizimDebetdir === true || bizimDebetdir === false;
+                banner.style.display = bilinir ? 'none' : '';
+            }
         });
     });
 </script>
