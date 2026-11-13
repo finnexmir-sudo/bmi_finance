@@ -11614,3 +11614,69 @@ enum dəyərlərinin `GoamlEnums.cs`-dəki adları ilə tutuşdurulması). İsti
 Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: Tip=Fizik (IN/OUT)
 seçilmiş, NameUr dolu olan bir namizədi ixrac et → Sender/Receiver-in artıq "Entity"
 YOX, "Person" (real şəxsin adı) yazdığını təsdiqləməli.
+
+## GOAML — Valyuta Kodu "01" Çıxırdı, "USD" DEYİL — `kurval.soknamevalut` SÜTUNU ISO KOD DEYİLMİŞ (13.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı bölmədəki 2-ci açıq məsələ (valyuta kodu) istifadəçinin canlı Oracle
+yoxlaması ilə TAM HƏLL OLUNDU.
+
+**Yoxlama nəticəsi — `kurval.soknamevalut` SÜTUNU ISO KOD DEYİL.**
+`select kodvaluti, soknamevalut from odb.kurval where kodvaluti = '01'` PL/SQL
+Developer-də `KODVALUTI=1, SOKNAMEVALUT='01'` qaytardı — yəni valyuta kodu "1" üçün
+bu sütun həqiqətən HƏRFİ "01" saxlayır, "USD" YOX. Bizim kodun oxuduğu dəyər DÜZ idi
+(Oracle sorğusu/kod işləyirdi) — **sadəcə mənbə sütun bizim gözlədiyimiz MƏNANI
+daşımırdı**. İstifadəçi AYSEL-in real BLR faylında isə (`receiver_account_currency`)
+eyni hesab üçün **"USD"** gördüyünü təsdiqlədi.
+
+**Əsl mənbə — layihədə ARTIQ TƏSDİQLƏNMİŞ, fərqli bir xəritə.**
+`docs/sql/aml/90_AML_OracleSorgular.sql` (sətir 285-287, 4 yerdə təkrarlanır) elə
+bu `kod_valuti` kodunu artıq sabit bir `CASE`-ə çevirir:
+
+```sql
+case t.kod_valuti when 0 then 'AZN' when 1 then 'USD'
+                  when 2 then 'EUR' when 3 then 'RUB'
+                  when 4 then 'IRR' when 5 then 'AED' end
+```
+
+Bu, Kassa modulunun (`KassaKursService.Valyutalar`) dəstəklədiyi **elə həmin 6
+valyutadır** (AZN + USD/AVRO/RUB/IRR/AED) — təsadüfi üst-üstə düşmə deyil, bankın
+bütöv valyuta dəstidir. Hesab nömrəsinin 6-7-ci simvolundan (`Substring(5,2)`)
+çıxarılan iki-rəqəmli kod ("01") elə BU `kod_valuti`-nin özüdür (parse ediləndə
+`1`), YALNIZ `kurval.soknamevalut`-un simvolik adı YANILDICIDIR.
+
+**Düzəliş — `GoamlService.ValyutaKoduAsync` ARTIQ Oracle-a MÜRACİƏT ETMİR.**
+Canlı sorğu (`select soknamevalut from kurval where kodvaluti = '{kod}'`) TAMAMİLƏ
+ÇIXARILDI, əvəzinə yeni `KodValutiXeritesi` statik lüğəti (`{0:AZN,1:USD,2:EUR,
+3:RUB,4:IRR,5:AED}`) — kod `int.TryParse` ilə ədədə çevrilir, lüğətdən oxunur.
+Metod imzası (`Task<string?>`, `kes` keş parametri) TOXUNULMADI ki, çağıran yerlər
+(`ValyutaVeMeblegAsync`) dəyişməsin — yalnız gövdə dəyişdi, Oracle round-trip və
+onun `try/catch`/log bloku artıq lazım deyil (xəta ehtimalı özü aradan qalxdı).
+
+**Qayda:** Oracle-dakı sütun ADININ (`SOKNAMEVALUT` — "sok adı valyuta") özü
+MƏNASINI zəmanət etmir — canlı data göstərdi ki, bu sütun sadəcə kodun özünü
+zero-padded mətn kimi təkrarlayır, insan-oxunan/ISO ad DEYİL. Düzgün simvolik ad
+üçün EYNİ layihədə ARTIQ TƏSDİQLƏNMİŞ başqa bir xəritəyə (`90_AML_OracleSorgular.
+sql`-in öz `CASE`-i) müraciət etmək, YENİ bir Oracle sorğusu/sütunu TƏXMİN etməkdən
+qat-qat etibarlı oldu — xüsusən bu sütun artıq EYNİ kod bazasında, EYNİ problemi
+(valyuta kodunun insan-oxunan adı) həll etmək üçün sınanmışdı.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI ixraclara təsir edir. Yuxarıdakı
+bölmədə qeyd olunan, hələ `Status=İxracEdilib`-də qalan test qeydinin valyuta sahəsi
+bu düzəlişlə ÖZBAŞINA düzəlmir — yenidən ixrac etmək üçün statusu geri qaytarmaq
+lazımdır (bax yuxarı eyni SQL).
+
+⚠️ **`reportType: 0, reportReason: 0` (1-ci açıq məsələ) HƏLƏ AÇIQDIR** — istifadəçinin
+eyni sessiyada işlətdiyi `select reporttype, reportreason from odb.malumatin_novu
+where isare = 'BLR'` sorğusu Oracle-da DÜZ `8/4` qaytardı, yəni data VƏ sorğunun
+məntiqi SAĞLAMDIR — bu, "0/0"-ın məhz APPLICATION-SIDE (ehtimal: `FOXPRO` hesabının
+`malumatin_novu`-ya SELECT icazəsi yoxdur, `balscht_fiz`/`balscht_ur`-dakı 09.11.2026
+presedenti ilə EYNİ) olduğu fərziyyəsini GÜCLƏNDİRİR, AMMA hələ `Logs\log-<tarix>.txt`-
+dəki `InnerException`/ORA kodu ilə TƏSDİQLƏNMƏYİB — kod dəyişikliyi bu addımı
+GÖZLƏYİR.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in TƏK bu faylın sətirləri üzərində — brace/bracket
+tam balanslı, parens-dəki -8 fərq köhnə, bu dəyişiklikdən ASILI OLMAYAN bir şərh
+artefaktıdır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra statusu
+geri qaytarılmış (və ya yeni) bir namizədi ixrac edib valyuta sahəsinin indi
+"USD"/"EUR"/"RUB"/"IRR"/"AED"/"AZN" kimi düzgün ISO koda çevrildiyini təsdiqləməlidir.

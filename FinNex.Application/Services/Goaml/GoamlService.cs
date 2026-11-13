@@ -2020,27 +2020,35 @@ namespace FinNex.Application.Services.Goaml
             return (valyuta, meblegde);
         }
 
-        /// <summary>`KURVAL.SOKNAMEVALUT` — hesab nömrəsinin 6-7-ci simvolundan
-        /// (sabit mövqe, `func_get_Ekv`-in öz oxuduğu mövqe) oxunur, nəticə
-        /// ixrac boyu keşlənir (eyni kod təkrar sorğulanmır).</summary>
-        private async Task<string?> ValyutaKoduAsync(string? hesab, Dictionary<string, string?> kes, CancellationToken ct)
+        /// <summary>13.11.2026, KRİTİK DÜZƏLİŞ — ARTIQ Oracle-dan (`kurval.soknamevalut`)
+        /// OXUNMUR. AYSEL-in real BLR ixracı ilə sahə-sahə tutuşdurularkən üzə çıxdı:
+        /// hesab 41025010001302600000 (kod="01") üçün AYSEL "USD" yazırdı, bizim
+        /// `kurval.soknamevalut` sorğusu isə canlı yoxlanılanda HƏRFİ "01" qaytarırdı
+        /// (PL/SQL Developer: `KODVALUTI=1, SOKNAMEVALUT='01'` — bu sütun ISO kod DEYİL,
+        /// adı yanıldıcıdır). Düzgün xəritə TƏXMİN EDİLMƏYİB — artıq layihədə, canlı
+        /// Oracle-dan TƏSDİQLƏNMİŞ bir sabit `CASE`-dir (`docs/sql/aml/90_AML_
+        /// OracleSorgular.sql`, sətir 285-287) — Kassa modulunun dəstəklədiyi 6 valyutanın
+        /// (AZN+USD+AVRO+RUB+IRR+AED) elə özüdür, təsadüfi üst-üstə düşmə deyil.</summary>
+        private static readonly Dictionary<int, string> KodValutiXeritesi = new()
         {
-            if (string.IsNullOrEmpty(hesab) || hesab.Length < 7) return null;
+            [0] = "AZN",
+            [1] = "USD",
+            [2] = "EUR",
+            [3] = "RUB",
+            [4] = "IRR",
+            [5] = "AED",
+        };
+
+        private Task<string?> ValyutaKoduAsync(string? hesab, Dictionary<string, string?> kes, CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(hesab) || hesab.Length < 7) return Task.FromResult<string?>(null);
             var kod = Tehlukesiz(hesab.Substring(5, 2));
-            if (kes.TryGetValue(kod, out var keshlenen)) return keshlenen;
-            try
-            {
-                var setirler = await _oracle.SelectAsync($"select soknamevalut from kurval where kodvaluti = '{kod}'", 1, ct);
-                var netice = setirler.Count > 0 ? DVal(setirler[0], "SOKNAMEVALUT") as string : null;
-                kes[kod] = netice;
-                return netice;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "GOAML Export — KURVAL sorğusu uğursuz oldu (kod={Kod})", kod);
-                kes[kod] = null;
-                return null;
-            }
+            if (kes.TryGetValue(kod, out var keshlenen)) return Task.FromResult(keshlenen);
+            var netice = int.TryParse(kod, out var sayi) && KodValutiXeritesi.TryGetValue(sayi, out var valyuta)
+                ? valyuta
+                : null;
+            kes[kod] = netice;
+            return Task.FromResult(netice);
         }
 
         /// <summary>`odb.Malumatin_novu` — REPORT_CODE üzrə reportType/reportReason.</summary>
