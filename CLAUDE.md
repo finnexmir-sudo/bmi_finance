@@ -11665,14 +11665,34 @@ bölmədə qeyd olunan, hələ `Status=İxracEdilib`-də qalan test qeydinin val
 bu düzəlişlə ÖZBAŞINA düzəlmir — yenidən ixrac etmək üçün statusu geri qaytarmaq
 lazımdır (bax yuxarı eyni SQL).
 
-⚠️ **`reportType: 0, reportReason: 0` (1-ci açıq məsələ) HƏLƏ AÇIQDIR** — istifadəçinin
-eyni sessiyada işlətdiyi `select reporttype, reportreason from odb.malumatin_novu
-where isare = 'BLR'` sorğusu Oracle-da DÜZ `8/4` qaytardı, yəni data VƏ sorğunun
-məntiqi SAĞLAMDIR — bu, "0/0"-ın məhz APPLICATION-SIDE (ehtimal: `FOXPRO` hesabının
-`malumatin_novu`-ya SELECT icazəsi yoxdur, `balscht_fiz`/`balscht_ur`-dakı 09.11.2026
-presedenti ilə EYNİ) olduğu fərziyyəsini GÜCLƏNDİRİR, AMMA hələ `Logs\log-<tarix>.txt`-
-dəki `InnerException`/ORA kodu ilə TƏSDİQLƏNMƏYİB — kod dəyişikliyi bu addımı
-GÖZLƏYİR.
+⚠️ **`reportType: 0, reportReason: 0` (1-ci açıq məsələ) — loq yoxlaması FƏRZİYYƏNİ
+TƏRSİNƏ ÇEVİRDİ, `ORA-01031` DEYİL.** İstifadəçi `Logs\log-20261113.txt`-də
+"malumatin_novu" sözünü axtardı — **sıfır nəticə**, "Can't find the text". Bu,
+`MalumatinNovuTapAsync`-in öz koduna görə MÜHÜM bir məlumatdır:
+
+```csharp
+if (setirler.Count == 0) return null;   // ⚠️ HEÇ BİR LOG YAZMIR — sakit yol
+...
+catch (Exception ex) { _logger.LogWarning(ex, "...malumatin_novu sorğusu uğursuz oldu..."); return null; }
+```
+
+`LogWarning` YALNIZ İSTİSNA (bağlantı xətası, `ORA-xxxxx`) olanda yazılır. Loqda
+HEÇ BİR iz olmaması deməkdir ki, sorğu **UĞURLA icra olunub, AMMA O AN sıfır sətir
+qaytarıb** — yəni bu, `balscht_fiz`/`balscht_ur`-dakı (09.11.2026) `ORA-01031`
+icazə problemi İLƏ EYNİ KATEQORİYA DEYİL (o zaman İSTİSNA atılırdı, bu dəfə
+atılmır). Səbəb ya BİRDƏFƏLİK bir Oracle anlıq uyğunsuzluğu (connection pool/
+read-consistency), ya da FOXPRO-nun bağlandığı Oracle nüsxəsi/sxemi istifadəçinin
+şəxsi PL/SQL Developer sessiyasının bağlandığından FƏRQLİ ola bilər — bu, hələ
+YOXLANILMAYIB.
+
+**Növbəti addım — TƏKRAR TEST, kod dəyişikliyi YOX:** Oracle data artıq
+TƏSDİQLƏNİB (8/4) — sadəcə EYNİ "BLR" tipli bir namizədi tətbiqdən YENİDƏN
+(hazırkı, dəyişməmiş kodla) ixrac et. Uğurla 8/4 çıxarsa, bu, bir dəfəlik fluke
+imiş, əlavə iş lazım deyil. YENƏ 0/0 çıxarsa (sabit təkrarlanırsa), onda
+problem sistemlidir — həmin halda FOXPRO-nun Oracle bağlantı sətrini (`appsettings.
+json → Oracle:ConnectionString`) istifadəçinin PL/SQL Developer-də bağlandığı
+host/servis adı ilə TUTUŞDURMAQ lazım gələcək (iki ayrı Oracle nüsxəsinə
+bağlanma ehtimalı).
 
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
 (mötərizə balansı `git diff`-in TƏK bu faylın sətirləri üzərində — brace/bracket
