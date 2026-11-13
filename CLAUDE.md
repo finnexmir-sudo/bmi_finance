@@ -11220,3 +11220,128 @@ ilə təsdiqlənib ixrac edilən bir qeydin header-ində `tin`/`city`/`workplace
 bu sahələrin JSON-da HEÇ GÖRÜNMƏDİYİNİ (əvvəlki kimi sadə header) təsdiqləməli
 — əgər mümkündürsə, ixrac edilən faylı AYSEL-in öz nümunəsi ilə yenidən
 sahə-sahə tutuşdurmalıdır (bax yuxarı, istifadəçinin göndərdiyi "risk.json").
+
+## GOAML — "Fayl Fərqliliyi" Əsl Səbəbi: `reportType`, Bizim `ReportCode` DEYİL (13.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real goAML portalının **6 ƏSL form-sxemini** (CTR, ETR, BCR, HRZ,
+NGR, PEP — JSON faylı kimi, konkret qeyd DEYİL, `typeName`/`validation`/
+`label`/`options` daşıyan sxem təsviri) göndərdi. Bunlar 05-13.11.2026 arasında
+qurulan "Export to JSON" (#15) + "PEP/BLR header-zənginləşdirməsi" (13.11.2026,
+yuxarı) işinin TƏMƏLİNDƏ olan fərziyyəni **yanlış** çıxardı.
+
+### Kök səbəb
+
+`HeaderZenginlesdirAsync` əvvəl budağı **bizim daxili `ReportCode` kodunun
+ADINA** görə seçirdi: `if (reportCodeKod != "PEP" && reportCodeKod != "BLR")
+return;` — `reportCodeKod = e.ReportCode?.Kod()`, yəni bizim 16-dəyərli
+`GoamlHesabatNovu` kataloqunun (AAR/AIF/**BLR**/CTR/ETR/FIR/FMR/**PEP**/QHT/
+STR/TF/TFR/TPR1-3/UNR — AYSEL-in köhnə daxili "malumatin_novu" sinifləşdirməsi)
+string adı. Bu, YALNIZ təsadüfən işləyirdi — "PEP" adlı daxili kod HƏM də real
+portalın adıdır, amma "BLR" sadəcə AYSEL-in daxili termini idi, real portalın
+HEÇ BİR yerində "BLR" sözü YOXDUR.
+
+**Real goAML portalı yalnız 8 `reportType` tanıyır** (rəqəm, sxemin özündəki
+`reportType.options`-dan): `1=CTR, 2=ETR, 3=NGR, 4=PEP, 6=SAR, 7=TFR, 8=HRZ,
+9=BCR` (5 YOXDUR/istifadə olunmur). Bizim daxili 16 kodumuz bu 8 dəyərdən
+birinə canlı Oracle sorğusu (`MalumatinNovuTapAsync` → `odb.Malumatin_novu`)
+ilə TƏRCÜMƏ OLUNUR — bu hissə ƏVVƏLDƏN DÜZGÜN idi. Səhv YALNIZ
+`HeaderZenginlesdirAsync`-in bu TƏRCÜMƏ OLUNMUŞ rəqəmi YOX, tərcümədən ƏVVƏLKİ
+string adı yoxlamasında idi.
+
+**Konkret nəticə:** 13.11.2026-dakı "risk.json" nümunəsi (`reportType:8,
+countryOfRegistration:"IR", citizenship:"IR"`) əslində **HRZ**-dir (AYSEL-in
+daxili "BLR" adının Oracle-da tərcümə olunduğu REAL ad) — "BLR" ADI ilə
+mənimsənilmiş, amma əslində doğru idi (təsadüfən). Daxili "STR" (çox güman
+Oracle-da SAR=6-ya tərcümə olunur) kimi kodlar isə `reportCodeKod == "PEP" ||
+"BLR"` şərtini HEÇ VAXT keçmədiyi üçün enrichment ÜMUMİYYƏTLƏ ALMIRDI —
+baxmayaraq ki onların da (SAR/TFR) öz zəngin header-ləri ola bilər (hələ
+görülməyib).
+
+### Düzəliş
+
+`HeaderZenginlesdirAsync(GoamlEmeliyyat e, string reportCodeKod, ...)` →
+`HeaderZenginlesdirAsync(GoamlEmeliyyat e, int? reportType, ...)` — budaq
+indi `MalumatinNovuTapAsync`-ın qaytardığı **tərcümə edilmiş** `mn?.reportType`-ə
+baxır (`ReportQurAsync`-dən ötürülür), daxili kod ADINA YOX. `reportCodeKod`
+parametri `ReportQurAsync`-dən (artıq lazım deyil) ÇIXARILDI —
+`MalumatinNovuTapAsync`-ın özü (Oracle lookup-un açarı) hələ də doğru şəkildə
+string kodu işlədir, TOXUNULMADI.
+
+### Real sxemlərdən TƏSDİQLƏNƏN fərqlər — PEP ≠ HRZ
+
+Əvvəlki (yanlış) fərziyyə: "PEP" və "BLR" eyni geniş header-i paylaşır. Real
+sxemlər göstərdi ki, **bir-birindən FƏRQLİ, QİSMƏN üst-üstə düşən** iki sahə
+dəstidir:
+
+| Sahə | PEP (4) | HRZ (8) |
+|---|---|---|
+| citizenship/identityType/serial/documentNumber/fin/customerRiskDegree/country/residency/city/district/street/home/flat/sofIncome/averageMonthlyIncome/**additionalSofIncomes**/**amount**/position/workplace/businessStartDate/businessEndDate/note/fullName | ✅ | ✅ |
+| individualPerson, tin, countryOfRegistration, sphereOfActivity, typeOfConnectionToHrz, hrzCountry, idNumber | ❌ | ✅ |
+| pepCountry, positionStartDate, positionEndDate, typeOfConnectionToPep, politicallyInfluentialPersonPositions, institution | ✅ | ❌ |
+
+**`additionalSofIncomes` və `amount` — hər İKİSİNDƏ VAR idi, bizim DTO-da
+ƏSKİK idi** — əlavə edildi (`GoamlJsonHeaderDto.Amount`/`AdditionalSofIncomes`,
+hər ikisi nullable, Oracle mənbəyi YOXDUR, boş qalır — `additionalSofIncomes`
+boşdursa `amount`-un "tələb olunur" asılılığı da işə düşmür, validasiya
+pozulmur).
+
+**`influentialPerson` adlı sahə HEÇ BİR real sxemdə YOXDUR** — əvvəlki
+versiyada (13.11.2026-nın əvvəlki dalğası) səhvən əlavə edilmişdi (görünür,
+AYSEL-in köhnə SQL-indəki bir dəyişən adının yanlış JSON sahə adı kimi
+oxunması nəticəsində), DTO-dan VƏ `PEP` budağının öz sətrindən TAMAMİLƏ
+SİLİNDİ.
+
+### QHT müəmması TAMAMİLƏ HƏLL OLUNDU — əvvəlki iz YANLIŞ İDİ
+
+Əvvəlki qeyd (13.11.2026-nın ilk dalğası) deyirdi ki, "QHT" `v_PV_HUQUQI`
+(`odb.huquqi_shexs`, açar `registrac_nomer_k` — bizim entity-də YOXDUR) tələb
+edən, port edilə bilməyən bir hesabat növüdür. **Bu, TAMAMİLƏ YANLIŞ İZ İMİŞ.**
+NGR-in real sxemi göstərdi ki, "QHT" **ayrıca hesabat növü DEYİL** — sadəcə
+NGR-in (reportType=3) öz `organizationType` dropdown-unun bir seçimidir
+("QHT" / "Dini təşkilat"). `v_PV_HUQUQI`/`registrac_nomer_k` ilə HEÇ BİR
+əlaqəsi yoxdur.
+
+**NGR — tamamilə YENİ, sadə bir budaq əlavə edildi** (`HeaderZenginlesdirAsync`-ə):
+`tin` (VÖEN, digər budaqlarla EYNİ `PvRegnomAllAsync().InnRegnom` mənbəyindən,
+canlı Oracle), `tinDate`/`organizationType`/`note` — bunlar üçün Oracle-da
+HƏLƏ TƏSDİQLƏNMİŞ mənbə YOXDUR (97_...sql-də NGR-ə aid heç bir qol yoxdur, bu
+tamam yeni, 13.11.2026-da real nümunədən tapılan sxemdir) — operator bunları
+ƏL İLƏ doldurmalıdır, DTO-da sahələr (`TinDate`/`OrganizationType`) mövcuddur,
+sadəcə YAZILMIR.
+
+### Açıq qalan — SAR (6) və TFR (7)
+
+İstifadəçi hələ bu ikisinin real sxemini GÖNDƏRMƏYİB. `HeaderZenginlesdirAsync`
+bu iki `reportType` üçün **heç bir enrichment YAZMIR** (`if (reportType is not
+(3 or 4 or 8)) return;` — header YALNIZ ümumi sendDate/reportType/reportReason
+daşıyır, CTR/ETR/BCR ilə eyni). Bu, UYDURMA DEYİL — real nümunə gələnə qədər
+qəsdən boş saxlanılıb. Real sxemlər gəldikdə bu bölməyə YENİ budaqlar əlavə
+olunmalıdır.
+
+**Qayda (bu sessiyanın ÜÇÜNCÜ dəfə təkrarlanan dərsi, ən açıq forması):**
+köhnə sistemin DAXİLİ kateqoriya adlarını (bizim "ReportCode" kataloqu) XARİCİ
+sistemin (real goAML portalı) sxem seçicisi kimi İŞLƏTMƏ — hətta ad TƏSADÜFƏN
+üst-üstə düşsə belə ("PEP" = "PEP"), bu, YALNIZ o KONKRET adlar üçün düzgün
+işləyən, gizli, kövrək bir asılılıqdır. Həmişə XARİCİ sistemin ÖZ, rəsmi
+identifikatorunu (bura: Oracle-dan gələn rəqəmsal `reportType`) bir dəyişənə
+TƏRCÜMƏ ET və BÜTÜN sonrakı məntiqi O DƏYİŞƏNƏ bağla — daxili adlandırma
+sxemi dəyişsə (yeni kod əlavə olunsa, köhnə kod yenidən adlandırılsa) belə,
+xarici sistemlə əlaqə POZULMASIN.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — `git diff`-in YALNIZ əlavə/silinən sətirləri ayrıca
+ölçülüb, hər ikisi EYNİ -1 fərqlə, yəni düzəlişin ÖZÜ net-neytraldır, tam fayl
+balansındakı -8 fərq bu dəyişiklikdən ASILI DEYİL, köhnə şərh mətnindən gəlir;
+`InfluentialPerson`-un silinməsindən sonra heç bir qalıq istinad
+`grep -rn "InfluentialPerson"` ilə TAPILMADI; `PvRegnomAllAsync`/
+`GoamlPvRegnomSetiri.InnRegnom` çağırışının sahə adları mənbə kodundan
+təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: (1) daxili "PEP" kodu ilə təsdiqlənmiş qeydi ixrac et
+→ header-də `pepCountry`/`institution`/`politicallyInfluentialPersonPositions`
+göründüyünü, AMMA `individualPerson`/`hrzCountry`/`idNumber`-in YOXDUR
+olduğunu; (2) daxili "BLR" kodu ilə təsdiqlənmiş qeydi ixrac et → tərsinə,
+`hrzCountry`/`individualPerson` görünsün, `pepCountry`/`institution` YOXDUR
+olsun; (3) "QHT" (NGR) kodu ilə təsdiqlənmiş qeydi ixrac et → header-də `tin`
+dolu, `tinDate`/`organizationType` boş (operator əl ilə yazmalı) görünsün;
+(4) CTR/ETR/BCR kodlu bir qeyddə HEÇ bir əlavə sahənin görünmədiyini təsdiqlə.
+SAR/TFR real nümunələri gələndə bu bölmə YENİDƏN tamamlanmalıdır.

@@ -74,19 +74,56 @@ namespace FinNex.Application.DTOs.Goaml
         public int ReportReason { get; set; }
 
         // ═══════════════════════════════════════════════════════════════════
-        // PEP/BLR-ə xas header-zənginləşdirməsi (13.11.2026, `JSON_MMX_IN`-in
-        // sətir 892-1008-dəki qolları port edilib — bax `GoamlService.
-        // HeaderZenginlesdirAsync`). Hamısı NULLABLE: `JsonIxracAsync`-in
-        // serializer-i `WhenWritingNull` ilə qurulub, `reportCode` PEP/BLR
-        // olmayanda (CTR və s.) bu sahələrin heç biri JSON-a YAZILMIR —
-        // nümunə faylda (13.11.2026, istifadəçinin göndərdiyi "əməliyyat.json"
-        // vs "risk.json") görülən DƏQIQ fərq budur.
+        // Header-zənginləşdirməsi — İKİNCİ, DÜZƏLDİLMİŞ VERSİYA (13.11.2026,
+        // istifadəçinin göndərdiyi 6 REAL goAML portal form-sxemi — CTR, ETR,
+        // BCR, HRZ, NGR, PEP — əsasında).
         //
-        // ⚠️ QHT qolu (tin/tinDate/organizationType/note, sətir 882-888)
-        // PORT EDİLMƏYİB — `huquqi_shexs`-dəki `registrac_nomer_k` açarının
-        // mənbəyi (GOAML_CLIENTS-də bu adda sütun YOXDUR) tapılmayıb. QHT
-        // tipli hesabat seçilsə, header YALNIZ ÜMUMİ sendDate/reportType/
-        // reportReason-u daşıyar (əvvəlki kimi), bu sahələr boş qalar.
+        // ⚠️ KÖK SƏBƏB TAPILDI: bu sahələr əvvəl AYSEL-in köhnə `JSON_MMX_IN`
+        // SQL-indəki DAXİLİ `report_code` (bizim 16-dəyərli `GoamlHesabatNovu`
+        // kataloqu — AAR/BLR/CTR/QHT/STR/UNR və s., `malumatin_novu` cədvəlinin
+        // AÇARI) yoxlamasına görə qurulmuşdu. REAL goAML portalı isə yalnız
+        // `reportType`-i (1=CTR,2=ETR,3=NGR,4=PEP,6=SAR,7=TFR,8=HRZ,9=BCR)
+        // tanıyır — bizim 16 daxili kod `malumatin_novu` vasitəsilə BU 8
+        // dəyərdən birinə TƏRCÜMƏ OLUNUR (`GoamlService.MalumatinNovuTapAsync`).
+        // Branch indi bizim daxili kod ADINA (`reportCodeKod == "PEP"`) YOX,
+        // Oracle-un qaytardığı HƏMİN `reportType`-ə görə seçilir (bax
+        // `HeaderZenginlesdirAsync`) — əks halda, məsələn, daxili "STR" kodu
+        // (çox güman SAR=6-ya tərcümə olunur) heç vaxt enrichment ALMAZDI.
+        //
+        // Real sxemlərdən TƏSDİQLƏNDİ: "risk.json" (əvvəl "BLR" sayılan
+        // nümunə) əslində reportType=8=**HRZ**-dir, "PEP" (reportType=4) isə
+        // TAM FƏRQLİ, bir qədər DAR bir sahə dəstidir — HƏR İKİSİ BİRLİKDƏ
+        // paylaşır: citizenship/identityType/serial/documentNumber/fin/
+        // customerRiskDegree/country/residency/city/district/street/home/
+        // flat/sofIncome/averageMonthlyIncome/additionalSofIncomes/amount/
+        // position/workplace/businessStartDate/businessEndDate/note/fullName.
+        // YALNIZ PEP-də: pepCountry, positionStartDate/EndDate,
+        // typeOfConnectionToPep, politicallyInfluentialPersonPositions,
+        // institution. YALNIZ HRZ-də: individualPerson, tin,
+        // countryOfRegistration, sphereOfActivity, typeOfConnectionToHrz,
+        // hrzCountry, idNumber. ("influentialPerson" adlı sahə HEÇ BİR real
+        // sxemdə YOXDUR — əvvəlki versiyada səhvən əlavə edilmişdi, silindi.)
+        //
+        // NGR (reportType=3) TAMAMİLƏ YENİ, SADƏ bir sxemdir —
+        // tin/tinDate/organizationType(QHT və ya Dini təşkilat)/note. ⚠️ "QHT"
+        // AYRICA hesabat növü DEYİL — NGR-in daxilindəki `organizationType`
+        // seçimlərindən BİRİDİR (əvvəlki "registrac_nomer_k tapılmadı, QHT
+        // port edilmədi" qeydi bu səbəbdən TAMAMİLƏ YANLIŞ İZ İMİŞ — QHT-nin
+        // `v_PV_HUQUQI`/`huquqi_shexs` ilə heç bir əlaqəsi yoxdur). `tinDate`/
+        // `organizationType` üçün Oracle-da mənbə HƏLƏ TAPILMAYIB (97_...sql-
+        // də NGR-ə aid qol YOXDUR, bu, köhnə SQL-dən DEYİL, yeni real
+        // nümunədən gəlir) — operator bunları ƏL İLƏ doldurmalıdır, YALNIZ
+        // `tin` (VÖEN) digər budaqlarla EYNİ Oracle mənbəyindən (`InnRegnom`)
+        // avtomatik doldurulur.
+        //
+        // ⚠️ SAR (6) və TFR (7) HƏLƏ GÖRÜLMƏYİB — real nümunə gələnə qədər
+        // bu iki `reportType` üçün HEÇ BİR enrichment yazılmayıb (header
+        // yalnız sendDate/reportType/reportReason daşıyır), uydurma sahə
+        // ƏLAVƏ EDİLMƏYİB.
+        //
+        // Hamısı NULLABLE: `JsonIxracAsync`-in serializer-i `WhenWritingNull`
+        // ilə qurulub — reportType 3/4/8 olmayanda (CTR/ETR/BCR/SAR/TFR) bu
+        // sahələrin HEÇ BİRİ JSON-a yazılmır.
         // ═══════════════════════════════════════════════════════════════════
 
         [JsonPropertyName("individualPerson")]
@@ -176,9 +213,6 @@ namespace FinNex.Application.DTOs.Goaml
         [JsonPropertyName("fullName")]
         public string? FullName { get; set; }
 
-        [JsonPropertyName("influentialPerson")]
-        public string? InfluentialPerson { get; set; }
-
         [JsonPropertyName("institution")]
         public string? Institution { get; set; }
 
@@ -193,6 +227,23 @@ namespace FinNex.Application.DTOs.Goaml
 
         [JsonPropertyName("idNumber")]
         public string? IdNumber { get; set; }
+
+        // PEP (4) VƏ HRZ (8) — HƏR İKİSİNDƏ var, real sxemdən təsdiqləndi
+        // (13.11.2026). Oracle-da mənbə tapılmayıb — operator əl ilə doldurur,
+        // boş qalanda "additionalSofIncomes doldurulub, amount tələb olunur"
+        // asılılığı pozulmur (ikisi də boşdur, dependency işə düşmür).
+        [JsonPropertyName("amount")]
+        public decimal? Amount { get; set; }
+
+        [JsonPropertyName("additionalSofIncomes")]
+        public List<int>? AdditionalSofIncomes { get; set; }
+
+        // NGR (reportType=3) — YENİ, 13.11.2026-da real nümunədən tapıldı.
+        [JsonPropertyName("tinDate")]
+        public string? TinDate { get; set; }
+
+        [JsonPropertyName("organizationType")]
+        public int? OrganizationType { get; set; }
     }
 
     public class GoamlJsonTransactionBlocDto

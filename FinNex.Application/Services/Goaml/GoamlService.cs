@@ -1447,10 +1447,34 @@ namespace FinNex.Application.Services.Goaml
         private static string? HeaderTarixYaz(DateTime? tarix) =>
             tarix?.ToString("yyyy-MM-ddTHH:mm:ss.001Z", CultureInfo.InvariantCulture);
 
-        private async Task HeaderZenginlesdirAsync(GoamlEmeliyyat e, string reportCodeKod, GoamlJsonHeaderDto header, CancellationToken ct)
+        /// <summary>
+        /// 13.11.2026, DÜZƏLİŞ: budaqlanma artıq `reportCodeKod`-a (bizim daxili
+        /// "PEP"/"BLR" string-i) YOX, Oracle-un `malumatin_novu`-dan qaytardığı
+        /// REAL `reportType`-ə (1=CTR,2=ETR,3=NGR,4=PEP,6=SAR,7=TFR,8=HRZ,9=BCR)
+        /// görədir — real goAML portal sxemləri bunu təsdiqlədi. Əvvəlki string-
+        /// əsaslı yoxlama YALNIZ daxili kodun adı TƏSADÜFƏN "PEP"/"BLR" olanda
+        /// işləyirdi; başqa daxili kodlar (məs. "STR", Oracle-dan çox güman
+        /// SAR=6-ya tərcümə olunur) heç vaxt enrichment ALMIRDI.
+        /// </summary>
+        private async Task HeaderZenginlesdirAsync(GoamlEmeliyyat e, int? reportType, GoamlJsonHeaderDto header, CancellationToken ct)
         {
-            if (reportCodeKod != "PEP" && reportCodeKod != "BLR") return;
+            if (reportType is not (3 or 4 or 8)) return;
 
+            if (reportType == 3)
+            {
+                // NGR — real sxemdə YALNIZ tin/tinDate/organizationType/note
+                // var (97_...sql-də bu reportType-ə aid qol YOXDUR — bu BÜTÖV
+                // YENİ bir budaqdır). Yalnız VÖEN (tin) üçün mövcud Oracle
+                // mənbəyimiz (InnRegnom) var; tinDate/organizationType üçün
+                // HƏLƏ təsdiqlənmiş mənbə yoxdur — operator əl ilə doldurur.
+                var regnumberNgr = await PvRegnomAllAsync(e.CandidateFilialNumber, e.RegistracNomer, ct);
+                header.Tin = regnumberNgr?.InnRegnom;
+                return;
+            }
+
+            // PEP (4) / HRZ (8) — "BLR" adlandırması real portalda YOXDUR,
+            // bu reportType=8 "HRZ" adlanır (əvvəlki kod daxili "BLR" kodunun
+            // adını birbaşa işlədirdi, çaşdırıcı idi).
             var fizik = await FizikiShexsRegnomFinAsync(e.RegistracNomer, e.Snn, ct);
             var imzaHuquq = await ImzaHuquqGenisAsync(e.RegistracNomer, e.Snn, ct);
             var regnumber = await PvRegnomAllAsync(e.CandidateFilialNumber, e.RegistracNomer, ct);
@@ -1515,9 +1539,9 @@ namespace FinNex.Application.Services.Goaml
             var fullName = string.Join(" ", new[] { e.SigAdi, e.SigAtasininAdi, e.SigSoyadi }
                 .Where(s => !string.IsNullOrWhiteSpace(s)));
 
-            if (reportCodeKod == "PEP")
+            if (reportType == 4)
             {
-                // Sətir 892-926 — v_PV_HUQUQI YOXDUR, hamısı yuxarıdakı qaydaya uyğun.
+                // PEP — sətir 892-926 — v_PV_HUQUQI YOXDUR, hamısı yuxarıdakı qaydaya uyğun.
                 header.Tin = regnumber?.InnRegnom;
                 header.CountryOfRegistration = fizik?.Vetendashligi ?? e.SigVetendasligi;
                 header.Citizenship = fizik?.Vetendashligi ?? e.SigVetendasligi;
@@ -1545,14 +1569,13 @@ namespace FinNex.Application.Services.Goaml
                 header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi);
                 header.TypeOfConnectionToPep = typeOfConnectionToPep;
                 header.FullName = fullName;
-                header.InfluentialPerson = fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
                 header.SofIncome = 0;
                 header.Institution = header.Workplace;
                 header.PoliticallyInfluentialPersonPositions = new List<int> { 11 };
             }
-            else if (reportCodeKod == "BLR")
+            else if (reportType == 8)
             {
-                // Sətir 973-1007 — v_PV_HUQUQI fallback-ları SKİP edilib (bax yuxarı şərh).
+                // HRZ — sətir 973-1007 — v_PV_HUQUQI fallback-ları SKİP edilib (bax yuxarı şərh).
                 header.IndividualPerson = individualPerson;
                 header.Tin = regnumber?.InnRegnom;
                 header.CountryOfRegistration = e.SigVetendasligi ?? emitent?.Vetendashligi ?? fizik?.Vetendashligi;
@@ -1673,7 +1696,7 @@ namespace FinNex.Application.Services.Goaml
                         xeberdarliqlar.Add($"\"{reportCodeKod}\" üçün reportType/reportReason Oracle-dan (malumatin_novu) tapılmadı — 0 yazıldı, əl ilə yoxlayın.");
                 }
 
-                root.Reports.Add(await ReportQurAsync(e, mn, reportCodeKod, valyutaKoduKesi, ct));
+                root.Reports.Add(await ReportQurAsync(e, mn, valyutaKoduKesi, ct));
             }
 
             var json = System.Text.Json.JsonSerializer.Serialize(root,
@@ -1702,7 +1725,7 @@ namespace FinNex.Application.Services.Goaml
         }
 
         private async Task<GoamlJsonReportDto> ReportQurAsync(GoamlEmeliyyat e, (int reportType, int reportReason)? mn,
-            string reportCodeKod, Dictionary<string, string?> valyutaKoduKesi, CancellationToken ct)
+            Dictionary<string, string?> valyutaKoduKesi, CancellationToken ct)
         {
             var report = new GoamlJsonReportDto
             {
@@ -1714,7 +1737,7 @@ namespace FinNex.Application.Services.Goaml
                 },
             };
 
-            await HeaderZenginlesdirAsync(e, reportCodeKod, report.Header, ct);
+            await HeaderZenginlesdirAsync(e, mn?.reportType, report.Header, ct);
 
             var bloc = new GoamlJsonTransactionBlocDto
             {
