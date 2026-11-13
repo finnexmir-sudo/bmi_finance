@@ -11528,3 +11528,89 @@ Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır �
 təsdiqləyib ixrac edərkən Oracle bağlantısını keçici kəssə (və ya
 `malumatin_novu`-nun özü müvəqqəti əlçatmaz olsa), bu dəfə yaşıl qutudan
 DƏRHAL SONRA amber/sarı xəbərdarlıq qutusunun göründüyünü təsdiqləməli.
+
+## GOAML — Sender/Receiver "Entity" Bloku Tip=Fizik-ə baxmayaraq yazılırdı (13.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi AYSEL-in real BLR ixracı (`BMI_BAKU_BLR_FI_2_14738_20260204_TEST.JSON`) ilə bizim eyni
+hesab cütünün (Debet 10020/Kredit 41025, "Fiziki (IN)") ixracını birbaşa fayl-fayl müqayisə etdi.
+
+**Tapılan bug — `SenderQurAsync`/`ReceiverQurAsync`.** Hər ikisi Entity/Person qolunu
+**YALNIZ `NameUr` boş olub-olmamasına görə** seçirdi, `Tip`-ə baxmadan:
+
+```csharp
+if (!string.IsNullOrWhiteSpace(e.NameUr))         // Entity — Tip-dən ASILI DEYİLDİ
+{ sender.Entity = ...; }
+else if (...ToAdi/ToSoyadi...)
+{ sender.Person = ...; }
+```
+
+Bu konkret namizəddə `NameUr` **"KASSA - USD"** ilə dolu idi — hesab-sahibi auto-doldurma
+mexanizmi (09-10.11.2026) `Debet` hesabının (10020..., bankın öz kassa/GL hesabı) adını
+`LICSCH_ALL_2`-dən tapıb NameUr-a yazmışdı. Operator isə əməliyyatı açıq-aydın **"Fiziki
+(IN)"** seçmişdi (real şəxs — Asghar Najafimarganmaskan — kassaya nağd pul qoyur). Nəticə:
+Sender/Receiver-in HƏR İKİSİ `"Entity": {"...entity_name": "KASSA - USD"}` yazdı, real
+şəxsin KYC-si (ad/soyad/sənəd/vətəndaşlıq) HEÇ YERƏ DÜŞMƏDİ — baxmayaraq ki `ToAdi`/`ToSoyadi`/
+`SigAdi`/`SigSoyadi` sahələri DOLU idi.
+
+AYSEL-in eyni (10020/41025) hesab cütü ilə real ixracı isə `Person` yazır — Sender-i
+"_IN" prosedurunun öz qaydasına görə elə `ToAdi`/`ToSoyadi`-dən (sender_first_name/
+last_name = "ASGHAR"/"NAJAFIMARGANMASKAN"), Receiver-i `Sig`-dən doldurur — Debet
+hesabının texniki olaraq "kassa/GL hesabı" olması ONU dəyişmir.
+
+**Düzəliş — hər iki metoda eyni qoruyucu:** `Tip` **Fizik (OUT/IN)** olduqda `NameUr`-un
+dolu-boş olmasından ASILI OLMAYARAQ Entity qolu **ÜMUMİYYƏTLƏ işə düşmür**, birbaşa
+Person-a keçir:
+
+```csharp
+if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn))
+```
+
+`ReceiverQurAsync`-da mövcud `&& e.Tip != GoamlTipi.HuquqiOut` şərtinin YANINA əlavə
+olundu (silinmədi) — ikisi birlikdə işləyir.
+
+⚠️ **Yalnız Fizik (OUT/IN) üçün düzəldildi — HToH/HToF/FToH/Huquqi tiplərinə TOXUNULMADI.**
+Onlarda Entity-nin NameUr-a görə seçilməsi DÜZGÜN ola bilər (qarışıq tiplərdə bir tərəf
+həqiqətən hüquqi şəxsdir) — bu, ayrıca, diqqətli araşdırma tələb edir, bu sessiyada
+EDİLMƏDİ.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI ixraclara təsir edir.
+
+### AÇIQ QALAN, HƏLƏ TƏSDİQLƏNMƏMİŞ İKİ MƏSƏLƏ (eyni müqayisədən)
+
+Eyni ixracda daha iki fərq tapıldı, AMMA bunlar kod səviyyəsində TƏSDİQLƏNMƏYİB —
+Oracle-da canlı yoxlama lazımdır, təxminlə düzəliş edilmədi:
+
+1. **`reportType: 0, reportReason: 0`** — "BLR" seçilmişdi, AYSEL-in özü `8/4` yazır,
+   istifadəçinin əvvəlki canlı sorğusu da Oracle-un `malumatin_novu`-da "BLR" üçün
+   düz `8/4` saxladığını göstərmişdi — AMMA bu konkret ixracda `MalumatinNovuTapAsync`
+   YENƏ uğursuz oldu (0 sətir və ya istisna). **Oxşar simptom artıq bir dəfə
+   (09.11.2026) başqa iki cədvəldə (`balscht_fiz`/`balscht_ur`) `ORA-01031:
+   insufficient privileges` olaraq tapılmışdı** (FOXPRO tətbiq hesabının o
+   cədvəllərə SELECT icazəsi yox idi, istifadəçinin öz şəxsi Oracle hesabı isə
+   var idi) — `malumatin_novu`-da da EYNİ bug ehtimal olunur. Yoxlama addımı:
+   `Logs\log-<bugünkü-tarix>.txt`-də "malumatin_novu sorğusu uğursuz oldu" sətrini
+   tap, `InnerException`-dakı ORA kodunu gör — `ORA-01031` çıxarsa, DBA-dan
+   `GRANT SELECT ON odb.malumatin_novu TO FOXPRO;` istə (eyni, artıq sınanmış həll).
+2. **Valyuta kodu `"01"`** (ISO "USD" ƏVƏZİNƏ) — `ValyutaKoduAsync` hesab nömrəsinin
+   6-7-ci simvolundan (`"01"`) `kurval.soknamevalut`-u sorğulayır; nəticə JSON-a
+   HƏRFİ "01" kimi düşüb — yəni ya Oracle sorğusu "01" sətrini SOKNAMEVALUT kimi
+   qaytarıb (data-səviyyəli sual), ya da sorğu uğursuz olub AMMA fallback
+   (`?? "AZN"`) işləməyib (kod-səviyyəli sual, az ehtimallı — kod aydın "AZN"
+   yazır). Yoxlama: `select kodvaluti, soknamevalut from odb.kurval where
+   kodvaluti = '01'` PL/SQL Developer-də — nəticə göstərəcək ki, problem
+   Oracle-dadır, yoxsa kodda.
+
+Hər ikisi istifadəçidən Oracle-da birbaşa yoxlama gözləyir — bu sessiyada SQL/kod
+dəyişikliyi edilmədi, yalnız diaqnostik addım yazıldı.
+
+⚠️ **Bu KONKRET test namizədi artıq `Status=İxracEdilib`-dədir** (filename `_TEST.json`,
+real əhəmiyyəti yoxdur) — yuxarı iki məsələ düzəldikdən sonra YENİDƏN ixrac etmək
+üçün statusu `UPDATE GoamlEmeliyyatlar SET Status=1 WHERE Id=<id>` ilə geri qaytarmaq
+lazımdır (əvvəlcə `SELECT`-lə təsdiqlə — bax yuxarı eyni addım).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in əlavə sətirləri üzərində, `GoamlTipi.FizikOut/FizikIn`
+enum dəyərlərinin `GoamlEnums.cs`-dəki adları ilə tutuşdurulması). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: Tip=Fizik (IN/OUT)
+seçilmiş, NameUr dolu olan bir namizədi ixrac et → Sender/Receiver-in artıq "Entity"
+YOX, "Person" (real şəxsin adı) yazdığını təsdiqləməli.

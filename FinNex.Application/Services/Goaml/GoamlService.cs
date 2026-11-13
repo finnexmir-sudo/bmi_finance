@@ -1873,7 +1873,14 @@ namespace FinNex.Application.Services.Goaml
         {
             var sender = new GoamlJsonSenderDto { SenderCountryName = e.FromCountry ?? "" };
 
-            if (!string.IsNullOrWhiteSpace(e.NameUr))
+            // 13.11.2026, KRİTİK DÜZƏLİŞ: `Tip=FizikIn` (real hadisə) ilə test edildi —
+            // NameUr səssizcə "KASSA - USD" (hesab-sahibi auto-doldurmanın tapdığı GL/
+            // kassa hesabının adı) ilə dolu idi, Tip FİZİKİ olduğu halda Entity bloku
+            // yazılırdı, real şəxsin (ToAdi/ToSoyadi) KYC-si İSTİFADƏ OLUNMURDU. Operator
+            // Tip-i açıq FİZİKİ seçibsə, NameUr-un məzmunundan ASILI OLMAYARAQ Person
+            // istifadə olunmalıdır — AYSEL-in eyni (Debet/Kredit) cütlü real nümunəsi
+            // də məhz belədir.
+            if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn))
             {
                 sender.Entity = new GoamlJsonSenderEntityDto
                 {
@@ -1931,7 +1938,10 @@ namespace FinNex.Application.Services.Goaml
         {
             var receiver = new GoamlJsonReceiverDto { ReceiverCountryName = e.ToOlkeAdi ?? "" };
 
-            if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip != GoamlTipi.HuquqiOut)
+            // 13.11.2026, KRİTİK DÜZƏLİŞ (bax SenderQurAsync-dəki EYNİ şərh) — Tip
+            // FİZİKİ olanda Entity YOX, Sig-dən (real şəxs) Person yazılmalıdır.
+            if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip != GoamlTipi.HuquqiOut
+                && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn))
             {
                 receiver.Entity = new GoamlJsonReceiverEntityDto
                 {
