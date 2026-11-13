@@ -323,6 +323,17 @@ public class EmeliyyatlarController : Controller
             : $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\".";
         TempData["IxracFayli"] = netice.Data.TeklifOlunanFaylAdi;
 
+        // 13.11.2026, KRİTİK DÜZƏLİŞ: `TempData["Success"]`-in yuxarıdakı
+        // xəbərdarlıq mətni Export.cshtml-in ÖZ "İxrac tamamlandı" qutusunda
+        // HEÇ VAXT OXUNMURDU (o qutu YALNIZ "IxracFayli"-ni göstərir) — real
+        // hadisə: `malumatin_novu` sorğusu konkret bir ixracda keçici səbəbdən
+        // uğursuz oldu (reportType/reportReason 0/0 yazıldı), server xəbərdarlığı
+        // hazırladı, AMMA ekranda HEÇ YERDƏ görünmədi. İndi AYRI, PERSİSTENT
+        // (fn-alert YOX, auto-hide olmur) bir TempData açarı — Export.cshtml
+        // bunu "gml-warn" qutusu ilə HƏMİŞƏ göstərir.
+        if (netice.Data.Xeberdarliqlar.Count > 0)
+            TempData["IxracXeberdarliqlari"] = string.Join(" | ", netice.Data.Xeberdarliqlar);
+
         return RedirectToAction(nameof(Export));
     }
 

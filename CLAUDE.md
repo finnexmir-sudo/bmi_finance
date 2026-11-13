@@ -11450,3 +11450,81 @@ VƏ Export səhifəsindəki "Məlumatın növü" dropdown-larında indi "STR —
 olmayaraq pul vəsaitləri (TM)" seçimlərinin DƏ göründüyünü, bu kodlarla
 bir namizədi təsdiqləyib ixrac edəndə JSON-un sınmadan, sadə (əlavə
 sahəsiz) bir header ilə çıxdığını.
+
+## GOAML — Oracle `malumatin_novu` Keçici Uğursuzluğu SƏSSİZ İDİ — Xəbərdarlıq Yazılırdı, AMMA HEÇ YERDƏ GÖSTƏRİLMİRDİ (13.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi "BLR" ilə bir namizəd ixrac edib AYSEL-in öz faylı ilə müqayisə
+etdi: AYSEL-in faylında `reportType: 8, reportReason: 4` (+ HRZ-ə məxsus
+header sahələri — `individualPerson`/`tin`/`countryOfRegistration`/
+`citizenship`/`identityType`), bizim ixracda isə **`reportType: 0,
+reportReason: 0`**, header sahələrinin HEÇ BİRİ YOX idi.
+
+**Diaqnoz — ekranın özü yanıltmışdı.** Export səhifəsindəki yaşıl "İxrac
+tamamlandı" qutusunda HEÇ bir xəbərdarlıq YOX idi — sükutla "uğurlu"
+göründü. İstifadəçi PL/SQL Developer-də eyni sorğunu ƏL İLƏ işlətdi:
+`select reporttype, reportreason from odb.malumatin_novu where isare =
+'BLR'` → **DÜZ 8/4 qaytardı**. Yəni Oracle-dakı data VƏ sorğunun özü
+tamamilə DÜZGÜNDÜR — problem nə `Kod()` xəritəsində (bax yuxarı "Fayl
+Fərqliliyi" bölməsi), nə `malumatin_novu` cədvəlinin məzmununda idi.
+
+**Əsl kök səbəb — İKİ qatlı, biri gözlənilən (keçici Oracle uğursuzluğu),
+biri HEÇ GÖZLƏNİLMƏYƏN (görüntü qatı bugunu):**
+
+1. `MalumatinNovuTapAsync` HƏMİN KONKRET ixrac anında (0 sətir qaytarıb və
+   ya istisna atıb) uğursuz oldu — bu, TƏK başına GÖZLƏNİLƏN, artıq
+   qoruyucusu olan bir hal idi: `JsonIxracAsync` belə halda `reportType=0`
+   yazır VƏ `Xeberdarliqlar` siyahısına açıq mətn əlavə edir (*"BLR" üçün
+   reportType/reportReason Oracle-dan (malumatin_novu) tapılmadı — 0
+   yazıldı, əl ilə yoxlayın*), bu mətn `EmeliyyatlarController.Export`-da
+   `TempData["Success"]`-ə yazılırdı.
+2. **AMMA `Export.cshtml`-in "İxrac tamamlandı" yaşıl qutusu (istifadəçinin
+   REAL gördüyü yeganə banner) `TempData["Success"]`-i HEÇ VAXT OXUMURDU** —
+   o, YALNIZ `TempData["IxracFayli"]` (fayl adı) üzərində qurulmuş, AYRICA,
+   öz CSS sinfi (`gml-success-box`, qəsdən `fn-alert` DEYİL ki, qlobal
+   4-saniyəlik auto-hide onu silməsin) daşıyan müstəqil bir komponentdir.
+   Server-in hazırladığı xəbərdarlıq mətni bu komponentin strukturunda
+   yer almadığı üçün **heç bir yerdə göstərilmədi** — nə bu qutuda, nə
+   başqa görünən bir elementdə.
+
+**Düzəliş — iki fayl:**
+- `EmeliyyatlarController.Export` — `Xeberdarliqlar.Count > 0` olanda
+  AYRI, YENİ bir açar yazır: `TempData["IxracXeberdarliqlari"]` (eyni
+  mətn, ayrıca saxlanılır — `TempData["Success"]`-ə TOXUNULMADI).
+- `Export.cshtml` — yeni `.gml-warn` qutusu (artıq CSS-də mövcud idi,
+  limitlər üçün işlənirdi — bax "`gml-limits`" bölməsi), "İxrac tamamlandı"
+  qutusunun DƏRHAL ardınca, `TempData["IxracXeberdarliqlari"]` doluysa
+  göstərilir: xəbərdarlığın öz mətni + operatora konkret addım ("Oracle-da
+  sorğunu əl ilə yoxlayın... keçici xəta idisə qeydi YENİDƏN ixrac edin").
+  `gml-warn` da `fn-alert` DEYİL — auto-hide olmur, operator görənə qədər qalır.
+
+⚠️ **Bu KONKRET test qeydi artıq `Status=İxracEdilib`-dədir — sadəcə
+"YENİDƏN ixrac et" onu DÜZƏLTMİR.** `IxracSertiQur`-un şərti
+(`x.Status == GoamlEmeliyyatStatusu.Qaralama`) ixrac edilmiş qeydi BİR DAHA
+GÖTÜRMÜR (bu, elə TƏKRAR-İXRAC qoruyucusunun ÖZÜDÜR, bax "Export to JSON"
+bölməsi) — reportType=0 ilə artıq ixrac olunmuş bu sətir indi "unudulmuş"
+vəziyyətdədir. Test qeydi olduğu üçün (fayl adı `_TEST.json`) real
+nəticəyə təsiri yoxdur, AMMA real bir hesabatda bu baş versə, operator
+qeydi YENİDƏN ixrac edə bilməz — mühəndis statusu əl ilə geri (`Qaralama=1`)
+çevirməlidir (`UPDATE GoamlEmeliyyatlar SET Status=1 WHERE Id=<id>`,
+ƏVVƏLCƏ `SELECT Id, Status, ReportCode, CandidateRecNum FROM
+GoamlEmeliyyatlar WHERE Status=2 AND Id=<id>` ilə təsdiqlənməli — bu
+sessiyada İCRA EDİLMƏDİ, yalnız gələcək belə hal üçün yol göstərilir).
+
+**Qayda:** bir əməliyyatın SƏRBƏST-OLA-BİLƏN uğursuzluğunu (bura: keçici
+Oracle sorğusu) "TƏHLÜKƏSİZ DEFOLT + server-tərəfli xəbərdarlıq mətni"
+ilə qorumaq KİFAYƏT ETMİR — o xəbərdarlığın HƏQİQƏTƏN, HƏR ekranda
+(xüsusən əməliyyatın öz "uğurlu" göstərişinin İÇİNDƏ, AYRI bir TempData
+açarına/komponentə düşmədən) GÖRÜNDÜYÜNÜ yoxlamaq lazımdır. Bu, "İŞLƏK
+FUNKSİYANI SİLMƏK" qaydasının əksi bir forması deyil, ONA bənzər bir
+simptomdur: server düzgün, təhlükəsiz davranır, AMMA nəticəni daşıyan
+mesaj YANLIŞ komponentə yazılıb, operator onu HEÇ VAXT görmür — "sükutla
+uğurlu" görünən bir ekran əslində səssiz bir xəbərdarlığı udur.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı hər iki dəyişən faylda, `TempData` açar
+adlarının controller↔view arasında bir-bir tutuşdurulması). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır —
+ən asan yol: bir namizədi "BLR" (və ya hər hansı schema-hazır kod) ilə
+təsdiqləyib ixrac edərkən Oracle bağlantısını keçici kəssə (və ya
+`malumatin_novu`-nun özü müvəqqəti əlçatmaz olsa), bu dəfə yaşıl qutudan
+DƏRHAL SONRA amber/sarı xəbərdarlıq qutusunun göründüyünü təsdiqləməli.

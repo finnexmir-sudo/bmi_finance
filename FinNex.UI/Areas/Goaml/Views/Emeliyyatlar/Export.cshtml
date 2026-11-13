@@ -4,6 +4,7 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "GOAML — Export to file (JSON)";
     var gmlIxracFayli = TempData["IxracFayli"] as string;
+    var gmlIxracXeberdarliqlari = TempData["IxracXeberdarliqlari"] as string;
 }
 
 @section Styles {
@@ -60,6 +61,22 @@
             <a href="@Url.Action("IxracFayli", new { fayl = gmlIxracFayli })" id="gmlDownloadLink" class="fn-btn fn-btn--primary">
                 <i class="bi bi-download"></i> Faylı yüklə
             </a>
+        </div>
+    }
+
+    @* 13.11.2026, KRİTİK DÜZƏLİŞ: server-in `malumatin_novu` (reportType/
+       reportReason) tapa bilmədiyi hallarda hazırladığı xəbərdarlıq əvvəllər
+       heç bir qutuda GÖSTƏRİLMİRDİ (yalnız TempData["Success"]-ə yazılırdı,
+       yuxarıdakı "İxrac tamamlandı" qutusu isə onu HEÇ OXUMURDU) — real hadisə:
+       BLR ixracı reportType=0 yazdı, Oracle-un özü 'BLR' üçün düz 8/4 qaytardığı
+       halda. Bu qutu "gml-warn"dır (fn-alert YOX — auto-hide olmur), operator
+       görməsə belə qalır. *@
+    @if (!string.IsNullOrEmpty(gmlIxracXeberdarliqlari))
+    {
+        <div class="gml-warn">
+            <strong><i class="bi bi-exclamation-triangle-fill"></i> Diqqət — reportType/reportReason tapılmadı:</strong>
+            <div style="margin-top:6px">@gmlIxracXeberdarliqlari</div>
+            <div style="margin-top:6px">Bu ixracdakı qeyd(lər)in header-ində <code>reportType</code>/<code>reportReason</code> <strong>0</strong> yazılıb — real goAML sxemi üçün YARARSIZDIR. Oracle-da sorğunu əl ilə yoxlayın (<code>select reporttype, reportreason from odb.malumatin_novu where isare = '...'</code>); nəticə düzgün gəlirsə, bu KEÇİCİ xəta idi — qeydi YENİDƏN ixrac edin (əvvəlki fayl artıq "İxrac edilib" statusunda qaldığı üçün təkrar ixrac onu YENİDƏN götürmür — bu halda düzəliş üçün qeydi HR/mühəndisə bildirin).</div>
         </div>
     }
 
