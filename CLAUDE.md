@@ -11700,3 +11700,75 @@ tam balanslı, parens-dəki -8 fərq köhnə, bu dəyişiklikdən ASILI OLMAYAN 
 artefaktıdır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra statusu
 geri qaytarılmış (və ya yeni) bir namizədi ixrac edib valyuta sahəsinin indi
 "USD"/"EUR"/"RUB"/"IRR"/"AED"/"AZN" kimi düzgün ISO koda çevrildiyini təsdiqləməlidir.
+
+### `reportType=0/0` İKİ DƏFƏ TƏKRARLANDI — `/Goaml/Emeliyyatlar/OracleDiaqnostika` DİAQNOSTİKA SƏHİFƏSİ ƏLAVƏ OLUNDU (13.11.2026)
+
+Valyuta düzəlişindən sonra istifadəçi YENİDƏN ixrac etdi — "BLR" ilə eyni
+namizəd YENƏ `reportType: 0, reportReason: 0` verdi. Bu, "bir dəfəlik fluke"
+nəzəriyyəsini (əvvəlki qeyd) ÖLDÜRDÜ — iki ayrı ixrac (fayl adlarından: 145323
+və 155247) EYNİ nəticəni verdi, deməli SABİT bir problemdir.
+
+**Yeganə qalan izahla bağlı iki namizəd arasında seçim etmək üçün CANLI
+ORACLE MÜQAYİSƏSİ lazımdır** — nə kodda, nə SQL-də əlavə təxmin etmək
+mümkün deyil, çünki eyni hərfi mətnli sorğu (`select reporttype, reportreason
+from odb.malumatin_novu where isare = 'BLR'`) istifadəçinin ŞƏXSİ PL/SQL
+Developer sessiyasında **8/4** qaytarır, tətbiqin (FOXPRO hesabı) ÖZÜNDƏ isə
+sükutla **0 sətir** qaytarır — HEÇ bir istisna (ORA-kodu) atılmadan (loqda
+"malumatin_novu" sözü HEÇ keçmir).
+
+**Həll — müvəqqəti, YALNIZ diaqnostika üçün bir səhifə əlavə olundu:**
+`IGoamlService.OracleDiaqnostikaAsync()` / `GoamlService.OracleDiaqnostikaAsync`
+tətbiqin ÖZ Oracle bağlantısı ilə (`_oracle.SelectAsync`, eyni FOXPRO hesabı)
+yeddi KİÇİK, YALNIZ-OXU sorğu aparır — hər biri AYRI `try/catch`-dədir ki,
+biri uğursuz olsa qalanları bloklamasın:
+
+```sql
+select global_name from global_name;
+select sys_context('userenv','db_name') from dual;
+select sys_context('userenv','host') from dual;
+select sys_context('userenv','instance_name') from dual;
+select user from dual;
+select count(*) from odb.malumatin_novu;
+select count(*) from odb.malumatin_novu where isare = 'BLR';
+select reporttype, reportreason from odb.malumatin_novu where isare = 'BLR';
+```
+
+Yeni **`GET /Goaml/Emeliyyatlar/OracleDiaqnostika`** səhifəsi (+ Export
+səhifəsindəki "reportType/reportReason tapılmadı" xəbərdarlığının altına
+birbaşa keçid düyməsi) bu 7 dəyəri açıq göstərir, eyni 7 sorğunu da (düz
+mətnlə, kopyala-yapışdır üçün) ekranda saxlayır — istifadəçi bunları ÖZ
+PL/SQL Developer sessiyasında işlədib BİRƏ-BİR tutuşdura bilsin.
+
+**Diaqnoz məntiqi:**
+- `global_name`/`db_name`/`host`/`instance_name`/`user` tətbiqdə (FOXPRO) VƏ
+  şəxsi sessiyada FƏRQLİ çıxırsa → tətbiq **başqa bir Oracle nüsxəsinə/
+  bazaya** bağlanır, `malumatin_novu`-nun BLR sətri o bazada sadəcə YOXDUR
+  (ya hələ sinxronlaşmayıb, ya tamamilə ayrı mühitdir — test/UAT vs production
+  kimi). Həll kodda DEYİL, `appsettings.json → Oracle:ConnectionString`-i
+  düzgün nüsxəyə yönləndirməkdədir.
+- Hər şey EYNİ çıxır (host/db/instance üst-üstə düşür), AMMA
+  `MalumatinNovuUmumiSay`/`MalumatinNovuBlrSay` tətbiqdə AZ (və ya sıfır)
+  çıxırsa → eyni baza, AMMA FOXPRO-nun gördüyü SƏTIR DƏSTİ fərqlidir — VPD/
+  Row-Level-Security siyasəti, FƏRQLİ bir SİNONİM (`odb.malumatin_novu`
+  FOXPRO üçün başqa bir obyektə işarə edə bilər) və ya FOXPRO-nun gördüyü
+  bir "dirty read" (commit olunmamış data) ehtimalı araşdırılmalıdır.
+- `Xetalar` siyahısında (varsa) hər hansı bir sorğunun ÖZ ORA-kodu çıxırsa
+  (bura qədər heç biri belə bir xəta göstərməyib, amma mümkündür) — o, əsl
+  səbəbdir, əvvəlcə ona bax.
+
+⚠️ **Bu, MÜVƏQQƏTİ bir diaqnostika vasitəsidir, daimi funksiya DEYİL** —
+kök səbəb tapılıb düzəldildikdən sonra bu səhifə (controller action-u,
+servis metodu, DTO, view) silinməlidir; `IcazeKodlari.GoamlBax` arxasında
+qalması (hər hansı sadə `[Authorize]` deyil) səbəbindən risk aşağıdır, amma
+"İşlək Funksiyanı Silmək" qaydasına görə silinməsi istifadəçinin öz açıq
+razılığı ilə olmalıdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/tag balansı Python skriptlə hər dəyişən/yeni fayl üzrə, `IGoamlService.cs`-in
+pre-existing −1 paren-fərqinin bu dəyişiklikdən ASILI OLMADIĞI `git stash`
+ilə təsdiqləndi — dəyişiklik özü net +3/+3 balanslıdır). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra `/Goaml/Emeliyyatlar/OracleDiaqnostika`
+səhifəsini açıb yuxarıdakı 7 sorğunu ÖZ PL/SQL Developer sessiyasında
+işlədib nəticələri (xüsusən `global_name`/`user`/`malumatin_novu` sayları)
+göndərməlidir — yalnız bundan sonra əsl kök səbəb (fərqli Oracle nüsxəsi,
+yoxsa FOXPRO-ya xas görmə şərti) qəti müəyyənləşəcək.

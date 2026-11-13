@@ -2069,6 +2069,73 @@ namespace FinNex.Application.Services.Goaml
             }
         }
 
+        /// <summary>13.11.2026, DİAQNOSTİKA (müvəqqəti) — bax <see cref="GoamlOracleDiaqnostikaDto"/>
+        /// və <see cref="IGoamlService.OracleDiaqnostikaAsync"/>. Hər sorğu AYRI
+        /// try/catch-dədir ki, biri uğursuz olsa belə qalanları yoxlamağa davam etsin.</summary>
+        public async Task<GoamlOracleDiaqnostikaDto> OracleDiaqnostikaAsync(CancellationToken ct = default)
+        {
+            var dto = new GoamlOracleDiaqnostikaDto();
+
+            async Task<string?> BirDeyerAsync(string sql, string sutun, string adi)
+            {
+                try
+                {
+                    var setirler = await _oracle.SelectAsync(sql, 1, ct);
+                    return setirler.Count > 0 ? DVal(setirler[0], sutun)?.ToString() : "(0 sətir)";
+                }
+                catch (Exception ex)
+                {
+                    dto.Xetalar.Add($"{adi}: {ex.Message}");
+                    _logger.LogWarning(ex, "GOAML OracleDiaqnostika — {Adi} uğursuz oldu", adi);
+                    return null;
+                }
+            }
+
+            dto.GlobalName = await BirDeyerAsync("select global_name as g from global_name", "G", "global_name");
+            dto.DbName = await BirDeyerAsync("select sys_context('userenv','db_name') as d from dual", "D", "db_name");
+            dto.DbHost = await BirDeyerAsync("select sys_context('userenv','host') as h from dual", "H", "host");
+            dto.InstanceName = await BirDeyerAsync("select sys_context('userenv','instance_name') as i from dual", "I", "instance_name");
+            dto.OracleUser = await BirDeyerAsync("select user as u from dual", "U", "user");
+
+            try
+            {
+                var setirler = await _oracle.SelectAsync("select count(*) as c from odb.malumatin_novu", 1, ct);
+                dto.MalumatinNovuUmumiSay = setirler.Count > 0 ? ToLong(DVal(setirler[0], "C")) : (long?)null;
+            }
+            catch (Exception ex)
+            {
+                dto.Xetalar.Add($"malumatin_novu say: {ex.Message}");
+                _logger.LogWarning(ex, "GOAML OracleDiaqnostika — malumatin_novu say uğursuz oldu");
+            }
+
+            try
+            {
+                var setirler = await _oracle.SelectAsync("select count(*) as c from odb.malumatin_novu where isare = 'BLR'", 1, ct);
+                dto.MalumatinNovuBlrSay = setirler.Count > 0 ? ToLong(DVal(setirler[0], "C")) : (long?)null;
+            }
+            catch (Exception ex)
+            {
+                dto.Xetalar.Add($"malumatin_novu BLR say: {ex.Message}");
+                _logger.LogWarning(ex, "GOAML OracleDiaqnostika — malumatin_novu BLR say uğursuz oldu");
+            }
+
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select reporttype, reportreason from odb.malumatin_novu where isare = 'BLR'", 1, ct);
+                dto.BlrReportTypeVeReason = setirler.Count > 0
+                    ? $"reportType={ToLong(DVal(setirler[0], "REPORTTYPE"))}, reportReason={ToLong(DVal(setirler[0], "REPORTREASON"))}"
+                    : "(0 sətir)";
+            }
+            catch (Exception ex)
+            {
+                dto.Xetalar.Add($"malumatin_novu BLR reportType/reportReason: {ex.Message}");
+                _logger.LogWarning(ex, "GOAML OracleDiaqnostika — malumatin_novu BLR reportType/reportReason uğursuz oldu");
+            }
+
+            return dto;
+        }
+
         // ── Köməkçilər ──────────────────────────────────────────────────────
 
         /// <summary>Yalnız hərf/rəqəm saxlanır — xam istifadəçi mətni raw SQL-ə

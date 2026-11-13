@@ -360,4 +360,16 @@ public class EmeliyyatlarController : Controller
         var bytes = System.IO.File.ReadAllBytes(yol);
         return File(bytes, "application/json", temizAd);
     }
+
+    // ── GET /Goaml/Emeliyyatlar/OracleDiaqnostika — 13.11.2026, MÜVƏQQƏTİ.
+    //    "BLR" üçün malumatin_novu sorğusu app-dan (FOXPRO) sükutla 0 sətir
+    //    qaytarır, istifadəçinin öz PL/SQL Developer sessiyasında isə 8/4
+    //    verir. Bu səhifə tətbiqin bağlandığı Oracle nüsxəsini/sxemini
+    //    göstərir ki, istifadəçi EYNİ sorğuları (global_name, user, və s.)
+    //    öz sessiyasında da işlədib tutuşdursun. ─────────────────────────
+    public async Task<IActionResult> OracleDiaqnostika()
+    {
+        var netice = await _goaml.OracleDiaqnostikaAsync();
+        return View(netice);
+    }
 }

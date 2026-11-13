@@ -77,6 +77,7 @@
             <strong><i class="bi bi-exclamation-triangle-fill"></i> Diqqət — reportType/reportReason tapılmadı:</strong>
             <div style="margin-top:6px">@gmlIxracXeberdarliqlari</div>
             <div style="margin-top:6px">Bu ixracdakı qeyd(lər)in header-ində <code>reportType</code>/<code>reportReason</code> <strong>0</strong> yazılıb — real goAML sxemi üçün YARARSIZDIR. Oracle-da sorğunu əl ilə yoxlayın (<code>select reporttype, reportreason from odb.malumatin_novu where isare = '...'</code>); nəticə düzgün gəlirsə, bu KEÇİCİ xəta idi — qeydi YENİDƏN ixrac edin (əvvəlki fayl artıq "İxrac edilib" statusunda qaldığı üçün təkrar ixrac onu YENİDƏN götürmür — bu halda düzəliş üçün qeydi HR/mühəndisə bildirin).</div>
+            <div style="margin-top:10px"><a asp-action="OracleDiaqnostika" class="fn-btn fn-btn--secondary" style="padding:5px 12px; font-size:.78rem"><i class="bi bi-search"></i> Oracle bağlantısını diaqnostika et</a></div>
         </div>
     }
 

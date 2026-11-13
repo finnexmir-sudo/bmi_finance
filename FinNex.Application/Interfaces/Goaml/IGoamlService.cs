@@ -76,5 +76,12 @@ namespace FinNex.Application.Interfaces.Goaml
         /// dəyişdirmir — <see cref="JsonIxracAsync"/> ilə EYNİ filtr şərtini paylaşır,
         /// ona görə nəticə HƏMİŞƏ real ixracla UYĞUN gəlir.</summary>
         Task<Result<List<GoamlEmeliyyatListDto>>> IxracOnizlemeAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default);
+
+        /// <summary>13.11.2026, DİAQNOSTİKA (müvəqqəti) — "BLR" üçün `malumatin_novu`
+        /// sorğusu tətbiqdən (FOXPRO) sükutla 0 sətir qaytarır, istifadəçinin öz
+        /// PL/SQL Developer sessiyasında isə 8/4 verir. Bu metod tətbiqin bağlandığı
+        /// Oracle nüsxəsini/sxemini identifikasiya edib istifadəçinin öz sessiyası ilə
+        /// tutuşdurmaq üçündür — bax <see cref="GoamlOracleDiaqnostikaDto"/>.</summary>
+        Task<GoamlOracleDiaqnostikaDto> OracleDiaqnostikaAsync(CancellationToken ct = default);
     }
 }
