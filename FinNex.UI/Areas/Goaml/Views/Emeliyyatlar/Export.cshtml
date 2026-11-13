@@ -89,9 +89,13 @@
                     <label class="gml-filter-lbl">Məlumatın növü (istəyə bağlı)</label>
                     <select asp-for="ReportCode" id="gmlReportCode" class="fn-input" style="width:220px" onchange="gmlFiltrDeyisdi()">
                         <option value="">— Hamısı —</option>
+                        @* 13.11.2026 — yalnız real sxemi təsdiqlənmiş kodlar (bax Tesdiq.cshtml-dəki eyni qeyd) *@
                         @foreach (GoamlHesabatNovu r in Enum.GetValues(typeof(GoamlHesabatNovu)))
                         {
-                            <option value="@((int)r)">@r.Kod() — @r.Aciqlama()</option>
+                            if (r.SxemHazirdir())
+                            {
+                                <option value="@((int)r)">@r.Kod() — @r.Aciqlama()</option>
+                            }
                         }
                     </select>
                 </div>

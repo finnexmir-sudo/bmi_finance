@@ -6,7 +6,11 @@
     ViewData["Title"] = "GOAML — Təsdiqlə";
 
     var tipSecimler = Enum.GetValues<GoamlTipi>().Select(t => new { Value = (int)t, Text = t.Etiket() }).ToList();
+    // 13.11.2026 — yalnız real sxemi TƏSDİQLƏNMİŞ (CTR/ETR/BLR/PEP/QHT) kodlar
+    // göstərilir. İstifadəçi: "bizde 6 fayl var ve bizde yalniz secimde onlari
+    // gosterek,o biriler islemir" — bax GoamlHesabatNovuExtensions.SxemHazirdir().
     var reportSecimler = Enum.GetValues<GoamlHesabatNovu>()
+        .Where(r => r.SxemHazirdir())
         .Select(r => new { Value = (int)r, Text = r.Kod() + " — " + r.Aciqlama() }).ToList();
     // Tip-in İSTİQAMƏTİ (OUT/IN) — "hansı hesab bizimdir" sualının JS-dəki
     // cavabı. TƏK mənbə `GoamlTipiExtensions.BizimTerefDebetdir()`-dir —

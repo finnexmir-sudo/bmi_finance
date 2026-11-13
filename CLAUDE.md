@@ -11345,3 +11345,57 @@ olsun; (3) "QHT" (NGR) kodu ilə təsdiqlənmiş qeydi ixrac et → header-də `
 dolu, `tinDate`/`organizationType` boş (operator əl ilə yazmalı) görünsün;
 (4) CTR/ETR/BCR kodlu bir qeyddə HEÇ bir əlavə sahənin görünmədiyini təsdiqlə.
 SAR/TFR real nümunələri gələndə bu bölmə YENİDƏN tamamlanmalıdır.
+
+## GOAML — "Məlumatın Növü" Dropdown-u Yalnız Təsdiqlənmiş 5 Koda Endirildi (13.11.2026)
+
+İstifadəçi: *"onlar mende de yoxdur. bizde 6 fayl var ve bizde yalniz secimde
+onlari gosterek,o biriler islemir"* — SAR/TFR real sxemləri nə bizdə, nə
+istifadəçidə var. Yuxarıdakı "Fayl Fərqliliyi" düzəlişindən sonra bu məntiqi
+nəticə: "Məlumatın növü" (`GoamlHesabatNovu`, 16 dəyər) dropdown-unda operator
+yalnız real sxemi TƏSDİQLƏNMİŞ kodları görməlidir, qalanları seçə bilməməlidir.
+
+**Yeni `GoamlHesabatNovuExtensions.SxemHazirdir()`** — 16 koddan YALNIZ **5**-i
+`true` qaytarır: **Ctr, Etr, Blr, Pep, Qht**. Hər birinin TƏSDİQ mənbəyi AYRI:
+- `Ctr`/`Etr`/`Pep` — adın ÖZÜ real `reportType` adı ilə EYNİDİR (CTR=1,
+  ETR=2, PEP=4);
+- `Blr` — CANLI export testi ilə TƏSDİQLƏNİB (nəticə `reportType:8`=HRZ
+  qayıtdı — "BLR" AYSEL-in daxili termini idi, real portalda HEÇ belə ad YOXDUR);
+- `Qht` — NGR-in (reportType=3) öz `organizationType` seçiminin "QHT" dəyəri
+  ilə adı üst-üstə düşür (bax yuxarı "QHT müəmması" bölməsi).
+
+**Qalan 11 kod** (`Aar, Aif, Fir, Fmr, Str, Tf, Tfr, Tpr1, Tpr2, Tpr3, Unr`)
+**GİZLƏDİLİR** — bunların heç biri real sxemlə TƏSDİQLƏNMƏYİB: `Tfr` adı
+`reportType=7` (TFR) ilə eynidir, amma elə BU report növünün real nümunəsi
+yoxdur (SAR=6 ilə birlikdə); qalanları (çoxu "şübhəli əməliyyat" alt-səbəbləri
+kimi görünür — AAR/FIR/FMR/STR/TF/UNR) ehtimal SAR(6)-ya düşür, amma
+TƏSDİQLƏNMƏYİB. ⚠️ **`Str` layihənin "defolt/əsas dəyər" kimi şərh olunan köhnə
+qeydinə baxmayaraq, dropdown-da HEÇ YERDƏ default seçilmirdi** (`Tesdiq.cshtml`-in
+GET action-u ReportCode-u heç vaxt əl ilə doldurmur) — ona görə bu kodu
+gizlətmək HEÇ bir mövcud default-u pozmadı.
+
+**Tətbiq — iki yer, TƏK mənbədən filtrlənir:**
+- `Tesdiq.cshtml` (`reportSecimler`) — operatorun namizədi TƏSDİQLƏYƏRKƏN
+  seçdiyi əsas dropdown.
+- `Export.cshtml` (ixracdan əvvəl "Məlumatın növü" FİLTRİ, istəyə bağlı) —
+  eyni qaydaya uyğunlaşdırıldı ki, iki ekran fərqli siyahı göstərməsin.
+
+⚠️ **Geriyə tətbiq olunmur, DB-yə TOXUNULMUR** — bu, SIRF görüntü (UI)
+filtridir. Əvvəllər (bu düzəlişdən əvvəl) gizlədilən 11 koddan biri ilə artıq
+təsdiqlənmiş bir qeyd varsa (test məqsədilə), o qeyd DƏYİŞMİR, Export-un
+`HeaderZenginlesdirAsync`-i onsuz da bu kodları `reportType is not (3 or 4
+or 8)` şərti ilə sakitcə "sadə header" kimi işləyir (xəta vermir) — yalnız
+Export-un öz filtr-dropdown-unda həmin KONKRET kodu seçə bilməzsən, "—
+Hamısı —" seçimi onu yenə də əhatə edir.
+
+**Qayda:** yeni kod/sxem tapılanda (SAR/TFR nümunəsi gələndə, ya da qalan
+kodların hansı `reportType`-ə getdiyi canlı Oracle-da yoxlananda) YALNIZ
+`SxemHazirdir()`-ə əlavə et — iki dropdown da avtomatik yenilənəcək, başqa
+heç bir yerə toxunmağa ehtiyac yoxdur.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı hər üç fayl üçün ayrıca skriptlə, `@using FinNex.Domain.
+Entities.Goaml`-in hər iki `.cshtml`-də onsuz da mövcud olduğu təsdiqləndi —
+yeni `using` əlavə etmək lazım olmadı). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real brauzerdə yoxlamalıdır: "Təsdiqlə" formasındaki
+"Məlumatın növü" dropdown-unda indi YALNIZ 5 seçimin (CTR/ETR/BLR/PEP/QHT)
+olduğunu, Export səhifəsindəki filtrin də eyni 5 seçimi göstərdiyini.

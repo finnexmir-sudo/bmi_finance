@@ -149,6 +149,33 @@ namespace FinNex.Domain.Entities.Goaml
             _ => n.ToString().ToUpperInvariant(),
         };
 
+        /// <summary>
+        /// 13.11.2026 — İstifadəçi: "bizde 6 fayl var ve bizde yalniz secimde
+        /// onlari gosterek,o biriler islemir". Bu, hansı REPORT_CODE-un Oracle
+        /// `malumatin_novu` vasitəsilə hansı real goAML `reportType`-ə
+        /// tərcümə olunduğu TƏSDİQLƏNİB VƏ həmin `reportType`-in sxemi artıq
+        /// bizdə VAR (CTR=1, ETR=2, NGR=3, PEP=4, HRZ=8, BCR=9 — 6 real
+        /// nümunə ilə yoxlanılıb, bax CLAUDE.md "Fayl Fərqliliyi" bölməsi).
+        /// SAR(6)/TFR(7)-nin real nümunəsi HƏLƏ YOXDUR (nə bizdə, nə
+        /// istifadəçidə) — qalan kodlar da (ehtimal onlardan birinə düşür,
+        /// amma TƏSDİQLƏNMƏYİB) "Məlumatın növü" seçimində GÖSTƏRİLMİR.
+        ///
+        /// Mənbə (hər biri üçün AYRI əsas):
+        /// - Ctr/Etr/Pep — adın ÖZÜ real `reportType` adı ilə EYNİDİR;
+        /// - Blr — CANLI export testi ilə TƏSDİQLƏNİB (nəticə reportType:8=HRZ
+        ///   qayıtdı — "BLR" AYSEL-in daxili termini idi, real portalda yoxdur);
+        /// - Qht — NGR-in (reportType=3) öz "organizationType" seçiminin
+        ///   "QHT" dəyəri ilə adı üst-üstə düşür (bax "QHT müəmması" bölməsi).
+        ///
+        /// Yeni bir kodun real sxemi tapılanda (SAR/TFR nümunəsi gələndə, ya
+        /// da qalan kodların hansı reportType-ə getdiyi Oracle-da canlı
+        /// yoxlananda) BURAYA əlavə et — başqa heç nə dəyişmə, HƏR İKİ dropdown
+        /// (Tesdiq.cshtml + Export.cshtml) bu metoda görə avtomatik yenilənir.
+        /// </summary>
+        public static bool SxemHazirdir(this GoamlHesabatNovu n) => n is
+            GoamlHesabatNovu.Ctr or GoamlHesabatNovu.Etr or GoamlHesabatNovu.Blr
+            or GoamlHesabatNovu.Pep or GoamlHesabatNovu.Qht;
+
         /// <summary>İnsan-oxunan qısa izah — "Tesdiq" formasındakı dropdown üçün
         /// (eyni mətn yuxarıdakı XML şərhlərindədir, təkrar yazılmasın deyə burda
         /// TƏK yerdə saxlanılır).</summary>
