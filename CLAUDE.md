@@ -11147,3 +11147,76 @@ TƏSDİQLƏNDİ, dəyişiklik lazım deyil.** Gələcəkdə QHT/PEP/BLR header-
 zənginləşdirməsini (bax yuxarı, "Risk" üçün sənədləşmiş boşluq) qurarkən
 AYSEL-in öz kodunun işlətdiyi `r_emitent_benefisiar` YOX, **`odb.emitent_
 benefisiar`** işlədilməlidir — ikinci bir cədvələ/view-ə EHTİYAC YOXDUR.
+
+## GOAML — PEP/BLR Header-Zənginləşdirməsi Portlandı (13.11.2026)
+
+İstifadəçi: *"hər iki json faylı tam dəqiq hazırlanması üçün işləri gör"* —
+yuxarıdakı "jsonlar fərqlidir" araşdırmasının nəticəsi olaraq tapılan boşluq
+(header-in QHT/PEP/BLR qollarında əlavə, geniş müştəri-profili bloku, bax
+yuxarı "Export to JSON" bölmələrindəki qeyd) indi PORT EDİLDİ.
+
+**Mənbə:** `docs/sql/goaml/97_Goaml_JSON_MMX_IN_Tam_Metn.sql`, sətir 854-1008
+— AYSEL-in öz `JSON_MMX_IN`-inin PEP (892-926) və BLR (973-1007) qolları,
+**field-by-field, NVL zənciri qorunaraq** (iki qolun eyni görünən sahələri —
+məs. `countryOfRegistration` — FƏRQLİ prioritetli NVL zəncirinə malikdir,
+PEP: `fizik → Nationality1`, BLR: `Nationality1 → emitent → fizik` — ikisi
+QARIŞDIRILMADAN ayrı-ayrı transkript edildi).
+
+**Yeni Oracle sorğuları (hamısı YALNIZ-OXU, `GoamlService.cs`):**
+`odb.fiziki_shexs` (REGNOM+FIN **və** FIN-yalnız — "cif" elə eyni cədvəldir,
+FIN-only sorğu), `odb.pv_regnom_all` (RISKLER/INN_REGNOM/FIZIK/YURIK/
+PREDPRINIMATEL), `odb.imza_huquqi_olan_shexsler` (YENİ, SIG-in əsas KYC
+sorğusundan FƏRQLİ sahələrlə — gəlir/vəzifə/AML şərh), `odb.emitent_
+benefisiar` (PEP bayraqları, `EmitentKycAsync`-dən AYRI, kiçik sorğu),
+`odb.r_types_of_docume(...)` (Oracle funksiyasının ÖZÜ canlı çağırılır,
+daxili məntiqi TƏXMİN EDİLMƏDİ).
+
+**`GoamlJsonHeaderDto`-ya ~28 YENİ NULLABLE sahə** əlavə olundu
+(individualPerson, tin, customerRiskDegree, city, workplace, hrzCountry və
+s.) — `JsonIxracAsync`-in serializer-i `DefaultIgnoreCondition =
+WhenWritingNull` ilə quruldu ki, CTR və s. tipli hesabatlarda bu sahələr
+JSON-a HEÇ YAZILMASIN (əvvəlki sadə header formatı qorunur).
+
+⚠️ **QHT qolu (882-888) PORT EDİLMƏYİB** — `huquqi_shexs`-dəki `registrac_
+nomer_k` açarının mənbəyi (GOAML_CLIENTS-in bizim 124-sütunlu güzgüsündə bu
+adda sütun YOXDUR) tapılmayıb. QHT seçilsə header yalnız ümumi sendDate/
+reportType/reportReason-u daşımağa davam edir.
+
+⚠️ **`v_PV_HUQUQI` (odb.huquqi_shexs) fallback-ları SKİP EDİLİB** (eyni səbəb —
+`registrac_nomer_k`) — PEP/BLR-in hər ikisində bu, bir neçə kandidatlı NVL
+zəncirinin YALNIZ BİRİDİR (adətən son, ehtiyat kandidat), qalan kandidatlar
+(fiziki_shexs/imza_huquqi_olan_shexsler/emitent/cif) onsuz da sorğulanır —
+nəticə demək olar tamdır, yalnız NADİR halda (yuxarıdakı mənbələrin HEÇ
+BİRİNDƏ olmayan, YALNIZ hüquqi şəxsin öz qeydiyyat tarixi/AML-şərhi) bəzi
+tarix/qeyd sahələri boş qala bilər.
+
+**Riyazi/məntiqi dəqiqlik üçün AYRILAN detallar:**
+- `customerRiskDegree`: PEP yalnız `v_REGNUMBER.Riskler`-dən (3→0,2→1,1→2);
+  BLR isə ƏVVƏLCƏ "kassa hesabı"nın (DEBET+KREDIT prefiksi `1005010060`/
+  `1006010050`) öz CIF-inin (emitent-in `E_PINCODE`-dən tapılan fiziki_shexs
+  sətri) risk dərəcəsinə baxır, YALNIZ o yoxdursa adi dəyərə (PEP-in
+  işlətdiyi) qayıdır — TƏRS prioritet, QARIŞDIRILMAYIB.
+- `typeOfConnectionToPep` (PEP) prioriteti: `0` (siyasi xadim DEYİL/yerli)
+  → `2` (ailə üzvü) → `1` (xarici) — AYSEL-in öz sıra MƏNTİQİ (0 ən geniş
+  şərtlə qalib gəlir) birə-bir saxlanıldı.
+- `individualPerson`/`typeOfConnectionToHrz` (BLR) HƏR İKİ report_code üçün
+  **unconditional** hesablanır (AYSEL-in özündə də if/elsif-dən KƏNARDADIR),
+  YALNIZ BLR-in output-unda İSTİFADƏ OLUNUR — PEP-ə yazılmır, çünki PEP-in
+  öz nümunə sxemində bu iki sahə yoxdur.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Export to file"
+çağırışlarına təsir edir, əvvəllər ixrac edilmiş fayllar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in əlavə/silinən sətirləri ayrıca
+ölçülərək, HƏR DVal/ToDecimal/ToLong/TarixiParseEt çağırışının Oracle sütun
+adı ilə SQL-dəki `select` siyahısı bir-bir tutuşduruldu, entity sahə adları —
+`RegistracNomer`/`Snn`/`SenderIdType/Serial/Number`/`SigAdi/AtasininAdi/
+Soyadi`/`SigVetendasligi`/`SigOlke`/`CandidateFilialNumber`/`CandidateRecNum`
+— `GoamlEmeliyyat.cs`-dən bir-bir təsdiqləndi). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: PEP ReportCode-u
+ilə təsdiqlənib ixrac edilən bir qeydin header-ində `tin`/`city`/`workplace`/
+`fullName` və s. sahələrin doldurulduğunu, CTR kimi sadə bir ReportCode-da isə
+bu sahələrin JSON-da HEÇ GÖRÜNMƏDİYİNİ (əvvəlki kimi sadə header) təsdiqləməli
+— əgər mümkündürsə, ixrac edilən faylı AYSEL-in öz nümunəsi ilə yenidən
+sahə-sahə tutuşdurmalıdır (bax yuxarı, istifadəçinin göndərdiyi "risk.json").

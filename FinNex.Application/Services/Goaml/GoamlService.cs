@@ -1201,6 +1201,390 @@ namespace FinNex.Application.Services.Goaml
             string.IsNullOrEmpty(xam) ? xam : (xam.Length <= maxUzunluq ? xam : xam.Substring(0, maxUzunluq));
 
         // ════════════════════════════════════════════════════════════════════
+        // PEP/BLR header-zənginləşdirməsi (13.11.2026) — `docs/sql/goaml/
+        // 97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-in sətir 854-1008-dəki PEP/BLR
+        // qollarının C# portu. Mənbə cədvəllər: `odb.fiziki_shexs`,
+        // `odb.imza_huquqi_olan_shexsler`, `odb.pv_regnom_all`,
+        // `odb.emitent_benefisiar` (prefikssiz — `r_emitent_benefisiar` YOX,
+        // 13.11.2026-da canlı Oracle + AYSEL-in öz data-daxiletmə ekranı ilə
+        // TƏSDİQLƏNDİ, bax CLAUDE.md).
+        //
+        // ⚠️ QHT qolu (sətir 882-888) PORT EDİLMƏYİB — `huquqi_shexs`-dəki
+        // `registrac_nomer_k` açarının mənbəyi (GOAML_CLIENTS-də bu adda sütun
+        // YOXDUR) tapılmayıb. QHT seçiləndə header yalnız ümumi sendDate/
+        // reportType/reportReason-u daşıyır.
+        //
+        // ⚠️ `v_PV_HUQUQI` (odb.huquqi_shexs) fallback-ları SKİP EDİLİB —
+        // PEP/BLR-in hər ikisində bu, YALNIZ bir NVL zəncirinin bir neçə
+        // kandidatından biridir (həmişə sonuncu/əlavə ehtiyat), qalan
+        // kandidatlar (fiziki_shexs/imza_huquqi_olan_shexsler/emitent) onsuz
+        // da sorğulanır — açarının mənbəyi tapılmayan `registrac_nomer_k`
+        // üzündən bu TƏK sorğu buraxılıb, nəticə az qala tam, nadir hallarda
+        // (yalnız hüquqi şəxs qeydiyyat tarixi digər heç bir mənbədə yoxdursa)
+        // bəzi tarix/qeyd sahələri boş qala bilər.
+        // ════════════════════════════════════════════════════════════════════
+
+        private sealed class GoamlFizikiShexsSetiri
+        {
+            public string? Regnom;
+            public string? Vetendashligi;
+            public string? YashadigiOlke;
+            public string? Sheher;
+            public string? PochtIndeksi;
+            public string? KuchaVeNomresi;
+            public decimal? AyliqGelir;
+            public string? Vezifesi;
+            public string? IshYerininAdi;
+            public DateTime? VezifeyeTeyinOlunmaTarixi;
+            public string? AmlComment;
+            public long? PoliticalLocal;
+            public long? PoliticalForeign;
+            public string? TaxActivityCode;
+            public DateTime? CustomerCreationDate;
+        }
+
+        private sealed class GoamlImzaHuquqGenisSetiri
+        {
+            public string? Sheher;
+            public string? PochtIndeksi;
+            public string? KuchaVeNomresi;
+            public decimal? AyliqGelir;
+            public string? Vezifesi;
+            public string? GelirMenbeyi;
+            public string? AmlComment;
+            public long? PoliticalLocal;
+            public long? PoliticalForeign;
+            public DateTime? ImzaBashlama;
+        }
+
+        private sealed class GoamlPvRegnomSetiri
+        {
+            public long? Riskler;
+            public string? InnRegnom;
+            public long? Fizik;
+            public long? Yurik;
+            public long? Predprinimatel;
+        }
+
+        private sealed class GoamlEmitentPepBayraqlari
+        {
+            public long? SiyasiXadimDeyil;
+            public long? SiyasiXadiminAileUzvleri;
+            public string? Pincode;
+            public string? Vetendashligi;
+        }
+
+        private async Task<GoamlFizikiShexsSetiri?> FizikiShexsRegnomFinAsync(string? regnom, string? fin, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(regnom) || string.IsNullOrWhiteSpace(fin)) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select regnom, vetendashligi, yashadigi_olke, sheher, pocht_indeksi, " +
+                    "kuchenin_adi_ve_nomresi, ayliq_gelir, vezifesi, ish_yerinin_adi, " +
+                    "pf_vezifeyeteyinolunmatarixi, aml_comment, political_local, political_foreign, " +
+                    "taxactivitycode, customercreationdate from odb.fiziki_shexs " +
+                    $"where regnom = '{Tehlukesiz(regnom)}' and fin = '{Tehlukesiz(fin)}'", 1, ct);
+                return setirler.Count == 0 ? null : FizikiShexsiOxu(setirler[0]);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — fiziki_shexs (regnom+fin) sorğusu uğursuz oldu");
+                return null;
+            }
+        }
+
+        private async Task<GoamlFizikiShexsSetiri?> FizikiShexsFinAsync(string? fin, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(fin)) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select regnom, vetendashligi, yashadigi_olke, sheher, pocht_indeksi, " +
+                    "kuchenin_adi_ve_nomresi, ayliq_gelir, vezifesi, ish_yerinin_adi, " +
+                    "pf_vezifeyeteyinolunmatarixi, aml_comment, political_local, political_foreign, " +
+                    "taxactivitycode, customercreationdate from odb.fiziki_shexs " +
+                    $"where fin = '{Tehlukesiz(fin)}'", 1, ct);
+                return setirler.Count == 0 ? null : FizikiShexsiOxu(setirler[0]);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — fiziki_shexs (fin) sorğusu uğursuz oldu");
+                return null;
+            }
+        }
+
+        private static GoamlFizikiShexsSetiri FizikiShexsiOxu(Dictionary<string, object?> r) => new()
+        {
+            Regnom = DVal(r, "REGNOM") as string,
+            Vetendashligi = DVal(r, "VETENDASHLIGI") as string,
+            YashadigiOlke = DVal(r, "YASHADIGI_OLKE") as string,
+            Sheher = DVal(r, "SHEHER") as string,
+            PochtIndeksi = DVal(r, "POCHT_INDEKSI") as string,
+            KuchaVeNomresi = DVal(r, "KUCHENIN_ADI_VE_NOMRESI") as string,
+            AyliqGelir = ToDecimal(DVal(r, "AYLIQ_GELIR")),
+            Vezifesi = DVal(r, "VEZIFESI") as string,
+            IshYerininAdi = DVal(r, "ISH_YERININ_ADI") as string,
+            VezifeyeTeyinOlunmaTarixi = TarixiParseEt(DVal(r, "PF_VEZIFEYETEYINOLUNMATARIXI")),
+            AmlComment = DVal(r, "AML_COMMENT") as string,
+            PoliticalLocal = ToLong(DVal(r, "POLITICAL_LOCAL")),
+            PoliticalForeign = ToLong(DVal(r, "POLITICAL_FOREIGN")),
+            TaxActivityCode = DVal(r, "TAXACTIVITYCODE") as string,
+            CustomerCreationDate = TarixiParseEt(DVal(r, "CUSTOMERCREATIONDATE")),
+        };
+
+        private async Task<GoamlImzaHuquqGenisSetiri?> ImzaHuquqGenisAsync(string? regnom, string? fin, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(regnom) || string.IsNullOrWhiteSpace(fin)) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select sheher, pocht_indeksi, kuchenin_adi_ve_nomresi, ayliq_gelir, vezifesi, " +
+                    "gelir_menbeyi, aml_comment, political_local, political_foreign, imza_bashlama " +
+                    "from odb.imza_huquqi_olan_shexsler " +
+                    $"where regnom = '{Tehlukesiz(regnom)}' and fin = '{Tehlukesiz(fin)}'", 1, ct);
+                if (setirler.Count == 0) return null;
+                var r = setirler[0];
+                return new GoamlImzaHuquqGenisSetiri
+                {
+                    Sheher = DVal(r, "SHEHER") as string,
+                    PochtIndeksi = DVal(r, "POCHT_INDEKSI") as string,
+                    KuchaVeNomresi = DVal(r, "KUCHENIN_ADI_VE_NOMRESI") as string,
+                    AyliqGelir = ToDecimal(DVal(r, "AYLIQ_GELIR")),
+                    Vezifesi = DVal(r, "VEZIFESI") as string,
+                    GelirMenbeyi = DVal(r, "GELIR_MENBEYI") as string,
+                    AmlComment = DVal(r, "AML_COMMENT") as string,
+                    PoliticalLocal = ToLong(DVal(r, "POLITICAL_LOCAL")),
+                    PoliticalForeign = ToLong(DVal(r, "POLITICAL_FOREIGN")),
+                    ImzaBashlama = TarixiParseEt(DVal(r, "IMZA_BASHLAMA")),
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — imza_huquqi_olan_shexsler (genış) sorğusu uğursuz oldu");
+                return null;
+            }
+        }
+
+        private async Task<GoamlPvRegnomSetiri?> PvRegnomAllAsync(int filial, string? regnom, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(regnom)) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select riskler, inn_regnom, fizik, yurik, predprinimatel from odb.pv_regnom_all " +
+                    $"where filialnumber = {filial} and regnom = '{Tehlukesiz(regnom)}'", 1, ct);
+                if (setirler.Count == 0) return null;
+                var r = setirler[0];
+                return new GoamlPvRegnomSetiri
+                {
+                    Riskler = ToLong(DVal(r, "RISKLER")),
+                    InnRegnom = DVal(r, "INN_REGNOM") as string,
+                    Fizik = ToLong(DVal(r, "FIZIK")),
+                    Yurik = ToLong(DVal(r, "YURIK")),
+                    Predprinimatel = ToLong(DVal(r, "PREDPRINIMATEL")),
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — pv_regnom_all sorğusu uğursuz oldu (filial={Filial}, regnom={Regnom})", filial, regnom);
+                return null;
+            }
+        }
+
+        private async Task<GoamlEmitentPepBayraqlari?> EmitentPepBayraqlariAsync(long recNum, CancellationToken ct)
+        {
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select e_siyasi_xadim_deyil, e_siyasi_xadimin_aile_uzvleri, e_pincode, e_vetendashligi " +
+                    $"from odb.emitent_benefisiar where doc_id = {recNum}", 1, ct);
+                if (setirler.Count == 0) return null;
+                var r = setirler[0];
+                return new GoamlEmitentPepBayraqlari
+                {
+                    SiyasiXadimDeyil = ToLong(DVal(r, "E_SIYASI_XADIM_DEYIL")),
+                    SiyasiXadiminAileUzvleri = ToLong(DVal(r, "E_SIYASI_XADIMIN_AILE_UZVLERI")),
+                    Pincode = DVal(r, "E_PINCODE") as string,
+                    Vetendashligi = DVal(r, "E_VETENDASHLIGI") as string,
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — emitent_benefisiar (PEP bayraqları) sorğusu uğursuz oldu (recNum={RecNum})", recNum);
+                return null;
+            }
+        }
+
+        /// <summary>`odb.r_types_of_docume(sender_id_type, sender_id_serial)` —
+        /// AYSEL-in öz Oracle funksiyasını CANLI çağırır (yenidən yazmırıq,
+        /// daxili məntiqini təxmin etmə riski olmasın).</summary>
+        private async Task<int?> IdentityTypeAsync(string? senderIdType, string? senderIdSerial, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(senderIdType)) return null;
+            try
+            {
+                var tip = Tehlukesiz(senderIdType);
+                var seriya = string.IsNullOrWhiteSpace(senderIdSerial) ? "" : Tehlukesiz(senderIdSerial);
+                var setirler = await _oracle.SelectAsync(
+                    $"select odb.r_types_of_docume('{tip}', '{seriya}') as deyer from dual", 1, ct);
+                if (setirler.Count == 0) return null;
+                var deyer = DVal(setirler[0], "DEYER");
+                return deyer == null ? null : (int)ToLong(deyer);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — r_types_of_docume() çağırışı uğursuz oldu");
+                return null;
+            }
+        }
+
+        /// <summary>Oracle-un `replace(trim(replace(val,'"')),'/')` naxışının C# qarşılığı
+        /// — dırnaq/slash işarələrini atır, JSON-u sındırmasın və mənalı görünsün deyə.</summary>
+        private static string? TemizMetn(string? xam) =>
+            string.IsNullOrWhiteSpace(xam) ? xam : xam.Replace("\"", "").Trim().Replace("/", "");
+
+        private static string? HeaderTarixYaz(DateTime? tarix) =>
+            tarix?.ToString("yyyy-MM-ddTHH:mm:ss.001Z", CultureInfo.InvariantCulture);
+
+        private async Task HeaderZenginlesdirAsync(GoamlEmeliyyat e, string reportCodeKod, GoamlJsonHeaderDto header, CancellationToken ct)
+        {
+            if (reportCodeKod != "PEP" && reportCodeKod != "BLR") return;
+
+            var fizik = await FizikiShexsRegnomFinAsync(e.RegistracNomer, e.Snn, ct);
+            var imzaHuquq = await ImzaHuquqGenisAsync(e.RegistracNomer, e.Snn, ct);
+            var regnumber = await PvRegnomAllAsync(e.CandidateFilialNumber, e.RegistracNomer, ct);
+            var emitent = await EmitentPepBayraqlariAsync(e.CandidateRecNum, ct);
+            var identityType = await IdentityTypeAsync(e.SenderIdType, e.SenderIdSerial, ct);
+
+            // v_customerRiskDegree — sətir 854-860, həm PEP, həm BLR-in "cif
+            // tapılmasa" fallback-ı üçün ortaqdır.
+            int? customerRiskDegree = regnumber?.Riskler switch
+            {
+                3 => 0,
+                2 => 1,
+                1 => 2,
+                _ => (int?)null,
+            };
+
+            // v_typeOfConnectionToPep — sətir 558-566.
+            int? typeOfConnectionToPep = null;
+            if (fizik?.PoliticalLocal == 1 || imzaHuquq?.PoliticalLocal == 1 || emitent?.SiyasiXadimDeyil == 1)
+                typeOfConnectionToPep = 0;
+            else if (emitent?.SiyasiXadiminAileUzvleri == 1)
+                typeOfConnectionToPep = 2;
+            else if (fizik?.PoliticalForeign == 1 || imzaHuquq?.PoliticalForeign == 1)
+                typeOfConnectionToPep = 1;
+
+            // v_individualPerson / v_typeOfConnectionToHrz — sətir 932-940.
+            var debetKreditQarisig = (Kes(e.Debet, 5) ?? "") + (Kes(e.Kredit, 5) ?? "");
+            var kassaHesabdir = debetKreditQarisig is "1005010060" or "1006010050";
+            bool? individualPerson = null;
+            int? typeOfConnectionToHrz = null;
+            if (regnumber?.Fizik == 1 || kassaHesabdir)
+            {
+                individualPerson = true;
+                typeOfConnectionToHrz = 1;
+            }
+            else if (regnumber?.Yurik == 1 || regnumber?.Predprinimatel == 1)
+            {
+                individualPerson = false;
+                typeOfConnectionToHrz = 11;
+            }
+
+            // "Kassa hesabı" olduqda emitent-in öz CIF-i (fiziki_shexs, FIN-only) —
+            // sətir 943-971. YALNIZ BLR-ə lazımdır.
+            GoamlFizikiShexsSetiri? cif = null;
+            int? customerRiskDegreeCif = null;
+            if (kassaHesabdir && !string.IsNullOrWhiteSpace(emitent?.Pincode))
+            {
+                cif = await FizikiShexsFinAsync(emitent!.Pincode, ct);
+                if (cif?.Regnom != null)
+                {
+                    var regnumberCif = await PvRegnomAllAsync(e.CandidateFilialNumber, cif!.Regnom, ct);
+                    customerRiskDegreeCif = regnumberCif?.Riskler switch
+                    {
+                        3 => 0,
+                        2 => 1,
+                        1 => 2,
+                        _ => (int?)null,
+                    };
+                }
+            }
+
+            var fullName = string.Join(" ", new[] { e.SigAdi, e.SigAtasininAdi, e.SigSoyadi }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+            if (reportCodeKod == "PEP")
+            {
+                // Sətir 892-926 — v_PV_HUQUQI YOXDUR, hamısı yuxarıdakı qaydaya uyğun.
+                header.Tin = regnumber?.InnRegnom;
+                header.CountryOfRegistration = fizik?.Vetendashligi ?? e.SigVetendasligi;
+                header.Citizenship = fizik?.Vetendashligi ?? e.SigVetendasligi;
+                header.IdentityType = identityType;
+                header.Serial = e.SenderIdSerial;
+                header.DocumentNumber = e.SenderIdNumber;
+                header.Fin = e.Snn;
+                header.CustomerRiskDegree = customerRiskDegree;
+                header.PepCountry = fizik?.Vetendashligi ?? e.SigVetendasligi;
+                header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
+                header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
+                header.City = fizik?.Sheher ?? imzaHuquq?.Sheher;
+                header.District = fizik?.PochtIndeksi ?? imzaHuquq?.PochtIndeksi;
+                header.Street = TemizMetn(fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi);
+                header.Home = header.Street;
+                header.Flat = "";
+                header.AverageMonthlyIncome = fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
+                header.Position = fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
+                var pepTarix = HeaderTarixYaz(fizik?.VezifeyeTeyinOlunmaTarixi ?? imzaHuquq?.ImzaBashlama);
+                header.PositionStartDate = pepTarix;
+                header.PositionEndDate = null; // AYSEL-in özündə də şərh içindədir, həmişə boş
+                header.BusinessStartDate = pepTarix;
+                header.BusinessEndDate = null;
+                header.Note = fizik?.AmlComment;
+                header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi);
+                header.TypeOfConnectionToPep = typeOfConnectionToPep;
+                header.FullName = fullName;
+                header.InfluentialPerson = fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
+                header.SofIncome = 0;
+                header.Institution = header.Workplace;
+                header.PoliticallyInfluentialPersonPositions = new List<int> { 11 };
+            }
+            else if (reportCodeKod == "BLR")
+            {
+                // Sətir 973-1007 — v_PV_HUQUQI fallback-ları SKİP edilib (bax yuxarı şərh).
+                header.IndividualPerson = individualPerson;
+                header.Tin = regnumber?.InnRegnom;
+                header.CountryOfRegistration = e.SigVetendasligi ?? emitent?.Vetendashligi ?? fizik?.Vetendashligi;
+                header.Citizenship = header.CountryOfRegistration;
+                header.IdentityType = identityType;
+                header.Serial = e.SenderIdSerial;
+                header.DocumentNumber = e.SenderIdNumber;
+                header.Fin = e.Snn;
+                header.SphereOfActivity = fizik?.TaxActivityCode;
+                header.CustomerRiskDegree = customerRiskDegreeCif ?? customerRiskDegree;
+                header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
+                header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
+                header.City = cif?.Sheher ?? fizik?.Sheher ?? imzaHuquq?.Sheher;
+                header.District = cif?.PochtIndeksi ?? fizik?.PochtIndeksi ?? imzaHuquq?.PochtIndeksi;
+                header.Street = TemizMetn(cif?.KuchaVeNomresi ?? fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi);
+                header.Home = header.Street;
+                header.Flat = "";
+                header.SofIncome = 0;
+                header.AverageMonthlyIncome = cif?.AyliqGelir ?? fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
+                header.Position = cif?.Vezifesi ?? fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
+                header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi);
+                header.BusinessStartDate = HeaderTarixYaz(cif?.CustomerCreationDate ?? fizik?.CustomerCreationDate ?? imzaHuquq?.ImzaBashlama);
+                header.BusinessEndDate = "";
+                header.Note = cif?.AmlComment ?? fizik?.AmlComment;
+                header.TypeOfConnectionToHrz = typeOfConnectionToHrz;
+                header.HrzCountry = e.SigVetendasligi ?? cif?.Vetendashligi ?? fizik?.Vetendashligi;
+                header.FullName = fullName;
+                header.IdNumber = cif?.Regnom ?? fizik?.Regnom;
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
         // GOAML — Export to JSON (#15, 12.11.2026)
         //
         // `docs/sql/goaml/97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-ın (AYSEL-in
@@ -1293,7 +1677,14 @@ namespace FinNex.Application.Services.Goaml
             }
 
             var json = System.Text.Json.JsonSerializer.Serialize(root,
-                new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                    // 13.11.2026 — PEP/BLR header-zənginləşdirməsinin nullable sahələri
+                    // (GoamlJsonHeaderDto) CTR və s. tipli hesabatlarda yazılmasın deyə.
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                });
 
             foreach (var e in setirler)
                 e.Status = GoamlEmeliyyatStatusu.IxracEdilib;
@@ -1322,6 +1713,8 @@ namespace FinNex.Application.Services.Goaml
                     ReportReason = mn?.reportReason ?? 0,
                 },
             };
+
+            await HeaderZenginlesdirAsync(e, reportCodeKod, report.Header, ct);
 
             var bloc = new GoamlJsonTransactionBlocDto
             {

@@ -73,12 +73,126 @@ namespace FinNex.Application.DTOs.Goaml
         [JsonPropertyName("reportReason")]
         public int ReportReason { get; set; }
 
-        // ⚠️ QHT/PEP/BLR-ə xas əlavə sahələr (tin, hrzCountry, customerRiskDegree
-        // və s.) QƏSDƏN DAXIL EDİLMƏYİB — bunlar ƏLAVƏ Oracle KYC/risk sorğuları
-        // (huquqi_shexs.REGISTRATION_NUMBER, pv_regnom_all.Riskler və s.) tələb
-        // edir, 12.11.2026-da hələ PORT EDİLMƏYİB (bax GoamlService.JsonIxracAsync
-        // başındakı qeyd). Report_code bu üçündürsə, header YALNIZ ÜMUMİ
-        // sendDate/reportType/reportReason-u daşıyır — tam goAML şablonu DEYİL.
+        // ═══════════════════════════════════════════════════════════════════
+        // PEP/BLR-ə xas header-zənginləşdirməsi (13.11.2026, `JSON_MMX_IN`-in
+        // sətir 892-1008-dəki qolları port edilib — bax `GoamlService.
+        // HeaderZenginlesdirAsync`). Hamısı NULLABLE: `JsonIxracAsync`-in
+        // serializer-i `WhenWritingNull` ilə qurulub, `reportCode` PEP/BLR
+        // olmayanda (CTR və s.) bu sahələrin heç biri JSON-a YAZILMIR —
+        // nümunə faylda (13.11.2026, istifadəçinin göndərdiyi "əməliyyat.json"
+        // vs "risk.json") görülən DƏQIQ fərq budur.
+        //
+        // ⚠️ QHT qolu (tin/tinDate/organizationType/note, sətir 882-888)
+        // PORT EDİLMƏYİB — `huquqi_shexs`-dəki `registrac_nomer_k` açarının
+        // mənbəyi (GOAML_CLIENTS-də bu adda sütun YOXDUR) tapılmayıb. QHT
+        // tipli hesabat seçilsə, header YALNIZ ÜMUMİ sendDate/reportType/
+        // reportReason-u daşıyar (əvvəlki kimi), bu sahələr boş qalar.
+        // ═══════════════════════════════════════════════════════════════════
+
+        [JsonPropertyName("individualPerson")]
+        public bool? IndividualPerson { get; set; }
+
+        [JsonPropertyName("tin")]
+        public string? Tin { get; set; }
+
+        [JsonPropertyName("countryOfRegistration")]
+        public string? CountryOfRegistration { get; set; }
+
+        [JsonPropertyName("citizenship")]
+        public string? Citizenship { get; set; }
+
+        [JsonPropertyName("identityType")]
+        public int? IdentityType { get; set; }
+
+        [JsonPropertyName("serial")]
+        public string? Serial { get; set; }
+
+        [JsonPropertyName("documentNumber")]
+        public string? DocumentNumber { get; set; }
+
+        [JsonPropertyName("fin")]
+        public string? Fin { get; set; }
+
+        [JsonPropertyName("sphereOfActivity")]
+        public string? SphereOfActivity { get; set; }
+
+        [JsonPropertyName("customerRiskDegree")]
+        public int? CustomerRiskDegree { get; set; }
+
+        [JsonPropertyName("pepCountry")]
+        public string? PepCountry { get; set; }
+
+        [JsonPropertyName("country")]
+        public string? Country { get; set; }
+
+        [JsonPropertyName("residency")]
+        public string? Residency { get; set; }
+
+        [JsonPropertyName("city")]
+        public string? City { get; set; }
+
+        [JsonPropertyName("district")]
+        public string? District { get; set; }
+
+        [JsonPropertyName("street")]
+        public string? Street { get; set; }
+
+        [JsonPropertyName("home")]
+        public string? Home { get; set; }
+
+        [JsonPropertyName("flat")]
+        public string? Flat { get; set; }
+
+        [JsonPropertyName("sofIncome")]
+        public decimal? SofIncome { get; set; }
+
+        [JsonPropertyName("averageMonthlyIncome")]
+        public decimal? AverageMonthlyIncome { get; set; }
+
+        [JsonPropertyName("position")]
+        public string? Position { get; set; }
+
+        [JsonPropertyName("positionStartDate")]
+        public string? PositionStartDate { get; set; }
+
+        [JsonPropertyName("positionEndDate")]
+        public string? PositionEndDate { get; set; }
+
+        [JsonPropertyName("businessStartDate")]
+        public string? BusinessStartDate { get; set; }
+
+        [JsonPropertyName("businessEndDate")]
+        public string? BusinessEndDate { get; set; }
+
+        [JsonPropertyName("note")]
+        public string? Note { get; set; }
+
+        [JsonPropertyName("workplace")]
+        public string? Workplace { get; set; }
+
+        [JsonPropertyName("typeOfConnectionToPep")]
+        public int? TypeOfConnectionToPep { get; set; }
+
+        [JsonPropertyName("fullName")]
+        public string? FullName { get; set; }
+
+        [JsonPropertyName("influentialPerson")]
+        public string? InfluentialPerson { get; set; }
+
+        [JsonPropertyName("institution")]
+        public string? Institution { get; set; }
+
+        [JsonPropertyName("politicallyInfluentialPersonPositions")]
+        public List<int>? PoliticallyInfluentialPersonPositions { get; set; }
+
+        [JsonPropertyName("typeOfConnectionToHrz")]
+        public int? TypeOfConnectionToHrz { get; set; }
+
+        [JsonPropertyName("hrzCountry")]
+        public string? HrzCountry { get; set; }
+
+        [JsonPropertyName("idNumber")]
+        public string? IdNumber { get; set; }
     }
 
     public class GoamlJsonTransactionBlocDto
