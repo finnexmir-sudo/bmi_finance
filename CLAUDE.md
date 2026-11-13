@@ -11114,3 +11114,36 @@ prefiksli 16 sahə — bir-bir tutuşduruldu). İstifadəçi Visual Studio-da
 (DOC_ID=RECNUM) real sətri olan bir namizəd aç → "Nümayəndənin" blokunun
 yaşıl banner ilə avtomatik dolduğunu, mövcud "Əlaqəli şəxslərdən seçin"
 dropdown-unun hələ işlək qaldığını təsdiqləməli.
+
+### `r_emitent_benefisiar` ARAŞDIRMASI BAĞLANDI — `emitent_benefisiar` (prefikssiz) KİFAYƏTDİR (13.11.2026)
+
+Yuxarıdakı "AYSEL-in `JSON_MMX_IN`-i PEP bayraqları üçün `r_emitent_benefisiar`
+(prefiksli) işlədir, bu bizim `emitent_benefisiar`-dan FƏRQLİDİRMİ?" sualı
+**canlı Oracle yoxlaması + AYSEL-in öz data-daxiletmə ekranı ilə BAĞLANDI**.
+
+`docs/sql/goaml/98_Goaml_Emitent_Benefisiar_R_Prefiks_Yoxlama.sql`-in
+nəticələri (istifadəçi, PL/SQL Developer-də):
+- **`R_EMITENT_BENEFISIAR` — VIEW-dir** (`all_views` sorğusu 1 sətir qaytardı),
+  `EMITENT_BENEFISIAR` isə TABLE.
+- Sütun fərqi **cəmi 2-dir**: `B_COMPLIANCE_STATUS`, `B_FAKTIKI_UNVAN` — bunlar
+  YALNIZ `EMITENT_BENEFISIAR`-dadır, `R_`-də YOXDUR.
+- PEP bayraqları (`E_SIYASI_XADIM_DEYIL`, `E_SIYASI_XADIMIN_AILE_UZVLERI`,
+  `E_PINCODE`, `E_VETENDASHLIGI`) **HƏR İKİSİNDƏ** var.
+
+**Qəti sübut — AYSEL-in ÖZ data-daxiletmə ekranı.** İstifadəçi AYSEL-in
+"EMİTENT-BENEFİSİAR & TRANSFER DOCUMENTS" Oracle Forms pəncərəsində (bu,
+operatorun Emitent/Benefisiar KYC-ni ƏL İLƏ yazıb SAXLADIĞI YAZILA BİLƏN
+forma, hesabat/görüntü DEYİL) bir item-in Properties dialoqunu açdı —
+**`Canvas = EMITENT_BENEFISIAR`**. Yəni real yazma əməliyyatı (operatorun
+daxil etdiyi hər KYC sahəsi) birbaşa `odb.emitent_benefisiar`-a gedir.
+
+**Nəticə: `R_EMITENT_BENEFISIAR` çox güman `EMITENT_BENEFISIAR` üzərində
+qurulmuş, 2 sütun əskik, sadə bir REPORTING VIEW-dir** (prefiksin "report"
+mənasını daşıdığı, layihədə artıq tanış bir naxış). Bizə lazım olan HƏR sütun
+(PEP bayraqları daxil) əsl cədvəldə onsuz da var.
+
+**Qayda: `GoamlService.EmitentKycAsync`-in `odb.emitent_benefisiar` seçimi
+TƏSDİQLƏNDİ, dəyişiklik lazım deyil.** Gələcəkdə QHT/PEP/BLR header-
+zənginləşdirməsini (bax yuxarı, "Risk" üçün sənədləşmiş boşluq) qurarkən
+AYSEL-in öz kodunun işlətdiyi `r_emitent_benefisiar` YOX, **`odb.emitent_
+benefisiar`** işlədilməlidir — ikinci bir cədvələ/view-ə EHTİYAC YOXDUR.
