@@ -11080,37 +11080,37 @@ sorğu ilə sınanmadı (artıq sübut olunduğu üçün).
   görə controller bunları formaya YAZMIR, data itmir, sadəcə hazırda
   görünən yeri yoxdur.
 
-### ⚠️ AÇIQ QALAN, İSTİFADƏÇİYƏ SORUŞULMUŞ SUALLAR (bu YAZI anında HƏLƏ CAVABSIZ)
+### Hər İki Sual CAVABLANDI (13.11.2026)
 
-1. **İstifadəçi "json fayllarını qatışdırmısan, Riskdə Əməliyyatın faylını
-   doldurursan, Əməliyyatda Riskin [faylını]" dedi** — bu sessiyada
-   `NamizedAxtarAsync`/`RiskNamizedAxtarAsync`-ın `90_Goaml_OracleSorgular.sql`/
-   `91_Goaml_Risk_OracleSorgular.sql`-ə DOĞRU bağlandığı (SorguAdi
-   etiketləri VƏ hər iki faylın WHERE-mətni) yoxlanıldı, `JsonIxracAsync`-in
-   per-sətir export döngüsündə də paylaşılan/köhnəlmiş dəyişən TAPILMADI.
-   **Konkret HANSI iki şeyin (fayl, export, yoxsa Tesdiq ekranı) qarışdığı
-   HƏLƏ İSTİFADƏÇİDƏN DƏQİQLƏŞDİRİLMƏYİB** — ehtimal GUESS EDİLMƏDİ, sual
-   olaraq qaldı.
-2. **`odb.emitent_benefisiar` (bu bölmənin mənbəyi) ilə `odb.
-   r_emitent_benefisiar` (11.11.2026-da `91_Goaml_Risk_OracleSorgular.sql`-ə
-   yazılmış risk-kriteriyasının İÇİNDƏ, `b_vetendashligi`/`e_vetendashligi`
-   üçün istifadə olunan ayrı ad, "r_" prefiksli) EYNİ CƏDVƏLDİRMİ, yoxsa
-   AYRI (məs. "report" prefiksli bir görüntü) cədvəldir?** Bu sualın
-   cavabı gələnə qədər `EmitentKycAsync`-in `odb.emitent_benefisiar`
-   (prefikssiz, istifadəçinin BU GÜN göndərdiyi `DESC` nəticəsinin
-   mənbəyi) işlətməsi DOĞRU qəbul edilib, AMMA Risk tabının öz sorğusunun
-   NİYƏ fərqli adlı bir cədvəl işlətdiyi araşdırılmayıb.
+1. **"JSON fayllarını qatışdırmısan" şikayəti — BUG DEYİL, DİZAYNIN ÖZÜDÜR.**
+   İstifadəçi özü yoxlayıb təsdiqlədi: *"men yoxladim, bizim risk cixan fayl
+   goamldeki emeliyyatdan cixan fayl ile eynidir"* — Risk tabından VƏ
+   Əməliyyatlar tabından ixrac olunan fayllar HƏQİQƏTƏN eynidir, çünki bu,
+   artıq sənədləşmiş memarlığın dəqiq nəticəsidir: Risk VƏ Əməliyyatlar
+   YALNIZ İKİ MÜSTƏQİL NAMİZƏD-AXTARIŞ mexanizmidir (`NamizedAxtarAsync`/
+   `RiskNamizedAxtarAsync`, fərqli Oracle sorğuları) — hər ikisinin
+   "Təsdiqlə" düyməsi EYNİ `EmeliyyatlarController.Tesdiq`-ə, EYNİ
+   `GoamlEmeliyyat` cədvəlinə yazır, EYNİ `JsonIxracAsync`-dən ixrac olunur
+   (bax yuxarı, "Risk" tabının öz bölməsi: *"Təsdiqlə/Siyahi/Detal/Sil
+   TƏKRARLANMAYIB — Risk-in namizədi `GoamlNamizedSetirDto` ilə EYNİ
+   formada olduğu üçün"*). Yəni "eyni fayl çıxır" — İKİ AYRI mənbədən
+   tapılmış namizədlər TƏSDİQLƏNDİKDƏN SONRA artıq EYNİ, TƏK ixrac
+   borusundan keçdiyi üçün — GÖZLƏNİL�ən VƏ DÜZGÜN nəticədir, "qarışıqlıq"
+   DEYİL. Heç bir kod dəyişikliyi lazım deyil.
+2. **CON (Nümayəndə) mənbəyi — `emitent_benefisiar` TƏSDİQLƏNDİ.**
+   İstifadəçi: *"emitent_benefisiar esas gotur"* — 13.11.2026-da yazılan
+   `EmitentKycAsync` artıq bu cədvəli (prefikssiz) işlədir, DƏYİŞİKLİK
+   LAZIM DEYİL. `odb.r_emitent_benefisiar` (Risk-in öz namizəd-kriteriyasında,
+   vətəndaşlıq yoxlaması üçün işlənən, "r_" prefiksli ayrı ad) HƏLƏ DƏ
+   araşdırılmayıb, AMMA bu, AYRI bir istehlakçıdır (Risk-in namizəd SEÇİMİ,
+   CON-un KYC DOLDURULMASI YOX) — istifadəçi bunu sorğulamadı, ona görə
+   TOXUNULMADI.
 
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
 yoxlanıldı** (mötərizə balansı `git diff`-in əlavə/silinən sətirləri ayrıca
 ölçülərək, DTO↔servis↔controller↔view dörd qatının sahə adları — Con*
-prefiksli 16 sahə — bir-bir tutuşduruldu). **İstifadəçinin yuxarıdakı iki
-sualı cavablandırmadan bu dəyişiklik PRODUCTION-da real bir namizədlə
-yoxlanmamalıdır** — `r_emitent_benefisiar`/`emitent_benefisiar` fərqi
-aydınlaşmayana qədər, CON-un tapdığı adın HƏQİQƏTƏN həmin əməliyyatın
-Emitentinə aid olduğuna zəmanət tam deyil. İstifadəçi Visual Studio-da
-**Rebuild All** ilə, sonra YUXARIDAKI SUALLARA CAVAB VERDİKDƏN SONRA real
-ssenari ilə yoxlamalıdır: `emitent_benefisiar`-da (DOC_ID=RECNUM) real
-sətri olan bir namizəd aç → "Nümayəndənin" blokunun yaşıl banner ilə
-avtomatik dolduğunu, mövcud "Əlaqəli şəxslərdən seçin" dropdown-unun hələ
-işlək qaldığını təsdiqləməli.
+prefiksli 16 sahə — bir-bir tutuşduruldu). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: `emitent_benefisiar`-da
+(DOC_ID=RECNUM) real sətri olan bir namizəd aç → "Nümayəndənin" blokunun
+yaşıl banner ilə avtomatik dolduğunu, mövcud "Əlaqəli şəxslərdən seçin"
+dropdown-unun hələ işlək qaldığını təsdiqləməli.
