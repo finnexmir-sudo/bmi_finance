@@ -156,9 +156,6 @@ namespace FinNex.Domain.Entities.Goaml
         /// tərcümə olunduğu TƏSDİQLƏNİB VƏ həmin `reportType`-in sxemi artıq
         /// bizdə VAR (CTR=1, ETR=2, NGR=3, PEP=4, HRZ=8, BCR=9 — 6 real
         /// nümunə ilə yoxlanılıb, bax CLAUDE.md "Fayl Fərqliliyi" bölməsi).
-        /// SAR(6)/TFR(7)-nin real nümunəsi HƏLƏ YOXDUR (nə bizdə, nə
-        /// istifadəçidə) — qalan kodlar da (ehtimal onlardan birinə düşür,
-        /// amma TƏSDİQLƏNMƏYİB) "Məlumatın növü" seçimində GÖSTƏRİLMİR.
         ///
         /// Mənbə (hər biri üçün AYRI əsas):
         /// - Ctr/Etr/Pep — adın ÖZÜ real `reportType` adı ilə EYNİDİR;
@@ -167,14 +164,28 @@ namespace FinNex.Domain.Entities.Goaml
         /// - Qht — NGR-in (reportType=3) öz "organizationType" seçiminin
         ///   "QHT" dəyəri ilə adı üst-üstə düşür (bax "QHT müəmması" bölməsi).
         ///
-        /// Yeni bir kodun real sxemi tapılanda (SAR/TFR nümunəsi gələndə, ya
-        /// da qalan kodların hansı reportType-ə getdiyi Oracle-da canlı
-        /// yoxlananda) BURAYA əlavə et — başqa heç nə dəyişmə, HƏR İKİ dropdown
-        /// (Tesdiq.cshtml + Export.cshtml) bu metoda görə avtomatik yenilənir.
+        /// SAME GÜN, İKİNCİ DALĞA — Str (SAR) və Tfr (TFR) ƏLAVƏ EDİLDİ,
+        /// AMMA FƏRQLİ ƏSASLA: istifadəçi açıq dedi — "TFR ve SAR elave
+        /// edilsin, ama buna json cixmayacaq, cunki o format yoxdur, onu
+        /// el ile basqa yerde ozleri doldururlar, bizde sadece gosterek,
+        /// ve bunlar sece bilsin, is getsin". Yəni bu ikisi üçün real
+        /// goAML JSON sxemi HƏLƏ YOXDUR və BİLƏRƏKDƏN qurulmur — operator
+        /// bu iki namizədi öz sistemimizdə TƏSDİQLƏYİB/SAXLAYA bilsin deyə
+        /// sadəcə dropdown-da GÖSTƏRİLİR. `HeaderZenginlesdirAsync`-in
+        /// mövcud `reportType is not (3 or 4 or 8)` qoruyucusu Str(→SAR=6)/
+        /// Tfr(→TFR=7) üçün artıq sadə (zənginləşdirilməmiş) header
+        /// yazdığından, bu ikisini ixrac etmək TƏHLÜKƏSİZDİR — yalnız heç
+        /// bir əlavə sahə (PEP/BLR/NGR-dəki kimi) yazılmır.
+        ///
+        /// Yeni bir kodun real sxemi tapılanda (qalan kodların hansı
+        /// reportType-ə getdiyi Oracle-da canlı yoxlananda) BURAYA əlavə et
+        /// — başqa heç nə dəyişmə, HƏR İKİ dropdown (Tesdiq.cshtml +
+        /// Export.cshtml) bu metoda görə avtomatik yenilənir.
         /// </summary>
         public static bool SxemHazirdir(this GoamlHesabatNovu n) => n is
             GoamlHesabatNovu.Ctr or GoamlHesabatNovu.Etr or GoamlHesabatNovu.Blr
-            or GoamlHesabatNovu.Pep or GoamlHesabatNovu.Qht;
+            or GoamlHesabatNovu.Pep or GoamlHesabatNovu.Qht or GoamlHesabatNovu.Str
+            or GoamlHesabatNovu.Tfr;
 
         /// <summary>İnsan-oxunan qısa izah — "Tesdiq" formasındakı dropdown üçün
         /// (eyni mətn yuxarıdakı XML şərhlərindədir, təkrar yazılmasın deyə burda

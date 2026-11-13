@@ -9,6 +9,10 @@
     // 13.11.2026 — yalnız real sxemi TƏSDİQLƏNMİŞ (CTR/ETR/BLR/PEP/QHT) kodlar
     // göstərilir. İstifadəçi: "bizde 6 fayl var ve bizde yalniz secimde onlari
     // gosterek,o biriler islemir" — bax GoamlHesabatNovuExtensions.SxemHazirdir().
+    // Eyni gün, 2-ci dalğa: Str(SAR)/Tfr(TFR) da əlavə edildi — bunlar üçün
+    // JSON sxemi YOXDUR (operator əl ilə başqa yerdə doldurur), YALNIZ
+    // göstərilir/seçilə bilir — istifadəçi: "bizde sadece gosterek, ve
+    // bunlar sece bilsin, is getsin".
     var reportSecimler = Enum.GetValues<GoamlHesabatNovu>()
         .Where(r => r.SxemHazirdir())
         .Select(r => new { Value = (int)r, Text = r.Kod() + " — " + r.Aciqlama() }).ToList();

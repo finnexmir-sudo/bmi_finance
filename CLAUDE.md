@@ -11399,3 +11399,54 @@ yeni `using` əlavə etmək lazım olmadı). İstifadəçi Visual Studio-da **Re
 All** ilə, sonra real brauzerdə yoxlamalıdır: "Təsdiqlə" formasındaki
 "Məlumatın növü" dropdown-unda indi YALNIZ 5 seçimin (CTR/ETR/BLR/PEP/QHT)
 olduğunu, Export səhifəsindəki filtrin də eyni 5 seçimi göstərdiyini.
+
+### Eyni gün, 2-ci dalğa — Str (SAR) və Tfr (TFR) da əlavə edildi, AMMA JSON-SUZ (13.11.2026)
+
+İstifadəçi: *"bir elave is. hemin siyahiya dedilerki TFR ve SAR elave
+edilsin ,ama buna json cixmayacaq,cunki o format yoxdur,onu el ile basqa
+yerde ozleri doldururlar,bizde sadece gosterek,ve bunlar sece bilsin,is
+getsin."* — yəni bu ikisi (AML məsul şəxsin tələbi ilə) dropdown-da
+GÖRÜNMƏLİ və SEÇİLƏ BİLMƏLİDİR, AMMA onlar üçün heç bir real goAML JSON
+sxemi QURULMAYACAQ (nə bizdə, nə istifadəçidə nümunəsi var, operator bu
+hesabatları başqa yerdə əl ilə doldurur).
+
+**Düzəliş — `SxemHazirdir()` 5-dən 7 koda genişləndi:**
+`GoamlHesabatNovu.Str` (= SAR, `reportType=6`) və `GoamlHesabatNovu.Tfr`
+(= TFR, `reportType=7`, adın özü ilə eyni) əlavə olundu. Hər ikisinin
+XML şərhi açıq izah edir ki, bunlar **digər 5-dən FƏRQLİ əsasla**
+(«JSON sxemi hələ yoxdur, sırf göstərmək/seçmək üçün») daxil edilib —
+gələcəkdə kimsə bu metodu oxuyub "niyə bunların da sxemi var?" deyə
+çaşmasın.
+
+**JSON ixracı üçün HEÇ BİR əlavə kod YAZILMADI — buna EHTİYAC YOXDUR.**
+`GoamlService.HeaderZenginlesdirAsync`-in artıq mövcud qoruyucusu
+(`if (reportType is not (3 or 4 or 8)) return;`) Str(→6)/Tfr(→7) üçün
+ARTIQ sadə (sendDate/reportType/reportReason, heç bir əlavə sahə
+olmadan) bir header yazır — bu, nə sınır, nə səhv məlumat yaradır,
+sadəcə "zənginləşdirilməmiş" qalır. Operator bu iki namizədi bizim
+sistemimizdə TƏSDİQLƏYİB/SAXLAYA bilər (iş davam edir — "is getsin"),
+real goAML faylını isə həmin hesabat növləri üçün başqa yerdə özü
+hazırlayır.
+
+**Dəyişən fayllar:** `FinNex.Domain/Entities/Goaml/GoamlEnums.cs`
+(`SxemHazirdir()` + XML şərhi), `Tesdiq.cshtml` (köhnəlmiş "(CTR/ETR/
+BLR/PEP/QHT)" şərhinin yanına 2-ci dalğanın izahı əlavə olundu — köhnə
+şərh SİLİNMƏDİ, tarixi ardıcıllıq qalsın deyə, sadəcə yeni bir izah
+qoşuldu). `Export.cshtml`-ə TOXUNULMADI — onun filtri onsuz da
+`SxemHazirdir()`-i çağırır, metod dəyişəndə avtomatik 7 kodu göstərir.
+
+⚠️ **Qayda (təkrar):** iki fərqli səbəbdən eyni boolean metoda daxil
+edilən dəyərləri (burada: "real sxemi var" vs "sxemi yox, sadəcə
+göstər") AYRI-AYRI şərh etmək lazımdır — əks halda gələcək bir
+sessiya "SxemHazirdir=true" adını görüb Str/Tfr-in də JSON-da
+zənginləşdirildiyini fərz edə bilər, bu YANLIŞ olardı.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/fiqurlu-mötərizə balansı skriptlə, mojibake
+yoxlaması — hər ikisi təmiz). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real brauzerdə yoxlamalıdır: "Təsdiqlə" formasındaki
+VƏ Export səhifəsindəki "Məlumatın növü" dropdown-larında indi "STR —
+Şübhəli əməliyyatlara dair məlumat (201)" və "TFR — Məbləğindən asılı
+olmayaraq pul vəsaitləri (TM)" seçimlərinin DƏ göründüyünü, bu kodlarla
+bir namizədi təsdiqləyib ixrac edəndə JSON-un sınmadan, sadə (əlavə
+sahəsiz) bir header ilə çıxdığını.
