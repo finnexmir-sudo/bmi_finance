@@ -11772,3 +11772,104 @@ səhifəsini açıb yuxarıdakı 7 sorğunu ÖZ PL/SQL Developer sessiyasında
 işlədib nəticələri (xüsusən `global_name`/`user`/`malumatin_novu` sayları)
 göndərməlidir — yalnız bundan sonra əsl kök səbəb (fərqli Oracle nüsxəsi,
 yoxsa FOXPRO-ya xas görmə şərti) qəti müəyyənləşəcək.
+
+### KÖK SƏBƏB TAPILDI — `malumatin_novu.REPORTTYPE`/`REPORTREASON` `VARCHAR2`-dir, `NUMBER` DEYİL (16.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı diaqnostika zənciri addım-addım DAVAM ETDİRİLDİ (16.11.2026) və
+sonunda real kök səbəbə çatdı. Sıra ilə RƏDD OLUNAN fərziyyələr:
+
+1. **Fərqli Oracle nüsxəsi/bazası?** — `global_name`/`db_name`/`host`/
+   `instance_name` tətbiqlə (FOXPRO) istifadəçinin PL/SQL Developer
+   sessiyası arasında HAMISI eyni çıxdı (BMI/BMI/BMILOCAL\SAMIRPC/bmi) —
+   rədd edildi.
+2. **Sinonim?** — `all_synonyms where synonym_name='MALUMATIN_NOVU'` → 0
+   sətir, heç bir sinonim yoxdur — rədd edildi.
+3. **VPD/Row-Level-Security?** — `dba_policies where object_name=
+   'MALUMATIN_NOVU'` → 0 sətir — rədd edildi.
+4. **FOXPRO-nun görmə fərqi (icazə/RLS)?** — `select count(*)`/`count(*)
+   where isare='BLR'` ODB VƏ FOXPRO-da EYNİ çıxdı (16, 1) — rədd edildi.
+5. **Tətbiq başqa serverə bağlanır?** — `appsettings`/User Secrets-dəki
+   `Oracle:ConnectionString`-i (`DATA SOURCE=10.2.94.10:1521/bmi`) tətbiqin
+   RUNTIME-da **ƏSLİNDƏ** istifadə etdiyi dəyərlə (yeni əlavə olunan
+   `IOracleService.MaskedConnectionInfo` vasitəsilə, diaqnostika səhifəsində
+   göstərilən) müqayisə edildi — **TAM EYNİ** çıxdı — rədd edildi.
+6. **HƏLLEDİCİ TEST** — istifadəçi PL/SQL Developer-də **BİRBAŞA FOXPRO
+   hesabı ilə** (ODB yox) bağlanıb eyni sorğunu işlətdi: `select reporttype,
+   reportreason from odb.malumatin_novu where isare='BLR'` → **8, 4**.
+   Yəni FOXPRO hesabının ÖZÜ, Oracle-a birbaşa sorğulananda, DÜZGÜN dəyəri
+   görür — problem Oracle-un HEÇ bir qatında deyil, YALNIZ .NET kodunda ola
+   bilər.
+7. **Əsl səbəb** — `select column_name, data_type from all_tab_columns
+   where table_name='MALUMATIN_NOVU'` göstərdi ki, cədvəlin **HƏR DÖRD**
+   sütunu (`ISARE`, `IZAH`, `REPORTTYPE`, `REPORTREASON`) **`VARCHAR2`**-dir —
+   `REPORTTYPE`/`REPORTREASON` heç vaxt `NUMBER` OLMAYIB. Adından ("type"/
+   "reason") və PL/SQL Developer-də rəqəm kimi sağa-düzülüb görünməsindən
+   YANLIŞ olaraq "NUMBER-dir" fərz edilmişdi — ekranda görünüş sütunun
+   HƏQİQİ Oracle tipini sübut ETMİR.
+
+**`GoamlService.ToLong(object? v)` köməkçisi YALNIZ `decimal`/`int`/`long`/
+`double` tanıyırdı, `string` üçün HEÇ bir qol yox idi** — `_ => 0` qoluna
+düşüb SƏSSİZCƏ sıfır yazırdı. Bu, Oracle-dan gələn "8" mətnini 0-a çevirən
+TƏK səbəb idi — nə keş, nə icazə, nə ayrı server, sadəcə bir .NET tip
+uyğunsuzluğu. Simptomun **HƏMİŞƏ, hər dəfə, dəyişmədən** sıfır çıxması da
+elə buna görə idi (`_ => 0` DETERMİNİSTİKDİR, təsadüfi deyil) — bu özü
+diaqnozun ƏVVƏLİNDƏN izlənə bilən bir ip ucu idi, amma yalnız sütun tipi
+TƏSDİQLƏNDİKDƏN sonra MƏNALI oldu.
+
+**Düzəliş — `ToLong`-a BİR qol əlavə edildi** (mövcud `decimal`/`int`/
+`long`/`double` qollarına TOXUNULMADAN):
+
+```csharp
+string s => long.TryParse(s.Trim(), out var parsed) ? parsed : 0,
+```
+
+Bu, `MalumatinNovuTapAsync` (əsl ixrac yolu) VƏ `OracleDiaqnostikaAsync`
+(diaqnostika səhifəsi) — hər ikisinin ÇAĞIRDIĞI ORTAQ `ToLong` metodunu
+düzəldir, ona görə TƏKRAR dəyişiklik lazım olmadı.
+
+⚠️ **Qayda — "bu, digər bütün sorğularımız kimi işləməlidir" fərziyyəsi
+İLƏ "bu KONKRET sütunun Oracle tipini HEÇ VAXT yoxlamamışıq" faktı arasında
+ZİDDİYYƏT YOXDUR.** Layihənin onlarla digər Oracle oxuması (RECNUM, FİLİAL,
+COUNT, KodValuti və s.) HƏQİQƏTƏN `NUMBER` sütunlardır və `ToLong` onları
+həmişə düz oxuyub — BU, dəyişmədi. Kök səbəb "kod pozulub" DEYİL, "BU TƏK
+cədvəlin BU İKİ sütunu, adına baxmayaraq, əslində mətn kimi saxlanılıb,
+VƏ bu, HEÇ VAXT (sütunun adı rəqəmə oxşadığı üçün) yoxlanılmayıb" idi.
+**Qayda: Oracle sütununun adı ("…type", "…reason", "…id") və ya ekranda
+(PL/SQL Developer kimi bir alətdə) RƏQƏM kimi sağa-düzülüb görünməsi,
+onun HƏQİQİ `DATA_TYPE`-ının `NUMBER` olduğunu SÜBUT ETMİR** — mətn sütunu
+da rəqəmli mətn daşıyıb eyni cür göstərilə bilər. Bir sütunu ilk dəfə
+`ToLong`/`ToDecimal` kimi "yalnız rəqəm tipləri" gözləyən bir köməkçi ilə
+oxuyanda, ŞÜBHƏ varsa (xüsusən köhnə/FoxPro-dan miras qalan cədvəllərdə —
+bax layihənin "`cl_Database`" və BMI-nin digər köhnə Oracle cədvəlləri),
+`all_tab_columns`-dan ƏVVƏLCƏDƏN tipi təsdiqləmək, bir neçə saatlıq canlı-
+müqayisə diaqnozundan QAT-QAT ucuzdur.
+
+**Qayda (diaqnostika metodologiyası) — "eyni SQL mətni iki sessiyada fərqli
+nəticə verir" simptomu HƏMIŞƏ Oracle-un ÖZÜNDƏ (icazə/keş/server) axtarmaq
+lazım DEYİL.** Bu halda hər iki sessiya EYNİ, DÜZGÜN dəyəri Oracle-dan
+alırdı (FOXPRO-nun özü ilə təsdiqləndi) — fərq YALNIZ nəticəni emal edən
+TƏTBİQ KODUNUN İÇİNDƏ idi. Oracle-tərəfli bütün fərziyyələr (sinonim, VPD,
+fərqli server, icazə) TAM RƏDD EDİLƏNDƏN sonra, son addım olaraq "bəlkə
+problem Oracle-dan sonra, bizim öz kodumuzdadır" sualına keçmək həmişə
+növbəti, təbii addım olmalıdır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRA çağırılan
+`JsonIxracAsync` ixraclarına təsir edir. Bu araşdırma boyu test məqsədilə
+yaradılmış, artıq `Status=İxracEdilib`-dəki (0/0 ilə) qeyd(lər) ÖZBAŞINA
+düzəlmir — real bir hesabatda bu baş vermişdisə, statusu `Qaralama`-ya əl
+ilə geri qaytarıb (`SELECT`-lə əvvəlcədən təsdiqləyərək) YENİDƏN ixrac
+etmək lazımdır.
+
+⚠️ **Müvəqqəti `OracleDiaqnostika` səhifəsi HƏLƏ SİLİNMƏDİ** — kök səbəb
+tapılsa da, "İşlək Funksiyanı Silmək" qaydasına görə bu, istifadəçinin öz
+açıq təsdiqini gözləyir. Faydalı qalan bir hissə — `AppConnectionDataSource`
+göstərişi — gələcəkdə oxşar bir "tətbiq başqa serverə bağlanırmı?" sualı
+yarananda təkrar işlənə bilər.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git stash`/`pop` ilə — düzəlişin ÖZÜ
+net-balanslı, yalnız `_ => 0`-dan ƏVVƏL bir `string` qolu əlavə olundu).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: "BLR" (və digər bütün `SxemHazirdir()` kodları) ilə
+təsdiqlənmiş bir qeydi ixrac et → JSON-dakı `reportType`/`reportReason`
+artıq düzgün (BLR üçün 8/4) çıxdığını təsdiqləməli.
