@@ -587,24 +587,31 @@ namespace FinNex.Application.Services.Goaml
             }
 
             // ── 2) Sənəd seriya/nömrəsinin parçalanması (CON/SIG/TO) —
-            //      MMX_ID_SERIAL-dan ƏN UZUN uyğun gələn prefiksi seçirik (AYSEL-in
-            //      özündə 1/2/3-char qaydaları eyni şərtlə, sırasız işləyirdi —
-            //      "ən uzun uyğunluq qalib" bunun təhlükəsiz, deterministik
-            //      qarşılığıdır). Oracle: 026fz39mr7as3/4ybzrfvr6f1hj/5jnvxwbx51r9y
-            //      (CON), 1a0h8d7fqx74s/c36az8naz33vr/gfcpk6qsx9t3h (SIG),
-            //      2wcj7fg4u6hcz/cf70ryjttg2vk/8vuah1ppks3s8 (TO). ────────────────
+            //      ƏVVƏLCƏ MMX_ID_SERIAL-dan ƏN UZUN uyğun gələn prefiksi seçirik
+            //      (AYSEL-in özündə 1/2/3-char qaydaları eyni şərtlə, sırasız
+            //      işləyirdi — "ən uzun uyğunluq qalib" bunun təhlükəsiz,
+            //      deterministik qarşılığıdır). Oracle: 026fz39mr7as3/
+            //      4ybzrfvr6f1hj/5jnvxwbx51r9y (CON), 1a0h8d7fqx74s/c36az8naz33vr/
+            //      gfcpk6qsx9t3h (SIG), 2wcj7fg4u6hcz/cf70ryjttg2vk/8vuah1ppks3s8
+            //      (TO). ──────────────────────────────────────────────────────
+            //      ⚠️ 16.11.2026: ƏVVƏL bu bütöv blok `serialler.Count > 0` şərti
+            //      ilə BLOKLANIRDI — Oracle `odb.mmx_id_serial`-a icazə/bağlantı
+            //      problemi olanda (siyahı boş qayıdanda) `ReprIdSerial`/`Number`
+            //      HƏMİŞƏ boş qalırdı, GRANT TƏLƏB EDİRDİ. İndi bu şərt GÖTÜRÜLDÜ —
+            //      `ParcalaSenedNomresi`-in ÖZÜ, siyahı boşdursa (və ya heç bir
+            //      prefiks uyğun gəlmirsə) Oracle-dan ASILI OLMAYAN bir YEDƏK
+            //      qaydaya keçir (aşağı bax) — `odb.mmx_id_serial`-a GRANT artıq
+            //      MƏCBURİ DEYİL, yalnız (varsa) DAHA DƏQİQ nəticə verir. ────────
             var serialler = await MmxIdSerialSiyahisiAsync(ct);
-            if (serialler.Count > 0)
-            {
-                if (ParcalaSenedNomresi(e.ConSenedinSeriyaNomresi, serialler, out var reprSer, out var reprNum))
-                { e.ReprIdSerial = reprSer; e.ReprIdNumber = reprNum; }
 
-                if (ParcalaSenedNomresi(e.SigSenedinSeriyaNomresi, serialler, out var sendSer, out var sendNum))
-                { e.SenderIdSerial = sendSer; e.SenderIdNumber = sendNum; }
+            if (ParcalaSenedNomresi(e.ConSenedinSeriyaNomresi, serialler, out var reprSer, out var reprNum))
+            { e.ReprIdSerial = reprSer; e.ReprIdNumber = reprNum; }
 
-                if (ParcalaSenedNomresi(e.ToSenedinSeriyaNomresi, serialler, out var recSer, out var recNum))
-                { e.RecIdSerial = recSer; e.RecIdNumber = recNum; }
-            }
+            if (ParcalaSenedNomresi(e.SigSenedinSeriyaNomresi, serialler, out var sendSer, out var sendNum))
+            { e.SenderIdSerial = sendSer; e.SenderIdNumber = sendNum; }
+
+            if (ParcalaSenedNomresi(e.ToSenedinSeriyaNomresi, serialler, out var recSer, out var recNum))
+            { e.RecIdSerial = recSer; e.RecIdNumber = recNum; }
 
             // ── 3) Sənəd növünün goAML MMX kodu — TYPES_OF_DOCUMENTS.ISARE →
             //      MMX_ID (CON/SIG/TO). Oracle: 0r10bu036mrxr / f35ct0dr8tvtz /
@@ -731,9 +738,18 @@ namespace FinNex.Application.Services.Goaml
         }
 
         /// <summary>CON/SIG/TO sənəd seriya+nömrəsini (məs. "AZE1234567")
-        /// `MMX_ID_SERIAL`-dakı ƏN UZUN uyğun gələn prefiksə görə seriya/nömrə
-        /// hissələrinə ayırır. 1, 2, 3 simvollu prefikslər sınanır — uzun olan
-        /// üstün tutulur (AYSEL-in özündə sıra qeyri-müəyyən idi, bax yuxarı).</summary>
+        /// ƏVVƏLCƏ `MMX_ID_SERIAL`-dakı ƏN UZUN uyğun gələn prefiksə görə
+        /// seriya/nömrə hissələrinə ayırır (1, 2, 3 simvollu prefikslər
+        /// sınanır — uzun olan üstün tutulur, AYSEL-in özündə sıra
+        /// qeyri-müəyyən idi, bax yuxarı). `serialler` boşdursa (Oracle
+        /// lüğəti əlçatmazdır — GRANT yoxdur/sorğu uğursuzdur) VƏ YA heç bir
+        /// prefiks uyğun gəlmirsə, 16.11.2026-da əlavə olunan, Oracle-dan
+        /// TAMAMİLƏ MÜSTƏQİL bir YEDƏK qaydaya keçir: sənədin BAŞINDAKI
+        /// hərf/işarə hissəsi SERİYA, ardınca gələn İLK RƏQƏMDƏN sonrakı
+        /// hissə NÖMRƏDİR ("D10019478" → "D"/"10019478", "AZE1234567" →
+        /// "AZE"/"1234567") — Azərbaycan şəxsiyyət/sənəd nömrələrinin demək
+        /// olar hamısı bu formatdadır, Oracle-un ÖZ MMX_ID_SERIAL siyahısı
+        /// olmadan belə əksər halda DOĞRU nəticə verir.</summary>
         private static bool ParcalaSenedNomresi(string? xam, List<string> serialler, out string? seriya, out string? nomre)
         {
             seriya = null; nomre = null;
@@ -750,7 +766,17 @@ namespace FinNex.Application.Services.Goaml
                     return true;
                 }
             }
-            return false;
+
+            var reqemIndex = -1;
+            for (var i = 0; i < temiz.Length; i++)
+            {
+                if (char.IsDigit(temiz[i])) { reqemIndex = i; break; }
+            }
+            if (reqemIndex < 0) return false; // rəqəm ümumiyyətlə yoxdur — mənalı parçalama yoxdur
+            if (reqemIndex == 0) { nomre = temiz; return true; } // sənəd birbaşa rəqəmlə başlayır, seriya yoxdur
+            seriya = temiz.Substring(0, reqemIndex);
+            nomre = temiz.Substring(reqemIndex).Trim();
+            return true;
         }
 
         /// <summary>DEBET/KREDIT kimi hesab kodlarının ilk N simvolunun verilmiş
@@ -2095,7 +2121,16 @@ namespace FinNex.Application.Services.Goaml
             // "Account" blokunu YALNIZ `report_code <> 'CTR' OR tip IN (FizikIn,
             // HuquqiIn, FToF)` olanda yazır — bu, Sender-dəki şərtdən FƏRQLİDİR (burada
             // mübadilə-stolu prefiksi YOX, ReportCode=CTR həll edir). Şərt qarışdırılmasın.
-            if (e.ReportCode != GoamlHesabatNovu.Ctr || e.Tip is GoamlTipi.FizikIn or GoamlTipi.HuquqiIn or GoamlTipi.FToF)
+            // ⚠️ 16.11.2026, İKİNCİ DALĞA: istifadəçi real AYSEL faylını (mübadilə
+            // stolu, Tip=FToF) göstərdi — "Account" ORADA DA YOXDUR, baxmayaraq ki
+            // yuxarıdakı şərt Tip=FToF-da HƏR ZAMAN TRUE olur. Deməli AYSEL-in əsl
+            // qaydasında mübadilə-stolu İSTİSNASI Receiver tərəfə də (Sender-dəki
+            // kimi) tətbiq olunur — ədəbiyyatda bu qol HƏLƏ tapılmayıb, amma Sender-lə
+            // EYNİ, artıq TƏSDİQLƏNMİŞ mübadilə-stolu məntiqinin TƏKRARI olduğu üçün
+            // (hər iki tərəf Representative-in ÖZÜDÜR, demək "hesab"ı da yoxdur)
+            // TƏHLÜKƏSİZ əlavədir — yeni, araşdırılmamış bir şərt İCAD EDİLMƏDİ.
+            if (!MubadiiStoluPrefiksiMi(e) &&
+                (e.ReportCode != GoamlHesabatNovu.Ctr || e.Tip is GoamlTipi.FizikIn or GoamlTipi.HuquqiIn or GoamlTipi.FToF))
             {
                 receiver.Account = new GoamlJsonReceiverAccountDto
                 {

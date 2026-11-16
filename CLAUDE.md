@@ -12142,3 +12142,27 @@ AYSEL-in öz mənbəyi (`97_...sql`, sətir 1245/1407) `sender_account_number`/`
 ⚠️ **"Real goAML portalına yüklənəndə problem yaradacaqmı?" sualına DƏQİQ CAVAB VERİLMƏDİ** — bu mühitdən real goAML portalının validasiya qaydalarına (Account-un MƏCBURİ sahə olub-olmadığına) baxmaq mümkün deyil. Bilinən: AYSEL-in real nümunə fayllarında (istifadəçinin göndərdiyi) Account HƏR ZAMAN REAL bir hesab nömrəsi daşıyır, BOŞ DEYİL — yəni bizim HAZIRKI boş çıxışımız AYSEL-in real çıxışından FƏRQLİDİR. Bu fərqin portalda rədd səbəbi olub-olmaması naməlumdur; ən sürətli yoxlama yolu faylı (əgər mövcuddursa) goAML-in test/sandbox mühitinə yükləyib nəticəyə baxmaqdır.
 
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə balansı — `git diff`-in YALNIZ bu editin əlavə etdiyi sətirləri ayrıca ölçülüb: `{`/`}` 2/2, `(`/`)` 9/9, tam balanslıdır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra `docs/sql/goaml/99_Goaml_Repr_Serial_ve_Account_Diaqnostikasi.sql`-i (A hissəsini HƏM ÖZ sessiyasında, HƏM FOXPRO ilə; B hissəsini bircə dəfə) PL/SQL Developer-də işlədib nəticəni göndərməlidir — yalnız bundan sonra `repr_id_serial`/`repr_id_number`-in və Account-un əsl mənbəyi/düzəlişi müəyyənləşə bilər.
+
+## GOAML — Yuxarıdakı DİAQNOSTİKANI KÖK HƏLLƏ ƏVƏZ ETDİK — İKİ GRANT TƏLƏBİ ARADAN QALDIRILDI (16.11.2026, EYNİ GÜN, İKİNCİ DALĞA)
+
+Yuxarıdakı bölmə Oracle-da YOXLAMA (GRANT) tələb edirdi. İstifadəçi iki şey dedi: (1) *"goaml in faylinda account yoxdur axi,faylida sene atmisam axi"* — real AYSEL faylında (mübadilə stolu, Tip=FToF) **Account ümumiyyətlə yoxdur**, mənim əvvəlki "AYSEL-in real çıxışında Account HƏMİŞƏ real hesab nömrəsi daşıyır" iddiam SƏHV idi (fayl faktı ilə ziddiyyətdə); (2) *"granti neye gore vermeliyemki?"* — niyə GRANT lazım olduğunu sual etdi. Hər iki sual KOD SƏVİYYƏSİNDƏ, Oracle-a toxunmadan HƏLL OLUNDU — diaqnostika artıq lazım deyil.
+
+### Account — Receiver tərəfə də mübadilə-stolu istisnası əlavə edildi
+
+Sender.Account artıq mübadilə-stolu olanda yazılmırdı (əvvəlki dalğa). Receiver.Account isə YALNIZ `ReportCode`/`Tip`-ə baxırdı (AYSEL-in sətir 1390-ın hərfi şərti), mübadilə-stolunu NƏZƏRƏ ALMIRDI — Tip=FToF olanda bu şərt HƏR ZAMAN TRUE idi, Receiver.Account HƏMİŞƏ yazılırdı. İstifadəçinin göndərdiyi real faylda Account-un YOXLUĞU bunun səhv olduğunu sübut etdi.
+
+**Düzəliş** — `ReceiverQurAsync`-ın Account şərtinə `!MubadiiStoluPrefiksiMi(e) &&` əlavə olundu (Sender-dəki İLƏ EYNİ yoxlama, təkrar yazılmadı). Bu, AYSEL-in hərfi sətrini ARAŞDIRMADAN dəyişmək deyil — artıq TƏSDİQLƏNMİŞ bir prinsipin (mübadilə-stolunda hər iki tərəf Representative-in ÖZÜDÜR, demək "hesabı" da yoxdur) Receiver-ə də tətbiqidir, real fayl bunu TƏSDİQLƏDİ.
+
+⚠️ **Yalnız mübadilə-stolu ssenarisi üçün bağlandı.** Qeyri-mübadilə-stolu əməliyyatlarda (real müştəri hesabı) Account bloku yenə yazılır, AMMA onun `sender_account_number`/`receiver_account_number`-i (`e.Account`/`e.AccountTo`) hələ də HEÇ YERDƏ doldurulmur (nə form, nə controller) — bu, BAŞQA, HƏLƏ GÖRÜLMƜMIŞ bir ssenaridir, bu sessiyada TOXUNULMADI (real nümunə yoxdur, təxmin edilmədi).
+
+### `repr_id_serial`/`repr_id_number` — GRANT ARTIQ TƏLƏB OLUNMUR
+
+İstifadəçinin "niyə grant verməliyəm" sualına ən doğru cavab: **lazım DEYİL**. `ParcalaSenedNomresi` (CON/SIG/TO sənəd-parçalayıcı) Oracle `odb.mmx_id_serial` lüğəti boş/əlçatmaz olanda (GRANT olsun-olmasın, FƏRQ ETMİR) indi Oracle-dan TAMAMİLƏ MÜSTƏQİL bir yedək qaydaya keçir: sənədin başındaki hərf/işarə hissəsi **seriya**, ardınca gələn (ilk rəqəmdən sonrakı) hissə **nömrə** ("D10019478" → `D`/`10019478`, "AZE1234567" → `AZE`/`1234567`) — Azərbaycan şəxsiyyət/sənəd nömrələrinin demək olar hamısı bu formatdadır.
+
+`AvtoDolduruAsync`-dəki `if (serialler.Count > 0)` qoruyucu da SİLİNDİ — əvvəl bu, Oracle siyahısı boş olanda BÜTÜN parçalama blokunu (CON/SIG/TO-nun ÜÇÜ) keçirirdi, indi hər çağırış MÜSTƏQİL baş verir, Oracle lüğəti ilə İLK CƏHD edilir, uğursuz olarsa həmin KONKRET sahə üçün yedək qaydaya düşür.
+
+⚠️ **Oracle lüğəti ARTIQ İSTƏYƏ BAĞLIDIR, mütləq DEYİL.** GRANT verilsə (`docs/sql/goaml/99_...sql`-in A hissəsi) — DAHA DƏQİQ nəticə (Oracle-un öz rəsmi prefiks siyahısına uyğun, nadir qeyri-standart formatlarda da düzgün) alınar. Verilməsə — yedək qayda İŞLƏYƏCƏK, əksər real sənəd formatında (hərf+rəqəm) eyni nəticəni verəcək. Yəni **GRANT indi SƏRBƏST BİR QƏRARDIR, BLOKER DEYİL**.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — hər iki düzəliş yalnız BUNDAN SONRAKI "Təsdiqlə" çağırışlarına təsir edir, artıq təsdiqlənmiş/ixrac edilmiş qeydlər dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə balansı — `git diff`-in YALNIZ bu dalğanın əlavə etdiyi sətirləri ayrıca ölçülüb: `{`/`}` 6/6, `(`/`)` 31/31, tam balanslıdır; fayl-ümumi pre-existing −8 paren fərqi dəyişmədi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ (RecNum 22903177, mübadilə stolu, F to F) namizədi yenidən təsdiqləyib export etməlidir: Account açarının Sender-də VƏ Receiver-də hər ikisində HEÇ görünmədiyini, `repr_id_serial`/`repr_id_number`-in (GRANT verilmədən belə) indi "D"/"10019478" kimi dolu gəldiyini (real sənəd dəyərinə uyğun) təsdiqləməli.

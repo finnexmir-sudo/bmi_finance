@@ -1,56 +1,46 @@
 -- ============================================================================
--- GOAML — Diaqnostika (16.11.2026)
+-- GOAML — Diaqnostika (16.11.2026, YENİLƏNİB — hər ikisi artıq İXTİYARİDİR)
 -- ============================================================================
--- İKİ AYRI sual üçün:
+-- Bu faylın İLK versiyası iki açıq sualı (A: repr_id_serial/number, B: Account
+-- mənbəyi) həll etmək üçün Oracle-da YOXLAMA tələb edirdi. İKİSİ DƏ sonradan
+-- KODDA həll olundu — bu fayl artıq MƏCBURİ DEYİL, yalnız İSTƏYƏNDƏ daha
+-- DƏQİQ nəticə üçün saxlanılır.
 --
--- A) "repr_id_serial"/"repr_id_number" niyə boş çıxır? — FOXPRO (tətbiq hesabı)
---    `odb.mmx_id_serial` / `odb.types_of_documents`-ə SELECT icazəsinə
---    malikdirmi? (ƏVVƏLKİ `balscht_fiz`/`balscht_ur`, `malumatin_novu`
---    ORA-01031 hadisələri İLƏ EYNİ şübhə.)
+-- A) "repr_id_serial"/"repr_id_number" — DÜZƏLDİ, GRANT TƏLƏB OLUNMUR.
+--    `ParcalaSenedNomresi` indi Oracle `odb.mmx_id_serial` lüğəti əlçatmaz
+--    olsa (GRANT yoxdur/sorğu uğursuzdur) belə, Oracle-dan ASILI OLMAYAN bir
+--    YEDƏK qayda ilə seriya/nömrəni ayırır: sənədin başındaki hərf/işarə
+--    hissəsi seriya, ardınca gələn rəqəm nömrədir ("D10019478" → "D"/
+--    "10019478"). GRANT aşağıdakı A1/A2 sorğularını vermək İNDİ YALNIZ DAHA
+--    DƏQIQ (Oracle-un öz rəsmi prefiks siyahısına görə) nəticə üçündür, ZƏRURİ
+--    DEYİL — verməsəniz də seriya/nömrə sahələri artıq boş qalmayacaq.
 --
--- B) "Account" bloku — Sender/Receiver account NÖMRƏSİ (sender_account_number/
---    receiver_account_number) haradan gəlməlidir? AYSEL-in öz mənbəyi
---    (97_...sql, sətir 1245/1407) `v_goal.account`/`v_goal.account_to`
---    yazır — bunlar `GOAML_CLIENTS`-in ÖZ sütunlarıdır (DEBET/KREDIT İLƏ
---    EYNİ İNSERT-in bir hissəsi, AMMA AYRI sütun). Bu sorğu GOAML_CLIENTS-də
---    ARTIQ MÖVCUD OLAN (AYSEL-in real işlədiyi) bir sətirdə ACCOUNT/ACCOUNT_TO-nun
---    DEBET/KREDIT ilə NECƏ əlaqəli olduğunu BİRBAŞA göstərir — TƏXMİN YOXDUR.
+-- B) "Account" bloku — mübadilə stolu (Tip=FToF, kassa/GL hesabı) üçün BAĞLANDI.
+--    İstifadəçi real AYSEL faylını göstərdi: Account bu ssenarida ORADA DA
+--    YOXDUR. Kod indi bu halda Account-u (həm Sender, həm Receiver) TAMAMİLƏ
+--    yazmır (əvvəl Receiver-də səhvən yazılırdı) — aşağıdakı B sorğusu bu
+--    halı bir daha YOXLAMIR.
 --
--- NECƏ İŞLƏDİLİR: hər bloku ƏVVƏLCƏ ÖZ (tam icazəli) PL/SQL Developer
--- sessiyanızda, SONRA (A üçün MƏCBURİ) tətbiqin FOXPRO hesabı ilə işlədin.
+--    ⚠️ AÇIQ QALAN (fərqli ssenari) — mübadilə-stolu OLMAYAN əməliyyatlarda
+--    (real müştəri hesabı) Account bloku YENƏ DƏ yazılır, AMMA onun
+--    `sender_account_number`/`receiver_account_number`-i (`e.Account`/
+--    `e.AccountTo`) HEÇ YERDƏ doldurulmur (nə formada, nə controller-də) —
+--    bu halda yenə boş çıxacaq. Bu, BAŞQA bir ssenari olduğu üçün BU sessiyada
+--    TƏSDİQLƏNMƏYİB — real bir qeyri-mübadilə-stolu AYSEL nümunəsi göndərilsə,
+--    aşağıdakı B sorğusu o nümunənin RecNum-u ilə işə yarayacaq.
 -- ============================================================================
 
 
--- ─── A1) odb.mmx_id_serial — FOXPRO görə bilirmi? ───────────────────────────
+-- ─── A — İXTİYARİ, YALNIZ DƏQİQLİK ÜÇÜN: FOXPRO görə bilirmi? ───────────────
 select count(*) as mmx_id_serial_say from odb.mmx_id_serial;
-
--- ─── A2) odb.types_of_documents — FOXPRO görə bilirmi? ──────────────────────
 select count(*) as types_of_documents_say from odb.types_of_documents;
-
--- Hər ikisi FOXPRO ilə 0 (və ya ORA-xxxxx xətası) qaytarır, ODB/sizin öz
--- sessiyanızda isə real say qaytarırsa — icazə problemidir, DBA-dan:
+-- 0/xəta çıxsa belə, yedək qayda işləyir — GRANT MƏCBURİ DEYİL:
 --   GRANT SELECT ON odb.mmx_id_serial TO FOXPRO;
 --   GRANT SELECT ON odb.types_of_documents TO FOXPRO;
 
 
--- ─── B) RecNum 22903177 üçün GOAML_CLIENTS-in ÖZ ACCOUNT/ACCOUNT_TO dəyəri ──
--- (AYSEL bu konkret əməliyyatı artıq saxlayıb — real nəticə, təxmin yoxdur)
-select
-    transactionnumber,
-    debet,
-    kredit,
-    account,
-    account_to,
-    filialnumber,
-    tip,
-    report_code
+-- ─── B — YALNIZ qeyri-mübadilə-stolu bir ssenari araşdırılanda lazımdır ─────
+-- (<RECNUM> yerinə real, Account-un YAZILMALI olduğu bir əməliyyatın RecNum-unu yaz)
+select transactionnumber, debet, kredit, account, account_to, filialnumber, tip, report_code
 from odb.goaml_clients
-where transactionnumber = 22903177;
-
--- Gözlənilən suallara cavab:
---   account = debet  VƏ  account_to = kredit   → Debet/Kredit-dən köçürmək kifayətdir
---   account/account_to BOŞ qalıb (AYSEL-in özündə də)  → bu sahə həmişə boş ola bilər,
---        bizim kod səhv deyil, sadəcə mənbə datası yoxdur
---   account/account_to DEBET/KREDIT-dən FƏRQLİ bir dəyərdir → ayrıca Oracle
---        mənbəyi (çox güman "Update New" kaskadının hələ tapılmamış bir qaydası)
---        var, port etmək üçün YENİDƏN v$sql/v$open_cursor araşdırması lazımdır
+where transactionnumber = <RECNUM>;
