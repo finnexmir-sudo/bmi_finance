@@ -11873,3 +11873,13 @@ net-balanslı, yalnız `_ => 0`-dan ƏVVƏL bir `string` qolu əlavə olundu).
 yoxlamalıdır: "BLR" (və digər bütün `SxemHazirdir()` kodları) ilə
 təsdiqlənmiş bir qeydi ixrac et → JSON-dakı `reportType`/`reportReason`
 artıq düzgün (BLR üçün 8/4) çıxdığını təsdiqləməli.
+
+**Müvəqqəti diaqnostika SİLİNDİ (16.11.2026, istifadəçinin açıq təsdiqi
+ilə).** `OracleDiaqnostikaAsync` (`IGoamlService`/`GoamlService`),
+`GoamlOracleDiaqnostikaDto.cs`, `EmeliyyatlarController.OracleDiaqnostika`
+action-u, `OracleDiaqnostika.cshtml` view-u, `Export.cshtml`-dəki keçid
+düyməsi VƏ `IOracleService.MaskedConnectionInfo`/`OracleService`-in
+implementasiyası — hamısı TAMAMİLƏ silindi, heç bir qalıq istinad qalmadı
+(`grep` ilə təsdiqləndi). Qalan YEGANƏ iz bu CLAUDE.md sənədidir — kök
+səbəbin tapılma YOLU (diaqnoz metodologiyası) gələcək oxşar hadisələr üçün
+dəyərli olduğundan silinmədi, yalnız onu TAPAN KOD silindi.
