@@ -12166,3 +12166,19 @@ Sender.Account artıq mübadilə-stolu olanda yazılmırdı (əvvəlki dalğa). 
 ⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — hər iki düzəliş yalnız BUNDAN SONRAKI "Təsdiqlə" çağırışlarına təsir edir, artıq təsdiqlənmiş/ixrac edilmiş qeydlər dəyişmir.
 
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə balansı — `git diff`-in YALNIZ bu dalğanın əlavə etdiyi sətirləri ayrıca ölçülüb: `{`/`}` 6/6, `(`/`)` 31/31, tam balanslıdır; fayl-ümumi pre-existing −8 paren fərqi dəyişmədi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ (RecNum 22903177, mübadilə stolu, F to F) namizədi yenidən təsdiqləyib export etməlidir: Account açarının Sender-də VƏ Receiver-də hər ikisində HEÇ görünmədiyini, `repr_id_serial`/`repr_id_number`-in (GRANT verilmədən belə) indi "D"/"10019478" kimi dolu gəldiyini (real sənəd dəyərinə uyğun) təsdiqləməli.
+
+## GOAML Export — Qarışıq Tipli Tarix Aralığı HƏR "Məlumatın Növü" Üçün AYRI FAYL Verir (16.11.2026)
+
+İstifadəçi sualı: *"tarix araligi secdi ve bir nece novde melumatlar olsa ve json vurulsa ne bas verecek?"* — cavab verildikdən sonra (əvvəl HAMISI BİR faylda qarışıq çıxırdı, hər qeyd öz başlığını daşısa da, fayl adı "HAMISI" idi) istifadəçi birbaşa soruşdu: *"biz her tipe gore ayri ede bilerik ki fayli yaratsin?"*
+
+**Həll — `JsonIxracAsync` qruplaşdırılıb.** Köhnə "bir `root`, bütün qeydlər" döngəsi `setirler`-i ƏVVƏLCƏ `e.ReportCode?.Kod() ?? "STR"`-ə görə qruplaşdırır (`GroupBy`), sonra HƏR qrup üçün AYRI `GoamlJsonRootDto` qurub AYRI JSON mətni + fayl adı (`GOAML_Ixrac_{Kod}_{tarix}_TEST.json`) yaradır. Qeydlərin özü (Status=İxracEdilib) isə HƏLƏ DƏ **bir dəfəyə, bütün qruplar birlikdə** yazılır — ikiqat ixrac qoruyucusu (bax `IxracSertiQur`) fayl sayından asılı olmayaraq eyni qalır.
+
+**DTO dəyişikliyi — `GoamlJsonIxracNeticeDto`:** `JsonMetni`/`TeklifOlunanFaylAdi`/`SetirSayi` (tək fayl) silindi, əvəzinə `List<GoamlJsonIxracFaylDto> Fayllar` (+ `UmumiSetirSayi`) — hər element öz `JsonMetni`/`TeklifOlunanFaylAdi`/`SetirSayi`/`ReportCodeEtiketi`-ni daşıyır.
+
+**Controller — hər fayl ÖZ `try/catch`-ində DMS-ə yazılır** (`goaml-ixrac` qovluğuna) — biri uğursuz olsa (keçici Oracle/disk xətası) qalanlar BLOKLANMIR, uğursuz olanlar ayrıca xəbərdarlıqda sadalanır. `TempData["IxracFayllari"]` (`;;`-ayırıcı mətn — TempData default `List<T>`-i daşıya bilmir) yazılan faylların adlarını saxlayır.
+
+**Görüntü — `Export.cshtml`:** "İxrac tamamlandı" qutusu indi **N fayl** göstərir (hər biri öz adı + öz "Yüklə" düyməsi ilə), auto-download skripti bir faylı kliklədikdən sonra 250ms gözləyib növbətini kliklər (bəzi brauzerlər eyni "tick"də çox sayda proqramatik yükləməni bloklaya bilər).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI ixraclara təsir edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə balansı hər 4 dəyişən faylda — `GoamlJsonIxracDto.cs` tam balanslı (180/180, 202/202), `GoamlService.cs`/`IGoamlService.cs`-in bu edit-in ÖZ net-kontribusiyası `git diff` izolyasiyası ilə balanslı təsdiqləndi (pre-existing -8/-1 deficit dəyişmədi), `EmeliyyatlarController.cs` tam balanslı (52/52, 150/150), `Export.cshtml` tam balanslı (52/52, 134/134) + daxili `<script>` bloku `node -c` ilə sintaksis yoxlamasından keçdi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: tarix aralığında HƏM CTR, HƏM BLR (və ya başqa iki tip) tipli təsdiqlənmiş qeyd olan vəziyyətdə "İxrac et"ə bas → iki AYRI faylın (hər birinin öz adında düz ReportCode kodu ilə) yaradıldığını, hər ikisinin düzgün yükləndiyini, bütün qeydlərin (hər iki tipdən) "İxrac edilib" statusuna keçdiyini təsdiqləməli.

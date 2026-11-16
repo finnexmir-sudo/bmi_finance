@@ -1711,6 +1711,14 @@ namespace FinNex.Application.Services.Goaml
             return Result<List<GoamlEmeliyyatListDto>>.Ok(neice);
         }
 
+        /// <summary>16.11.2026, istifadəçi tələbi: "biz hər tipə görə ayrı edə
+        /// bilərikki faylı yaratsın?" — tarix aralığında bir neçə ReportCode
+        /// (Məlumatın növü) qarışıq gələrsə, real goAML portalı adətən "bir
+        /// fayl = bir report type" gözlədiyi üçün BİR faylda qarışdırmaq
+        /// əvəzinə, HƏR ReportCode üçün AYRI fayl qaytarılır. Qeydlərin ÖZÜ
+        /// (Status=İxracEdilib) isə YENƏ DƏ bir dəfəyə, bütün qruplar birlikdə
+        /// yazılır — fayl sayından asılı olmayaraq ikiqat ixrac riski eyni
+        /// qalır (bax <see cref="IxracSertiQur"/>-un Status şərti).</summary>
         public async Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default)
         {
             var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync(IxracSertiQur(filtr));
@@ -1720,47 +1728,62 @@ namespace FinNex.Application.Services.Goaml
                     "Seçilmiş aralıqda ixrac ediləcək (hələ ixrac olunmamış) təsdiqlənmiş qeyd yoxdur.");
 
             var xeberdarliqlar = new List<string>();
-            var malumatinNovuKesi = new Dictionary<string, (int reportType, int reportReason)?>();
             var valyutaKoduKesi = new Dictionary<string, string?>();
+            var fayllar = new List<GoamlJsonIxracFaylDto>();
 
-            var root = new GoamlJsonRootDto();
+            // Qruplaşdırma — nullable enum-u (`ReportCode`) açar kimi birbaşa
+            // işlətmək olmur (`GroupBy` key-i `== null`-u digər dəyərlərlə
+            // qarışdıra bilər), ona görə əvvəlcə HƏR qeydin öz `reportCodeKod`-unu
+            // (mətn, "STR" fallback-i ilə) hesablayıb ONUN üzrə qruplaşdırırıq —
+            // bu, elə hər qrupun fayl adında işlədəcəyi mətndir.
+            var qruplar = setirler
+                .Select(e => (Setir: e, Kod: e.ReportCode?.Kod() ?? "STR"))
+                .GroupBy(x => x.Kod)
+                .OrderBy(g => g.Key);
 
-            foreach (var e in setirler.OrderBy(x => x.DateOper))
+            foreach (var qrup in qruplar)
             {
-                var reportCodeKod = e.ReportCode?.Kod() ?? "STR";
+                var reportCodeKod = qrup.Key;
+                var mn = await MalumatinNovuTapAsync(reportCodeKod, ct);
+                if (mn == null)
+                    xeberdarliqlar.Add($"\"{reportCodeKod}\" üçün reportType/reportReason Oracle-dan (malumatin_novu) tapılmadı — 0 yazıldı, əl ilə yoxlayın.");
 
-                if (!malumatinNovuKesi.TryGetValue(reportCodeKod, out var mn))
+                var root = new GoamlJsonRootDto();
+                foreach (var (e, _) in qrup.OrderBy(x => x.Setir.DateOper))
+                    root.Reports.Add(await ReportQurAsync(e, mn, valyutaKoduKesi, ct));
+
+                var json = System.Text.Json.JsonSerializer.Serialize(root,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                        // 13.11.2026 — PEP/BLR header-zənginləşdirməsinin nullable sahələri
+                        // (GoamlJsonHeaderDto) CTR və s. tipli hesabatlarda yazılmasın deyə.
+                        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                    });
+
+                fayllar.Add(new GoamlJsonIxracFaylDto
                 {
-                    mn = await MalumatinNovuTapAsync(reportCodeKod, ct);
-                    malumatinNovuKesi[reportCodeKod] = mn;
-                    if (mn == null)
-                        xeberdarliqlar.Add($"\"{reportCodeKod}\" üçün reportType/reportReason Oracle-dan (malumatin_novu) tapılmadı — 0 yazıldı, əl ilə yoxlayın.");
-                }
-
-                root.Reports.Add(await ReportQurAsync(e, mn, valyutaKoduKesi, ct));
+                    JsonMetni = json,
+                    TeklifOlunanFaylAdi = $"GOAML_Ixrac_{reportCodeKod}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json",
+                    SetirSayi = root.Reports.Count,
+                    ReportCodeEtiketi = qrup.First().Setir.ReportCode?.Aciqlama() is { } aciqlama
+                        ? $"{reportCodeKod} — {aciqlama}"
+                        : reportCodeKod,
+                });
             }
 
-            var json = System.Text.Json.JsonSerializer.Serialize(root,
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                    // 13.11.2026 — PEP/BLR header-zənginləşdirməsinin nullable sahələri
-                    // (GoamlJsonHeaderDto) CTR və s. tipli hesabatlarda yazılmasın deyə.
-                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-                });
-
+            // Bütün qeydlər (fayl/ReportCode sayından asılı olmayaraq) BİR dəfəyə
+            // "İxrac edilib"ə keçir — ikiqat ixrac qoruyucusu qruplaşdırmadan
+            // ƏVVƏLKİ İLƏ EYNİ qalır.
             foreach (var e in setirler)
                 e.Status = GoamlEmeliyyatStatusu.IxracEdilib;
             await _unitOfWork.YaddaSaxlaAsync();
 
-            var faylAdi = $"GOAML_Ixrac_{(filtr.ReportCode?.Kod() ?? "HAMISI")}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json";
-
             return Result<GoamlJsonIxracNeticeDto>.Ok(new GoamlJsonIxracNeticeDto
             {
-                JsonMetni = json,
-                TeklifOlunanFaylAdi = faylAdi,
-                SetirSayi = setirler.Count,
+                Fayllar = fayllar,
+                UmumiSetirSayi = setirler.Count,
                 Xeberdarliqlar = xeberdarliqlar,
             });
         }

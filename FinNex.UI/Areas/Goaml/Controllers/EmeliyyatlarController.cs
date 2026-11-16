@@ -291,7 +291,10 @@ public class EmeliyyatlarController : Controller
     //    ƏVVƏL birbaşa File() qaytarırdı, TempData["Success"] HEÇ VAXT görünmürdü,
     //    çünki fayl-yükləmə cavabı səhifəni YENİDƏN render ETMİR; PRG (Post-
     //    Redirect-Get) naxışına keçirildi — "Sil" action-unun ÖZÜNÜN artıq
-    //    işlətdiyi EYNİ naxış). ────────────────────────────────────────────
+    //    işlətdiyi EYNİ naxış). 16.11.2026-dan: `JsonIxracAsync` BİR YOX, bir
+    //    neçə fayl (hər ReportCode üçün ayrı) qaytara bilər — hamısı AYRI-AYRI
+    //    DMS-ə yazılır, TempData-ya `;;`-ayırıcı ilə SİYAHI kimi qoyulur
+    //    (TempData default olaraq `List<T>`-i saxlaya bilmir, sadə mətn lazımdır).
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Export(GoamlJsonIxracFiltrDto filtr)
@@ -314,27 +317,57 @@ public class EmeliyyatlarController : Controller
         //    DİSKDƏKİ fayldan gəlir; bu POST cavabı artıq birbaşa bayt qaytarmır.
         //    Qeydlər ARTIQ "İxracEdilib"ə keçib (JsonIxracAsync-in özündə commit
         //    olunub) — yazı sınsa belə statusu geri qaytarmırıq, yalnız operatora
-        //    açıq xəbərdarlıq veririk ki, əlaqəli heç nə itməyib.
+        //    açıq xəbərdarlıq veririk ki, əlaqəli heç nə itməyib. HƏR fayl AYRI
+        //    `try/catch`-dədir — biri uğursuz olsa belə, qalan fayllar diskə
+        //    yazılmağa davam edir (bir ReportCode-un Oracle-sı sınsa, o birini
+        //    bloklamasın).
         var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
         var dir = Path.Combine(dmsRoot, "goaml-ixrac");
+        var yazilanlar = new List<string>();
+        var yazilaBilmeyenler = new List<string>();
         try
         {
             Directory.CreateDirectory(dir);
-            await System.IO.File.WriteAllTextAsync(Path.Combine(dir, netice.Data.TeklifOlunanFaylAdi), netice.Data.JsonMetni, Encoding.UTF8);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "GOAML Export — DMS-ə yazma uğursuz oldu: {Fayl}", netice.Data.TeklifOlunanFaylAdi);
-            TempData["Error"] = $"{netice.Data.SetirSayi} qeyd ixrac edildi (statusu artıq \"İxrac edilib\"-dir), " +
-                "AMMA fayl diskə yazıla bilmədi — DMS qovluğuna (C:\\FinNex_DMS\\goaml-ixrac) çıxış yoxdur. " +
-                "Mühəndisə bildirin, qeydlərin özü İTMƏYİB.";
+            _logger.LogError(ex, "GOAML Export — DMS qovluğu yaradıla bilmədi: {Dir}", dir);
+            TempData["Error"] = $"{netice.Data.UmumiSetirSayi} qeyd ixrac edildi (statusu artıq \"İxrac edilib\"-dir), " +
+                "AMMA DMS qovluğuna (C:\\FinNex_DMS\\goaml-ixrac) çıxış yoxdur. Mühəndisə bildirin, qeydlərin özü İTMƏYİB.";
             return RedirectToAction(nameof(Export));
         }
 
+        foreach (var fayl in netice.Data.Fayllar)
+        {
+            try
+            {
+                await System.IO.File.WriteAllTextAsync(Path.Combine(dir, fayl.TeklifOlunanFaylAdi), fayl.JsonMetni, Encoding.UTF8);
+                yazilanlar.Add(fayl.TeklifOlunanFaylAdi);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GOAML Export — DMS-ə yazma uğursuz oldu: {Fayl}", fayl.TeklifOlunanFaylAdi);
+                yazilaBilmeyenler.Add(fayl.TeklifOlunanFaylAdi);
+            }
+        }
+
+        if (yazilanlar.Count == 0)
+        {
+            TempData["Error"] = $"{netice.Data.UmumiSetirSayi} qeyd ixrac edildi (statusu artıq \"İxrac edilib\"-dir), " +
+                "AMMA HEÇ BİR fayl diskə yazıla bilmədi. Mühəndisə bildirin, qeydlərin özü İTMƏYİB.";
+            return RedirectToAction(nameof(Export));
+        }
+
+        var fayllarTesviri = string.Join(", ", netice.Data.Fayllar.Select(f => $"{f.ReportCodeEtiketi} ({f.SetirSayi})"));
+        var esasMetin = netice.Data.Fayllar.Count == 1
+            ? $"{netice.Data.UmumiSetirSayi} qeyd ixrac edildi — \"{netice.Data.Fayllar[0].TeklifOlunanFaylAdi}\"."
+            : $"{netice.Data.UmumiSetirSayi} qeyd, {netice.Data.Fayllar.Count} AYRI fayla ixrac edildi: {fayllarTesviri}.";
         TempData["Success"] = netice.Data.Xeberdarliqlar.Count > 0
-            ? $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\". " + string.Join(" | ", netice.Data.Xeberdarliqlar)
-            : $"{netice.Data.SetirSayi} qeyd ixrac edildi — \"{netice.Data.TeklifOlunanFaylAdi}\".";
-        TempData["IxracFayli"] = netice.Data.TeklifOlunanFaylAdi;
+            ? esasMetin + " " + string.Join(" | ", netice.Data.Xeberdarliqlar)
+            : esasMetin;
+        TempData["IxracFayllari"] = string.Join(";;", yazilanlar);
+        if (yazilaBilmeyenler.Count > 0)
+            TempData["Error"] = "Bu fayl(lar) diskə yazıla bilmədi, yalnız əl ilə yoxlanmalıdır: " + string.Join(", ", yazilaBilmeyenler);
 
         // 13.11.2026, KRİTİK DÜZƏLİŞ: `TempData["Success"]`-in yuxarıdakı
         // xəbərdarlıq mətni Export.cshtml-in ÖZ "İxrac tamamlandı" qutusunda

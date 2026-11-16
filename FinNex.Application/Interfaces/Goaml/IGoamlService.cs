@@ -67,7 +67,10 @@ namespace FinNex.Application.Interfaces.Goaml
         /// NÖVBƏTİ ixrac eyni qeydi TƏKRAR GÖTÜRMƏYƏCƏK. Oracle-a YALNIZ OXU (malumatin_novu,
         /// kurval) aparılır, heç nə yazılmır. Fayla YAZMAQ bu metodun işi DEYİL —
         /// nəticə mətn kimi qaytarılır, DMS-ə yazmaq/yükləmək controller-in işidir
-        /// (Kassa/Exchange-in `SablonYolu()` presedentinə uyğun).</summary>
+        /// (Kassa/Exchange-in `SablonYolu()` presedentinə uyğun). 16.11.2026-dan:
+        /// aralıqda bir neçə ReportCode qarışıq gələrsə, nəticə TƏK fayl YOX, HƏR
+        /// ReportCode üçün AYRI `GoamlJsonIxracFaylDto` siyahısıdır (istifadəçi
+        /// tələbi: real goAML portalı "bir fayl = bir report type" gözlədiyi üçün).</summary>
         Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default);
 
         /// <summary>"İxrac et (JSON)"-dan ƏVVƏL, həmin filtrlə UYĞUN GƏLƏCƏK (hələ

@@ -3,7 +3,13 @@
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "GOAML — Export to file (JSON)";
-    var gmlIxracFayli = TempData["IxracFayli"] as string;
+    // 16.11.2026 — tək fayl YOX, hər ReportCode üçün AYRI fayl (bax `JsonIxracAsync`-in
+    // yenilənməsi) — TempData default olaraq `List<T>`-i daşıya bilmədiyi üçün
+    // controller bunu `;;`-ayırıcılı mətn kimi yazır, burada parçalanır.
+    var gmlIxracFayllariXam = TempData["IxracFayllari"] as string;
+    var gmlIxracFayllari = string.IsNullOrEmpty(gmlIxracFayllariXam)
+        ? new List<string>()
+        : gmlIxracFayllariXam.Split(";;", StringSplitOptions.RemoveEmptyEntries).ToList();
     var gmlIxracXeberdarliqlari = TempData["IxracXeberdarliqlari"] as string;
 }
 
@@ -50,17 +56,33 @@
         "İxrac edilib" statusuna keçir — növbəti ixrac onları TƏKRAR GÖTÜRMƏYƏCƏK.
     </div>
 
-    @if (!string.IsNullOrEmpty(gmlIxracFayli))
+    @* 16.11.2026 — tək fayl YOX, hər ReportCode üçün AYRI fayl ola bilər
+       (istifadəçi tələbi: "hər tipə görə ayrı fayl"). Hər fayl öz sətrində,
+       öz yükləmə düyməsi ilə göstərilir — "gmlDownloadLink0", "...1" və s. *@
+    @if (gmlIxracFayllari.Count > 0)
     {
-        <div class="gml-success-box">
-            <i class="bi bi-check-circle-fill"></i>
-            <div class="gml-success-text">
-                <div class="gml-success-title">İxrac tamamlandı</div>
-                <div class="gml-sub">Fayl diskə (DMS → <code>goaml-ixrac</code>) yazıldı: <code>@gmlIxracFayli</code></div>
+        <div class="gml-success-box" style="flex-direction:column; align-items:stretch">
+            <div style="display:flex; align-items:center; gap:14px">
+                <i class="bi bi-check-circle-fill"></i>
+                <div class="gml-success-text">
+                    <div class="gml-success-title">
+                        İxrac tamamlandı — @gmlIxracFayllari.Count
+                        @(gmlIxracFayllari.Count == 1 ? "fayl" : "AYRI fayl")
+                    </div>
+                    <div class="gml-sub">Fayllar diskə (DMS → <code>goaml-ixrac</code>) yazıldı.</div>
+                </div>
             </div>
-            <a href="@Url.Action("IxracFayli", new { fayl = gmlIxracFayli })" id="gmlDownloadLink" class="fn-btn fn-btn--primary">
-                <i class="bi bi-download"></i> Faylı yüklə
-            </a>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px">
+                @for (var i = 0; i < gmlIxracFayllari.Count; i++)
+                {
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 12px; background:#fff; border:1px solid #d1fae5; border-radius:8px">
+                        <code style="font-size:.8rem">@gmlIxracFayllari[i]</code>
+                        <a href="@Url.Action("IxracFayli", new { fayl = gmlIxracFayllari[i] })" id="gmlDownloadLink@(i)" class="fn-btn fn-btn--primary fn-btn--sm">
+                            <i class="bi bi-download"></i> Yüklə
+                        </a>
+                    </div>
+                }
+            </div>
         </div>
     }
 
@@ -254,13 +276,24 @@
             return confirm(gmlSonOnizlemeSayi + ' qeyd ixrac olunacaq və geri qaytarıla bilməyəcək ("İxrac edilib" statusuna keçəcək). Davam edilsin?');
         }
 
-        // Uğurlu ixracdan sonra (PRG redirect ilə geri qayıdanda) faylı avtomatik
+        // Uğurlu ixracdan sonra (PRG redirect ilə geri qayıdanda) faylları avtomatik
         // yükləməyə başla — operator əlavə klikə ehtiyac qalmadan alsın, amma
-        // yuxarıdakı "Faylı yüklə" düyməsi də qalır (avtomatik yükləmə brauzer
-        // tərəfindən bloklansa, operator əl ilə klikləyə bilsin).
+        // yuxarıdakı "Yüklə" düymələri də qalır (avtomatik yükləmə brauzer
+        // tərəfindən bloklansa, operator əl ilə klikləyə bilsin). 16.11.2026-dan
+        // BİR yox BİR NEÇƏ fayl ola bilər — brauzerin eyni anda çox sayda
+        // yükləməni bloklama ehtimalına görə, kliklər bir-birindən 250ms
+        // ARALI aparılır (eyni "tick"də bir neçə .click() bəzi brauzerlərdə
+        // "çoxlu avtomatik yükləmə" qoruyucusuna düşə bilər).
         (function () {
-            var link = document.getElementById('gmlDownloadLink');
-            if (link) link.click();
+            var i = 0;
+            function novbeti() {
+                var link = document.getElementById('gmlDownloadLink' + i);
+                if (!link) return;
+                link.click();
+                i++;
+                setTimeout(novbeti, 250);
+            }
+            novbeti();
         })();
     </script>
 }

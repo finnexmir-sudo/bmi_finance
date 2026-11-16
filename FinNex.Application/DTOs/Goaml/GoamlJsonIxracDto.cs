@@ -7,10 +7,11 @@ namespace FinNex.Application.DTOs.Goaml
     /// GOAML — Export to JSON (#15 tapşırığı, 12.11.2026) sorğu filtri.
     /// `JSON_MMX_IN`-in `(p_date_S, p_date_PO, v_report_code, V_tip)`
     /// parametrlərinin güzgüsüdür — amma bizim versiyamızda `Tip`/`ReportCode`
-    /// İSTƏYƏ BAĞLI (null = hamısı) — Oracle-dan FƏRQLİ olaraq tək çağırışda
-    /// qarışıq Tip/ReportCode-lu qeydləri BİRLİKDƏ ixrac edə bilir, çünki hər
-    /// qeydin header-i (reportType/reportReason) ÖZ ReportCode-undan AYRI-AYRI
-    /// hesablanır (bax <see cref="GoamlService.JsonIxracAsync"/>).
+    /// İSTƏYƏ BAĞLI (null = hamısı). 16.11.2026-dan: tarix aralığında bir neçə
+    /// ReportCode (Məlumatın növü) qarışıq gələrsə, nəticə BİR fayl YOX, HƏR
+    /// ReportCode üçün AYRI fayl kimi qaytarılır (bax
+    /// <see cref="GoamlJsonIxracNeticeDto"/>, <see cref="GoamlService.JsonIxracAsync"/>)
+    /// — real goAML portalı adətən "bir fayl = bir report type" gözlədiyi üçün.
     /// </summary>
     public class GoamlJsonIxracFiltrDto
     {
@@ -20,14 +21,28 @@ namespace FinNex.Application.DTOs.Goaml
         public GoamlHesabatNovu? ReportCode { get; set; }
     }
 
-    /// <summary>İxrac nəticəsi — JSON mətni servis qatında hazırlanır, fayla
-    /// yazmaq/DMS-ə qoymaq İSƏ controller-in işidir (Exchange/Kassa modulunun
-    /// `SablonYolu()` presedentinə uyğun — DMS yolu HƏMİŞƏ controller-dədir).</summary>
-    public class GoamlJsonIxracNeticeDto
+    /// <summary>Bir ReportCode (Məlumatın növü) üçün hazırlanan TƏK fayl —
+    /// 16.11.2026-dan `GoamlJsonIxracNeticeDto` bunlardan BİR SİYAHI daşıyır,
+    /// tək fayl ƏVƏZİNƏ (istifadəçi tələbi: "hər növ üçün ayrı fayl").</summary>
+    public class GoamlJsonIxracFaylDto
     {
         public string JsonMetni { get; set; } = "";
         public string TeklifOlunanFaylAdi { get; set; } = "";
         public int SetirSayi { get; set; }
+        /// <summary>Görüntü üçün — məs. "CTR — Nəğd pul əməliyyatları".</summary>
+        public string ReportCodeEtiketi { get; set; } = "";
+    }
+
+    /// <summary>İxrac nəticəsi — JSON mətni(ləri) servis qatında hazırlanır,
+    /// fayla yazmaq/DMS-ə qoymaq İSƏ controller-in işidir (Exchange/Kassa
+    /// modulunun `SablonYolu()` presedentinə uyğun — DMS yolu HƏMİŞƏ
+    /// controller-dədir). 16.11.2026-dan TƏK fayl YOX, hər ReportCode üçün
+    /// AYRI faylın siyahısıdır — qeydlərin ÖZÜ isə yenə BİR dəfəyə (hamısı
+    /// birlikdə) "İxrac edilib" statusuna keçir, fayl sayından asılı olmayaraq.</summary>
+    public class GoamlJsonIxracNeticeDto
+    {
+        public List<GoamlJsonIxracFaylDto> Fayllar { get; set; } = new();
+        public int UmumiSetirSayi { get; set; }
         /// <summary>Oracle-dan (malumatin_novu/kurval) lazımi dəyər tapılmayan
         /// qeydlərin xəbərdarlıqları — ixracı DAYANDIRMIR, YALNIZ operatora
         /// göstərilir (CLAUDE.md-nin "best-effort, Oracle əlçatmaz olsa belə
