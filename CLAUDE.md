@@ -12116,3 +12116,29 @@ VƏ Receiver.Person-un indi Representative İLƏ EYNİ (ARSALAN/JAMSHIDI/HASHEM/
 IR/8407144) məlumatı daşıdığını, `sender_curr_amount`-ın artıq 0 yox 23500
 olduğunu təsdiqləməli — valyuta kodunun (EUR/AZN) VƏ sənəd seriya/nömrəsinin
 hələ də gözlənilən ola biləcəyini (yuxarıdakı iki açıq bənd) nəzərə alaraq.
+
+## GOAML — `repr_id_serial`/`repr_id_number` BOŞ Qalırdı — İKİ "SAKİT CATCH" Tapıldı + Account-un Mənbəyi Diaqnostikaya Çıxarıldı (16.11.2026)
+
+İstifadəçi eyni gün ikinci dəfə (əvvəlki "ReprIdSerial raw sahədən oxuyurdu" fiksindən SONRA) yenə `"repr_id_serial": ""`/`"repr_id_number": ""` gördü, VƏ paralel sual verdi: bizim faylda "Account" bloku boş sahələrlə gəlir — bu, real goAML-ə yüklənəndə problem yaradacaqmı?
+
+### `repr_id_serial`/`repr_id_number` — kök səbəb TAPILDI, AMMA Oracle-da TƏSDİQLƏNMƏLİDİR
+
+`AvtoDolduruAsync`-ın CON/SIG/TO sənəd-parçalama bloku (`ParcalaSenedNomresi`) YALNIZ `MmxIdSerialSiyahisiAsync()`-in (`odb.mmx_id_serial`) qaytardığı siyahı **boş olmayanda** işə düşür (`if (serialler.Count > 0)`). Bu metodun catch bloku isə **TAM SAKİT İDİ** (`catch { return new List<string>(); }`) — Oracle xətası (nə qədər ciddi olsa belə) HEÇ YERƏ yazılmırdı, nəticə hər zaman "boş siyahı, parçalama keç" kimi görünürdü. `TypesOfDocumentsXeritesiAsync` (`odb.types_of_documents`, `ReprIdType`/`SenderIdType`/`RecIdType`-i dolduran metod) da EYNİ sakit catch-ə malik idi.
+
+Bu, EYNİ layihənin ƏVVƏLKİ, UĞURLA HƏLL olunmuş İKİ hadisəsi İLƏ (09.11.2026: `balscht_fiz`/`balscht_ur` — `ORA-01031`; sonra `malumatin_novu`) BİRƏ-BİR UYĞUN gəlir — hər ikisində "FOXPRO (tətbiq hesabı) HEÇ VAXT toxunmamış bir cədvələ SELECT icazəsi yoxdur" səbəbi idi, kod/sorğunun ÖZÜ düz idi, yalnız icazə çatışmırdı.
+
+**Düzəliş — iki catch bloku `_logger.LogWarning(ex, ...)` ilə əvəz olundu** (`GoamlService.cs`, `MmxIdSerialSiyahisiAsync`/`TypesOfDocumentsXeritesiAsync`) — DAVRANIŞ DƏYİŞMİR (hələ də "ən yaxşı cəhd", Oracle əlçatmaz olsa Təsdiq əməliyyatı sınmır), YALNIZ SƏBƏB indi `Logs\log-<tarix>.txt`-ə yazılır.
+
+⚠️ **BU, TƏSDİQ DEYİL, DİAQNOZ ADDIMIDIR.** Kök səbəb (icazə, yoxsa `ConSenedinSeriyaNomresi`-nin özünün bu konkret əməliyyatda boş olması) Oracle-a canlı baxmadan QƏTİ müəyyənləşdirilə bilmədi. Yeni `docs/sql/goaml/99_Goaml_Repr_Serial_ve_Account_Diaqnostikasi.sql` — A hissəsi FOXPRO-nun `odb.mmx_id_serial`/`odb.types_of_documents`-ə SELECT edə bildiyini TƏSDİQLƏYİR/RƏDD EDİR (əvvəlki uğurlu `ORA-01031` metodologiyasının EYNİ təkrarı).
+
+### "Account" bloku boş — mənbə TAPILDI, AMMA DEBET/KREDİT-DƏN GÜMAN EDİLMƏDİ
+
+Araşdırma göstərdi ki, `sender.Account`/`receiver.Account`-ı dolduran `e.Account`/`e.AccountTo` (və buradan `SenderAccountNumber`/`ReceiverAccountNumber`) **HEÇ YERDƏ yazılmır** — nə `Tesdiq.cshtml` formasında bir `<input>`, nə `EmeliyyatlarController.Tesdiq` GET action-unda bir sətir. Yəni bu iki sahə DAİM `null` olur, `?? ""` fallback-i ilə HƏR ZAMAN boş sətirdir — mübadilə-stolu olub-olmamasından ASILI OLMAYARAQ.
+
+AYSEL-in öz mənbəyi (`97_...sql`, sətir 1245/1407) `sender_account_number`/`receiver_account_number`-i `v_goal.account`/`v_goal.account_to`-dan yazır — bunlar `c_goal` kursorunun (`select * from goaml_clients`) ÖZ sütunlarıdır, yəni `GOAML_CLIENTS`-in 124-sütunlu İNSERT-inin (bizim entity-nin mənbəyi) BİR HİSSƏSİ — **AMMA `DEBET`/`KREDIT` İLƏ EYNİ SÜTUN DEYİL, AYRI sütundur.** `ACCOUNT`/`ACCOUNT_TO`-nun real dəyərini AYSEL-in hansı "Update New" qaydası (150+ qaydadan hələ TAPILMAMIŞ biri) doldurduğu bilinmir — **DEBET/KREDIT-dən köçürmək bu sessiyada QƏSDƏN EDİLMƏDİ**, çünki bu, Oracle-da TƏSDİQLƏNMƏMİŞ bir güman olardı (layihənin "Oracle sütununu təxmin etmə" qaydası).
+
+**Düzəliş əvəzinə DİAQNOSTİKA:** `99_...sql`-in B hissəsi RecNum 22903177-ni (istifadəçinin öz real test əməliyyatı, AYSEL-in artıq saxladığı) birbaşa `odb.goaml_clients`-dən DEBET/KREDIT/ACCOUNT/ACCOUNT_TO ilə YAN-YANA göstərir — bu, TƏXMİN yox, HƏQİQİ bir sətirin real dəyərlərini göstərəcək, mənbəni QƏTİ müəyyənləşdirəcək (account=debet-dirsə, deməli köçürmək kifayətdir; fərqlidirsə, YENİDƏN "Update New" tərzi bir `v$sql` araşdırması lazımdır).
+
+⚠️ **"Real goAML portalına yüklənəndə problem yaradacaqmı?" sualına DƏQİQ CAVAB VERİLMƏDİ** — bu mühitdən real goAML portalının validasiya qaydalarına (Account-un MƏCBURİ sahə olub-olmadığına) baxmaq mümkün deyil. Bilinən: AYSEL-in real nümunə fayllarında (istifadəçinin göndərdiyi) Account HƏR ZAMAN REAL bir hesab nömrəsi daşıyır, BOŞ DEYİL — yəni bizim HAZIRKI boş çıxışımız AYSEL-in real çıxışından FƏRQLİDİR. Bu fərqin portalda rədd səbəbi olub-olmaması naməlumdur; ən sürətli yoxlama yolu faylı (əgər mövcuddursa) goAML-in test/sandbox mühitinə yükləyib nəticəyə baxmaqdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə balansı — `git diff`-in YALNIZ bu editin əlavə etdiyi sətirləri ayrıca ölçülüb: `{`/`}` 2/2, `(`/`)` 9/9, tam balanslıdır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra `docs/sql/goaml/99_Goaml_Repr_Serial_ve_Account_Diaqnostikasi.sql`-i (A hissəsini HƏM ÖZ sessiyasında, HƏM FOXPRO ilə; B hissəsini bircə dəfə) PL/SQL Developer-də işlədib nəticəni göndərməlidir — yalnız bundan sonra `repr_id_serial`/`repr_id_number`-in və Account-un əsl mənbəyi/düzəlişi müəyyənləşə bilər.

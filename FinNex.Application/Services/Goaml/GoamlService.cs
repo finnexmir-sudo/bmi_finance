@@ -779,7 +779,18 @@ namespace FinNex.Application.Services.Goaml
                     .Select(s => s!.Trim())
                     .ToList();
             }
-            catch { return new List<string>(); }
+            catch (Exception ex)
+            {
+                // 16.11.2026: ƏVVƏL TAMAMİLƏ SAKİT idi — nəticədə `repr_id_serial`/
+                // `repr_id_number` (və SIG/TO-nun eyni sahələri) HEÇ BİR İZ qalmadan
+                // boş qalırdı (`serialler.Count > 0` şərti AvtoDolduruAsync-də bütün
+                // parçalama blokunu keçirdi). Əgər bu `ORA-01031` (insufficient
+                // privileges) — `balscht_fiz`/`balscht_ur`/`malumatin_novu`-dakı EYNİ
+                // nümunə — çıxarsa, DBA-dan `GRANT SELECT ON odb.mmx_id_serial TO
+                // FOXPRO;` istə (bax `docs/sql/goaml/99_...sql`).
+                _logger.LogWarning(ex, "GOAML MmxIdSerialSiyahisiAsync uğursuz oldu — repr_id_serial/number boş qalacaq");
+                return new List<string>();
+            }
         }
 
         private async Task<Dictionary<string, string>> TypesOfDocumentsXeritesiAsync(CancellationToken ct)
@@ -796,7 +807,11 @@ namespace FinNex.Application.Services.Goaml
                         xerite[isare.Trim()] = mmxId.ToString()!;
                 }
             }
-            catch { /* best-effort — Oracle əlçatmazdırsa bu addım sakitcə ötürülür */ }
+            catch (Exception ex)
+            {
+                // 16.11.2026: eyni "sakit catch" tələsi — bax MmxIdSerialSiyahisiAsync.
+                _logger.LogWarning(ex, "GOAML TypesOfDocumentsXeritesiAsync uğursuz oldu — repr/sender/rec_id_type boş qalacaq");
+            }
             return xerite;
         }
 
