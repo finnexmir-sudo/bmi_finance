@@ -10,6 +10,13 @@ namespace FinNex.Application.DTOs.Goaml;
 /// (<see cref="Xetalar"/>-da səbəbi var).</summary>
 public class GoamlOracleDiaqnostikaDto
 {
+    /// <summary>16.11.2026 — tətbiqin RUNTIME-da (appsettings/User Secrets/ENV
+    /// dəyərindən, HANSI mənbədən olursa-olsun) İSTİFADƏ ETDİYİ "Data Source=..."
+    /// (host:port/servis), şifrəsiz. Bunu `appsettings.json`/User Secrets-də
+    /// ƏL İLƏ gördüyün dəyərlə tutuşdur — fərqlidirsə, bir ENV dəyişəni/başqa
+    /// config mənbəyi onu üstələyir deməkdir.</summary>
+    public string? AppConnectionDataSource { get; set; }
+
     /// <summary>`select global_name from global_name` — PL/SQL Developer-in
     /// öz pəncərəsində EYNİ sorğunu işlədib bu sahə ilə tutuşdur.</summary>
     public string? GlobalName { get; set; }

@@ -28,6 +28,10 @@
     </div>
 
     <div class="fn-card" style="padding:20px; margin-top:16px">
+        <div class="gml-diag-row" style="background:#fef3c7; margin:-20px -20px 10px -20px; padding:14px 20px; border-radius:10px 10px 0 0; border-bottom:2px solid #fbbf24">
+            <div class="gml-diag-k" style="color:#92400e">⚠ Tətbiqin RUNTIME-da İSTİFADƏ ETDİYİ Data Source</div>
+            <div class="gml-diag-v @(Model.AppConnectionDataSource == null ? "gml-diag-null" : "")" style="color:#92400e">@(Model.AppConnectionDataSource ?? "XƏTA")</div>
+        </div>
         <div class="gml-diag-row">
             <div class="gml-diag-k">global_name (select global_name from global_name)</div>
             <div class="gml-diag-v @(Model.GlobalName == null ? "gml-diag-null" : "")">@(Model.GlobalName ?? "XƏTA")</div>

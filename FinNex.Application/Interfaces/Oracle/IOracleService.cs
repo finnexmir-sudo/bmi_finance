@@ -16,4 +16,12 @@ public interface IOracleService
     /// Raw / Excel export üçün — eyni adlı sütunlar itmir, sütun sırası və xam dəyər tipi qorunur.
     /// </summary>
     Task<OracleNetice> SelectXamAsync(string sql, int maxRows = 1000, CancellationToken ct = default);
+
+    /// <summary>16.11.2026, DİAQNOSTİKA — tətbiqin RUNTIME-da İSTİFADƏ ETDİYİ
+    /// connection string-in "Data Source=..." hissəsini (host:port/servis)
+    /// şifrəsiz qaytarır. "GOAML Oracle Diaqnostikası" səhifəsi istifadəçinin
+    /// `appsettings.json`/User Secrets-də GÖRDÜYÜ ilə tətbiqin ƏSLİNDƏ
+    /// BAĞLANDIĞI ünvanın EYNİ olduğunu sübut etmək üçün (env variable/başqa
+    /// config mənbəyi dəyəri ÜSTƏLƏYƏ bilər — bu, həmin riski bağlayır).</summary>
+    string MaskedConnectionInfo { get; }
 }

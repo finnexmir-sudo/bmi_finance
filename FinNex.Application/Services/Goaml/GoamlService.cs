@@ -2074,7 +2074,12 @@ namespace FinNex.Application.Services.Goaml
         /// try/catch-dədir ki, biri uğursuz olsa belə qalanları yoxlamağa davam etsin.</summary>
         public async Task<GoamlOracleDiaqnostikaDto> OracleDiaqnostikaAsync(CancellationToken ct = default)
         {
-            var dto = new GoamlOracleDiaqnostikaDto();
+            var dto = new GoamlOracleDiaqnostikaDto
+            {
+                // 16.11.2026 — RUNTIME-da ƏSLİNDƏ işlənən Data Source; heç bir
+                // Oracle sorğusu TƏLƏB etmir, ona görə try/catch-ə ehtiyac yoxdur.
+                AppConnectionDataSource = _oracle.MaskedConnectionInfo
+            };
 
             async Task<string?> BirDeyerAsync(string sql, string sutun, string adi)
             {

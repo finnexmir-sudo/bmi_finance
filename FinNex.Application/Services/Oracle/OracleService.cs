@@ -15,6 +15,21 @@ public class OracleService : IOracleService
             ?? throw new InvalidOperationException("Oracle:ConnectionString konfiqurasiya edilməyib.");
     }
 
+    // 16.11.2026, DİAQNOSTİKA — "Data Source=..." hissəsini şifrəsiz qaytarır.
+    // `;`-lə ayrılmış hissələrdən yalnız "data source" ilə BAŞLAYANI saxlayır,
+    // "password"/"user id" kimi digər hissələr HEÇ VAXT qaytarılmır.
+    public string MaskedConnectionInfo
+    {
+        get
+        {
+            var hisse = _connectionString
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .FirstOrDefault(h => h.StartsWith("data source", StringComparison.OrdinalIgnoreCase)
+                                   || h.StartsWith("datasource", StringComparison.OrdinalIgnoreCase));
+            return hisse ?? "(Data Source tapılmadı — connection string formatı gözlənilmədik)";
+        }
+    }
+
     public async Task<List<Dictionary<string, object?>>> SelectAsync(string sql, int maxRows = 1000, CancellationToken ct = default)
     {
         sql = YalnizSelect(sql);
