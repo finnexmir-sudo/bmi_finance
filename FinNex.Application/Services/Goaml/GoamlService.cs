@@ -1763,8 +1763,16 @@ namespace FinNex.Application.Services.Goaml
                 TrnStatus = "EXC",
                 TrnActualDate = tarix,
                 TrnBankDate = tarix,
-                TrnExternalNumber = e.TransactionNumber ?? "",
-                TrnInternalNumber = e.TransactionNumber ?? "",
+                // 16.11.2026, KRİTİK DÜZƏLİŞ: AYSEL-in öz mənbəyi (`97_Goaml_JSON_MMX_IN_
+                // Tam_Metn.sql`, sətir 1030-1031) `trn_internal_number`-i `v_goal.
+                // Transactionnumber`-dan yazır — bu, bizim `TransactionNumber` sahəsi
+                // DEYİL (o, Tesdiq formunda heç bir input-a bağlı deyil, HƏMİŞƏ null-dur,
+                // istifadəsiz bir sahədir). Real AYSEL ixracı ilə tutuşdurularkən üzə
+                // çıxdı: AYSEL bu sahəyə elə `CandidateRecNum`-un ÖZÜNÜ yazır (22903177).
+                // `pla_sys.message_id`/`Id_Vd` zənciri port edilməyib — ən dərin, hər
+                // zaman əlçatan fallback (RecNum) birbaşa işlədilir.
+                TrnExternalNumber = e.CandidateRecNum.ToString(CultureInfo.InvariantCulture),
+                TrnInternalNumber = e.CandidateRecNum.ToString(CultureInfo.InvariantCulture),
                 TrnType = TrnTipTeyinEt(e),
                 TrnPaymentSystem = TrnOdenisSistemiTeyinEt(e),
                 TrnPaymentSubSystem = "", // S1CARDSC-əsaslı VIS/MCR/BCC təyini port edilməyib
@@ -1880,7 +1888,15 @@ namespace FinNex.Application.Services.Goaml
             // Tip-i açıq FİZİKİ seçibsə, NameUr-un məzmunundan ASILI OLMAYARAQ Person
             // istifadə olunmalıdır — AYSEL-in eyni (Debet/Kredit) cütlü real nümunəsi
             // də məhz belədir.
-            if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn))
+            // 16.11.2026, EYNİ BUG `FToF`-da DA TAPILDI: Tip="F to F" (RecNum 22903177,
+            // AYSEL-in real ixracı ilə tutuşdurularkən) olan bir namizəddə də Entity
+            // yazılırdı, halbuki AYSEL bu tipdə DƏ Person (boş olsa belə) yazır —
+            // `FToF` AYSEL-in mənbəyində (97_Goaml_JSON_MMX_IN_Tam_Metn.sql, sətir 1143)
+            // Person-u YAZAN tiplər siyahısındadır (`tip not in (3,4,5,6,7,11)` — 8=FToF
+            // bu siyahıda deyil, deməli yazılır), Entity-ni YAZAN siyahıda (sətir 1113,
+            // 1123: `tip not in (1,2,8,12,14)`) isə 8=FToF AÇIQ İSTİSNADIR.
+            if (!string.IsNullOrWhiteSpace(e.NameUr)
+                && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn or GoamlTipi.FToF))
             {
                 sender.Entity = new GoamlJsonSenderEntityDto
                 {
@@ -1917,19 +1933,40 @@ namespace FinNex.Application.Services.Goaml
                 SenderAmountLocal = e.SummaVNacval ?? 0,
             };
 
-            sender.Account = new GoamlJsonSenderAccountDto
+            // 16.11.2026, KRİTİK DÜZƏLİŞ: AYSEL-in mənbəyi (sətir 1224) "Account" bloku
+            // YALNIZ mübadilə-stolu prefiksi (1005010060/1006010050) OLMAYANDA VƏ tip
+            // FizikIn/HuquqiIn/FToF OLMAYANDA yazır. RecNum 22903177 (F to F, mübadilə-
+            // stolu) ilə real AYSEL ixracında Sender-in "Account" AÇARI TAMAMİLƏ YOXDUR —
+            // bizim kod isə həmişə (boş sahələrlə belə) yazırdı. `DefaultIgnoreCondition
+            // = WhenWritingNull` ilə açarın ÖZÜNÜN yoxa çıxması üçün `sender.Account`
+            // `null` olaraq QALMALIDIR, boş obyekt YAZILMAMALIDIR.
+            if (!MubadiiStoluPrefiksiMi(e) && e.Tip is not (GoamlTipi.FizikIn or GoamlTipi.HuquqiIn or GoamlTipi.FToF))
             {
-                SenderAccountNumber = (e.AccountTo ?? e.Account) ?? "",
-                SenderAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
-                SenderAccountCurrency = currType,
-                SenderAccountFinInstCountry = e.FromCountry ?? "",
-                SenderAccountFinInstBicId = (e.SwiftTo ?? e.Swift) ?? "",
-                SenderAccountFinInstName = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
-                SenderAccountFinInstBranch = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
-                SenderAccountFinInstBic = (e.SwiftTo ?? e.Swift) ?? "",
-            };
+                sender.Account = new GoamlJsonSenderAccountDto
+                {
+                    SenderAccountNumber = (e.AccountTo ?? e.Account) ?? "",
+                    SenderAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
+                    SenderAccountCurrency = currType,
+                    SenderAccountFinInstCountry = e.FromCountry ?? "",
+                    SenderAccountFinInstBicId = (e.SwiftTo ?? e.Swift) ?? "",
+                    SenderAccountFinInstName = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstBranch = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstBic = (e.SwiftTo ?? e.Swift) ?? "",
+                };
+            }
 
             return sender;
+        }
+
+        /// <summary>AYSEL-in "mübadilə stolu" xüsusi prefiksi — <see cref="ValyutaVeMeblegAsync"/>-in
+        /// işlətdiyi EYNİ hesab-cütü yoxlaması (16.11.2026-da Account-blokunun
+        /// yazılıb-yazılmayacağını həll etmək üçün AYRICA çıxarıldı, düstur TƏKRAR
+        /// YAZILMADI).</summary>
+        private static bool MubadiiStoluPrefiksiMi(GoamlEmeliyyat e)
+        {
+            var prefiks = (e.Debet ?? "").Length >= 5 && (e.Kredit ?? "").Length >= 5
+                ? e.Debet!.Substring(0, 5) + e.Kredit!.Substring(0, 5) : "";
+            return prefiks is "1005010060" or "1006010050";
         }
 
         /// <summary>Receiver — Oracle sətir 1251-1403, "Sig" (Hesab imza hüququ olan
@@ -1940,8 +1977,11 @@ namespace FinNex.Application.Services.Goaml
 
             // 13.11.2026, KRİTİK DÜZƏLİŞ (bax SenderQurAsync-dəki EYNİ şərh) — Tip
             // FİZİKİ olanda Entity YOX, Sig-dən (real şəxs) Person yazılmalıdır.
+            // 16.11.2026: `FToF` də eyni istisnaya əlavə edildi (bax SenderQurAsync-
+            // dəki eyni tarixli şərh — AYSEL-in mənbəyində 8=FToF Entity-siyahısından
+            // (sətir 1113) AÇIQ istisnadır).
             if (!string.IsNullOrWhiteSpace(e.NameUr) && e.Tip != GoamlTipi.HuquqiOut
-                && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn))
+                && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn or GoamlTipi.FToF))
             {
                 receiver.Entity = new GoamlJsonReceiverEntityDto
                 {
@@ -1978,20 +2018,27 @@ namespace FinNex.Application.Services.Goaml
                 ReceiverAmountLocal = e.SummaVNacval ?? 0,
             };
 
-            receiver.Account = new GoamlJsonReceiverAccountDto
+            // 16.11.2026, KRİTİK DÜZƏLİŞ: AYSEL-in mənbəyi (sətir 1390) Receiver-in
+            // "Account" blokunu YALNIZ `report_code <> 'CTR' OR tip IN (FizikIn,
+            // HuquqiIn, FToF)` olanda yazır — bu, Sender-dəki şərtdən FƏRQLİDİR (burada
+            // mübadilə-stolu prefiksi YOX, ReportCode=CTR həll edir). Şərt qarışdırılmasın.
+            if (e.ReportCode != GoamlHesabatNovu.Ctr || e.Tip is GoamlTipi.FizikIn or GoamlTipi.HuquqiIn or GoamlTipi.FToF)
             {
-                ReceiverAccountNumber = (e.Account ?? e.AccountTo) ?? "",
-                ReceiverAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
-                ReceiverAccountCurrency = currType,
-                // Oracle: V_ATTRIB.NAIMEN_UCHREJ (bizim ÖZ bankımızın adı, ATTRIB-dən) —
-                // bu lookup port edilməyib, Oracle-un ÖZ ŞƏRHƏ ALINMIŞ ehtiyat düsturu
-                // (`NVL(institution_name, institution_name_to)`) işlədilir.
-                ReceiverAccountFinInstName = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
-                ReceiverAccountFinInstCountry = e.IncorporationCountryCode ?? "",
-                ReceiverAccountFinInstBicId = (e.Swift ?? e.SwiftTo) ?? "",
-                ReceiverAccountFinInstBranch = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
-                ReceiverAccountFinInstBic = (e.Swift ?? e.SwiftTo) ?? "",
-            };
+                receiver.Account = new GoamlJsonReceiverAccountDto
+                {
+                    ReceiverAccountNumber = (e.Account ?? e.AccountTo) ?? "",
+                    ReceiverAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
+                    ReceiverAccountCurrency = currType,
+                    // Oracle: V_ATTRIB.NAIMEN_UCHREJ (bizim ÖZ bankımızın adı, ATTRIB-dən) —
+                    // bu lookup port edilməyib, Oracle-un ÖZ ŞƏRHƏ ALINMIŞ ehtiyat düsturu
+                    // (`NVL(institution_name, institution_name_to)`) işlədilir.
+                    ReceiverAccountFinInstName = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                    ReceiverAccountFinInstCountry = e.IncorporationCountryCode ?? "",
+                    ReceiverAccountFinInstBicId = (e.Swift ?? e.SwiftTo) ?? "",
+                    ReceiverAccountFinInstBranch = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                    ReceiverAccountFinInstBic = (e.Swift ?? e.SwiftTo) ?? "",
+                };
+            }
 
             return receiver;
         }

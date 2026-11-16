@@ -71,7 +71,8 @@ public class EmeliyyatlarController : Controller
     public async Task<IActionResult> Tesdiq(int filialNumber, DateTime dateOper, long recNum,
         string? debet, string? kredit, decimal? summaVNacval, int? kodValuti,
         string? innDebet, string? innKredit, string? primechanie,
-        string? nameLicschDe, string? nameLicschKre, string? documentSource)
+        string? nameLicschDe, string? nameLicschKre, string? documentSource,
+        string? registracNomerDe, string? registracNomerKre)
     {
         ViewData["Title"] = "GOAML — Təsdiqlə";
 
@@ -89,6 +90,13 @@ public class EmeliyyatlarController : Controller
             NameUr = nameLicschDe,
             ToAdi = nameLicschKre,
             DocumentSource = documentSource,
+            // 16.11.2026: AYSEL-in real ixracı ilə tutuşdurularkən üzə çıxdı —
+            // "trn_detailed_id" elə bu sahədən (REGISTRAC_NOMER) gəlir, namizəd
+            // sorğusu onu artıq daşıyır (RegistracNomerDe/Kre), amma heç yerə
+            // köçürülmürdü — operator üçün forma sahəsi olmadığı üçün HƏMİŞƏ
+            // boş qalırdı. Hansı tərəf uyğundursa (adətən ikisindən yalnız biri
+            // doludur) həmin dəyər götürülür.
+            RegistracNomer = registracNomerDe ?? registracNomerKre,
         };
 
         // ── "Sistem gətirə bilmirsə, işçi doldurur" (09.11.2026, istifadəçi

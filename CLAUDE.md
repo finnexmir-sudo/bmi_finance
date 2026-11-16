@@ -11883,3 +11883,84 @@ implementasiyası — hamısı TAMAMİLƏ silindi, heç bir qalıq istinad qalma
 (`grep` ilə təsdiqləndi). Qalan YEGANƏ iz bu CLAUDE.md sənədidir — kök
 səbəbin tapılma YOLU (diaqnoz metodologiyası) gələcək oxşar hadisələr üçün
 dəyərli olduğundan silinmədi, yalnız onu TAPAN KOD silindi.
+
+### Export JSON — AYSEL-in Real Çıxışı ilə Sahə-Sahə Tutuşdurma: 3 KRİTİK Fərq (16.11.2026)
+
+İstifadəçi bizim export etdiyimiz JSON-u (RecNum 22903177, "F to F", mübadilə
+stolu) AYSEL-in ƏVVƏLKİ real ixracı ilə yan-yana göndərdi. Üç real, kodla
+təsdiqlənən fərq tapıldı — hər biri AYSEL-in öz mənbə prosedurunun (`docs/sql/
+goaml/97_Goaml_JSON_MMX_IN_Tam_Metn.sql`) HƏRFİ mətni ilə sübut olundu,
+TƏXMİN EDİLMƏDİ.
+
+**1. `trn_external_number`/`trn_internal_number` — "-" (bizdə) vs "22903177"
+(AYSEL).** Kod `e.TransactionNumber ?? ""` yazırdı — bu sahə `GoamlTesdiqDto`-da
+VAR, amma `Tesdiq.cshtml`-də HEÇ BİR `<input>`-ə bağlı DEYİL (operator onu
+ƏSLA doldura bilmir, HƏMİŞƏ `null`). AYSEL-in mənbəyi (sətir 1030-1031) isə
+`NVL(pla_sys.message_id, NVL(Id_Vd, Transactionnumber))` zəncirinin SON
+fallback-ini (`Transactionnumber`) işlədir — bu, bizim `CandidateRecNum`-un
+ÖZÜDÜR (real nümunədə eyni ədəd). `pla_sys`/`Id_Vd` port edilməyib — düzəliş
+birbaşa `e.CandidateRecNum.ToString()` yazır (ən dərin, həmişə əlçatan fallback).
+
+**2. Sender/Receiver "Entity" bloku `FToF`-da da YAZILIRDI.** 13.11.2026-da
+(bax yuxarı) YALNIZ `FizikOut`/`FizikIn` Entity-dən istisna edilmişdi — AMMA
+`FToF` (8) edilməmişdi. AYSEL-in mənbəyi (sətir 1113, 1123) Entity-ni YAZAN
+şərtdə `tip not in (1,2,8,12,14)` yazır — 8=FToF AÇIQ İSTİSNADIR, Person-u
+YAZAN şərtdə (sətir 1143: `tip not in (3,4,5,6,7,11)`) isə 8 İSTİSNA DEYİL,
+yəni FToF HƏMİŞƏ Person yazmalıdır (boş olsa belə). Düzəliş: hər iki metodun
+Entity-şərtinə `or GoamlTipi.FToF` əlavə edildi.
+
+**3. "Account" bloku mübadilə-stolu/CTR hallarında HEÇ YOXDUR, bizdə isə
+HƏMİŞƏ (boş sahələrlə) yazılırdı.** AYSEL-in mənbəyi (sətir 1224, 1390) bu
+bloku ŞƏRTLİ yazır — **Sender** üçün: `prefiks NOT IN ('1005010060',
+'1006010050') AND tip NOT IN (2,4,8)`; **Receiver** üçün İSƏ FƏRQLİ bir
+şərt: `report_code <> 'CTR' OR tip IN (2,4,8)` (mübadilə-stolu prefiksinə
+YOX, ReportCode=CTR-ə baxır). İkisi QARIŞDIRILMAMALIDIR — Sender prefiks-
+əsaslı, Receiver CTR-əsaslıdır. Düzəliş: hər iki `Account` təyinatı bu şərtə
+görə şərtləndirildi (`sender.Account`/`receiver.Account` `null` qalır,
+`DefaultIgnoreCondition=WhenWritingNull` açarın ÖZÜNÜ JSON-dan çıxarır).
+Prefiks yoxlaması `MubadiiStoluPrefiksiMi(e)` adlı yeni, paylaşılan helper-ə
+çıxarıldı (`ValyutaVeMeblegAsync`-in artıq işlətdiyi EYNİ düstur — təkrar
+yazılmadı).
+
+**4. `trn_detailed_id` ("-" vs "000001") — KOD BUGU YOX, YARIMÇIQ BORU İDİ,
+İNDİ TAMAMLANDI.** AYSEL-in mənbəyi (sətir 1037) `v_goal.Registrac_Nomer`-i
+yazır — bu, bizim `e.RegistracNomer ?? ""` ilə ARTIQ EYNİ sahədir (kodda
+dəyişiklik lazım deyil), AMMA `RegistracNomer` heç vaxt doldurulmurdu:
+namizəd sorğusu onu (`RegistracNomerDe`/`RegistracNomerKre`) artıq Oracle-dan
+oxuyur, lakin Index/Risk-in "Təsdiqlə" linki bu iki sahəni ÖTÜRMÜRDÜ,
+`Tesdiq` GET action-u da QƏBUL ETMİRDİ. Düzəliş — dörd fayl: `Index.cshtml`
+VƏ `Risk/Index.cshtml`-in `URLSearchParams`-ına `registracNomerDe`/
+`registracNomerKre` əlavə edildi; `EmeliyyatlarController.Tesdiq` GET-i bu
+iki parametri qəbul edib `dto.RegistracNomer = registracNomerDe ??
+registracNomerKre` yazır; `Tesdiq.cshtml`-ə uyğun `<input type="hidden"
+asp-for="RegistracNomer">` əlavə olundu ki, POST-da itməsin (`TesdiqleAsync`
+onsuz da `RegistracNomer = dto.RegistracNomer` yazırdı — bu qat dəyişmədi).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — dördü də yalnız BUNDAN SONRAKI "Təsdiqlə"/
+"Export" çağırışlarına təsir edir; artıq təsdiqlənmiş/ixrac edilmiş qeydlər
+(o cümlədən bu test RecNum-u) dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/brace balansı hər 5 dəyişən faylda, `git diff`-in
+əlavə/silinən sətirləri ayrıca ölçülərək düzəlişin ÖZÜNÜN net-balanslı
+olduğu təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra
+real ssenari ilə yoxlamalıdır: eyni (F to F, mübadilə stolu) namizədi
+yenidən Təsdiqlə+Export et → `trn_external_number`/`trn_internal_number`-in
+RecNum-u, Sender/Receiver-in Person (Entity YOX) yazdığını, "Account"
+açarının HEÇ görünmədiyini, "trn_detailed_id"-nin artıq Oracle-dakı real
+qeydiyyat nömrəsini daşıdığını AYSEL-in nümunəsi ilə tutuşdurub təsdiqləməli.
+
+### Açıq Qalan İki Müzakirə (16.11.2026, hələ İCRA EDİLMƏDİ, istifadəçi qərarı gözlənilir)
+
+1. **"Təsdiqlənmiş siyahı" həm Əməliyyatlar, həm Risk-dən EYNİ səhifəyə
+   aparır** — gözlənilən (bax yuxarı "GOAML — Hesab risk..." bölməsi, "AYRI
+   cədvəl YOXDUR"), istifadəçi ilə bunu AYIRD ETMƏK (`MenbeTab` sütunu
+   əlavə etmək) müzakirə olunur, HƏLƏ qərar verilməyib.
+2. **Export — (a) önizləmədə checkbox ilə seçim** (hazırda bütün filtr
+   nəticəsi bir dəfəyə ixrac olunur, sətir-sətir seçim yoxdur) **və (b) hər
+   "Məlumatın növü" üçün AYRI fayl** (hazırda bütün uyğun qeyd TƏK fayla
+   yazılır, ReportCode-a görə qruplaşdırılmır) — hər ikisi müzakirə edilib,
+   HƏLƏ İCRA EDİLMƏYİB. (b) üçün `JsonIxracAsync`-in artıq hər qeyd üçün
+   AYRICA `report` obyekti yaratdığı (bax `ReportQurAsync`) qeyd olundu —
+   qruplaşdırma ReportCode-a görə `GroupBy` tələb edir, yeni memarlıq lazım
+   deyil.
