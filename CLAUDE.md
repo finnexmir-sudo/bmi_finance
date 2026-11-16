@@ -12039,3 +12039,80 @@ mövcud, `AvtoDolduruAsync`-də artıq doldurulan bir sahə olduğu təsdiqlənd
 yoxlamalıdır: CON (Nümayəndə) sənəd seriyası "D" kimi bir hərf/rəqəm
 daşıyan bir namizədi təsdiqləyib export et → `repr_id_serial`-ın artıq
 TƏK HƏRF/QISA seriyanı (bütöv "D10019478" yox) göstərdiyini təsdiqləməli.
+
+### "Açıq Qalan #2" Qapandı — Mübadilə Stolunda Sender/Receiver Representative-in ÖZÜDÜR (16.11.2026)
+
+İstifadəçi AYSEL-in ƏVVƏLKİ (12.11.2026-cı tarixli) real ixracını — EYNİ
+RecNum 22903177, EYNİ müştəri (ARSALAN JAMSHIDI HASHEM) — göndərdi: orada
+Representative, Sender.Person VƏ Receiver.Person-un ÜÇÜ DƏ EYNİ şəxsin
+KYC-sini (ad/soyad/ata adı/sənəd/pin/vətəndaşlıq) daşıyır. İstifadəçinin öz
+sözü: *"əməliyyat goamldən gələndir, müştəri məlumatını sil yaddaşından"* —
+yəni bu, AYSEL-in ARTIQ SÜBUT ETDİYİ bir qayda, əlavə izahata ehtiyac yoxdur.
+
+**Kök məntiq (əvvəlki "100-prefiks guard" planından DAHA SADƏ, DAHA
+TƏHLÜKƏSİZ):** mübadilə-stolu (kassa-nağd valyuta dəyişimi) əməliyyatında
+Debet VƏ Kredit HƏR İKİSİ bankın ÖZ GL/kassa hesabıdır (real müştəri
+hesabı DEYİL) — "hesab sahibi" axtarışı (BALSCHT_FIZ/UR) belə hesablarda
+TƏBİİ OLARAQ heç nə tapmır. Əməliyyatı FİZİKİ aparan YEGANƏ real şəxs isə
+Representative/CON-dur (`emitent_benefisiar`, DOC_ID=RECNUM — 13.11.2026-da
+tapılan mexanizm) — nağd mübadilədə pulu verən VƏ geri alan elə HƏMİN
+insandır, ona görə Sender VƏ Receiver-in HƏR İKİSİ CON-un ÖZÜNÜ əks etdirir.
+
+**Düzəliş — `SenderQurAsync`/`ReceiverQurAsync`-a YENİ bir `else if` qolu
+(mövcud Entity-şərtdən SONRA, köhnə ToAdi/SigAdi-əsaslı qoldan ƏVVƏL):**
+`MubadiiStoluPrefiksiMi(e) && (ConAdi/ConSoyadi dolu)` olanda Person
+BİRBAŞA Con*/Repr* sahələrindən (`ConAdi`, `ConSoyadi`, `ConAtasininAdi`,
+`ConVetendasligi`, `ReprIdSerial`, `ReprIdNumber`, `ConPin`, `ConSenedinVerilmeTarixi`,
+`ConSenedinEtibarliliqMuddeti`, `ConDogulduguTarix`, `ConTelefonNomresi`,
+`ReprIdType`) qurulur — `ToAdi`/`SigAdi`-nin (hesab-sahibi auto-doldurma,
+GL hesabın ÖZ DİSPLAY ADINI daşıya bilən, qeyri-etibarlı mənbə) köhnə qolu
+YALNIZ bu yeni qol uyğun gəlməyəndə (CON boşdursa) işə düşür — "ToAdi real
+müştəri adıdır" ehtimalının HƏLƏ DƏ doğru olduğu qeyri-mübadilə halları
+(real "Alan fiziki şəxs" KYC-si olan adi köçürmələr) TOXUNULMADI.
+
+**İkinci, kiçik, eyni gün tapılan boşluq — `SummaVInval` (xarici valyuta
+məbləği) heç köçürülmürdü, "Registracnomer" ilə EYNİ unudulma naxışı.**
+Namizəd sorğusu bu sahəni onsuz da daşıyır (`GoamlNamizedSetirDto.
+SummaVInval`), AMMA Index/Risk-in linki ötürmür, `Tesdiq` GET-i qəbul
+etmir idi — nəticə `ValyutaVeMeblegAsync`-in mübadilə-stolu budağında
+HƏMİŞƏ `0` idi (sender_curr_amount:0, real 23500 əvəzinə). Dörd fayl üzrə
+(Index.cshtml, Risk/Index.cshtml, EmeliyyatlarController.Tesdiq GET,
+Tesdiq.cshtml-ə yeni hidden input) eyni "RegistracNomer" naxışı təkrarlanıb
+düzəldildi.
+
+⚠️ **AÇIQ QALAN — valyuta KODU (EUR) hələ "AZN" ola bilər.** `ValyutaVeMeblegAsync`-in
+mübadilə-stolu budağı `sender_curr_type`-ı `e.ForeignCurrencyCodeFrom ?? "AZN"`-
+dən oxuyur — bu sahə (AYSEL-in öz mənbəyində `v_goal.foreign_currency_code_from`)
+bizim namizəd Oracle sorğusunda (`90_Goaml_OracleSorgular.sql`) ÜMUMİYYƏTLƏ
+SEÇİLMİR — namizəddə belə bir sütun yoxdur. `SummaVInval` düzəldiyi üçün
+MƏBLƏĞ (23500) indi düzgün gələcək, AMMA valyuta KODU (EUR) hələ `null`
+qalıb defolt "AZN" yazılacaq, çünki mənbə sütun özü əlçatan deyil. Bunu
+düzəltmək üçün Oracle-da `foreign_currency_code`/`foreign_currency_code_from`-un
+HƏQİQİ mənbə cədvəlini (DOC_DNA_ALL_RISK-in öz sütunumu, başqa bir view-mu)
+CANLI yoxlamaq lazımdır — TƏXMİN EDİLMƏDİ, SQL-ə YENİ sütun əlavə edilmədi.
+
+⚠️ **AÇIQ QALAN — `repr_id_serial`/`repr_id_number` istifadəçinin yeni
+göndərdiyi test faylında HƏLƏ BOŞ İDİ** (əvvəlki "ReprIdSerial raw sahədən
+oxuyurdu" düzəlişi tətbiq olunub, AMMA mənbə sahənin ÖZÜ — `e.ReprIdSerial`/
+`ReprIdNumber`, `AvtoDolduruAsync`-in `MmxIdSerialSiyahisiAsync`+
+`ParcalaSenedNomresi` ilə doldurduğu — bu konkret confirm-də BOŞ qalıb).
+Səbəb ya `MMX_ID_SERIAL`-ın Oracle sorğusu bu dəfə uğursuz olub (09.11.2026-dakı
+`balscht_fiz`/`balscht_ur` ilə EYNİ `ORA-01031` icazə nümunəsi şübhəli — amma
+TƏSDİQLƏNMƏYİB), ya da `e.ConSenedinSeriyaNomresi`-in özü bu confirm-də boş
+olub. Yoxlama addımı: `Logs\log-<tarix>.txt`-də bu RecNum-un confirm anına
+uyğun vaxtda xəta/xəbərdarlıq axtarılmalı — bu sessiyada EDİLMƏDİ (Oracle-a
+bu mühitdən bağlantı yoxdur).
+
+⚠️ **Açıq qalan #3 (Receiver.Account real fayllarda yoxdur) HƏLƏ DƏ
+TOXUNULMADI** — istifadəçi bu mesajda onu YENİDƏN qaldırmadı, əvvəlki qeyd
+qüvvədədir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı 5 dəyişən faylda, Con*/Repr* sahə adları
+`RepresentativeQur`-un ARTIQ işlətdiyi adlarla bir-bir tutuşduruldu).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ (RecNum 22903177,
+mübadilə-stolu) namizədi yenidən təsdiqləyib export etməlidir: Sender.Person
+VƏ Receiver.Person-un indi Representative İLƏ EYNİ (ARSALAN/JAMSHIDI/HASHEM/
+IR/8407144) məlumatı daşıdığını, `sender_curr_amount`-ın artıq 0 yox 23500
+olduğunu təsdiqləməli — valyuta kodunun (EUR/AZN) VƏ sənəd seriya/nömrəsinin
+hələ də gözlənilən ola biləcəyini (yuxarıdakı iki açıq bənd) nəzərə alaraq.

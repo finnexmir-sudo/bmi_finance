@@ -69,7 +69,7 @@ public class EmeliyyatlarController : Controller
 
     // ── GET /Goaml/Emeliyyatlar/Tesdiq — seçilmiş namizəd üçün KYC forması ──
     public async Task<IActionResult> Tesdiq(int filialNumber, DateTime dateOper, long recNum,
-        string? debet, string? kredit, decimal? summaVNacval, int? kodValuti,
+        string? debet, string? kredit, decimal? summaVNacval, decimal? summaVInval, int? kodValuti,
         string? innDebet, string? innKredit, string? primechanie,
         string? nameLicschDe, string? nameLicschKre, string? documentSource,
         string? registracNomerDe, string? registracNomerKre)
@@ -84,6 +84,11 @@ public class EmeliyyatlarController : Controller
             Debet = debet,
             Kredit = kredit,
             SummaVNacval = summaVNacval,
+            // 16.11.2026: eyni "heç yerə köçürülmürdü" bugu — namizəd sorğusu
+            // SummaVInval-ı (xarici valyuta məbləği) onsuz da daşıyır, AMMA GET
+            // action onu heç qəbul etmirdi → mübadilə-stolu əməliyyatlarında
+            // sender_curr_amount həmişə 0 yazılırdı (bax CLAUDE.md).
+            SummaVInval = summaVInval,
             KodValuti = kodValuti,
             Primechanie = primechanie,
             DateOper = dateOper,

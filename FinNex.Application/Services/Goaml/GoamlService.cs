@@ -1911,6 +1911,36 @@ namespace FinNex.Application.Services.Goaml
                     SenderEntityTaxNumber = e.IncorporationNumber ?? "",
                 };
             }
+            // 16.11.2026, KRİTİK DÜZƏLİŞ: mübadilə-stolu (kassa-nağd valyuta dəyişimi)
+            // əməliyyatında Sender/Receiver AYRI hesab sahibləri DEYİL — hər iki "hesab"
+            // bankın ÖZ GL/kassa hesabıdır (real şəxs deyil), amma əməliyyatı FİZİKİ
+            // aparan ŞƏXS (Representative/CON, `emitent_benefisiar`-dan) VAR və AYSEL-in
+            // real ixracı (RecNum 22903177) göstərir ki, bu şəxs Sender VƏ Receiver-in
+            // HƏR İKİSİNDƏ (eyni ad/sənəd/pin ilə) təkrarlanır — çünki nağd mübadilədə
+            // pulu verən VƏ geri alan elə HƏMİN insandır. Əvvəlki kod bu halda `ToAdi`-ni
+            // (hesab-sahibi auto-doldurmanın tapdığı, GL hesabın ÖZ DİSPLAY ADI, məs.
+            // "VAL.M/MƏN NƏGD PUL-AZN (EUR)") "müştəri adı" kimi yazırdı — əvəzinə indi
+            // CON-un ÖZ KYC-si istifadə olunur, operatora TƏKRAR müştəri məlumatı
+            // yazdırmaq lazım deyil.
+            else if (MubadiiStoluPrefiksiMi(e) && (!string.IsNullOrWhiteSpace(e.ConAdi) || !string.IsNullOrWhiteSpace(e.ConSoyadi)))
+            {
+                sender.Person = new GoamlJsonSenderPersonDto
+                {
+                    SenderFirstName = (e.ConAdi ?? "").Trim(),
+                    SenderLastName = (e.ConSoyadi ?? "").Trim(),
+                    SenderMiddleName = (e.ConAtasininAdi ?? "").Trim(),
+                    SenderCitizenship = e.ConVetendasligi ?? "",
+                    SenderIdSerial = e.ReprIdSerial ?? "",
+                    SenderIdNumber = e.ReprIdNumber ?? "",
+                    SenderPinCode = e.ConPin ?? "",
+                    SenderIdIssueDate = Tarix(e.ConSenedinVerilmeTarixi),
+                    SenderIdExpiryDate = Tarix(e.ConSenedinEtibarliliqMuddeti),
+                    SenderBirthDate = Tarix(e.ConDogulduguTarix),
+                    SenderPhoneNumber = e.ConTelefonNomresi ?? "",
+                    SenderTaxId = "",
+                    SenderIdType = e.ReprIdType ?? "",
+                };
+            }
             else if (!string.IsNullOrWhiteSpace(e.ToAdi) || !string.IsNullOrWhiteSpace(e.ToSoyadi))
             {
                 sender.Person = new GoamlJsonSenderPersonDto
@@ -1994,6 +2024,28 @@ namespace FinNex.Application.Services.Goaml
                     ReceiverEntityName = e.NameUr ?? "",
                     ReceiverEntityRegCountry = e.IncorporationCountryCode ?? "",
                     ReceiverEntityTaxNumber = e.IncorporationNumber ?? "",
+                };
+            }
+            // 16.11.2026, KRİTİK DÜZƏLİŞ (bax SenderQurAsync-dəki EYNİ, eyni tarixli
+            // şərh) — mübadilə-stolu əməliyyatında Receiver DƏ ayrıca hesab sahibi
+            // deyil, Representative/CON-un ÖZÜDÜR.
+            else if (MubadiiStoluPrefiksiMi(e) && (!string.IsNullOrWhiteSpace(e.ConAdi) || !string.IsNullOrWhiteSpace(e.ConSoyadi)))
+            {
+                receiver.Person = new GoamlJsonReceiverPersonDto
+                {
+                    ReceiverFirstName = (e.ConAdi ?? "").Trim(),
+                    ReceiverLastName = (e.ConSoyadi ?? "").Trim(),
+                    ReceiverMiddleName = (e.ConAtasininAdi ?? "").Trim(),
+                    ReceiverCitizenship = e.ConVetendasligi ?? "",
+                    ReceiverIdSerial = e.ReprIdSerial ?? "",
+                    ReceiverIdNumber = e.ReprIdNumber ?? "",
+                    ReceiverPinCode = e.ConPin ?? "",
+                    ReceiverIdIssueDate = Tarix(e.ConSenedinVerilmeTarixi),
+                    ReceiverIdExpiryDate = Tarix(e.ConSenedinEtibarliliqMuddeti),
+                    ReceiverPhoneNumber = e.ConTelefonNomresi ?? "",
+                    ReceiverTaxId = "",
+                    ReceiverBirthDate = Tarix(e.ConDogulduguTarix),
+                    ReceiverIdType = e.ReprIdType ?? "",
                 };
             }
             else if (!string.IsNullOrWhiteSpace(e.SigAdi) || !string.IsNullOrWhiteSpace(e.SigSoyadi))
