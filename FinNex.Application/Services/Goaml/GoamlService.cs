@@ -2150,6 +2150,15 @@ namespace FinNex.Application.Services.Goaml
 
         /// <summary>Oracle NUMBER-i (adətən `decimal`) uzun ədədə çevirir —
         /// stringə çevirib geri parse ETMİRİK (CLAUDE.md "Oracle Rəqəmi" qaydası).</summary>
+        // 16.11.2026, KÖK SƏBƏB TAPILDI: `odb.malumatin_novu.REPORTTYPE`/`REPORTREASON`
+        // NUMBER YOX, VARCHAR2-dir (canlı Oracle-da `all_tab_columns` ilə TƏSDİQLƏNDİ) —
+        // "8" kimi mətn gəlirdi, aşağıdakı `string` qolu YOX idi, `_ => 0` qoluna düşüb
+        // SƏSSİZCƏ 0 yazırdı. Export-un reportType=0/0 bugu elə BU idi, Oracle-da/
+        // FOXPRO hesabında HEÇ bir problem yox imiş (PL/SQL Developer-də FOXPRO ilə
+        // birbaşa test 8/4 vermişdi — mətni sadəcə GÖSTƏRİRDİ, .NET kodu isə onu
+        // RƏQƏMƏ ÇEVİRƏ BİLMİRDİ). `long.TryParse` uğursuz olarsa (boş/naməlum mətn)
+        // yenə 0 — bu, YALNIZ yeni bir imkan ƏLAVƏ edir, mövcud decimal/int/double
+        // davranışına TOXUNMUR.
         private static long ToLong(object? v) => v switch
         {
             null => 0,
@@ -2157,6 +2166,7 @@ namespace FinNex.Application.Services.Goaml
             decimal d => (long)d,
             int i => i,
             double db => (long)db,
+            string s => long.TryParse(s.Trim(), out var parsed) ? parsed : 0,
             _ => 0,
         };
 
