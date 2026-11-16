@@ -11964,3 +11964,78 @@ qeydiyyat nömrəsini daşıdığını AYSEL-in nümunəsi ilə tutuşdurub təs
    AYRICA `report` obyekti yaratdığı (bax `ReportQurAsync`) qeyd olundu —
    qruplaşdırma ReportCode-a görə `GroupBy` tələb edir, yeni memarlıq lazım
    deyil.
+
+### İKİNCİ TUTUŞDURMA — 1 Düzəldilən, 2 AÇIQ QALAN (16.11.2026, istifadəçi "yadda saxla, sonra qayıdacağıq")
+
+İstifadəçi real ixrac faylını (həm AYSEL-in öz arxiv faylları — NGR/BCR/BLR
+nümunələri, həm bizim təzə ixracımız) Notepad++-da yan-yana açıb daha üç
+fərq göstərdi. Birincisi DƏRHAL düzəldildi (aydın, təklikdə doğrulanan bir
+sətirlik səhv), qalan ikisi İSTİFADƏÇİNİN ÖZ SÖZÜ İLƏ **sonraya saxlanıldı** —
+aşağıda hər birinin NİYƏ indi fiks edilmədiyi açıq yazılıb.
+
+**1. DÜZƏLDİLDİ — `RepresentativeQur`-un PAT qolu `ReprIdSerial`-ı YANLIŞ,
+RAW sahədən oxuyurdu.** `AvtoDolduruAsync` (sətir 599-600) `ConSenedinSeriyaNomresi`-ni
+(məs. "D10019478") artıq `MMX_ID_SERIAL`-a görə PARÇALAYIR və təmiz nəticəni
+`e.ReprIdSerial`/`e.ReprIdNumber`-ə yazır (bu, 07.11.2026-dakı "Update New"
+köçürməsinin elə həmin "Sənəd seriya/nömrəsinin parçalanması" addımıdır).
+`RepresentativeQur` isə `ReprIdNumber`-i düz (parçalanmış) sahədən oxuyurdu,
+AMMA `ReprIdSerial`-ı SƏHVƏN yenə RAW, parçalanmamış `ConSenedinSeriyaNomresi`-
+dən oxuyurdu — nəticədə `repr_id_serial` xanasına bütöv "D10019478" düşürdü,
+"D" yox. SIG (`e.SenderIdSerial`) və TO (`e.RecIdSerial`) qollarının HƏR
+İKİSİ artıq düzgün, parçalanmış sahəni oxuyurdu — yalnız CON/PAT qolu
+unudulmuşdu. Düzəliş: `ReprIdSerial = e.ReprIdSerial ?? ""`.
+
+**2. AÇIQ QALDI — Sender/Receiver.Person-un adı GL/kassa hesabının öz
+DİSPLAY ADINI daşıyır ("VAL.M/MƏN NƏGD PUL-AZN (EUR)"), real müştəri
+adı DEYİL.** Kök: `EmeliyyatlarController.Tesdiq` GET-i `ToAdi`/`NameUr`-u
+HƏR ZAMAN namizədin "Kredit sahibi"/"Debet sahibi" DISPLAY mətnindən
+(`nameLicschKre`/`nameLicschDe`) doldurur — bu, REAL müştəri hesabında
+("Jamshidi Arsalan Hashem" kimi) düzgün bir ilk-təxmindir, AMMA mübadilə-
+stolu/GL hesabında (prefiks "100") bu mətn bir İNSAN ADI DEYİL, hesabın
+ÖZ ÜNVANIDIR — buna baxmayaraq `SenderQurAsync`/`ReceiverQurAsync`-ın
+Person qolu `ToAdi`/`SigAdi`-ni olduğu kimi "ad" sahəsinə yazır.
+
+İşlək (güman edilən) düzəliş: GET action-da `ToAdi`/`NameUr`-u YALNIZ hesab
+"100" prefiksli (GL/kassa) OLMADIQDA doldur — `TrnTipTeyinEt`-in artıq
+işlətdiyi `Pref3(e.Debet/Kredit, "100")` idiomunun eynisi. Bu HƏM qara
+sahəni düzəldərdi, HƏM DƏ `AvtoDolduruAsync`-dəki mövcud SIG→TO fallback-ı
+(sətir 629 — "ToAdi boşdursa SIG-dən köçür") indiyə qədər ENGƏLLƏYƏN
+"ToAdi həmişə dolu (zibil mətnlə)" vəziyyətini aradan qaldırardı.
+
+⚠️ **TƏTBİQ EDİLMƏDİ** — istifadəçi "yadda saxla, sonra qayıdacağıq" dedi,
+üstəlik EYNİ RecNum-un (22903177) başqa bir ixracında (`əməliyyat.JSON`)
+Receiver.Person ARTIQ DÜZGÜN, real müştəri KYC-si ilə dolu idi (SIG
+hardansa doğru doldurulmuşdu) — hansı KONKRET confirm-addımının (Tip seçimi,
+"əks tərəfi də təsdiqlə" axını) bunu bəzən düzgün, bəzən yanlış etdiyi hələ
+TAM izlənməyib. Növbəti sessiyada əvvəlcə BU İKİ nəticəni (düzgün + yanlış)
+verən addımları dəqiq təkrarlayıb fərqi tapmaq lazımdır, sonra YUXARIDAKI
+"100" prefiksi həllini tətbiq etmək.
+
+**3. AÇIQ QALDI — Receiver-in "Account" bloku real AYSEL fayllarında (NGR/
+BCR/BLR nümunələri) HEÇ GÖRÜNMÜR, bizim ixracda isə (boş sahələrlə) qalır.**
+AYSEL-in mənbəyi (sətir 1390) Account-u YALNIZ `report_code <> 'CTR' OR
+tip IN (2,4,8)` olanda yazır — bu şərt Sender-in mübadilə-stolu prefiks
+şərtindən TAM FƏRQLİDİR (bax yuxarı "3-cü bənd" — Sender üçün artıq
+düzəldilib). AMMA real nümunə fayllarda Account-un HEÇ VAXT görünməməsi
+göstərir ki, ya (a) bu şərt YALNIZ nadir hallarda TRUE olur (NGR/BCR/BLR-in
+heç biri bu şərtə düşmür — mümkündür), ya da (b) AYSEL-in bizim əlimizdə
+olmayan Tip-təyinatı (15 "Update New" qaydası, HƏLƏ köçürülməyib) bu
+transaksiyaya FƏRQLİ bir Tip kodu (2/4/8-dən KƏNAR, məs. "ACC TO ACC"=12)
+verib, bizim əl ilə seçdiyimiz "F to F"(8) ONUN öz nəticəsi ilə üst-üstə
+düşməyib.
+
+⚠️ **TƏTBİQ EDİLMƏDİ** — hazırkı kod AYSEL-in HƏRFİ mənbə mətninə (sətir
+1390) sadiqdir, dəyişiklik TƏXMİNƏ əsaslanmalı olardı. İstifadəçi "yadda
+saxla" dediyi üçün toxunulmadı. Növbəti addım: istifadəçinin NGR/BCR/BLR
+nümunələrindəki REAL Tip/ReportCode dəyərlərini (əgər mətndə görünürsə)
+bizim bu şərtlə (`ReportCode==Ctr && Tip not in (FizikIn,HuquqiIn,FToF)`)
+tutuşdurmaq — uyğun gəlməsə, şərt YENİDƏN nəzərdən keçirilməlidir (bəlkə
+Sender-in mübadilə-stolu prefiksi Receiver-ə DƏ əlavə şərt kimi qoşulmalıdır).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün 1-ci düzəliş yalnız
+əl ilə yoxlanıldı** (mötərizə balansı skriptlə, `e.ReprIdSerial`-ın entity-də
+mövcud, `AvtoDolduruAsync`-də artıq doldurulan bir sahə olduğu təsdiqləndi).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: CON (Nümayəndə) sənəd seriyası "D" kimi bir hərf/rəqəm
+daşıyan bir namizədi təsdiqləyib export et → `repr_id_serial`-ın artıq
+TƏK HƏRF/QISA seriyanı (bütöv "D10019478" yox) göstərdiyini təsdiqləməli.

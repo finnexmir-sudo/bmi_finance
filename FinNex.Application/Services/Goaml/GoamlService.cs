@@ -1853,7 +1853,13 @@ namespace FinNex.Application.Services.Goaml
                 {
                     ReprStatus = "PAT",
                     ReprCitizenship = e.ConVetendasligi ?? "",
-                    ReprIdSerial = e.ConSenedinSeriyaNomresi ?? "",
+                    // 16.11.2026, KRİTİK DÜZƏLİŞ: `ReprIdSerial` RAW, PARÇALANMAMIŞ
+                    // `ConSenedinSeriyaNomresi`-ni (məs. "D10019478") olduğu kimi
+                    // yazırdı — `AvtoDolduruAsync`-in (sətir 599-600) ARTIQ
+                    // PARÇALADIĞI, təmiz `e.ReprIdSerial`-ı (yalnız "D") HEÇ OXUMURDU.
+                    // `ReprIdNumber` düz idi (parçalanmış sahəni oxuyurdu) — yalnız
+                    // Serial YANLIŞ mənbədən gəlirdi.
+                    ReprIdSerial = e.ReprIdSerial ?? "",
                     ReprIdNumber = e.ReprIdNumber ?? "",
                     ReprIdIssueDate = Tarix(e.ConSenedinVerilmeTarixi),
                     ReprIdExpiryDate = Tarix(e.ConSenedinEtibarliliqMuddeti),
