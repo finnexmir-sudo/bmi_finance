@@ -13,9 +13,17 @@
     // JSON sxemi YOXDUR (operator əl ilə başqa yerdə doldurur), YALNIZ
     // göstərilir/seçilə bilir — istifadəçi: "bizde sadece gosterek, ve
     // bunlar sece bilsin, is getsin".
+    // 17.11.2026, İKİNCİ DALĞA (görüntü) — istifadəçi ChatGPT mockup göstərib
+    // "bele daha seliqeli dir sanki, belke artiq yazilari silek? blr,ctr ve
+    // s.,onsuzda isleden bilirde" dedi — qısa kod (BLR/CTR/...) artıq GÖRÜNMÜR,
+    // yalnız təsviri mətn qalır (dəyər yenə checkbox-un `value`-sunda gedir,
+    // funksionallıq DƏYİŞMİR). `Kod` sahəsi saxlanılır — `title` atributunda
+    // (hover/debug üçün), görünən mətndə YOX.
     var reportSecimler = Enum.GetValues<GoamlHesabatNovu>()
         .Where(r => r.SxemHazirdir())
-        .Select(r => new { Value = (int)r, Text = r.Kod() + " — " + r.Aciqlama() }).ToList();
+        .Select(r => new { Value = (int)r, Kod = r.Kod(), Text = r.Aciqlama() }).ToList();
+    var reportSolSutun = reportSecimler.Take((reportSecimler.Count + 1) / 2).ToList();
+    var reportSagSutun = reportSecimler.Skip((reportSecimler.Count + 1) / 2).ToList();
     // Tip-in İSTİQAMƏTİ (OUT/IN) — "hansı hesab bizimdir" sualının JS-dəki
     // cavabı. TƏK mənbə `GoamlTipiExtensions.BizimTerefDebetdir()`-dir —
     // burada YENİDƏN YAZILMIR, sadəcə JSON-a render olunur (12.11.2026).
@@ -26,6 +34,16 @@
     <style>
         .gml-grid-2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
         .gml-grid-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
+        /* 17.11.2026 — "Məlumatın növü" checkbox qrupu, ChatGPT mockup-a görə
+           iki sütun + sətir-ayırıcı (border-bottom). `.gml-checks`-dən AYRI
+           sinif adları — o sinif başqa yerdə (Blok 3-ün Fizik/Sahibkar/Hüquqi
+           checkbox-ları) ARTIQ işlənir, toxunulmasın deyə. */
+        .gml-report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:0 28px;
+            border:1px solid #e5e7eb; border-radius:8px; padding:4px 18px; background:#fafafa; }
+        .gml-report-col { display:flex; flex-direction:column; }
+        .gml-report-item { display:flex; align-items:center; gap:10px; padding:11px 0; font-size:.86rem;
+            font-weight:400; color:#374151; cursor:pointer; border-bottom:1px solid #eef0f2; }
+        .gml-report-item:last-child { border-bottom:none; }
         .gml-flbl { display:block; font-size:.76rem; font-weight:600; color:#6b7280; margin-bottom:5px; }
         .gml-req { color:#dc2626; }
         .gml-section-title { font-size:1rem; font-weight:700; color:#111827; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
@@ -194,15 +212,27 @@
                      öz `GoamlEmeliyyat` sətrini yaradır (eyni KYC, fərqli
                      ReportCode) — bax GoamlService.TesdiqleAsync-in dedup
                      açarına (Tip+ReportCode). ── *@
-                <div class="gml-checks" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px 18px; border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; background:#fafafa">
-                    @foreach (var r in reportSecimler)
-                    {
-                        <label style="font-weight:400">
-                            <input type="checkbox" name="ReportCodes" value="@r.Value"
-                                checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
-                            @r.Text
-                        </label>
-                    }
+                <div class="gml-report-grid">
+                    <div class="gml-report-col">
+                        @foreach (var r in reportSolSutun)
+                        {
+                            <label class="gml-report-item" title="@r.Kod">
+                                <input type="checkbox" name="ReportCodes" value="@r.Value"
+                                    checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
+                                @r.Text
+                            </label>
+                        }
+                    </div>
+                    <div class="gml-report-col">
+                        @foreach (var r in reportSagSutun)
+                        {
+                            <label class="gml-report-item" title="@r.Kod">
+                                <input type="checkbox" name="ReportCodes" value="@r.Value"
+                                    checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
+                                @r.Text
+                            </label>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
