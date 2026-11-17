@@ -90,6 +90,34 @@
       (artıq dəqiq bilinir hansı kreditə düşüb), ona görə bayraq orada 0 qalır.
       ⚠️ GERİYƏ TƏTBİQ OLUNMUR — yalnız canlı docdna üzərində işləyən BU GÜNÜN sorğusu.
 
+   10. (17.11.2026, EYNİ GÜN, ÜÇÜNCÜ DALĞA — KÖK QƏRAR DƏQİQLƏŞDİ) 9-cu bənddəki
+       düzəliş YALNIZ "Vaxtı keçmiş əsas/faiz (birbaşa)" sətirlərini xaric edirdi —
+       "Əsas (birbaşa)" / "Faiz (birbaşa)" (kreditin ÖZ performing alt-hesabına
+       BİRBAŞA düşən, overdue OLMAYAN) sətirləri hələ GÖSTƏRİLİRDİ. İstifadəçi bunu
+       YENİDƏN rədd etdi: "dedim axi silinme setirleri istemirem,yalniz carisi
+       kreditde olan setirler" — yəni BÜTÜN "(birbaşa)" sətirlər (dördü də: Əsas,
+       Faiz, Vaxtı keçmiş əsas, Vaxtı keçmiş faiz) CARİ→KREDİT DAXİLİ YENİDƏN
+       TƏSNİFATDIR (BMI-nin "fərqli silinmə" formasının davamı), REAL YENİ pul
+       DEYİL — gələn ödənişin ƏSL, YEGANƏ sübutu onun müştərinin CARİ hesabına
+       (kassa/köçürmə ilə) daxil olduğu ANDIR (bax layihənin "PİD — 'Ödənişə
+       Nəzarət' 3-cü tab" ilkin memarlıq qərarı: "addım 1-in özü KİFAYƏTDİR").
+       Real nümunə (DƏMİROV ƏJDƏR ƏSGƏR OĞLU, screenshot): eyni günün ÜÇ AYRI
+       RECNUM-u — (1) kassa→cari (4.895,14), (2) cari→kreditin ƏSAS alt-hesabı
+       (4.874,52), (3) cari→kreditin FAİZ alt-hesabı (20,62) — (2)+(3)=(1) DƏQIQ
+       bərabərdir: elə HƏMİN pulun (1)-də daxil olması, (2)/(3)-də isə daxili
+       bölünməsidir. Hər üçünü göstərmək eyni pulu İKİ dəfə sayır.
+
+       HƏLL — outer WHERE indi `hesabi = N'Cari hesaba daxil olub...'` (əvvəlki
+       `NOT IN (...)` əvəzinə) — YALNIZ addım-1 (kassa/cari/köçürmə → müştərinin
+       CARİ hesabı) sətirləri qalır, bütün dörd "(birbaşa)" label TAMAMİLƏ xaric
+       olunur. ROW_NUMBER()/"coxaday" MƏNTİQİNƏ TOXUNULMADI — "(birbaşa)" sətirlər
+       CASE-də hələ DƏ hesablanır (rn prioritetində işlənir) ki, çox-kreditli bir
+       müştəridə ƏGƏR hansısa kreditə BİRBAŞA uyğunluq varsa, o RECNUM bütövlükdə
+       (fantom "Cari hesaba daxil olub" sətri DƏ daxil olmaqla) nəticədən TAM
+       düşsün — rn=1 həmin "(birbaşa)" sətri seçir, sonra outer filter onu da
+       (hesabi≠"Cari...") xaric edir, RECNUM heç yerdə qalmır.
+       ⚠️ GERİYƏ TƏTBİQ OLUNMUR — yalnız canlı docdna üzərində BU GÜNÜN sorğusu.
+
    Servis sorğunu ada görə tapır: adında "Odenis" + "Nezaret" + "Gunluk"
    (normalizasiya: Azərbaycan hərfləri ASCII-yə, boşluqlar silinir). Adi siyahı VƏ
    Gray list axtarışlarına "gunluk" İSTİSNASI əlavə edilib (OdenisNezaretiService.cs)
@@ -112,7 +140,7 @@ IF @DepId IS NULL
     SELECT TOP 1 @DepId = Id FROM Departamentler WHERE ISNULL(Silinib,0)=0 ORDER BY Id;
 
 SET @Ad       = N'PID Odenis Nezaret Gunluk';
-SET @Mahiyyet = N'Gündəlik gələn kredit ödənişləri — docdna (kassa/cari hesab/köçürmə → kredit, regnom üzrə). "Vaxtı keçmiş" sətirləri xaricdir; eyni RECNUM çox-kreditli müştəridə artıq TƏK sətrə yığılır (yalançı ikiqat ödəniş yoxdur).';
+SET @Mahiyyet = N'Gündəlik gələn kredit ödənişləri — YALNIZ addım-1 (kassa/cari hesab/köçürmə → müştərinin CARİ hesabı, regnom üzrə). Bütün "(birbaşa)" (Əsas/Faiz/Vaxtı keçmiş) daxili yenidən-təsnifat sətirləri XARİCDİR — eyni pul ikinci dəfə sayılmasın. Eyni RECNUM çox-kreditli müştəridə tək sətrə yığılır.';
 SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, qeyd_no, adi, kat, novu, tipi, kredit_bagli_tarixi, vk_esas, gecikme, coxaday
   FROM (
     SELECT x.*,
@@ -155,7 +183,7 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
       ) x
   )
  WHERE rn = 1
-   AND hesabi NOT IN (N''Vaxtı keçmiş əsas (birbaşa)'', N''Vaxtı keçmiş faiz (birbaşa)'')
+   AND hesabi = N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
  ORDER BY tarix DESC, adi';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
