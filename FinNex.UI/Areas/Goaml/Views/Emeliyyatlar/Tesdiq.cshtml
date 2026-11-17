@@ -157,9 +157,18 @@
              AYSEL-in "Update New" kaskadının ekvivalenti quruləndə həmin sahələr
              bank reyestrlərindən AVTOMATİK doldurulacaq, operator onları əl ilə
              bir daha doldurmayacaq. ── *@
+        @* ── 17.11.2026, İKİNCİ DALĞA (görüntü düzəlişi) — "Məlumatın növü"
+             checkbox qrupu tək-sütunlu grid xanasına (170-220px) sıxışdığı
+             üçün 7 sətirə düşürdü, "Tip"/"Əməliyyat tarixi" sütunları isə
+             (bir xana hündürlüyündə) yanında boş qalırdı — istifadəçi:
+             "bele gorundu,sence burda nese seliqeye salmaq olar?" Həll:
+             Tip+Tarix bir sırada (kompakt), Məlumatın növü ayrıca, TAM
+             ENLİ bir sıra kimi — checkbox-lar öz grid-ində (230px-dən
+             başlayaraq avtomatik neçə sütuna sığırsa) axır, 2-3 sətirə
+             düşür, yanında boş sahə qalmır. ── *@
         <div class="gml-critical">
             <div class="gml-section-title"><i class="bi bi-exclamation-triangle-fill" style="color:#d97706"></i> Təsnifat (məcburi)</div>
-            <div class="gml-grid-3">
+            <div class="gml-grid-2" style="margin-bottom:16px">
                 <div>
                     <label class="gml-flbl">Tip <span class="gml-req">*</span></label>
                     <select name="Tip" class="fn-select" required>
@@ -171,29 +180,29 @@
                     </select>
                 </div>
                 <div>
-                    <label class="gml-flbl">Məlumatın növü <span class="gml-req">*</span>
-                        <span style="color:#94a3b8; font-weight:400">(bir neçəsi ola bilər)</span></label>
-                    @* ── 17.11.2026, AML məsul şəxsin tələbi: "ele emeliyyat varki,
-                         hem ctr,hem blr hemde ve s. ola biler" — tək seçimli
-                         `<select>` ƏVƏZİNƏ çoxseçimli checkbox qrupu. Hər
-                         işarələnmiş kod üçün controller (`EmeliyyatlarController.
-                         Tesdiq` POST) AYRI, öz `GoamlEmeliyyat` sətrini yaradır
-                         (eyni KYC, fərqli ReportCode) — bax GoamlService.
-                         TesdiqleAsync-in dedup açarına (Tip+ReportCode). ── *@
-                    <div class="gml-checks" style="flex-wrap:wrap; gap:10px 18px; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; background:#fafafa">
-                        @foreach (var r in reportSecimler)
-                        {
-                            <label style="font-weight:400">
-                                <input type="checkbox" name="ReportCodes" value="@r.Value"
-                                    checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
-                                @r.Text
-                            </label>
-                        }
-                    </div>
-                </div>
-                <div>
                     <label class="gml-flbl">Əməliyyat tarixi</label>
                     <input type="date" name="DateOper" class="fn-input" value="@Model.DateOper?.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+            <div>
+                <label class="gml-flbl">Məlumatın növü <span class="gml-req">*</span>
+                    <span style="color:#94a3b8; font-weight:400">(bir neçəsi ola bilər)</span></label>
+                @* ── AML məsul şəxsin tələbi: "ele emeliyyat varki, hem ctr,hem
+                     blr hemde ve s. ola biler" — tək seçimli `<select>` ƏVƏZİNƏ
+                     çoxseçimli checkbox qrupu. Hər işarələnmiş kod üçün
+                     controller (`EmeliyyatlarController.Tesdiq` POST) AYRI,
+                     öz `GoamlEmeliyyat` sətrini yaradır (eyni KYC, fərqli
+                     ReportCode) — bax GoamlService.TesdiqleAsync-in dedup
+                     açarına (Tip+ReportCode). ── *@
+                <div class="gml-checks" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px 18px; border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; background:#fafafa">
+                    @foreach (var r in reportSecimler)
+                    {
+                        <label style="font-weight:400">
+                            <input type="checkbox" name="ReportCodes" value="@r.Value"
+                                checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
+                            @r.Text
+                        </label>
+                    }
                 </div>
             </div>
         </div>
