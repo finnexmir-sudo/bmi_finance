@@ -35,6 +35,7 @@
     .on-scope { display: flex; align-items: flex-start; gap: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
                 border-radius: 10px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 12px; }
     .on-scope b { font-weight: 700; }
+    .on-scope code { color: #1e40af; background: rgba(30,64,175,.1); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
     /* Tab keçidi */
     .on-tabs { display: inline-flex; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
@@ -98,9 +99,11 @@
                 köçürmə yolu ilə gələn, müştərinin <b>öz REGNOM-u üzrə</b> krediti ilə uyğunlaşdırılan məbləğdir.
                 <b>Hesabı</b> sütunu "(birbaşa)" — kredit hesabına birbaşa düşüb; "Cari hesaba daxil olub" —
                 hələ müştərinin cari hesabındadır, kreditə keçməyib (hər ikisi <b>ödənilib</b> sayılır).
-                Müştərinin bir neçə aktiv krediti varsa, EYNİ ödəniş hər kredit üçün AYRI sətirdə göstərilir —
-                bu sətirlər <span class="gn-fanout"><i class="bi bi-files"></i> təkrarlanır</span> işarəsi ilə
-                seçilir və <b>aşağıdakı Cəmdə eyni pul bir neçə dəfə sayılır</b>.
+                Hər ödəniş (eyni əməliyyat) siyahıda <b>yalnız BİR dəfə</b> göstərilir. Müştərinin bir neçə
+                aktiv krediti varsa və ödəniş hələ konkret kreditə bağlanmayıbsa, sistem onu TƏMSİLÇİ olaraq
+                bir kreditə yazır — bu sətirlər <span class="gn-fanout"><i class="bi bi-files"></i> bir neçə
+                krediti var</span> işarəsi ilə seçilir; <b>real kredit başqası ola bilər</b>, lazım gəlsə
+                müştərinin digər açıq kreditlərini də yoxlayın.
             </span>
         </div>
 
@@ -114,6 +117,7 @@
                             <th>Debet</th>
                             <th>Kredit</th>
                             <th>Hesabı</th>
+                            <th>Gecikmə</th>
                             <th class="on-num">Məbləğ</th>
                             <th>Müştəri</th>
                             <th>Reg. №</th>
@@ -121,7 +125,6 @@
                             <th>Girov növü</th>
                             <th>Kredit tipi</th>
                             <th class="on-num">V/K əsas</th>
-                            <th>Gecikmə</th>
                             <th>Təyinat</th>
                         </tr>
                     </thead>
@@ -141,10 +144,11 @@
                                         @s.Kredit
                                         @if (s.CoxKreditliFanOut)
                                         {
-                                            <span class="gn-fanout" title="Bu, YENİ bir ödəniş deyil — eyni ödəniş (RECNUM=@s.RecNum) müştərinin BAŞQA kreditinə də aid edilib, ona görə cədvəldə iki dəfə görünür. Cəmi hesablayanda bunu NƏZƏRƏ ALIN — eyni pul iki dəfə sayılır."><i class="bi bi-files"></i> təkrarlanır</span>
+                                            <span class="gn-fanout" title="Bu müştərinin BİRDƏN ÇOX aktiv krediti var — bu ödəniş (RECNUM=@s.RecNum) hələ konkret kreditə bağlanmayıb (kreditin öz hesabına yox, cari hesaba düşüb), ona görə sistem TƏMSİLÇİ olaraq bu kreditə yazdı. Real kredit BAŞQASI ola bilər — əmin olmaq üçün müştərinin digər açıq kreditlərini də yoxlayın."><i class="bi bi-files"></i> bir neçə krediti var</span>
                                         }
                                     </td>
                                     <td><span class="gn-hesabi @(birbasa ? "gn-hesabi--birbasa" : "gn-hesabi--cari")">@s.Hesabi</span></td>
+                                    <td><span class="@(s.Gecikme == "Gecikir" ? "gn-gecikir" : "gn-vaxtinda")">@s.Gecikme</span></td>
                                     <td class="on-num" style="font-weight:700">@Pul(s.Mebleg)</td>
                                     <td style="font-weight:600">@s.Adi</td>
                                     <td class="on-mono">@(s.QeydNo ?? "—")</td>
@@ -152,7 +156,6 @@
                                     <td>@(s.Novu ?? "—")</td>
                                     <td>@(s.Tipi ?? "—")</td>
                                     <td class="on-num">@(s.VkEsas.HasValue && s.VkEsas.Value > 0 ? Pul(s.VkEsas) : "—")</td>
-                                    <td><span class="@(s.Gecikme == "Gecikir" ? "gn-gecikir" : "gn-vaxtinda")">@s.Gecikme</span></td>
                                     <td class="gn-teyinat">@(string.IsNullOrWhiteSpace(s.Teyinat) ? "—" : s.Teyinat)</td>
                                 </tr>
                             }

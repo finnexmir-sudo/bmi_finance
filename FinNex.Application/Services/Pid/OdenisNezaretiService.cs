@@ -133,17 +133,13 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         try
         {
             var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
-            var setirler = rows.Select(MapGunlukSatir).ToList();
-
-            // Çox-kreditli müştəridə eyni ödəniş (eyni RECNUM) bir neçə sətirə düşür —
-            // UI-da işarələmək üçün (bax DTO-nun öz şərhi, qərar hələ verilməyib).
-            var recnumSayi = setirler.Where(x => x.RecNum.HasValue)
-                                      .GroupBy(x => x.RecNum!.Value)
-                                      .ToDictionary(g => g.Key, g => g.Count());
-            foreach (var s in setirler)
-                s.CoxKreditliFanOut = s.RecNum.HasValue && recnumSayi.TryGetValue(s.RecNum.Value, out var c) && c > 1;
-
-            vm.Setirler = setirler;
+            // ⚠️ 17.11.2026-dan bəri SQL-in ÖZÜ eyni RECNUM-u (çox-kreditli regnomda)
+            // ROW_NUMBER() ilə TƏK sətrə yığır — bu səviyyədə RecNum GroupBy artıq
+            // HEÇ VAXT >1 vermir (SQL-in əvvəlki, hələ dedup etməyən versiyasının
+            // qalığı idi). CoxKreditliFanOut indi birbaşa SQL-in "coxaday" bayrağından
+            // oxunur — bu, yalnız HƏQİQƏTƏN qeyri-müəyyən (bir neçə açıq kredit, heç
+            // birinə birbaşa uyğunluq yox) halda 1-dir (bax SQL faylının 9-cu bəndi).
+            vm.Setirler = rows.Select(MapGunlukSatir).ToList();
         }
         catch (Exception ex) { vm.Xeta = ex.Message; }
         return vm;
@@ -166,6 +162,7 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         KreditBagliTarixi = GetDate(row, "kredit_bagli_tarixi", "date_close"),
         VkEsas            = GetDec(row, "vk_esas", "summa_19"),
         Gecikme           = GetStr(row, "gecikme"),
+        CoxKreditliFanOut = GetDec(row, "coxaday") == 1m,
     };
 
     // Təyinatdan müştəri adı: İLK "( … )" mötərizəsinin içi. Artıq boşluqlar yığcamlanır.

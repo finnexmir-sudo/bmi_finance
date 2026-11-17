@@ -136,9 +136,13 @@ public class GrayOdenisSiyahiDto
 // YOX, çünki real ödəniş çox vaxt ƏVVƏLCƏ müştərinin CARİ hesabına düşür, kredit
 // hesabının ÖZÜNƏ hələ KEÇMƏYİB. "Hesabı" sütunu bu iki halı ayırd edir.
 //
-// ⚠️ Eyni müştərinin BİRDƏN ÇOX aktiv krediti varsa, BİR ödəniş HƏR kredit üçün
-// AYRI sətir kimi çıxır (eyni RECNUM-la) — subschkre join-i qəsdən yoxdur (bax
-// SQL faylının öz şərhi: docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql).
+// ⚠️ (17.11.2026, İKİNCİ DALĞA) Eyni müştərinin BİRDƏN ÇOX aktiv krediti olduqda
+// əvvəl bir ödəniş HƏR kredit üçün AYRI sətir kimi (eyni RECNUM-la) çıxırdı —
+// yalançı ikiqat ödəniş. SQL indi RECNUM üzrə ROW_NUMBER() ilə TƏK sətrə yığır
+// (bax SQL faylının 9-cu bəndi: docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql).
+// CoxKreditliFanOut İNDİ "sətir təkrarlanır" demək DEYİL — YALNIZ həmin RECNUM
+// HƏQİQƏTƏN hansı kreditə aid olduğu qəti deyil (müştərinin bir neçə açıq krediti
+// var, heç birinə birbaşa uyğunluq yoxdur, sistem TƏMSİLÇİ olaraq birini seçib).
 // ⚠️ "Status" (Tam bağlanıb/Problemli) BURADA YOXDUR — hələ yenidən qurulmayıb.
 // ⚠️ Faiz gecikməsi (DPD) BURADA YOXDUR — yalnız əsas borc (VkEsas) göstərilir.
 public class GunlukOdenisSatirDto
@@ -148,7 +152,7 @@ public class GunlukOdenisSatirDto
     public string    Kredit       { get; set; } = "";
     public string?   Hesabi       { get; set; }   // "Əsas (birbaşa)" / "...Cari hesaba daxil olub..."
     public decimal   Mebleg       { get; set; }
-    public decimal?  RecNum       { get; set; }   // eyni RECNUM = çox-kreditli müştəridə eyni ödənişin fan-out-u
+    public decimal?  RecNum       { get; set; }   // docdna-nın öz əməliyyat №-si (SQL-in dedup açarı)
     public string?   Teyinat      { get; set; }
     public string?   QeydNo       { get; set; }   // regnom kodu (6 rəqəm)
     public string    Adi          { get; set; } = "(naməlum)";
@@ -159,7 +163,7 @@ public class GunlukOdenisSatirDto
     public decimal?  VkEsas       { get; set; }         // vaxtı keçmiş əsas qalıq
     public string?   Gecikme      { get; set; }         // "Gecikir" / "Vaxtında"
 
-    public bool CoxKreditliFanOut { get; set; }   // servis doldurur: eyni RECNUM başqa sətirdə də varsa
+    public bool CoxKreditliFanOut { get; set; }   // SQL-in "coxaday" sütunundan — kredit qəti deyil, bir neçə namizəddən biri seçilib
 }
 
 public class GunlukOdenisSiyahiDto
