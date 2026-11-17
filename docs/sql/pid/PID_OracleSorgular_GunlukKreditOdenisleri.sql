@@ -6,8 +6,9 @@
 
    ARXA FON (2026-11-17 müzakirəsi, canlı Oracle ilə sınanıb təsdiqlənib):
 
-   1. docdna — CANLI, YALNIZ BUGÜNKÜ gündür (arxivi arh_dd-dir), tarix filtri
-      lazım deyil — cədvəlin özü artıq bugünlə məhdudlaşır.
+   1. ⚠️ MƏNBƏ odb.docdna DEYİL, odb.view_tek_docdna-DIR (13-cü bəndə bax, 17.11.2026-da
+      canlı sınaqla dəyişdirildi). Hər ikisi CANLI, YALNIZ BUGÜNKÜ gündür (arxivi
+      arh_dd-dir), tarix filtri lazım deyil — cədvəlin özü artıq bugünlə məhdudlaşır.
 
    2. "Gələn ödəniş" ÜÇ yoldan ola bilər (debet tərəfi):
         - KASSA     : SUBSTR(debet,1,3) IN ('100','250','110')
@@ -162,6 +163,19 @@
        İSTƏNİLƏN biri gecikirsə (summa_19>0), bütün sətir "Gecikir" göstərir —
        "bir neçə krediti var" işarəli sətirlərdə ƏN PİS (gecikən) status qalib gəlir.
 
+   13. (17.11.2026, YEDDİNCİ DALĞA — KRİTİK, MƏNBƏ CƏDVƏLİ SƏHV İDİ) İstifadəçi:
+       "view_tek_docdna cedvelinden baxmaliydin,otvet_ispoln 0 olan." Diaqnostika
+       (docs/sql/pid/90_Gunluk_ViewTekDocdna_Diaqnostika.sql, canlı Oracle, 17.11.2026
+       14:41): eyni gün, eyni otvet_ispoln=0 şərti ilə `odb.docdna`-da CƏMİ **2** sətir,
+       `odb.view_tek_docdna`-da isə **50** sətir — docdna bu gündəki real əməliyyatların
+       BÖYÜK ƏKSƏRİYYƏTİNİ DAŞIMIR. view_tek_docdna-nın bütün lazımi sütunları (DEBET,
+       KREDIT, DATE_OPER, SUMMA_V_NACVAL, RECNUM, PRIMECHANIE, OTVET_ISPOLN) docdna İLƏ
+       EYNİ ADLADIR (canlı DESC ilə təsdiqləndi) — sorğunun ÖZÜNÜ YENİDƏN YAZMAĞA EHTİYAC
+       OLMADAN, sadəcə HƏR ÜÇ `odb.docdna` istinadı (əsas FROM, 10b-nin EXISTS-i, 12-ci
+       bəndin gecikmə-ödənildi EXISTS-i) `odb.view_tek_docdna`-ya dəyişdirildi.
+       ⚠️ "tək" adı görünür bu view-in docdna-nı DEDUPLICATE/TAMAMLAYARAQ göstərdiyini
+       bildirir — GERİYƏ TƏTBİQ OLUNMUR, yalnız canlı sorğu üçündür.
+
    Servis sorğunu ada görə tapır: adında "Odenis" + "Nezaret" + "Gunluk"
    (normalizasiya: Azərbaycan hərfləri ASCII-yə, boşluqlar silinir). Adi siyahı VƏ
    Gray list axtarışlarına "gunluk" İSTİSNASI əlavə edilib (OdenisNezaretiService.cs)
@@ -184,7 +198,7 @@ IF @DepId IS NULL
     SELECT TOP 1 @DepId = Id FROM Departamentler WHERE ISNULL(Silinib,0)=0 ORDER BY Id;
 
 SET @Ad       = N'PID Odenis Nezaret Gunluk';
-SET @Mahiyyet = N'Gündəlik gələn kredit ödənişləri — YALNIZ addım-1 (kassa/cari hesab/köçürmə → müştərinin CARİ hesabı, regnom üzrə). Bütün "(birbaşa)" (Əsas/Faiz/Vaxtı keçmiş) daxili yenidən-təsnifat sətirləri XARİCDİR. Debet=Kredit regnomu (müştərinin öz hesabları arası köçürmə) da XARİCDİR. Eyni RECNUM çox-kreditli müştəridə tək sətrə yığılır.';
+SET @Mahiyyet = N'Gündəlik gələn kredit ödənişləri — MƏNBƏ odb.view_tek_docdna (odb.docdna YOX — bax 13-cü bənd). YALNIZ addım-1 (kassa/cari hesab/köçürmə → müştərinin CARİ hesabı, regnom üzrə). Bütün "(birbaşa)" (Əsas/Faiz/Vaxtı keçmiş) daxili yenidən-təsnifat sətirləri XARİCDİR. Debet=Kredit regnomu (müştərinin öz hesabları arası köçürmə) da XARİCDİR. Eyni RECNUM çox-kreditli müştəridə tək sətrə yığılır. Gecikmə 3 hal göstərir: Gecikir / Gecikmə ödənildi (bu gün) / Vaxtında.';
 SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, qeyd_no, adi, kat, novu, tipi, kredit_bagli_tarixi, vk_esas, gecikme, coxaday
   FROM (
     SELECT x.*,
@@ -207,7 +221,7 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
                     WHEN d.kredit = l.licschpkre  THEN N''Faiz (birbaşa)''
                     WHEN d.kredit = l.licsch_19   THEN N''Vaxtı keçmiş əsas (birbaşa)''
                     WHEN d.kredit = l.licschppkre THEN N''Vaxtı keçmiş faiz (birbaşa)''
-                    WHEN EXISTS (SELECT 1 FROM odb.docdna d2
+                    WHEN EXISTS (SELECT 1 FROM odb.view_tek_docdna d2
                                   WHERE d2.kredit IN (l.licschkre, l.licschpkre, l.licsch_19, l.licschppkre))
                          THEN N''Kreditə keçib (silinib)''
                     ELSE N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
@@ -226,8 +240,15 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
                                    WHERE SUBSTR(l2.licschkre,10,6) = SUBSTR(l.licschkre,10,6)
                                      AND l2.date_close IS NULL
                                      AND NVL(l2.summa_19,0) > 0)
-                    THEN N''Gecikir'' ELSE N''Vaxtında'' END AS gecikme
-          FROM odb.docdna d, odb.licschkre l, odb.regnom r, odb.tipzal g, odb.tipkre t
+                         THEN N''Gecikir''
+                    WHEN EXISTS (SELECT 1 FROM odb.view_tek_docdna d3, odb.licschkre l3
+                                   WHERE SUBSTR(l3.licschkre,10,6) = SUBSTR(l.licschkre,10,6)
+                                     AND l3.date_close IS NULL
+                                     AND d3.kredit IN (l3.licsch_19, l3.licschppkre))
+                         THEN N''Gecikmə ödənildi (bu gün)''
+                    ELSE N''Vaxtında''
+               END                 AS gecikme
+          FROM odb.view_tek_docdna d, odb.licschkre l, odb.regnom r, odb.tipzal g, odb.tipkre t
          WHERE SUBSTR(d.kredit,10,6) = SUBSTR(l.licschkre,10,6)
            AND l.date_close IS NULL
            AND r.regnom(+) = SUBSTR(l.licschkre,10,6)
@@ -253,7 +274,7 @@ ELSE
     VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
-PRINT N'PID Gündəlik Kredit Ödənişləri sorğusu yazıldı/yeniləndi — köçürmə (NULL debet) sahə düzəldi, gecikmə müştərinin bütün kreditləri üzrə yoxlanır.';
+PRINT N'PID Gündəlik Kredit Ödənişləri sorğusu yazıldı/yeniləndi — mənbə view_tek_docdna-ya keçdi, gecikmə 3 hal göstərir.';
 
 SELECT SorguAdi, DepartamentId, Aktiv FROM OracleSorgular
 WHERE  SorguAdi = N'PID Odenis Nezaret Gunluk';

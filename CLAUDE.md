@@ -13054,3 +13054,28 @@ sətir "Gecikir" göstərir — "bir neçə krediti var" sətirlərində ən pis
 
 ⚠️ SQL faylı (`docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql`) yenidən
 SQL Server-də işlədilməlidir. GERİYƏ TƏTBİQ OLUNMUR.
+
+## PİD Gündəlik Kredit Ödənişləri — Mənbə `odb.docdna` YOX, `odb.view_tek_docdna` İMİŞ (17.11.2026, YEDDİNCİ DALĞA, KRİTİK — DÜZƏLDİLDİ) + Gecikmə 3 Hal
+
+İstifadəçi: "view_tek_docdna cedvelinden baxmaliydin,otvet_ispoln 0 olan". Canlı
+diaqnostika (`docs/sql/pid/90_Gunluk_ViewTekDocdna_Diaqnostika.sql`): eyni gün,
+eyni `otvet_ispoln=0` şərti ilə `odb.docdna`-da CƏMİ **2** sətir, `odb.
+view_tek_docdna`-da **50** sətir — docdna bugünkü real əməliyyatların böyük
+əksəriyyətini DAŞIMIR. Lazımi sütunlar (DEBET/KREDIT/DATE_OPER/SUMMA_V_NACVAL/
+RECNUM/PRIMECHANIE/OTVET_ISPOLN) hər ikisində EYNİ adladır — sorğunun məntiqi
+DƏYİŞMƏDİ, YALNIZ hər üç `odb.docdna` istinadı (əsas FROM, "artıq kreditə keçib"
+EXISTS-i, "gecikmə ödənildi" EXISTS-i) `odb.view_tek_docdna`-ya dəyişdi.
+
+**Ayrıca — iki sual, iki cavab:**
+1. **"Bir müştəri bir gündə iki+ ödəniş etsə?"** — hər ödəniş ÖZ RECNUM-u ilə
+   ayrı sətirdir (`ROW_NUMBER() OVER (PARTITION BY recnum...)` — partisiya
+   RECNUM-dur, fərqli RECNUM-lar HEÇ VAXT birləşmir/cəmlənmir). Artıq düzgün
+   işləyirdi, kod dəyişikliyi lazım olmadı.
+2. **"Gecikmiş müştəri bu gün ödəyib, gecikməni örtübsə?"** — əvvəl YALNIZ 2 hal
+   var idi (Gecikir/Vaxtında) və bu halda "Vaxtında" yazılırdı — yanıldıcı idi.
+   İndi 3-cü hal: `Gecikmə ödənildi (bu gün)` (amber, `.gn-gecikme-odenildi`) —
+   loan-un hazırkı `summa_19`-u 0-dırsa, AMMA bugün `view_tek_docdna`-da bu
+   regnom-un overdue alt-hesablarına (licsch_19/licschppkre) birbaşa düşən sətir
+   VARSA, bu label göstərilir. "Gecikir" yalnız summa_19 HƏLƏ DƏ >0 olanda qalır.
+
+⚠️ SQL faylı yenidən SQL Server-də işlədilməlidir. GERİYƏ TƏTBİQ OLUNMUR.

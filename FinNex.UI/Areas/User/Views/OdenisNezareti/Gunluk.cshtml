@@ -50,6 +50,7 @@
     .gn-hesabi--cari     { background: #fef3c7; color: #92400e; }
     .gn-gecikir { color: #b91c1c; font-weight: 800; }
     .gn-vaxtinda { color: #15803d; font-weight: 700; }
+    .gn-gecikme-odenildi { color: #92400e; font-weight: 700; }
     .gn-fanout { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 8px;
                  border-radius: 20px; background: #f3e8ff; color: #7e22ce; font-size: 10.5px; font-weight: 700;
                  white-space: nowrap; cursor: help; vertical-align: middle; }
@@ -94,7 +95,7 @@
         <div class="on-scope">
             <i class="bi bi-info-circle" style="margin-top:2px"></i>
             <span>
-                <b>Yalnız BUGÜN</b> (canlı <code>docdna</code>) — yeni ödəniş üçün "Yenilə". Ödəniş — müştərinin
+                <b>Yalnız BUGÜN</b> (canlı <code>view_tek_docdna</code>) — yeni ödəniş üçün "Yenilə". Ödəniş — müştərinin
                 öz REGNOM-u üzrə krediti ilə uyğunlaşdırılan, kassa/cari/köçürmə ilə gələn məbləğdir; kreditin öz
                 alt-hesabına sonrakı daxili bölünməsi göstərilmir (yeni pul deyil). "Hesabı" sütunu pulun hələ
                 cari hesabda, yoxsa artıq kreditə keçdiyini (silinib) göstərir. Hər ödəniş TƏK sətirdə görünür —
@@ -146,7 +147,7 @@
                                         }
                                     </td>
                                     <td><span class="gn-hesabi @(silinib ? "gn-hesabi--birbasa" : "gn-hesabi--cari")">@s.Hesabi</span></td>
-                                    <td><span class="@(s.Gecikme == "Gecikir" ? "gn-gecikir" : "gn-vaxtinda")">@s.Gecikme</span></td>
+                                    <td><span class="@(s.Gecikme == "Gecikir" ? "gn-gecikir" : s.Gecikme.StartsWith("Gecikmə ödənildi") ? "gn-gecikme-odenildi" : "gn-vaxtinda")">@s.Gecikme</span></td>
                                     <td class="on-num" style="font-weight:700">@Pul(s.Mebleg)</td>
                                     <td style="font-weight:600">@s.Adi</td>
                                     <td class="on-mono">@(s.QeydNo ?? "—")</td>
