@@ -12522,3 +12522,78 @@ ssenari ilə yoxlamalıdır: `odb.regnom`-da VÖEN qeydi olan bir hüquqi şəxs
 namizəd aç → yeni "Hüquqi şəxsin VÖEN-i" sahəsinin avtomatik dolduğunu, "Təsdiqlə"dən
 sonra Export-dakı `sender_entity_tax_number`/`receiver_entity_tax_number`-in bu dəyəri
 daşıdığını təsdiqləməlidir.
+
+## GOAML Export — Entity Adındakı Dırnaqlar + Account Bloku TAM BOŞ — Real AYSEL İxracı ilə Sahə-Sahə Tutuşdurma (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real AYSEL ixracını (`BMI_BAKU_CTR_HI_2_15587_20261116_TEST.JSON`) bizim
+EYNİ əməliyyatın (Debet=10020 kassa, Kredit=40160... "HESAM" MMC) ixracı ilə birbaşa
+fayl-fayl müqayisə etdi (iki ekran-görüntüsü) — iki fərq tapıldı: *"dusmeyen
+yerler,ve adda bizde / / arasinda dusub"* (uyğun gəlməyən yerlər, VƏ adda bizdə
+dırnaq işarələri arada qalıb).
+
+### 1. `receiver_entity_name` — "\"HESAM\" MMC" (bizdə) vs "HESAM MMC" (AYSEL)
+
+Oracle-dakı `NAME_UR` sütunu Azəri şirkət adlandırma konvensiyasına görə dırnaq
+işarəsini HƏRFİ saxlayır (`"HESAM" MMC`) — AYSEL bunu `entity_name`-ə yazmazdan
+ƏVVƏL çıxarır, biz isə olduğu kimi yazırdıq (JSON serializer-i bunu `\"HESAM\"
+MMC` kimi ESCAPE edir, Notepad++-da "dırnaq arada qalıb" kimi görünür).
+
+**Düzəliş — yeni `TemizEntityAdi(ad)` helper** (`GoamlService.cs`) — `"` işarələrini
+çıxarır, boş sətirlər (`"HESAM"  MMC` → `HESAM MMC`, ikiqat boşluq) təmizlənir.
+`SenderQurAsync`/`ReceiverQurAsync`-ın Entity bloklarında `e.NameUr ?? ""` ƏVƏZİNƏ
+`TemizEntityAdi(e.NameUr)` çağırılır. `NameUr`-un ÖZÜ (ekranda, digər KYC
+sahələrində) TOXUNULMADI — YALNIZ bu ixrac sahəsi təmizlənir.
+
+### 2. `Account` bloku — hamısı boş sətir (bizdə) vs tam dolu (AYSEL)
+
+Kök səbəb: `SenderAccountNumber`/`ReceiverAccountNumber` `e.Account`/`e.AccountTo`-dan
+oxunurdu — bu İKİ sahə HEÇ YERDƏ doldurulmur (nə forma, nə GET auto-fill), YALNIZ
+`AvtoDolduruAsync`-in step-5-i (`HToHIn`/`HToFIn`/`HToH`, Debet huquqidirsə)
+`AccountTo = e.Debet` yazır — bu konkret nümunədə (Debet=kassa, Kredit=huquqi
+müştəri) HEÇ bir şərt uyğun gəlmirdi. `fin_inst_name`/`bic`/`tax_id` isə
+`InstitutionName`/`Swift`/`IncorporationCountryCode` (prefikssiz, "To"-suz)
+sahələrindən oxuyurdu — bunlar WHOLE CLASS boyu HEÇ YERDƏ YAZILMIR (06.11.2026-da
+"Hüquqi şəxsin (göndərən tərəf)" bloku formadan çıxarılanda bu sahələr özləri ilə
+getmiş, DEAD FIELD qalmışdı).
+
+**Həll — account_number artıq `e.Debet`/`e.Kredit`-in ÖZÜDÜR** (ledger-dəki real
+debet/kredit sətri) — AYSEL-in ÖZ step-5-i artıq `AccountTo = e.Debet` yazaraq bunun
+doğru qarşılıq olduğunu təsdiqləyir, yeni bir fərziyyə DEYİL.
+
+**`fin_inst_*` üçün yeni `HesabinOzBankiAsync(filial, hesab)` helper** —
+`OzBankimizinAttributlariAsync` (ATTRIB, bankın ümumi profili) + `MfoFilialAdiAsync`
+(hesabın ÖZ MFO filialı, DAHA DƏQİQ, prioritetlidir) ARTIQ MÖVCUD, sınanmış Oracle
+sorğularını TƏKRAR işlədir — YENİ Oracle sorğusu İCAD EDİLMƏDİ. Məntiq: bu modulun
+namizəd sorğusu YALNIZ bizim ÖZ ledgerimizdən (`doc_dna_all_risk`) oxuduğu üçün
+Debet/Kredit-dəki HƏR hesab (kassa/mübadilə-stolu artıq yuxarı gate-lərlə İSTİSNA
+edilib) STRUKTUR OLARAQ HƏMİŞƏ bizim ÖZ bankımızdadır — bu, Tip-dən ASILI DEYİL,
+ona görə əvvəlki kodun step-5-ə (Debet-huquqi) bağlı dar şərti TAMAMİLƏ ÇIXARILDI,
+`SenderQurAsync`/`ReceiverQurAsync`-ın Account-blokları bu yeni helper-i birbaşa,
+şərtsiz çağırır (köhnə `InstitutionName*`/`Swift*` sahələri ehtiyat fallback kimi
+saxlanıldı — step-5-in özü TOXUNULMADI, hələ işlək qalır).
+
+`ReceiverAccountFinInstTaxId`/`SenderAccountFinInstTaxId` — DTO-da artıq VAR idi,
+AMMA `SenderQurAsync`/`ReceiverQurAsync`-ın object initializer-ində UNUDULMUŞDU
+(sahə mövcud, mapping yox idi) — indi `HesabinOzBankiAsync`-in `Voen`-dən (ATTRIB.
+INN_BANK) yazılır.
+
+⚠️ **`receiver_account_dubl_number` HƏLƏ DƏ BOŞ QALIR, QƏSDƏN TOXUNULMADI.** Real
+AYSEL nümunəsində bu sahə "3-21-2-2-1/2-28876/2025" kimi bir dəyər daşıyır — görünüşə
+görə məhkəmə/icra sənədi nömrəsi, VÖEN-in ikinci qeydiyyat nömrəsi (`huquqi_shexs.
+REGISTRATION_NUMBER`, əvvəlki sessiyalarda qeyd olunan köhnə fərziyyə) DEYİL. Bu
+mühitdən Oracle-a canlı baxmaq mümkün olmadığı üçün mənbə TƏXMİN EDİLMƏDİ — layihənin
+"Oracle sütununu təxmin etmə" qaydasına görə açıq saxlanıldı.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — hər iki düzəliş yalnız BUNDAN SONRAKI "Təsdiqlə"/
+"Export" çağırışlarına təsir edir, artıq ixrac edilmiş fayllar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri üzrə
+ayrıca ölçülüb — net fərq SIFIR; DTO-dakı `SenderAccountFinInstTaxId`/
+`ReceiverAccountFinInstTaxId` sahə adları `GoamlJsonIxracDto.cs`-dən bir-bir
+təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ (Debet=
+kassa, Kredit=huquqi müştəri) namizədi yenidən Təsdiqləyib Export etməlidir:
+`receiver_entity_name`-in artıq dırnaqsız ("HESAM MMC") çıxdığını, `Account`
+blokunun (account_number=Kredit-in tam nömrəsi, fin_inst_name/branch=bizim ÖZ
+filialımız, fin_inst_tax_id/bic=ATTRIB-dən) dolu gəldiyini AYSEL-in nümunəsi ilə
+tutuşdurub təsdiqləməlidir.

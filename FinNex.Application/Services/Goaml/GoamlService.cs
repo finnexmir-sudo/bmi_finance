@@ -1989,6 +1989,34 @@ namespace FinNex.Application.Services.Goaml
         private static string Tarix(DateTime? d) =>
             d == null ? "" : d.Value.ToString("yyyy-MM-ddTHH:mm:ss.001Z", CultureInfo.InvariantCulture);
 
+        /// <summary>AYSEL-in "entity_name" sahəsi hüquqi şəxsin RƏSMİ adındakı
+        /// dırnaq işarələrini ("HESAM" MMC → HESAM MMC) ÇIXARIR — 17.11.2026, real
+        /// AYSEL ixracı ilə (BMI_BAKU_CTR_HI_2_15587) sahə-sahə tutuşdurularkən
+        /// tapıldı: Oracle-dakı `NAME_UR` sütunu dırnaq işarəsini olduğu kimi
+        /// saxlayır (Azəri şirkət adlandırma konvensiyası), amma AYSEL onları
+        /// entity_name-ə YAZMAZDAN ƏVVƏL çıxarır. `NameUr`-un ÖZÜ (digər KYC
+        /// sahələrində, ekranda) TOXUNULMUR — YALNIZ bu ixrac sahəsi təmizlənir.</summary>
+        private static string TemizEntityAdi(string? ad) =>
+            string.IsNullOrWhiteSpace(ad) ? "" : ad.Replace("\"", "").Replace("  ", " ").Trim();
+
+        /// <summary>Account.fin_inst_* (bank institution) — 17.11.2026, real AYSEL
+        /// ixracı ilə tutuşdurularkən tapıldı: Debet/Kredit-dəki HƏR hesab (kassa/
+        /// mübadilə-stolu artıq yuxarı gate-lərlə İSTİSNA edilib) BU modulun ÖZ
+        /// ledgerindən (`doc_dna_all_risk`/`arh_dd`) gəldiyi üçün STRUKTUR OLARAQ
+        /// HƏMİŞƏ bizim ÖZ bankımızdadır — Tip-dən ASILI OLMADAN. Əvvəlki kod bunu
+        /// YALNIZ step-5-in dar "Debet huquqidirsə" şərtinə bağlamışdı (yalnız
+        /// `InstitutionNameTo`/`SwiftTo` doldururdu), Kredit-huquqi halını (bu
+        /// nümunə kimi — Debet kassa, Kredit real müştəri) HEÇ YOXLAMIRDI, nəticədə
+        /// Account.fin_inst_* HƏMİŞƏ boş qalırdı. `MfoFilialAdiAsync` (hesabın ÖZ
+        /// MFO filialı) `OzBankimizinAttributlariAsync`-dan (ATTRIB, bankın ümumi
+        /// profili) DAHA DƏQİQDİR — ikisi fərqli mənbədir, PRİORİTET MFO-dadır.</summary>
+        private async Task<(string? Ad, string? Voen, string? Swift)> HesabinOzBankiAsync(int filial, string? hesab, CancellationToken ct)
+        {
+            var ozBankimiz = await OzBankimizinAttributlariAsync(ct);
+            var filialAdi = string.IsNullOrWhiteSpace(hesab) ? null : await MfoFilialAdiAsync(filial, hesab!, ct);
+            return (filialAdi ?? ozBankimiz?.AdSoyad, ozBankimiz?.InnBank, ozBankimiz?.BicSwift);
+        }
+
         /// <summary>Oracle sətir 1070-1246 — "_IN" (GƏLƏN əməliyyat) prosedurunda
         /// Sender.Person/Account ƏSLİNDƏ "To*" (bizim "Alan fiziki şəxsin" bloku)
         /// sahələrindən doldurulur — xarici tərəf PULU GÖNDƏRƏN kimi qeydə alınır.
@@ -2016,7 +2044,7 @@ namespace FinNex.Application.Services.Goaml
             {
                 sender.Entity = new GoamlJsonSenderEntityDto
                 {
-                    SenderEntityName = e.NameUr ?? "",
+                    SenderEntityName = TemizEntityAdi(e.NameUr),
                     SenderEntityRegCountry = e.IncorporationCountryCode ?? "",
                     SenderEntityTaxNumber = e.IncorporationNumber ?? "",
                 };
@@ -2088,16 +2116,23 @@ namespace FinNex.Application.Services.Goaml
             // `null` olaraq QALMALIDIR, boş obyekt YAZILMAMALIDIR.
             if (!MubadiiStoluPrefiksiMi(e) && e.Tip is not (GoamlTipi.FizikIn or GoamlTipi.HuquqiIn or GoamlTipi.FToF))
             {
+                // 17.11.2026: account_number İNDİ `e.Debet`-in ÖZÜDÜR (ledger-dəki
+                // debet sətri — AYSEL-in step-5-də HToHIn/HToFIn/HToH üçün elə
+                // `AccountTo = e.Debet` yazması bunun DOĞRU qarşılıq olduğunu artıq
+                // təsdiqləyir), fin_inst_* `HesabinOzBankiAsync`-dən — bax o metodun
+                // baş şərhi.
+                var (bankAdi, bankVoen, bankSwift) = await HesabinOzBankiAsync(e.CandidateFilialNumber, e.Debet, ct);
                 sender.Account = new GoamlJsonSenderAccountDto
                 {
-                    SenderAccountNumber = (e.AccountTo ?? e.Account) ?? "",
+                    SenderAccountNumber = e.Debet ?? (e.AccountTo ?? e.Account) ?? "",
                     SenderAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
                     SenderAccountCurrency = currType,
                     SenderAccountFinInstCountry = e.FromCountry ?? "",
-                    SenderAccountFinInstBicId = (e.SwiftTo ?? e.Swift) ?? "",
-                    SenderAccountFinInstName = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
-                    SenderAccountFinInstBranch = (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
-                    SenderAccountFinInstBic = (e.SwiftTo ?? e.Swift) ?? "",
+                    SenderAccountFinInstBicId = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
+                    SenderAccountFinInstName = bankAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstBranch = bankAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstBic = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
+                    SenderAccountFinInstTaxId = bankVoen ?? "",
                 };
             }
 
@@ -2131,7 +2166,7 @@ namespace FinNex.Application.Services.Goaml
             {
                 receiver.Entity = new GoamlJsonReceiverEntityDto
                 {
-                    ReceiverEntityName = e.NameUr ?? "",
+                    ReceiverEntityName = TemizEntityAdi(e.NameUr),
                     ReceiverEntityRegCountry = e.IncorporationCountryCode ?? "",
                     ReceiverEntityTaxNumber = e.IncorporationNumber ?? "",
                 };
@@ -2201,19 +2236,25 @@ namespace FinNex.Application.Services.Goaml
             if (!MubadiiStoluPrefiksiMi(e) &&
                 (e.ReportCode != GoamlHesabatNovu.Ctr || e.Tip is GoamlTipi.FizikIn or GoamlTipi.HuquqiIn or GoamlTipi.FToF))
             {
+                // 17.11.2026, real AYSEL ixracı (BMI_BAKU_CTR_HI_2_15587) ilə sahə-
+                // sahə tutuşdurularkən tapıldı: account_number `e.Kredit`-in ÖZÜDÜR
+                // (ledger-dəki kredit sətri), fin_inst_* isə Oracle-un "ehtiyat
+                // düsturu" (InstitutionName/Swift — bu ikisi HƏR YERDƏ dead field idi,
+                // bax AvtoDolduruAsync-in baş şərhi) ƏVƏZİNƏ `HesabinOzBankiAsync`-dən
+                // (ATTRIB+MFO, canlı) — bax o metodun baş şərhi: Debet/Kredit-dəki
+                // HƏR hesab strukturca bizim ÖZ bankımızdadır, Tip-dən ASILI DEYİL.
+                var (bankAdi, bankVoen, bankSwift) = await HesabinOzBankiAsync(e.CandidateFilialNumber, e.Kredit, ct);
                 receiver.Account = new GoamlJsonReceiverAccountDto
                 {
-                    ReceiverAccountNumber = (e.Account ?? e.AccountTo) ?? "",
+                    ReceiverAccountNumber = e.Kredit ?? (e.Account ?? e.AccountTo) ?? "",
                     ReceiverAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
                     ReceiverAccountCurrency = currType,
-                    // Oracle: V_ATTRIB.NAIMEN_UCHREJ (bizim ÖZ bankımızın adı, ATTRIB-dən) —
-                    // bu lookup port edilməyib, Oracle-un ÖZ ŞƏRHƏ ALINMIŞ ehtiyat düsturu
-                    // (`NVL(institution_name, institution_name_to)`) işlədilir.
-                    ReceiverAccountFinInstName = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                    ReceiverAccountFinInstName = bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
                     ReceiverAccountFinInstCountry = e.IncorporationCountryCode ?? "",
-                    ReceiverAccountFinInstBicId = (e.Swift ?? e.SwiftTo) ?? "",
-                    ReceiverAccountFinInstBranch = (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
-                    ReceiverAccountFinInstBic = (e.Swift ?? e.SwiftTo) ?? "",
+                    ReceiverAccountFinInstBicId = bankSwift ?? (e.Swift ?? e.SwiftTo) ?? "",
+                    ReceiverAccountFinInstBranch = bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                    ReceiverAccountFinInstBic = bankSwift ?? (e.Swift ?? e.SwiftTo) ?? "",
+                    ReceiverAccountFinInstTaxId = bankVoen ?? "",
                 };
             }
 
