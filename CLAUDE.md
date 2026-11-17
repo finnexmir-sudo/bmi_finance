@@ -12927,3 +12927,64 @@ sonra, Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalı
 göründüyünü, "Gecikmə" sütununun indi "Hesabı"-nın dərhal yanında (scroll-suz
 görünən) olduğunu, "docdna" sözünün artıq qırmızı deyil, banner-in öz göy tonunda
 göründüyünü təsdiqləməlidir.
+
+## PİD Gündəlik Kredit Ödənişləri — "Birbaşa" Sətirlərin HAMISI "Silinmə" İmiş, Yalnız İkisi Yox (17.11.2026, ÜÇÜNCÜ DALĞA, KRİTİK — DÜZƏLDİLDİ)
+
+Əvvəlki (eyni günün ikinci dalğa) düzəliş YALNIZ "Vaxtı keçmiş əsas (birbaşa)"/
+"Vaxtı keçmiş faiz (birbaşa)" sətirlərini sorğudan çıxarmışdı. İstifadəçi canlı
+ekranda (screenshot 557.png) YENƏ bu şikayəti etdi: *"ale sen meni yorduneeeeeeee,
+dedim axi silinme setirleri istemirem,yalniz carisi kreditde olan setirler"* —
+yəni "Əsas (birbaşa)"/"Faiz (birbaşa)" (overdue OLMAYAN, kreditin öz PERFORMING
+alt-hesabına birbaşa düşən) sətirlər DƏ eyni "silinmə" kateqoriyasındadır, hələ
+sorğudan çıxarılmamışdı.
+
+**Kök səbəb — "(birbaşa)" dörd label-in HAMISI eyni daxili hərəkətdir.** Layihənin
+öz memarlıq qərarına görə (bax yuxarı "PİD — 'Ödənişə Nəzarət' 3-cü tab" bölməsi):
+*"addım 1-in özü KİFAYƏTDİR — kredit hesabına hələ keçməsə belə 'ödənilib' sayılır"*.
+Yəni real "gələn ödəniş" sübutu YALNIZ addım-1-dir (kassa/cari/köçürmə → müştərinin
+CARİ hesabı). Addım-2 (cari → kreditin öz Əsas/Faiz/Vaxtı-keçmiş-əsas/Vaxtı-keçmiş-
+faiz alt-hesabı) HƏR DÖRD HALDA eyni pulun DAXİLİ YENİDƏN TƏSNİFATIDIR — BMI-nin
+köhnə "fərqli silinmə" (`frm_odenis_ferqlisilinme.cs`) formasının izlədiyi məhz
+bu hərəkətdir, overdue olub-olmamasından asılı olmayaraq.
+
+Real nümunə (screenshot, DƏMİROV ƏJDƏR ƏSGƏR OĞLU): eyni günün ÜÇ AYRI RECNUM-u —
+(1) kassa→cari 4.895,14, (2) cari→Əsas alt-hesab 4.874,52, (3) cari→Faiz alt-hesab
+20,62 — **(2)+(3) = (1) DƏQİQ bərabərdir**: (1) elə HƏMİN pulun daxil olması, (2)/(3)
+isə onun daxili bölünməsidir. Üçünü də göstərmək eyni pulu İKİ DƏFƏ sayır.
+
+**Həll — outer `WHERE` indi `NOT IN (...)` (iki label xaric) ƏVƏZİNƏ `hesabi =
+N'Cari hesaba daxil olub (kreditə hələ keçməyib)'`** (`docs/sql/pid/PID_
+OracleSorgular_GunlukKreditOdenisleri.sql`, header-in 10-cu bəndi) — YALNIZ
+addım-1 sətirləri qalır, bütün dörd "(birbaşa)" label TAMAMİLƏ xaric olunur.
+
+⚠️ **ROW_NUMBER()/`coxaday` MƏNTİQİNƏ TOXUNULMADI, bilərəkdən.** "(birbaşa)"
+label-lər CASE-də HƏLƏ DƏ hesablanır və rn-in `ORDER BY` prioritetində iştirak
+edir — bu, ÇOX VACİBDİR: çox-kreditli bir müştəridə ƏGƏR bir RECNUM hansısa
+kreditə BİRBAŞA uyğun gəlirsə (yəni elə addım-2-nin ÖZÜDÜR), rn=1 HƏMİN "(birbaşa)"
+sətri seçir (fantom "Cari hesaba daxil olub" sətirlərini artıq ötəri sıradan
+çıxarır), SONRA outer filter bu seçilmiş "(birbaşa)" sətri DƏ (`hesabi≠"Cari..."`)
+xaric edir — nəticədə o RECNUM heç yerdə qalmır, YALANDAN "Cari hesaba daxil
+olub" kimi görünmür. Yəni iki pilləli filtr (əvvəl rn=1 dedup, sonra label
+filtri) birlikdə işləyir — CASE-i sadələşdirib YALNIZ "Cari hesaba daxil olub"
+hesablasaq, bu iki-pilləli qoruma pozulardı.
+
+**Görüntü — `Gunluk.cshtml`:** banner mətni yeniləndi ("(birbaşa)" sözünün artıq
+göstərilmədiyini izah edən cümlə ilə əvəz olundu), "Hesabı" sütunundakı
+`birbasa`-ya görə rəng seçən ternary (artıq HEÇ VAXT `true` olmur, çünki SQL
+bu halları tamamilə xaric edib) çıxarılıb, sabit `gn-hesabi--cari` sinfi ilə
+əvəz olundu — `.gn-hesabi--birbasa` CSS qaydası (zərərsiz, ölü) saxlanıldı,
+gələcəkdə yenidən lazım ola bilər.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız canlı `docdna` üzərində BUNDAN SONRAKI
+sorğulamalara təsir edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/tag balansı `git diff --unified=0` ilə YALNIZ bu sessiyanın əlavə
+etdiyi sətirləri üzrə ayrıca ölçülərək — hər iki dəyişən faylda (SQL, `.cshtml`)
+əlavə/silinən sətirlərin mötərizə/tag sayı BALANSLI təsdiqləndi). İstifadəçi
+SQL faylını SQL Server-də YENİDƏN işlədib, Visual Studio-da **Rebuild All**
+edib, sonra real ssenari ilə yoxlamalıdır: DƏMİROV ƏJDƏR (və ya oxşar, həm
+kassa→cari, həm cari→loan-split əməliyyatı olan hər hansı müştəri) üçün artıq
+YALNIZ "Cari hesaba daxil olub" sətrinin (tək dəfə) göründüyünü, "Əsas (birbaşa)"/
+"Faiz (birbaşa)" sətirlərinin siyahıdan TAMAMİLƏ çıxdığını, Cəmin artıq ikiqat
+saymadığını təsdiqləməlidir.
