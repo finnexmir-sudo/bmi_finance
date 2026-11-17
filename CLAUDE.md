@@ -12670,3 +12670,58 @@ namizədi açıb HƏM "CTR", HƏM "BLR" checkbox-larını işarələyib Təsdiql
 siyahı"da EYNİ Debet/Kredit/Tip ilə İKİ AYRI sətrin (biri CTR, biri BLR)
 yarandığını, hər ikisinin Export-da (16.11.2026-dakı "hər ReportCode üçün AYRI
 fayl" məntiqinə görə) İKİ AYRI JSON faylına düşdüyünü təsdiqləməlidir.
+
+## GOAML Export — BLR-in Daxilində Fiziki VƏ Hüquqi AYRI Fayla Düşür (17.11.2026)
+
+İstifadəçi: *"misal blr teyin olunubsa,ve fiziki ve huquqidirse,bunlar bir faylda
+cixmamalidir"* — 16.11.2026-dakı "hər ReportCode üçün ayrı fayl" düzəlişi
+qeydləri YALNIZ `ReportCode`-a (CTR/BLR/PEP/...) görə qruplaşdırırdı. Bu,
+BLR-dən BAŞQA bütün kodlar üçün kifayət idi, AMMA **BLR (HRZ, `reportType=8`)
+sxemində `individualPerson` (fiziki/hüquqi) sahəsi HƏR qeyd üçün AYRI-AYRI
+hesablanır** (`HeaderZenginlesdirAsync`-in `regnumber?.Fizik==1`/`Yurik==1`/
+`Predprinimatel==1` şərtləri, bax 13.11.2026-dakı "Export to JSON" bölməsi) —
+eyni tarix aralığında fiziki şəxsin BİR BLR əməliyyatı ilə hüquqi şəxsin BAŞQA
+BİR BLR əməliyyatı eyni `GOAML_Ixrac_BLR_...json` faylına düşə bilərdi, halbuki
+real goAML portalı HRZ faylının İÇİNDƏKİ hər `report`-un `individualPerson`-u
+fərqli ola bilsə belə, əməliyyatlı iş axınında (operator/AML şöbəsi) bunları
+QARIŞIQ saxlamaq istəmədi.
+
+**Həll — İKİ SƏVİYYƏLİ qruplaşdırma, Oracle sorğusu TƏKRARLANMIR:**
+`JsonIxracAsync` ƏVVƏLCƏ (ReportCode-a görə, köhnə kimi) hər qeydin öz
+`report` obyektini (header daxil, `ReportQurAsync` → `HeaderZenginlesdirAsync`)
+qurur — bu mərhələdə `individualPerson` ARTIQ hesablanıb, `report.Header.
+IndividualPerson`-da saxlanılır. SONRA, fayllara bölmədən ƏVVƏL, nəticə
+(`butunRaportlar`) **(ReportCode, IndividualPerson)** CÜTÜNƏ görə YENİDƏN
+qruplaşdırılır (`FizikiHuquqiAcar` köməkçisi: `true`→"FIZIKI", `false`→"HUQUQI",
+`null`→""). Fayl adına ayırıcı varsa `_FIZIKI`/`_HUQUQI` sonluğu, `ReportCodeEtiketi`-nə
+isə "(Fiziki şəxs)"/"(Hüquqi şəxs)" qeydi əlavə olunur.
+
+⚠️ **Oracle round-trip İKİQAT EDİLMƏDİ — bu, kritik bir dizayn qərarıdır.**
+İlk fikir "qruplaşdırmadan ƏVVƏL individualPerson-u ayrıca hesabla" idi, AMMA
+bu, `HeaderZenginlesdirAsync`-in artıq apardığı Oracle sorğularını (regnumber,
+emitent və s.) HƏR qeyd üçün İKİNCİ DƏFƏ çağırmaq demək olardı. Əvəzinə: HƏR
+qeydin `report`-u BİR DƏFƏ qurulur (ReportCode-a görə birinci keçiddə),
+`IndividualPerson` dəyəri onun artıq doldurulmuş `Header`-indən OXUNUR — ikinci
+qruplaşdırma YALNIZ yaddaşdakı siyahı üzərində aparılır, heç bir əlavə Oracle
+çağırışı yoxdur.
+
+⚠️ **`IndividualPerson` YALNIZ HRZ (BLR, reportType=8) sxemində doldurulur** —
+`HeaderZenginlesdirAsync`-in digər budaqları (PEP=4, NGR/QHT=3, sadə CTR/ETR/
+STR/TFR) bu sahəyə TOXUNMUR, həmişə `null` qalır. `FizikiHuquqiAcar` belə
+hallarda boş ayırıcı ("") qaytarır — fayl adına/etiketə heç bir sonluq əlavə
+olunmur, bu kodlar ÜÇÜN davranış 16.11.2026-dakı "tək ReportCode-a görə"
+davranışdan FƏRQLƏNMİR (bölünmür, hamısı tək faylda qalır).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "İxrac et" çağırışlarına
+təsir edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri
+üzrə ayrıca ölçülüb — net fərq SIFIR; faylın ÖZÜNÜN əvvəldən mövcud olan -8
+paren-fərqi `git stash`-la TƏSDİQLƏNDİ — bu edit-dən ƏVVƏL də, SONRA da eynidir,
+yəni dəyişiklik bu kök fərqi NƏ BÖYÜTDÜ, NƏ KİÇİLTDİ). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: eyni tarix
+aralığında HƏM fiziki şəxsin, HƏM hüquqi şəxsin BLR-ə təsdiqlənmiş bir
+əməliyyatını eyni anda ixrac et → İKİ AYRI faylın (`..._BLR_FIZIKI_...json` və
+`..._BLR_HUQUQI_...json`) yarandığını, CTR/PEP kimi digər kodlarda isə hələ
+TƏK fayl (sonluqsuz) gəldiyini təsdiqləməlidir.
