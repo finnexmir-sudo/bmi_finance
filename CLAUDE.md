@@ -12182,3 +12182,155 @@ Sender.Account artıq mübadilə-stolu olanda yazılmırdı (əvvəlki dalğa). 
 ⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI ixraclara təsir edir.
 
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə balansı hər 4 dəyişən faylda — `GoamlJsonIxracDto.cs` tam balanslı (180/180, 202/202), `GoamlService.cs`/`IGoamlService.cs`-in bu edit-in ÖZ net-kontribusiyası `git diff` izolyasiyası ilə balanslı təsdiqləndi (pre-existing -8/-1 deficit dəyişmədi), `EmeliyyatlarController.cs` tam balanslı (52/52, 150/150), `Export.cshtml` tam balanslı (52/52, 134/134) + daxili `<script>` bloku `node -c` ilə sintaksis yoxlamasından keçdi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: tarix aralığında HƏM CTR, HƏM BLR (və ya başqa iki tip) tipli təsdiqlənmiş qeyd olan vəziyyətdə "İxrac et"ə bas → iki AYRI faylın (hər birinin öz adında düz ReportCode kodu ilə) yaradıldığını, hər ikisinin düzgün yükləndiyini, bütün qeydlərin (hər iki tipdən) "İxrac edilib" statusuna keçdiyini təsdiqləməli.
+
+## PİD — "Ödənişə Nəzarət" 3-cü Tab: Gündəlik Kredit Ödənişləri (17.11.2026)
+
+İstifadəçi tapşırığı: *"gundelik gelen butun kredit odenislerinin siyahisi"* — Docdna üzərindən
+canlı Oracle sorğusu ilə, bir neçə saatlıq iterativ diaqnoz (hər addım istifadəçinin öz PL/SQL
+Developer sessiyasında sınanıb) sonunda tapılan düzgün model aşağıdakı kimidir.
+
+### `docdna` ≠ `arh_dd` — tarix filtri lazım deyil
+
+`odb.docdna` **CANLI, YALNIZ BUGÜNKÜ gündür** (arxivi `arh_dd`-dir) — cədvəlin özü artıq
+bugünlə məhdudlaşdığı üçün `WHERE date_oper = ...` yazmağa EHTİYAC YOXDUR. (Yazılış qaydası:
+**`docdna`**, alt-xətt YOX — istifadəçi açıq düzəltdi: *"DOC_DNA-bele yazilmir dacdna bele
+yazilir"*.)
+
+### Kök səbəb düzəlişi — "silinmə" ilə "gələn ödəniş" EYNİ ŞEY DEYİL
+
+İlkin query `d.kredit`-in **birbaşa** kreditin öz hesabına (`licschkre`/`licschpkre`/
+`licsch_19`/`licschppkre`) düşüb-düşmədiyinə baxırdı — bu, BMI-nin köhnə
+`frm_odenis_ferqlisilinme.cs`-indəki **silinmə** (yazılış/fərqli-silinmə) nəzarətinin
+mirasıdır. İstifadəçi düzəltdi: *"sen silinme uzre baxir san,ama bu sehvdir axi,biz gelen
+odenislere baxmaliyiq. onlarda ya kassadan kecir,ya 25 den yada kocurme ile"*.
+
+Real ödəniş **İKİ ADDIMLA** gələ bilər:
+1. Pul **mənbədən** (kassa 100/250/110, müştərinin öz/başqa **cari hesabı** sinif 3/4, və ya
+   **köçürmə** `otvet_ispoln=0`) müştərinin ÖZ CARİ hesabına düşür (`docdna.kredit` = cari
+   hesab, 41040000001972000000 kimi).
+2. (Bəzən, SONRA, AYRI bir əməliyyatla) bu pul kredit hesabının ÖZÜNƏ köçürülür.
+
+İstifadəçi qərarı: **addım 1-in özü KİFAYƏTDİR** — kredit hesabına hələ keçməsə belə
+"ödənilib" sayılır. Buna görə uyğunlaşdırma **MÜŞTƏRİ REGNOM-u** üzrə gedir (hesabın öz
+10-15-ci simvolları), **tam hesab bərabərliyi YOX**: `SUBSTR(d.kredit,10,6) =
+SUBSTR(l.licschkre,10,6)` — bu, addım 1-i DƏ, addım 2-ni DƏ əhatə edir (əgər `d.kredit`
+HƏQİQƏTƏN `l.licschkre`-yə bərabərdirsə, substr-i də trivial olaraq bərabərdir).
+
+**Konkret, canlı doğrulanmış nümunə:** `debet=25019000000000300006 →
+kredit=41040000001972000000` — ikinci diaqnostik sorğu (`licschkre`-nin 4 sahəsi ilə TAM
+bərabərlik axtaran) **0 sətir** qaytardı, yəni bu, kredit hesabının ÖZÜ DEYİL, müştərinin
+CARİ hesabı idi. Regnom-əsaslı düzəlişdən SONRA sorğu bunu düzgün tapdı, "Hesabı"="Cari
+hesaba daxil olub (kreditə hələ keçməyib)" etiketi ilə — istifadəçi ekran-görüntüsü ilə
+TƏSDİQLƏDİ.
+
+⚠️ **AÇIQ TRADEOFF — çox-kreditli müştəridə fan-out.** Regnom-əsaslı uyğunlaşdırmaya keçərkən
+`l.subschkre = d.ssk` join-i (loan-un öz sub-hesabı ilə) ÇIXARILDI — kredit hesabına birbaşa
+düşməyən ödənişdə SSK mənalı deyil. Nəticə: eyni müştərinin BİRDƏN ÇOX aktiv krediti varsa,
+BİR ödəniş HƏR kredit üçün AYRI SƏTIR kimi çıxır (eyni `RECNUM`-la). Bu, tək bir "N aktiv
+krediti var" sətrinə yığılsın, yoxsa hər kredit öz sətrini saxlasın — HƏLƏ QƏRAR
+VERİLMƏYİB. V1-də hər sətir ayrıca göstərilir, `CoxKreditliFanOut` bayrağı (+ ekranda
+bənövşəyi 🔗 ikonu) ilə işarələnir ki, operator bunun eyni pulun təkrarı olduğunu bilsin.
+
+### Debet filtri — kassa, cari hesab, köçürmə (üç yol, OR)
+
+```sql
+(LENGTH(d.debet) = 20 AND (SUBSTR(d.debet,1,3) IN ('100','250','110') OR SUBSTR(d.debet,1,1) IN ('3','4')))
+OR d.otvet_ispoln = 0
+```
+
+`LENGTH(d.debet)=20` qoruyucusu ƏLAVƏ EDİLDİ (kodda, istifadəçi ilə AYRICA TƏSDİQLƏNMƏYİB,
+amma layihənin öz qoruyucu konvensiyasına uyğun — bax `Muhasibat_OracleSorgular_Kredit_
+ArhTarix.sql`-dəki `LENGTH(licschkre)=20`): qısa/texniki GL kodu (məs. "35") səhvən "sinif
+3/4" sayılmasın deyə. Real hesab nömrələri bu bazada həmişə 20 simvoldur.
+
+### Performans — `tar_ferq360`/`view_nacpogprokre_all` üç dəfə uğursuz oldu, v1-dən ÇIXARILDI
+
+Faiz gecikməsini (DPD) əlavə etmək üçün `odb.view_nacpogprokre_all` + `odb.tar_ferq360`
+(FinNex-in Mühasibat Dashboard-unda ARTIQ SINANMIŞ, işlək mexanizm — bax
+`Muhasibat_OracleSorgular_Kredit_ArhTarix.sql`) sınandı:
+1. **1-ci cəhd** — `tar_ferq360` HƏR sətirdə (filtrsiz) çağırılırdı → "çox çəkir". İstifadəçinin
+   özünün əlavə etdiyi `date_close IS NULL` filtri TƏSİR ETMƏDİ (filtr NƏTİCƏYƏ tətbiq olunurdu,
+   bahalı hesablamadan ƏVVƏL yox).
+2. **2-ci cəhd** — `bugunku` CTE ilə "bugünkü aktiv kredit hesabları"nı ƏVVƏLCƏDƏN tapıb,
+   `faiz_gecikme` CTE-ni `EXISTS` ilə ona bağladıq → dublikat sətirlər çıxdı (`view_nacpogprokre_all`
+   hər `(licschpkre,subschkre)` üçün BİRDƏN ÇOX sətir daşıyır — bir sched dövrü üçün bir sətir).
+3. **3-cü cəhd** — korrelə olunmuş `MAX(date_oper)` alt-sorğusu ilə dedup edildi → YENƏ "uzun
+   çəkir, gəlmir" (korrelə skalyar alt-sorğu özü `view_nacpogprokre_all`-ı hər xarici sətir üçün
+   TƏKRAR qiymətləndirir — eyni anti-naxışın yeni forması).
+
+İstifadəçi bu problemi `ROW_NUMBER() OVER (...)` ilə düzəltmək (təklif edilmişdi) YERİNƏ,
+söhbəti "silinmə → gələn ödəniş" çərçivəsinə keçirdi — nəticədə faiz gecikməsi **v1-dən
+TAMAMİLƏ ÇIXARILDI**. Yalnız **əsas borc** gecikməsi (`l.summa_19 > 0 → "Gecikir"`) qalıb —
+bu, sadə sütun müqayisəsidir, custom funksiya/view çağırmır, performans riski yoxdur.
+
+⚠️ **AÇIQ İŞ** — faiz gecikməsi gələcəkdə `ROW_NUMBER() OVER (PARTITION BY licschpkre,
+subschkre ORDER BY date_oper DESC) = 1` ilə (korrelyasiyasız, bir dəfə hesablanan) əlavə
+oluna bilər — bu sessiyada edilmədi.
+
+### "Status" (Tam bağlanıb/Problemli) — KÖHNƏ məntiq YANLIŞ İDİ, v1-də YOXDUR
+
+BMI-nin köhnə `frm_odenis_ferqlisilinme.cs`-i `mab1 - mab2 - mab4` (in=out) tutuşdurması ilə
+"tam sıfırlanıb" statusunu hesablayırdı — AMMA bu, `d.kredit`-in ÖZ in/out axınına baxırdı.
+Regnom-əsaslı düzəlişdən sonra `d.kredit` tez-tez müştərinin CARİ hesabıdır (kreditin hesabı
+YOX) — köhnə status məntiqi bu modelə artıq UYĞUN GƏLMİR. **Status sütunu v1-də YOXDUR** —
+düzgün variant kreditin ÖZ GL hesabına (`l.licschkre` və s., REAL, ayrıca sorğu ilə) görə
+YENİDƏN qurulmalıdır. Bu sessiyada İCAD EDİLMƜDİ, AÇIQ İŞ olaraq qalır.
+
+### Tipzal/tipkre — LEFT JOIN (INNER YOX)
+
+BMI-nin köhnə sorğusu bu iki lookup-u INNER JOIN edirdi — kodu olmayan (NULL
+`tipzaloga`/`tipkredita`) krediti SƏSSİZCƏ atırdı (CLAUDE.md-də dəfələrlə sənədləşmiş,
+layihə-geniş bir dərs). Burada `l.tipzaloga = g.code(+)` / `l.tipkredita = t.code(+)` —
+kodu olmayan kredit də sətirdə qalır, yalnız "Girov növü"/"Kredit tipi" boş görünür.
+
+### Struktur
+
+`docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql` — `OracleSorgular`-a
+`"PID Odenis Nezaret Gunluk"` adlı sorğu əlavə edir (`PID_OracleSorgular_Graylist.sql`-in
+EYNİ idempotent naxışı — `@DepId` axtarışı, `IF NOT EXISTS INSERT`). `GunlukOdenisSatirDto`/
+`GunlukOdenisSiyahiDto` (`FinNex.Application/DTOs/Pid/OdenisNezaretiDtos.cs`).
+`IOdenisNezaretiService.GunlukSiyahiAsync()` + `OdenisNezaretiService.GunlukSiyahiAsync`
+(+ `MapGunlukSatir` — mövcud `GetStr`/`GetDec`/`GetDate` köməkçilərini TƏKRAR işlədir, yeni
+parser yazılmadı) — sorğu adında "Odenis"+"Nezaret"+"Gunluk" axtarır; **mövcud İKİ
+lookup-a** (`OdenisNezaretSorguMetniAsync` VƏ `GraySiyahiAsync`-in öz inline axtarışı)
+`!Contains("gunluk")` istisnası ƏLAVƏ EDİLDİ ki, üç sorğu bir-birini örtmesin (Gray-in özü
+üçün əvvəldən sənədləşmiş "istisna" naxışının təkrarı).
+
+`OdenisNezaretiController.Gunluk()`/`GunlukExcel()` (3-cü tab, `Index`/`Gray`-in eyni
+naxışı), `Views/OdenisNezareti/Gunluk.cshtml` (yeni, Gray.cshtml-in dizayn dilini
+təkrarlayır — paylaşılan CSS faylı YOXDUR, hər view öz `<style>` blokunu daşıyır, layihənin
+onlarla yerdə sənədləşmiş konvensiyası). `Index.cshtml`/`Gray.cshtml`-ə 3-cü tab linki
+əlavə olundu.
+
+⚠️ **`[Authorize(Roles = "Admin,PID")]` DƏYİŞMƏDİ.** İstifadəçi PİD-in bu hesabatı
+istədiyini, amma bunun Kredit şöbəsinə də aid olduğunu qeyd etdi (*"PID isteyidir ama
+kredite de uygun gelir"*), sonra PİD-ə vermək qərarına gəldi (*"PID e verek"*) — Kredit
+şöbəsinin GÖRMƏ İCAZƏSİ (əgər lazım olsa) AÇIQ QALAN SUALDIR: layihədə `RoleNames.Kredit`
+KONSTANTı YOXDUR (yalnız komitə-səviyyəli `RoleNames.KreditAdmin` var, "PID" özü də
+`RoleNames`-də KONSTANT DEYİL, ad-hoc sətirdir) — mövcud `KreditAdmin`-i işlətmək, yoxsa
+yeni, daha geniş bir rol yaratmaq qərarı VERİLMƏYİB, bu sessiyada HƏLL EDİLMƏDİ.
+
+### Qeyd — `RusumCemi` (məhkəmə rüsumu) ARTIQ MÖVCUDDUR, ayrıca iş deyil
+
+Müzakirənin əvvəlində "bəs məhkəmə rüsumu kimi başqa silinmələr?" sualı qaldırıldı
+(*"ola bilerki musteri odenis edib ama basqa silinme olub,misal mehkeme rusumu"*).
+Araşdırma göstərdi ki, **bu artıq var** — mövcud "Ödənişə Nəzarət" (Index tabı)
+Oracle sorğusu `OdenisNezaretSatirDto.RusumCemi`/`RusumCariAy`/`RusumKecenAy` sahələrini
+artıq hesablayır, şərhi açıq deyir: *"SUM(summa_v_nacval) — məhkəmə rüsumu (KREDIT
+7011…)"* — yəni məhkəmə rüsum ödənişləri `OdenisCemi`-dən (kredit əsas/faiz, KREDIT
+2121-tərzi hesablar) TAMAMİLƏ AYRI, KREDIT `7011...` prefiksli hesablara görə artıq
+izlənir, Index tabının öz cədvəlində göstərilir. Gündəlik tab buna TOXUNMADI — bu,
+ayrıca, artıq mövcud bir mexanizmdir, təkrar qurulmadı.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə
+balansı skriptlə hər 5 dəyişən/yeni faylda — `OdenisNezaretiService.cs`-in bu edit-in ÖZ
+net-kontribusiyası `git stash` izolyasiyası ilə balanslı təsdiqləndi, pre-existing -1 paren
+fərqi dəyişmədi; DTO/interfeys/servis/controller/view beş qatı sahə adı-adı əl ilə
+tutuşduruldu; `Gunluk.cshtml`-in daxili `<script>` bloku `node -c` ilə sintaksis
+yoxlamasından keçdi). İstifadəçi SQL faylını SQL Server-də işlətdikdən sonra Visual
+Studio-da **Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: "Gündəlik ödənişlər"
+tabının açıldığını, bugünkü real bir ödənişin (kassa/cari-hesab/köçürmə yolu ilə gələn)
+düzgün sətirlə göründüyünü, "Hesabı" etiketinin düzgün ayırd etdiyini (birbaşa vs cari
+hesaba daxil olub), çox-kreditli bir müştəridə 🔗 işarəsinin göründüyünü, Excel ixracının
+işlədiyini — gün ərzində yeni ödəniş gəldikcə səhifəni yeniləyib yoxlamalıdır (istifadəçinin
+öz sözü: *"gun erzinde odenisler artdiqca yoxlayacam"*).

@@ -128,3 +128,48 @@ public class GrayOdenisSiyahiDto
     public decimal CemKecenAy => Setirler.Sum(x => x.KecenAy);
     public decimal CemUmumi   => Setirler.Sum(x => x.Cemi);
 }
+
+// ── GÜNDƏLİK KREDİT ÖDƏNİŞLƏRİ — Ödənişə Nəzarət, 3-cü tab (17.11.2026) ──────
+// Mənbə: odb.docdna (CANLI, yalnız bugünkü gün). Debet — kassa (100/250/110),
+// müştərinin cari hesabı (sinif 3/4) və ya köçürmə (otvet_ispoln=0). Kredit tərəfi
+// MÜŞTƏRİ REGNOM-u üzrə uyğunlaşdırılır (SUBSTR(hesab,10,6)) — ƏSL hesab bərabərliyi
+// YOX, çünki real ödəniş çox vaxt ƏVVƏLCƏ müştərinin CARİ hesabına düşür, kredit
+// hesabının ÖZÜNƏ hələ KEÇMƏYİB. "Hesabı" sütunu bu iki halı ayırd edir.
+//
+// ⚠️ Eyni müştərinin BİRDƏN ÇOX aktiv krediti varsa, BİR ödəniş HƏR kredit üçün
+// AYRI sətir kimi çıxır (eyni RECNUM-la) — subschkre join-i qəsdən yoxdur (bax
+// SQL faylının öz şərhi: docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql).
+// ⚠️ "Status" (Tam bağlanıb/Problemli) BURADA YOXDUR — hələ yenidən qurulmayıb.
+// ⚠️ Faiz gecikməsi (DPD) BURADA YOXDUR — yalnız əsas borc (VkEsas) göstərilir.
+public class GunlukOdenisSatirDto
+{
+    public DateTime? Tarix        { get; set; }
+    public string    Debet        { get; set; } = "";
+    public string    Kredit       { get; set; } = "";
+    public string?   Hesabi       { get; set; }   // "Əsas (birbaşa)" / "...Cari hesaba daxil olub..."
+    public decimal   Mebleg       { get; set; }
+    public decimal?  RecNum       { get; set; }   // eyni RECNUM = çox-kreditli müştəridə eyni ödənişin fan-out-u
+    public string?   Teyinat      { get; set; }
+    public string?   QeydNo       { get; set; }   // regnom kodu (6 rəqəm)
+    public string    Adi          { get; set; } = "(naməlum)";
+    public string    Kat          { get; set; } = "";   // kreditin öz hesabı (licschkre)
+    public string?   Novu         { get; set; }         // girov növü (tipzal)
+    public string?   Tipi         { get; set; }         // kredit tipi (tipkre)
+    public DateTime? KreditBagliTarixi { get; set; }    // həmişə boş olmalıdır — sorğu yalnız açıq kreditləri gətirir
+    public decimal?  VkEsas       { get; set; }         // vaxtı keçmiş əsas qalıq
+    public string?   Gecikme      { get; set; }         // "Gecikir" / "Vaxtında"
+
+    public bool CoxKreditliFanOut { get; set; }   // servis doldurur: eyni RECNUM başqa sətirdə də varsa
+}
+
+public class GunlukOdenisSiyahiDto
+{
+    public bool SorguTapildi { get; set; }
+    public string? Xeta { get; set; }
+    public List<GunlukOdenisSatirDto> Setirler { get; set; } = new();
+
+    public int     CemSetir     => Setirler.Count;
+    public decimal CemMebleg    => Setirler.Sum(x => x.Mebleg);
+    public int     GecikenSay   => Setirler.Count(x => x.Gecikme == "Gecikir");
+    public int     Muxtelif     => Setirler.Select(x => x.QeydNo).Distinct().Count();
+}

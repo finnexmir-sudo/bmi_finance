@@ -42,6 +42,44 @@ public class OdenisNezaretiController : Controller
         return View(vm);
     }
 
+    // ── GÜNDƏLİK KREDİT ÖDƏNİŞLƏRİ tabı — docdna (kassa/cari hesab/köçürmə → kredit) ──
+    public async Task<IActionResult> Gunluk()
+    {
+        var vm = await _service.GunlukSiyahiAsync();
+        return View(vm);
+    }
+
+    // Gündəlik kredit ödənişləri Excel — səhifə ilə eyni süzgəc (müştəri/hesab axtarışı)
+    public async Task<IActionResult> GunlukExcel(string? axtaris)
+    {
+        var vm = await _service.GunlukSiyahiAsync();
+        var setirlerF = vm.Setirler.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(axtaris))
+        {
+            var q = axtaris.Trim().ToLowerInvariant();
+            setirlerF = setirlerF.Where(x =>
+                (x.Adi + " " + x.Debet + " " + x.Kredit + " " + x.Kat + " " + (x.QeydNo ?? ""))
+                    .ToLowerInvariant().Contains(q));
+        }
+        var filtered = setirlerF.ToList();
+
+        var basliqlar = new[] { "№", "Tarix", "Debet", "Kredit", "Hesabı", "Məbləğ", "Müştəri",
+            "Reg. nömrəsi", "Kredit hesabı", "Girov növü", "Kredit tipi", "V/K əsas", "Gecikmə", "Təyinat" };
+        var setirler = filtered.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.Tarix, x.Debet, x.Kredit, x.Hesabi, x.Mebleg, x.Adi,
+            x.QeydNo, x.Kat, x.Novu, x.Tipi, x.VkEsas, x.Gecikme, x.Teyinat
+        }).ToList();
+        setirler.Add(new object?[]
+        {
+            null, null, null, null, "CƏMİ:", filtered.Sum(x => x.Mebleg), null,
+            null, null, null, null, null, null, null
+        });
+
+        var bytes = ExcelExportHelper.Yarat("Gündəlik Kredit Ödənişləri", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Gunluk_Kredit_Odenisleri_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
     // Gray list Excel — səhifə ilə eyni struktur: müştəri xülasəsi + hər ödəniş sətri
     public async Task<IActionResult> GrayExcel(string? axtaris)
     {

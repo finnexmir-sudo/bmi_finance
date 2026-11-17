@@ -11,6 +11,9 @@ public interface IOdenisNezaretiService
     // Gray list — ARH_DD (debet 45019…, kredit 89150…) ödənişləri, müştəri üzrə qruplu
     Task<GrayOdenisSiyahiDto> GraySiyahiAsync();
 
+    // Gündəlik kredit ödənişləri — docdna (kassa/cari hesab/köçürmə → kredit, regnom üzrə)
+    Task<GunlukOdenisSiyahiDto> GunlukSiyahiAsync();
+
     Task<IList<OdenisNezaretiDto>> HamisiniGetirAsync(BalansNovu? balans = null, string? axtaris = null);
     Task<OdenisNezaretiDto?> IdIleGetirAsync(int id);
     Task<int> YaratAsync(OdenisNezaretiCreateDto dto, int isciId);

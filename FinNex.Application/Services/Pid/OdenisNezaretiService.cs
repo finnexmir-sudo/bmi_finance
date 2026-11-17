@@ -54,11 +54,11 @@ public class OdenisNezaretiService : IOdenisNezaretiService
     {
         var res = await _sorguService.HamisiniGetirAsync();
         if (!res.Success || res.Data is null) return null;
-        // "gray" istisnası: Graylist sorğusunun adında da "Odenis"+"Nezaret" var —
-        // adi siyahı səhvən onu götürməsin
+        // "gray"/"gunluk" istisnası: Graylist VƏ Gündəlik sorğularının adında da
+        // "Odenis"+"Nezaret" var — adi siyahı səhvən onları götürməsin
         var q = res.Data.FirstOrDefault(x => x.Aktiv
             && Norm(x.SorguAdi).Contains("odenis") && Norm(x.SorguAdi).Contains("nezaret")
-            && !Norm(x.SorguAdi).Contains("gray"));
+            && !Norm(x.SorguAdi).Contains("gray") && !Norm(x.SorguAdi).Contains("gunluk"));
         return q?.SorguMetni;
     }
 
@@ -73,7 +73,7 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         var sql = (!res.Success || res.Data is null) ? null
             : res.Data.FirstOrDefault(x => x.Aktiv
                 && Norm(x.SorguAdi).Contains("odenis") && Norm(x.SorguAdi).Contains("nezaret")
-                && Norm(x.SorguAdi).Contains("gray"))?.SorguMetni;
+                && Norm(x.SorguAdi).Contains("gray") && !Norm(x.SorguAdi).Contains("gunluk"))?.SorguMetni;
         if (string.IsNullOrWhiteSpace(sql)) { vm.SorguTapildi = false; return vm; }
         vm.SorguTapildi = true;
 
@@ -114,6 +114,59 @@ public class OdenisNezaretiService : IOdenisNezaretiService
         catch (Exception ex) { vm.Xeta = ex.Message; }
         return vm;
     }
+
+    // ── GÜNDƏLİK KREDİT ÖDƏNİŞLƏRİ: docdna (kassa/cari hesab/köçürmə → kredit, regnom üzrə) ──
+    // Sorğu adı: "Odenis"+"Nezaret"+"Gunluk". Bax CLAUDE.md (17.11.2026) və SQL faylının
+    // öz şərhi (docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql) — "status" və
+    // faiz-gecikmə BU TABDA QƏSDƏN YOXDUR, hələ yenidən qurulmayıb/əlavə olunmayıb.
+    public async Task<GunlukOdenisSiyahiDto> GunlukSiyahiAsync()
+    {
+        var vm = new GunlukOdenisSiyahiDto();
+        var res = await _sorguService.HamisiniGetirAsync();
+        var sql = (!res.Success || res.Data is null) ? null
+            : res.Data.FirstOrDefault(x => x.Aktiv
+                && Norm(x.SorguAdi).Contains("odenis") && Norm(x.SorguAdi).Contains("nezaret")
+                && Norm(x.SorguAdi).Contains("gunluk"))?.SorguMetni;
+        if (string.IsNullOrWhiteSpace(sql)) { vm.SorguTapildi = false; return vm; }
+        vm.SorguTapildi = true;
+
+        try
+        {
+            var rows = await _oracle.SelectAsync(sql, maxRows: 100000);
+            var setirler = rows.Select(MapGunlukSatir).ToList();
+
+            // Çox-kreditli müştəridə eyni ödəniş (eyni RECNUM) bir neçə sətirə düşür —
+            // UI-da işarələmək üçün (bax DTO-nun öz şərhi, qərar hələ verilməyib).
+            var recnumSayi = setirler.Where(x => x.RecNum.HasValue)
+                                      .GroupBy(x => x.RecNum!.Value)
+                                      .ToDictionary(g => g.Key, g => g.Count());
+            foreach (var s in setirler)
+                s.CoxKreditliFanOut = s.RecNum.HasValue && recnumSayi.TryGetValue(s.RecNum.Value, out var c) && c > 1;
+
+            vm.Setirler = setirler;
+        }
+        catch (Exception ex) { vm.Xeta = ex.Message; }
+        return vm;
+    }
+
+    private static GunlukOdenisSatirDto MapGunlukSatir(Dictionary<string, object?> row) => new()
+    {
+        Tarix             = GetDate(row, "tarix", "date_oper"),
+        Debet             = GetStr(row, "debet") ?? "",
+        Kredit            = GetStr(row, "kredit") ?? "",
+        Hesabi            = GetStr(row, "hesabi"),
+        Mebleg            = GetDec(row, "mebleg", "summa_v_nacval") ?? 0m,
+        RecNum            = GetDec(row, "recnum"),
+        Teyinat           = GetStr(row, "teyinat", "primechanie"),
+        QeydNo            = GetStr(row, "qeyd_no"),
+        Adi               = GetStr(row, "adi", "name_regnom") ?? "(naməlum)",
+        Kat               = GetStr(row, "kat", "licschkre") ?? "",
+        Novu              = GetStr(row, "novu"),
+        Tipi              = GetStr(row, "tipi"),
+        KreditBagliTarixi = GetDate(row, "kredit_bagli_tarixi", "date_close"),
+        VkEsas            = GetDec(row, "vk_esas", "summa_19"),
+        Gecikme           = GetStr(row, "gecikme"),
+    };
 
     // Təyinatdan müştəri adı: İLK "( … )" mötərizəsinin içi. Artıq boşluqlar yığcamlanır.
     // Mötərizə yoxdursa → "(təyinatda ad tapılmadı)" qrupu (sətir itmir, say = siyahı).
