@@ -13,15 +13,14 @@
     // JSON sxemi YOXDUR (operator əl ilə başqa yerdə doldurur), YALNIZ
     // göstərilir/seçilə bilir — istifadəçi: "bizde sadece gosterek, ve
     // bunlar sece bilsin, is getsin".
-    // 17.11.2026, İKİNCİ DALĞA (görüntü) — istifadəçi ChatGPT mockup göstərib
-    // "bele daha seliqeli dir sanki, belke artiq yazilari silek? blr,ctr ve
-    // s.,onsuzda isleden bilirde" dedi — qısa kod (BLR/CTR/...) artıq GÖRÜNMÜR,
-    // yalnız təsviri mətn qalır (dəyər yenə checkbox-un `value`-sunda gedir,
-    // funksionallıq DƏYİŞMİR). `Kod` sahəsi saxlanılır — `title` atributunda
-    // (hover/debug üçün), görünən mətndə YOX.
+    // 17.11.2026, İKİNCİ DALĞA (görüntü) — ChatGPT mockup-a görə iki sütunlu,
+    // sətir-ayırıcılı düzüm tətbiq olundu. Qısa kod (BLR/CTR/...) ƏVVƏLCƏ
+    // çıxarılmışdı, AMMA istifadəçi DƏRHAL geri istədi: "eksineye,BLR, CTR,
+    // ETR və s. bunlar qalsin." — kod YENİDƏN mətnin əvvəlinə qaytarıldı,
+    // YALNIZ iki-sütunlu düzüm saxlanıldı.
     var reportSecimler = Enum.GetValues<GoamlHesabatNovu>()
         .Where(r => r.SxemHazirdir())
-        .Select(r => new { Value = (int)r, Kod = r.Kod(), Text = r.Aciqlama() }).ToList();
+        .Select(r => new { Value = (int)r, Kod = r.Kod(), Text = r.Kod() + " — " + r.Aciqlama() }).ToList();
     var reportSolSutun = reportSecimler.Take((reportSecimler.Count + 1) / 2).ToList();
     var reportSagSutun = reportSecimler.Skip((reportSecimler.Count + 1) / 2).ToList();
     // Tip-in İSTİQAMƏTİ (OUT/IN) — "hansı hesab bizimdir" sualının JS-dəki
@@ -216,7 +215,7 @@
                     <div class="gml-report-col">
                         @foreach (var r in reportSolSutun)
                         {
-                            <label class="gml-report-item" title="@r.Kod">
+                            <label class="gml-report-item">
                                 <input type="checkbox" name="ReportCodes" value="@r.Value"
                                     checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
                                 @r.Text
@@ -226,7 +225,7 @@
                     <div class="gml-report-col">
                         @foreach (var r in reportSagSutun)
                         {
-                            <label class="gml-report-item" title="@r.Kod">
+                            <label class="gml-report-item">
                                 <input type="checkbox" name="ReportCodes" value="@r.Value"
                                     checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
                                 @r.Text
