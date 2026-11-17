@@ -378,32 +378,42 @@ public class DsmfHesabatService : IDsmfHesabatService
     // Üç Yazıcı" riski olmasın deyə bu, DÖRD YERDƏ YOX, İKİ YERDƏ (bölmə
     // cədvəli + Hissə 1 sətri) EYNİ dict-dən oxunur.
 
-    // HYS — işçi payı (IsciHYS.Mebleg). Bu metodun ÖZÜ SIRF işçi payını
-    // qaytarır — HƏR DÖRD çağıran (Bölmə 2/3 + Hissə 1-in 3.1/4.1) onu
+    // HYS — işçi payı. 17.11.2026-da CANLI `IsciHYS.Mebleg`-dən DONDURULMUŞ
+    // `MaasDetay`-a keçirildi (istifadəçi: "işçi HYS-ə gedən məbləğ redaktə
+    // ilə azaldılıb — noyabrda iyul ayına baxanda görürük ki, hesabat
+    // güzəştlərdəki CANLI HYS-dan götürür, bu da uyğunsuzluq yaradır").
+    //
+    // Kök səbəb: bu metod CANLI `IsciHYS` cədvəlindən oxuyurdu — `IsciHYS.
+    // Mebleg` sonradan redaktə ilə dəyişsə, artıq keçmiş olan ayların bu
+    // hesabatı da SƏSSİZCƏ dəyişirdi (eyni "canlı dəyərə güvənmə YALNIZ hələ
+    // baş verməmiş bir şey üçün düzgündür" prinsipi — bax CLAUDE.md "Qara
+    // Jeton — Kəsilən Saat CANLI Kataloq Dəyərindən Asılı İdi"). Qonşusu
+    // `HysIsegoturenMapAsync` isə artıq DOĞRU idi (aşağı bax) — bu ikisi
+    // arasındakı ASİMMETRİYA elə bugun özü idi.
+    //
+    // Arxiv YENİ YARADILMADI — onsuz da VAR: `MaasHesablamaService.cs:1428`
+    // hər ay payroll hesablananda "HYS (İşçi)" adlı `MaasDetay` sətrini (o
+    // ANKİ `hysMebleg` ilə, dondurma ARTIQ tətbiq olunmuş halda) yazır —
+    // `HysIsegoturenMapAsync`-in "HYS (İşəgötürən)" oxuduğu ƏN EYNİ mənbə,
+    // ƏN EYNİ naxış. `IIsciHYSDondurmaService`-ə artıq EHTİYAC YOXDUR —
+    // dondurma `MaasHesablamaService`-də HESABLAMA ANINDA tətbiq olunub,
+    // frozen sətrin özü bunu onsuz da daşıyır.
+    //
+    // HƏR DÖRD çağıran (Bölmə 2/3 + Hissə 1-in 3.1/4.1) nəticəni
     // `HysIsegoturenMapAsync`-in (işəgötürən payı) nəticəsi İLƏ BİRLİKDƏ
-    // toplayır (29.10.2026, ÜÇÜNCÜ dalğa — bax `HysIsegoturenMapAsync`-in
-    // şərhi: rəsmi şablonun K10 qeydi "e/h M+T+U" Bölmə 3-ə də işəgötürən
-    // payını tələb etdi, "sirket yox" qərarı TAM TƏRSİNƏ ÇEVRİLDİ).
-    // Dondurulmuş aylar (IIsciHYSDondurmaService) TƏK mənbədən xaric edilir —
-    // bax CLAUDE.md "HYS — Bir Aylıq Dondurma".
+    // toplayır (29.10.2026, ÜÇÜNCÜ dalğa — bax o metodun şərhi).
     private async Task<Dictionary<int, decimal>> HysIsciPayiAsync(int il, int ay)
     {
-        var ayBaslangic = new DateTime(il, ay, 1);
-        var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
-
-        var qeydler = await _unitOfWork.Repository<IsciHYS>()
+        var detallar = await _unitOfWork.Repository<MaasDetay>()
             .Query()
             .AsNoTracking()
-            .Where(x => !x.Silinib
-                     && x.BaslamaTarixi <= ayBitis
-                     && (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangic))
+            .Where(x => !x.Silinib && x.MaasNovu.Ad == "HYS (İşçi)"
+                     && x.Maas.Il == il && x.Maas.Ay == ay && !x.Maas.Silinib
+                     && (x.Maas.Status == MaasStatus.Tesdiqlendi || x.Maas.Status == MaasStatus.Odenildi))
+            .Select(x => new { x.Maas.IsciId, x.Mebleg })
             .ToListAsync();
 
-        var dondurulmus = await _hysDondurma.DondurulmusIdlerAsync(il, ay);
-        if (dondurulmus.Count > 0)
-            qeydler = qeydler.Where(x => !dondurulmus.Contains(x.Id)).ToList();
-
-        return qeydler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
+        return detallar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
     }
 
     // İşəgötürən tərəfindən ödənilən HYS haqqı (29.10.2026, istifadəçi düzəlişi:

@@ -13186,3 +13186,72 @@ HEÇ görünmədiyini, Faktiki iş günü-nün artdığını; (2) qabaqcadan öd
 məzuniyyəti olan bir işçinin 2.3 sütununun indi leave brütünü DAŞIDIĞINI;
 (3) "Hərbi Xidmət" ödəmiş işçinin 3.1 sütununun indi bu məbləği EHTİVA
 ETDİYİNİ (əvvəlkindən böyük çıxmalıdır) təsdiqləməlidir.
+
+## DSMF — HYS İşçi Payı CANLI Dəyərdən ASILI İDİ, Keçmiş Aylar Səssizcə Dəyişirdi (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi tapşırığı: *"bezi aylarda isci hys ya geden meblegi azaldilib ve bunu
+redakte ile edibler,hemin cari ayda her sey qaydasinda olub ama indi biz noyabr
+ayinda bu hesabat ucun iyul ayina baxanda gorurukki hys hemin ayda az olub ama
+bizim hesabat guzestlerdeki HYS dan goturur meblegi ve buda uygunsuzluq
+yaradir."*
+
+### Kök səbəb — iki qonşu metodun ASİMMETRİYASI
+
+`DsmfHesabatService.HysIsciPayiAsync` (HYS-in işçi payı, Bölmə 2/3 + Hissə 1-in
+3.1/4.1 sütunlarının mənbəyi) **CANLI** `IsciHYS.Mebleg`-dən oxuyurdu — yəni
+"indi nə görürsə" onu qaytarırdı. Qonşusu `HysIsegoturenMapAsync` (işəgötürən
+payı) isə artıq **DONDURULMUŞ** mənbədən — `MaasDetay`-dakı "HYS (İşəgötürən)"
+sətrindən — oxuyurdu. Nəticə: işçi HYS-i sonradan redaktə ilə azaldılanda, bu
+redaktə NOYABRDA edilsə belə, hesabat İYUL üçün YENİDƏN HESABLANANDA (artıq
+keçmiş, sabit olmalı olan bir ayı göstərərkən) o ANDAKI CANLI (azaldılmış)
+dəyəri götürürdü — iyulun ÖZ, əsl payroll hesablamasında işlənmiş dəyər YOX.
+Bu, CLAUDE.md-dəki "canlı dəyərə güvənmə qaydası YALNIZ hələ baş verməmiş bir
+şey üçün düzgündür — artıq BAŞ VERMİŞ bir hadisəni göstərən hər sahə, hadisənin
+BAŞ VERDİYİ anda dondurulmalıdır" prinsipinin (Qara Jeton/VM9821/Kəsilən Saat
+bölmələrində dəfələrlə sənədləşmiş) eyni növ pozuntusudur.
+
+### Arxiv YENİ YARADILMADI — onsuz da VAR idi
+
+İstifadəçi: *"hys nin arxivi olmur bele olanda, ya setr uzerinde mebleg
+azaldilmasini temin edek ve arxiv saxlayaq"* — AMMA arxiv axtarmağa ehtiyac
+YOX idi, çünki `MaasHesablamaService.cs:1428` hər ay payroll hesablananda
+artıq "HYS (İşçi)" adlı `MaasDetay` sətri yazır (`MaasDetayTipi.Tutulma`, o
+ANKİ `hysMebleg` ilə) — bu, elə `HysIsegoturenMapAsync`-in "HYS (İşəgötürən)"
+oxuduğu MƏNBƏNİN EYNİSİDİR. Üstəlik bu sətr yazılmazdan ƏVVƏL dondurma
+(`IIsciHYSDondurmaService`, bax "HYS — Bir Aylıq Dondurma" bölməsi) artıq
+`MaasHesablamaService.cs:994-998`-də tətbiq olunub — yəni frozen sətrin özü
+dondurma vəziyyətini də onsuz da daşıyır.
+
+### Düzəliş
+
+`HysIsciPayiAsync` artıq `HysIsegoturenMapAsync` İLƏ BİRƏ-BİR EYNİ naxışla
+`MaasDetay`-dan (`MaasNovu.Ad == "HYS (İşçi)"`, `Maas.Status == Tesdiqlendi ||
+Odenildi`) oxuyur — canlı `IsciHYS` sorğusu VƏ `IIsciHYSDondurmaService`
+çağırışı TAMAMİLƏ ÇIXARILDI (dondurma artıq frozen sətrin özündə).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR DEYİL — ƏKSİNƏ, KEÇMİŞ AYLARI DƏRHAL DÜZƏLDİR.**
+Bu, layihənin adi "dondurma" düzəlişlərindən FƏRQLİDİR: digər hallarda (Qara
+Jeton, VM9821) düzəliş yalnız BUNDAN SONRAKI hadisələrə aiddir, çünki keçmiş
+hadisə üçün düzgün tarixi dəyər HEÇ YERDƏ saxlanmayıb. Burada isə iyulun DOĞRU
+dəyəri artıq `MaasDetay`-da (iyul ayında) yazılıb və HEÇ vaxt dəyişməyib —
+problem YALNIZ onu OXUYAN funksiyada idi. Bu düzəlişdən sonra keçmiş HƏR ay
+üçün hesabat DƏRHAL, əlavə SQL/migrasiya olmadan düzgün nəticə verəcək.
+
+⚠️ **İSTİSNA — əgər bir ayın payroll-u SONRADAN YENİDƏN HESABLANIBSA** ("Yenidən
+Hesabla"), o ayın "HYS (İşçi)" sətri də YENİLƏNİR — bu, gözlənilən, qəsdli bir
+davranışdır (əməliyyat əl ilə, auditə düşən şəkildə edilir), "canlı dəyərə
+sürüşmə" ilə QARIŞDIRILMAMALIDIR.
+
+⚠️ **Hesablanmamış (Layihə statuslu və ya ümumiyyətlə mövcud olmayan) ay üçün
+HYS işçi payı indi 0 göstərəcək** — bu, modulun digər bütün mənbələrinin
+(Xəstəlik, manual gəlir istisnaları, HYS işəgötürən) artıq işlətdiyi EYNİ
+qaydadır, yeni risk DEYİL, əksinə indiyədək olan ASİMMETRİYANI aradan qaldırır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/fiqurlu-mötərizə/kvadrat-mötərizə balansı skriptlə — tam fayl
+407/407, 102/102, 97/97, mojibake YOX). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real ssenari ilə yoxlamalıdır: iyul ayının HYS-i sonradan
+(noyabrda) redaktə ilə azaldılmış bir işçi üçün — Bölmə 2/3 və Hissə 1-in 3.1/
+4.1 sütunlarının artıq İYULUN ÖZ, əsl payroll hesablamasındakı (dəyişməz)
+HYS məbləğini göstərdiyini, noyabrdakı redaktənin bu KEÇMİŞ ay üçün rəqəmi
+TƏSİR ETMƏDİYİNİ təsdiqləməlidir.
