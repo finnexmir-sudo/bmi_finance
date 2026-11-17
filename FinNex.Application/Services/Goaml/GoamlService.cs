@@ -1758,7 +1758,20 @@ namespace FinNex.Application.Services.Goaml
         /// əvəzinə, HƏR ReportCode üçün AYRI fayl qaytarılır. Qeydlərin ÖZÜ
         /// (Status=İxracEdilib) isə YENƏ DƏ bir dəfəyə, bütün qruplar birlikdə
         /// yazılır — fayl sayından asılı olmayaraq ikiqat ixrac riski eyni
-        /// qalır (bax <see cref="IxracSertiQur"/>-un Status şərti).</summary>
+        /// qalır (bax <see cref="IxracSertiQur"/>-un Status şərti).
+        ///
+        /// 17.11.2026, İKİNCİ SƏVİYYƏ — istifadəçi: "misal blr teyin olunubsa,
+        /// ve fiziki ve huquqidirse,bunlar bir faylda cixmamalidir". BLR (HRZ,
+        /// `reportType=8`) sxemində `individualPerson` (fiziki/hüquqi) HƏR
+        /// qeyd üçün AYRI-AYRI hesablanır (bax <see cref="HeaderZenginlesdirAsync"/>)
+        /// — eyni ReportCode-un İÇİNDƏ fiziki VƏ hüquqi qarışıq gələ bilər.
+        /// Ona görə ReportCode-a görə qruplaşdırmadan ƏVVƏL HƏR qeydin öz
+        /// `report` obyekti (header daxil) qurulur, SONRA (ReportCode,
+        /// IndividualPerson) CÜTÜNƏ görə qruplaşdırılır — eyni Oracle
+        /// sorğusu İKİ dəfə çağırılmır (header artıq hesablanıb), yalnız
+        /// NƏTİCƏ ikinci dəfə qruplaşdırılır. `IndividualPerson` null olan
+        /// (CTR/ETR/PEP/QHT/STR/TFR — bu sahə YALNIZ HRZ-ə aiddir) kodlarda
+        /// ayırıcı boşdur — əvvəlki (bölünməmiş) davranış DƏYİŞMİR.</summary>
         public async Task<Result<GoamlJsonIxracNeticeDto>> JsonIxracAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default)
         {
             var setirler = await _unitOfWork.Repository<GoamlEmeliyyat>().HamisiniGetirAsync(IxracSertiQur(filtr));
@@ -1771,26 +1784,51 @@ namespace FinNex.Application.Services.Goaml
             var valyutaKoduKesi = new Dictionary<string, string?>();
             var fayllar = new List<GoamlJsonIxracFaylDto>();
 
-            // Qruplaşdırma — nullable enum-u (`ReportCode`) açar kimi birbaşa
+            // 1-ci səviyyə — nullable enum-u (`ReportCode`) açar kimi birbaşa
             // işlətmək olmur (`GroupBy` key-i `== null`-u digər dəyərlərlə
             // qarışdıra bilər), ona görə əvvəlcə HƏR qeydin öz `reportCodeKod`-unu
-            // (mətn, "STR" fallback-i ilə) hesablayıb ONUN üzrə qruplaşdırırıq —
-            // bu, elə hər qrupun fayl adında işlədəcəyi mətndir.
-            var qruplar = setirler
+            // (mətn, "STR" fallback-i ilə) hesablayıb ONUN üzrə qruplaşdırırıq.
+            // HƏR Kod qrupu üçün `mn` (reportType/reportReason) BİR dəfə
+            // tapılır (o, kodun özünə bağlıdır, sətirdən asılı deyil), sonra
+            // qrupun HƏR sətri üçün AYRI `report` (öz header-i ilə) qurulur.
+            var qruplarByKod = setirler
                 .Select(e => (Setir: e, Kod: e.ReportCode?.Kod() ?? "STR"))
                 .GroupBy(x => x.Kod)
                 .OrderBy(g => g.Key);
 
-            foreach (var qrup in qruplar)
+            var butunRaportlar = new List<(GoamlEmeliyyat Setir, string Kod, GoamlJsonReportDto Report)>();
+            foreach (var qrup in qruplarByKod)
             {
                 var reportCodeKod = qrup.Key;
                 var mn = await MalumatinNovuTapAsync(reportCodeKod, ct);
                 if (mn == null)
                     xeberdarliqlar.Add($"\"{reportCodeKod}\" üçün reportType/reportReason Oracle-dan (malumatin_novu) tapılmadı — 0 yazıldı, əl ilə yoxlayın.");
 
-                var root = new GoamlJsonRootDto();
                 foreach (var (e, _) in qrup.OrderBy(x => x.Setir.DateOper))
-                    root.Reports.Add(await ReportQurAsync(e, mn, valyutaKoduKesi, ct));
+                    butunRaportlar.Add((e, reportCodeKod, await ReportQurAsync(e, mn, valyutaKoduKesi, ct)));
+            }
+
+            // 2-ci səviyyə — (Kod, Fiziki/Hüquqi) cütünə görə. `individualPerson`
+            // artıq header-in ÖZÜNDƏ hesablanıb (yuxarı), ona görə Oracle-a
+            // YENİDƏN getmir — yalnız nəticə üzərində qruplaşdırma.
+            static string FizikiHuquqiAcar(GoamlJsonReportDto r) => r.Header.IndividualPerson switch
+            {
+                true => "FIZIKI",
+                false => "HUQUQI",
+                null => "",
+            };
+
+            var ikinciSeviyyeQruplar = butunRaportlar
+                .GroupBy(x => (x.Kod, Ayirici: FizikiHuquqiAcar(x.Report)))
+                .OrderBy(g => g.Key.Kod).ThenBy(g => g.Key.Ayirici);
+
+            foreach (var qrup in ikinciSeviyyeQruplar)
+            {
+                var (reportCodeKod, ayirici) = qrup.Key;
+
+                var root = new GoamlJsonRootDto();
+                foreach (var x in qrup)
+                    root.Reports.Add(x.Report);
 
                 var json = System.Text.Json.JsonSerializer.Serialize(root,
                     new System.Text.Json.JsonSerializerOptions
@@ -1802,14 +1840,22 @@ namespace FinNex.Application.Services.Goaml
                         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                     });
 
+                var faylAdiSonluq = ayirici == "" ? "" : $"_{ayirici}";
+                var etiketSonluq = ayirici switch
+                {
+                    "FIZIKI" => " (Fiziki şəxs)",
+                    "HUQUQI" => " (Hüquqi şəxs)",
+                    _ => "",
+                };
+
                 fayllar.Add(new GoamlJsonIxracFaylDto
                 {
                     JsonMetni = json,
-                    TeklifOlunanFaylAdi = $"GOAML_Ixrac_{reportCodeKod}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json",
+                    TeklifOlunanFaylAdi = $"GOAML_Ixrac_{reportCodeKod}{faylAdiSonluq}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json",
                     SetirSayi = root.Reports.Count,
-                    ReportCodeEtiketi = qrup.First().Setir.ReportCode?.Aciqlama() is { } aciqlama
+                    ReportCodeEtiketi = (qrup.First().Setir.ReportCode?.Aciqlama() is { } aciqlama
                         ? $"{reportCodeKod} — {aciqlama}"
-                        : reportCodeKod,
+                        : reportCodeKod) + etiketSonluq,
                 });
             }
 
