@@ -12838,3 +12838,92 @@ sətirləri ilə göründüyünü, "Vaxtı keçmiş..." sətirlərinin siyahıda
 çıxdığını, "Yenilə" düyməsinin səhifəni təzədən yüklədiyini, "Təmizlə"/
 "Excelə yüklə" düymələrinin üzərinə gələndə indi rəng dəyişdiyini, çox-kreditli
 bir müştəridə "təkrarlanır" pilinin göründüyünü təsdiqləməlidir.
+
+## PİD Gündəlik Kredit Ödənişləri — Çox-kreditli Regnomda EYNİ RECNUM İKİ DƏFƏ Sayılırdı (17.11.2026, İKİNCİ DALĞA, KRİTİK — DÜZƏLDİLDİ)
+
+Əvvəlki düzəlişdən (bax yuxarı, "'Vaxtı keçmiş' Sətirləri ÖZÜ 'Silinmə' İdi") DƏRHAL
+sonra istifadəçi Excel ixracında (ekran-görüntüsü) eyni RECNUM-un İKİ sətirdə
+göründüyünü tapdı: ƏLİYEV NİZAM ÇALI OĞLU (regnom 019738) üçün EYNİ 500,00 ödənişi
+İKİ fərqli kreditə ("DAŞINMAZ ƏMLAK" girovlu, Gecikir/3947,63 və "F/Ş TƏR.VER.ZƏMANƏT"
+girovlu, Vaxtında/0,00) aid "Cari hesaba daxil olub" sətri kimi göstərilirdi.
+İstifadəçinin öz sözü: *"eyni setiri iki defe gosterib,sebeb ise hemin regnomum iki
+aciq krediti var. bunuda duzelt,yalanci iki odenis demis oluruq."*
+
+### Kök səbəb — REGNOM-üzrə JOIN cartesian-tərzi fan-out yaradır
+
+`SUBSTR(d.kredit,10,6) = SUBSTR(l.licschkre,10,6)` join-i (əvvəlki dalğada qurulmuş,
+"ödəniş müştərinin cari hesabına düşə bilər" ssenarisini tutmaq üçün) müştərinin
+REGNOM-u üzrə HƏR açıq krediti ilə AYRI-AYRI uyğunlaşır. Bir müştərinin 2+ açıq
+krediti varsa, bu, İKİ fərqli zərər yaradır:
+
+1. **Fantom "Cari hesaba daxil olub" sətri** — d.kredit müştərinin BİR krediti üçün
+   BİRBAŞA uyğun gəlirsə (Əsas/Faiz), AMMA müştərinin İKİNCİ bir açıq krediti DƏ
+   varsa, o İKİNCİ kredit üçün d.kredit heç bir sütuna uyğun GƏLMİR, CASE ELSE-ə
+   düşür və SƏHVƏN "Cari hesaba daxil olub" sətri yaradır — halbuki pul artıq
+   BİRİNCİ kreditə BİRBAŞA düşüb.
+2. **Həqiqi ambiqyuitet ikiqat sayılırdı** — pul həqiqətən cari hesabdadırsa (heç
+   bir krediti birbaşa toxunmayıb) VƏ müştərinin 2+ açıq krediti varsa, EYNİ
+   "Cari hesaba daxil olub" sətri HƏR kredit üçün AYRI-AYRI təkrarlanır.
+
+### Həll — bir RECNUM = bir sətir
+
+Bir `docdna` qeydi HƏMİŞƏ BİR fiziki əməliyyatdır (bir neçə krediti real bölünmüş
+ödəniş kimi TƏMSİL ETMİR — belə bölgü ayrı-ayrı RECNUM-larla gələrdi). SQL-ə
+`ROW_NUMBER() OVER (PARTITION BY recnum ORDER BY CASE WHEN hesabi=N'Cari hesaba
+daxil olub...' THEN 1 ELSE 0 END, kat) = 1` əlavə edildi (3-cü səviyyəli alt-sorğu,
+`docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql`-in 9-cu bəndi):
+
+- Əgər o RECNUM üçün İSTƏNİLƏN kreditə BİRBAŞA uyğunluq varsa — O sətir QALİB
+  gəlir, fantom "Cari hesaba daxil olub" sətirləri AVTOMATİK ATILIR.
+- Əgər HEÇ bir birbaşa uyğunluq yoxdursa (həqiqi ambiqyuitet) — yalnız BİR kredit
+  (sıralamada `kat` üzrə ilk gələn) TƏMSİLÇİ kimi saxlanılır, qalanlar atılır.
+
+Yeni **`coxaday`** bayrağı (0/1) YALNIZ ikinci halda (həqiqi ambiqyuitet) 1 olur —
+birinci haldakı fantom-atma heç bir qeyri-müəyyənlik DEYİL (artıq dəqiq bilinir
+hansı kreditə düşüb). `CoxKreditliFanOut` DTO sahəsi artıq bu sütundan oxunur
+(`OdenisNezaretiService.MapGunlukSatir`), C#-ın özünün köhnə `RecNum`-a görə
+`GroupBy` hesablaması SİLİNDİ — SQL artıq dedup etdiyi üçün bu hesablama HƏR ZAMAN
+`count=1` verərdi (dead code, "CoxKreditliFanOut HEÇ VAXT `true` olmazdı" bugu).
+
+⚠️ **Qayda:** bir servis qatında (C#) "bu sütun artıq unikal olmalıdır" fərziyyəsi
+ilə yazılmış bir qrup-hesablama, mənbə SQL-in ÖZÜNDƏ dedup əlavə ediləndə SƏSSİZCƏ
+ÖLÜ KODA çevrilə bilər (həmişə eyni, köhnəlmiş nəticəni — burada `false` — qaytarır,
+heç bir xəta vermədən). SQL-ə dedup əlavə edəndə, "əvvəlki dublikatı GÖRMƏK üçün"
+yazılmış hər C# məntiqini YOXLA — ya silinməli, ya da (bu halda kimi) eyni
+məlumatı artıq SQL-in özündən DAHA DƏQİQ almaq mümkündürsə, ona keçirilməlidir.
+
+### Görüntü düzəlişləri (eyni sessiya)
+
+- **Banner/badge mətni** — köhnə "EYNİ ödəniş hər kredit üçün AYRI sətirdə göstərilir
+  ... Cəmdə eyni pul bir neçə dəfə sayılır" artıq YALANDIR (SQL dedup edir) —
+  yenidən yazıldı: "Hər ödəniş yalnız BİR dəfə göstərilir... sistem TƏMSİLÇİ olaraq
+  bir kreditə yazır... real kredit başqası ola bilər." Badge mətni "təkrarlanır"
+  → **"bir neçə krediti var"** (artıq təkrarlanma yoxdur, yalnız hansı kreditə aid
+  olduğu qəti deyil).
+- **"Gecikmə" sütunu qabağa gətirildi** — istifadəçi: *"gecikme sutununu qabaga
+  getir"* (əvvəl 13-cü sütun idi, scroll tələb edirdi, demək olar heç görünmürdü).
+  İndi "Hesabı"-dan DƏRHAL sonra, "Məbləğ"-dən ƏVVƏL (ekranın ilk görünən hissəsində).
+  `GunlukExcel` (Excel ixracı, `OdenisNezaretiController.cs`) da EYNİ sıraya
+  uyğunlaşdırıldı — "CƏMİ:" xülasə sətri də yeni sütun mövqeyinə köçürüldü.
+- **"docdna" sözünün qırmızı rəngi** — istifadəçi: *"yazinin renginide deyis"*.
+  Köhnə `<code>docdna</code>` Bootstrap-ın defolt `code` rənginə (pink/qırmızı,
+  `#d63384`) görə göy (`#1e40af`) banner-in içində qırmızı, yad bir ləkə kimi
+  görünürdü — heç bir xüsusi layihə qaydası YOX idi, sırf Bootstrap defolt
+  stilinin unudulmuş qalması idi. `.on-scope code { color:#1e40af;
+  background:rgba(30,64,175,.1); ... }` əlavə edildi ki, banner-in öz tonunda
+  qalsın.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız canlı `docdna` üzərində işləyən BU GÜNÜN
+sorğusudur, arxiv datasına təsiri yoxdur. SQL faylı YENİDƏN SQL Server-də
+işlədilməlidir ki, dəyişiklik qüvvəyə minsin.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff --unified=0` ilə YALNIZ bu sessiyanın əlavə etdiyi
+sətirləri üzrə ayrıca ölçülərək — 4 dəyişən faylın (SQL, controller, servis, DTO)
+hamısında net fərq SIFIR; SQL-in embedded Oracle mətni ayrıca 31/31 mötərizə ilə
+balanslı təsdiqləndi). İstifadəçi SQL faylını SQL Server-də YENİDƏN işlətdikdən
+sonra, Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+2+ açıq krediti olan müştərinin eyni (RECNUM) ödənişinin artıq YALNIZ BİR sətirdə
+göründüyünü, "Gecikmə" sütununun indi "Hesabı"-nın dərhal yanında (scroll-suz
+görünən) olduğunu, "docdna" sözünün artıq qırmızı deyil, banner-in öz göy tonunda
+göründüyünü təsdiqləməlidir.
