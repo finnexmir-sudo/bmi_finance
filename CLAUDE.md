@@ -12597,3 +12597,76 @@ kassa, Kredit=huquqi müştəri) namizədi yenidən Təsdiqləyib Export etməli
 blokunun (account_number=Kredit-in tam nömrəsi, fin_inst_name/branch=bizim ÖZ
 filialımız, fin_inst_tax_id/bic=ATTRIB-dən) dolu gəldiyini AYSEL-in nümunəsi ilə
 tutuşdurub təsdiqləməlidir.
+
+## GOAML — Eyni Əməliyyat BİRDƏN ÇOX Hesabat Növünə Uyğun Gələ Bilər — "Məlumatın Növü" ÇOXSEÇİMLİ Edildi (17.11.2026)
+
+İstifadəçi (AML məsul şəxsdən): *"ele emeliyyat varki,hemin emeliyyat hem ctr,hem
+blr hemde ve s. ola biler,yani bir nece nove uygun ola biler. bizim sistemde
+yalniz bir defe sece bilir."* — "Təsdiqlə" forması "Məlumatın növü"nü **tək
+seçimli** `<select>` kimi göstərirdi, VƏ dedup şərti bunu STRUKTUR SƏVİYYƏSİNDƏ
+bağlamışdı: `MovcuddurmuAsync`-ın açarı `(filial, dateOper, recNum, Tip)` idi,
+**`ReportCode`-u DAŞIMIRDI** — eyni namizədi EYNİ Tip ilə, AMMA FƏRQLİ "Məlumatın
+növü" ilə (məs. əvvəlcə CTR, sonra BLR) ikinci dəfə Təsdiqləmək cəhdi "Bu əməliyyat
+eyni Tip ilə artıq təsdiqlənib" xətası ilə RƏDD OLUNURDU — operator CTR-i
+seçib göndərəndən sonra BLR-i əlavə etmək üçün HEÇ bir yol yox idi.
+
+**Həll — iki qat, bir-birini TAMAMLAYAN:**
+
+1. **Dedup açarına `ReportCode` əlavə edildi** (`GoamlService.TesdiqleAsync`) —
+   bu, elə 12.11.2026-da `Tip`-in açara əlavə olunmasının (hər iki tərəfdə KYC
+   olan əməliyyatın iki AYRI istiqamətli Tip ilə iki dəfə göndərilə bilməsi
+   üçün) EYNİ naxışının `ReportCode`-a tətbiqidir — şərt indi `(filial,
+   dateOper, recNum, Tip, ReportCode)`-dur. Eyni Tip+ReportCode cütü ilə
+   ikinci cəhd yenə RƏDD OLUNUR (əsl təkrar-klik qoruması qalır), AMMA
+   FƏRQLİ ReportCode ilə YENİ bir sətir yaradıla bilir.
+2. **"Məlumatın növü" `<select>`-dən checkbox QRUPUNA çevrildi** (`Tesdiq.cshtml`,
+   `name="ReportCodes"`, çoxlu) — operator indi BİR təsdiq cəhdində bir neçə
+   kodu birlikdə işarələyə bilər. `EmeliyyatlarController.Tesdiq` (POST) hər
+   işarələnmiş kod üçün `_goaml.TesdiqleAsync`-i AYRI çağırır (`dto.ReportCode`-u
+   hər dövrədə dəyişdirərək) — NƏTİCƏ: EYNİ KYC-li, FƏRQLİ ReportCode-lu
+   bir neçə `GoamlEmeliyyat` sətri yaranır, hamısı eyni Tip/Debet/Kredit/KYC
+   ilə, yalnız ReportCode-u fərqli.
+
+**`_goaml.TesdiqleAsync`-in ÖZ imzası dəyişmədi** ("Metod İmzası Dəyişikliyi"
+riskini artırmamaq üçün) — TƏK bir `ReportCode` qəbul etməyə davam edir, çoxluq
+YALNIZ controller səviyyəsində (bir dövrə ilə) idarə olunur. Yeni
+`GoamlTesdiqDto.ReportCodes` (`List<int>?`) checkbox-ların dəyərlərini daşıyır,
+mövcud tək `ReportCode` sahəsi TOXUNULMADI (GET-dən pre-fill üçün, VƏ
+`GoamlEmeliyyatDetalDto`-nun "Bax" ekranı üçün hələ də işlək qalır).
+
+**Hər kodun öz `AvtoDolduruAsync` çağırışı var** (hər dövrə öz `GoamlEmeliyyat e`
+obyektini yaradır) — bu, əlavə Oracle round-trip-lərə səbəb olur (N kod seçilibsə,
+N dəfə eyni "Update New" kaskadı işləyir), AMMA KYC/hesab datası HƏR DƏFƏ EYNİ
+olduğu üçün nəticə baxımından ZƏRƏRSİZDİR, sadəcə bir az yavaşdır — N adətən
+kiçikdir (2-3 kod), performans riski aşağı sayıldı.
+
+**Qismən uğur ssenarisi açıq idarə olunur** — bir kod uğurlu, digəri (keçici
+Oracle xətası, yoxsa EYNİ kodla əvvəlcədən artıq təsdiqlənmiş olma) uğursuz
+olsa, controller BUNU GİZLƏTMİR: ən azı bir kod uğurlu olubsa `Siyahi`-yə
+yönləndirir, AMMA `TempData["Success"]`-ə uğurlu kodların yanında "AMMA uğursuz
+oldu: <kod>: <səbəb>" əlavə edir. Heç biri uğurlu olmayıbsa forma geri qaytarılır,
+`TempData["Error"]`-da bütün səbəblər sadalanır — Export-un "hər fayl öz
+`try/catch`-ində" prinsipinin (16.11.2026) EYNİ "best-effort, uğursuzluğu
+gizlətmə" fəlsəfəsi.
+
+**Client-side "ən azı bir seç" yoxlaması ƏLAVƏ EDİLDİ** — HTML-in öz `required`
+atributu bir checkbox QRUPUNDA "ən azı biri" semantikasını vermir (hər birinə
+qoysan HƏR BİRİ məcburi olar) — `Tesdiq.cshtml`-ə `submit` hadisəsində
+`input[name="ReportCodes"]:checked`-in sayını yoxlayan kiçik bir skript əlavə
+olundu, boşdursa `preventDefault()` + `alert()`.
+
+⚠️ **"Təsdiqlənib" bədgisi/"Əks tərəfi də təsdiqlə" düymə mətni (Index/Risk
+siyahıları) TOXUNULMADI** — bu, Tip-əsaslı (istiqamət) kontekstdir, ReportCode-un
+çoxluğu ilə bağlı deyil, dəyişiklik tələb etmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri üzrə
+ayrıca ölçülüb — hər 4 dəyişən faylda net fərq SIFIR; `using FinNex.Domain.
+Entities.Goaml;` əlavə olunmadan `GoamlHesabatNovu` enum-u controller-də
+CS0246 verərdi — "Qovluq Adı ≠ Namespace" qaydasına uyğun yoxlanıb düzəldildi;
+yeni JS submit-guard `node -c` ilə sintaksis yoxlamasından keçdi). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: bir
+namizədi açıb HƏM "CTR", HƏM "BLR" checkbox-larını işarələyib Təsdiqlə → "Təsdiqlənmiş
+siyahı"da EYNİ Debet/Kredit/Tip ilə İKİ AYRI sətrin (biri CTR, biri BLR)
+yarandığını, hər ikisinin Export-da (16.11.2026-dakı "hər ReportCode üçün AYRI
+fayl" məntiqinə görə) İKİ AYRI JSON faylına düşdüyünü təsdiqləməlidir.

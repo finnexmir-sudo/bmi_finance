@@ -171,14 +171,25 @@
                     </select>
                 </div>
                 <div>
-                    <label class="gml-flbl">Məlumatın növü <span class="gml-req">*</span></label>
-                    <select name="ReportCode" class="fn-select" required>
-                        <option value="">— seçin —</option>
+                    <label class="gml-flbl">Məlumatın növü <span class="gml-req">*</span>
+                        <span style="color:#94a3b8; font-weight:400">(bir neçəsi ola bilər)</span></label>
+                    @* ── 17.11.2026, AML məsul şəxsin tələbi: "ele emeliyyat varki,
+                         hem ctr,hem blr hemde ve s. ola biler" — tək seçimli
+                         `<select>` ƏVƏZİNƏ çoxseçimli checkbox qrupu. Hər
+                         işarələnmiş kod üçün controller (`EmeliyyatlarController.
+                         Tesdiq` POST) AYRI, öz `GoamlEmeliyyat` sətrini yaradır
+                         (eyni KYC, fərqli ReportCode) — bax GoamlService.
+                         TesdiqleAsync-in dedup açarına (Tip+ReportCode). ── *@
+                    <div class="gml-checks" style="flex-wrap:wrap; gap:10px 18px; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; background:#fafafa">
                         @foreach (var r in reportSecimler)
                         {
-                            <option value="@r.Value" selected="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)">@r.Text</option>
+                            <label style="font-weight:400">
+                                <input type="checkbox" name="ReportCodes" value="@r.Value"
+                                    checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
+                                @r.Text
+                            </label>
                         }
-                    </select>
+                    </div>
                 </div>
                 <div>
                     <label class="gml-flbl">Əməliyyat tarixi</label>
@@ -368,6 +379,20 @@
         body.querySelectorAll('input').forEach(function (el) { el.value = ''; });
         body.querySelectorAll('select').forEach(function (el) { el.selectedIndex = 0; });
     }
+
+    // ── "Məlumatın növü" indi checkbox qrupudur (17.11.2026) — HTML-in öz
+    //    `required`-i "bir qrupdan ƏN AZI biri" semantikasını vermir (hər
+    //    checkbox-a `required` qoysaq HƏR BİRİ məcburi olardı). Submit-də
+    //    əl ilə yoxlanır.
+    document.addEventListener('submit', function (ev) {
+        var form = ev.target;
+        if (!form.querySelector('input[name="ReportCodes"]')) return;
+        var iseretli = form.querySelectorAll('input[name="ReportCodes"]:checked');
+        if (iseretli.length === 0) {
+            ev.preventDefault();
+            alert('Məlumatın növü — ən azı bir hesabat növü seçilməlidir (CTR, BLR, PEP və s. — bir neçəsi ola bilər).');
+        }
+    });
 </script>
 
 @{

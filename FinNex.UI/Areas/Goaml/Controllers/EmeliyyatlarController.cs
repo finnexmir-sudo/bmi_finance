@@ -2,6 +2,7 @@ using System.Text;
 using FinNex.Application.DTOs.Goaml;
 using FinNex.Application.Interfaces.Goaml;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Goaml;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Filters;
 using Microsoft.AspNetCore.Authorization;
@@ -241,6 +242,15 @@ public class EmeliyyatlarController : Controller
     }
 
     // ── POST /Goaml/Emeliyyatlar/Tesdiq — KYC formunu yaddaşa yazır ─────────
+    //    17.11.2026 — "Məlumatın növü" artıq ÇOX seçimlidir (checkbox qrupu,
+    //    bax Tesdiq.cshtml): eyni əməliyyat HƏM CTR, HƏM BLR, hətta HƏM PEP
+    //    ola bilər (AML məsul şəxsin tələbi). `_goaml.TesdiqleAsync` özü
+    //    TƏK bir ReportCode qəbul edir (dəyişmədi — "Metod İmzası
+    //    Dəyişikliyi" riskini artırmamaq üçün) — bu action HƏR seçilmiş kod
+    //    üçün onu AYRI çağırır, HƏR çağırış ÖZ `GoamlEmeliyyat` sətrini
+    //    yaradır (eyni KYC, fərqli ReportCode). Dedup açarı indi `ReportCode`-u
+    //    da daşıdığı üçün (bax GoamlService.TesdiqleAsync) bu dövrələr
+    //    bir-birini BLOKLAMIR.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Tesdiq(GoamlTesdiqDto dto)
@@ -252,14 +262,35 @@ public class EmeliyyatlarController : Controller
             return View(dto);
         }
 
-        var netice = await _goaml.TesdiqleAsync(dto, isciId.Value);
-        if (!netice.Success)
+        var secilenKodlar = (dto.ReportCodes ?? new List<int>()).Distinct().ToList();
+        if (secilenKodlar.Count == 0)
         {
-            TempData["Error"] = netice.Message;
+            TempData["Error"] = "Məlumatın növü — ən azı bir hesabat növü seçilməlidir.";
             return View(dto);
         }
 
-        TempData["Success"] = netice.Message;
+        var ugurlular = new List<string>();
+        var xetalar = new List<string>();
+        foreach (var kod in secilenKodlar)
+        {
+            dto.ReportCode = (GoamlHesabatNovu)kod;
+            var netice = await _goaml.TesdiqleAsync(dto, isciId.Value);
+            if (netice.Success)
+                ugurlular.Add(dto.ReportCode.Value.Kod());
+            else
+                xetalar.Add($"{dto.ReportCode.Value.Kod()}: {netice.Message}");
+        }
+
+        if (ugurlular.Count > 0)
+            TempData["Success"] = $"Təsdiqləndi: {string.Join(", ", ugurlular)}" +
+                (xetalar.Count > 0 ? $" — AMMA uğursuz oldu: {string.Join(" | ", xetalar)}" : ".");
+
+        if (ugurlular.Count == 0)
+        {
+            TempData["Error"] = string.Join(" | ", xetalar);
+            return View(dto);
+        }
+
         return RedirectToAction(nameof(Siyahi));
     }
 

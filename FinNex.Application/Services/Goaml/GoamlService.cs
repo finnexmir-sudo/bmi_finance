@@ -159,22 +159,32 @@ namespace FinNex.Application.Services.Goaml
             if (dto.ReportCode == null)
                 return Result.Fail("Məlumatın növü seçilməlidir.");
 
-            // Eyni namizəd (filial+tarix+recnum) EYNİ Tip ilə ikinci dəfə
-            // təsdiqlənməsin — operatorun səhvən iki dəfə klikləməsi, ya da
-            // fərqli axtarışda eyni sətrin yenidən seçilməsi. ⚠️ ARTIQ `Tip`-ə
+            // Eyni namizəd (filial+tarix+recnum) EYNİ Tip + EYNİ ReportCode ilə
+            // ikinci dəfə təsdiqlənməsin — operatorun səhvən iki dəfə klikləməsi,
+            // ya da fərqli axtarışda eyni sətrin yenidən seçilməsi. ⚠️ `Tip`-ə
             // BAXMADAN bloklamırıq (12.11.2026, AML məsul şəxsin tələbi): hər
             // iki tərəfdə (Debet VƏ Kredit) KYC tapılan əməliyyat ADƏTƏN İKİ
             // AYRI hesabat kimi — bir dəfə bir istiqamətli Tip ilə, bir dəfə
-            // əks istiqamətli Tip ilə — göndərilməlidir. Köhnə şərt (Tip-i
-            // yoxlamadan) bunu BLOKLAYIRDI — ikinci, fərqli Tip-li təsdiq
-            // "artıq təsdiqlənib" xətası ilə rədd olunurdu.
+            // əks istiqamətli Tip ilə — göndərilməlidir.
+            // ⚠️ 17.11.2026, İKİNCİ GENİŞLƏNDİRMƏ — `ReportCode`-a DA baxmadan
+            // bloklamırıq: eyni əməliyyat EYNİ Tip altında belə BİRDƏN ÇOX
+            // hesabat növünə (məs. HƏM CTR, HƏM BLR) uyğun gələ bilər — AML
+            // məsul şəxsin tələbi. Köhnə şərt (ReportCode-u yoxlamadan) bunu
+            // BLOKLAYIRDI: "Təsdiqlə" forması YALNIZ BİR "Məlumatın növü"
+            // seçməyə icazə verirdi (tək seçimli dropdown), EYNİ namizədi
+            // İKİNCİ dəfə fərqli kodla təsdiqləmək "artıq təsdiqlənib" xətası
+            // ilə rədd olunurdu. İndi forma çoxseçimli checkbox-dır
+            // (`Tesdiq.cshtml` → `ReportCodes`), controller hər kod üçün bu
+            // metodu AYRI çağırır — dedup açarı həmin dövrələrin bir-birini
+            // BLOKLAMAMASI üçün `ReportCode`-u da daşımalıdır.
             var movcuddur = await _unitOfWork.Repository<GoamlEmeliyyat>().MovcuddurmuAsync(x =>
                 x.CandidateFilialNumber == dto.CandidateFilialNumber &&
                 x.CandidateDateOper == dto.CandidateDateOper &&
                 x.CandidateRecNum == dto.CandidateRecNum &&
-                x.Tip == dto.Tip);
+                x.Tip == dto.Tip &&
+                x.ReportCode == dto.ReportCode);
             if (movcuddur)
-                return Result.Fail("Bu əməliyyat eyni Tip ilə artıq təsdiqlənib. Əks tərəfi də göndərmək lazımdırsa, fərqli (əks istiqamətli) Tip seçib yenidən təsdiqləyin.");
+                return Result.Fail($"Bu əməliyyat eyni Tip VƏ eyni Məlumat növü ({dto.ReportCode?.Kod()}) ilə artıq təsdiqlənib. Başqa hesabat növü də (CTR/BLR/PEP və s.) uyğun gəlirsə, onu ƏLAVƏ seçib yenidən təsdiqləyin — ya da əks istiqamətli Tip seçin.");
 
             var e = new GoamlEmeliyyat
             {

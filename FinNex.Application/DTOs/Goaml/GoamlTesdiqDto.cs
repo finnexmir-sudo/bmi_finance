@@ -23,6 +23,18 @@ namespace FinNex.Application.DTOs.Goaml
         public decimal? KursValuti { get; set; }
         public GoamlTipi? Tip { get; set; }
         public GoamlHesabatNovu? ReportCode { get; set; }
+        /// <summary>17.11.2026 — "eyni əməliyyat həm CTR, həm BLR, həm də s. ola
+        /// bilər" (istifadəçi: AML məsul şəxs). Forma indi "Məlumatın növü"-nü
+        /// CHECKBOX qrupu kimi göstərir (əvvəl tək seçimli `<select>` idi) — bu
+        /// sahə checkbox-ların işarələnmiş dəyərlərini daşıyır. Controller
+        /// (`EmeliyyatlarController.Tesdiq` POST) hər kod üçün AYRI
+        /// `IGoamlService.TesdiqleAsync` çağırışı edir (`dto.ReportCode`-u hər
+        /// dövrədə dəyişdirərək) — EYNİ namizəd+Tip üçün BİRDƏN ÇOX
+        /// `GoamlEmeliyyat` sətri yaranır, hər biri öz ReportCode-u ilə. Tək
+        /// `ReportCode` sahəsi (yuxarı) hələ də qalır — hər dövrənin ÖZÜ
+        /// yazdığı DƏYƏR, GET-dən pre-fill üçün VƏ `GoamlEmeliyyatDetalDto`-nun
+        /// miras aldığı "Bax" ekranı üçün.</summary>
+        public List<int>? ReportCodes { get; set; }
         public string? TransactionNumber { get; set; }
         public string? Primechanie { get; set; }
         public DateTime? DateOper { get; set; }
