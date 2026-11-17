@@ -13010,3 +13010,24 @@ dəyişib fon rənginə yaxınlaşdırırdı. **Düzəliş (3 fayl — Index/Gra
 hover-də də eyni (oxunaqlı) görünür.
 
 ⚠️ SQL faylı yenidən SQL Server-də işlədilməlidir.
+
+## PİD Gündəlik Kredit Ödənişləri — "Hələ Keçməyib" Label Faktiki Yanlış Ola Bilərdi + UI Sadələşmə (17.11.2026, BEŞİNCİ DALĞA)
+
+İstifadəçi (DƏMİROV nümunəsi, elə əvvəlki dalğanın özü): *"kredite hele kecmeyib hissesi
+duz deyil,men baxiramki silinme olub axi"* — bu sətrin ÖZ RECNUM-u üçün d.kredit heç bir
+loan sub-hesabına uyğun gəlmədiyi üçün (step-2 AYRI recnum-da, artıq xaric edilib) label
+"hələ keçməyib" yazırdı, amma real sistemdə pul artıq (başqa bir recnum-la) kreditə keçib.
+
+**Düzəliş** — innermost sorğuya `hesabi_ham` (raw, dedup üçün) VƏ `hesabi` (displayed)
+ayrıldı; `hesabi` üçün yeni EXISTS şərti: əgər EYNİ loan üçün bugün (istənilən recnum-da)
+artıq birbaşa uyğun gələn sətir varsa, label **"Kreditə keçib (silinib)"** olur (yaşıl
+bədge), əks halda "Cari hesaba daxil olub (hələ keçməyib)" (amber) qalır. ROW_NUMBER/
+coxaday dedup `hesabi_ham`-a görə işləyir — relabel yalnız görüntüyə təsir edir.
+
+**UI sadələşmələri (eyni sessiya, istifadəçi tələbi):**
+- Banner cümləsi QISALDILDI (əvvəlki 6 cümlədən 4-ə).
+- "Kredit hesabı" sütunu (`l.licschkre`) HƏM səhifədən, HƏM Excel ixracından ÇIXARILDI —
+  istifadəçiyə lazım deyil (sorğuda/Kat sütununda hələ var, yalnız göstərilmir).
+- "Məbləğ" başlığı → "Ödəniş" (həm səhifə, həm Excel).
+
+⚠️ SQL faylı yenidən SQL Server-də işlədilməlidir.

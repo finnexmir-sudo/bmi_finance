@@ -94,17 +94,12 @@
         <div class="on-scope">
             <i class="bi bi-info-circle" style="margin-top:2px"></i>
             <span>
-                <b>Bu siyahı yalnız BUGÜNÜ göstərir</b> (mənbə canlı <code>docdna</code> cədvəlidir, arxiv deyil) —
-                gün ərzində yeni ödəniş gələndə "Yenilə" ilə yoxlayın. Ödəniş — kassa, müştərinin cari hesabı və ya
-                köçürmə yolu ilə gələn, müştərinin <b>öz REGNOM-u üzrə</b> krediti ilə uyğunlaşdırılan məbləğdir.
-                Yalnız pulun müştərinin <b>CARİ hesabına DAXİL OLDUĞU AN</b> göstərilir — kreditin öz alt-hesabına
-                (əsas/faiz) sonradan daxili bölünməsi (kredite ayrica "yazilma") sətirləri BURADA GÖSTƏRİLMİR, çünki
-                onlar YENİ pul DEYİL, elə bu sətirdəki pulun daxili yenidən-təsnifatıdır. Hər ödəniş (eyni əməliyyat)
-                siyahıda <b>yalnız BİR dəfə</b> göstərilir. Müştərinin bir neçə
-                aktiv krediti varsa və ödəniş hələ konkret kreditə bağlanmayıbsa, sistem onu TƏMSİLÇİ olaraq
-                bir kreditə yazır — bu sətirlər <span class="gn-fanout"><i class="bi bi-files"></i> bir neçə
-                krediti var</span> işarəsi ilə seçilir; <b>real kredit başqası ola bilər</b>, lazım gəlsə
-                müştərinin digər açıq kreditlərini də yoxlayın.
+                <b>Yalnız BUGÜN</b> (canlı <code>docdna</code>) — yeni ödəniş üçün "Yenilə". Ödəniş — müştərinin
+                öz REGNOM-u üzrə krediti ilə uyğunlaşdırılan, kassa/cari/köçürmə ilə gələn məbləğdir; kreditin öz
+                alt-hesabına sonrakı daxili bölünməsi göstərilmir (yeni pul deyil). "Hesabı" sütunu pulun hələ
+                cari hesabda, yoxsa artıq kreditə keçdiyini (silinib) göstərir. Hər ödəniş TƏK sətirdə görünür —
+                <span class="gn-fanout"><i class="bi bi-files"></i> bir neçə krediti var</span> işarəli sətirdə
+                real kredit başqası ola bilər.
             </span>
         </div>
 
@@ -119,10 +114,9 @@
                             <th>Kredit</th>
                             <th>Hesabı</th>
                             <th>Gecikmə</th>
-                            <th class="on-num">Məbləğ</th>
+                            <th class="on-num">Ödəniş</th>
                             <th>Müştəri</th>
                             <th>Reg. №</th>
-                            <th>Kredit hesabı</th>
                             <th>Girov növü</th>
                             <th>Kredit tipi</th>
                             <th class="on-num">V/K əsas</th>
@@ -135,9 +129,10 @@
                             var i = 1;
                             @foreach (var s in Model.Setirler)
                             {
-                                @* SQL indi YALNIZ "Cari hesaba daxil olub..." sətirlərini qaytarır —
-                                   "(birbaşa)" label-lər (Əsas/Faiz/Vaxtı keçmiş) xarici-filtrdə atılır,
-                                   ona görə burada "birbasa" halı artıq HEÇ VAXT baş vermir. *@
+                                @* "Hesabı" iki hal göstərə bilər: "Cari hesaba daxil olub (hələ keçməyib)"
+                                   (amber) və ya "Kreditə keçib (silinib)" (yaşıl) — SQL EXISTS ilə eyni gün
+                                   həmin loan-a BİRBAŞA düşən başqa bir sətir tapılsa, ikincisi göstərilir. *@
+                                var silinib = s.Hesabi == "Kreditə keçib (silinib)";
                                 <tr data-search="@($"{s.Adi} {s.Debet} {s.Kredit} {s.Kat} {s.QeydNo}".ToLowerInvariant())"
                                     data-mebleg="@Inv(s.Mebleg)">
                                     <td>@(i++)</td>
@@ -150,12 +145,11 @@
                                             <span class="gn-fanout" title="Bu müştərinin BİRDƏN ÇOX aktiv krediti var — bu ödəniş (RECNUM=@s.RecNum) hələ konkret kreditə bağlanmayıb (kreditin öz hesabına yox, cari hesaba düşüb), ona görə sistem TƏMSİLÇİ olaraq bu kreditə yazdı. Real kredit BAŞQASI ola bilər — əmin olmaq üçün müştərinin digər açıq kreditlərini də yoxlayın."><i class="bi bi-files"></i> bir neçə krediti var</span>
                                         }
                                     </td>
-                                    <td><span class="gn-hesabi gn-hesabi--cari">@s.Hesabi</span></td>
+                                    <td><span class="gn-hesabi @(silinib ? "gn-hesabi--birbasa" : "gn-hesabi--cari")">@s.Hesabi</span></td>
                                     <td><span class="@(s.Gecikme == "Gecikir" ? "gn-gecikir" : "gn-vaxtinda")">@s.Gecikme</span></td>
                                     <td class="on-num" style="font-weight:700">@Pul(s.Mebleg)</td>
                                     <td style="font-weight:600">@s.Adi</td>
                                     <td class="on-mono">@(s.QeydNo ?? "—")</td>
-                                    <td class="on-mono">@s.Kat</td>
                                     <td>@(s.Novu ?? "—")</td>
                                     <td>@(s.Tipi ?? "—")</td>
                                     <td class="on-num">@(s.VkEsas.HasValue && s.VkEsas.Value > 0 ? Pul(s.VkEsas) : "—")</td>
@@ -165,7 +159,7 @@
                         }
                         else
                         {
-                            <tr><td colspan="14" class="on-empty">Bu gün hələ gələn kredit ödənişi qeydə alınmayıb</td></tr>
+                            <tr><td colspan="13" class="on-empty">Bu gün hələ gələn kredit ödənişi qeydə alınmayıb</td></tr>
                         }
                     </tbody>
                 </table>

@@ -63,17 +63,17 @@ public class OdenisNezaretiController : Controller
         }
         var filtered = setirlerF.ToList();
 
-        var basliqlar = new[] { "№", "Tarix", "Debet", "Kredit", "Hesabı", "Gecikmə", "Məbləğ", "Müştəri",
-            "Reg. nömrəsi", "Kredit hesabı", "Girov növü", "Kredit tipi", "V/K əsas", "Təyinat" };
+        var basliqlar = new[] { "№", "Tarix", "Debet", "Kredit", "Hesabı", "Gecikmə", "Ödəniş", "Müştəri",
+            "Reg. nömrəsi", "Girov növü", "Kredit tipi", "V/K əsas", "Təyinat" };
         var setirler = filtered.Select((x, idx) => new object?[]
         {
             idx + 1, x.Tarix, x.Debet, x.Kredit, x.Hesabi, x.Gecikme, x.Mebleg, x.Adi,
-            x.QeydNo, x.Kat, x.Novu, x.Tipi, x.VkEsas, x.Teyinat
+            x.QeydNo, x.Novu, x.Tipi, x.VkEsas, x.Teyinat
         }).ToList();
         setirler.Add(new object?[]
         {
             null, null, null, null, null, "CƏMİ:", filtered.Sum(x => x.Mebleg), null,
-            null, null, null, null, null, null
+            null, null, null, null, null
         });
 
         var bytes = ExcelExportHelper.Yarat("Gündəlik Kredit Ödənişləri", basliqlar, setirler);

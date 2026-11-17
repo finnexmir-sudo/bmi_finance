@@ -118,6 +118,20 @@
        (hesabi≠"Cari...") xaric edir, RECNUM heç yerdə qalmır.
        ⚠️ GERİYƏ TƏTBİQ OLUNMUR — yalnız canlı docdna üzərində BU GÜNÜN sorğusu.
 
+   10b. (17.11.2026, BEŞİNCİ DALĞA) İstifadəçi real nümunədə (DƏMİROV, elə 10-cu bənddəki
+       RECNUM) BMI-də yoxlayıb gördü ki, pul artıq kreditə KEÇİB (silinib) — amma bu sətrin
+       ÖZ recnum-u üçün d.kredit heç bir sub-hesaba (licschkre/pkre/19/ppkre) uyğun
+       gəlmədiyi üçün (step-2 AYRI, BAŞQA recnum-ludur, 10-cu bənddə artıq xaric edilib)
+       label yenə "hələ keçməyib" yazırdı — bu artıq FAKTIKI YANLIŞDIR. İstifadəçi:
+       "kredite hele kecmeyib hissesi duz deyil,men baxiramki silinme olub axi."
+
+       HƏLL — EXISTS yoxlaması: əgər EYNİ loan (l.licschkre/pkre/19/ppkre) üçün BUGÜN
+       (istənilən recnum-da) artıq BİRBAŞA uyğun gələn bir docdna sətri VARSA, label
+       "Kreditə keçib (silinib)"-ə dəyişir — "Cari hesaba daxil olub (hələ keçməyib)"
+       YALNIZ belə bir uyğunluq TAPILMAYANDA qalır. Raw təsnifat (hesabi_ham) ayrıca
+       sütunda saxlanılır — ROW_NUMBER()/coxaday dedup məntiqi HƏLƏ DƏ ona görə işləyir
+       (yalnız displayed label dəyişir, daxiletmə/sıralama qərarı DƏYİŞMİR).
+
    11. (17.11.2026, DÖRDÜNCÜ DALĞA) Debet-in ÖZ regnom-u (SUBSTR(d.debet,10,6)) kredit
        tərəfin regnom-una (artıq SUBSTR(d.kredit,10,6)=SUBSTR(l.licschkre,10,6) ilə
        tapılıb) BƏRABƏRDİRSƏ — bu, müştərinin ÖZ HESABLARI ARASINDA köçürmədir (öz
@@ -153,9 +167,9 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
   FROM (
     SELECT x.*,
            ROW_NUMBER() OVER (PARTITION BY x.recnum
-                ORDER BY CASE WHEN x.hesabi = N''Cari hesaba daxil olub (kreditə hələ keçməyib)'' THEN 1 ELSE 0 END, x.kat) AS rn,
+                ORDER BY CASE WHEN x.hesabi_ham = N''Cari hesaba daxil olub (kreditə hələ keçməyib)'' THEN 1 ELSE 0 END, x.kat) AS rn,
            CASE WHEN COUNT(*) OVER (PARTITION BY x.recnum) > 1
-                     AND x.hesabi = N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
+                     AND x.hesabi_ham = N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
                 THEN 1 ELSE 0 END AS coxaday
       FROM (
         SELECT d.date_oper AS tarix,
@@ -165,6 +179,15 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
                     WHEN d.kredit = l.licschpkre  THEN N''Faiz (birbaşa)''
                     WHEN d.kredit = l.licsch_19   THEN N''Vaxtı keçmiş əsas (birbaşa)''
                     WHEN d.kredit = l.licschppkre THEN N''Vaxtı keçmiş faiz (birbaşa)''
+                    ELSE N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
+               END               AS hesabi_ham,
+               CASE WHEN d.kredit = l.licschkre   THEN N''Əsas (birbaşa)''
+                    WHEN d.kredit = l.licschpkre  THEN N''Faiz (birbaşa)''
+                    WHEN d.kredit = l.licsch_19   THEN N''Vaxtı keçmiş əsas (birbaşa)''
+                    WHEN d.kredit = l.licschppkre THEN N''Vaxtı keçmiş faiz (birbaşa)''
+                    WHEN EXISTS (SELECT 1 FROM odb.docdna d2
+                                  WHERE d2.kredit IN (l.licschkre, l.licschpkre, l.licsch_19, l.licschppkre))
+                         THEN N''Kreditə keçib (silinib)''
                     ELSE N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
                END               AS hesabi,
                d.summa_v_nacval  AS mebleg,
@@ -192,7 +215,7 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
       ) x
   )
  WHERE rn = 1
-   AND hesabi = N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
+   AND hesabi_ham = N''Cari hesaba daxil olub (kreditə hələ keçməyib)''
  ORDER BY tarix DESC, adi';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
