@@ -12725,3 +12725,116 @@ aralığında HƏM fiziki şəxsin, HƏM hüquqi şəxsin BLR-ə təsdiqlənmiş
 əməliyyatını eyni anda ixrac et → İKİ AYRI faylın (`..._BLR_FIZIKI_...json` və
 `..._BLR_HUQUQI_...json`) yarandığını, CTR/PEP kimi digər kodlarda isə hələ
 TƏK fayl (sonluqsuz) gəldiyini təsdiqləməlidir.
+
+## PİD Gündəlik Kredit Ödənişləri — "Vaxtı keçmiş" Sətirləri ÖZÜ "Silinmə" İdi, Cəmi İkiqat Şişirdirdi (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı ekran-görüntüləri ilə 17.11.2026-da qurulmuş "Gündəlik Kredit
+Ödənişləri" tabı (yuxarı bax, elə həmin tarixin bölməsi) üçün dörd ayrı qüsur
+bildirdi: *"biz yalniz odenisleri gosterek,silinmeleri ayrica gostermek maraqli
+deyil. buton ustune gelende reng duz deyismir. paylas isaresi neyi bildirir?
+basa dusmedim. mesajda yenile ile yoxla yazmisan ama bizde yenile butonu
+yoxdur"*.
+
+### 1. "Vaxtı keçmiş əsas/faiz (birbaşa)" — EYNİ pul 2-3 dəfə sayılırdı
+
+Real nümunə (ekran-görüntüsündən): ƏLİYEV NİZAM Ç.O. üçün eyni gün 4 sətir
+çıxırdı — "Cari hesaba daxil olub" (500,00) + **İKİ** "Vaxtı keçmiş faiz
+(birbaşa)" sətri (hər biri 500,00, çox-kreditli fan-out) + yenidən "Cari
+hesaba daxil olub" (500,00) — görünən cəm **2000,00**, real daxil olan isə
+**500,00**. MƏMİŞOV D.H.O. nümunəsi bunu rəqəmlə sübut etdi: "Cari hesaba
+daxil olub" = 90,00, "Əsas (birbaşa)" = 83,42, "Faiz (birbaşa)" = 6,58 —
+83,42+6,58=90,00 **DƏQİQ** — yəni bu üçü eyni 90 AZN-in HƏR İKİ ADDIMI
+(addım 1: kassa→cari hesab, addım 2: cari hesab→kreditin öz performing
+alt-hesabı).
+
+**Kök səbəb — SQL-in "sinif 3/4 = müştərinin cari hesabı" gate-i STEP-1-i
+(kassa/köçürmə → cari hesab) İSTƏDİYİ kimi tuturdu, AMMA STEP-2-ni (cari
+hesab → kreditin ÖZ alt-hesabı, elə "Vaxtı keçmiş əsas/faiz" labelı) DƏ
+EYNİ GATE-DƏN KEÇİRİRDİ** — çünki step-2-nin DEBET tərəfi (müştərinin cari
+hesabı) ÖZÜ DƏ "sinif 4" prefiksinə uyğun gəlir. Nəticə: eyni pul HƏM
+"Cari hesaba daxil olub" (step 1) sətri kimi, HƏM DƏ "Vaxtı keçmiş ...
+(birbaşa)" (step 2 — kreditin ÖZ *vaxtı keçmiş* alt-hesabına daxili
+YENİDƏN TƏSNİFAT) sətri kimi AYRI-AYRI göstərilirdi — bu, BMI-nin köhnə
+"fərqli silinmə" (`frm_odenis_ferqlisilinme.cs`) formasının izlədiyi MƏHZ
+bu hərəkətdir (SQL faylının öz 6-cı bəndi onsuz da "Status" barədə bu
+köhnə formu adlandırıb, amma "Vaxtı keçmiş" labelının ÖZÜNÜN silinmə
+olduğu diqqətdən qaçmışdı).
+
+**Düzəliş — `docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql`:**
+sorğu indi **outer SELECT + inner subquery** formasına keçdi — daxili
+sorğu eyni CASE-i (Əsas/Faiz/Vaxtı keçmiş əsas/Vaxtı keçmiş faiz/Cari
+hesaba daxil olub) hesablayır, XARİCİ `WHERE hesabi NOT IN (N'Vaxtı keçmiş
+əsas (birbaşa)', N'Vaxtı keçmiş faiz (birbaşa)')` isə bu İKİ labelı
+TAMAMİLƏ XARİC EDİR. **Filtr hesablanmış `hesabi` STRINQİNƏ görə yazıldı,
+`d.kredit <> l.licsch_19` kimi BİRBAŞA sütun müqayisəsinə YOX** — əks
+halda `l.licsch_19`/`l.licschppkre` NULL olan kreditlərdə bu müqayisə
+UNKNOWN qaytarıb HƏR İKİ YANLIŞ İSTİQAMƏTDƏ (NULL-lu kreditin DÜZGÜN
+sətirlərini də səssizcə ata bilərdi) nəticə verərdi — Oracle NULL-müqayisə
+tələsinin BU sorğudakı forması. "Əsas (birbaşa)"/"Faiz (birbaşa)"/"Cari
+hesaba daxil olub" sətirlərinə TOXUNULMADI — istifadəçinin öz sözü ilə
+bu üçü REAL ödəniş sayılır (performing hesaba düşmə, "step 2 kreditin
+ÖZ İŞLƏK hesabına" eyni-gün tamamlanması operativ baxımdan izlənməlidir).
+
+**Fayl indi TRULY RE-RUNNABLE formadadır** (`IF EXISTS ... UPDATE ELSE
+INSERT`, GOAML-in `90_Goaml_OracleSorgular.sql`-dəki EYNİ naxışı) —
+əvvəlki versiya `IF NOT EXISTS ... INSERT` idi (sorğu artıq DB-də
+mövcud olduğu üçün faylı YENİDƏN işlətmək HEÇ NƏ dəyişdirməzdi). İstifadəçi
+bu faylı YENİDƏN SQL Server-də işlətməlidir ki, ARTIQ MÖVCUD sətrin
+`SorguMetni`-si yenilənsin.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — `docdna` canlı (yalnız bugünkü) cədvəldir,
+arxiv datasına təsiri yoxdur, sadəcə BUNDAN SONRAKI sorğulamalarda bu iki
+label görünməyəcək.
+
+### 2. `.on-btn--g:hover` qaydası HEÇ BİR üç view-da YOXDU
+
+`Index.cshtml`/`Gray.cshtml`/`Gunluk.cshtml` (hər biri öz `<style>`
+blokunu daşıyır, bax yuxarı "paylaşılan CSS faylı YOXDUR" qaydası) `.on-btn--g`
+sinfinin ÜÇÜNÜN DƏ eyni, kopyalanmış tərifi var idi, ÜÇÜNDƏ DƏ `:hover`
+qaydası YOX idi — "Təmizlə"/"Excelə yüklə" düymələri üzərinə gələndə heç
+bir rəng dəyişikliyi yox idi. `.on-btn--g:hover { background:#f8fafc;
+border-color:#cbd5e1; color:#1e293b; }` HƏR ÜÇ fayla əlavə edildi (`.on-tab`
+sinfinin artıq işlək hover qaydası ilə EYNİ rəng tonu) — yalnız Gunluk-da
+düzəldib Index/Gray-i köhnə qoysaydım, eyni kopyalanmış sinfin bir yerdə
+düz, iki yerdə YENƏ hover-siz qalması YARANARDI.
+
+### 3. "Paylaş" ikonu — `bi-share-fill`, çaşdırıcı simvol seçimi idi
+
+Çox-kreditli fan-out işarəsi `bi-share-fill` (Bootstrap-ın "paylaş" ikonu)
++ YALNIZ hover tooltip idi — istifadəçi ikonun ÖZÜNDƏN "paylaşım" (klikləyə
+biləcəyi bir əməliyyat) kimi başa düşdü, əsl mənasını (bu sətir YENİ pul
+DEYİL, artıq göstərilmiş ödənişin İKİNCİ dəfə, başqa bir kredit üçün
+TƏKRARLANMASI) anlamadı. Düzəliş: ikon `bi-files` (sıra-sıra sənəd,
+"təkrar/dublikat" metaforası) ilə əvəz olundu, YANINA **həmişə görünən**
+"təkrarlanır" mətni əlavə edildi (artıq yalnız hover-ə güvənmir) və tooltip
+mətni açıq izah edir: *"Bu, YENİ bir ödəniş DEYİL — eyni ödəniş (RECNUM=…)
+müştərinin BAŞQA kreditinə də aid edilib… Cəmi hesablayanda bunu NƏZƏRƏ
+ALIN — eyni pul iki dəfə sayılır."* Yuxarıdakı info-banner-in cümləsi də
+eyni aydınlığa köçürüldü.
+
+### 4. "Yenilə" ilə yoxlayın yazılırdı, amma düymə yox idi
+
+Info-banner mətni *"gün ərzində yeni ödəniş gələndə 'Yenilə' ilə yoxlayın"*
+deyirdi, AMMA səhifədə YALNIZ "Təmizlə" (lokal axtarış təmizləyir) və
+"Excelə yüklə" düymələri var idi — "Yenilə" adlı HEÇ bir düymə YOXDU.
+`docdna` canlı (bugünkü) cədvəl olduğu üçün səhifəni YENİDƏN açmaq kifayət
+edirdi, AMMA bu, istifadəçiyə aydın DEYİLDİ. Düzəliş: yeni "Yenilə" düyməsi
+(`location.reload()`, Mail/Kassa modullarının "sadə reload, AJAX yox" eyni
+prinsipi) "Təmizlə"dən ƏVVƏL əlavə edildi — indi banner mətni ilə ekran
+üst-üstə düşür.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/div balansı `git diff`-in yalnız bu sessiyanın əlavə etdiyi
+sətirləri üzrə ayrıca ölçülərək — hər üç `.cshtml` faylda net fərq SIFIR;
+SQL faylının `@Sql` dəyişəninə yazılan Oracle mətni ayrıca çıxarılıb
+parentez balansı yoxlanıldı — 24/24, balanslıdır; komment blokundakı
+(SQL-in İÇİNDƏ YOX) 2 paren-fərqi əvvəlki sessiyalardan tanış olan
+Azərbaycan-dilli şərh mətnindəki adi bir haldır, funksional təsiri yoxdur).
+İstifadəçi faylı SQL Server-də YENİDƏN işlədib, Visual Studio-da **Rebuild
+All** edib, sonra real ssenari ilə yoxlamalıdır: eyni gün ərzində kassadan
+gələn və kreditin performing+overdue alt-hesablarına bölünən bir ödənişin
+artıq YALNIZ "Cari hesaba daxil olub" (+ varsa "Əsas/Faiz (birbaşa)")
+sətirləri ilə göründüyünü, "Vaxtı keçmiş..." sətirlərinin siyahıdan TAMAMİLƏ
+çıxdığını, "Yenilə" düyməsinin səhifəni təzədən yüklədiyini, "Təmizlə"/
+"Excelə yüklə" düymələrinin üzərinə gələndə indi rəng dəyişdiyini, çox-kreditli
+bir müştəridə "təkrarlanır" pilinin göründüyünü təsdiqləməlidir.
