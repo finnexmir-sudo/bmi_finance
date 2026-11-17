@@ -12988,3 +12988,25 @@ kassa→cari, həm cari→loan-split əməliyyatı olan hər hansı müştəri) 
 YALNIZ "Cari hesaba daxil olub" sətrinin (tək dəfə) göründüyünü, "Əsas (birbaşa)"/
 "Faiz (birbaşa)" sətirlərinin siyahıdan TAMAMİLƏ çıxdığını, Cəmin artıq ikiqat
 saymadığını təsdiqləməlidir.
+
+## PİD Gündəlik Kredit Ödənişləri — Müştərinin Öz Hesabları Arası Köçürmə DƏ Xaric Edildi + Aktiv Tab Hover Bugu (17.11.2026, DÖRDÜNCÜ DALĞA)
+
+İstifadəçi: *"debetdeki hesabin regnomu kreditdekine beraber olanlarda gelmesin,cunki bu
+musterinin oz hesablari arasindaki emeliyyatdir"* — Debet-in regnom-u (`SUBSTR(d.debet,10,6)`)
+Kredit-in regnom-una (artıq `SUBSTR(d.kredit,10,6)=SUBSTR(l.licschkre,10,6)` ilə tapılıb)
+bərabərdirsə, bu, müştərinin ÖZ cari hesabından ÖZ kreditinə köçürmədir (daxili), XARİCDƏN
+gələn ödəniş DEYİL.
+
+**Düzəliş — `docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql`:** innermost
+`WHERE`-ə `AND (LENGTH(d.debet) <> 20 OR SUBSTR(d.debet,10,6) <> SUBSTR(d.kredit,10,6))`
+əlavə olundu — qısa/texniki kassa kodunda (20 simvoldan az) substr mənasız ola bilər, ona
+görə `LENGTH=20` olanda YALNIZ tətbiq olunur.
+
+**Ayrıca tapılan, eyni sessiyada düzəldilən UI bugu** — "Gündəlik ödənişlər" (aktiv) tab
+üzərinə mouse gələndə mətn oxunmaz olurdu: `.on-tab--aktiv` (bənövşəyi fon, ağ mətn) üçün
+`:hover` qaydası YOX idi, ona görə ÜMUMİ bir `a:hover` qaydası (başqa yerdən) mətn rəngini
+dəyişib fon rənginə yaxınlaşdırırdı. **Düzəliş (3 fayl — Index/Gray/Gunluk.cshtml):**
+`.on-tab--aktiv, .on-tab--aktiv:hover { background: #4f46e5; color: #fff; }` — aktiv tab
+hover-də də eyni (oxunaqlı) görünür.
+
+⚠️ SQL faylı yenidən SQL Server-də işlədilməlidir.

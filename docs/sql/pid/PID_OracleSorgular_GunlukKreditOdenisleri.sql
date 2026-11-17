@@ -118,6 +118,14 @@
        (hesabi≠"Cari...") xaric edir, RECNUM heç yerdə qalmır.
        ⚠️ GERİYƏ TƏTBİQ OLUNMUR — yalnız canlı docdna üzərində BU GÜNÜN sorğusu.
 
+   11. (17.11.2026, DÖRDÜNCÜ DALĞA) Debet-in ÖZ regnom-u (SUBSTR(d.debet,10,6)) kredit
+       tərəfin regnom-una (artıq SUBSTR(d.kredit,10,6)=SUBSTR(l.licschkre,10,6) ilə
+       tapılıb) BƏRABƏRDİRSƏ — bu, müştərinin ÖZ HESABLARI ARASINDA köçürmədir (öz
+       cari → öz kredit), XARİCDƏN gələn ödəniş DEYİL. İstifadəçi: "debetdeki hesabin
+       regnomu kreditdekine beraber olanlarda gelmesin,cunki bu musterinin oz hesablari
+       arasindaki emeliyyatdir." LENGTH(d.debet)=20 qoruyucusu ilə (qısa/texniki kassa
+       kodunda substr mənasız ola bilər).
+
    Servis sorğunu ada görə tapır: adında "Odenis" + "Nezaret" + "Gunluk"
    (normalizasiya: Azərbaycan hərfləri ASCII-yə, boşluqlar silinir). Adi siyahı VƏ
    Gray list axtarışlarına "gunluk" İSTİSNASI əlavə edilib (OdenisNezaretiService.cs)
@@ -140,7 +148,7 @@ IF @DepId IS NULL
     SELECT TOP 1 @DepId = Id FROM Departamentler WHERE ISNULL(Silinib,0)=0 ORDER BY Id;
 
 SET @Ad       = N'PID Odenis Nezaret Gunluk';
-SET @Mahiyyet = N'Gündəlik gələn kredit ödənişləri — YALNIZ addım-1 (kassa/cari hesab/köçürmə → müştərinin CARİ hesabı, regnom üzrə). Bütün "(birbaşa)" (Əsas/Faiz/Vaxtı keçmiş) daxili yenidən-təsnifat sətirləri XARİCDİR — eyni pul ikinci dəfə sayılmasın. Eyni RECNUM çox-kreditli müştəridə tək sətrə yığılır.';
+SET @Mahiyyet = N'Gündəlik gələn kredit ödənişləri — YALNIZ addım-1 (kassa/cari hesab/köçürmə → müştərinin CARİ hesabı, regnom üzrə). Bütün "(birbaşa)" (Əsas/Faiz/Vaxtı keçmiş) daxili yenidən-təsnifat sətirləri XARİCDİR. Debet=Kredit regnomu (müştərinin öz hesabları arası köçürmə) da XARİCDİR. Eyni RECNUM çox-kreditli müştəridə tək sətrə yığılır.';
 SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, qeyd_no, adi, kat, novu, tipi, kredit_bagli_tarixi, vk_esas, gecikme, coxaday
   FROM (
     SELECT x.*,
@@ -180,6 +188,7 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
                  (LENGTH(d.debet) = 20 AND (SUBSTR(d.debet,1,3) IN (''100'',''250'',''110'') OR SUBSTR(d.debet,1,1) IN (''3'',''4'')))
                  OR d.otvet_ispoln = 0
                )
+           AND (LENGTH(d.debet) <> 20 OR SUBSTR(d.debet,10,6) <> SUBSTR(d.kredit,10,6))
       ) x
   )
  WHERE rn = 1
