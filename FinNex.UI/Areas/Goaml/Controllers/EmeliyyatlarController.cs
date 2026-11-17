@@ -143,6 +143,12 @@ public class EmeliyyatlarController : Controller
         if (yeganeKyc != null)
             KycTetbiqEt(dto, yeganeKyc);
 
+        // 17.11.2026 — VÖEN (`IncorporationNumber`) NameUr İLƏ EYNİ "hansı tərəf
+        // əsl müştəridir" qaydasını izləyir (kassadırsa digər tərəf) — Tip-dən
+        // ASILI DEYİL, çünki bu, hesabın ÖZ xüsusiyyətidir, əməliyyatın
+        // istiqaməti deyil. Mənbə: `odb.regnom.INN_REGNOM` (istifadəçi tapıntısı).
+        dto.IncorporationNumber = debetKassadir ? herIkiTeref.Kredit?.Voen : herIkiTeref.Debet?.Voen;
+
         ViewBag.KycDebet = herIkiTeref.Debet;
         ViewBag.KycKredit = herIkiTeref.Kredit;
         ViewBag.HerIkiTerefdeKycVar = herIkiTeref.Debet != null && herIkiTeref.Kredit != null;

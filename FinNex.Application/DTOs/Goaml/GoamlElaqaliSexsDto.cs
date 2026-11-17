@@ -64,6 +64,15 @@ namespace FinNex.Application.DTOs.Goaml
         /// <summary>Yalnız hüquqi şəxsdə doldurulur — CON seçimi üçün şirkətin
         /// bütün (hazırda aktiv, IMZA_BITME boş) əlaqəli şəxsləri.</summary>
         public List<GoamlElaqaliSexsDto> ElaqaliSexsler { get; set; } = new();
+
+        /// <summary>Hesabın ÖZ VÖEN-i — `odb.regnom.INN_REGNOM`, regnom koduna görə
+        /// (17.11.2026, istifadəçi tapıntısı: "voen menbeyi, regnomda var, INN_REGNOM
+        /// dur"). Fiziki şəxsdə demək olar HƏMİŞƏ `null` qalır (`regnom.PINCODE`
+        /// işlənir, VÖEN YOX — CLAUDE.md-nin AML modulundakı eyni cüt). Hüquqi
+        /// şəxsdə TAPILMAYA da bilər (`odb.regnom` hər hüquqi şəxsin sətrini
+        /// daşımır — bax `HesabSahibiKycAsync`-in baş şərhi) — belə halda `null`,
+        /// operator özü əl ilə yazır.</summary>
+        public string? Voen { get; set; }
     }
 
     /// <summary>

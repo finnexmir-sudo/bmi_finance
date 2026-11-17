@@ -187,6 +187,17 @@
             </div>
         </div>
 
+        @* ── Hüquqi şəxsin ÖZ VÖEN-i (17.11.2026) — `NameUr`-un (Sender/Receiver
+             Entity adı) daşıdığı eyni tərəfin VÖEN-i, `odb.regnom.INN_REGNOM`-dan
+             (istifadəçi tapıntısı) avtomatik gətirilir — tapılmasa (fiziki şəxsdə
+             həmişə, hüquqi şəxsdə bəzən) boş qalır, operator özü yazır. CON/SIG
+             bloklarından KƏNARDA, müstəqil sahədir ki, həmin blokların "Təmizlə"
+             düyməsi bunu silməsin (bu, PERSON deyil, ENTITY-səviyyəli məlumatdır). ── *@
+        <div style="margin-bottom:18px; max-width:320px">
+            <label class="gml-flbl">Hüquqi şəxsin VÖEN-i <span style="color:#94a3b8">(NameUr — @(Model.NameUr ?? "—") üçün)</span></label>
+            <input asp-for="IncorporationNumber" class="fn-input" />
+        </div>
+
         @* ── BLOK 1 — Nümayəndənin (Oracle: _CON) ── *@
         <details class="gml-block" open>
             <summary>

@@ -12476,3 +12476,49 @@ indi real müştəri adını (kassanın özünün YOX) göstərdiyini, `trn_deta
 Kredit-in real registrac_nomer-ini daşıdığını, `trn_actual_date`/`trn_bank_date`-in
 (real log tapılmayana qədər) heç olmasa AYSEL-in öz fallback saatına (≈07:13:36) uyğun
 gəldiyini təsdiqləməlidir.
+
+## GOAML — VÖEN Mənbəyi Tapıldı — `odb.regnom.INN_REGNOM` (17.11.2026)
+
+Yuxarıdaki "`sender_entity_tax_number`/`receiver_entity_tax_number` HƏLƏ DƏ boş qalır"
+açıq məsələsinə istifadəçi birbaşa cavab verdi: *"voen menbeyi,regnomda varda INN_REGNOM
+dur."* — AML modulunun artıq sənədləşmiş, əvvəldən bilinən cütünün (`regnom.PINCODE`=FİN,
+`regnom.INN_REGNOM`=VÖEN) elə bu `IncorporationNumber` sahəsinə də aid olduğu təsdiqləndi.
+
+**`IncorporationNumber`-in TAM yolu:**
+- `GoamlHesabSahibiKycDto.Voen` (yeni sahə) — `odb.regnom.INN_REGNOM`, `HesabSahibiKycAsync`-in
+  ARTIQ hesabladığı `regnomKodu`-na görə:
+  - **Fiziki şəxs branşı** — əlavə round-trip LAZIM DEYİL, `inn_regnom` sütunu mövcud
+    `odb.regnom` sorğusunun (ad/soyad/doğum tarixi və s. oxuyan) SELECT siyahısına
+    əlavə edildi. Demək olar HƏMİŞƏ `null` qalacaq (fiziki şəxsdə VÖEN YOX, FİN var) —
+    bu, SƏHV DEYİL, elə AML modulunun mövcud konvensiyasıdır.
+  - **Hüquqi şəxs branşı** — yeni, AYRICA `VoenRegnomAsync(regnomKodu)` helper-i
+    (`select inn_regnom from odb.regnom where regnom = '...'`) — bu branş əvvəllər
+    `odb.regnom`-a ÜMUMİYYƏTLƏ toxunmurdu (SIG → `imza_huquqi_olan_shexsler`, CON →
+    `odb.NUMAYENDE`). `odb.regnom` hər hüquqi şəxsin öz sətrini daşımır (09.11.2026-dakı
+    eyni qoruyucu şərh) — sətir tapılmasa sakitcə `null`, operator əl ilə yazır.
+- `EmeliyyatlarController.Tesdiq` GET-i `dto.IncorporationNumber`-i **`NameUr` İLƏ EYNİ**
+  "hansı tərəf kassadır" qaydasına görə seçir (`debetKassadir ? herIkiTeref.Kredit?.Voen :
+  herIkiTeref.Debet?.Voen`) — Tip-dən ASILI DEYİL (CON/SIG-in Tip-əsaslı seçimindən
+  FƏRQLİ), çünki VÖEN hesabın ÖZ xüsusiyyətidir, əməliyyatın istiqaməti deyil — elə
+  `NameUr`/`RegistracNomer`-in də artıq izlədiyi məntiq.
+- **Tesdiq.cshtml-ə YENİ, VİZUAL sahə əlavə edildi** — əvvəl `IncorporationNumber` heç
+  bir `<input>`-ə bağlı DEYİLDİ (06.11.2026-dakı "Hüquqi şəxsin (göndərən tərəf)" bloku
+  tam çıxarılanda bu sahə də özü ilə getmişdi) — auto-doldurulmuş dəyər HEÇ YERDƏ
+  göstərilməsə, POST-da səssizcə itərdi (CLAUDE.md-nin "Şərhdə Göstərilən, Formaya
+  Göndərilməyən Sahə" tələsinin elə özü). Yeni sahə **CON/SIG bloklarının (`<details>`)
+  KƏNARINDA**, müstəqil yerləşdirildi — bu, PERSON-səviyyəli məlumat DEYİL,
+  ENTITY-səviyyəlidir, "Təmizlə" düymələrinin (CON/SIG-in öz bloku daxilində) bunu
+  yanlışlıqla silməsinin qarşısı alınıb.
+
+⚠️ **`IncorporationCountryCode` (Ölkə) HƏLƏ DƏ TOXUNULMADI** — istifadəçi YALNIZ VÖEN-dən
+danışdı. Bu sahə üçün hələ TƏSDİQLƏNMİŞ bir Oracle mənbəyi yoxdur, "AZ" kimi bir defolt
+TƏXMİN EDİLMƏDİ — açıq qalan item olaraq saxlanılır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə
+balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri üzrə ayrıca ölçülüb —
+dörd dəyişən faylın (DTO, `GoamlService.cs`, `EmeliyyatlarController.cs`, `Tesdiq.cshtml`)
+hər birində net fərq SIFIR). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: `odb.regnom`-da VÖEN qeydi olan bir hüquqi şəxs hesabı ilə
+namizəd aç → yeni "Hüquqi şəxsin VÖEN-i" sahəsinin avtomatik dolduğunu, "Təsdiqlə"dən
+sonra Export-dakı `sender_entity_tax_number`/`receiver_entity_tax_number`-in bu dəyəri
+daşıdığını təsdiqləməlidir.

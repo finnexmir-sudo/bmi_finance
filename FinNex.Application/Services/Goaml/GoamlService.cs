@@ -1019,13 +1019,17 @@ namespace FinNex.Application.Services.Goaml
                     var regnomSetirler = await _oracle.SelectAsync(
                         "select name, surname, patronymic, birthdate, birthaddress, gender, " +
                         "registrationaddress, citizenship, employer, pin, documentnumber, givendate, " +
-                        "expiredate, givenorganizatoin from odb.regnom where regnom = '" + regnomKodu + "'", 1, ct);
+                        "expiredate, givenorganizatoin, inn_regnom from odb.regnom where regnom = '" + regnomKodu + "'", 1, ct);
                     if (regnomSetirler.Count == 0) return null;
 
                     var r = regnomSetirler[0];
                     return new GoamlHesabSahibiKycDto
                     {
                         Fiziki = true,
+                        // Fiziki şəxsdə normalda boş (regnom.PINCODE işlənir) — yenə
+                        // də eyni sorğunun artıq oxuduğu sətirdən, əlavə round-trip
+                        // olmadan oxunur (17.11.2026).
+                        Voen = DVal(r, "INN_REGNOM") as string,
                         TekSexs = new GoamlElaqaliSexsDto
                         {
                             Adi = DVal(r, "NAME") as string,
@@ -1082,17 +1086,40 @@ namespace FinNex.Application.Services.Goaml
                 var rehber = rehberSetirleri.Count > 0 ? ImzaHuququSetirdenQur(rehberSetirleri[0]) : null;
 
                 var numayendeler = await NumayendeSiyahisiAsync(regnomKodu, ct);
+                var voen = await VoenRegnomAsync(regnomKodu, ct);
 
                 return new GoamlHesabSahibiKycDto
                 {
                     Fiziki = false,
                     TekSexs = rehber,
                     ElaqaliSexsler = numayendeler,
+                    Voen = voen,
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GOAML HesabSahibiKycAsync uğursuz oldu — regnomKodu={RegnomKodu}, fizPrefiksdir={FizPrefiksdir}", regnomKodu, fizPrefiksdir);
+                return null;
+            }
+        }
+
+        /// <summary>Hüquqi şəxs branşı üçün `odb.regnom.INN_REGNOM` (VÖEN),
+        /// regnom koduna görə (17.11.2026, istifadəçi tapıntısı). Fiziki branşda
+        /// bu, ARTIQ `odb.regnom`-u oxuyan mövcud sorğunun bir sütunu kimi gəlir
+        /// (bax yuxarı) — ayrıca round-trip YALNIZ hüquqi branş üçün lazımdır.
+        /// `odb.regnom` hər hüquqi şəxsin öz sətrini daşımır (09.11.2026-dakı
+        /// eyni qeyd) — sətir tapılmasa sakitcə `null` qayıdır.</summary>
+        private async Task<string?> VoenRegnomAsync(string regnomKodu, CancellationToken ct)
+        {
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select inn_regnom from odb.regnom where regnom = '" + regnomKodu + "'", 1, ct);
+                return setirler.Count == 0 ? null : DVal(setirler[0], "INN_REGNOM") as string;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML VoenRegnomAsync uğursuz oldu — regnomKodu={RegnomKodu}", regnomKodu);
                 return null;
             }
         }
