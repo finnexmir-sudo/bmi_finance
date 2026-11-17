@@ -18,6 +18,7 @@
     .on-actions { margin-left: auto; display: flex; gap: 8px; }
     .on-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; }
     .on-btn--g { background: #fff; color: #334155; border: 1.5px solid #e2e8f0; }
+    .on-btn--g:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
     .on-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
     .on-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
     .on-table thead th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; z-index: 3; }
@@ -48,7 +49,9 @@
     .gn-hesabi--cari     { background: #fef3c7; color: #92400e; }
     .gn-gecikir { color: #b91c1c; font-weight: 800; }
     .gn-vaxtinda { color: #15803d; font-weight: 700; }
-    .gn-fanout { display: inline-block; margin-left: 6px; color: #9333ea; cursor: help; }
+    .gn-fanout { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 8px;
+                 border-radius: 20px; background: #f3e8ff; color: #7e22ce; font-size: 10.5px; font-weight: 700;
+                 white-space: nowrap; cursor: help; vertical-align: middle; }
     .gn-teyinat { white-space: normal; max-width: 420px; color: #64748b; font-size: 12px; }
 </style>
 
@@ -81,6 +84,7 @@
         <div class="on-bar">
             <input type="text" id="gnAxtar" class="on-inp on-grow" placeholder="🔍 Müştəri, hesab, reg. nömrəsi axtar…" />
             <div class="on-actions">
+                <button type="button" id="gnYenile" class="on-btn on-btn--g" onclick="location.reload()"><i class="bi bi-arrow-clockwise"></i> Yenilə</button>
                 <button type="button" id="gnTemizle" class="on-btn on-btn--g"><i class="bi bi-x-circle"></i> Təmizlə</button>
                 <a id="gnExcel" href="@Url.Action("GunlukExcel")" class="on-btn on-btn--g"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
             </div>
@@ -94,8 +98,9 @@
                 köçürmə yolu ilə gələn, müştərinin <b>öz REGNOM-u üzrə</b> krediti ilə uyğunlaşdırılan məbləğdir.
                 <b>Hesabı</b> sütunu "(birbaşa)" — kredit hesabına birbaşa düşüb; "Cari hesaba daxil olub" —
                 hələ müştərinin cari hesabındadır, kreditə keçməyib (hər ikisi <b>ödənilib</b> sayılır).
-                Çox-kreditli müştəridə <span class="gn-fanout"><i class="bi bi-share-fill"></i></span> işarəsi
-                eyni ödənişin bir neçə kreditə görə təkrarlandığını bildirir.
+                Müştərinin bir neçə aktiv krediti varsa, EYNİ ödəniş hər kredit üçün AYRI sətirdə göstərilir —
+                bu sətirlər <span class="gn-fanout"><i class="bi bi-files"></i> təkrarlanır</span> işarəsi ilə
+                seçilir və <b>aşağıdakı Cəmdə eyni pul bir neçə dəfə sayılır</b>.
             </span>
         </div>
 
@@ -136,7 +141,7 @@
                                         @s.Kredit
                                         @if (s.CoxKreditliFanOut)
                                         {
-                                            <span class="gn-fanout" title="Eyni ödəniş (RECNUM=@s.RecNum) başqa kreditə də düşür — çox-kreditli müştəri"><i class="bi bi-share-fill"></i></span>
+                                            <span class="gn-fanout" title="Bu, YENİ bir ödəniş deyil — eyni ödəniş (RECNUM=@s.RecNum) müştərinin BAŞQA kreditinə də aid edilib, ona görə cədvəldə iki dəfə görünür. Cəmi hesablayanda bunu NƏZƏRƏ ALIN — eyni pul iki dəfə sayılır."><i class="bi bi-files"></i> təkrarlanır</span>
                                         }
                                     </td>
                                     <td><span class="gn-hesabi @(birbasa ? "gn-hesabi--birbasa" : "gn-hesabi--cari")">@s.Hesabi</span></td>
