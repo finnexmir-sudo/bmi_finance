@@ -76,6 +76,17 @@ public class EmeliyyatlarController : Controller
     {
         ViewData["Title"] = "GOAML — Təsdiqlə";
 
+        // 17.11.2026, KRİTİK — "Debet = əsas tərəf" fərziyyəsi AYSEL-in real ixracı
+        // ilə tutuşdurularkən YANLIŞ çıxdı: Debet="10020" (kassa/GL), Kredit="40160…"
+        // (real müştəri, "HESAM MMC") olan bir namizəddə AYSEL HƏR İKİ Entity blokunu
+        // (Sender VƏ Receiver) "HESAM MMC" ilə yazırdı, biz isə Debet-in ÖZ display
+        // adını ("KASSA - USD") yazırdıq — kassa/GL hesabının "adı" real müştəri
+        // adı DEYİL. Eyni "100"-prefiks qaydası (`TrnTipTeyinEt`-in artıq işlətdiyi)
+        // burada da — hansı tərəf kassadırsa, DİGƏR tərəfin adı/registrac_nomer-i
+        // ÜSTÜN tutulur.
+        var debetKassadir = Pref3(debet, "100");
+        var kreditKassadir = !debetKassadir && Pref3(kredit, "100");
+
         var dto = new GoamlTesdiqDto
         {
             CandidateFilialNumber = filialNumber,
@@ -92,16 +103,26 @@ public class EmeliyyatlarController : Controller
             KodValuti = kodValuti,
             Primechanie = primechanie,
             DateOper = dateOper,
-            NameUr = nameLicschDe,
+            // NameUr HƏM Sender.Entity, HƏM Receiver.Entity-ni (SenderQurAsync/
+            // ReceiverQurAsync-ın HƏR İKİSİ) qidalandırır — kassa/GL tərəfindən
+            // DEYİL, REAL müştəri tərəfindən gəlməlidir (yuxarıdaki şərhə bax).
+            NameUr = debetKassadir ? nameLicschKre : nameLicschDe,
             ToAdi = nameLicschKre,
             DocumentSource = documentSource,
             // 16.11.2026: AYSEL-in real ixracı ilə tutuşdurularkən üzə çıxdı —
             // "trn_detailed_id" elə bu sahədən (REGISTRAC_NOMER) gəlir, namizəd
             // sorğusu onu artıq daşıyır (RegistracNomerDe/Kre), amma heç yerə
             // köçürülmürdü — operator üçün forma sahəsi olmadığı üçün HƏMİŞƏ
-            // boş qalırdı. Hansı tərəf uyğundursa (adətən ikisindən yalnız biri
-            // doludur) həmin dəyər götürülür.
-            RegistracNomer = registracNomerDe ?? registracNomerKre,
+            // boş qalırdı.
+            //
+            // 17.11.2026, KRİTİK — sadə "DE əvvəl" DÜZ DEYİL: AYSEL "016901"
+            // (Kredit-in registrac_nomer-i) yazırdı, biz isə "000001" (Debet/kassa
+            // tərəfinin registrac_nomer-i, çox güman GL hesabının sabit/sentinel
+            // dəyəri) yazırdıq — kassa tərəfinin registrac_nomer-i REAL müştəri
+            // qeydiyyat nömrəsi DEYİL.
+            RegistracNomer = debetKassadir ? (registracNomerKre ?? registracNomerDe)
+                : kreditKassadir ? (registracNomerDe ?? registracNomerKre)
+                : (registracNomerDe ?? registracNomerKre),
         };
 
         // ── "Sistem gətirə bilmirsə, işçi doldurur" (09.11.2026, istifadəçi
@@ -164,6 +185,13 @@ public class EmeliyyatlarController : Controller
 
         return View(dto);
     }
+
+    /// <summary>`GoamlService.Pref3`-ün (private) ƏYNİSİ — bir hesabın birinci 3
+    /// simvolunun verilmiş prefikslə üst-üstə düşüb-düşmədiyini yoxlayır. Burada
+    /// yalnız kassa/GL ("100") tərəfini tapmaq üçün — `dto.RegistracNomer`-in
+    /// seçimində istifadə olunur (17.11.2026).</summary>
+    private static bool Pref3(string? hesab, string teq) =>
+        !string.IsNullOrEmpty(hesab) && hesab.Length >= 3 && hesab.Substring(0, 3) == teq;
 
     /// <summary>Hesab sahibinin KYC-sini (fiziki — CON+SIG-in hər ikisinə; hüquqi —
     /// YALNIZ "Rəhbər", SIG-ə) <see cref="GoamlTesdiqDto"/>-ya yazır. GET Tesdiq-in

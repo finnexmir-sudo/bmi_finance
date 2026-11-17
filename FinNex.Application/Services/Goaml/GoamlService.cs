@@ -1073,7 +1073,7 @@ namespace FinNex.Application.Services.Goaml
                     "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
                     "s.sheher, s.olke, s.senedin_novu, s.seriyasi_ve_nomresi, s.verilme_tarixi, " +
                     "s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi, " +
-                    "s.ish_yerinin_adi " +
+                    "s.ish_yerinin_adi, s.vetendashligi " +
                     "from odb.imza_huquqi_olan_shexsler s " +
                     "where s.regnom = '" + regnomKodu + "' and (s.imza_bitme is null or s.imza_bitme > sysdate) " +
                     "and exists (select 1 from odb.aml_related_persons rp where rp.id_aml = s.id_aml and rp.id_related_persons = 2)",
@@ -1113,7 +1113,8 @@ namespace FinNex.Application.Services.Goaml
                     "select n.id_aml, n.adi, n.soyadi, n.ata_adi, n.doguldugu_tarix, n.doguldugu_yer, " +
                     "n.cinsi, n.fin, n.telefon_nomresi, n.unvanin_teyinati, n.kuchenin_adi_ve_nomresi, " +
                     "n.sheher, n.olke, n.senedin_novu, n.seriyasi_ve_nomresi, n.verilme_tarixi, " +
-                    "n.etibarliliq_muddeti, n.veren_orqanin_adi, n.verildiyi_olke, n.vezifesi " +
+                    "n.etibarliliq_muddeti, n.veren_orqanin_adi, n.verildiyi_olke, n.vezifesi, " +
+                    "n.vetendashligi " +
                     "from odb.numayende n " +
                     "where n.regnom = '" + regnomKodu + "' and (n.imza_bitme is null or n.imza_bitme > sysdate)", 50, ct);
                 return setirler.Select(NumayendeSetirdenQur).ToList();
@@ -1151,6 +1152,7 @@ namespace FinNex.Application.Services.Goaml
             SenedinEtibarliliqMuddeti = TarixiParseEt(DVal(r, "ETIBARLILIQ_MUDDETI")),
             VerenOrqan = DVal(r, "VEREN_ORQANIN_ADI") as string,
             VerildiyiOlke = DVal(r, "VERILDIYI_OLKE") as string,
+            Vetendasligi = DVal(r, "VETENDASHLIGI") as string,
         };
 
         private GoamlElaqaliSexsDto ImzaHuququSetirdenQur(Dictionary<string, object?> r) => new()
@@ -1177,6 +1179,7 @@ namespace FinNex.Application.Services.Goaml
             VerildiyiOlke = DVal(r, "VERILDIYI_OLKE") as string,
             Vezife = DVal(r, "VEZIFESI") as string,
             IsYeriAdi = DVal(r, "ISH_YERININ_ADI") as string,
+            Vetendasligi = DVal(r, "VETENDASHLIGI") as string,
         };
 
         /// <summary>Oracle-dan gələn tarix dəyərini oxuyur — sütun VARCHAR2 (mətn,
@@ -1821,7 +1824,23 @@ namespace FinNex.Application.Services.Goaml
 
         private static GoamlJsonTransactionDto TransactionQur(GoamlEmeliyyat e)
         {
-            var tarix = (e.DateOper ?? e.CandidateDateOper).ToString("yyyy-MM-ddTHH:mm:ss.002Z", CultureInfo.InvariantCulture);
+            // 17.11.2026, KRİTİK — AYSEL-in real ixracı ilə tutuşdurularkən üzə çıxdı:
+            // `trn_actual_date`/`trn_bank_date` saat 00:00:00 (sırf tarix) yazılırdı,
+            // AYSEL isə real vaxt (12:55:01) göstərirdi. Mənbə düstur
+            // (`97_Goaml_JSON_MMX_IN_Tam_Metn.sql`, sətir 1028-1029):
+            //   NVL(NVL(V_log.Datetimedocexec, V_log.Datetimedocins),
+            //       to_char(v_goal.date_oper + 0.301111, 'YYYY-MM-DD"T"HH24:MI:SS".002Z"'))
+            // Yəni AYSEL ƏVVƏLCƏ real audit-jurnal vaxtını (V_log.Datetimedocexec/
+            // Datetimedocins) işlədir, YALNIZ o yoxdursa `date_oper`-ə sabit 0,301111
+            // gün (≈7 saat 13 dəq 36 san) əlavə edir. `V_log`/`Datetimedocexec` cədvəli
+            // HƏLƏ TAPILMAYIB/TƏSDİQLƏNMƏYİB (canlı Oracle yoxlaması lazımdır) — ona görə
+            // YALNIZ fallback düsturu (sabit offset) port edildi, bu da AYSEL-in ÖZ
+            // fallback-i ilə EYNİDİR (".002Z" sonluğu elə bunu göstərir — ".001Z" real
+            // log vaxtıdır, ".002Z" fallback-dır). ⚠️ Real log qeydi olan əməliyyatlarda
+            // (bu test nümunəsi kimi) nəticə YENƏ DƏ AYSEL-dən FƏRQLİ olacaq — V_log
+            // mənbəyi tapılmadan bu, mümkün deyil.
+            var tarix = (e.DateOper ?? e.CandidateDateOper).Add(TimeSpan.FromDays(0.301111))
+                .ToString("yyyy-MM-ddTHH:mm:ss.002Z", CultureInfo.InvariantCulture);
             return new GoamlJsonTransactionDto
             {
                 TrnStatus = "EXC",

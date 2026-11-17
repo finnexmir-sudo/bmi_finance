@@ -12334,3 +12334,145 @@ düzgün sətirlə göründüyünü, "Hesabı" etiketinin düzgün ayırd etdiyi
 hesaba daxil olub), çox-kreditli bir müştəridə 🔗 işarəsinin göründüyünü, Excel ixracının
 işlədiyini — gün ərzində yeni ödəniş gəldikcə səhifəni yeniləyib yoxlamalıdır (istifadəçinin
 öz sözü: *"gun erzinde odenisler artdiqca yoxlayacam"*).
+
+## GOAML — CON/SIG Vətəndaşlığı HƏMİŞƏ Boş İdi — `VETENDASHLIGI` SÜTUNU SELECT-ə HEÇ DÜŞMÜRDÜ (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi: *"Numayendeni el ile dolduranda vetendasligi bos gelir, ama bazada var"* —
+"Nümayəndə" (CON) bloku `gml-con-select` dropdown-undan əl ilə seçiləndə "Vətəndaşlığı"
+sahəsi həmişə boş qalırdı, baxmayaraq ki Oracle-da dəyər mövcuddur.
+
+**Kök səbəb — İKİ SORĞUDA DA, HƏRFİ EYNİ UNUDULMA.** `NumayendeSiyahisiAsync`
+(`odb.NUMAYENDE`, CON seçim siyahısı) VƏ `HesabSahibiKycAsync`-in "Rəhbər" sorğusu
+(`odb.imza_huquqi_olan_shexsler`, SIG) — HƏR İKİSİNİN `SELECT` siyahısı `n.olke`/`s.olke`
+daşıyırdı, AMMA **`vetendashligi` sütununu HEÇ SEÇMİRDİ**. `NumayendeSetirdenQur`/
+`ImzaHuququSetirdenQur` mapping funksiyaları da müvafiq olaraq `Vetendasligi`-ni heç
+yazmırdı — sütun adı 11.11.2026-da (Risk tabının namizəd araşdırmasında, `COUNTRY_CODES_
+RED/GRAY`-ə qarşı) artıq CANLI TƏSDİQLƏNMİŞDİ (`imza_huquqi_olan_shexsler`/`NUMAYENDE`-nin
+**`VETENDASHLIGI`** sahəsi, "AZ"/"IR" dəyərləri ilə), amma bu tapıntı o vaxt yalnız Risk-in
+ÖZ namizəd sorğusuna (`r_emitent_benefisiar`) tətbiq olunub, CON/SIG-in əsas KYC
+sorğularına köçürülməmişdi — iki MÜSTƏQİL yer, biri düzəlib, o biri unudulub.
+
+**Düzəliş — üç fayl, dörd yer:**
+1. `rehberSetirleri` SQL-i (SIG) — `SELECT`-ə `s.vetendashligi` əlavə edildi.
+2. `NumayendeSiyahisiAsync` SQL-i (CON) — `SELECT`-ə `n.vetendashligi` əlavə edildi.
+3. `ImzaHuququSetirdenQur` — `Vetendasligi = DVal(r, "VETENDASHLIGI") as string,` əlavə.
+4. `NumayendeSetirdenQur` — eyni sətir əlavə.
+
+Fiziki şəxsin (`odb.regnom.CITIZENSHIP`) və `emitent_benefisiar`-ın (`E_VETENDASHLIGI`)
+sorğuları artıq DÜZGÜN idi, toxunulmadı — yalnız CON/SIG (hüquqi şəxsin NUMAYENDE/
+imza_huquqi_olan_shexsler) qolları boş idi.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə" GET-lərinə təsir edir.
+
+## GOAML Export — Kassa/GL Tərəfi "Əsas Tərəf" Sayılırdı — Entity Adı VƏ `trn_detailed_id` SƏHV Çıxırdı (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi AYSEL-in real ixracı (`BMI_BAKU_CTR_HI_2_15587_20261116_TEST.JSON`) ilə bizim
+ixracımızı (`GOAML_Ixrac_CTR_20261117_095942_TEST.json`) birbaşa fayl-fayl müqayisə etdi
+— *"yene duz deyil faylimiz. 1ci goamlden cixandir, 2ci ise bizimki."* Eyni namizəd
+(RecNum 22904033, Debet="10020" — kassa, Kredit="40160010001690100000" — real müştəri
+"HESAM MMC") iki MÜSTƏQİL sahədə fərqli çıxdı.
+
+### Kök səbəb — "Debet HƏMİŞƏ əsas tərəfdir" fərziyyəsi kassa/GL hesablarında YANLIŞDIR
+
+`EmeliyyatlarController.Tesdiq` (GET) həmişə `NameUr = nameLicschDe` (Debet-in display
+adı) və `RegistracNomer = registracNomerDe ?? registracNomerKre` (DE əvvəl) yazırdı —
+Debet HANSI HESAB OLURSA OLSUN. Debet bir kassa/GL hesabıdırsa (prefiks "100" —
+`TrnTipTeyinEt`-in artıq işlətdiyi EYNİ qayda), onun öz display adı VƏ registrac_nomer-i
+REAL MÜŞTƏRİ ATRİBUTU DEYİL (GL hesabının öz sabit adı/sentinel registrac_nomer-idir) —
+amma kod bunu fərqləndirmirdi.
+
+**Nəticə — iki sahədə:**
+- `NameUr` = "KASSA - USD" (Debet-in öz GL adı) → `SenderQurAsync`/`ReceiverQurAsync`-ın
+  HƏR İKİSİ bunu Entity adı kimi yazdı (`sender_entity_name`/`receiver_entity_name`) —
+  AYSEL isə Kredit-in real adını ("HESAM MMC") HƏR İKİ blokda yazırdı.
+- `RegistracNomer` = "000001" (Debet/kassanın öz, çox güman sabit, registrac_nomer-i) →
+  `trn_detailed_id`-ə düşdü — AYSEL "016901" (Kredit-in REAL registrac_nomer-i) yazırdı.
+
+**Düzəliş — `EmeliyyatlarController.cs`, hər ikisi EYNİ "kassadırsa digər tərəfi götür"
+qaydası ilə:**
+```csharp
+var debetKassadir = Pref3(debet, "100");
+var kreditKassadir = !debetKassadir && Pref3(kredit, "100");
+...
+NameUr = debetKassadir ? nameLicschKre : nameLicschDe,
+...
+RegistracNomer = debetKassadir ? (registracNomerKre ?? registracNomerDe)
+    : kreditKassadir ? (registracNomerDe ?? registracNomerKre)
+    : (registracNomerDe ?? registracNomerKre),
+```
+`Pref3` (3-simvol prefiks yoxlaması) `GoamlService`-in private helper-inin EYNİSİ,
+controller-ə ayrıca əlavə edildi (servisin private metoduna kənardan çatmaq olmadığı
+üçün). `ToAdi` (= `nameLicschKre`) TOXUNULMADI — "Alan fiziki şəxsin" adı hələ də
+birbaşa Kredit-in display adıdır, bu sahənin rolu dəyişmədi.
+
+⚠️ **Kredit kassadırsa `NameUr` ÜÇÜN ƏKS İSTİQAMƏTDƏ dəyişiklik YAZILMADI** (`kreditKassadir`
+yalnız `RegistracNomer`-də işlənir) — çünki bu halda `nameLicschDe` onsuz da real müştərinin
+adıdır (köhnə default davranış artıq düzgündür), əks halda iki eyni-nəticəli şərt qolu
+yazmaq lazımsız mürəkkəblik olardı.
+
+⚠️ **Receiver.Account HƏLƏ DƏ boş qalır (bu sessiyada TOXUNULMADI)** — AYSEL-in real
+ixracında `receiver_account_number` = "40160010001690100000" (Kredit-in ÖZÜ) kimi
+görünür, bizdə isə bu, `e.Account`/`e.AccountTo`-dan gəlir (heç yerdə doldurulmayan,
+əvvəldən açıq qalan sahələr — bax yuxarı "16.11.2026, Açıq Qalan #3"). `e.Kredit`/
+`e.Debet`-i birbaşa fallback kimi yazmaq AYSEL-in "_IN" prosedurunun Sender/Receiver
+rol-dəyişmə naxışına (bax 1965-ci sətirin şərhi) görə RİSKLİDİR — hansı tərəfin
+hansı semantik rola uyğun gəldiyi canlı Oracle təsdiqi tələb edir, TƏXMİN EDİLMƏDİ.
+
+⚠️ **`sender_entity_tax_number`/`receiver_entity_tax_number` HƏLƏ DƏ boş qalır** —
+`e.IncorporationNumber`/`IncorporationCountryCode` (`IncorporationNumberTo`/
+`IncorporationCountryCodeTo`-dan FƏRQLİ olaraq) Tesdiq.cshtml-də HEÇ BİR `<input>`-ə
+bağlı deyil və heç bir auto-doldurma mənbəyi yoxdur — bu, ƏVVƏLKİ sessiyalarda artıq
+qeyd olunmuş, QƏSDƏN açıq qalan bir boşluqdur (`huquqi_shexs.REGISTRATION_NUMBER`
+mənbəyi tapılmayıb), bu sessiyada TƏKRAR toxunulmadı.
+
+⚠️ **Risk tabının ÖZ namizəd sorğusunda (`91_Goaml_Risk_OracleSorgular.sql`) `registrac_
+nomer_de`/`registrac_nomer_kre` ALİASLARI ŞÜBHƏLİDİR, YOXLANMADI** — həmin sorğuda bu
+iki sütun `substr(t.debet,10,6)`/`substr(t.kredit,10,6)` (REGNOM KODU, 6 rəqəm) kimi
+hesablanır, halbuki Əməliyyatlar tabının sorğusunda (`90_Goaml_OracleSorgular.sql`)
+bunlar `DOC_DNA_ALL_RISK`-in NATİV `registrac_nomer_de`/`kre` sütunlarıdır (tam fərqli
+format/mənbə). Risk tabından açılan bir namizədin `trn_detailed_id`-si bu səbəbdən
+səhv (regnom kodu) çıxa bilər — CANLI YOXLANMADI, yalnız bu sessiyada koda baxaraq
+AŞKAR EDİLDİ. Növbəti dəfə Risk tabından bir namizəd Təsdiqlənib Export edildikdə,
+`trn_detailed_id`-nin mənalı görünüb-görünmədiyi yoxlanmalıdır.
+
+## GOAML Export — `trn_actual_date`/`trn_bank_date` SAAT 00:00:00 YAZIRDI, AYSEL-in ÖZ "FALLBACK" DÜSTURU PORT EDİLDİ (17.11.2026)
+
+Eyni fayl-fayl müqayisədə üzə çıxdı: AYSEL-in real ixracında `trn_actual_date`:
+"2026-11-13T**12:55:01**.001Z" (real vaxt), bizimkində isə "2026-11-13T**00:00:00**.002Z"
+(sırf tarix, saat sıfır).
+
+**Mənbə düstur tapıldı — `97_Goaml_JSON_MMX_IN_Tam_Metn.sql`, sətir 1028-1029:**
+```sql
+NVL( NVL(V_log.Datetimedocexec, V_log.Datetimedocins),
+     to_char(v_goal.date_oper + 0.301111, 'YYYY-MM-DD"T"HH24:MI:SS".002Z"') )
+```
+Yəni AYSEL ƏVVƏLCƏ real audit-jurnal vaxtını (`V_log.Datetimedocexec`/`Datetimedocins`)
+işlədir, YALNIZ o YOXDURSA `date_oper`-ə sabit **0,301111 gün** (≈7 saat 13 dəq 36 san)
+əlavə edir. **".001Z" sonluğu real log vaxtını, ".002Z" sonluğu fallback-ı göstərir** —
+real nümunədə ".001Z" olduğu üçün bu konkret transaksiya REAL jurnal vaxtından gəlib,
+fallback-dan YOX.
+
+**Port edilən — YALNIZ fallback düsturu** (`TransactionQur`):
+```csharp
+var tarix = (e.DateOper ?? e.CandidateDateOper).Add(TimeSpan.FromDays(0.301111))
+    .ToString("yyyy-MM-ddTHH:mm:ss.002Z", CultureInfo.InvariantCulture);
+```
+
+⚠️ **`V_log.Datetimedocexec`/`Datetimedocins` (ƏSAS mənbə) HƏLƏ TAPILMAYIB/TƏSDİQLƏNMƏYİB** —
+bu, canlı Oracle araşdırması (bu cədvəlin adının/sütunlarının dəqiqləşdirilməsi) tələb
+edir, bu mühitdən mümkün olmadı. **Real audit-jurnal qeydi olan HƏR əməliyyatda
+(bu test nümunəsi DAXİL) nəticə YENƏ DƏ AYSEL-dən FƏRQLİ olacaq** — fallback düsturu
+yalnız "heç bir real vaxt yoxdursa, heç olmasa AYSEL-in ÖZ təxmini ilə UYĞUNLAŞ" məqsədi
+daşıyır, "düzgün vaxtı tap" MƏQSƏDİ DAŞIMIR. İstifadəçi `V_log` (və ya oxşar adlı) bir
+cədvəl tapsa, əsas (log-əsaslı) yol da port edilə bilər.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı** (mötərizə
+balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri üzrə ayrıca ölçülüb —
+hər iki dəyişən faylda (`GoamlService.cs`, `EmeliyyatlarController.cs`) net fərq SIFIR,
+yəni düzəlişlərin özü balanslıdır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra
+EYNİ (Debet=kassa, Kredit=real müştəri) namizədi yenidən Təsdiqləyib Export etməlidir:
+"Vətəndaşlığı"nın CON seçimində artıq boş gəlmədiyini, Sender/Receiver Entity adının
+indi real müştəri adını (kassanın özünün YOX) göstərdiyini, `trn_detailed_id`-nin indi
+Kredit-in real registrac_nomer-ini daşıdığını, `trn_actual_date`/`trn_bank_date`-in
+(real log tapılmayana qədər) heç olmasa AYSEL-in öz fallback saatına (≈07:13:36) uyğun
+gəldiyini təsdiqləməlidir.
