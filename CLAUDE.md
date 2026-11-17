@@ -13031,3 +13031,26 @@ coxaday dedup `hesabi_ham`-a görə işləyir — relabel yalnız görüntüyə 
 - "Məbləğ" başlığı → "Ödəniş" (həm səhifə, həm Excel).
 
 ⚠️ SQL faylı yenidən SQL Server-də işlədilməlidir.
+
+## PİD Gündəlik Kredit Ödənişləri — Köçürmə Sətirləri NULL Tələsinə Düşürdü + Gecikmə Tək Kreditə Baxırdı (17.11.2026, ALTINCI DALĞA)
+
+İki ayrı bug, eyni gün tapıldı:
+
+**1. Köçürmə (otvet_ispoln=0) sətirləri NULL debet-ə görə səssizcə atılırdı.**
+17.11.2026-dakı "debet regnomu kredit regnomuna bərabərdirsə xaric et" düzəlişi
+(bax yuxarı, DÖRDÜNCÜ DALĞA) `LENGTH(d.debet) <> 20` şərtindən istifadə edirdi —
+köçürmədə `d.debet` çox vaxt NULL-dur, `LENGTH(NULL)=NULL`, `NULL<>20=NULL`
+(UNKNOWN), `NULL OR NULL=NULL` → bütöv sətir atılırdı. İstifadəçi: "kocurtme ile
+olanlar dusmeyib axi." Həll: `LENGTH(d.debet) <> 20` → `NVL(LENGTH(d.debet),0)
+<> 20` — NULL debet üçün indi TRUE, köçürmə sətri filtrdən tam keçir.
+
+**2. "Gecikmə" yalnız dedup-dan qalib çıxan TƏK kreditin öz `summa_19`-una
+baxırdı.** Müştərinin 2+ açıq krediti varsa və "kat" sıralamasına görə vaxtında
+olan seçilirdisə, DİGƏR (gecikən) krediti görünməz qalırdı. İstifadəçi:
+"musterinin iki krediti var,biri normal biri ise gecikmededir ama biz vaxtinda
+yazmisiq." Həll: EXISTS ilə eyni regnom üzrə (`SUBSTR(l2.licschkre,10,6)=
+SUBSTR(l.licschkre,10,6)`) AÇIQ kreditlərdən İSTƏNİLƏN biri gecikirsə, bütün
+sətir "Gecikir" göstərir — "bir neçə krediti var" sətirlərində ən pis status qalib gəlir.
+
+⚠️ SQL faylı (`docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql`) yenidən
+SQL Server-də işlədilməlidir. GERİYƏ TƏTBİQ OLUNMUR.

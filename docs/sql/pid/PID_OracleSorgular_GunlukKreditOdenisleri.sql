@@ -140,6 +140,28 @@
        arasindaki emeliyyatdir." LENGTH(d.debet)=20 qoruyucusu ilə (qısa/texniki kassa
        kodunda substr mənasız ola bilər).
 
+   11b. (17.11.2026, EYNİ GÜN — KRİTİK, NULL TƏLƏSİ) 11-ci bənd KÖÇÜRMƏ (otvet_ispoln=0)
+       sətirlərini SƏSSİZCƏ YOX EDİRDİ. Köçürmədə d.debet çox vaxt NULL-dur (xaricdən
+       gələn pulun "debet" GL kodu doldurulmur). `LENGTH(NULL)=NULL`, `NULL<>20=NULL`
+       (UNKNOWN, TRUE YOX) → `NULL OR NULL = NULL` → bütöv WHERE sətri UNKNOWN sayılıb
+       atılırdı — İSTİFADƏÇİ: "kocurtme ile olanlar dusmeyib axi." Bu, elə faylın öz
+       10-cu bəndindəki ("hesabi" label filtrinin) artıq XƏBƏRDAR ETDİYİ Oracle
+       NULL-müqayisə tələsinin YENİ yeri idi. HƏLL: `LENGTH(d.debet) <> 20` →
+       `NVL(LENGTH(d.debet),0) <> 20` — NULL debet üçün bu İNDİ TRUE-dur (0<>20), TRUE
+       OR (ikinci şərt) = HƏMİŞƏ TRUE (Kleene məntiqi), ona görə köçürmə sətri 11-ci
+       bəndin filtrindən TƏSİRSİZ keçir — kassa/cari filtrindəki `LENGTH(d.debet)=20`
+       isə TOXUNULMADI (o, DAXİLƏ-ALMA şərtidir, NULL debet onsuz da `otvet_ispoln=0`
+       qoluyla ora düşür).
+
+   12. (17.11.2026, EYNİ GÜN) "Gecikmə" YALNIZ seçilmiş (dedup-dan qalib çıxan) TƏK
+       kreditin öz l.summa_19-una baxırdı — müştərinin 2+ krediti varsa və TƏSADÜFƏN
+       vaxtında olan seçilirsə ("kat" sıralamasına görə), gecikən DİGƏR krediti
+       GÖRÜNMƏZ qalırdı. İstifadəçi: "musterinin iki krediti var,biri normal biri ise
+       gecikmededir ama biz vaxtinda yazmisiq." HƏLL — EXISTS: eyni regnom üzrə
+       (SUBSTR(l2.licschkre,10,6)=SUBSTR(l.licschkre,10,6)) AÇIQ kreditlərdən
+       İSTƏNİLƏN biri gecikirsə (summa_19>0), bütün sətir "Gecikir" göstərir —
+       "bir neçə krediti var" işarəli sətirlərdə ƏN PİS (gecikən) status qalib gəlir.
+
    Servis sorğunu ada görə tapır: adında "Odenis" + "Nezaret" + "Gunluk"
    (normalizasiya: Azərbaycan hərfləri ASCII-yə, boşluqlar silinir). Adi siyahı VƏ
    Gray list axtarışlarına "gunluk" İSTİSNASI əlavə edilib (OdenisNezaretiService.cs)
@@ -200,7 +222,11 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
                t.name            AS tipi,
                l.date_close      AS kredit_bagli_tarixi,
                l.summa_19        AS vk_esas,
-               CASE WHEN NVL(l.summa_19,0) > 0 THEN N''Gecikir'' ELSE N''Vaxtında'' END AS gecikme
+               CASE WHEN EXISTS (SELECT 1 FROM odb.licschkre l2
+                                   WHERE SUBSTR(l2.licschkre,10,6) = SUBSTR(l.licschkre,10,6)
+                                     AND l2.date_close IS NULL
+                                     AND NVL(l2.summa_19,0) > 0)
+                    THEN N''Gecikir'' ELSE N''Vaxtında'' END AS gecikme
           FROM odb.docdna d, odb.licschkre l, odb.regnom r, odb.tipzal g, odb.tipkre t
          WHERE SUBSTR(d.kredit,10,6) = SUBSTR(l.licschkre,10,6)
            AND l.date_close IS NULL
@@ -211,7 +237,7 @@ SET @Sql      = N'SELECT tarix, debet, kredit, hesabi, mebleg, recnum, teyinat, 
                  (LENGTH(d.debet) = 20 AND (SUBSTR(d.debet,1,3) IN (''100'',''250'',''110'') OR SUBSTR(d.debet,1,1) IN (''3'',''4'')))
                  OR d.otvet_ispoln = 0
                )
-           AND (LENGTH(d.debet) <> 20 OR SUBSTR(d.debet,10,6) <> SUBSTR(d.kredit,10,6))
+           AND (NVL(LENGTH(d.debet),0) <> 20 OR SUBSTR(d.debet,10,6) <> SUBSTR(d.kredit,10,6))
       ) x
   )
  WHERE rn = 1
@@ -227,7 +253,7 @@ ELSE
     VALUES (@Ad, @Mahiyyet, @Sql, 1, 0, @DepId, GETDATE(), 0);
 
 COMMIT TRAN;
-PRINT N'PID Gündəlik Kredit Ödənişləri sorğusu yazıldı/yeniləndi — "Vaxtı keçmiş" sətirləri xaricdir, eyni RECNUM çox-kreditli müştəridə tək sətrə yığılır.';
+PRINT N'PID Gündəlik Kredit Ödənişləri sorğusu yazıldı/yeniləndi — köçürmə (NULL debet) sahə düzəldi, gecikmə müştərinin bütün kreditləri üzrə yoxlanır.';
 
 SELECT SorguAdi, DepartamentId, Aktiv FROM OracleSorgular
 WHERE  SorguAdi = N'PID Odenis Nezaret Gunluk';
