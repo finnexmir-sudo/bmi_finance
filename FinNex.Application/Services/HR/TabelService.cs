@@ -167,7 +167,21 @@ namespace FinNex.Application.Services.HR
                     // ⚠️ `Any` YOX, `FirstOrDefault` — günü ÖRTƏN qeydin NÖVÜ lazımdır:
                     //    öz hesabına (ödənişsiz) məzuniyyət tabeldə «M» deyil, «G» yazılır
                     //    (rəsmi qalıb: «işə gəlmədiyi günlər (G)», istifadəçi qərarı 09.09.2026).
-                    var gunMez = mezuniyyetler.FirstOrDefault(m => m.IsciId == isci.Id &&
+                    //
+                    // ⚠️ Dövlət vəzifəsi (DovletVezifelerininIcrasi) MÖVCUD ƏMƏK MƏZUNİYYƏTİNİ
+                    //    ƏVƏZ EDİR (bax CLAUDE.md "Məzuniyyət Təsdiq Axını") — korreksiya
+                    //    yalnız Davamiyyət STATUSUNU üstələyir, altdakı Mezuniyyet (İllik)
+                    //    QEYDİ silinmir/qısalmır. Nəticədə eyni gün üçün HƏM İllik, HƏM
+                    //    DovletVezifelerininIcrasi qeydi var olur, `FirstOrDefault` sırasına
+                    //    görə HANSI qalib gələcəyi qeyri-müəyyən idi. İstifadəçi (17.11.2026):
+                    //    "dövlət vəzifəsi olana da məzuniyyət yazmışıq... bu səhvdir, iş günü
+                    //    kimi düşməlidir." Dövlət vəzifəsi günü HƏMİŞƏ ÜSTÜNDÜR — overlap
+                    //    varsa belə, bu gün adi iş günü kimi sayılır (gunMez=null).
+                    bool dovletVezifesindedir = mezuniyyetler.Any(m => m.IsciId == isci.Id &&
+                        m.Nov == MezuniyyetNovu.DovletVezifelerininIcrasi &&
+                        gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
+
+                    var gunMez = dovletVezifesindedir ? null : mezuniyyetler.FirstOrDefault(m => m.IsciId == isci.Id &&
                         !m.JetonIleOdendi &&
                         gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
 

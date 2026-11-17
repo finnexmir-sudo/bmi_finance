@@ -126,8 +126,22 @@ public class DsmfHesabatService : IDsmfHesabatService
                     Elave(6, i, gun);
                 }
 
-                // Kod 1 — ödənişli əsas məzuniyyət (Illik).
-                Elave(1, i, await NovUzreHaqiqiIsGunuAsync(isci.Id, MezuniyyetNovu.Illik, il, ay));
+                // ⚠️ Dövlət vəzifəsi MÖVCUD ƏMƏK MƏZUNİYYƏTİNİ ƏVƏZ EDİR (bax
+                // TabelService-dəki eyni şərh) — korreksiya yalnız Davamiyyət
+                // statusunu üstələyir, altdakı İllik qeydi silinmir/qısalmır,
+                // ona görə eyni gün HƏM Kod 1 (İllik), HƏM Kod 11 (dövlət vəzifəsi)
+                // kimi İKİ DƏFƏ sayıla bilərdi. İstifadəçi (17.11.2026):
+                // "dövlət vəzifəsi olana da məzuniyyət yazmışıq... bu səhvdir,
+                // iş günü kimi düşməlidir." Kod 11 TAMAMİLƏ ÇIXARILDI — dövlət
+                // vəzifəsi günləri heç bir "işləməyib" səbəbi kimi sayılmır,
+                // ADİ İŞ GÜNÜ kimi qalır (Tabel-dəki fix ilə EYNİ qayda). Kod 1
+                // isə bu günləri İSTİSNA edir ki, overlap halında ikiqat
+                // çıxılmasın.
+                var dovletVezifesiGunleri = await DovletVezifesiGunSetiAsync(isci.Id, il, ay);
+
+                // Kod 1 — ödənişli əsas məzuniyyət (Illik), dövlət vəzifəsi
+                // günləri istisna edilərək.
+                Elave(1, i, await NovUzreHaqiqiIsGunuAsync(isci.Id, MezuniyyetNovu.Illik, il, ay, dovletVezifesiGunleri));
 
                 // Kod 3 — ödənişsiz məzuniyyət (Ə.M. 129). Mövcud, sınanmış servis metodu.
                 Elave(3, i, await _maasHesablama.OzHesabinaIsGunuSayAsync(isci.Id, il, ay));
@@ -135,9 +149,6 @@ public class DsmfHesabatService : IDsmfHesabatService
                 // Kod 5 — xəstələnmə. Mövcud, sınanmış servis metodu (26.10.2026-da
                 // düzəldilmiş "həqiqi iş günü" versiyası).
                 Elave(5, i, await _maasHesablama.XestelikHaqiqiIsGunuSayAsync(isci.Id, il, ay));
-
-                // Kod 11 — dövlət/ictimai vəzifə.
-                Elave(11, i, await NovUzreHaqiqiIsGunuAsync(isci.Id, MezuniyyetNovu.DovletVezifelerininIcrasi, il, ay));
             }
 
             if (sebebGunleri.Count == 0) continue;
@@ -173,7 +184,10 @@ public class DsmfHesabatService : IDsmfHesabatService
     // MezuniyyetGunleriniSayGenisAsync işlədilmədi, çünki o, Illik+Ezamiyyət-i
     // BİRLİKDƏ qaytarır (Ezamiyyət DSMF-nin 12 səbəbindən biri DEYİL — işçi
     // ezamiyyətdə işləyir, "işləmədiyi gün" sayılmır).
-    private async Task<int> NovUzreHaqiqiIsGunuAsync(int isciId, MezuniyyetNovu nov, int il, int ay)
+    // xaricEt — bu günlər (varsa) nəticədən ÇIXARILIR. Dövlət vəzifəsinin
+    // İllik-i əvəz etdiyi overlap günləri üçün (bax Hissesi3HazirlaAsync).
+    private async Task<int> NovUzreHaqiqiIsGunuAsync(
+        int isciId, MezuniyyetNovu nov, int il, int ay, HashSet<DateTime>? xaricEt = null)
     {
         var ayBaslangic = new DateTime(il, ay, 1);
         var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
@@ -194,13 +208,16 @@ public class DsmfHesabatService : IDsmfHesabatService
         if (qeydler.Count == 0) return 0;
 
         return await HaqiqiIsGunuSayAsync(
-            qeydler.Select(x => (x.BaslamaTarixi, x.BitmeTarixi)), il, ay);
+            qeydler.Select(x => (x.BaslamaTarixi, x.BitmeTarixi)), il, ay, xaricEt);
     }
 
     // Verilmiş tarix aralıqlarının bir aya düşən REAL iş günü sayı (BayramGunu +
     // həftəsonu qaydaları) — HashSet ilə üst-üstə düşən günlər ikiqat sayılmır.
+    // xaricEt veriləndə (dövlət vəzifəsi overlap-i kimi) həmin günlər HEÇ VAXT
+    // nəticəyə daxil edilmir.
     private async Task<int> HaqiqiIsGunuSayAsync(
-        IEnumerable<(DateTime Baslama, DateTime Bitme)> araliqlar, int il, int ay)
+        IEnumerable<(DateTime Baslama, DateTime Bitme)> araliqlar, int il, int ay,
+        HashSet<DateTime>? xaricEt = null)
     {
         var ayBaslangic = new DateTime(il, ay, 1);
         var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
@@ -218,6 +235,7 @@ public class DsmfHesabatService : IDsmfHesabatService
             var bitme = bitmeX > ayBitis ? ayBitis : bitmeX;
             for (var t = baslama.Date; t <= bitme.Date; t = t.AddDays(1))
             {
+                if (xaricEt != null && xaricEt.Contains(t.Date)) continue;
                 bool realIsGunu = ozelTipDict.TryGetValue(t.Date, out var tip)
                     ? tip == GunTipi.IsGunu
                     : t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
@@ -225,6 +243,37 @@ public class DsmfHesabatService : IDsmfHesabatService
             }
         }
         return gunler.Count;
+    }
+
+    // Bu ay üçün işçinin dövlət vəzifəsi günləri (ay hüdudlarına kəsilmiş) —
+    // Kod 1-in (İllik) overlap istisnası üçün. Kod 11 ARTIQ ayrıca sətir kimi
+    // yazılmır (17.11.2026) — dövlət vəzifəsi günləri heç bir "işləməyib"
+    // kateqoriyasına düşmür, sadəcə İllik-in çıxılmasının qarşısını alır.
+    private async Task<HashSet<DateTime>> DovletVezifesiGunSetiAsync(int isciId, int il, int ay)
+    {
+        var ayBaslangic = new DateTime(il, ay, 1);
+        var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+        var qeydler = await _unitOfWork.Repository<Mezuniyyet>()
+            .Query()
+            .AsNoTracking()
+            .Where(x => x.IsciId == isciId
+                     && x.Status == MezuniyyetStatus.Tesdiqlenib
+                     && x.Nov == MezuniyyetNovu.DovletVezifelerininIcrasi
+                     && x.BaslamaTarixi <= ayBitis
+                     && x.BitmeTarixi >= ayBaslangic)
+            .Select(x => new { x.BaslamaTarixi, x.BitmeTarixi })
+            .ToListAsync();
+
+        var gunler = new HashSet<DateTime>();
+        foreach (var q in qeydler)
+        {
+            var baslama = q.BaslamaTarixi < ayBaslangic ? ayBaslangic : q.BaslamaTarixi;
+            var bitme = q.BitmeTarixi > ayBitis ? ayBitis : q.BitmeTarixi;
+            for (var t = baslama.Date; t <= bitme.Date; t = t.AddDays(1))
+                gunler.Add(t.Date);
+        }
+        return gunler;
     }
 
     // Rübün ilk ayı BUGÜNDƏN sonradırsa (hələ başlamayıb). DSMF yalnız
@@ -469,27 +518,39 @@ public class DsmfHesabatService : IDsmfHesabatService
         return netice;
     }
 
-    // Manual gəlir növlərindən (məs. "Hərbi Xidmət") QİSMƏN gəlir vergisindən
-    // azad olanlar — ManualGelirIstisnasiAsync-dən FƏRQLİ: orada İşsizlik/İTSS
-    // bazasından TAM azadlıq (bayraqla), burada gəlir vergisi bazasından YALNIZ
-    // MaasNovu.GelirVergisiAzadMebleg qədər (Min(ödəniş, azad məbləğ)) azadlıq.
+    // Manual gəlir növlərindən gəlir vergisindən azad olanlar — QİSMƏN
+    // (VergiyeCelb=true + GelirVergisiAzadMebleg>0, Min(ödəniş, azad məbləğ))
+    // VƏ TAM (VergiyeCelb=false, bütün ödəniş) hər ikisi. ManualGelirIstisnasiAsync-
+    // dən FƏRQLİ: orada İşsizlik/İTSS bazasından azadlıq (bayraqla), burada
+    // GƏLİR VERGİSİ bazasından azadlıq.
+    //
+    // ⚠️ VergiyeCelb=false (TAM azad) qolu 17.11.2026-da əlavə edildi —
+    // istifadəçi: "hərbi xidmətə görə ödənilən pulu o biri sütunda yazmışıq
+    // amma burda [3.1-də] göstərməmişik." Əvvəlki sorğu YALNIZ qismən-azad
+    // (VergiyeCelb=true+cap) halını tuturdu — "Hərbi Xidmət" kimi TAM azad
+    // (VergiyeCelb=false) manual gəlir növləri bu filtri HEÇ KEÇMİRDİ (nə
+    // VergiyeCelb=true şərti, nə GelirVergisiAzadMebleg>0 — tam azad olanda
+    // bu sahəyə bir cap yazmağa ehtiyac yoxdur), ona görə 3.1-ə HEÇ
+    // ƏLAVƏ OLUNMURDU, baxmayaraq ki eyni növ İşsizlik/İTSS bazasından
+    // (ManualGelirIstisnasiAsync, bayraqla, bu filtrə görə ASILI DEYİL)
+    // doğru-düzgün azad edilirdi — bax "o biri sütun".
     private async Task<Dictionary<int, decimal>> ManualGelirVergiIstisnasiAsync(int il, int ay)
     {
         var novlər = await _unitOfWork.Repository<MaasNovu>()
             .Query()
             .AsNoTracking()
             .Where(x => x.Aktivdir && !x.Silinib && x.ManualGelir
-                     && x.VergiyeCelb && x.GelirVergisiAzadMebleg > 0)
-            .Select(x => new { x.Id, x.GelirVergisiAzadMebleg })
+                     && (!x.VergiyeCelb || x.GelirVergisiAzadMebleg > 0))
+            .Select(x => new { x.Id, x.VergiyeCelb, x.GelirVergisiAzadMebleg })
             .ToListAsync();
 
         if (novlər.Count == 0) return new Dictionary<int, decimal>();
-        var azadMap = novlər.ToDictionary(x => x.Id, x => x.GelirVergisiAzadMebleg);
+        var novMap = novlər.ToDictionary(x => x.Id, x => x);
 
         var detallar = await _unitOfWork.Repository<MaasDetay>()
             .Query()
             .AsNoTracking()
-            .Where(x => !x.Silinib && azadMap.Keys.Contains(x.MaasNovuId)
+            .Where(x => !x.Silinib && novMap.Keys.Contains(x.MaasNovuId)
                      && x.Maas.Il == il && x.Maas.Ay == ay && !x.Maas.Silinib
                      && (x.Maas.Status == MaasStatus.Tesdiqlendi || x.Maas.Status == MaasStatus.Odenildi))
             .Select(x => new { x.Maas.IsciId, x.MaasNovuId, x.Mebleg })
@@ -498,7 +559,8 @@ public class DsmfHesabatService : IDsmfHesabatService
         var netice = new Dictionary<int, decimal>();
         foreach (var d in detallar)
         {
-            var azad = Math.Min(d.Mebleg, azadMap[d.MaasNovuId]);
+            var nov = novMap[d.MaasNovuId];
+            var azad = nov.VergiyeCelb ? Math.Min(d.Mebleg, nov.GelirVergisiAzadMebleg) : d.Mebleg;
             if (azad <= 0) continue;
             netice[d.IsciId] = netice.GetValueOrDefault(d.IsciId) + azad;
         }
@@ -768,6 +830,7 @@ public class DsmfHesabatService : IDsmfHesabatService
 
         var ayinRealIsGunu = new int[3];
         var brutMaplar = new Dictionary<int, decimal>[3];
+        var mezQabaqBrut = new Dictionary<int, decimal>[3];
         var vm9821 = new Dictionary<int, decimal>[3];
         var hys = new Dictionary<int, decimal>[3];
         var hysIseg = new Dictionary<int, decimal>[3];
@@ -785,6 +848,7 @@ public class DsmfHesabatService : IDsmfHesabatService
             ayinRealIsGunu[i] = await HaqiqiIsGunuSayAsync(
                 new[] { (new DateTime(il, ay, 1), new DateTime(il, ay, 1).AddMonths(1).AddDays(-1)) }, il, ay);
             brutMaplar[i] = await MaasBrutMapAsync(il, ay);
+            mezQabaqBrut[i] = await MezQabaqcadanBrutMapAsync(il, ay);
             vm9821[i] = await Vm9821MapAsync(il, ay);
             hys[i] = await HysIsciPayiAsync(il, ay);
             hysIseg[i] = await HysIsegoturenMapAsync(il, ay);
@@ -818,10 +882,19 @@ public class DsmfHesabatService : IDsmfHesabatService
                 aylar[i] = new DsmfHissesi1AyDto
                 {
                     FaktikiIsGunu = Math.Max(0, ayinRealIsGunu[i] - islememisGun),
-                    // 2.3 = BrutMebleg + VM 98.2.1 (bax Vm9821MapAsync-in şərhi —
-                    // VM9821 brütə DAXİL EDİLMİR, amma sütunun öz başlığı "...VƏ
-                    // DİGƏR GƏLİRLƏR"dir, DSMF-in bütün bazaları onu özündə daşıyır).
-                    HesablananMebleg = brutMaplar[i].GetValueOrDefault(isci.Id) + vm9821[i].GetValueOrDefault(isci.Id),
+                    // 2.3 = BrutMebleg + Qabaqcadan mez. brütünün bu ayın payı + VM 98.2.1.
+                    // Qabaqcadan ödənilən məzuniyyətin brütü HEÇ VAXT Maas.BrutMebleg-ə
+                    // daxil edilmir (MaasHesablamaService.cs:1110, brutMaas = esasBrut +
+                    // hysIsegoturen — mezuniyyetAvansBrutu YOXDUR), ona görə leave
+                    // günlərinin düşdüyü ayların 2.3-ü bu payı bax
+                    // MezQabaqcadanBrutMapAsync-in şərhi) daşımadan boş qalırdı
+                    // (17.11.2026, istifadəçi: "ödənilmiş mezuniyyet pulu bəzilərində
+                    // yoxdur, bu yəqin ki qabaqcadan verilmişlərdədi"). VM9821 ilə EYNİ
+                    // qayda (bax Vm9821MapAsync-in şərhi — brütə daxil edilməsə də,
+                    // sütunun öz başlığı "...VƏ DİGƏR GƏLİRLƏR"dir).
+                    HesablananMebleg = brutMaplar[i].GetValueOrDefault(isci.Id)
+                                     + mezQabaqBrut[i].GetValueOrDefault(isci.Id)
+                                     + vm9821[i].GetValueOrDefault(isci.Id),
                     // ⚠️ AzadGuzestCemi (3.1) VƏ DsmfAzadCemi (4.1) HƏR İKİSİ
                     // `hysIseg`-i daxil edir (29.10.2026, ÜÇÜNCÜ dalğa — bax
                     // HysIsegoturenMapAsync-in şərhi, rəsmi şablonun K10 qeydi
@@ -861,6 +934,60 @@ public class DsmfHesabatService : IDsmfHesabatService
             .ToListAsync();
 
         return maaslar.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Sum(x => x.BrutMebleg));
+    }
+
+    // Qabaqcadan ödənilmiş məzuniyyətin BU AYA düşən brüt payı (17.11.2026,
+    // istifadəçi: "hesablanmış əmək haqqında ödənilmiş mezuniyyet pulu bəzilərində
+    // yoxdur, bu yəqin ki qabaqcadan verilmişlərdədi"). TƏKRAR DÜSTUR YAZILMADI —
+    // `MaasController.MezQabaqcadanBrutMapAsync`-in BİRƏ-BİR eyni naxışı (tək
+    // mənbə — `IMaasHesablamaService.AvansAylaraBolunurmu`/`MezuniyyetAvansAyPaylariAsync`,
+    // bax CLAUDE.md "Ay-ay payların yeganə mənbəyi"): kəsimdən (01.08.2026) sonra
+    // aylara-bölünmüş modeldə hər qabaqcadan mezuniyyətin bu AYA düşən payı
+    // `MezuniyyetAvansAyPaylariAsync`-dan oxunur; kəsimdən ƏVVƏLKİ aylarda isə
+    // köhnə "ödənmə ayı" qaydası (`OdenilmeTarixi`) tətbiq olunur.
+    private async Task<Dictionary<int, decimal>> MezQabaqcadanBrutMapAsync(int il, int ay)
+    {
+        bool avansAylaraBolunur = _maasHesablama.AvansAylaraBolunurmu(il, ay);
+        var ayIlkGunu    = new DateTime(il, ay, 1);
+        var novbetiAyIlk = ayIlkGunu.AddMonths(1);
+
+        var avansBazaSorgu = _unitOfWork.Repository<Mezuniyyet>()
+            .Query()
+            .AsNoTracking()
+            .Where(x =>
+                !x.Silinib &&
+                x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis &&
+                x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib);
+
+        var avanslar = avansAylaraBolunur
+            ? await avansBazaSorgu
+                .Where(x => x.BaslamaTarixi < novbetiAyIlk && x.BitmeTarixi >= ayIlkGunu)
+                .ToListAsync()
+            : await avansBazaSorgu
+                .Where(x => x.OdenilmeTarixi.HasValue &&
+                            x.OdenilmeTarixi.Value.Year == il &&
+                            x.OdenilmeTarixi.Value.Month == ay)
+                .ToListAsync();
+
+        var map = new Dictionary<int, decimal>();
+        foreach (var av in avanslar)
+        {
+            decimal brut;
+            if (avansAylaraBolunur)
+            {
+                var paylar = await _maasHesablama.MezuniyyetAvansAyPaylariAsync(
+                    av.IsciId, av.BaslamaTarixi, av.BitmeTarixi, av.OdenenMebleg);
+                var buAy = paylar.FirstOrDefault(p => p.Il == il && p.Ay == ay);
+                brut = buAy?.Brut ?? 0m;
+            }
+            else
+            {
+                brut = av.OdenenMeblegBrut ?? 0m;
+            }
+            if (brut <= 0) continue;
+            map[av.IsciId] = map.GetValueOrDefault(av.IsciId) + brut;
+        }
+        return map;
     }
 
     // VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər (29.10.2026,

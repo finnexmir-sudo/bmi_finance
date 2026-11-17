@@ -13079,3 +13079,110 @@ EXISTS-i, "gecikmə ödənildi" EXISTS-i) `odb.view_tek_docdna`-ya dəyişdi.
    VARSA, bu label göstərilir. "Gecikir" yalnız summa_19 HƏLƏ DƏ >0 olanda qalır.
 
 ⚠️ SQL faylı yenidən SQL Server-də işlədilməlidir. GERİYƏ TƏTBİQ OLUNMUR.
+
+## DSMF Hissə 1 — Üç Səhv Düzəldildi: Dövlət Vəzifəsi İkiqat Çıxılırdı, Qabaqcadan Mez. Brütü İtirdi, Hərbi Xidmət 3.1-ə Düşmürdü (17.11.2026)
+
+İstifadəçi şablon faylını araşdırıb (bax yuxarı "Hissə 1" sualı) 10-cu sətrin
+kross-referens qeydlərini oxuduqdan sonra üç real xəta bildirdi.
+
+### 1. Dövlət vəzifəsi — Kod 11 İKİQAT ÇIXIRDI, HƏM Tabel-də "M" yazılırdı
+
+*"iş günlərinin sayında biz dövlət vəzifəsi olana da məzuniyyət yazmışıq həm
+də tabeldə elə düşür, bu səhvdir iş günü kimi düşməlidir."*
+
+**Kök səbəb — `TabelService.cs`-in `gunMez` lookup-u, `FirstOrDefault` ilə
+TƏK sətir tapırdı.** `MezuniyyetService`-in "dövlət vəzifəsi korreksiyası
+mövcud əmək məzuniyyətini əvəz edir" məntiqi (bax yuxarı "Məzuniyyət Təsdiq
+Axını" bölməsi) YALNIZ Davamiyyət STATUSUNU üstələyir — altdakı Mezuniyyet
+(İllik) QEYDİ silinmir/qısalmır. Nəticədə eyni gün üçün HƏM İllik, HƏM
+DovletVezifelerininIcrasi sətri mövcud olur:
+- **Tabel**-də `gunMez = mezuniyyetler.FirstOrDefault(...)` siyahı sırasına
+  görə YA İllik, YA Dövlət vəzifəsi sətrini tapırdı — `Nov != OzHesabina`
+  olan HƏR hal "M" yazırdı (DovletVezifelerininIcrasi DAXİL).
+- **DSMF Hissə 3**-də Kod 1 (İllik) VƏ Kod 11 (Dövlət vəzifəsi) AYRI-AYRI
+  sorğulanıb SUMLANIRDI (`Elave(1,...)` + `Elave(11,...)`) — overlap olan
+  günlər İKİ DƏFƏ "işləməyib" sayılırdı, Hissə 1-in "Faktiki iş günü"
+  (2.2) bunları İKİ DƏFƏ çıxırdı.
+
+**Düzəliş — dövlət vəzifəsi HƏMİŞƏ ÜSTÜNDÜR, overlap olsa belə İŞ GÜNÜ kimi
+sayılır (Kod 11 TAMAMİLƏ ÇIXARILDI):**
+- `TabelService.cs` — `gunMez` axtarışından ƏVVƏL `dovletVezifesindedir`
+  (`Any`) yoxlanılır; `true`-dursa `gunMez = null` (nə "G", nə "M" — normal
+  iş günü/saat hesablama yoluna düşür).
+- `DsmfHesabatService.Hissesi3HazirlaAsync` — Kod 11-in `Elave()` çağırışı
+  SİLİNDİ. Yeni `DovletVezifesiGunSetiAsync(isciId, il, ay)` helper-i həmin
+  ayın dövlət vəzifəsi günlərini (`HashSet<DateTime>`) qaytarır, Kod 1-in
+  (İllik) hesablamasına `xaricEt` parametri kimi ötürülür —
+  `NovUzreHaqiqiIsGunuAsync`/`HaqiqiIsGunuSayAsync`-ə yeni, **opsional**
+  `HashSet<DateTime>? xaricEt = null` parametri əlavə edildi (mövcud
+  çağıranlara TOXUNMADAN — defolt `null`).
+
+⚠️ **`DsmfIslemeyenGunSebebi.Metinler[11]`-in mətn girişi SİLİNMƏDİ** — rəsmi
+12-reason kataloqu tam saxlanılır, sadəcə bu kod BİR DAHA `Elave()` ilə
+yazılmır (heç bir sətir Kod 11 ilə görünməyəcək).
+
+### 2. Qabaqcadan ödənilmiş məzuniyyətin brütü 2.3-ə (Hesablanmış) DÜŞMÜRDÜ
+
+*"hesablanmış əmək haqqında ödənilmiş mezuniyyet pulu bəzilərində yoxdur, bu
+yəqinki qabaqcadan verilmişlərdədi, bunada bax."*
+
+**Kök səbəb:** `MaasHesablamaService.cs:1110` — `decimal brutMaas = esasBrut
++ hysIsegoturen;` — `mezuniyyetAvansBrutu` (qabaqcadan ödənilmiş məzuniyyətin
+brütü) HEÇ VAXT bu düsturun İÇİNDƏ DEYİL (yalnız vergi/DSMF/İşsizlik/İTSS
+bazalarına, 1146-1149-cu sətirlər, əlavə olunur) — yəni `Maas.BrutMebleg`
+(Hissə 1-in 2.3-ünün YEGANƏ mənbəyi idi) bu məbləği HEÇ BİR AYDA (nə ödənmə
+ayında, nə məzuniyyət günlərinin düşdüyü ayda) daşımır. Adi (qabaqcadan
+OLMAYAN) məzuniyyət ödənişi isə `esasBrut`-un daxilindədir — ona görə YALNIZ
+qabaqcadan ödənilən işçilərdə "bəzilərində yoxdur" simptomu görünürdü.
+
+**Düzəliş — yeni `MezQabaqcadanBrutMapAsync(il, ay)` helper-i, `MaasController.
+MezQabaqcadanBrutMapAsync`-in BİRƏ-BİR EYNİ naxışı** (tək mənbə —
+`IMaasHesablamaService.AvansAylaraBolunurmu`/`MezuniyyetAvansAyPaylariAsync`,
+TƏKRAR DÜSTUR YAZILMADI): kəsimdən (01.08.2026) sonra `MezuniyyetAvansAyPaylariAsync`-
+dan bu AYIN payı oxunur, kəsimdən ƏVVƏLKİ aylarda köhnə "ödənmə ayı" qaydası
+(`OdenilmeTarixi`) tətbiq olunur. Nəticə `HesablananMebleg`-ə VM9821 İLƏ EYNİ
+qaydada (brütə DAXİL EDİLMİR, amma sütunun öz başlığı "...VƏ DİGƏR GƏLİRLƏR"dir)
+ƏLAVƏ OLUNUR: `HesablananMebleg = BrutMebleg + mezQabaqBrut + VM9821`.
+
+### 3. "Hərbi Xidmət" (əsgər pulu) 3.1-ə (Azadolunan güzəşt) DÜŞMÜRDÜ
+
+*"Azadolunan və güzəşt verilən cəmi gəlirin məbləği — burda — qaçqın+əlil+
+əsgər pulu+... bu qeydi yazmışıq, hərbi xidmətə görə ödənilən pulu o biri
+sütunda yazmışıq amma burda göstərməmişik."*
+
+**Kök səbəb:** `ManualGelirVergiIstisnasiAsync` (3.1-in "əsgər pulu" mənbəyi)
+YALNIZ `VergiyeCelb=true && GelirVergisiAzadMebleg>0` (QİSMƏN gəlir-vergisi-
+azad) manual gəlir növlərini tuturdu. "Hərbi Xidmət" TAM azaddırsa
+(`VergiyeCelb=false`) — bu filtrin HEÇ bir qoluna düşmür, 3.1-ə HEÇ ƏLAVƏ
+OLUNMUR idi. Eyni zamanda `ManualGelirIstisnasiAsync` (Bölmə 4/5, 6.3/7.2 —
+İşsizlik/İTSS azadlığı) bu sahələrə HEÇ BAXMIR (yalnız `IssizliyeCelb`/
+`ItsseCelb` bayrağına görə işləyir) — ona görə "Hərbi Xidmət"in FULL məbləği
+6.3/7.2-də ("o biri sütun") düzgün görünürdü, YALNIZ 3.1-də yox idi.
+
+**Düzəliş — `ManualGelirVergiIstisnasiAsync`-ə İKİNCİ qol əlavə edildi:**
+sorğu indi `!VergiyeCelb || GelirVergisiAzadMebleg > 0` (QİSMƏN VƏ TAM azad,
+hər ikisi) tutur; `VergiyeCelb=false` olanda FULL `MaasDetay.Mebleg` (cap
+YOX), `VergiyeCelb=true` olanda köhnə `Min(Mebleg, GelirVergisiAzadMebleg)`
+(dəyişmədi) hesablanır.
+
+⚠️ **Bu, HƏRBİ XİDMƏT-in konkret HR konfiqurasiyasını (VergiyeCelb=true/false)
+yoxlamadan edilən, DB-nə baxmadan köçürülə bilən bir düzəlişdir** — hansı
+konfiqurasiyada olursa olsun (tam azad VƏ YA qismən-azad-amma-cap-sız), indi
+hər ikisi düzgün 3.1-ə düşür. HR-in real konfiqurasiyasını (VergiyeCelb
+dəyərini) yoxlamaq istəyə bağlıdır, kod dəyişikliyi buna bağlı DEYİL.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — hər üç düzəliş yalnız BUNDAN SONRAKI Hissə
+1/Hissə 3 hesablamalarına təsir edir.** Keçmiş rüblər üçün artıq göstərilmiş
+(əgər ixrac olunubsa) Excel-lər YENİDƏN hazırlanmalıdır.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — kod-yalnız hissədə 413/413 tam balanslı, tam fayldakı +1
+fərq YALNIZ şərh mətnindədir, əvvəlki sessiyalarda dəfələrlə sənədləşmiş
+«comment-prose paren mismatch» növüdür, funksional təsiri yoxdur). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+(1) dövlət vəzifəsi+İllik overlap-i olan bir işçinin Tabel-ində indi həmin
+günlərin normal saat/iş-günü göstərdiyini (M yox), DSMF Hissə 1/3-də Kod 11-in
+HEÇ görünmədiyini, Faktiki iş günü-nün artdığını; (2) qabaqcadan ödənilmiş
+məzuniyyəti olan bir işçinin 2.3 sütununun indi leave brütünü DAŞIDIĞINI;
+(3) "Hərbi Xidmət" ödəmiş işçinin 3.1 sütununun indi bu məbləği EHTİVA
+ETDİYİNİ (əvvəlkindən böyük çıxmalıdır) təsdiqləməlidir.
