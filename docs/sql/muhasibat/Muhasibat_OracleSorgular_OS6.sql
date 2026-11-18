@@ -97,13 +97,26 @@ select
    bağlanmır, AMMA müqavilə artıq bağlı ola bilir). Korrelə skalyar
    alt-sorğu (JOIN YOX) ki, arh_licschkre-də eyni (licschkre,date_oper)
    üçün birdən çox subschkre sətri olsa belə əsas cədvəl SƏTIR SAYI
-   ARTMASIN — subschkre=0 (və ya ən kiçik) üstün tutulur. */
+   ARTMASIN — subschkre=0 (və ya ən kiçik) üstün tutulur.
+   ⚠️ 18.11.2026, İKİNCİ DALĞA — DÜZƏLİŞ: `al.licschkre = l.licsch` SƏHV İDİ.
+   İstifadəçi: "lics cari hesabi sen kredit hesabina beraber etmisen" — haqlı:
+   `odb.arh_licschkre`-nin (= `odb.licschkre`-nin arxivi) HƏR sətri BİR KREDİTİN
+   DÖRD AYRI GL sub-hesabını daşıyır (`licschkre`=əsas/performing, `licschpkre`=
+   faiz/performing, `licsch_19`=vaxtı keçmiş əsas, `licschppkre`=vaxtı keçmiş
+   faiz — bu DÖRDLÜK artıq `docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.
+   sql`-də, eyni cədvəldə, istifadəçi ilə canlı sınanıb TƏSDİQLƏNİB). `l.licsch`
+   (bizim Kod3 "kredit hesabları" sətri) bu DÖRD sub-hesabdan İSTƏNİLƏN BİRİ ola
+   bilər — YALNIZ `al.licschkre`-yə (əsas/performing) bərabərliyi yoxlamaq digər
+   3 sub-hesab (faiz, vaxtı keçmiş əsas, vaxtı keçmiş faiz) üçün HƏMİŞƏ "tapılmadı"
+   (0) qaytarır → G3/H3/J3/K3 kütləvi şəkildə 0-a düşür. Düzəliş: `l.licsch`-i
+   DÖRDÜNÜN HƏR BİRİNƏ qarşı yoxla (IN) — kredit müqaviləsinin `date_close`-u
+   bütün dörd sub-hesaba AİDDİR (loan bir dəfə bağlanır, dördü də birlikdə). */
     (select count(*) from odb.arh_licschkre al
-      where al.licschkre = l.licsch
+      where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
         and al.date_oper = to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_tapildi,
     (select max(al.date_close) keep (dense_rank first order by nvl(al.subschkre,0))
        from odb.arh_licschkre al
-      where al.licschkre = l.licsch
+      where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
         and al.date_oper = to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_baglama
 from odb.licsch l
 where l.date_open_licsch is not null

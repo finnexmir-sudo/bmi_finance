@@ -13562,3 +13562,77 @@ yalnız əl ilə yoxlanıldı** (mötərizə balansı — 91/91, tam fayl). İst
 SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə eyni Oktyabr 2026
 ÖS-6.1 nəticəsinin (rəqəmlər DƏYİŞMƏDƏN, sorğu müddətinin azaldığını)
 təsdiqləməli, SONRA `94_...sql`-in nəticəsini göndərməlidir.
+
+## ÖS-6.1 — Kredit Açıqlığı Yoxlaması SƏHV SÜTUNA BAXIRDI — Loan-un DÖRD Sub-Hesabından YALNIZ BİRİNİ Yoxlayırdı (18.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı "sürət" düzəlişindən dərhal sonra istifadəçi canlı ekranda sınadı —
+sürət artdı ("suretlidir"), AMMA **"kredit hesabları 0 çıxdı"** ("dövrün
+sonuna cəmi" sütunu, Kod 3-ün bütün G/H/J/K xanaları 0, bax ekran-görüntüsü).
+İstifadəçi dərhal, dəqiq kök səbəbi göstərdi: *"where al.licschkre = l.licsch
+- bu sert sehvdir axi, lics cari hesabi sen kredit hesabina beraber
+etmisen"*.
+
+### Kök səbəb — `odb.arh_licschkre`-nin HƏR sətri BİR kreditin DÖRD AYRI GL sub-hesabını daşıyır
+
+Bu, TƏSADÜFƏN tapılan bir fakt deyil — eyni `odb.licschkre`/`odb.arh_licschkre`
+cədvəli artıq `docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.sql`-də,
+istifadəçi ilə HƏFTƏLƏRLƏ canlı Oracle sınağı ilə TƏSDİQLƏNMİŞ bir strukturla
+işlənir: hər kredit sətri **DÖRD** GL hesab nömrəsi daşıyır —
+
+| Sütun | Mənası |
+|---|---|
+| `licschkre` | Əsas borc, PERFORMİNQ (vaxtında) |
+| `licschpkre` | Faiz, PERFORMİNQ (vaxtında) |
+| `licsch_19` | Əsas borc, VAXTI KEÇMİŞ |
+| `licschppkre` | Faiz, VAXTI KEÇMİŞ |
+
+18.11.2026-dakı əvvəlki düzəliş (yuxarı) `l.licsch`-i (ÖS-6.1-in Kod 3 "kredit
+hesabları" kimi təsnif etdiyi HƏR `odb.licsch` sətri — bu DÖRD sub-hesabdan
+İSTƏNİLƏN BİRİ ola bilər) YALNIZ `al.licschkre`-yə (yəni YALNIZ "əsas, performinq"
+sütununa) bərabərliyə görə axtarırdı. Nəticə: loan-un **digər üç** sub-hesabına
+aid olan `licsch` sətirləri (faiz-performinq, vaxtı-keçmiş-əsas, vaxtı-keçmiş-
+faiz) üçün bu axtarış HƏMİŞƏ "tapılmadı" (0) qayıdırdı — `KreditArhTapildi=false`
+→ `KreditHesabiAktivDovrSonu` HƏR ZAMAN `false` → G3/H3/J3/K3 kütləvi şəkildə
+0-a enirdi (real nümunədə demək olar bütün sub-hesablar üçün).
+
+### Düzəliş — `l.licsch`-i DÖRDÜNÜN HƏR BİRİNƏ qarşı yoxla (`IN`)
+
+`Muhasibat_OracleSorgular_OS6.sql`-in hər iki korrelə alt-sorğusunda
+(`kredit_arh_tapildi`, `kredit_arh_baglama`):
+
+```sql
+-- əvvəl (SƏHV — yalnız BİR sub-hesabı yoxlayırdı):
+where al.licschkre = l.licsch
+-- indi (DÜZGÜN — kreditin DÖRD sub-hesabının HƏR HANSI biri):
+where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
+```
+
+Bu, `date_close`-un (loan-un BÜTÖV bağlanma tarixi) DÖRD sub-hesabın DÖRDÜNƏ DƏ
+EYNİ cür aid olduğu fərziyyəsinə əsaslanır (bir kredit bağlananda onun DÖRD
+GL sətri BİRLİKDƏ bağlanır — `date_close` sütunu ayrıca-ayrıca deyil, loan
+sətrinin ÖZÜNDƏdir) — bu, PİD faylının öz EXISTS yoxlamasının (`d2.kredit IN
+(l.licschkre, l.licschpkre, l.licsch_19, l.licschppkre)`) EYNİ NAXIŞIDIR, YENİ
+bir fərziyyə İCAD EDİLMƏYİB.
+
+**C# tərəfinə TOXUNULMADI** — `MuhasibatService.Os61Async` yalnız mapping
+sütunlarının ADINI (`kredit_arh_tapildi`/`kredit_arh_baglama`) oxuyur, bu
+adlar dəyişmədi, yalnız onları HESABLAYAN SQL şərti düzəldi.
+
+⚠️ **Yuxarıdakı "D1-dən əvvəl bağlanan hesabları at" sürət filtri (bu
+sessiyanın ƏVVƏLKİ dalğası) BU BUGUN SƏBƏBİ DEYİL** — o filtr `l.licsch`
+cədvəlinin ÖZÜNDƏKİ `date_close_licsch`-ə (ledger sətrinin inzibati bağlanma
+tarixinə) əsaslanır, kredit sub-hesabları adətən bu sahədə `NULL` qalır
+(filtr onları atmır) — iki bug müstəqildir, TƏSADÜFƏN eyni gündə üst-üstə
+düşdü.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — bu, canlı, YALNIZ-OXU Oracle sorğusudur**, heç
+bir sətir bizim bazamıza yazılmır/dondurulmur. SQL faylı YENİDƏN SQL
+Server-də işlədilməlidir ki, `OracleSorgular`-dakı sətr yenilənsin.
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün
+yalnız əl ilə yoxlanıldı** (mötərizə balansı — 101/101 parens, 84 tək dırnaq
+— cüt, gözlənilən). İstifadəçi SQL faylını SQL Server-də YENİDƏN işlədib,
+real mühitdə Oktyabr 2026 ÖS-6.1-in "kredit hesabları" (Kod 3, 1.2) sətrinin
+"dövrün sonuna cəmi" sütununun artıq 0 YOX, real açıq kredit sayını (əvvəlki
+~289-a yaxın bir ədəd) göstərdiyini təsdiqləməlidir — "bu ay açılan" (D/E/F)
+sütunları bu düzəlişdən TƏSİRLƏNMƏDİ (onsuz da işlək idi, 2/0/2 göstərirdi).
