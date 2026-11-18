@@ -108,6 +108,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdKeyfiyyetDetal  = "Muhasibat — Kredit keyfiyyet detal";
     private const string AdYerlesdirme     = "Muhasibat — Yerlesdirme";
     private const string AdSonIsGunu       = "Muhasibat — Ilin son is gunu";
+    private const string AdForma0250       = "Muhasibat — Forma 0250 GL";
 
     // Sorğu siyahısı bir dəfə oxunur və scoped servis ömrü boyu cache-lənir (DbContext).
     // Bu, GunlukIcmal kimi çoxlu SqlAl çağıran bölmələrdə DbContext-i təkrar-təkrar vurmur
@@ -1786,6 +1787,47 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         return dto;
     }
 
+    // Forma 0250 — General Ledger (CBAR), 18.11.2026. Mənbə sorğu KOD×valyuta üzrə
+    // artıq aqreqasiya olunmuş gəlir (əsas qalıq/dövriyyə) qaytarır — burada əlavə
+    // qruplaşdırma APARILMIR, sorğunun öz sırası (to_number(kod), valyuta) saxlanılır.
+    public async Task<MuhasibatForma0250Dto> Forma0250Async(DateTime bas, DateTime son)
+    {
+        var b = bas.Date;
+        var s = son.Date;
+        var dto = new MuhasibatForma0250Dto { Bas = b, Son = s };
+
+        try
+        {
+            var sql = (await SqlAl(AdForma0250))
+                .Replace("{D1}", b.ToString("dd-MM-yyyy"))
+                .Replace("{D2}", s.ToString("dd-MM-yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 5000);
+
+            foreach (var r in rows)
+            {
+                dto.Setirler.Add(new MuhasibatForma0250SatirDto
+                {
+                    Rate = DecN(Val(r, "rate")),
+                    ClosingBase = DecN(Val(r, "closing_base")),
+                    ClosingLocal = DecN(Val(r, "closing_local")),
+                    CreditTurnover = DecN(Val(r, "credit_turnover")),
+                    DebitTurnover = DecN(Val(r, "debit_turnover")),
+                    OpeningLocal = DecN(Val(r, "opening_local")),
+                    CurrencyType = Val(r, "currencytype")?.ToString() ?? "",
+                    Kod = Val(r, "kod")?.ToString() ?? "",
+                });
+            }
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
     public async Task<MuhasibatRezidentDto> RezidentAsync(DateTime? tarix = null)
     {
         var t = (tarix ?? DateTime.Now.Date.AddDays(-1)).Date;
@@ -2460,4 +2502,10 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
 
     private static decimal Dec(object? o) =>
         (o == null || o == DBNull.Value) ? 0m : Convert.ToDecimal(o);
+
+    // Nullable variant — Forma 0250-də "rate"/"closing_base" kimi sahələr Oracle-dan
+    // əsl NULL gələ bilər (AZN-də rate, kurs tapılmayanda closing_base) — bunları
+    // 0-a yox, null-a saxlamaq lazımdır ki, ekranda "—" göstərilsin, "0" yox.
+    private static decimal? DecN(object? o) =>
+        (o == null || o == DBNull.Value) ? null : Convert.ToDecimal(o);
 }

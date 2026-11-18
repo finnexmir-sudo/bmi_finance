@@ -13255,3 +13255,97 @@ All** ilə, sonra real ssenari ilə yoxlamalıdır: iyul ayının HYS-i sonradan
 4.1 sütunlarının artıq İYULUN ÖZ, əsl payroll hesablamasındakı (dəyişməz)
 HYS məbləğini göstərdiyini, noyabrdakı redaktənin bu KEÇMİŞ ay üçün rəqəmi
 TƏSİR ETMƏDİYİNİ təsdiqləməlidir.
+
+## Mühasibatlıq — Forma 0250 "Baş Kitab (CBAR)" Hesabatı Əlavə Olundu (18.11.2026)
+
+İstifadəçi BMI-dən AMB-yə (CBAR) **aylıq** təqdim olunan "Forma 0250 — General
+Ledger" Oracle sorğusunu (balanslı hesablar `arh_saldo_ls` + balansdankənar
+`arh_dd`, böyük bir `kod_map` xəritəsi ilə AMB KOD-larına aqreqasiya olunmuş)
+gətirdi: *"yeni bir is. bunun neticesini muhasibatliqda gesabatlara hazirlamaq
+lazimdir"*. "Maliyyə Hesabatları" kataloqunda mövcud "Aylıq" (0) kateqoriyasına
+**ilk kart** kimi quruldu.
+
+### Struktur — mövcud naxışlar TƏKRAR işlədildi, yeni memarlıq İCAD EDİLMƏDİ
+
+- **SQL** — `docs/sql/muhasibat/Muhasibat_OracleSorgular_Forma0250.sql`.
+  Mənbə Oracle sorğusu HƏRFİ köçürüldü, YALNIZ iki yerdə dəyişdi: `&d1`/`&d2`
+  (Oracle SQL*Plus substitution dəyişənləri) → `{D1}`/`{D2}` token-ləri
+  (digər Muhasibat sorğularının `{TARIX}`/`{BAS}`/`{SON}` konvensiyasının
+  eynisi). Tək dırnaqlar T-SQL literalı üçün Python skripti ilə **proqramla**
+  ikiqat edildi (~4500 tək dırnaq, 300+ sətirlik `kod_map` CTE-ni ƏL İLƏ
+  transkript etmək SƏHV RİSKİ daşıyardı) — `IF EXISTS...UPDATE ELSE INSERT`
+  (GOAML-in `90_Goaml_OracleSorgular.sql`-dəki TƏKRAR İŞLƏDİLƏ BİLƏN
+  formasının eynisi), `SorguAdi = N'Muhasibat — Forma 0250 GL'`.
+- **DTO** — `MuhasibatForma0250Dto`/`MuhasibatForma0250SatirDto`
+  (`FinNex.Application/DTOs/Muhasibat/`). Sahə adları Oracle-un öz sütun
+  aliasları ilə EYNİ (Rate/ClosingBase/ClosingLocal/CreditTurnover/
+  DebitTurnover/OpeningLocal/CurrencyType/Kod) — mənbə sorğunun öz şərhi
+  "Excel görüntü sırası (KOD ən axırda)" dediyi üçün bu sıra Excel
+  ixracında da EYNİ saxlanıldı.
+- **Servis** — `IMuhasibatService.Forma0250Async(bas, son)` /
+  `MuhasibatService.Forma0250Async` — `SqlAl(AdForma0250)` ilə `OracleSorgular`-
+  dan oxuyur, `{D1}`/`{D2}`-ni `dd-MM-yyyy` ilə əvəz edir, `_oracle.
+  SelectAsync(sql, maxRows: 5000)` çağırır. **Yeni `DecN()` nullable-decimal
+  köməkçisi** əlavə olundu (`Dec()`-in yanında) — `rate`/`closing_base` kimi
+  sahələr Oracle-dan HƏQİQƏTƏN `NULL` gələ bilər (AZN-də rate, kurs
+  tapılmayanda closing_base) və bunlar `0`-a YOX, `null`-a (ekranda "—")
+  saxlanmalıdır — `Dec()` (always-0 fallback) bu sahələr üçün YARAMAZDI.
+- **Controller** — `HesabatController.Forma0250`/`Forma0250Excel`.
+  `DateTime?`/`DateTime` ƏVƏZİNƏ **`string?`/`string` + mövcud, artıq bütün
+  digər tarix action-larının (`Ifrs9`, `Valyuta`, `Rezident`) işlətdiyi
+  `ParseTarix()` helper-i** istifadə edildi — bu, ilk versiyada `DateTime?`
+  ilə yazılmışdı, SONRA bu controller-in ÖZÜNDƏ artıq mövcud, deliberatca
+  seçilmiş konvensiyaya uyğunlaşdırıldı (model-binder-ə güvənməkdənsə,
+  `InvariantCulture`+`TryParseExact` ilə `dd-MM-yyyy`/`yyyy-MM-dd`/`dd/MM/yyyy`
+  qəbul edən paylaşılan metod).
+- **View** — `Views/Hesabat/Forma0250.cshtml` — `Dsmf1.cshtml`-in "paylaşılan
+  faylda yoxdur, hər səhifə öz yerli `<style>` nüsxəsini daşıyır" konvensiyasının
+  təkrarı (`.mh-hero--f0250`), tarix aralığı seçimi `Valyuta.cshtml`-dəki
+  `.mh-datef-f` + `<input type="date">` naxışı ilə (il/rüb `<select>` YOX,
+  çünki bu hesabat gün aralığı istəyir). Cədvəl `.hj-table`/`dsmf-scroll`
+  (hr-jeton.css) — çox sütunlu nəticə öz daxilində scroll alır, bütöv səhifəni
+  aşağı düşürmədən (bax yuxarı "DSMF Önizləmə Səhifələri — Üfüqi Scroll AŞAĞIDA
+  İdi" bölməsi, eyni həll).
+- **Kataloq** — `HesabatController.Katalog`-a `Kod="forma-0250-gl"`,
+  `Kateqoriya="Aylıq"` kartı əlavə olundu. `Index.cshtml`-in kateqoriya
+  pill-ləri (Günlük/Aylıq/Rüblük/Risk/Xərclər) və `.hs-kat--aylıq` CSS sinfi
+  ARTIQ MÖVCUD İDİ (29.10.2026-dan, "hələ kart yoxdur" vəziyyətində) —
+  heç bir dəyişiklik lazım olmadı, say avtomatik "Aylıq 0" → "Aylıq 1" olacaq.
+
+⚠️ **KOD sayı HESAB sayı İLƏ EYNİ DEYİL** — mənbə sorğunun öz `kod_map`
+xəritəsi onlarla hesabı BİR KOD-a (məs. 478) yığır; nəticə sətir sayı
+(KOD×valyuta, sıfır olmayanlar) AMB-nin gözlədiyi sıra ilə üst-üstə düşür,
+BMI-nin xam hesab sayı ilə YOX — bu, VİEW-in öz "Mənbə" xəbərdarlığında
+açıq izah olunub ki, operator "niyə sətir sayı az görünür" sualı verməsin.
+
+⚠️ **Excel ixracı — RƏSMİ DMS ŞABLONU YOXDUR, sadə HSSFWorkbook (DSMF/AMB-nin
+"şablon yoxdursa fallback" qolunun eynisi, template OLMADAN birbaşa).**
+İstifadəçi rəsmi bir `.xlsx` şablon faylı GÖNDƏRMƏDİ (DSMF/AMB-dən fərqli) —
+ixrac olunan cədvəl sütun sırası Oracle SELECT-i ilə EYNİDİR (Məzənnə/Qapanış
+valyuta/Qapanış AZN/Kredit dövriyyəsi/Debet dövriyyəsi/Açılış AZN/Valyuta/KOD),
+AMMA rəsmi CBAR şablonu ilə HÜCEYRƏ-HÜCEYRƏ tutuşdurulmayıb. Rəsmi şablon
+tapılsa, gələcəkdə `AmbA1Excel`/`Dsmf1Excel`-dəki "DMS-də varsa doldur, yoxdursa
+fallback" naxışı bura da tətbiq oluna bilər.
+
+⚠️ **GERİYƏ TƏTBİQ/DONDURMA MƏSƏLƏSİ YOXDUR** — bu, canlı Oracle sorğusudur
+(heç bir sətir öz bazamıza yazılmır/dondurulmur), hər çağırışda real vaxtda
+Oracle-dan oxunur — DSMF/HYS kimi "frozen MaasDetay" məsələləri BURAYA AİD
+DEYİL.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/tag balansı Python skriptlə hər dəyişən/yeni faylda ayrıca ölçüldü —
+DTO/interfeys/servis/controller/view beş qatının HAMISI balanslı çıxdı; SQL
+faylının tək-dırnaq sayı cüt (4508) təsdiqləndi, `{D1}`/`{D2}` əvəzlənməsi
+proqramla yoxlanıldı: 5/11 keçid). **İstifadəçi aşağıdakı addımları ATMALIDIR:**
+1. `docs/sql/muhasibat/Muhasibat_OracleSorgular_Forma0250.sql`-i SQL Server-də
+   (FinNex bazasında) işlət — `OracleSorgular`-a `"Muhasibat — Forma 0250 GL"`
+   sətrini yazır/yeniləyir.
+2. Visual Studio-da **Rebuild All**.
+3. "Maliyyə Hesabatları" → "Aylıq" kateqoriyasında yeni "Forma 0250 — Baş
+   Kitab (CBAR)" kartını aç, bir dövr (məs. sentyabr 2026, 01-09–30-09) seçib
+   "Göstər" bas → nəticəni mühasibin ƏVVƏLKİ (əl ilə hazırlanmış) 0250
+   Excel-i ilə KOD-KOD/valyuta-valyuta tutuşdur — xüsusilə AZN sətirlərinin
+   `closing_base=0`, qalan valyutaların `rate`/`closing_base`-in doğru
+   göründüyünü.
+4. "Excel-ə ixrac et" ilə yüklənən faylın sütun sırasının/rəqəmlərinin
+   ekrandakı ilə EYNİ olduğunu yoxla.

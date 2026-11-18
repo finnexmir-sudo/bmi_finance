@@ -75,6 +75,10 @@ public class HesabatController : Controller
     {
         new() { Kod = "ifrs9-ecl", Ad = "IFRS 9 — ECL", Tesvir = "Gözlənilən kredit zərərləri (roll-rate stage modeli) · AMB MHBS 9 A1 ixracı da buradadır",
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
+        // Forma 0250 — General Ledger (CBAR), 18.11.2026. BMI-nin AMB-yə AYLIQ
+        // təqdim etdiyi Baş Kitab sorğusu — bax Muhasibat_OracleSorgular_Forma0250.sql.
+        new() { Kod = "forma-0250-gl", Ad = "Forma 0250 — Baş Kitab (CBAR)", Tesvir = "AMB-yə aylıq təqdim olunan Baş Kitab — KOD üzrə qalıq/dövriyyə (balanslı + balansdankənar hesablar)",
+                Kateqoriya = "Aylıq", Ikon = "bi-journal-text", Area = "Muhasibat", Controller = "Hesabat", Action = "Forma0250" },
         // DSMF Vahid Hesabat Forması — TƏK kataloq kartı (29.10.2026, istifadəçi
         // tələbi: "Vahid hesabat adini yaz, hazirladiqlarini onun icinde goster,
         // altisinida" — altı rəsmi əlavədən ikisi hazırdır). Əvvəl burada İKİ ayrı
@@ -472,6 +476,65 @@ public class HesabatController : Controller
         var bytes = await System.IO.File.ReadAllBytesAsync(yol);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "AMB_Metodoloji_Rehberlik_23122025.docx");
+    }
+
+    // ── Forma 0250 — General Ledger (CBAR), 18.11.2026 ──
+    // İstifadəçinin Oracle sorğusu (balanslı + balansdankənar, KOD xəritəsi ilə)
+    // birbaşa OracleSorgular-a yazılıb (Muhasibat_OracleSorgular_Forma0250.sql) —
+    // burada YALNIZ dövr (bas/son) seçimi + önizləmə + Excel ixracı var.
+    public async Task<IActionResult> Forma0250(string? bas, string? son)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var bugun = DateTime.Today;
+        // Default dövr: cari ayın 1-dən bugünə qədər (mühasibin "sentyabr 01-09/30-09"
+        // nümunəsinə uyğun — aylıq hesabatdır).
+        var b = ParseTarix(bas) ?? new DateTime(bugun.Year, bugun.Month, 1);
+        var s = ParseTarix(son) ?? bugun;
+        var m = await _service.Forma0250Async(b, s);
+        return View(m);
+    }
+
+    public async Task<IActionResult> Forma0250Excel(string bas, string son)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var b = ParseTarix(bas) ?? DateTime.Today;
+        var s = ParseTarix(son) ?? DateTime.Today;
+        var m = await _service.Forma0250Async(b, s);
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("Forma 0250");
+        int r = 0;
+        sh.CreateRow(r++).CreateCell(0).SetCellValue(
+            $"FORMA 0250 — Baş Kitab (CBAR) — {m.Bas:dd.MM.yyyy} – {m.Son:dd.MM.yyyy}");
+        r++;
+        var h = sh.CreateRow(r++);
+        // Sütun sırası mənbə Oracle sorğusunun SELECT siyahısı ilə EYNİ — "Excel
+        // görüntü sırası (KOD ən axırda)" (mühasibin öz şərhi, bax SQL faylı).
+        string[] basliq = { "Məzənnə", "Qapanış (valyuta)", "Qapanış (AZN)", "Kredit dövriyyəsi",
+                             "Debet dövriyyəsi", "Açılış (AZN)", "Valyuta", "KOD" };
+        for (int i = 0; i < basliq.Length; i++) h.CreateCell(i).SetCellValue(basliq[i]);
+
+        foreach (var x in m.Setirler)
+        {
+            var row = sh.CreateRow(r++);
+            if (x.Rate.HasValue) row.CreateCell(0).SetCellValue((double)x.Rate.Value);
+            if (x.ClosingBase.HasValue) row.CreateCell(1).SetCellValue((double)x.ClosingBase.Value);
+            if (x.ClosingLocal.HasValue) row.CreateCell(2).SetCellValue((double)x.ClosingLocal.Value);
+            if (x.CreditTurnover.HasValue) row.CreateCell(3).SetCellValue((double)x.CreditTurnover.Value);
+            if (x.DebitTurnover.HasValue) row.CreateCell(4).SetCellValue((double)x.DebitTurnover.Value);
+            if (x.OpeningLocal.HasValue) row.CreateCell(5).SetCellValue((double)x.OpeningLocal.Value);
+            row.CreateCell(6).SetCellValue(x.CurrencyType);
+            row.CreateCell(7).SetCellValue(x.Kod);
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel",
+                    $"Forma0250_{m.Bas:yyyyMMdd}_{m.Son:yyyyMMdd}.xls");
     }
 
     // DSMF Vahid Hesabat Forması — hub səhifəsi. 6 rəsmi əlavənin hamısını adı ilə
