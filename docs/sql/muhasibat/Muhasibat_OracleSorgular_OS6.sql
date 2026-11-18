@@ -90,7 +90,21 @@ select
          then 1 else 0 end        acilib_bu_ay,
     case when l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')
           and (l.date_close_licsch is null or l.date_close_licsch > to_date(''{D2}'',''dd-mm-yyyy''))
-         then 1 else 0 end        movcud_dovr_sonu
+         then 1 else 0 end        movcud_dovr_sonu,
+/* 18.11.2026 — KREDİT üçün "açıqdır" licsch.date_close_licsch-dən YOX,
+   arh_licschkre.date_close-dan (kredit müqaviləsinin ÖZ bağlanma tarixi,
+   canlı sınanıb: licsch 643, arh_licschkre 289 — licsch ledger sətri
+   bağlanmır, AMMA müqavilə artıq bağlı ola bilir). Korrelə skalyar
+   alt-sorğu (JOIN YOX) ki, arh_licschkre-də eyni (licschkre,date_oper)
+   üçün birdən çox subschkre sətri olsa belə əsas cədvəl SƏTIR SAYI
+   ARTMASIN — subschkre=0 (və ya ən kiçik) üstün tutulur. */
+    (select count(*) from odb.arh_licschkre al
+      where al.licschkre = l.licsch
+        and al.date_oper = to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_tapildi,
+    (select max(al.date_close) keep (dense_rank first order by nvl(al.subschkre,0))
+       from odb.arh_licschkre al
+      where al.licschkre = l.licsch
+        and al.date_oper = to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_baglama
 from odb.licsch l
 where l.date_open_licsch is not null
   and l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')

@@ -1885,6 +1885,8 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                     Adi = Val(r, "adi")?.ToString() ?? "",
                     AcilibBuAy = Dec(Val(r, "acilib_bu_ay")) == 1,
                     MovcudDovrSonu = Dec(Val(r, "movcud_dovr_sonu")) == 1,
+                    KreditArhTapildi = Dec(Val(r, "kredit_arh_tapildi")) > 0,
+                    KreditDateClose = DateVal(Val(r, "kredit_arh_baglama")),
                     Qaliq = Math.Abs(qaliq),
                 };
             }).ToList();
@@ -1949,9 +1951,24 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             bool DepozitQrup(Os61Hesab h) => h.Qrup is "411" or "412";
             bool KreditHesabi(Os61Hesab h) => h.Klass is "20" or "21";
             bool KreditHesabiAktivMenbe(Os61Hesab h) => KreditHesabi(h) && h.KreditFlag is "0" or "5" && h.RezervFlag != "9";
+            // 18.11.2026 — "dövrün sonuna" (G/H/I/J/K) ÜÇÜN kreditin HƏQİQƏTƏN açıq
+            // olub-olmaması licsch.date_close_licsch-ə YOX, arh_licschkre.date_close-a
+            // (müqavilənin ÖZ bağlanma tarixi) görə yoxlanır — canlı sınanıb: eyni şərt
+            // licsch-ə görə 643, arh_licschkre-ə görə 289 verir (643-289-dəki fərqin demək
+            // olar hamısı — 342-dən 8-i xaric — müqaviləsi artıq bağlı, AMMA ledger sətri
+            // hələ "date_close_licsch=NULL" qalan kreditlərdir; TƏRS istiqamətdə — arh-da
+            // açıq, licsch filtrinə uymayan — 0 nümunə tapıldı, deməli arh_licschkre TƏMIZ
+            // alt-dəstdir). "Bu ay açılan" (D/E, KreditHesabiAktivMenbe-nin ÖZÜ, YUXARI
+            // dəyişməz qalır) BUNA TOXUNMUR — o, ledger sətrinin açılma TARİXİ haqqındadır,
+            // müqavilənin HAZIRKI statusu haqqında YOX.
+            bool KreditHesabiAktivDovrSonu(Os61Hesab h) =>
+                KreditHesabiAktivMenbe(h) && h.KreditArhTapildi &&
+                (h.KreditDateClose == null || h.KreditDateClose.Value.Date > sonGun.Date);
             bool SahibkarKredit(Os61Hesab h) => sahibkarKreditBolmeler.Contains(h.Bolme);
             bool FizikiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "21";
             bool HuquqiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "20";
+            bool FizikiKreditDovrSonu(Os61Hesab h) => KreditHesabiAktivDovrSonu(h) && h.Klass == "21";
+            bool HuquqiKreditDovrSonu(Os61Hesab h) => KreditHesabiAktivDovrSonu(h) && h.Klass == "20";
             bool CariFiziki(Os61Hesab h) => h.Klass == "41" && !DepozitQrup(h) && h.Qrup != "391" && h.RezervFlag != "9";
             bool CariHuquqi(Os61Hesab h) => h.Klass is "38" or "39" or "40" && h.RezervFlag != "9";
             bool SahibkarCari(Os61Hesab h) => sahibkarCariBolmeler.Contains(h.Bolme) && h.RezervFlag != "9";
@@ -2047,14 +2064,16 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             };
 
             // Kod 13/14/15 (kredit — fiziki/sahibkar/hüquqi) — regnom-əsaslı dedup.
+            // acilanShert = "bu ay açılan" (ledger-açılma tarixi), movcudShert =
+            // "dövrün sonuna" (arh_licschkre-əsaslı, həqiqətən açıq müqavilə).
             var kod13 = Setir("4.1", "        fiziki şəxslər", 13, false,
-                FizikiKredit, FizikiKredit, regnomDedup: true);
+                FizikiKredit, FizikiKreditDovrSonu, regnomDedup: true);
             var kod14 = Setir(null, "              ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən ", 14, true,
                 h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h),
-                h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
+                h => KreditHesabiAktivDovrSonu(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
                 jFixZero: true);
             var kod15 = Setir("4.2", "        hüquqi şəxslər", 15, false,
-                HuquqiKredit, HuquqiKredit, regnomDedup: true, jFixZero: true);
+                HuquqiKredit, HuquqiKreditDovrSonu, regnomDedup: true, jFixZero: true);
             var kod12 = new MuhasibatOs61SetirDto
             {
                 BolmeNo = "4", Ad = "Kredit hesabların hüquqi statusuna görə sayı- cəmi", Kod = 12,
@@ -2071,11 +2090,11 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             // Kod 17/18 (kredit müddətinə görə — uzun/qısa).
             const string j17ManualQeyd = "Mənbə şablonda əl ilə yazılmış sabit ədəd (J=2) — Oracle-dan hesablanmır.";
             var kod17 = Setir("5.1", "        uzunmüddətli", 17, false,
-                h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup));
+                h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivDovrSonu(h) && uzunKreditQruplar.Contains(h.Qrup));
             kod17.J_AktivXariciValyuta = null;
             kod17.ElIleQeyd = j17ManualQeyd;
             var kod18 = Setir("5.2", "        qısamüddətli (360 günə qədər)", 18, false,
-                h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup),
+                h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivDovrSonu(h) && qisaKreditQruplar.Contains(h.Qrup),
                 jFixZero: true);
             var kod16 = new MuhasibatOs61SetirDto
             {
@@ -2144,6 +2163,8 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         public string Adi { get; set; } = "";
         public bool AcilibBuAy { get; set; }
         public bool MovcudDovrSonu { get; set; }
+        public bool KreditArhTapildi { get; set; }
+        public DateTime? KreditDateClose { get; set; }
         public decimal Qaliq { get; set; }
     }
 
@@ -2827,4 +2848,9 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
     // 0-a yox, null-a saxlamaq lazımdır ki, ekranda "—" göstərilsin, "0" yox.
     private static decimal? DecN(object? o) =>
         (o == null || o == DBNull.Value) ? null : Convert.ToDecimal(o);
+
+    // ÖS-6.1 — arh_licschkre.date_close kimi Oracle DATE sütunlarını nullable
+    // DateTime-a çevirir (18.11.2026).
+    private static DateTime? DateVal(object? o) =>
+        (o == null || o == DBNull.Value) ? null : Convert.ToDateTime(o);
 }

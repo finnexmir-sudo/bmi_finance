@@ -13430,3 +13430,82 @@ unudulub, özü obyektin adı səhv yazılmayıb.
 ⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün
 yalnız əl ilə yoxlanıldı** (mötərizə/dırnaq balansı). İstifadəçi SQL faylını
 SQL Server-də YENİDƏN işlədib real mühitdə yoxlamalıdır.
+
+## ÖS-6.1 — "Dövrün Sonuna" Açıq Kredit Sayı `licsch.date_close_licsch`-ə YOX, `arh_licschkre.date_close`-a Görə Olmalıdır (18.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi qaydası: *"aktiv kredit hesablarinin sayinda yanasma beledir,yalniz
+krediti aciq olanlari sayacagiq."* Bu, ilk baxışda mövcud `movcud_dovr_sonu`
+flag-ının (açılma/bağlanma tarixinin `licsch`-in ÖZÜNDƏ olması) artıq
+ödədiyi bir şərt kimi göründü — AMMA İSTİFADƏÇİ BUNU AÇIQ RƏDD ETDİ:
+*"date_close_licsch IS NULL OR date_close_licsch > dövrün son gün - bu hisse
+hesabin varligina aiddir,ama kreditin olub olmammasi arh_licschkre burda
+baxmaliyiq."*
+
+**Kök səbəb — `licsch.date_close_licsch` YALNIZ ledger SƏTRİNİN mövcudluğunu
+göstərir, kredit MÜQAVİLƏSİNİN bağlı olub-olmadığını YOX.** Canlı sınaq
+(30-10-2026, 31-10-2026 şənbə olduğu üçün son iş günü) bunu rəqəmlə sübut
+etdi: `licsch`-ə görə "açıq kredit" sayı **643**, `odb.arh_licschkre.date_close`-a
+görə **289**. Dörd-tərəfli üzləşmə (`93_Os61_Licsch_Vs_ArhLicschkre_Ferqi.sql`)
+fərqin mənbəyini tam aydınlaşdırdı:
+- **8 sətir** — `licsch`-ə görə açıq, AMMA `arh_licschkre`-də HƏMİN tarixə
+  heç bir sətri YOXDUR (kənar hal);
+- **qalan ~342 sətir** — `arh_licschkre.date_close` DOLUDUR (müqavilə
+  HƏQİQƏTƏN bağlıdır), AMMA `licsch.date_close_licsch` HƏLƏ `NULL`-dur
+  (ledger sətri heç vaxt inzibati bağlanmayıb);
+- **TƏRS istiqamətdə (arh-da açıq, licsch filtrinə uymayan) — 0 nümunə.**
+  `arh_licschkre` `licsch`-in filtrlənmiş dəstinin TƏMİZ ALT-DƏSTİDİR,
+  əks istiqamətdə uyğunsuzluq yoxdur.
+
+**Bu, "Kredit Hesabatları — Açıq/Bağlı (date_close) vs Qalıq" qaydasının (yuxarı)
+EYNİ PRİNSİPİNİN `licsch` üçün tətbiqidir** — mühasibat GL sətri ilə kredit
+MÜQAVİLƏSİNİN öz statusu İKİ AYRI şeydir, biri o birinin əvəzinə işlədilə bilməz.
+
+**Həll — İKİ YENİ, KORRELƏ SKALYAR alt-sorğu sütunu** (`Muhasibat_OracleSorgular_
+OS6.sql`, JOIN YOX — `arh_licschkre`-də eyni (licschkre,date_oper) üçün
+birdən çox `subschkre` sətri olsa belə əsas cədvəlin sətir sayı ARTMASIN deyə):
+```sql
+(select count(*) from odb.arh_licschkre al
+  where al.licschkre = l.licsch and al.date_oper = to_date('{D2}','dd-mm-yyyy'))
+  kredit_arh_tapildi,
+(select max(al.date_close) keep (dense_rank first order by nvl(al.subschkre,0))
+   from odb.arh_licschkre al
+  where al.licschkre = l.licsch and al.date_oper = to_date('{D2}','dd-mm-yyyy'))
+  kredit_arh_baglama
+```
+
+**C# tərəfi — `MuhasibatService.cs`, Os61Async.** `Os61Hesab`-a
+`KreditArhTapildi` (bool) + `KreditDateClose` (DateTime?, yeni `DateVal()`
+nullable-tarix köməkçisi ilə parse olunur) əlavə edildi. Yeni
+`KreditHesabiAktivDovrSonu(h)` predikatı (`KreditHesabiAktivMenbe(h) &&
+h.KreditArhTapildi && (h.KreditDateClose == null || h.KreditDateClose.Value.Date
+> sonGun.Date)`) YALNIZ **movcudShert**-ə (G/H/I/J/K, "dövrün sonuna")
+tətbiq olundu — `FizikiKredit`/`HuquqiKredit`/`KreditHesabiAktivMenbe`-nin
+ÖZÜ (D/E, "bu ay açılan") **TOXUNULMADI**, çünki o, ledger sətrinin açılma
+TARİXİ haqqındadır, müqavilənin HAZIRKI statusu haqqında YOX — iki sual
+fərqlidir, eyni şərtlə cavablandırıla bilməz.
+
+Dəyişən Setir() çağırışları: kod13 (`FizikiKredit`/`FizikiKreditDovrSonu`),
+kod14 (inline sahibkar-kredit lambda), kod15 (`HuquqiKredit`/
+`HuquqiKreditDovrSonu`), kod17/kod18 (uzun/qısa-müddətli qrup filtri).
+kod3-ün movcudShert-i artıq `_=>false`-dur (kod12-nin cəmini TƏKRAR
+istifadə edir) — ayrıca dəyişiklik lazım olmadı, kod12 kod13+kod15-dən
+avtomatik düzəlir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — hər çağırışda canlı Oracle sorğusudur, heç bir
+sətir bizim bazamıza yazılmır/dondurulmur.** SQL skripti YENİDƏN SQL Server-də
+işlədilməlidir ki, `OracleSorgular`-dakı sorğu mətni yenilənsin.
+
+⚠️ **8-sətirlik kənar hal (licsch-də açıq, AMMA `arh_licschkre`-də HEÇ sətri
+olmayan) qəsdən "açıq sayılmır" tərəfə düşür** (`KreditArhTapildi=false` →
+`KreditHesabiAktivDovrSonu` `false` qaytarır) — bu, kiçik, qəbul edilən bir
+residualdır, operator istəsə əl ilə yoxlaya bilər.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git stash` izolyasiyası ilə — pre-existing -6 fərqi
+dəyişməz qaldı, edit özü 21/21 balanslıdır; `Os61Hesab`↔mapping↔predikat
+sahə adları bir-bir tutuşduruldu). İstifadəçi SQL faylını SQL Server-də
+YENİDƏN işlədib, Visual Studio-da **Rebuild All** ilə, sonra real mühitdə
+Oktyabr 2026 ÖS-6.1 hesabatında G3-ün (dövr sonu, kredit hesabları) artıq
+643 YOX, ~289-a (278 fiziki + 11 hüquqi) yaxın bir rəqəm göstərdiyini
+təsdiqləməlidir — eyni zamanda "bu ay açılan" (D/E) sütunlarının BU
+DÜZƏLİŞDƏN TƏSİRLƏNMƏDİYİNİ (əvvəlki kimi qaldığını) yoxlamalıdır.
