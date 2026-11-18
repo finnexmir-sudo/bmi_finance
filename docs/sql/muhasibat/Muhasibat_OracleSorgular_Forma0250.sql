@@ -89,11 +89,11 @@ val AS (
 -- KURS: son yazilan tarixin ({D2}) kursu, odb.func_get_kurval ile; valyuta uzre bir defe hesablanir
 kurslar AS (
     select ''AZN'' valyuta, 1 kurs from dual
-    union all select ''USD'', odb.func_get_kurval(''01'', ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
-    union all select ''EUR'', odb.func_get_kurval(''02'', ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
-    union all select ''RUB'', odb.func_get_kurval(''03'', ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
-    union all select ''IRR'', odb.func_get_kurval(''04'', ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
-    union all select ''AED'', odb.func_get_kurval(''05'', ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
+    union all select ''USD'', odb.func_get_kurval(''01'', odb.ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
+    union all select ''EUR'', odb.func_get_kurval(''02'', odb.ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
+    union all select ''RUB'', odb.func_get_kurval(''03'', odb.ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
+    union all select ''IRR'', odb.func_get_kurval(''04'', odb.ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
+    union all select ''AED'', odb.func_get_kurval(''05'', odb.ish_gun_cari1(to_date(''{D2}'',''dd-mm-yyyy''))) from dual
 ),
 kod_map(acc, acc_len, kod, valyuta) AS (
     select ''10010'' acc,5 acc_len,''602'' kod,''AZN'' valyuta from dual

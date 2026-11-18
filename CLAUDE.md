@@ -13402,3 +13402,31 @@ işlədib (`OracleSorgular`-dakı sətri yeniləsin), Visual Studio-da **Rebuild
 All** ilə, sonra real mühitdə yoxlamalıdır: kartın adının indi "FORMA 0250 —
 GENERAL LEDGER" olduğunu, dövr seçib "Göstər"ə basanda artıq "Yüklənmədi"
 xətası çıxmadan nəticənin göründüyünü, xəbərdarlıq qutusunun qısaldığını.
+
+## Forma 0250 — İKİNCİ XƏTA: `ish_gun_cari1` Sxema Prefiksi Olmadan Çağırılırdı (18.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı "WITH-dən əvvəl şərh" düzəlişindən sonra sorğu artıq Oracle-a
+çatırdı, amma **`ORA-00904: "ISH_GUN_CARI1": invalid identifier`** verdi.
+
+**Kök səbəb:** `kurslar` CTE-sində `odb.func_get_kurval('01', ish_gun_cari1(...))`
+yazılmışdı — `func_get_kurval`-ın özü düzgün `odb.` prefiksi daşıyırdı, AMMA
+ikinci arqument olan `ish_gun_cari1(...)` **prefikssiz** idi. Layihədə bu
+funksiya artıq İKİ ayrı yerdə (`docs/sql/aml/06_Qaliq_Diaqnostikasi.sql`,
+`docs/sql/muhasibat/Muhasibat_Hesabatlar_Xerite.md`) **`odb.ish_gun_cari1
+(tarix)`** kimi sənədləşib — FOXPRO (tətbiq hesabı) bunu sxema prefiksi
+olmadan görə BİLMİR (public synonym yoxdur).
+
+**Düzəliş:** bütün 5 çağırışda `ish_gun_cari1(` → `odb.ish_gun_cari1(` —
+TƏXMİN DEYİL, layihənin ARTIQ TƏSDİQLƏNMİŞ konvensiyasının bu sorğuya da
+tətbiqi.
+
+**Qayda:** Oracle-dan köçürülən bir xam sorğuda funksiya çağırışlarının
+HƏR BİRİNİN sxema prefiksini yoxla, tək birinin (`func_get_kurval`) doğru
+olması qalanların DA doğru olduğuna zəmanət vermir — hər arqumentin öz
+funksiya çağırışı AYRI yoxlanmalıdır. `ORA-00904 "..." invalid identifier`
+(sütun/funksiya adı dırnaqda görünür) çox vaxt elə BU-dur: sxema prefiksi
+unudulub, özü obyektin adı səhv yazılmayıb.
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün
+yalnız əl ilə yoxlanıldı** (mötərizə/dırnaq balansı). İstifadəçi SQL faylını
+SQL Server-də YENİDƏN işlədib real mühitdə yoxlamalıdır.
