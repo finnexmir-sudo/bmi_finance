@@ -1907,7 +1907,8 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                 Func<Os61Hesab, bool>? movcudShert = null,
                 bool regnomDedup = false,
                 bool hFixZero = false, bool jFixZero = false,
-                string? elIleQeyd = null)
+                string? elIleQeyd = null,
+                Func<Os61Hesab, bool>? aktivShert = null)
             {
                 var s = new MuhasibatOs61SetirDto
                 {
@@ -1927,9 +1928,29 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                     var set = movcud.Where(movcudShert).ToList();
                     s.G_HesabSayiCemi = set.Count;
                     s.H_HesabSayiXariciValyuta = hFixZero ? 0 : set.Count(h => h.Valyuta != "00");
-                    s.I_AktivCemi = elIleQeyd != null ? null : s.G_HesabSayiCemi;
-                    s.J_AktivXariciValyuta = jFixZero ? 0 : s.H_HesabSayiXariciValyuta;
                     s.K_SahibSayi = SahibSayi(set, regnomDedup);
+
+                    // 18.11.2026, KRİTİK — I/J ("ondan aktiv hesablar üzrə") ARTIQ G/H-dən
+                    // KOPYA DEYİL. Kredit sətirləri (kod13/14/15/17/18) `aktivShert`
+                    // ötürür (arh_licschkre-ə görə HƏQİQƏTƏN açıq müqavilə, G-dən DAHA DAR) —
+                    // bu olmasaydı (köhnə "I=G çarpaz-yoxlama" davranışı) G ARTIQ Excel-in
+                    // 643-ü əvəzinə yanlışlıqla 232 (artıq Dövr Sonu arxiv-filtri ilə
+                    // ÖZÜ daralmış) göstərirdi — çünki `movcudShert`-in özünə köhnədə
+                    // bilavasitə `...DovrSonu` filtri ötürülürdü. İndi G/H HƏMİŞƏ
+                    // `movcudShert`-in (raw, licsch-əsaslı) tam nəticəsidir, I/J isə
+                    // (veriləndə) AYRI, DAR bir dəstdən. `aktivShert` verilmədikdə (cari/
+                    // depozit kimi arxiv-fərqi olmayan sətirlər) köhnə davranış qalır.
+                    if (aktivShert != null)
+                    {
+                        var aktivSet = movcud.Where(aktivShert).ToList();
+                        s.I_AktivCemi = elIleQeyd != null ? null : aktivSet.Count;
+                        s.J_AktivXariciValyuta = jFixZero ? 0 : aktivSet.Count(h => h.Valyuta != "00");
+                    }
+                    else
+                    {
+                        s.I_AktivCemi = elIleQeyd != null ? null : s.G_HesabSayiCemi;
+                        s.J_AktivXariciValyuta = jFixZero ? 0 : s.H_HesabSayiXariciValyuta;
+                    }
                 }
 
                 return s;
@@ -2067,13 +2088,14 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             // acilanShert = "bu ay açılan" (ledger-açılma tarixi), movcudShert =
             // "dövrün sonuna" (arh_licschkre-əsaslı, həqiqətən açıq müqavilə).
             var kod13 = Setir("4.1", "        fiziki şəxslər", 13, false,
-                FizikiKredit, FizikiKreditDovrSonu, regnomDedup: true);
+                FizikiKredit, FizikiKredit, regnomDedup: true, aktivShert: FizikiKreditDovrSonu);
             var kod14 = Setir(null, "              ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən ", 14, true,
                 h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h),
-                h => KreditHesabiAktivDovrSonu(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
-                jFixZero: true);
+                h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
+                jFixZero: true,
+                aktivShert: h => KreditHesabiAktivDovrSonu(h) && h.Klass == "21" && SahibkarKredit(h));
             var kod15 = Setir("4.2", "        hüquqi şəxslər", 15, false,
-                HuquqiKredit, HuquqiKreditDovrSonu, regnomDedup: true, jFixZero: true);
+                HuquqiKredit, HuquqiKredit, regnomDedup: true, jFixZero: true, aktivShert: HuquqiKreditDovrSonu);
             var kod12 = new MuhasibatOs61SetirDto
             {
                 BolmeNo = "4", Ad = "Kredit hesabların hüquqi statusuna görə sayı- cəmi", Kod = 12,
@@ -2090,12 +2112,14 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             // Kod 17/18 (kredit müddətinə görə — uzun/qısa).
             const string j17ManualQeyd = "Mənbə şablonda əl ilə yazılmış sabit ədəd (J=2) — Oracle-dan hesablanmır.";
             var kod17 = Setir("5.1", "        uzunmüddətli", 17, false,
-                h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivDovrSonu(h) && uzunKreditQruplar.Contains(h.Qrup));
+                h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup),
+                aktivShert: h => KreditHesabiAktivDovrSonu(h) && uzunKreditQruplar.Contains(h.Qrup));
             kod17.J_AktivXariciValyuta = null;
             kod17.ElIleQeyd = j17ManualQeyd;
             var kod18 = Setir("5.2", "        qısamüddətli (360 günə qədər)", 18, false,
-                h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivDovrSonu(h) && qisaKreditQruplar.Contains(h.Qrup),
-                jFixZero: true);
+                h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup),
+                jFixZero: true,
+                aktivShert: h => KreditHesabiAktivDovrSonu(h) && qisaKreditQruplar.Contains(h.Qrup));
             var kod16 = new MuhasibatOs61SetirDto
             {
                 BolmeNo = "5", Ad = "Kredit hesabların müddətinə görə sayı- cəmi ", Kod = 16,

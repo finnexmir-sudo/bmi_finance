@@ -13823,3 +13823,54 @@ SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə yoxlamalıdır:
 sorğunun indi daha sürətli (ƏVVƏLKİ BEŞİNCİ DALĞA versiyasından da) qayıtdığını,
 (2) "kredit hesabları" (Kod 3) sətrinin "dövrün sonuna cəmi" sütununun hələ də
 DÖRDÜNCÜ/BEŞİNCİ DALĞA-dakı DOĞRU ədədi göstərdiyini (nəticə dəyişməməlidir).
+
+### YEDDİNCİ DALĞA — "HESAB SAYI" ÜMUMİYYƏTLƏ "ONDAN AKTİV" İLƏ EYNİ ÇIXDI — `Setir()` HELPER-İ I-nı G-DƏN KOPYALAYIRDI (18.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı ekranı mühasibin "OS old 2026-10.xls" referensı ilə YAN-YANA
+göstərdi: *"neticeler sehvdir,sen yordune meni,texmini exceldeki kimi
+olmalidir"*. Fərq: bizim ekranda Kod 3-ün ("kredit hesabları") "HESAB SAYI"
+(dövrün sonuna) = **232**, "ONDAN AKTİV" = **232** (EYNİ!), Excel-də isə
+"Hesab sayı" = **643**, "ondan aktiv hesablar üzrə" = **293** (fərqli, 643
+HƏMİŞƏ 293-dən BÖYÜKDÜR).
+
+**Kök səbəb — BEŞİNCİ DALĞA-nın SQL düzəlişi DEYİL, daha ƏVVƏLKİ (47-ci
+tapşırıqdakı) C# dizayn qərarı.** `Setir()` helper-i (`MuhasibatService.
+Os61Async`) G/H ("Hesab sayı") sütununu HESABLAYIR, SONRA I/J-ni sadəcə
+G/H-dən KOPYALAYIRDI (`s.I_AktivCemi = s.G_HesabSayiCemi;`) — bu, "köhnə, hələ
+arxiv-əsaslı aktiv anlayışı yox ikən" yazılmış bir "çarpaz-yoxlama" dizaynı
+idi (bax `Setir`-in öz baş şərhi: "I=G/J=H çarpaz-yoxlama"). 47-ci tapşırıqda
+("dövrün sonuna" kredit-açıq şərtini `arh_licschkre`-ə keçirəndə) kod13/14/
+15/17/18-in `movcudShert` PARAMETRİNƏ (G-ni BESLƏYƏN parametr) SƏHVƏN birbaşa
+`FizikiKreditDovrSonu`/`HuquqiKreditDovrSonu` (artıq ARXİV-FİLTRLİ, dar
+predikat) ötürülmüşdü — "I=G" kopyalama davranışı ilə birləşəndə bu, G-ni DƏ
+(TOTAL olmalı idi) ARXİV-filtrli dar nəticəyə sıxışdırdı, I də elə ONUN
+nüsxəsi olduğu üçün hər ikisi EYNİ (232) çıxdı.
+
+**Düzəliş — `Setir()`-ə YENİ, OPSİONAL `aktivShert` parametri əlavə edildi**
+(default `null`): verilmədikdə köhnə "I=G/J=H kopyala" davranışı DƏYİŞMİR
+(cari hesablar/depozit kimi arxiv-fərqi olmayan sətirlər üçün) — AMMA
+veriləndə I/J artıq G-dən KOPYALANMIR, `movcud.Where(aktivShert)` ilə AYRI,
+DAR bir dəstdən hesablanır. Beş çağırış (kod13/14/15/17/18) uyğunlaşdırıldı:
+`movcudShert`-ə indi RAW (`KreditHesabiAktivMenbe`-əsaslı, licsch-ə görə TOTAL)
+predikat, `aktivShert`-ə isə ƏVVƏLKİ (arxiv-filtrli, `...DovrSonu`) predikat
+ötürülür. `kod3`/`kod1` dəyişmədi — onlar G/H/I/J/K-ni `kod12`-dən (kod13+
+kod15-in cəmi) kopyalayır, kod12 düzəldiyi üçün avtomatik düzəlir.
+
+⚠️ **K_SahibSayi (SAHİB SAYI) QƏSDƏN TOTAL (G) dəstindən hesablanmağa
+davam edir, aktivSet-ə KEÇİRİLMƏDİ** — `Setir`-in öz köhnə baş şərhi K-nı
+HƏMİŞƏ G ilə eyni "movcud" dəstdən hesablamışdı (arxiv-fərqi tanınmazdan
+ƏVVƏL); Excel-in K sütununun TOTAL-a, yoxsa aktiv-subset-ə bağlı olduğu bu
+ekranlardan AYDIN görünmür — ən AZ riskli, ən KİÇİK dəyişiklik seçildi
+(YALNIZ I/J, K-ya TOXUNULMADI). Əgər gələcəkdə K-nın da səhv çıxdığı
+aşkarlansa, bu, AYRI bir qərar tələb edir (K-nı `aktivSet`-dən hesablamaq).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — hesablama canlı, hər çağırışda yenidən icra
+olunur**, saxlanmış heç bir dəyər yoxdur.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (fayl-ümumi mötərizə balansı `git diff` izolyasiyası ilə —
+edit-in ÖZÜ 18/18 balanslıdır, pre-existing 6-deficit DƏYİŞMƏDİ). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real mühitdə Oktyabr 2026 ÖS-6.1-i
+yenidən açıb: Kod 3-ün "HESAB SAYI" (dövrün sonuna)=643-ə, "ONDAN AKTİV"=293-ə
+yaxın (31-günlük pəncərə kiçik fərq yarada bilər, bax ALTINCI DALĞA)
+çıxdığını, HƏR İKİ sütunun artıq FƏRQLİ olduğunu təsdiqləməlidir.
