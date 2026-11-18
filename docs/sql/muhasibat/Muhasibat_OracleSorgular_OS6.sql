@@ -90,8 +90,8 @@ with
    arxivdən düşmüş hesablar səhvən "tapılmadı" olmasın), SONRA `l.licsch`
    bu KİÇİK, ƏVVƏLCƏDƏN hazır nəticə ilə TƏK dəfə JOIN olunur.
    "Hər sətr üçün tam arxiv taraması" (N×M) → "bütöv sorğu üçün BİR
-   aqreqasiya + BİR join" (N+M). `/*+ MATERIALIZE */` Oracle-un bunu
-   YENİDƏN korrelə formaya "unmerge" etməsinin (bax CLAUDE.md-dəki
+   aqreqasiya + BİR join" (N+M). arh_agg-dəki MATERIALIZE hinti Oracle-un
+   bunu YENİDƏN korrelə formaya "unmerge" etməsinin (bax CLAUDE.md-dəki
    "Oracle View Merging" qaydası) qarşısını alır. */
 arh_norm as (
     select licschkre acc, date_oper, date_close, subschkre
