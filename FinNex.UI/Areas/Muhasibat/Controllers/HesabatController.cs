@@ -77,7 +77,7 @@ public class HesabatController : Controller
                 Kateqoriya = "Risk", Ikon = "bi-clipboard2-pulse", Area = "Muhasibat", Controller = "Hesabat", Action = "Ifrs9" },
         // Forma 0250 — General Ledger (CBAR), 18.11.2026. BMI-nin AMB-yə AYLIQ
         // təqdim etdiyi Baş Kitab sorğusu — bax Muhasibat_OracleSorgular_Forma0250.sql.
-        new() { Kod = "forma-0250-gl", Ad = "Forma 0250 — Baş Kitab (CBAR)", Tesvir = "AMB-yə aylıq təqdim olunan Baş Kitab — KOD üzrə qalıq/dövriyyə (balanslı + balansdankənar hesablar)",
+        new() { Kod = "forma-0250-gl", Ad = "FORMA 0250 — GENERAL LEDGER", Tesvir = "KOD üzrə qalıq/dövriyyə (balanslı + balansdankənar hesablar)",
                 Kateqoriya = "Aylıq", Ikon = "bi-journal-text", Area = "Muhasibat", Controller = "Hesabat", Action = "Forma0250" },
         // DSMF Vahid Hesabat Forması — TƏK kataloq kartı (29.10.2026, istifadəçi
         // tələbi: "Vahid hesabat adini yaz, hazirladiqlarini onun icinde goster,
@@ -509,7 +509,7 @@ public class HesabatController : Controller
         var sh = wb.CreateSheet("Forma 0250");
         int r = 0;
         sh.CreateRow(r++).CreateCell(0).SetCellValue(
-            $"FORMA 0250 — Baş Kitab (CBAR) — {m.Bas:dd.MM.yyyy} – {m.Son:dd.MM.yyyy}");
+            $"FORMA 0250 — GENERAL LEDGER (CBAR) — {m.Bas:dd.MM.yyyy} – {m.Son:dd.MM.yyyy}");
         r++;
         var h = sh.CreateRow(r++);
         // Sütun sırası mənbə Oracle sorğusunun SELECT siyahısı ilə EYNİ — "Excel

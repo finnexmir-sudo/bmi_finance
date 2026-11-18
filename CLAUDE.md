@@ -13349,3 +13349,56 @@ proqramla yoxlanıldı: 5/11 keçid). **İstifadəçi aşağıdakı addımları 
    göründüyünü.
 4. "Excel-ə ixrac et" ilə yüklənən faylın sütun sırasının/rəqəmlərinin
    ekrandakı ilə EYNİ olduğunu yoxla.
+
+## Forma 0250 — "Yüklənmədi: Oracle-da yalnız SELECT sorğusuna icazə var" (18.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İlk publish-dən dərhal sonra istifadəçi canlı ekranda **"Yüklənmədi: Oracle-da
+yalnız SELECT sorğusuna icazə var."** xətası aldı — CLAUDE.md-də ARTIQ
+sənədləşmiş "Saxlanmış Sorğu `--` ŞƏRHİ İLƏ BAŞLAYA BİLMƏZ" (09.09.2026)
+qaydasının elə özü, bu dəfə `/* ... */` blok şərhi formasında: `OracleService.
+YalnizSelect` sorğunun **BAŞLANĞICININ** `SELECT` və ya `WITH` olmasını tələb
+edir, `Muhasibat_OracleSorgular_Forma0250.sql`-in `@Sql` dəyişəninə yazılan
+mətn isə `/* ===== FORMA 0250 — GENERAL LEDGER ... ===== */` böyük şərh bloku
+ilə BAŞLAYIRDI, `WITH` ondan SONRA gəlirdi.
+
+**Düzəliş:** `WITH` açar sözü şərhin ÖNÜNƏ keçirildi — saxlanılan mətn indi
+`WITH\n/* ===== şərh ===== */\nbal AS (...` formasındadır. Oracle-un özü
+`WITH` açar sözündən sonra, CTE adından ƏVVƏL şərhə icazə verir (lekser
+boşluq/şərhi istənilən token arası yerdə qəbul edir) — sorğunun MƏNTİQİ bir
+hərf belə dəyişmədi, yalnız `WITH` sözü şərhin önünə köçürüldü (`git diff`
+yalnız 2 sətir fərq göstərir).
+
+**Qayda (təkrar, YENİ forma):** `--` tək-sətir şərhi ilə YANAŞI, **`/* ... */`
+çox-sətirli blok şərhi DƏ** eyni tələyə düşür — `YalnizSelect` hər iki
+formanı eyni cür rədd edir (yalnız `trimmed.StartsWith("SELECT"/"WITH")`
+yoxlayır). Yeni bir `OracleSorgular` skripti yazanda saxlanılan SQL mətninin
+BİRİNCİ QEYRİ-BOŞ sətrinin (hər hansı şərh formasında) HƏR ZAMAN `SELECT`/
+`WITH` olduğunu yoxla — izahlı başlıq şərhi lazımdırsa, onu `WITH`-dən SONRA,
+ilk CTE-dən ƏVVƏL yerləşdir.
+
+### Ad — "FORMA 0250 — GENERAL LEDGER"
+
+İstifadəçi tələbi: kataloq kartının, səhifə başlığının (`<h1>`) və Excel
+ixracının başlıq sətrinin adı dəqiq **"FORMA 0250 — GENERAL LEDGER"** olsun
+(əvvəlki "Forma 0250 — Baş Kitab (CBAR)" əvəzinə) — mənbə SQL-in öz başlıq
+şərhindəki adın hərfi forması. Dörd yer yeniləndi: `HesabatController.
+Katalog`-dakı `Ad`, `Forma0250Excel`-in başlıq sətri, `Forma0250.cshtml`-in
+`ViewData["Title"]` və `<h1 class="mh-title">`.
+
+### Xəbərdarlıq qutusu — qısaldıldı
+
+İstifadəçi: "3-cü şəkildəki kimi saxla, artıqları sil" — səhifədəki uzun,
+texniki "Mənbə" izah qutusu (Oracle cədvəl adları, KOD 478 nümunəsi, "sətir
+sayı" izahı) **TƏK bir sətirlik** mesaja qədər qısaldıldı: "KOD üzrə qalıq/
+dövriyyə (balanslı + balansdankənar hesablar)" — kataloq kartının (`Index.
+cshtml`) öz `Tesvir`-i ilə eyni, qısa mətn. Kataloq kartının `Tesvir`-i də
+eyni qısa mətnə endirildi (əvvəlki "AMB-yə aylıq təqdim olunan Baş Kitab —
+..." prefiksindən çıxarıldı).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı hər üç dəyişən faylda, `git diff`-in yalnız niyyət edilən
+sətirləri dəyişdiyi təsdiqləndi). İstifadəçi faylı SQL Server-də YENİDƏN
+işlədib (`OracleSorgular`-dakı sətri yeniləsin), Visual Studio-da **Rebuild
+All** ilə, sonra real mühitdə yoxlamalıdır: kartın adının indi "FORMA 0250 —
+GENERAL LEDGER" olduğunu, dövr seçib "Göstər"ə basanda artıq "Yüklənmədi"
+xətası çıxmadan nəticənin göründüyünü, xəbərdarlıq qutusunun qısaldığını.

@@ -42,7 +42,8 @@ DECLARE @Ad NVARCHAR(200), @Mahiyyet NVARCHAR(MAX), @Sql NVARCHAR(MAX);
 
 SET @Ad       = N'Muhasibat — Forma 0250 GL';
 SET @Mahiyyet = N'Forma 0250 — General Ledger (CBAR). KOD üzrə aylıq qalıq/dövriyyə hesabatı — balanslı (arh_saldo_ls) + balansdankənar (arh_dd) hesablar, {D1}/{D2} dövr aralığı.';
-SET @Sql = N'/* =====================================================================
+SET @Sql = N'WITH
+/* =====================================================================
    FORMA 0250 — GENERAL LEDGER (CBAR)  | Excel RTL goruntu sirasi (KOD en axirda)
    Dovr: {D1} .. {D2} (dd-mm-yyyy; sentyabr: 01-09-2026 / 30-09-2026)
    BALANSLI (1-5): arh_saldo_ls | BALANSDANKENAR (6/7/8/9): arh_dd (kredit-debet, 50130 istisna)
@@ -61,7 +62,6 @@ SET @Sql = N'/* ================================================================
          balansdankenar (6-9) kredit-debet isaresini saxlayir (gelir +, xerc -).
    Valyuta: 00=AZN 01=USD 02=EUR 03=RUB 04=IRR 05=AED
    ===================================================================== */
-WITH
 bal AS (
     select substr(licsch,1,5) hes5, licsch hes20, substr(licsch,6,2) val_kod,
            sum(obd_n) debet, sum(obk_n) kredit,

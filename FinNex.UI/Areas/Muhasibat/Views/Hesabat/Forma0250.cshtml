@@ -1,6 +1,6 @@
 @model FinNex.Application.DTOs.Muhasibat.MuhasibatForma0250Dto
 @{
-    ViewData["Title"] = "Forma 0250 — Baş Kitab (CBAR)";
+    ViewData["Title"] = "FORMA 0250 — GENERAL LEDGER";
     string N(decimal? v) => v.HasValue ? v.Value.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "—";
     string N4(decimal? v) => v.HasValue ? v.Value.ToString("N4", System.Globalization.CultureInfo.InvariantCulture) : "—";
 }
@@ -29,7 +29,7 @@
     <div class="mh-hero mh-hero--f0250">
         <div class="mh-hero-l">
             <div class="mh-badge"><i class="bi bi-journal-text"></i> Mühasibat / Hesabatlar / Aylıq</div>
-            <h1 class="mh-title">Forma 0250 — Baş Kitab (CBAR)</h1>
+            <h1 class="mh-title">FORMA 0250 — GENERAL LEDGER</h1>
             <div class="mh-sub"><i class="bi bi-calendar-range"></i> @Model.Bas.ToString("dd.MM.yyyy") — @Model.Son.ToString("dd.MM.yyyy")</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <a asp-action="Forma0250Excel" asp-route-bas="@Model.Bas.ToString("yyyy-MM-dd")" asp-route-son="@Model.Son.ToString("yyyy-MM-dd")" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə ixrac et</a>
@@ -51,13 +51,7 @@
 
     <div class="pr-warn" style="margin-top:14px;">
         <i class="bi bi-exclamation-triangle"></i>
-        <div>
-            <b>Mənbə:</b> AMB-yə aylıq təqdim olunan Baş Kitab sorğusu — balanslı hesablar
-            (<code>arh_saldo_ls</code>) + balansdankənar hesablar (<code>arh_dd</code>, 50130 istisna).
-            KOD bir neçə hesabı birləşdirə bilər (məs. KOD <b>478</b> onlarla hesabı toplayır) —
-            burada görünən sətir sayı BMI-nin hesab sayı ilə YOX, AMB-nin KOD×valyuta sayı ilə üst-üstə düşür.
-            Qalıqlar/dövriyyələri sıfır olan KOD×valyuta cütü siyahıda göstərilmir.
-        </div>
+        <div>KOD üzrə qalıq/dövriyyə (balanslı + balansdankənar hesablar)</div>
     </div>
 
     @if (!Model.Ugurlu)
