@@ -110,14 +110,23 @@ select
    3 sub-hesab (faiz, vaxtı keçmiş əsas, vaxtı keçmiş faiz) üçün HƏMİŞƏ "tapılmadı"
    (0) qaytarır → G3/H3/J3/K3 kütləvi şəkildə 0-a düşür. Düzəliş: `l.licsch`-i
    DÖRDÜNÜN HƏR BİRİNƏ qarşı yoxla (IN) — kredit müqaviləsinin `date_close`-u
-   bütün dörd sub-hesaba AİDDİR (loan bir dəfə bağlanır, dördü də birlikdə). */
+   bütün dörd sub-hesaba AİDDİR (loan bir dəfə bağlanır, dördü də birlikdə).
+   ⚠️ 18.11.2026, ÜÇÜNCÜ DALĞA — `al.date_oper = D2` DƏQİQ BƏRABƏRLİYİ İKİNCİ,
+   MÜSTƏQİL SƏBƏBDƏN də 0 qaytarırdı: canlı yoxlanıldı (31-10-2026, şənbə) —
+   `arh_licschkre`-də HEÇ BİR sətir `date_oper=''31-10-2026''` ilə yoxdur
+   (arxiv YALNIZ iş günlərində yazılır), ən son mövcud snapshot ''30-10-2026''
+   çıxdı. Düzəliş: dəqiq bərabərlik YERİNƏ `<=D2` + "ən son məlum snapshot":
+   `kredit_arh_tapildi` sadə MÖVCUDLUQ (istənilən tarixdə tapılıbsa kifayətdir,
+   "son" olmasına EHTİYAC YOXDUR), `kredit_arh_baglama` isə D2-yə QƏDƏR olan ƏN
+   SON (`date_oper` maksimum, tie-break subschkre=0 üstün) sətrin `date_close`-u
+   — bu, D2 istənilən gün (iş günü və ya YOX) olsa belə düzgün nəticə verir. */
     (select count(*) from odb.arh_licschkre al
       where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
-        and al.date_oper = to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_tapildi,
-    (select max(al.date_close) keep (dense_rank first order by nvl(al.subschkre,0))
+        and al.date_oper <= to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_tapildi,
+    (select max(al.date_close) keep (dense_rank first order by al.date_oper desc, nvl(al.subschkre,0) asc)
        from odb.arh_licschkre al
       where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
-        and al.date_oper = to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_baglama
+        and al.date_oper <= to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_baglama
 from odb.licsch l
 where l.date_open_licsch is not null
   and l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')

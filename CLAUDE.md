@@ -13636,3 +13636,59 @@ real mühitdə Oktyabr 2026 ÖS-6.1-in "kredit hesabları" (Kod 3, 1.2) sətrini
 "dövrün sonuna cəmi" sütununun artıq 0 YOX, real açıq kredit sayını (əvvəlki
 ~289-a yaxın bir ədəd) göstərdiyini təsdiqləməlidir — "bu ay açılan" (D/E/F)
 sütunları bu düzəlişdən TƏSİRLƏNMƏDİ (onsuz da işlək idi, 2/0/2 göstərirdi).
+
+### DÖRDÜNCÜ DALĞA (eyni gün) — Düzəliş SQL Server-də tətbiq olundu, AMMA nəticə YENƏ 0 — İKİNCİ, MÜSTƏQİL SƏBƏB: `al.date_oper = D2` DƏQİQ BƏRABƏRLİYİ HƏFTƏSONUNDA HEÇ NƏ TAPMIR
+
+İstifadəçi fiksi SQL Server-də işlədib (`SorguMetni`-ni canlı göstərdi — `l.licsch
+in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)` ARTIQ ORADA idi),
+amma ekranda "kredit hesabları"nın "dövrün sonuna cəmi" sütunu YENƏ 0 qaldı.
+Canlı Oracle yoxlaması (PL/SQL Developer, FOXPRO@bmi):
+
+```sql
+select count(*) from odb.arh_licschkre where date_oper = to_date('31-10-2026','dd-mm-yyyy');
+-- 0 (heç bir sətir)
+select max(date_oper) from odb.arh_licschkre where date_oper <= to_date('31-10-2026','dd-mm-yyyy');
+-- 30-10-2026
+```
+
+**Təsdiqləndi: `odb.arh_licschkre` YALNIZ İŞ GÜNLƏRİNDƏ snapshot yazır.**
+31-10-2026 (ay sonu, şənbə) üçün archive-da HEÇ BİR sətir yoxdur — `al.date_oper
+= to_date(D2)` dəqiq bərabərliyi istifadə edən HƏR iki korrelə alt-sorğu
+(`kredit_arh_tapildi`, `kredit_arh_baglama`) BÜTÜN sətirlər üçün 0/NULL qaytarırdı
+— düzəldilmiş `IN(4 sütun)` şərti BU SƏBƏBDƏN effektsiz qalmışdı (loan tapılsa
+belə, D2-nin özü arxivdə YOXDUR).
+
+**Düzəliş — dəqiq bərabərlik (`=D2`) `<=D2`-yə, "D2-yə QƏDƏR olan ƏN SON məlum
+vəziyyət" məntiqinə keçirildi:**
+
+```sql
+-- kredit_arh_tapildi — sadə mövcudluq, "son" olmasına ehtiyac yoxdur:
+where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
+  and al.date_oper <= to_date('{D2}','dd-mm-yyyy')
+
+-- kredit_arh_baglama — D2-yə QƏDƏR ən son (date_oper MAX, tie-break
+-- subschkre=0 üstün) sətrin date_close-u:
+max(al.date_close) keep (dense_rank first order by al.date_oper desc, nvl(al.subschkre,0) asc)
+```
+
+Bu, D2 iş günü olsun-olmasın (bayram/həftəsonu) HƏMİŞƏ işləyir — arxivin ƏN SON
+yazdığı real snapshot-u (nümunədə 30-10-2026) işlədir, mövcud olmayan bir tarixə
+dəqiq bərabərlik axtarmır.
+
+⚠️ **İKİ MÜSTƏQİL SƏBƏB EYNİ GÜNDƏ, EYNİ SİMPTOMLA (0) üst-üstə düşdü** — (1)
+yanlış sütun (`licschkre` TƏK, dördlük YOX) və (2) dəqiq-tarix-bərabərliyi
+(arxivin iş-günü-yalnız olması). Birincini düzəltmədən ikinci görünməzdi (nəticə
+yenə 0 qalardı — səbəblərdən biri "düzəldi" testi KEÇMƏZDİ), ikincini düzəltmədən
+birincinin düzgünlüyü TƏSDİQLƏNƏ BİLMƏZDİ. **Qayda:** "düzəldim, amma nəticə
+dəyişmədi" halında — DƏRHAL ikinci bir, MÜSTƏQİL səbəb axtarmaq lazımdır, birinci
+düzəlişin "səhv olduğu" qənaətinə tələsmədən (hər ikisi doğru ola bilər, sadəcə
+BİRİ digərini GİZLƏDİR).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — canlı, YALNIZ-OXU Oracle sorğusudur.** SQL faylı
+YENİDƏN SQL Server-də işlədilməlidir (`OracleSorgular`-dakı sətr yenilənsin).
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün yalnız
+əl ilə yoxlanıldı** (mötərizə balansı — 106/106 parens, 92 tək dırnaq — cüt).
+İstifadəçi SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə Oktyabr
+2026 ÖS-6.1-in "kredit hesabları" (Kod 3) sətrinin "dövrün sonuna cəmi"
+sütununun ARTIQ 0 DEYİL, real açıq kredit sayını göstərdiyini təsdiqləməlidir.
