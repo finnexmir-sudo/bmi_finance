@@ -79,6 +79,12 @@ public class HesabatController : Controller
         // təqdim etdiyi Baş Kitab sorğusu — bax Muhasibat_OracleSorgular_Forma0250.sql.
         new() { Kod = "forma-0250-gl", Ad = "FORMA 0250 — GENERAL LEDGER", Tesvir = "KOD üzrə qalıq/dövriyyə (balanslı + balansdankənar hesablar)",
                 Kateqoriya = "Aylıq", Ikon = "bi-journal-text", Area = "Muhasibat", Controller = "Hesabat", Action = "Forma0250" },
+        // ÖS-6.1 (AMB "Ödəniş Statistikası" Əlavə 6.1), 18.11.2026 — müştəri hesabları
+        // haqqında statistik hesabat (hesab sayı + sahib sayı). "Old"/"yeni" AMB
+        // şablonlarının HƏR İKİSİNDƏ eyni 22 sətir/Kod işlədir (bax CLAUDE.md) — bura
+        // yalnız BİR, ortaq hesablama kartıdır.
+        new() { Kod = "os-6-1", Ad = "ÖS-6.1 — Müştəri Hesabları", Tesvir = "Müştəri hesablarının sayı və sahib sayı (AMB Ödəniş Statistikası, aylıq)",
+                Kateqoriya = "Aylıq", Ikon = "bi-person-lines-fill", Area = "Muhasibat", Controller = "Hesabat", Action = "Os61" },
         // DSMF Vahid Hesabat Forması — TƏK kataloq kartı (29.10.2026, istifadəçi
         // tələbi: "Vahid hesabat adini yaz, hazirladiqlarini onun icinde goster,
         // altisinida" — altı rəsmi əlavədən ikisi hazırdır). Əvvəl burada İKİ ayrı
@@ -535,6 +541,60 @@ public class HesabatController : Controller
         wb.Write(ms, true);
         return File(ms.ToArray(), "application/vnd.ms-excel",
                     $"Forma0250_{m.Bas:yyyyMMdd}_{m.Son:yyyyMMdd}.xls");
+    }
+
+    // ÖS-6.1 (AMB "Ödəniş Statistikası" Əlavə 6.1) — İl + Ay seçimi (Rüb YOX, DSMF-dən
+    // fərqli olaraq bu hesabat AYLIQDIR). 18.11.2026.
+    public async Task<IActionResult> Os61(int? il, int? ay)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var bugun = DateTime.Today;
+        var m = await _service.Os61Async(il ?? bugun.Year, ay ?? bugun.Month);
+        return View(m);
+    }
+
+    public async Task<IActionResult> Os61Excel(int il, int ay)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var m = await _service.Os61Async(il, ay);
+
+        var wb = new HSSFWorkbook();
+        var sh = wb.CreateSheet("ÖS-6.1");
+        int r = 0;
+        sh.CreateRow(r++).CreateCell(0).SetCellValue(
+            $"ÖS-6.1. Statistik vahidin müştəri hesabları haqqında statistik hesabat — {il}, ay {ay}");
+        r++;
+        var h = sh.CreateRow(r++);
+        string[] basliq = { "Bölmə №", "Göstəricilərin adı", "Kod",
+            "Hesab sayı (cəmi)", "ondan xarici valyutada", "Hesab sahiblərinin sayı",
+            "Hesab sayı (cəmi)", "ondan xarici valyutada", "ondan aktiv (cəmi)",
+            "ondan aktiv (xarici valyutada)", "Hesab sahiblərinin sayı", "Qeyd" };
+        for (int i = 0; i < basliq.Length; i++) h.CreateCell(i).SetCellValue(basliq[i]);
+
+        foreach (var x in m.Setirler)
+        {
+            var row = sh.CreateRow(r++);
+            row.CreateCell(0).SetCellValue(x.BolmeNo ?? "");
+            row.CreateCell(1).SetCellValue((x.AltSetir ? "    " : "") + x.Ad);
+            row.CreateCell(2).SetCellValue(x.Kod);
+            if (x.D_HesabSayiCemi.HasValue) row.CreateCell(3).SetCellValue((double)x.D_HesabSayiCemi.Value);
+            if (x.E_HesabSayiXariciValyuta.HasValue) row.CreateCell(4).SetCellValue((double)x.E_HesabSayiXariciValyuta.Value);
+            if (x.F_SahibSayi.HasValue) row.CreateCell(5).SetCellValue((double)x.F_SahibSayi.Value);
+            if (x.G_HesabSayiCemi.HasValue) row.CreateCell(6).SetCellValue((double)x.G_HesabSayiCemi.Value);
+            if (x.H_HesabSayiXariciValyuta.HasValue) row.CreateCell(7).SetCellValue((double)x.H_HesabSayiXariciValyuta.Value);
+            if (x.I_AktivCemi.HasValue) row.CreateCell(8).SetCellValue((double)x.I_AktivCemi.Value);
+            if (x.J_AktivXariciValyuta.HasValue) row.CreateCell(9).SetCellValue((double)x.J_AktivXariciValyuta.Value);
+            if (x.K_SahibSayi.HasValue) row.CreateCell(10).SetCellValue((double)x.K_SahibSayi.Value);
+            if (!string.IsNullOrWhiteSpace(x.ElIleQeyd)) row.CreateCell(11).SetCellValue(x.ElIleQeyd);
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return File(ms.ToArray(), "application/vnd.ms-excel", $"OS61_{il}_{ay:D2}.xls");
     }
 
     // DSMF Vahid Hesabat Forması — hub səhifəsi. 6 rəsmi əlavənin hamısını adı ilə

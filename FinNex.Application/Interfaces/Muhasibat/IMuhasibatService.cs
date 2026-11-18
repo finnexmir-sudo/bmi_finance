@@ -60,6 +60,10 @@ public interface IMuhasibatService
     // (balanslı hesablar + balansdankənar, aylıq AMB təqdimatı — 18.11.2026).
     Task<MuhasibatForma0250Dto> Forma0250Async(DateTime bas, DateTime son);
 
+    // ÖS-6.1 (AMB "Ödəniş Statistikası" Əlavə 6.1) — müştəri hesabları haqqında statistik
+    // hesabat (hesab sayı + hesab sahiblərinin sayı, il/ay üzrə, licsch-dən — 18.11.2026).
+    Task<MuhasibatOs61Dto> Os61Async(int il, int ay);
+
     // Drill-down — bir kart/sətrin arxasındakı hesab (sətir) detalı.
     // sahe: balans / balans-valyuta / balans-menfeet / likvidlik / depozit / kredit / valyuta / rezident.
     // Cem müvafiq kartdakı rəqəmlə üst-üstə düşür (eyni sorğu + eyni təsnifat).

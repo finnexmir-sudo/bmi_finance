@@ -109,6 +109,7 @@ public class MuhasibatService : IMuhasibatService
     private const string AdYerlesdirme     = "Muhasibat — Yerlesdirme";
     private const string AdSonIsGunu       = "Muhasibat — Ilin son is gunu";
     private const string AdForma0250       = "Muhasibat — Forma 0250 GL";
+    private const string AdOs61            = "Muhasibat — OS6.1 Hesablar";
 
     // Sorğu siyahısı bir dəfə oxunur və scoped servis ömrü boyu cache-lənir (DbContext).
     // Bu, GunlukIcmal kimi çoxlu SqlAl çağıran bölmələrdə DbContext-i təkrar-təkrar vurmur
@@ -1826,6 +1827,317 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         }
 
         return dto;
+    }
+
+    // ÖS-6.1 — "Açılmış hesablar"/"Ümumi hesablar"/"Kredit hesablari" xam licsch sətirləri
+    // bir dəfəyə oxunur, sonra 22 sətrin (Kod 1-22, old/yeni şablonlarının HƏR İKİSİNDƏ
+    // EYNİ) hər biri LINQ ilə hesablanır — mühasibin MID()/COUNTIFS()/SUMIFS() düsturlarının
+    // birbaşa köçürülməsi (18.11.2026). Bax: docs/sql/muhasibat/Muhasibat_OracleSorgular_OS6.sql
+    // başlığındakı MID↔SUBSTR xəritəsi.
+    //
+    // QEYD — Excel-in ÖZÜNDƏKİ, bilərəkdən SAXLANILAN xüsusiyyətlər (kodda da eynidir):
+    //  • "I" sütunu ("ondan aktiv hesablar üzrə") demək olar HƏR sətirdə sadəcə "G"-ni
+    //    TƏKRARLAYIR (bəzi sətirlərdə Excel bunu `=G26` kimi AÇIQ edir), "J" isə "H"-ni —
+    //    bu, mühasibin PARALEL (ehtiyat) bir mənbədən apardığı çarpaz-yoxlamadır, YENİ
+    //    məlumat DEYİL. Yalnız DEPOZİT sətirlərində (Kod 2/5/9/10) I "Depozit" vərəqindən
+    //    ƏL İLƏ yazılan bir say idi — Oracle-da qarşılığı yoxdur, null + ElIleQeyd.
+    //  • Kod 2/5/6/8/9/10/11 (depozit) üçün H/J/K Excel-də SABİT 0-dır (FX-aktiv və
+    //    hesab-sahibi sayı bu sətirlərdə heç vaxt hesablanmayıb) — bu, mənbə şablonun
+    //    ÖZ konvensiyasıdır, "düzəldilmədi".
+    //  • Kod 17-nin J-si Excel-də sabit "2" (əl ilə yazılmış bir ədəd) — Oracle-dan
+    //    hesablanmır, null + ElIleQeyd.
+    //  • "Hesabat ayı üzrə" (D/E/F) sayları Excel-də hər hesabı 2-4 dəfə təkrarlayan xam
+    //    ixracın "/4" və ya "/2" ilə kompensasiya edir — bizim licsch mənbəyimiz artıq
+    //    hesab başına BİR sətir olduğu üçün bu bölmələr YOXDUR, sadə COUNT işlədilir.
+    //  • Kredit hesablarının "F/S/H" (fiziki/sahibkar/hüquqi) tipi "Kredit hesablari_mod"-un
+    //    N sütununda ARTIQ HAZIR gəlir (hansı dictionary ilə hesablandığı bizə məlum deyil) —
+    //    biz bunu Klass(20/21) + Bölmə-sahibkar-siyahısı ilə YAXINLAŞDIRIRIQ (D20-nin öz
+    //    bölmə siyahısından), real nəticə ilə mütləq tutuşdurulmalıdır (bax #46).
+    //  • Kod 17-nin "G/H" (uzunmüddətli) və Kod 18-in (qısamüddətli) Qrup siyahıları Excel-in
+    //    İ-sütunundaki (Kredit_mod, redundant mənbə) daha dar siyahılardan GENİŞ saxlanılıb —
+    //    D23/D24-ün ÖZ (ən tam) siyahısı istifadə olunub.
+    public async Task<MuhasibatOs61Dto> Os61Async(int il, int ay)
+    {
+        var ilkGun = new DateTime(il, ay, 1);
+        var sonGun = ilkGun.AddMonths(1).AddDays(-1);
+        var dto = new MuhasibatOs61Dto { Il = il, Ay = ay };
+
+        try
+        {
+            var sql = (await SqlAl(AdOs61))
+                .Replace("{D1}", ilkGun.ToString("dd-MM-yyyy"))
+                .Replace("{D2}", sonGun.ToString("dd-MM-yyyy"));
+            var rows = await _oracle.SelectAsync(sql, maxRows: 200000);
+
+            var hesablar = rows.Select(r =>
+            {
+                var val = Val(r, "valyuta")?.ToString() ?? "00";
+                var qaliq = val == "00" ? Dec(Val(r, "qaliq_nacval")) : Dec(Val(r, "qaliq_inval"));
+                return new Os61Hesab
+                {
+                    Klass = Val(r, "klass")?.ToString() ?? "",
+                    Qrup = Val(r, "qrup")?.ToString() ?? "",
+                    Bolme = Val(r, "bolme")?.ToString() ?? "",
+                    RezervFlag = Val(r, "rezerv_flag")?.ToString() ?? "",
+                    KreditFlag = Val(r, "kredit_flag")?.ToString() ?? "",
+                    Valyuta = val,
+                    RegnomKod = Val(r, "regnom_kod")?.ToString() ?? "",
+                    Adi = Val(r, "adi")?.ToString() ?? "",
+                    AcilibBuAy = Dec(Val(r, "acilib_bu_ay")) == 1,
+                    MovcudDovrSonu = Dec(Val(r, "movcud_dovr_sonu")) == 1,
+                    Qaliq = Math.Abs(qaliq),
+                };
+            }).ToList();
+
+            var acilan = hesablar.Where(h => h.AcilibBuAy).ToList();
+            var movcud = hesablar.Where(h => h.MovcudDovrSonu).ToList();
+
+            static int SahibSayi(List<Os61Hesab> list, bool regnom) =>
+                regnom
+                    ? list.Select(h => h.RegnomKod).Where(x => x != "").Distinct().Count()
+                    : list.Select(h => h.Adi).Where(x => x != "").Distinct().Count();
+
+            // Sahə-üzrə ümumi köməkçi: D/E/F (bu ay) + G/H/I/J/K (dövr sonu, I=G/J=H
+            // çarpaz-yoxlama) bir filtrdən hesablanır.
+            MuhasibatOs61SetirDto Setir(
+                string? bolmeNo, string ad, int kod, bool altSetir,
+                Func<Os61Hesab, bool>? acilanShert = null,
+                Func<Os61Hesab, bool>? movcudShert = null,
+                bool regnomDedup = false,
+                bool hFixZero = false, bool jFixZero = false,
+                string? elIleQeyd = null)
+            {
+                var s = new MuhasibatOs61SetirDto
+                {
+                    BolmeNo = bolmeNo, Ad = ad, Kod = kod, AltSetir = altSetir, ElIleQeyd = elIleQeyd
+                };
+
+                if (acilanShert != null)
+                {
+                    var set = acilan.Where(acilanShert).ToList();
+                    s.D_HesabSayiCemi = set.Count;
+                    s.E_HesabSayiXariciValyuta = set.Count(h => h.Valyuta != "00");
+                    s.F_SahibSayi = SahibSayi(set, regnomDedup);
+                }
+
+                if (movcudShert != null)
+                {
+                    var set = movcud.Where(movcudShert).ToList();
+                    s.G_HesabSayiCemi = set.Count;
+                    s.H_HesabSayiXariciValyuta = hFixZero ? 0 : set.Count(h => h.Valyuta != "00");
+                    s.I_AktivCemi = elIleQeyd != null ? null : s.G_HesabSayiCemi;
+                    s.J_AktivXariciValyuta = jFixZero ? 0 : s.H_HesabSayiXariciValyuta;
+                    s.K_SahibSayi = SahibSayi(set, regnomDedup);
+                }
+
+                return s;
+            }
+
+            // Bölmə/Qrup kodları (mühasibin düsturlarından hərfi köçürülüb).
+            var sahibkarKreditBolmeler = new[] { "21140", "21145", "21150", "21155", "21240", "21245", "21250", "21255" };
+            var sahibkarCariBolmeler = new[] { "41040", "41045", "41050", "41055" };
+            var uzunKreditQruplar = new[] { "212", "206", "207", "208" };
+            var qisaKreditQruplar = new[] { "210", "211", "203", "204", "205" };
+
+            bool DepozitQrup(Os61Hesab h) => h.Qrup is "411" or "412";
+            bool KreditHesabi(Os61Hesab h) => h.Klass is "20" or "21";
+            bool KreditHesabiAktivMenbe(Os61Hesab h) => KreditHesabi(h) && h.KreditFlag is "0" or "5" && h.RezervFlag != "9";
+            bool SahibkarKredit(Os61Hesab h) => sahibkarKreditBolmeler.Contains(h.Bolme);
+            bool FizikiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "21";
+            bool HuquqiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "20";
+            bool CariHesabiXam(Os61Hesab h) => h.Klass is "38" or "39" or "40" or "41";
+            bool CariFiziki(Os61Hesab h) => h.Klass == "41" && !DepozitQrup(h) && h.Qrup != "391" && h.RezervFlag != "9";
+            bool CariHuquqi(Os61Hesab h) => h.Klass is "38" or "39" or "40" && h.RezervFlag != "9";
+            bool SahibkarCari(Os61Hesab h) => sahibkarCariBolmeler.Contains(h.Bolme) && h.RezervFlag != "9";
+
+            // Kod 20/21/22 (cari hesablar — dövrün sonu) — Kod 4/19 bunları TƏKRAR işlədir.
+            var cariFizikiSetir = Setir("6.1", "fiziki şəxslər", 20, false,
+                h => h.Klass == "41" && !DepozitQrup(h), CariFiziki, regnomDedup: false);
+            var cariSahibkarSetir = Setir(null, "ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən", 21, true,
+                h => sahibkarCariBolmeler.Contains(h.Bolme), SahibkarCari, regnomDedup: false);
+            var cariHuquqiSetir = Setir("6.2", "hüquqi şəxslər", 22, false,
+                h => h.Klass is "38" or "39" or "40", CariHuquqi, regnomDedup: false);
+
+            var kod19 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "6", Ad = "Cari hesabların hüquqi statusuna görə sayı- cəmi ", Kod = 19,
+                D_HesabSayiCemi = cariFizikiSetir.D_HesabSayiCemi + cariHuquqiSetir.D_HesabSayiCemi,
+                E_HesabSayiXariciValyuta = cariFizikiSetir.E_HesabSayiXariciValyuta + cariHuquqiSetir.E_HesabSayiXariciValyuta,
+                F_SahibSayi = cariFizikiSetir.F_SahibSayi + cariHuquqiSetir.F_SahibSayi,
+                G_HesabSayiCemi = cariFizikiSetir.G_HesabSayiCemi + cariHuquqiSetir.G_HesabSayiCemi,
+                H_HesabSayiXariciValyuta = cariFizikiSetir.H_HesabSayiXariciValyuta + cariHuquqiSetir.H_HesabSayiXariciValyuta,
+                I_AktivCemi = cariFizikiSetir.I_AktivCemi + cariHuquqiSetir.I_AktivCemi,
+                J_AktivXariciValyuta = cariFizikiSetir.J_AktivXariciValyuta + cariHuquqiSetir.J_AktivXariciValyuta,
+                K_SahibSayi = cariFizikiSetir.K_SahibSayi + cariHuquqiSetir.K_SahibSayi,
+            };
+
+            // Kod 4 (1.3, "cari hesablar") — D/E/F öz-özünə (bu ay açılan), G..K = Kod19-un
+            // dövrün-sonu sütunları (yeni şablonda '=G25' kimi birbaşa istinad).
+            var kod4 = Setir("1.3", "       cari hesablar", 4, false,
+                h => CariHesabiXam(h) && !DepozitQrup(h), _ => false);
+            kod4.G_HesabSayiCemi = kod19.G_HesabSayiCemi;
+            kod4.H_HesabSayiXariciValyuta = kod19.H_HesabSayiXariciValyuta;
+            kod4.I_AktivCemi = kod19.I_AktivCemi;
+            kod4.J_AktivXariciValyuta = kod19.J_AktivXariciValyuta;
+            kod4.K_SahibSayi = kod19.K_SahibSayi;
+
+            // Kod 2/5/6/9/10 (depozit) — H/J/K şablonda sabit 0, I "Depozit" vərəqindən
+            // əl ilə yazılır (Oracle-da qarşılığı yoxdur).
+            const string depozitManualQeyd = "Mənbə şablonda (Depozit vərəqi) əl ilə yazılan say — Oracle-dan avtomatik hesablanmır.";
+            var kod6 = Setir("2.1", "        fiziki şəxslər", 6, false,
+                DepozitQrup, h => DepozitQrup(h), hFixZero: true, jFixZero: true, elIleQeyd: depozitManualQeyd);
+            kod6.K_SahibSayi = 0; // şablonda sabit 0 (dövr-sonu depozit sahib sayısı hesablanmır)
+            var kod7 = new MuhasibatOs61SetirDto
+            {
+                Ad = "           ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən ", Kod = 7, AltSetir = true,
+                D_HesabSayiCemi = 0, E_HesabSayiXariciValyuta = 0, F_SahibSayi = 0,
+                G_HesabSayiCemi = 0, H_HesabSayiXariciValyuta = 0, I_AktivCemi = 0, J_AktivXariciValyuta = 0, K_SahibSayi = 0,
+            };
+            var kod8 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "2.2", Ad = "         hüquqi şəxslər", Kod = 8,
+                D_HesabSayiCemi = 0, E_HesabSayiXariciValyuta = 0, F_SahibSayi = 0,
+                G_HesabSayiCemi = movcud.Count(h => h.Qrup == "391"),
+                H_HesabSayiXariciValyuta = 0, I_AktivCemi = 0, J_AktivXariciValyuta = 0, K_SahibSayi = 0,
+            };
+            var kod5 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "2", Ad = "Depozit hesabların hüquqi statusuna görə sayı- cəmi ", Kod = 5,
+                D_HesabSayiCemi = kod6.D_HesabSayiCemi + kod8.D_HesabSayiCemi,
+                E_HesabSayiXariciValyuta = kod6.E_HesabSayiXariciValyuta + kod8.E_HesabSayiXariciValyuta,
+                F_SahibSayi = kod6.F_SahibSayi + kod8.F_SahibSayi,
+                G_HesabSayiCemi = kod6.G_HesabSayiCemi + kod8.G_HesabSayiCemi,
+                H_HesabSayiXariciValyuta = kod6.H_HesabSayiXariciValyuta + kod8.H_HesabSayiXariciValyuta,
+                I_AktivCemi = null, J_AktivXariciValyuta = kod6.J_AktivXariciValyuta + kod8.J_AktivXariciValyuta,
+                K_SahibSayi = kod6.K_SahibSayi + kod8.K_SahibSayi,
+                ElIleQeyd = depozitManualQeyd,
+            };
+            var kod2 = Setir("1.1", "       depozit hesabları (cari hesablar istisna olmaqla)", 2, false,
+                DepozitQrup, h => h.Qrup is "411" or "412" or "391",
+                hFixZero: true, jFixZero: true, elIleQeyd: depozitManualQeyd);
+            kod2.K_SahibSayi = kod5.K_SahibSayi;
+            var kod10 = Setir("3.1", "        müddətli", 10, false,
+                DepozitQrup, h => h.Qrup is "411" or "412" or "391",
+                hFixZero: true, jFixZero: true, elIleQeyd: depozitManualQeyd);
+            kod10.F_SahibSayi = kod5.F_SahibSayi;
+            kod10.K_SahibSayi = kod5.K_SahibSayi;
+            var kod11 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "3.2", Ad = "        tələbolunanadək", Kod = 11,
+                D_HesabSayiCemi = 0, E_HesabSayiXariciValyuta = 0, F_SahibSayi = 0,
+                G_HesabSayiCemi = 0, H_HesabSayiXariciValyuta = 0, I_AktivCemi = 0, J_AktivXariciValyuta = 0, K_SahibSayi = 0,
+            };
+            var kod9 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "3", Ad = "Depozit hesabların müddətinə görə sayı- cəmi ", Kod = 9,
+                D_HesabSayiCemi = kod10.D_HesabSayiCemi + kod11.D_HesabSayiCemi,
+                E_HesabSayiXariciValyuta = kod10.E_HesabSayiXariciValyuta + kod11.E_HesabSayiXariciValyuta,
+                F_SahibSayi = kod5.F_SahibSayi,
+                G_HesabSayiCemi = kod10.G_HesabSayiCemi + kod11.G_HesabSayiCemi,
+                H_HesabSayiXariciValyuta = kod10.H_HesabSayiXariciValyuta + kod11.H_HesabSayiXariciValyuta,
+                I_AktivCemi = null, J_AktivXariciValyuta = kod10.J_AktivXariciValyuta + kod11.J_AktivXariciValyuta,
+                K_SahibSayi = kod5.K_SahibSayi,
+                ElIleQeyd = depozitManualQeyd,
+            };
+
+            // Kod 13/14/15 (kredit — fiziki/sahibkar/hüquqi) — regnom-əsaslı dedup.
+            var kod13 = Setir("4.1", "        fiziki şəxslər", 13, false,
+                h => h.Klass == "21", FizikiKredit, regnomDedup: true);
+            var kod14 = Setir(null, "              ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən ", 14, true,
+                SahibkarKredit, h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
+                jFixZero: true);
+            var kod15 = Setir("4.2", "        hüquqi şəxslər", 15, false,
+                h => h.Klass == "20", HuquqiKredit, regnomDedup: true, jFixZero: true);
+            var kod12 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "4", Ad = "Kredit hesabların hüquqi statusuna görə sayı- cəmi", Kod = 12,
+                D_HesabSayiCemi = kod13.D_HesabSayiCemi + kod15.D_HesabSayiCemi,
+                E_HesabSayiXariciValyuta = kod13.E_HesabSayiXariciValyuta + kod15.E_HesabSayiXariciValyuta,
+                F_SahibSayi = kod13.F_SahibSayi + kod15.F_SahibSayi,
+                G_HesabSayiCemi = kod13.G_HesabSayiCemi + kod15.G_HesabSayiCemi,
+                H_HesabSayiXariciValyuta = kod13.H_HesabSayiXariciValyuta + kod15.H_HesabSayiXariciValyuta,
+                I_AktivCemi = kod13.I_AktivCemi + kod15.I_AktivCemi,
+                J_AktivXariciValyuta = kod13.J_AktivXariciValyuta + kod15.J_AktivXariciValyuta,
+                K_SahibSayi = kod13.K_SahibSayi + kod15.K_SahibSayi,
+            };
+
+            // Kod 17/18 (kredit müddətinə görə — uzun/qısa).
+            const string j17ManualQeyd = "Mənbə şablonda əl ilə yazılmış sabit ədəd (J=2) — Oracle-dan hesablanmır.";
+            var kod17 = Setir("5.1", "        uzunmüddətli", 17, false,
+                h => uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup));
+            kod17.J_AktivXariciValyuta = null;
+            kod17.ElIleQeyd = j17ManualQeyd;
+            var kod18 = Setir("5.2", "        qısamüddətli (360 günə qədər)", 18, false,
+                h => qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup),
+                jFixZero: true);
+            var kod16 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "5", Ad = "Kredit hesabların müddətinə görə sayı- cəmi ", Kod = 16,
+                D_HesabSayiCemi = kod17.D_HesabSayiCemi + kod18.D_HesabSayiCemi,
+                E_HesabSayiXariciValyuta = kod17.E_HesabSayiXariciValyuta + kod18.E_HesabSayiXariciValyuta,
+                F_SahibSayi = kod12.F_SahibSayi,
+                G_HesabSayiCemi = kod17.G_HesabSayiCemi + kod18.G_HesabSayiCemi,
+                H_HesabSayiXariciValyuta = kod17.H_HesabSayiXariciValyuta + kod18.H_HesabSayiXariciValyuta,
+                I_AktivCemi = kod17.I_AktivCemi + kod18.I_AktivCemi,
+                J_AktivXariciValyuta = (kod17.J_AktivXariciValyuta ?? 0) + (kod18.J_AktivXariciValyuta ?? 0),
+                K_SahibSayi = kod17.K_SahibSayi + kod18.K_SahibSayi,
+            };
+
+            // Kod 3 (1.2, "kredit hesabları") — D/E/F öz-özünə, G..K = Kod12-nin cəmi.
+            var kod3 = Setir("1.2", "       kredit hesabları", 3, false,
+                KreditHesabi, _ => false);
+            kod3.G_HesabSayiCemi = kod12.G_HesabSayiCemi;
+            kod3.H_HesabSayiXariciValyuta = kod12.H_HesabSayiXariciValyuta;
+            kod3.I_AktivCemi = kod12.I_AktivCemi;
+            kod3.J_AktivXariciValyuta = kod12.J_AktivXariciValyuta;
+            kod3.K_SahibSayi = kod12.K_SahibSayi;
+
+            var kod1 = new MuhasibatOs61SetirDto
+            {
+                BolmeNo = "1", Ad = "Müştəri hesablarının hesab növünə görə sayı- cəmi ", Kod = 1,
+                D_HesabSayiCemi = kod2.D_HesabSayiCemi + kod3.D_HesabSayiCemi + kod4.D_HesabSayiCemi,
+                E_HesabSayiXariciValyuta = kod2.E_HesabSayiXariciValyuta + kod3.E_HesabSayiXariciValyuta + kod4.E_HesabSayiXariciValyuta,
+                F_SahibSayi = kod4.F_SahibSayi,
+                G_HesabSayiCemi = kod2.G_HesabSayiCemi + kod3.G_HesabSayiCemi + kod4.G_HesabSayiCemi,
+                H_HesabSayiXariciValyuta = kod2.H_HesabSayiXariciValyuta + kod3.H_HesabSayiXariciValyuta + kod4.H_HesabSayiXariciValyuta,
+                I_AktivCemi = kod3.I_AktivCemi + kod4.I_AktivCemi,
+                J_AktivXariciValyuta = kod2.J_AktivXariciValyuta + kod3.J_AktivXariciValyuta + kod4.J_AktivXariciValyuta,
+                K_SahibSayi = kod4.K_SahibSayi,
+                ElIleQeyd = "I sütunu (ondan aktiv) YALNIZ Kod 3+4-ü cəmləyir — Kod 2 (depozit) manual olduğu üçün cəmə daxil deyil.",
+            };
+
+            dto.Setirler = new List<MuhasibatOs61SetirDto>
+            {
+                kod1, kod2, kod3, kod4, kod5, kod6, kod7, kod8, kod9, kod10,
+                kod11, kod12, kod13, kod14, kod15, kod16, kod17, kod18,
+                kod19, cariFizikiSetir, cariSahibkarSetir, cariHuquqiSetir,
+            };
+            dto.Setirler = dto.Setirler.OrderBy(x => x.Kod).ToList();
+
+            dto.Ugurlu = true;
+        }
+        catch (Exception ex)
+        {
+            dto.Ugurlu = false;
+            dto.Xeta = ex.Message;
+        }
+
+        return dto;
+    }
+
+    private class Os61Hesab
+    {
+        public string Klass { get; set; } = "";
+        public string Qrup { get; set; } = "";
+        public string Bolme { get; set; } = "";
+        public string RezervFlag { get; set; } = "";
+        public string KreditFlag { get; set; } = "";
+        public string Valyuta { get; set; } = "";
+        public string RegnomKod { get; set; } = "";
+        public string Adi { get; set; } = "";
+        public bool AcilibBuAy { get; set; }
+        public bool MovcudDovrSonu { get; set; }
+        public decimal Qaliq { get; set; }
     }
 
     public async Task<MuhasibatRezidentDto> RezidentAsync(DateTime? tarix = null)
