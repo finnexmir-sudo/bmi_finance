@@ -13509,3 +13509,56 @@ Oktyabr 2026 ÖS-6.1 hesabatında G3-ün (dövr sonu, kredit hesabları) artıq
 643 YOX, ~289-a (278 fiziki + 11 hüquqi) yaxın bir rəqəm göstərdiyini
 təsdiqləməlidir — eyni zamanda "bu ay açılan" (D/E) sütunlarının BU
 DÜZƏLİŞDƏN TƏSİRLƏNMƏDİYİNİ (əvvəlki kimi qaldığını) yoxlamalıdır.
+
+## ÖS-6.1 — Sürət: D1-dən Əvvəl Bağlanan Hesabları Sorğunun ÖZÜNDƏ At (18.11.2026)
+
+İstifadəçi şikayəti: *"sql i bazada isledirem, cox sayir, orda kohneden olan
+hesablarida getirir, evvel hesablar 13 herf idi indi 20 dir, ve basqa
+seyler. biz baslama tarixini duz tapsaq daha tez bas verer sorgu."*
+— sorğu `odb.licsch`-i (tarixcə, ən köhnə qeyddən bu günə qədər) tam oxuyur,
+əksəriyyəti artıq uzun müddətdir BAĞLI, bu hesabata heç aid olmayan hesablardır.
+
+**Düzəliş — `Muhasibat_OracleSorgular_OS6.sql`-in əsas `WHERE`-inə bir sətir:**
+```sql
+and (l.date_close_licsch is null or l.date_close_licsch >= to_date('{D1}','dd-mm-yyyy'))
+```
+
+**Riyazi əsas:** D1-dən ƏVVƏL bağlanmış hesab (açılma tarixi məntiqi olaraq
+bağlanma tarixindən əvvəl/eynidir, deməli D1-dən də əvvəldir) nə "bu ay açılan"
+(D/E/F — açılma D1..D2 aralığında olmalıdır), nə "dövrün sonuna açıq" (G/H/I/J/K
+— D2-dən sonra bağlanmalı, yaxud heç bağlanmamalı) şərtlərinin HEÇ BİRİNƏ uyğun
+GƏLƏ BİLMƏZ — silinməsi hər iki hesablama qrupu üçün TƏHLÜKƏSİZDİR.
+
+⚠️ **`IS NULL` qoruyucusu MƏCBURİDİR — istifadəçinin öz sualı məhz bunu
+aydınlaşdırdı.** İstifadəçi əvvəlcə tək `l.date_close_licsch >= to_date('{D1}',...)`
+yazmağı təklif etdi — bu, Oracle-un `NULL >= tarix`-i **UNKNOWN** saydığı üçün
+(nə TRUE, nə FALSE) `WHERE` onu KEÇİRMİR: hazırda AÇIQ (yəni `date_close_licsch
+IS NULL`) olan HƏR hesab — bu hesabatın əsas məzmunu — SƏSSİZCƏ silinərdi.
+`(IS NULL OR >= D1)` forması YALNIZ D1-dən ƏVVƏL bağlanmış hesabları atır,
+açıq hesablara TOXUNMUR.
+
+⚠️ **Bu, "13→20 simvol" boşluğunu (hesab formatı dəyişikliyi) TAM HƏLL ETMİR —
+AYRICA, hələ AÇIQ DİAQNOSTİKA tələb edir.** Köhnə-formatlı (13 simvol) bir
+hesab NƏZƏRİ olaraq hələ də `date_close_licsch IS NULL` ola bilər (heç vaxt
+inzibati bağlanmayıb) — bu filtr onu ATMAZ. Bu sualı cavablandırmaq üçün
+`docs/sql/muhasibat/94_Os61_Hesab_Uzunlugu_Baslama_Tarixi.sql` yazıldı
+(diaqnostik, YALNIZ-OXU) — istifadəçi bunu PL/SQL Developer-də bloq-bloq
+işlədib nəticəni göndərməlidir: (A) `LENGTH(licsch)` üzrə say+tarix aralığı,
+(B) 13↔20 keçid sərhədində üst-üstə düşmə varmı (tarix filtri TƏK BAŞINA
+təhlükəsizdirmi, yoxsa `LENGTH(licsch)=20` şərti DƏ əlavə lazımdır), (C)
+`date_open_licsch`-ə indeks varmı (tarix-floor-un REAL sürət artımı verib-
+vermədiyini təyin edir), (D) namizəd filtrlə qalan sətir sayının hazırkı
+sayla müqayisəsi. Nəticə gəldikdən sonra əsas sorğuya (və lazım gəlsə
+`90_Os61_Dogrulama_Diaqnostika.sql`-ə) uyğun `date_open_licsch >=` /
+`LENGTH(licsch)=20` şərti əlavə ediləcək.
+
+⚠️ **Bu sorğu YALNIZ-OXU canlı Oracle sorğusudur — heç bir sətir bizim öz
+bazamıza yazılmır/dondurulmur**, ona görə "geriyə tətbiq" məsələsi yoxdur,
+sadəcə SQL Server-də `OracleSorgular`-ı yeniləmək (faylı YENİDƏN işlətmək)
+kifayətdir.
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün
+yalnız əl ilə yoxlanıldı** (mötərizə balansı — 91/91, tam fayl). İstifadəçi
+SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə eyni Oktyabr 2026
+ÖS-6.1 nəticəsinin (rəqəmlər DƏYİŞMƏDƏN, sorğu müddətinin azaldığını)
+təsdiqləməli, SONRA `94_...sql`-in nəticəsini göndərməlidir.

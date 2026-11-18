@@ -108,6 +108,13 @@ select
 from odb.licsch l
 where l.date_open_licsch is not null
   and l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')
+/* 18.11.2026 — SÜRƏT: D1-dən ƏVVƏL bağlanmış hesab bu hesabata heç vaxt
+   daxil ola BİLMƏZ — nə "bu ay açılan" (açılma D1-dən əvvələ düşərdi), nə
+   "dövrün sonuna açıq" (artıq D2-dən əvvəl bağlanıb). ⚠️ NULL-U QORUYUCUSU
+   MƏCBURİDİR: `date_close_licsch >= D1` TƏK yazılsa, hazırda AÇIQ (NULL)
+   hesabların HAMISI SƏSSİZCƏ rədd olunar (Oracle-da NULL>=tarix UNKNOWN-dur,
+   WHERE bunu keçirmir) — "IS NULL OR" olmadan bu filtr əksər sətri silərdi. */
+  and (l.date_close_licsch is null or l.date_close_licsch >= to_date(''{D1}'',''dd-mm-yyyy''))
 ';
 
 IF EXISTS (SELECT 1 FROM OracleSorgular WHERE SorguAdi = @Ad AND ISNULL(Silinib,0) = 0)
