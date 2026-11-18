@@ -65,13 +65,13 @@ DECLARE @Ad NVARCHAR(200), @Mahiyyet NVARCHAR(MAX), @Sql NVARCHAR(MAX);
 SET @Ad       = N'Muhasibat — OS6.1 Hesablar';
 SET @Mahiyyet = N'ÖS-6.1 (AMB) — müştəri hesabları haqqında statistik hesabat. licsch-dən hesab sayı/müştəri sayı hesablamaq üçün xam sətirlər ({D1}=ayın 1-i, {D2}=ayın son günü).';
 SET @Sql = N'
+select
 /* =====================================================================
    ÖS-6.1 — xam hesab sətirləri (dövr: {D1} .. {D2}, dd-mm-yyyy)
    Hər sətir = bir licsch qeydi, Klass/Qrup/Bölmə/Valyuta/Regnom hesab
    nömrəsinin SUBSTR-i ilə əvvəlcədən hesablanıb (mühasibin MID() düsturunun
    Oracle qarşılığı).
    ===================================================================== */
-select
     l.licsch                      hesab,
     substr(l.licsch,1,2)          klass,
     substr(l.licsch,1,3)          qrup,
