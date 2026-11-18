@@ -13692,3 +13692,82 @@ YENİDƏN SQL Server-də işlədilməlidir (`OracleSorgular`-dakı sətr yenilə
 İstifadəçi SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə Oktyabr
 2026 ÖS-6.1-in "kredit hesabları" (Kod 3) sətrinin "dövrün sonuna cəmi"
 sütununun ARTIQ 0 DEYİL, real açıq kredit sayını göstərdiyini təsdiqləməlidir.
+
+### BEŞİNCİ DALĞA (eyni gün) — "lupa dönür, çox fırlanır" — KORRELƏ ALT-SORĞU HƏR SƏTR ÜÇÜN TƏKRARLANIRDI, SÜRƯT BUGU (18.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Düzgün nəticə verəndən dərhal sonra istifadəçi: *"sorguda nese problem var,lupa
+dusur nedir cox firlanir"* (sorğuda nəsə problem var, lupa [yükləmə spinneri]
+düşür, niyə — çox fırlanır). Bu, DÖRDÜNCÜ DALĞA-nın düzəlişinin ÖZÜNÜN yaratdığı,
+AYRI, sırf SÜRƏT problemidir — nəticə düzgün idi, amma icra müddəti qəbuledilməz
+dərəcədə uzun idi.
+
+**Kök səbəb:** `kredit_arh_tapildi`/`kredit_arh_baglama` İKİ KORRELƏ alt-sorğu
+idi — hər biri `odb.licsch`-in HƏR BİR SƏTRİ üçün AYRI-AYRI icra olunurdu, hər
+çağırışda `l.licsch IN (4 sütun)` (heç bir TƐK indeksdən keçməyən, 4 sütuna OR-
+bərabərliyi) + `al.date_oper <= D2` (RANGE, arxivin BÜTÜN tarixçəsi) şərtini
+`odb.arh_licschkre`-nin hamısında yoxlayırdı. Arxiv **gündəlik** yazıldığı üçün
+(DÖRDÜNCÜ DALĞA-da təsdiqlənib) bu cədvəl böyükdür — nəticə
+**O(licsch sətr sayı × arxivin tam tarixçəsi)** idi: hər açıq hesab üçün bütöv
+arxiv tarixçəsi yenidən taranırdı. Bu, elə "lupa"nın (sorğu dayanmadan fırlanması)
+dəqiq səbəbidir.
+
+**Düzəliş — nəticə RİYAZİ olaraq EYNİDİR, YALNIZ icra planı dəyişdi.** Dörd
+sütun (`licschkre`/`licschpkre`/`licsch_19`/`licschppkre`) `UNION ALL` ilə BİR
+DƏFƏYƏ tək `acc` sütununa normallaşdırılır (`arh_norm`), BİR DƏFƏYƏ `acc` üzrə
+qruplaşdırılır (`arh_agg` — "tapıldımı" VƏ "HƏMİN HESABIN ÖZ ən son `date_oper`-
+inə görə `date_close`", köhnə korrelə sorğunun DƏQİQ EYNİ semantikası, HƏR hesab
+üçün AYRICA, cədvəlin qlobal son tarixinə MƏHDUDLAŞDIRILMADAN — ÖNƏMLİ: əgər
+"qlobal son tarix" seçilsəydi, D2-dən əvvəl bağlanıb arxivdən düşmüş hesablar
+səhvən "tapılmadı" olardı, bu YALNIZ performans üçün DEYİL, DOĞRULUQ üçün də
+vacibdir), SONRA `l.licsch` bu KİÇİK, ƏVVƏLCƏDƏN hazır nəticə ilə (`arh_agg`)
+TƏK dəfə `LEFT JOIN` olunur:
+
+```sql
+with
+arh_norm as (
+    select licschkre acc, date_oper, date_close, subschkre from odb.arh_licschkre where date_oper <= to_date(D2)
+    union all
+    select licschpkre acc, date_oper, date_close, subschkre from odb.arh_licschkre where date_oper <= to_date(D2)
+    union all
+    select licsch_19 acc, date_oper, date_close, subschkre from odb.arh_licschkre where date_oper <= to_date(D2)
+    union all
+    select licschppkre acc, date_oper, date_close, subschkre from odb.arh_licschkre where date_oper <= to_date(D2)
+),
+arh_agg as (
+    select /*+ materialize */ acc,
+           max(date_close) keep (dense_rank first order by date_oper desc, nvl(subschkre,0) asc) date_close
+      from arh_norm where acc is not null group by acc
+)
+select ..., case when son.acc is not null then 1 else 0 end kredit_arh_tapildi, son.date_close kredit_arh_baglama
+from odb.licsch l
+left join arh_agg son on son.acc = l.licsch
+where ...
+```
+
+"Hər sətr üçün tam arxiv taraması" (N×M) → "bütöv sorğu üçün BİR aqreqasiya
+(arxivi 4 dəfə, YALNIZ bir dəfə ümumi) + BİR join" (N+M) — N=licsch sətr sayı,
+M=arxivin tam tarixçəsi.
+
+**`/*+ MATERIALIZE */` hinti qəsdən əlavə edildi** — join açarı (`son.acc =
+l.licsch`) sadə bərabərlikdir, nəzəri olaraq Oracle-un view-merge edib bu
+icra planını YENİDƏN korrelə formaya "unmerge" etmə riski DÜZ bu join tipində
+AŞAĞIDIR (CLAUDE.md-dəki "Oracle View Merging" qaydası LIKE/OR-əsaslı join-lərə
+aiddir) — amma CLAUDE.md-nin öz qaydasına görə ("compute once" pattern-inə
+hinsiz güvənmə) ehtiyat tədbiri kimi saxlanıldı.
+
+**`WITH` açar sözü ŞƏRHDƏN ƏVVƏL yerləşdirildi** — `OracleService.YalnizSelect`
+sorğunun BAŞLANĞICININ `SELECT` və ya `WITH` olmasını tələb edir (bax yuxarı
+"Saxlanmış Sorğu `--` ŞƏRHİ İLƏ BAŞLAYA BİLMƏZ" qaydası) — böyük izahlı şərh
+BLOKU bu dəfə `with`-dən SONRA, birinci CTE adından ƏVVƏL yerləşdirildi (Forma
+0250-nin öz düzəlişindəki EYNİ naxış).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — canlı, YALNIZ-OXU Oracle sorğusudur.** SQL faylı
+YENİDƏN SQL Server-də işlədilməlidir ki, `OracleSorgular`-dakı sətr yenilənsin.
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün yalnız
+əl ilə yoxlanıldı** (mötərizə balansı — 101/101 parens, 100 tək dırnaq — cüt).
+İstifadəçi SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə Oktyabr 2026
+ÖS-6.1-i yenidən açıb: (1) sorğunun indi SƏNİYYƏLƏRLƏ (əvvəlki "lupa dönür"
+halından FƏRQLİ) qayıtdığını, (2) "kredit hesabları" (Kod 3) sətrinin "dövrün
+sonuna cəmi" sütununun DÖRDÜNCÜ DALĞA-dakı DOĞRU ədədi (əvvəlki kimi) hələ də
+göstərdiyini (yəni sürət düzəlişi NƏTİCƏNİ DƏYİŞMƏDİ) təsdiqləməlidir.

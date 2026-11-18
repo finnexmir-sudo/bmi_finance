@@ -65,13 +65,60 @@ DECLARE @Ad NVARCHAR(200), @Mahiyyet NVARCHAR(MAX), @Sql NVARCHAR(MAX);
 SET @Ad       = N'Muhasibat — OS6.1 Hesablar';
 SET @Mahiyyet = N'ÖS-6.1 (AMB) — müştəri hesabları haqqında statistik hesabat. licsch-dən hesab sayı/müştəri sayı hesablamaq üçün xam sətirlər ({D1}=ayın 1-i, {D2}=ayın son günü).';
 SET @Sql = N'
-select
+with
 /* =====================================================================
    ÖS-6.1 — xam hesab sətirləri (dövr: {D1} .. {D2}, dd-mm-yyyy)
    Hər sətir = bir licsch qeydi, Klass/Qrup/Bölmə/Valyuta/Regnom hesab
    nömrəsinin SUBSTR-i ilə əvvəlcədən hesablanıb (mühasibin MID() düsturunun
    Oracle qarşılığı).
    ===================================================================== */
+/* 18.11.2026, DÖRDÜNCÜ DALĞA — "lupa dönür, çox fırlanır" (sürət bugu).
+   Kök səbəb: ÜÇÜNCÜ DALĞA-nın düzəlişi (IN 4 sütun + date_oper<=D2) HƏR
+   BİR `odb.licsch` SƏTRİ ÜÇÜN AYRI-AYRI, 2 KORRELƏ alt-sorğu kimi icra
+   olunurdu — hər çağırışda `al.date_oper<=D2` (RANGE) + `l.licsch IN
+   (4 sütun)` (heç bir indeksdən keçməyən bərabərlik) arxivin TAM
+   tarixçəsini TƏZƏDƏN oxuyurdu. Arxiv GÜNDƏLİK yazıldığı üçün (bax
+   yuxarı, ÜÇÜNCÜ DALĞA) bu cədvəl böyükdür — nəticə O(licsch sətr sayı ×
+   arxivin tam tarixçəsi) idi, "lupa" şikayətinin dəqiq səbəbi budur.
+   Düzəliş — NƏTİCƏ DƏYİŞMİR, YALNIZ İCRA PLANI dəyişir: dörd sütun
+   (licschkre/licschpkre/licsch_19/licschppkre) BİR DƏFƏYƏ tək "acc"
+   sütununa normallaşdırılır (arh_norm), BİR DƏFƏYƏ hesab üzrə
+   qruplaşdırılır (arh_agg — "tapıldımı" VƏ "D2-yə qədər HƏMİN HESABIN
+   ÖZ ən son `date_oper`-inə görə `date_close`" — köhnə korrelə sorğunun
+   DƏQİQ EYNİ semantikası, HƏR hesab üçün AYRICA hesablanır, cədvəlin
+   qlobal son tarixinə MƏHDUDLAŞDIRILMIR ki, D2-dən əvvəl bağlanıb
+   arxivdən düşmüş hesablar səhvən "tapılmadı" olmasın), SONRA `l.licsch`
+   bu KİÇİK, ƏVVƏLCƏDƏN hazır nəticə ilə TƏK dəfə JOIN olunur.
+   "Hər sətr üçün tam arxiv taraması" (N×M) → "bütöv sorğu üçün BİR
+   aqreqasiya + BİR join" (N+M). `/*+ MATERIALIZE */` Oracle-un bunu
+   YENİDƏN korrelə formaya "unmerge" etməsinin (bax CLAUDE.md-dəki
+   "Oracle View Merging" qaydası) qarşısını alır. */
+arh_norm as (
+    select licschkre acc, date_oper, date_close, subschkre
+      from odb.arh_licschkre
+     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+    union all
+    select licschpkre acc, date_oper, date_close, subschkre
+      from odb.arh_licschkre
+     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+    union all
+    select licsch_19 acc, date_oper, date_close, subschkre
+      from odb.arh_licschkre
+     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+    union all
+    select licschppkre acc, date_oper, date_close, subschkre
+      from odb.arh_licschkre
+     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+),
+arh_agg as (
+    select /*+ materialize */
+           acc,
+           max(date_close) keep (dense_rank first order by date_oper desc, nvl(subschkre,0) asc) date_close
+      from arh_norm
+     where acc is not null
+     group by acc
+)
+select
     l.licsch                      hesab,
     substr(l.licsch,1,2)          klass,
     substr(l.licsch,1,3)          qrup,
@@ -91,43 +138,10 @@ select
     case when l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')
           and (l.date_close_licsch is null or l.date_close_licsch > to_date(''{D2}'',''dd-mm-yyyy''))
          then 1 else 0 end        movcud_dovr_sonu,
-/* 18.11.2026 — KREDİT üçün "açıqdır" licsch.date_close_licsch-dən YOX,
-   arh_licschkre.date_close-dan (kredit müqaviləsinin ÖZ bağlanma tarixi,
-   canlı sınanıb: licsch 643, arh_licschkre 289 — licsch ledger sətri
-   bağlanmır, AMMA müqavilə artıq bağlı ola bilir). Korrelə skalyar
-   alt-sorğu (JOIN YOX) ki, arh_licschkre-də eyni (licschkre,date_oper)
-   üçün birdən çox subschkre sətri olsa belə əsas cədvəl SƏTIR SAYI
-   ARTMASIN — subschkre=0 (və ya ən kiçik) üstün tutulur.
-   ⚠️ 18.11.2026, İKİNCİ DALĞA — DÜZƏLİŞ: `al.licschkre = l.licsch` SƏHV İDİ.
-   İstifadəçi: "lics cari hesabi sen kredit hesabina beraber etmisen" — haqlı:
-   `odb.arh_licschkre`-nin (= `odb.licschkre`-nin arxivi) HƏR sətri BİR KREDİTİN
-   DÖRD AYRI GL sub-hesabını daşıyır (`licschkre`=əsas/performing, `licschpkre`=
-   faiz/performing, `licsch_19`=vaxtı keçmiş əsas, `licschppkre`=vaxtı keçmiş
-   faiz — bu DÖRDLÜK artıq `docs/sql/pid/PID_OracleSorgular_GunlukKreditOdenisleri.
-   sql`-də, eyni cədvəldə, istifadəçi ilə canlı sınanıb TƏSDİQLƏNİB). `l.licsch`
-   (bizim Kod3 "kredit hesabları" sətri) bu DÖRD sub-hesabdan İSTƏNİLƏN BİRİ ola
-   bilər — YALNIZ `al.licschkre`-yə (əsas/performing) bərabərliyi yoxlamaq digər
-   3 sub-hesab (faiz, vaxtı keçmiş əsas, vaxtı keçmiş faiz) üçün HƏMİŞƏ "tapılmadı"
-   (0) qaytarır → G3/H3/J3/K3 kütləvi şəkildə 0-a düşür. Düzəliş: `l.licsch`-i
-   DÖRDÜNÜN HƏR BİRİNƏ qarşı yoxla (IN) — kredit müqaviləsinin `date_close`-u
-   bütün dörd sub-hesaba AİDDİR (loan bir dəfə bağlanır, dördü də birlikdə).
-   ⚠️ 18.11.2026, ÜÇÜNCÜ DALĞA — `al.date_oper = D2` DƏQİQ BƏRABƏRLİYİ İKİNCİ,
-   MÜSTƏQİL SƏBƏBDƏN də 0 qaytarırdı: canlı yoxlanıldı (31-10-2026, şənbə) —
-   `arh_licschkre`-də HEÇ BİR sətir `date_oper=''31-10-2026''` ilə yoxdur
-   (arxiv YALNIZ iş günlərində yazılır), ən son mövcud snapshot ''30-10-2026''
-   çıxdı. Düzəliş: dəqiq bərabərlik YERİNƏ `<=D2` + "ən son məlum snapshot":
-   `kredit_arh_tapildi` sadə MÖVCUDLUQ (istənilən tarixdə tapılıbsa kifayətdir,
-   "son" olmasına EHTİYAC YOXDUR), `kredit_arh_baglama` isə D2-yə QƏDƏR olan ƏN
-   SON (`date_oper` maksimum, tie-break subschkre=0 üstün) sətrin `date_close`-u
-   — bu, D2 istənilən gün (iş günü və ya YOX) olsa belə düzgün nəticə verir. */
-    (select count(*) from odb.arh_licschkre al
-      where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
-        and al.date_oper <= to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_tapildi,
-    (select max(al.date_close) keep (dense_rank first order by al.date_oper desc, nvl(al.subschkre,0) asc)
-       from odb.arh_licschkre al
-      where l.licsch in (al.licschkre, al.licschpkre, al.licsch_19, al.licschppkre)
-        and al.date_oper <= to_date(''{D2}'',''dd-mm-yyyy''))  kredit_arh_baglama
+    case when son.acc is not null then 1 else 0 end          kredit_arh_tapildi,
+    son.date_close                                           kredit_arh_baglama
 from odb.licsch l
+left join arh_agg son on son.acc = l.licsch
 where l.date_open_licsch is not null
   and l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')
 /* 18.11.2026 — SÜRƏT: D1-dən ƏVVƏL bağlanmış hesab bu hesabata heç vaxt
