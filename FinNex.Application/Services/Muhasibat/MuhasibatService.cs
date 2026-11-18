@@ -1939,24 +1939,30 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             var uzunKreditQruplar = new[] { "212", "206", "207", "208" };
             var qisaKreditQruplar = new[] { "210", "211", "203", "204", "205" };
 
+            // 18.11.2026 — bir kredit licsch-də 4 AYRI sətirdir (əsas/faiz/vaxtı keçmiş
+            // əsas/vaxtı keçmiş faiz, eyni Bölmə prefiksi, fərqli KreditFlag — canlı
+            // sınanıb: BAYDAROV V.Ü., Bölmə=2121, flag=0/2/3/4). KreditHesabiAktivMenbe-nin
+            // flag IN ('0','5') filtri YALNIZ "əsas" sub-hesabı seçib hər kreditə 1 sətir
+            // verir — bu FİLTR acilanShert-DƏ DƏ (bu ay açılan), movcudShert-DƏ DƏ (dövr
+            // sonu) EYNİ olmalıdır, yoxsa D/E 4x şişər (kod3/13/14/15/17/18-in hamısı bu
+            // səbəbdən düzəldi). Eyni qayda cari hesablarda RezervFlag/Qrup=391 üçün.
             bool DepozitQrup(Os61Hesab h) => h.Qrup is "411" or "412";
             bool KreditHesabi(Os61Hesab h) => h.Klass is "20" or "21";
             bool KreditHesabiAktivMenbe(Os61Hesab h) => KreditHesabi(h) && h.KreditFlag is "0" or "5" && h.RezervFlag != "9";
             bool SahibkarKredit(Os61Hesab h) => sahibkarKreditBolmeler.Contains(h.Bolme);
             bool FizikiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "21";
             bool HuquqiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "20";
-            bool CariHesabiXam(Os61Hesab h) => h.Klass is "38" or "39" or "40" or "41";
             bool CariFiziki(Os61Hesab h) => h.Klass == "41" && !DepozitQrup(h) && h.Qrup != "391" && h.RezervFlag != "9";
             bool CariHuquqi(Os61Hesab h) => h.Klass is "38" or "39" or "40" && h.RezervFlag != "9";
             bool SahibkarCari(Os61Hesab h) => sahibkarCariBolmeler.Contains(h.Bolme) && h.RezervFlag != "9";
 
             // Kod 20/21/22 (cari hesablar — dövrün sonu) — Kod 4/19 bunları TƏKRAR işlədir.
             var cariFizikiSetir = Setir("6.1", "fiziki şəxslər", 20, false,
-                h => h.Klass == "41" && !DepozitQrup(h), CariFiziki, regnomDedup: false);
+                CariFiziki, CariFiziki, regnomDedup: false);
             var cariSahibkarSetir = Setir(null, "ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən", 21, true,
-                h => sahibkarCariBolmeler.Contains(h.Bolme), SahibkarCari, regnomDedup: false);
+                SahibkarCari, SahibkarCari, regnomDedup: false);
             var cariHuquqiSetir = Setir("6.2", "hüquqi şəxslər", 22, false,
-                h => h.Klass is "38" or "39" or "40", CariHuquqi, regnomDedup: false);
+                CariHuquqi, CariHuquqi, regnomDedup: false);
 
             var kod19 = new MuhasibatOs61SetirDto
             {
@@ -1974,7 +1980,7 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             // Kod 4 (1.3, "cari hesablar") — D/E/F öz-özünə (bu ay açılan), G..K = Kod19-un
             // dövrün-sonu sütunları (yeni şablonda '=G25' kimi birbaşa istinad).
             var kod4 = Setir("1.3", "       cari hesablar", 4, false,
-                h => CariHesabiXam(h) && !DepozitQrup(h), _ => false);
+                h => CariFiziki(h) || CariHuquqi(h), _ => false);
             kod4.G_HesabSayiCemi = kod19.G_HesabSayiCemi;
             kod4.H_HesabSayiXariciValyuta = kod19.H_HesabSayiXariciValyuta;
             kod4.I_AktivCemi = kod19.I_AktivCemi;
@@ -2042,12 +2048,13 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
 
             // Kod 13/14/15 (kredit — fiziki/sahibkar/hüquqi) — regnom-əsaslı dedup.
             var kod13 = Setir("4.1", "        fiziki şəxslər", 13, false,
-                h => h.Klass == "21", FizikiKredit, regnomDedup: true);
+                FizikiKredit, FizikiKredit, regnomDedup: true);
             var kod14 = Setir(null, "              ondan hüquqi şəxs yaratmadan sahibkarlıq fəaliyyəti həyata keçirən ", 14, true,
-                SahibkarKredit, h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
+                h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h),
+                h => KreditHesabiAktivMenbe(h) && h.Klass == "21" && SahibkarKredit(h), regnomDedup: true,
                 jFixZero: true);
             var kod15 = Setir("4.2", "        hüquqi şəxslər", 15, false,
-                h => h.Klass == "20", HuquqiKredit, regnomDedup: true, jFixZero: true);
+                HuquqiKredit, HuquqiKredit, regnomDedup: true, jFixZero: true);
             var kod12 = new MuhasibatOs61SetirDto
             {
                 BolmeNo = "4", Ad = "Kredit hesabların hüquqi statusuna görə sayı- cəmi", Kod = 12,
@@ -2064,11 +2071,11 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             // Kod 17/18 (kredit müddətinə görə — uzun/qısa).
             const string j17ManualQeyd = "Mənbə şablonda əl ilə yazılmış sabit ədəd (J=2) — Oracle-dan hesablanmır.";
             var kod17 = Setir("5.1", "        uzunmüddətli", 17, false,
-                h => uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup));
+                h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && uzunKreditQruplar.Contains(h.Qrup));
             kod17.J_AktivXariciValyuta = null;
             kod17.ElIleQeyd = j17ManualQeyd;
             var kod18 = Setir("5.2", "        qısamüddətli (360 günə qədər)", 18, false,
-                h => qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup),
+                h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup), h => KreditHesabiAktivMenbe(h) && qisaKreditQruplar.Contains(h.Qrup),
                 jFixZero: true);
             var kod16 = new MuhasibatOs61SetirDto
             {
@@ -2085,7 +2092,7 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
 
             // Kod 3 (1.2, "kredit hesabları") — D/E/F öz-özünə, G..K = Kod12-nin cəmi.
             var kod3 = Setir("1.2", "       kredit hesabları", 3, false,
-                KreditHesabi, _ => false);
+                KreditHesabiAktivMenbe, _ => false);
             kod3.G_HesabSayiCemi = kod12.G_HesabSayiCemi;
             kod3.H_HesabSayiXariciValyuta = kod12.H_HesabSayiXariciValyuta;
             kod3.I_AktivCemi = kod12.I_AktivCemi;
