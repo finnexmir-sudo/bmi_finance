@@ -93,22 +93,45 @@ with
    aqreqasiya + BİR join" (N+M). arh_agg-dəki MATERIALIZE hinti Oracle-un
    bunu YENİDƏN korrelə formaya "unmerge" etməsinin (bax CLAUDE.md-dəki
    "Oracle View Merging" qaydası) qarşısını alır. */
+/* 18.11.2026, ALTINCI DALĞA — materialize+join-dən SONRA DA "lupa dönür"
+   davam etdi (istifadəçinin öz canlı testi). Kök səbəb: arh_agg-in qrup-
+   laşdırdığı arh_norm CTE-si `odb.arh_licschkre`-nin TAM tarixçəsini (illər
+   boyu, HƏR iş günü, 4x UNPIVOT olunmuş) materiallaşdırırdı — O(M) bir dəfə
+   olsa belə, M özü ÇOX BÖYÜK idi.
+   Düzəliş: arh_norm-un hər 4 qoluna `date_oper > D2-31` aşağı həddi əlavə
+   edildi (bir təqvim ayı pəncərəsi, D2-dən geriyə). Bu TƏHLÜKƏSİZDİR:
+   "dövrün sonuna" sualı YALNIZ D2 ANINDAKI vəziyyətə aiddir — HƏQİQƏTƏN
+   açıq qalan hər kredit arxivin GÜNDƏLİK yazdığı son bir neçə iş günündə
+   (31 gün bunu geniş örtür) YENİDƏN görünür; pəncərədə HEÇ TAPILMAYAN
+   hesab isə ya həqiqətən yoxdur, ya da çox əvvəl bağlanıb arxiv onu artıq
+   yeniləmir — HƏR İKİ HALDA `KreditHesabiAktivDovrSonu`-nun `KreditArh
+   Tapildi` şərti onsuz da false qaytarıb "açıq sayılmır" nəticəsinə
+   gətirir, yəni YANLIŞ-NEQATİV riski YOXDUR.
+   ⚠️ Bu, arxivin HƏR açıq kredit üçün HƏR iş günü (fəaliyyətindən asılı
+   olmayaraq) sətir yazdığı fərziyyəsinə əsaslanır — PİD-in gündəlik ödəniş
+   modulunda artıq canlı TƏSDİQLƏNMİŞ naxışdır (bax CLAUDE.md). Əgər "açıq
+   kredit" sayı bu düzəlişdən sonra GÖZLƏNİLMƏDƏN azalsa, əvvəlcə bu
+   fərziyyəni yoxla — pəncərəni genişləndirmək (31→60) ilk addım olmalıdır. */
 arh_norm as (
     select licschkre acc, date_oper, date_close, subschkre
       from odb.arh_licschkre
-     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
+       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
     union all
     select licschpkre acc, date_oper, date_close, subschkre
       from odb.arh_licschkre
-     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
+       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
     union all
     select licsch_19 acc, date_oper, date_close, subschkre
       from odb.arh_licschkre
-     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
+       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
     union all
     select licschppkre acc, date_oper, date_close, subschkre
       from odb.arh_licschkre
-     where date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
+       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
 ),
 arh_agg as (
     select /*+ materialize */

@@ -13771,3 +13771,55 @@ YENİDƏN SQL Server-də işlədilməlidir ki, `OracleSorgular`-dakı sətr yeni
 halından FƏRQLİ) qayıtdığını, (2) "kredit hesabları" (Kod 3) sətrinin "dövrün
 sonuna cəmi" sütununun DÖRDÜNCÜ DALĞA-dakı DOĞRU ədədi (əvvəlki kimi) hələ də
 göstərdiyini (yəni sürət düzəlişi NƏTİCƏNİ DƏYİŞMƏDİ) təsdiqləməlidir.
+
+### ALTINCI DALĞA (eyni gün) — MATERIALIZE+JOIN-DƏN SONRA DA YAVAŞ İDİ — ARXİV TAM TARİXÇƏ ÜZRƏ YOX, 31 GÜNLÜK PƏNCƏRƏ ÜZRƏ AQREQAT OLUNUR (18.11.2026)
+
+BEŞİNCİ DALĞA-nın N×M → N+M düzəlişi icra planını düzəltdi, AMMA istifadəçi öz
+tərəfindən sınadığı, pəncərəli (son 15 gün) bir variantın PL/SQL Developer-də
+sürətli işlədiyini göstərdi (`unpivot` + `date_oper > D2-15` ilə) və soruşdu:
+*"bu sql i? bu suretlidir"*. Kök səbəb: BEŞİNCİ DALĞA arxivi YALNIZ BİR DƏFƏ
+aqreqasiya edirdi (N×M → N+M idi, DOĞRU idi), AMMA M-in ÖZÜ (illərlə gündəlik
+yazılan `odb.arh_licschkre`, 4x UNPIVOT olunmuş) hələ də ÇOX BÖYÜK idi — "bir
+dəfə" olsa da, o "bir dəfə" uzun sürürdü.
+
+**Düzəliş — istifadəçinin pəncərə ideyası QƏBUL EDİLDİ, AMMA onun UNPIVOT
+sintaksisinə keçmədən, MÖVCUD `arh_norm`/`arh_agg` strukturuna SADƏCƏ bir aşağı
+hədd əlavə edilərək** (kiçik, cərrahi dəyişiklik — adların/CTE strukturunun
+dəyişməsinə ehtiyac yoxdur): `arh_norm`-un HƏR DÖRD UNION ALL qolunun WHERE-i
+`date_oper <= D2`-dən `date_oper > D2-31 AND date_oper <= D2`-ə keçdi (BEŞİNCİ
+DALĞA-nın "tapıldımı" məntiqinə — `case when son.acc is not null...` — TOXUNUL-
+MADI, o artıq DOĞRU idi, istifadəçinin `count(date_close is null)` variantından
+FƏRQLİ olaraq əlavə düzəlişə ehtiyac yox idi).
+
+**Pəncərə 31 gün (istifadəçinin test etdiyi 15 gün YOX) seçildi — bir təqvim
+ayı, bilərəkdən bir az geniş.** Səbəb: "dövrün sonuna" sualı YALNIZ D2 ANINDAKI
+vəziyyətə aiddir (D1-in nə qədər geriyə getdiyi önəmli deyil) — HƏQİQƏTƏN açıq
+qalan hər kredit arxivin GÜNDƏLİK (iş günü) yazdığı son bir neçə sətirdə artıq
+görünür, 31 gün bunu rahat örtür. Pəncərədə HEÇ TAPILMAYAN hesab isə ya
+HƏQİQƏTƏN mövcud deyil, ya da çox əvvəl bağlanıb arxiv onu artıq yeniləmir —
+HƏR İKİ HALDA `KreditHesabiAktivDovrSonu`-nun `KreditArhTapildi` şərti onsuz da
+`false` qaytarıb "açıq sayılmır" nəticəsinə gətirir (BEŞİNCİ DALĞA-nın "qlobal
+son tarixə məhdudlaşdırma" barədə artıq qoyduğu qoruyucunun məntiqinin EYNİSİ,
+bir pilə də aşağı tətbiq olunur) — YANLIŞ-NEQATİV RİSKİ YOXDUR.
+
+⚠️ **Bu, arxivin HƏR açıq kredit üçün HƏR iş günü (fəaliyyətindən asılı
+olmayaraq) sətir yazdığı fərziyyəsinə əsaslanır** — PİD-in gündəlik ödəniş
+modulunda artıq canlı TƏSDİQLƏNMİŞ naxışdır (bax yuxarı "PİD Gündəlik Kredit
+Ödənişləri" bölmələri, `odb.arh_licschkre`-nin gündəlik snapshot olduğu
+TƏSDİQLƏNİB). Əgər "açıq kredit" sayı bu düzəlişdən sonra GÖZLƏNİLMƏDƏN azalsa
+(məs. uzun müddət heç bir fəaliyyəti olmayan, amma HƏQİQƏTƏN açıq qalan bir
+kredit arxivdə 31 gündən köhnə görünərsə), bu fərziyyəni yoxlamaq lazımdır —
+pəncərəni genişləndirmək (31→60) ilk addım olmalıdır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — canlı, YALNIZ-OXU Oracle sorğusudur.** SQL faylı
+YENİDƏN SQL Server-də işlədilməlidir ki, `OracleSorgular`-dakı sətr yenilənsin.
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün yalnız
+əl ilə yoxlanıldı** (mötərizə balansı — 113/113 parens, 132 tək dırnaq — cüt;
+şərh ayırıcılarının (`/*`/`*/`) HAMISI düzgün sırada açılıb-bağlandığı `grep`
+ilə təsdiqləndi — ORA-00911 tələsinə YENİDƏN düşülmədi, bu dəfə komment
+daxilində HEÇ bir `/*`/`*/` sintaksisi hərfi sitat kimi yazılmadı). İstifadəçi
+SQL faylını SQL Server-də YENİDƏN işlədib, real mühitdə yoxlamalıdır: (1)
+sorğunun indi daha sürətli (ƏVVƏLKİ BEŞİNCİ DALĞA versiyasından da) qayıtdığını,
+(2) "kredit hesabları" (Kod 3) sətrinin "dövrün sonuna cəmi" sütununun hələ də
+DÖRDÜNCÜ/BEŞİNCİ DALĞA-dakı DOĞRU ədədi göstərdiyini (nəticə dəyişməməlidir).
