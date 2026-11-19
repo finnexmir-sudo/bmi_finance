@@ -87,92 +87,104 @@
         <div class="hi-empty" id="hiLoading">Yüklənir...</div>
     </div>
 
-    <!-- ═══ KATEQORİYALAR ═══ -->
-    <div class="hi-section-head">
-        <i class="bi bi-tags"></i> Kateqoriyalar
-        <button type="button" class="hi-add-btn" onclick="document.getElementById('katModal').classList.add('hi-modal--open')">
-            <i class="bi bi-plus-lg"></i> Yeni kateqoriya
-        </button>
-    </div>
-    <div class="fn-card">
-        @if (Model.Kateqoriyalar.Any())
-        {
-            <div class="hi-kat-list">
-                @foreach (var k in Model.Kateqoriyalar)
+    <!-- ═══ TƏNZİMLƏMƏLƏR (qatlanan — Kateqoriyalar + Şablonlar) ═══ -->
+    <details class="hi-settings">
+        <summary class="hi-settings-summary">
+            <i class="bi bi-gear"></i>
+            <span>Tənzimləmələr</span>
+            <span class="hi-settings-sub">kateqoriyalar və hesabat şablonları</span>
+            <i class="bi bi-chevron-down hi-settings-chevron"></i>
+        </summary>
+        <div class="hi-settings-body">
+
+            <!-- ═══ KATEQORİYALAR ═══ -->
+            <div class="hi-section-head">
+                <i class="bi bi-tags"></i> Kateqoriyalar
+                <button type="button" class="hi-add-btn" onclick="document.getElementById('katModal').classList.add('hi-modal--open')">
+                    <i class="bi bi-plus-lg"></i> Yeni kateqoriya
+                </button>
+            </div>
+            <div class="fn-card">
+                @if (Model.Kateqoriyalar.Any())
                 {
-                    <div class="hi-kat-item">
-                        <span class="hi-kat-name">@k.Ad</span>
-                        <form asp-action="KateqoriyaSil" method="post" class="hi-inline-form" onsubmit="return confirm('Bu kateqoriyanı silmək istəyirsiniz?')">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@k.Id" />
-                            <button type="submit" class="hi-btn hi-btn--del" title="Sil"><i class="bi bi-x-lg"></i></button>
-                        </form>
+                    <div class="hi-kat-list">
+                        @foreach (var k in Model.Kateqoriyalar)
+                        {
+                            <div class="hi-kat-item">
+                                <span class="hi-kat-name">@k.Ad</span>
+                                <form asp-action="KateqoriyaSil" method="post" class="hi-inline-form" onsubmit="return confirm('Bu kateqoriyanı silmək istəyirsiniz?')">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@k.Id" />
+                                    <button type="submit" class="hi-btn hi-btn--del" title="Sil"><i class="bi bi-x-lg"></i></button>
+                                </form>
+                            </div>
+                        }
                     </div>
                 }
+                else
+                {
+                    <div class="hi-empty">Hələ kateqoriya yaradılmayıb.</div>
+                }
             </div>
-        }
-        else
-        {
-            <div class="hi-empty">Hələ kateqoriya yaradılmayıb.</div>
-        }
-    </div>
 
-    <!-- ═══ ŞABLONLAR + YENİ ŞABLON ═══ -->
-    <div class="hi-section-head">
-        <i class="bi bi-journal-text"></i> Hesabat şablonları
-        <button type="button" class="hi-add-btn" onclick="document.getElementById('sablonModal').classList.add('hi-modal--open')">
-            <i class="bi bi-plus-lg"></i> Yeni şablon
-        </button>
-    </div>
-
-    @if (Model.Sablonlar.Any())
-    {
-        <div class="fn-card">
-            <table class="hi-table">
-                <thead>
-                    <tr>
-                        <th>Hesabat adı</th>
-                        <th>Tezlik</th>
-                        <th>Kateqoriya</th>
-                        <th>Prioritet</th>
-                        <th>Məsul</th>
-                        <th>Departament</th>
-                        <th>Deadline</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var s in Model.Sablonlar)
-                    {
-                        <tr>
-                            <td class="hi-t-bold">@s.Ad</td>
-                            <td><span class="hi-tag">@s.TezlikText</span></td>
-                            <td>@s.KateqoriyaAd</td>
-                            <td><span class="hi-pri hi-pri--@s.Prioritet.ToString().ToLower()">@s.PrioritetText</span></td>
-                            <td>@s.MesulIsciAd</td>
-                            <td>@s.DepartamentAd</td>
-                            <td>@(s.SonTarixGunu > 0 ? $"{s.SonTarixGunu}-ci gün" : "") @s.SonTarixSaati.ToString(@"hh\:mm")</td>
-                            <td>
-                                <form asp-action="SablonSil" method="post" class="hi-inline-form" onsubmit="return confirm('Silmək istədiyinizə əminsiniz?')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@s.Id" />
-                                    <button type="submit" class="hi-btn hi-btn--del" title="Sil"><i class="bi bi-trash3"></i></button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-    else
-    {
-        <div class="fn-card">
-            <div class="hi-empty">
-                Hələ hesabat şablonu yaradılmayıb. <strong>"Yeni şablon"</strong> düyməsini basın.
+            <!-- ═══ ŞABLONLAR + YENİ ŞABLON ═══ -->
+            <div class="hi-section-head">
+                <i class="bi bi-journal-text"></i> Hesabat şablonları
+                <button type="button" class="hi-add-btn" onclick="document.getElementById('sablonModal').classList.add('hi-modal--open')">
+                    <i class="bi bi-plus-lg"></i> Yeni şablon
+                </button>
             </div>
+
+            @if (Model.Sablonlar.Any())
+            {
+                <div class="fn-card">
+                    <table class="hi-table">
+                        <thead>
+                            <tr>
+                                <th>Hesabat adı</th>
+                                <th>Tezlik</th>
+                                <th>Kateqoriya</th>
+                                <th>Prioritet</th>
+                                <th>Məsul</th>
+                                <th>Departament</th>
+                                <th>Deadline</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.Sablonlar)
+                            {
+                                <tr>
+                                    <td class="hi-t-bold">@s.Ad</td>
+                                    <td><span class="hi-tag">@s.TezlikText</span></td>
+                                    <td>@s.KateqoriyaAd</td>
+                                    <td><span class="hi-pri hi-pri--@s.Prioritet.ToString().ToLower()">@s.PrioritetText</span></td>
+                                    <td>@s.MesulIsciAd</td>
+                                    <td>@s.DepartamentAd</td>
+                                    <td>@(s.SonTarixGunu > 0 ? $"{s.SonTarixGunu}-ci gün" : "") @s.SonTarixSaati.ToString(@"hh\:mm")</td>
+                                    <td>
+                                        <form asp-action="SablonSil" method="post" class="hi-inline-form" onsubmit="return confirm('Silmək istədiyinizə əminsiniz?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@s.Id" />
+                                            <button type="submit" class="hi-btn hi-btn--del" title="Sil"><i class="bi bi-trash3"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="fn-card">
+                    <div class="hi-empty">
+                        Hələ hesabat şablonu yaradılmayıb. <strong>"Yeni şablon"</strong> düyməsini basın.
+                    </div>
+                </div>
+            }
         </div>
-    }
+    </details>
 </div>
 
 <!-- ═══ YENİ KATEQORİYA MODAL ═══ -->

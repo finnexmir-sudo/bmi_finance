@@ -98,6 +98,55 @@
     min-width: 140px;
 }
 
+/* ── Tənzimləmələr (qatlanan bölmə) ── */
+.hi-settings {
+    margin-top: 22px;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.hi-settings-summary {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 16px;
+    cursor: pointer;
+    list-style: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+    user-select: none;
+}
+
+.hi-settings-summary::-webkit-details-marker { display: none; }
+.hi-settings-summary::marker { content: ''; }
+
+.hi-settings-summary i.bi-gear { color: #8a93a8; font-size: 14px; }
+
+.hi-settings-sub {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #8a93a8;
+}
+
+.hi-settings-chevron {
+    margin-left: auto;
+    color: #8a93a8;
+    font-size: 12px;
+    transition: transform .15s;
+}
+
+.hi-settings[open] .hi-settings-summary { border-bottom: 1px solid #f0f2f5; }
+.hi-settings[open] .hi-settings-chevron { transform: rotate(180deg); }
+
+.hi-settings-body {
+    padding: 4px 16px 16px;
+}
+
+.hi-settings-body .hi-section-head:first-child { margin-top: 14px; }
+
 /* ── Section Head (Kateqoriyalar/Şablonlar) ── */
 .hi-section-head {
     font-size: 10px;
