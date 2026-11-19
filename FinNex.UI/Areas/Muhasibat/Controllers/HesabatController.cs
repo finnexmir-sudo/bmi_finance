@@ -670,6 +670,14 @@ public class HesabatController : Controller
             row3.CreateCell(1).SetCellValue($"{ayAdlari[ay]} {il}");
         }
 
+        // 19.11.2026 — ÖS-6.1-in HƏR dəyəri bir SAYDIR (hesab/sahib sayı), pul məbləği
+        // deyil — xanada vergüldən sonra heç nə görünməməlidir. Stil BİR DƏFƏ yaradılır
+        // (hər xana üçün CreateCellStyle çağırsaq NPOI-nin 64 000 stil həddinə dəyərik —
+        // bax CLAUDE.md-nin "Böyük Excel ixracı" qaydası) və hər yazılan xanaya tətbiq
+        // olunur ki, şablonun ÖZÜNDƏ olan onluq format ("#,##0.00" kimi) üstələnsin.
+        var tamSayiStili = wb.CreateCellStyle();
+        tamSayiStili.DataFormat = wb.CreateDataFormat().GetFormat("#,##0");
+
         var ws = wb.GetSheet(vereqAdi);
         if (ws != null)
         {
@@ -685,12 +693,20 @@ public class HesabatController : Controller
                 // açılışda "repair" dialoqu) — istifadəçi: "düstur olan yerləri
                 // düsturdan çıxarma". Ona görə DÜSTUR DAŞIYAN xanaya TOXUNULMUR, Excel
                 // onu ƏTRAFDAKI (bizim yazdığımız) xanalardan ÖZÜ yenidən hesablayır.
+                //
+                // Dəyər HƏMİŞƏ tam ədədə yuvarlaqlaşdırılır (istifadəçi: "tam rəqəmlər
+                // düşməlidir, vergüldən sonra olmasın") — bu, SAY sahəsidir, hesablama
+                // zənciri onsuz da tam ədəd verir, AMMA `double` çevrilməsi nəzəri olaraq
+                // 642.999999999 kimi qalıq buraxa bilər; `Math.Round` + xananın ÖZ formatı
+                // (yuxarı) ikiqat qoruyur.
                 void Yaz(int col, decimal? v)
                 {
                     if (!v.HasValue) return;
                     var movcud = row.GetCell(col);
                     if (movcud != null && movcud.CellType == CellType.Formula) return;
-                    row.CreateCell(col).SetCellValue((double)v.Value);
+                    var yeniXana = row.CreateCell(col);
+                    yeniXana.SetCellValue((double)Math.Round(v.Value, 0, MidpointRounding.AwayFromZero));
+                    yeniXana.CellStyle = tamSayiStili;
                 }
                 Yaz(3, s.D_HesabSayiCemi);
                 Yaz(4, s.E_HesabSayiXariciValyuta);
