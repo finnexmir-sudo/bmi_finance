@@ -123,40 +123,48 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── Tamamla ──
+        // ── Tapşırıq siyahısı (AJAX, cədvəl üçün) ──
+        [HttpGet]
+        public async Task<IActionResult> GetTapshiriqlar(string? axtar, int? departamentId, int? tezlik, int? status)
+        {
+            // Departament-scoped işçi filtr dropdown-undan asılı olmayaraq yalnız ÖZ departamentini görür.
+            var isciDeptId = await GetUserDepartamentIdAsync();
+            var effektivDeptId = isciDeptId ?? departamentId;
+
+            var tezlikEnum = tezlik.HasValue ? (HesabatTezlik?)tezlik.Value : null;
+            var result = await _service.GetTapshiriqlarAsync(effektivDeptId, status, axtar, tezlikEnum);
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new { success = true, data = result.Data });
+        }
+
+        // ── Tamamla (AJAX) ──
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Tamamla(int tapshiriqId, string? qeyd)
         {
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null)
-            {
-                TempData["Error"] = "İşçi tapılmadı.";
-                return RedirectToAction(nameof(Index));
-            }
+                return Json(new { success = false, message = "İşçi tapılmadı." });
 
             var result = await _service.TamamlaAsync(tapshiriqId, isciId.Value, qeyd);
             if (result.Success)
                 await _teklifService.TapshiriqTamamlandiAsync(tapshiriqId);
-            TempData[result.Success ? "Success" : "Error"] = result.Message;
-            return RedirectToAction(nameof(Index));
+            return Json(new { success = result.Success, message = result.Message });
         }
 
-        // ── İcraya Başla ──
+        // ── İcraya Başla (AJAX) ──
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> IcrayaBasla(int tapshiriqId)
         {
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null)
-            {
-                TempData["Error"] = "İşçi tapılmadı.";
-                return RedirectToAction(nameof(Index));
-            }
+                return Json(new { success = false, message = "İşçi tapılmadı." });
 
             var result = await _service.IcrayaBaslaAsync(tapshiriqId, isciId.Value);
-            TempData[result.Success ? "Success" : "Error"] = result.Message;
-            return RedirectToAction(nameof(Index));
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         // ── Helpers ──

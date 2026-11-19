@@ -1,5 +1,6 @@
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.HesabatIzleme;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.Interfaces.HR
 {
@@ -17,7 +18,7 @@ namespace FinNex.Application.Interfaces.HR
 
         // Tapşırıqlar
         Task<Result<HesabatIzlemeDashboardDto>> GetDashboardAsync(int? departamentId = null);
-        Task<Result<IList<HesabatTapshiriqListDto>>> GetTapshiriqlarAsync(int? departamentId = null, int? status = null);
+        Task<Result<IList<HesabatTapshiriqListDto>>> GetTapshiriqlarAsync(int? departamentId = null, int? status = null, string? axtar = null, HesabatTezlik? tezlik = null);
         Task<Result> TamamlaAsync(int tapshiriqId, int isciId, string? qeyd);
         Task<Result> IcrayaBaslaAsync(int tapshiriqId, int isciId);
 

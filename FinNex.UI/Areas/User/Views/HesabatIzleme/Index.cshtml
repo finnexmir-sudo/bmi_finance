@@ -13,205 +13,78 @@
 
 <div class="fn-dashboard hi">
 
-    <!-- ═══ KPI ═══ -->
-    <div class="hi-kpi-row">
-        <div class="hi-kpi hi-kpi--total">
-            <div class="hi-kpi-num">@Model.Umumi</div>
-            <div class="hi-kpi-lbl">Bu ay ümumi</div>
+    @Html.AntiForgeryToken()
+
+    <!-- ═══ BAŞLIQ + XÜLASƏ ═══ -->
+    <div class="hi-head">
+        <div>
+            <h1 class="hi-head-title">Hesabat İzləmə</h1>
+            <div class="hi-head-sub">Dövri hesabat öhdəlikləri — kim, nə vaxt, hansı statusda</div>
         </div>
-        <div class="hi-kpi hi-kpi--done">
-            <div class="hi-kpi-num">@Model.Tamamlanan</div>
-            <div class="hi-kpi-lbl">Tamamlanıb</div>
-        </div>
-        <div class="hi-kpi hi-kpi--wait">
-            <div class="hi-kpi-num">@Model.Gozleyen</div>
-            <div class="hi-kpi-lbl">Gözləyir</div>
-        </div>
-        <div class="hi-kpi hi-kpi--late">
-            <div class="hi-kpi-num">@Model.Geciken</div>
-            <div class="hi-kpi-lbl">Gecikib</div>
-        </div>
-        <div class="hi-kpi hi-kpi--pct">
-            <div class="hi-kpi-num">@Model.TamamlanmaFaizi<sup>%</sup></div>
-            <div class="hi-progress"><div class="hi-progress-fill" style="width:@Model.TamamlanmaFaizi%"></div></div>
-            <div class="hi-kpi-lbl">İcra faizi</div>
+        <div class="hi-head-chips">
+            <span class="hi-chip">Cəmi <b>@Model.Umumi</b></span>
+            <span class="hi-chip hi-chip--wait">Gözləyir <b>@Model.Gozleyen</b></span>
+            <span class="hi-chip hi-chip--late">Gecikib <b>@Model.Geciken</b></span>
+            <span class="hi-chip hi-chip--done">Tamamlanıb <b>@Model.Tamamlanan</b> (@Model.TamamlanmaFaizi%)</span>
         </div>
     </div>
 
-    <!-- ═══ GECİKƏNLƏR ═══ -->
-    @if (Model.GecikenTapshiriqlar.Any())
-    {
-        <div class="hi-section-head hi-section-head--alert">
-            <i class="bi bi-exclamation-triangle-fill"></i> Gecikən hesabatlar (@Model.GecikenTapshiriqlar.Count)
+    <!-- ═══ TOOLBAR ═══ -->
+    <div class="hi-toolbar fn-card">
+        <div class="hi-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="hiAxtar" placeholder="Hesabat adı, departament, məsul şəxs axtar..." />
         </div>
-        <div class="fn-card">
-            <div class="hi-task-list">
-                @foreach (var t in Model.GecikenTapshiriqlar)
-                {
-                    var gecikGun = (DateTime.Now - t.Deadline).Days;
-                    var gecikSaat = (int)(DateTime.Now - t.Deadline).TotalHours % 24;
-                    <div class="hi-task hi-task--late">
-                        <div class="hi-task-left">
-                            <div class="hi-task-icon hi-ico--late"><i class="bi bi-exclamation-circle-fill"></i></div>
-                            <div>
-                                <div class="hi-task-name">@t.SablonAd</div>
-                                <div class="hi-task-meta">@t.DepartamentAd · @t.MesulIsciAd · @t.DovrText</div>
-                            </div>
-                        </div>
-                        <div class="hi-task-right">
-                            <span class="hi-late-badge">@(gecikGun > 0 ? $"{gecikGun} gün" : $"{gecikSaat} saat") gecikib</span>
-                            <form asp-action="Tamamla" method="post" class="hi-inline-form">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="tapshiriqId" value="@t.Id" />
-                                <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
-                            </form>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    }
-
-    <!-- ═══ BU GÜNÜN HESABATLARI ═══ -->
-    <div class="hi-section-head">
-        <span class="hi-live-dot"></span> Bugünkü hesabatlar
-    </div>
-    <div class="fn-card">
-        @if (Model.BugunkuTapshiriqlar.Any())
+        @if (ViewBag.UserDeptId == null)
         {
-            <div class="hi-task-list">
-                @foreach (var t in Model.BugunkuTapshiriqlar)
+            <select id="hiDept" class="hi-input hi-input--sm">
+                <option value="">Bütün departamentlər</option>
+                @foreach (var d in depts)
                 {
-                    var iconCls = t.Status switch
-                    {
-                        HesabatTapshiriqStatus.Tamamlandi => "hi-ico--done",
-                        HesabatTapshiriqStatus.Icrada => "hi-ico--progress",
-                        HesabatTapshiriqStatus.Gecikib => "hi-ico--late",
-                        _ => "hi-ico--wait"
-                    };
-                    var icon = t.Status switch
-                    {
-                        HesabatTapshiriqStatus.Tamamlandi => "bi-check-circle-fill",
-                        HesabatTapshiriqStatus.Icrada => "bi-arrow-repeat",
-                        HesabatTapshiriqStatus.Gecikib => "bi-exclamation-circle-fill",
-                        _ => "bi-clock"
-                    };
-                    <div class="hi-task">
-                        <div class="hi-task-left">
-                            <div class="hi-task-icon @iconCls"><i class="bi @icon"></i></div>
-                            <div>
-                                <div class="hi-task-name">@t.SablonAd</div>
-                                <div class="hi-task-meta">
-                                    @t.MesulIsciAd · @t.KateqoriyaAd ·
-                                    <span class="hi-deadline">Son: @t.Deadline.ToString("HH:mm")</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="hi-task-right">
-                            @if (t.Status == HesabatTapshiriqStatus.Tamamlandi)
-                            {
-                                <span class="fn-badge fn-badge--done">Tamamlandı</span>
-                                <span class="hi-time">@t.IcraTarixi?.ToString("HH:mm")</span>
-                            }
-                            else if (t.Status == HesabatTapshiriqStatus.Icrada)
-                            {
-                                <span class="fn-badge fn-badge--review">İcrada</span>
-                                <form asp-action="Tamamla" method="post" class="hi-inline-form">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
-                                    <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
-                                </form>
-                            }
-                            else
-                            {
-                                <span class="fn-badge fn-badge--wait">Gözləyir</span>
-                                <form asp-action="IcrayaBasla" method="post" class="hi-inline-form">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
-                                    <button type="submit" class="hi-btn hi-btn--start" title="Başla"><i class="bi bi-play-fill"></i></button>
-                                </form>
-                                <form asp-action="Tamamla" method="post" class="hi-inline-form">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
-                                    <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
-                                </form>
-                            }
-                        </div>
-                    </div>
+                    <option value="@d.Id">@d.Ad</option>
                 }
-            </div>
+            </select>
         }
-        else
-        {
-            <div class="hi-empty">Bugünkü hesabat tapşırığı yoxdur</div>
-        }
+        <select id="hiTezlik" class="hi-input hi-input--sm">
+            <option value="">Bütün tezliklər</option>
+            <option value="1">Günlük</option>
+            <option value="2">Həftəlik</option>
+            <option value="3">Aylıq</option>
+            <option value="4">Rüblük</option>
+            <option value="5">İllik</option>
+        </select>
+        <select id="hiStatus" class="hi-input hi-input--sm">
+            <option value="">Bütün statuslar</option>
+            <option value="1">Gözləyir</option>
+            <option value="2">İcrada</option>
+            <option value="3">Tamamlandı</option>
+            <option value="4">Gecikib</option>
+        </select>
+        <button type="button" class="hi-btn hi-btn--ghost" id="hiYenile" title="Yenilə">
+            <i class="bi bi-arrow-clockwise"></i> Yenilə
+        </button>
     </div>
 
-    <!-- ═══ BU AYIN HESABATLARI ═══ -->
-    <div class="hi-section-head">
-        <i class="bi bi-calendar3"></i> Bu ayın hesabatları
-    </div>
-    <div class="fn-card">
-        @if (Model.BuAyTapshiriqlar.Any())
-        {
-            <div class="hi-task-list hi-scroll">
-                @foreach (var t in Model.BuAyTapshiriqlar)
-                {
-                    var iconCls = t.Status switch
-                    {
-                        HesabatTapshiriqStatus.Tamamlandi => "hi-ico--done",
-                        HesabatTapshiriqStatus.Icrada => "hi-ico--progress",
-                        HesabatTapshiriqStatus.Gecikib => "hi-ico--late",
-                        _ => "hi-ico--wait"
-                    };
-                    var icon = t.Status switch
-                    {
-                        HesabatTapshiriqStatus.Tamamlandi => "bi-check-circle-fill",
-                        HesabatTapshiriqStatus.Icrada => "bi-arrow-repeat",
-                        HesabatTapshiriqStatus.Gecikib => "bi-exclamation-circle-fill",
-                        _ => "bi-clock"
-                    };
-                    <div class="hi-task @(t.Gecikibmi ? "hi-task--late" : "")">
-                        <div class="hi-task-left">
-                            <div class="hi-task-icon @iconCls"><i class="bi @icon"></i></div>
-                            <div>
-                                <div class="hi-task-name">@t.SablonAd</div>
-                                <div class="hi-task-meta">
-                                    @t.MesulIsciAd · @t.KateqoriyaAd · @t.TezlikText ·
-                                    <span class="hi-deadline">Son: @t.Deadline.ToString("dd.MM HH:mm")</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="hi-task-right">
-                            <span class="hi-pri hi-pri--@t.Prioritet.ToString().ToLower()">@t.PrioritetText</span>
-                            @if (t.Status == HesabatTapshiriqStatus.Tamamlandi)
-                            {
-                                <span class="fn-badge fn-badge--done">Tamamlandı</span>
-                                @if (t.IcraEdenAd != null)
-                                {
-                                    <span class="hi-by">@t.IcraEdenAd</span>
-                                }
-                            }
-                            else
-                            {
-                                var badgeCls = t.Gecikibmi ? "fn-badge--rejected" : t.Status == HesabatTapshiriqStatus.Icrada ? "fn-badge--review" : "fn-badge--wait";
-                                var badgeText = t.Gecikibmi ? "Gecikib" : t.StatusText;
-                                <span class="fn-badge @badgeCls">@badgeText</span>
-                                <form asp-action="Tamamla" method="post" class="hi-inline-form">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
-                                    <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
-                                </form>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="hi-empty">Bu ay üçün hesabat tapşırığı yoxdur</div>
-        }
+    <!-- ═══ TAPŞIRIQ CƏDVƏLİ ═══ -->
+    <div class="fn-card hi-table-wrap">
+        <div class="hi-scroll">
+            <table class="hi-table hi-table--main">
+                <thead>
+                    <tr>
+                        <th>Hesabat adı</th>
+                        <th>Departament</th>
+                        <th>Tezlik</th>
+                        <th>Son tarix</th>
+                        <th>Məsul şəxs</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="hiTbody"></tbody>
+            </table>
+        </div>
+        <div class="hi-empty" id="hiEmpty" style="display:none">Heç bir hesabat tapşırığı tapılmadı.</div>
+        <div class="hi-empty" id="hiLoading">Yüklənir...</div>
     </div>
 
     <!-- ═══ KATEQORİYALAR ═══ -->
@@ -416,3 +289,152 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+    var tbody = document.getElementById('hiTbody');
+    var emptyEl = document.getElementById('hiEmpty');
+    var loadingEl = document.getElementById('hiLoading');
+    var axtarEl = document.getElementById('hiAxtar');
+    var deptEl = document.getElementById('hiDept');
+    var tezlikEl = document.getElementById('hiTezlik');
+    var statusEl = document.getElementById('hiStatus');
+    var yenileBtn = document.getElementById('hiYenile');
+    var axtarTimer = null;
+
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function tezlikText(t) {
+        return { 1: 'Günlük', 2: 'Həftəlik', 3: 'Aylıq', 4: 'Rüblük', 5: 'İllik' }[t] || '-';
+    }
+
+    function pillInfo(row) {
+        if (row.status === 3) return { cls: 'done', text: 'Tamamlanıb' };
+        if (row.status === 4) return { cls: 'late', text: 'Gecikib' };
+        var saatQalib = (new Date(row.deadline) - new Date()) / 3600000;
+        if (saatQalib < 0) return { cls: 'late', text: 'Gecikib' };
+        if (saatQalib <= 72) return { cls: 'soon', text: 'Yaxınlaşır' };
+        if (row.status === 2) return { cls: 'progress', text: 'İcrada' };
+        return { cls: 'wait', text: 'Vaxtında' };
+    }
+
+    function relativeText(row) {
+        if (row.status === 3) {
+            return row.icraTarixi ? 'Tamamlanıb: ' + fmtDate(row.icraTarixi) : 'Tamamlanıb';
+        }
+        var deadline = new Date(row.deadline);
+        var gun = Math.floor((deadline - new Date()) / 86400000);
+        if (gun < 0) return Math.abs(gun) === 0 ? 'Bu gün gecikib' : Math.abs(gun) + ' gün gecikib';
+        if (gun === 0) return 'Bu gün';
+        if (gun === 1) return 'Sabah';
+        return gun + ' gün qalıb';
+    }
+
+    function fmtDate(iso) {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '-';
+        var pad = function (n) { return n < 10 ? '0' + n : n; };
+        return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function renderRows(list) {
+        if (!list.length) {
+            tbody.innerHTML = '';
+            emptyEl.textContent = 'Heç bir hesabat tapşırığı tapılmadı.';
+            emptyEl.style.display = 'block';
+            return;
+        }
+        emptyEl.style.display = 'none';
+        tbody.innerHTML = list.map(function (t) {
+            var pill = pillInfo(t);
+            var basla = t.status === 1
+                ? '<button type="button" class="hi-btn hi-btn--start" data-act="basla" data-id="' + t.id + '" title="İcraya başla"><i class="bi bi-play-fill"></i></button>'
+                : '';
+            var tamamla = t.status !== 3
+                ? '<button type="button" class="hi-btn hi-btn--done" data-act="tamamla" data-id="' + t.id + '" title="Tamamla"><i class="bi bi-check-lg"></i></button>'
+                : '';
+            return '' +
+                '<tr>' +
+                    '<td><div class="hi-r-title">' + esc(t.sablonAd) + '</div><div class="hi-r-sub">' + esc(t.kateqoriyaAd) + '</div></td>' +
+                    '<td>' + esc(t.departamentAd) + '</td>' +
+                    '<td><span class="hi-tag">' + tezlikText(t.tezlik) + '</span></td>' +
+                    '<td><div class="hi-r-title">' + fmtDate(t.deadline) + '</div><div class="hi-r-sub">' + relativeText(t) + '</div></td>' +
+                    '<td>' + esc(t.mesulIsciAd) + '</td>' +
+                    '<td><span class="hi-pill hi-pill--' + pill.cls + '">' + pill.text + '</span></td>' +
+                    '<td class="hi-r-actions">' + basla + tamamla + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    async function hiYukle() {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        var params = new URLSearchParams();
+        if (axtarEl.value.trim()) params.set('axtar', axtarEl.value.trim());
+        if (deptEl && deptEl.value) params.set('departamentId', deptEl.value);
+        if (tezlikEl.value) params.set('tezlik', tezlikEl.value);
+        if (statusEl.value) params.set('status', statusEl.value);
+
+        try {
+            var r = await fetch('@Url.Action("GetTapshiriqlar")?' + params.toString());
+            var d = await r.json();
+            loadingEl.style.display = 'none';
+            if (!d.success) {
+                tbody.innerHTML = '';
+                emptyEl.textContent = d.message || 'Yüklənmədi.';
+                emptyEl.style.display = 'block';
+                return;
+            }
+            renderRows(d.data || []);
+        } catch (e) {
+            loadingEl.style.display = 'none';
+            tbody.innerHTML = '';
+            emptyEl.textContent = 'Yüklənmədi — şəbəkə xətası.';
+            emptyEl.style.display = 'block';
+        }
+    }
+
+    tbody.addEventListener('click', async function (e) {
+        var btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        var id = btn.getAttribute('data-id');
+        var action = btn.getAttribute('data-act') === 'basla' ? '@Url.Action("IcrayaBasla")' : '@Url.Action("Tamamla")';
+        btn.disabled = true;
+        try {
+            var r = await fetch(action, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'tapshiriqId=' + encodeURIComponent(id)
+            });
+            var d = await r.json();
+            if (d.success) {
+                hiYukle();
+            } else {
+                btn.disabled = false;
+                alert(d.message || 'Əməliyyat uğursuz oldu.');
+            }
+        } catch (err) {
+            btn.disabled = false;
+            alert('Şəbəkə xətası.');
+        }
+    });
+
+    axtarEl.addEventListener('input', function () {
+        clearTimeout(axtarTimer);
+        axtarTimer = setTimeout(hiYukle, 350);
+    });
+    if (deptEl) deptEl.addEventListener('change', hiYukle);
+    tezlikEl.addEventListener('change', hiYukle);
+    statusEl.addEventListener('change', hiYukle);
+    yenileBtn.addEventListener('click', hiYukle);
+
+    hiYukle();
+})();
+</script>
+}

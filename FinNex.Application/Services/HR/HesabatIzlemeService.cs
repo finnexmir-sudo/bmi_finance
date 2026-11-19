@@ -183,7 +183,7 @@ namespace FinNex.Application.Services.HR
             return Result<HesabatIzlemeDashboardDto>.Ok(vm);
         }
 
-        public async Task<Result<IList<HesabatTapshiriqListDto>>> GetTapshiriqlarAsync(int? departamentId = null, int? status = null)
+        public async Task<Result<IList<HesabatTapshiriqListDto>>> GetTapshiriqlarAsync(int? departamentId = null, int? status = null, string? axtar = null, HesabatTezlik? tezlik = null)
         {
             var query = _uow.Repository<HesabatTapshiriq>()
                 .Query()
@@ -200,9 +200,23 @@ namespace FinNex.Application.Services.HR
             if (status.HasValue)
                 query = query.Where(x => (int)x.Status == status.Value);
 
+            if (tezlik.HasValue)
+                query = query.Where(x => x.Sablon.Tezlik == tezlik.Value);
+
+            if (!string.IsNullOrWhiteSpace(axtar))
+            {
+                var axtarTemiz = axtar.Trim();
+                query = query.Where(x =>
+                    x.Sablon.Ad.Contains(axtarTemiz) ||
+                    x.Sablon.Departament.Ad.Contains(axtarTemiz) ||
+                    (x.Sablon.MesulIsci.Ad + " " + x.Sablon.MesulIsci.Soyad).Contains(axtarTemiz));
+            }
+
+            // Hələ tamamlanmayanlar əvvəl (ən gecikmiş/ən tez bitən üstdə), tamamlananlar sonda.
             var list = await query
-                .OrderByDescending(x => x.Deadline)
-                .Take(100)
+                .OrderBy(x => x.Status == HesabatTapshiriqStatus.Tamamlandi ? 1 : 0)
+                .ThenBy(x => x.Deadline)
+                .Take(300)
                 .ToListAsync();
 
             return Result<IList<HesabatTapshiriqListDto>>.Ok(
