@@ -2,6 +2,7 @@
 using FinNex.Application.DTOs.HR.IsciStrukturRolu;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Services.Communication;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
@@ -23,6 +24,7 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IXatirlatmaService _xatirlatmaService;
         private readonly ITapshiriqService _tapshiriqService;
         private readonly IIsciStrukturRoluService _strukturRoluService;
+        private readonly IHesabatIzlemeService _hesabatIzlemeService;
         private readonly UserManager<AppUser> _userManager;
 
         public DashboardController(
@@ -32,6 +34,7 @@ namespace FinNex.UI.Areas.User.Controllers
             IXatirlatmaService xatirlatmaService,
             ITapshiriqService tapshiriqService,
             IIsciStrukturRoluService strukturRoluService,
+            IHesabatIzlemeService hesabatIzlemeService,
             UserManager<AppUser> userManager)
         {
             _dashboardService = dashboardService;
@@ -40,6 +43,7 @@ namespace FinNex.UI.Areas.User.Controllers
             _xatirlatmaService = xatirlatmaService;
             _tapshiriqService = tapshiriqService;
             _strukturRoluService = strukturRoluService;
+            _hesabatIzlemeService = hesabatIzlemeService;
             _userManager = userManager;
         }
 
@@ -66,6 +70,29 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 var badgeResult = await GetBadgeSaylariInternalAsync(isciId);
                 ViewBag.BadgeSaylari = badgeResult;
+
+                // Mənim Hesabat Öhdəliklərim — xülasə kartı (tam siyahı /User/HesabatIzleme/Menim-dədir)
+                var hesabatResult = await _hesabatIzlemeService.GetTapshiriqlarAsync(mesulIsciId: isciId);
+                if (hesabatResult.Success && hesabatResult.Data != null)
+                {
+                    viewModel.MenimHesabatGecikibSayi = hesabatResult.Data.Count(t => t.Status == HesabatTapshiriqStatus.Gecikib);
+                    viewModel.MenimHesabatGozleyirSayi = hesabatResult.Data.Count(t =>
+                        t.Status == HesabatTapshiriqStatus.Gozleyir || t.Status == HesabatTapshiriqStatus.Icrada);
+
+                    viewModel.MenimHesabatlarim = hesabatResult.Data
+                        .Where(t => t.Status != HesabatTapshiriqStatus.Tamamlandi)
+                        .Take(5)
+                        .Select(t => new MenimHesabatVM
+                        {
+                            Id = t.Id,
+                            SablonAd = t.SablonAd,
+                            Deadline = t.Deadline,
+                            StatusText = t.StatusText,
+                            Gecikib = t.Status == HesabatTapshiriqStatus.Gecikib,
+                            Tamamlanib = t.Status == HesabatTapshiriqStatus.Tamamlandi,
+                        })
+                        .ToList();
+                }
             }
 
             ViewData["HideBackButton"] = true;

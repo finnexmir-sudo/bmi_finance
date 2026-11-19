@@ -56,6 +56,13 @@ namespace FinNex.UI.Areas.User.Models
         public List<BildiriVM> Bildiriler { get; set; } = new();
         public List<DashboardImtiyazDto> AktivImtiyazlar { get; set; } = new();
 
+        // ── Mənim Hesabat Öhdəliklərim (FromDto-dan kənar, controller-də
+        //    ayrıca IHesabatIzlemeService çağırışı ilə doldurulur — BadgeSaylari
+        //    ViewBag-i ilə eyni konvensiya) ─────────────────────
+        public List<MenimHesabatVM> MenimHesabatlarim { get; set; } = new();
+        public int MenimHesabatGecikibSayi { get; set; }
+        public int MenimHesabatGozleyirSayi { get; set; }
+
         // ── DTO-dan map et ──────────────────────────────────────
         public static UserDashboardViewModel FromDto(UserDashboardDto dto) => new()
         {
@@ -165,5 +172,15 @@ namespace FinNex.UI.Areas.User.Models
         public string Metn { get; set; } = "";
         public string TarixAd { get; set; } = "";
         public string NovText { get; set; } = "";
+    }
+
+    public class MenimHesabatVM
+    {
+        public int Id { get; set; }
+        public string SablonAd { get; set; } = "";
+        public DateTime Deadline { get; set; }
+        public string StatusText { get; set; } = "";
+        public bool Gecikib { get; set; }
+        public bool Tamamlanib { get; set; }
     }
 }

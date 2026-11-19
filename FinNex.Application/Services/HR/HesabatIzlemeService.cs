@@ -183,7 +183,7 @@ namespace FinNex.Application.Services.HR
             return Result<HesabatIzlemeDashboardDto>.Ok(vm);
         }
 
-        public async Task<Result<IList<HesabatTapshiriqListDto>>> GetTapshiriqlarAsync(int? departamentId = null, int? status = null, string? axtar = null, HesabatTezlik? tezlik = null)
+        public async Task<Result<IList<HesabatTapshiriqListDto>>> GetTapshiriqlarAsync(int? departamentId = null, int? status = null, string? axtar = null, HesabatTezlik? tezlik = null, int? mesulIsciId = null)
         {
             var query = _uow.Repository<HesabatTapshiriq>()
                 .Query()
@@ -202,6 +202,9 @@ namespace FinNex.Application.Services.HR
 
             if (tezlik.HasValue)
                 query = query.Where(x => x.Sablon.Tezlik == tezlik.Value);
+
+            if (mesulIsciId.HasValue)
+                query = query.Where(x => x.Sablon.MesulIsciId == mesulIsciId.Value);
 
             if (!string.IsNullOrWhiteSpace(axtar))
             {

@@ -139,6 +139,32 @@ namespace FinNex.UI.Areas.User.Controllers
             return Json(new { success = true, data = result.Data });
         }
 
+        // ── Mənim Hesabatlarım (tam səhifə, bütün işçilərə açıq) ──
+        public async Task<IActionResult> Menim()
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            ViewBag.MesulIsciId = isciId;
+            ViewData["Title"] = "Mənim Hesabatlarım";
+            ViewData["UserRole"] = "İşçi";
+            return View();
+        }
+
+        // ── Mənim Hesabatlarım siyahısı (AJAX, cədvəl üçün) — HƏMİŞƏ cari işçiyə kilidlidir ──
+        [HttpGet]
+        public async Task<IActionResult> GetMenimTapshiriqlar(string? axtar, int? tezlik, int? status)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null)
+                return Json(new { success = false, message = "İşçi profiliniz tapılmadı." });
+
+            var tezlikEnum = tezlik.HasValue ? (HesabatTezlik?)tezlik.Value : null;
+            var result = await _service.GetTapshiriqlarAsync(status: status, axtar: axtar, tezlik: tezlikEnum, mesulIsciId: isciId.Value);
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            return Json(new { success = true, data = result.Data });
+        }
+
         // ── Tamamla (AJAX) ──
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -38,6 +38,10 @@
             _ => "fn-badge--review"
         };
 
+        string MenimHesabatBadgeClass(bool gecikib, bool tamamlanib) =>
+            gecikib ? "fn-badge--rejected" :
+            tamamlanib ? "fn-badge--done" : "fn-badge--wait";
+
         string BildiriDot(string novText) => novText switch
         {
             "Ugur" => "#1e9b6b",
@@ -295,6 +299,40 @@
                     <div class="fn-empty">Bildiriş yoxdur</div>
                 }
             </div>
+
+            @* ── Mənim Hesabat Öhdəliklərim (yalnız varsa görünür) ── *@
+            @if (Model.MenimHesabatlarim.Any())
+            {
+                <div class="fn-card">
+                    <div class="fn-card-head">
+                        <div class="fn-card-title">
+                            Mənim hesabat öhdəliklərim
+                            @if (Model.MenimHesabatGecikibSayi > 0)
+                            {
+                                <span class="fn-badge fn-badge--rejected" style="margin-left:6px">@Model.MenimHesabatGecikibSayi gecikib</span>
+                            }
+                        </div>
+                        <a asp-area="User" asp-controller="HesabatIzleme" asp-action="Menim"
+                           class="fn-card-link">Hamısı →</a>
+                    </div>
+
+                    <div class="fn-nlist">
+                        @foreach (var h in Model.MenimHesabatlarim)
+                        {
+                            <div class="fn-nitem">
+                                <div class="fn-ndot" style="background:@(h.Gecikib ? "#d85a30" : "#2d6cdf")"></div>
+                                <div>
+                                    <div class="fn-ntext">@h.SablonAd</div>
+                                    <div class="fn-ntime">
+                                        @h.Deadline.ToString("dd.MM.yyyy HH:mm")
+                                        <span class="fn-badge @MenimHesabatBadgeClass(h.Gecikib, h.Tamamlanib)" style="margin-left:6px">@h.StatusText</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
 
             @* ── Son ödənişlər ── *@
             <div class="fn-card">
