@@ -41,7 +41,8 @@
             <h1 class="mh-title">ÖS-6.1 — Müştəri Hesabları</h1>
             <div class="mh-sub"><i class="bi bi-info-circle"></i> AMB "Ödəniş Statistikası" Əlavə 6.1 — @ayAdlari[Model.Ay] @Model.Il</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <a asp-action="Os61Excel" asp-route-il="@Model.Il" asp-route-ay="@Model.Ay" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel-ə ixrac et</a>
+                <a asp-action="Os61Excel" asp-route-il="@Model.Il" asp-route-ay="@Model.Ay" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel (Köhnə şablon)</a>
+                <a asp-action="Os61ExcelYeni" asp-route-il="@Model.Il" asp-route-ay="@Model.Ay" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel (Yeni şablon)</a>
                 <a asp-action="Index" class="mh-xls"><i class="bi bi-arrow-left"></i> Hesabatlar siyahısına qayıt</a>
             </div>
         </div>

@@ -2,10 +2,17 @@ namespace FinNex.Application.DTOs.Muhasibat;
 
 /// <summary>
 /// ÖS-6.1 (AMB "Ödəniş Statistikası" Əlavə 6.1) — statistik vahidin müştəri hesabları
-/// haqqında statistik hesabat. "Old" (ÖS-6 kombinə şablonu) və "yeni" (OVS yeni 6.1.xlsm)
-/// submission-shell-lərinin HƏR İKİSİNDƏ eyni 22 sətir, eyni "sətirlərin şifrləri" (Kod,
-/// 1-22) işlədilir — yalnız hüceyrə mövqeyi (sheet/sətir) fərqlidir. Bu DTO Kod-a görə
-/// saxlayır ki, nəticə HƏR İKİ şablona (ayrıca ixrac koduna) birə-bir köçürülə bilsin.
+/// haqqında statistik hesabat.
+///
+/// 19.11.2026 — real "OS old 2026.xls" ("ÖS-6" vərəqi) VƏ "OS yeni 2026.xlsm" ("ÖS-Bank-6"
+/// vərəqi) şablonları canlı tutuşdurulub: Kod (1-22) YALNIZ KÖHNƏ şablonda bizim bu DTO-nun
+/// sətir sırası ilə BİRƏ-BİR üst-üstə düşür (sətirlərin şifrəsi = Kod, sətir = Kod+19).
+/// YENİ (AMB-nin restrukturizasiya etdiyi) şablonda isə: (a) "depozit"→"əmanət",
+/// "tələbolunanadək"→"tələbli" kimi adlar DƏYİŞİB, (b) "kredit hesabları" artıq TOP-LEVEL
+/// sətir deyil, "cari hesablar"ın ALT-sətridir, (c) hər bir "ondan məsafədən açılan..."
+/// üçün ƏLAVƏ, bizim DTO-da QARŞILIĞI OLMAYAN boş sətirlər var — ona görə YENİ şablona
+/// yazarkən Kod-un ÖZÜ YOX, AYRI bir (bizim Kod → yeni şablonun Kod-u) xəritəsi işlədilir
+/// (bax `HesabatController.Os61YeniKodXeritesi`).
 /// </summary>
 public class MuhasibatOs61Dto
 {

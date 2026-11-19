@@ -555,6 +555,10 @@ public class HesabatController : Controller
         return View(m);
     }
 
+    // 19.11.2026 — AMB-yə təqdim olunan RƏSMİ şablonun ("ÖS-6" vərəqi, "OS old 2026.xls"
+    // kombinə iş kitabı) öz hüceyrələrinə yazır (varsa), yoxdursa köhnə sadə/formatlanmamış
+    // cədvələ (fallback) keçir — DSMF/AMB modullarının ARTIQ işlətdiyi "şablon-varsa-doldur,
+    // yoxdursa fallback" naxışının eynisi.
     public async Task<IActionResult> Os61Excel(int il, int ay)
     {
         if (!await IcazeVarAsync())
@@ -562,6 +566,113 @@ public class HesabatController : Controller
 
         var m = await _service.Os61Async(il, ay);
 
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61", "OS_Eski.xlsx");
+        var adı = $"OS61_Eski_{il}_{ay:D2}.xlsx";
+
+        if (System.IO.File.Exists(sablonPath))
+        {
+            var dolu = Os61SablonDoldur(sablonPath, "ÖS-6", m, il, ay, kodXeritesi: null);
+            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+        }
+
+        return Os61DuzCedvel(m, il, ay, $"OS61_{il}_{ay:D2}.xls");
+    }
+
+    // 19.11.2026 — AMB-nin YENİ (restrukturizasiya olunmuş) şablonu ("ÖS-Bank-6" vərəqi,
+    // "OS yeni 2026.xlsm"). Kod nömrələri köhnə ilə EYNİ DEYİL (bax Os61YeniKodXeritesi-nin
+    // öz şərhi) — şablon tapılmasa YENƏ DƏ sadə cədvəl fallback-dır (köhnə şablonun öz Kod
+    // nömrələri ilə — bu, yalnız RƏSMİ formatın olmadığını göstərmək üçündür).
+    public async Task<IActionResult> Os61ExcelYeni(int il, int ay)
+    {
+        if (!await IcazeVarAsync())
+            return Forbid();
+
+        var m = await _service.Os61Async(il, ay);
+
+        var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61", "OS_Yeni.xlsx");
+        var adı = $"OS61_Yeni_{il}_{ay:D2}.xlsx";
+
+        if (System.IO.File.Exists(sablonPath))
+        {
+            var dolu = Os61SablonDoldur(sablonPath, "ÖS-Bank-6", m, il, ay, Os61YeniKodXeritesi);
+            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+        }
+
+        return Os61DuzCedvel(m, il, ay, $"OS61_Yeni_{il}_{ay:D2}.xls");
+    }
+
+    // Bizim Kod (1-22, Os61Async-ın öz sırası) → YENİ AMB şablonunun ("ÖS-Bank-6") öz
+    // "sətirlərin şifrəsi" (C sütunu) nömrəsi. 19.11.2026-da canlı iki şablonun (OS old
+    // 2026.xls / OS yeni 2026.xlsm, Oktyabr 2026 üçün mühasibin ƏL İLƏ doldurduğu) sahə-sahə
+    // tutuşdurulmasından çıxarılıb — "kredit hesabları" (bizim Kod 3) sətrinin HƏR İKİ
+    // şablonda G=643/I=293 göstərməsi ilə TƏSDİQLƏNİB. AMB bu şablonda bəzi adları da
+    // dəyişib ("depozit"→"əmanət", "tələbolunanadək"→"tələbli") və "kredit hesabları"nı
+    // top-level sətirdən "cari hesablar"ın alt-sətrinə köçürüb — YALNIZ say/rəqəm dəyişmir,
+    // YERLƏŞMƏ dəyişir, ona görə Kod-un ÖZÜNƏ güvənmək olmaz, bu xəritə LAZIMDIR.
+    private static readonly Dictionary<int, int> Os61YeniKodXeritesi = new()
+    {
+        [1] = 1, [2] = 2, [3] = 6, [4] = 4, [5] = 8, [6] = 9, [7] = 10, [8] = 11,
+        [9] = 12, [10] = 13, [11] = 14, [12] = 15, [13] = 16, [14] = 17, [15] = 18,
+        [16] = 19, [17] = 20, [18] = 21, [19] = 22, [20] = 23, [21] = 25, [22] = 27,
+    };
+
+    // Rəsmi AMB şablonuna ("ÖS-6" köhnə / "ÖS-Bank-6" yeni) yazır. `kodXeritesi` null-dursa
+    // (köhnə şablon) Kod-un ÖZÜ sətir nömrəsini verir (Excel sətri = Kod+19, köhnə şablonda
+    // bizim 22 sətirlə 1:1 üst-üstə düşür) — doludursa (yeni şablon) əvvəlcə xəritədən
+    // keçirilir. `st_main!B3`-ə cari dövrün adı yazılır ("Oktyabr 2026" kimi), bankın öz adı
+    // (B2) TOXUNULMUR.
+    private static byte[] Os61SablonDoldur(
+        string sablonPath, string vereqAdi, MuhasibatOs61Dto m, int il, int ay,
+        Dictionary<int, int>? kodXeritesi)
+    {
+        IWorkbook wb;
+        using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
+            wb = new XSSFWorkbook(fs);
+
+        var stMain = wb.GetSheet("st_main");
+        if (stMain != null)
+        {
+            string[] ayAdlari = { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+            var row3 = stMain.GetRow(2) ?? stMain.CreateRow(2);
+            row3.CreateCell(1).SetCellValue($"{ayAdlari[ay]} {il}");
+        }
+
+        var ws = wb.GetSheet(vereqAdi);
+        if (ws != null)
+        {
+            foreach (var s in m.Setirler)
+            {
+                var hedefKod = (kodXeritesi != null && kodXeritesi.TryGetValue(s.Kod, out var yk)) ? yk : s.Kod;
+                var row = ws.GetRow(hedefKod + 18); // Excel sətri (1-based) = hedefKod+19
+                if (row == null) continue;
+
+                void Yaz(int col, decimal? v)
+                {
+                    if (v.HasValue) row.CreateCell(col).SetCellValue((double)v.Value);
+                }
+                Yaz(3, s.D_HesabSayiCemi);
+                Yaz(4, s.E_HesabSayiXariciValyuta);
+                Yaz(5, s.F_SahibSayi);
+                Yaz(6, s.G_HesabSayiCemi);
+                Yaz(7, s.H_HesabSayiXariciValyuta);
+                Yaz(8, s.I_AktivCemi);
+                Yaz(9, s.J_AktivXariciValyuta);
+                Yaz(10, s.K_SahibSayi);
+            }
+        }
+
+        using var ms = new MemoryStream();
+        wb.Write(ms, true);
+        return ms.ToArray();
+    }
+
+    // Rəsmi şablon DMS-də tapılmayanda köhnə, sadə/formatlanmamış cədvəl (əvvəlki,
+    // şablonsuz dövrün TƏK export yolu idi — indi YALNIZ fallback).
+    private static IActionResult Os61DuzCedvel(MuhasibatOs61Dto m, int il, int ay, string faylAdi)
+    {
         var wb = new HSSFWorkbook();
         var sh = wb.CreateSheet("ÖS-6.1");
         int r = 0;
@@ -594,7 +705,7 @@ public class HesabatController : Controller
 
         using var ms = new MemoryStream();
         wb.Write(ms, true);
-        return File(ms.ToArray(), "application/vnd.ms-excel", $"OS61_{il}_{ay:D2}.xls");
+        return new FileContentResult(ms.ToArray(), "application/vnd.ms-excel") { FileDownloadName = faylAdi };
     }
 
     // DSMF Vahid Hesabat Forması — hub səhifəsi. 6 rəsmi əlavənin hamısını adı ilə
