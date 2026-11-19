@@ -37,7 +37,7 @@ with raw_aday as (
        and l.date_open_licsch <= to_date('30-10-2026','dd-mm-yyyy')
        and (l.date_close_licsch is null or l.date_close_licsch > to_date('30-10-2026','dd-mm-yyyy'))
 )
-select count(*) loose_hec_bagli_gorunmeyib_sayi
+select count(*) loose_acik_sayi
   from raw_aday r
  where exists (
          select 1 from odb.arh_licschkre al
