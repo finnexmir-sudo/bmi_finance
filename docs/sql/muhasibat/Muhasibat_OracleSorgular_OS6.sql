@@ -94,52 +94,41 @@ with
    bunu YENİDƏN korrelə formaya "unmerge" etməsinin (bax CLAUDE.md-dəki
    "Oracle View Merging" qaydası) qarşısını alır. */
 /* 18.11.2026, ALTINCI DALĞA — materialize+join-dən SONRA DA "lupa dönür"
-   davam etdi (istifadəçinin öz canlı testi). Kök səbəb: arh_agg-in qrup-
-   laşdırdığı arh_norm CTE-si `odb.arh_licschkre`-nin TAM tarixçəsini (illər
-   boyu, HƏR iş günü, 4x UNPIVOT olunmuş) materiallaşdırırdı — O(M) bir dəfə
-   olsa belə, M özü ÇOX BÖYÜK idi.
-   Düzəliş: arh_norm-un hər 4 qoluna `date_oper > D2-31` aşağı həddi əlavə
-   edildi (bir təqvim ayı pəncərəsi, D2-dən geriyə). Bu TƏHLÜKƏSİZDİR:
-   "dövrün sonuna" sualı YALNIZ D2 ANINDAKI vəziyyətə aiddir — HƏQİQƏTƏN
-   açıq qalan hər kredit arxivin GÜNDƏLİK yazdığı son bir neçə iş günündə
-   (31 gün bunu geniş örtür) YENİDƏN görünür; pəncərədə HEÇ TAPILMAYAN
-   hesab isə ya həqiqətən yoxdur, ya da çox əvvəl bağlanıb arxiv onu artıq
-   yeniləmir — HƏR İKİ HALDA `KreditHesabiAktivDovrSonu`-nun `KreditArh
-   Tapildi` şərti onsuz da false qaytarıb "açıq sayılmır" nəticəsinə
-   gətirir, yəni YANLIŞ-NEQATİV riski YOXDUR.
-   ⚠️ Bu, arxivin HƏR açıq kredit üçün HƏR iş günü (fəaliyyətindən asılı
-   olmayaraq) sətir yazdığı fərziyyəsinə əsaslanır — PİD-in gündəlik ödəniş
-   modulunda artıq canlı TƏSDİQLƏNMİŞ naxışdır (bax CLAUDE.md). Əgər "açıq
-   kredit" sayı bu düzəlişdən sonra GÖZLƏNİLMƏDƏN azalsa, əvvəlcə bu
-   fərziyyəni yoxla — pəncərəni genişləndirmək (31→60) ilk addım olmalıdır. */
-arh_norm as (
-    select licschkre acc, date_oper, date_close, subschkre
-      from odb.arh_licschkre
-     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
-       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
-    union all
-    select licschpkre acc, date_oper, date_close, subschkre
-      from odb.arh_licschkre
-     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
-       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
-    union all
-    select licsch_19 acc, date_oper, date_close, subschkre
-      from odb.arh_licschkre
-     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
-       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
-    union all
-    select licschppkre acc, date_oper, date_close, subschkre
-      from odb.arh_licschkre
-     where date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
-       and date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
-),
+   davam etdi. Pəncərə (D2-31..D2) əlavə edildi, sürət düzəldi — AMMA
+   nəticə (232) Excel-in 293-ündən hələ UZAQ qaldı.
+
+   19.11.2026, YEDDİNCİ DALĞA, KÖK SƏBƏB TAPILDI — istifadəçinin öz canlı
+   testi (`select count(distinct a.licschkre) from odb.arh_licschkre a
+   where a.date_oper=''30-10-2026'' and a.date_close is null` → 289,
+   sonra `odb.licsch`-ə JOIN edib klass üzrə bölündükdə 278+11=289 —
+   bizim 643 raw namizədimizin DƏQIQ TƏMIZ ALT-DƏSTİ). Kök səbəb:
+   DÖRDÜNCÜ/ALTINCI DALĞA-nın `licschkre/licschpkre/licsch_19/
+   licschppkre` DÖRDÜNÜ BİRLİKDƏ "acc" sütununa normallaşdırması SƏHV
+   idi — bizim raw namizəd (`l.licsch`, flag IN (''0'',''5'')) ARTIQ
+   "əsas" (performing-principal) sub-hesabdır, yəni HƏMİŞƏ
+   `arh_licschkre.licschkre`-nin ÖZÜDÜR. Digər 3 sütuna (faiz/vaxtı
+   keçmiş əsas/vaxtı keçmiş faiz) baxmaq lazım DEYİLDİ — əksinə, həmin
+   sütunlarda TƏSADÜFƏN eyni ƏDƏDİ daşıyan BAŞQA kreditlərin sətirləri
+   "acc" üzrə QRUPLAŞMADA bizim kreditimizlə QARIŞIB onun date_close-unu
+   təhrif edirdi (bu, 232-nin 289-dan aşağı çıxmasının səbəbidir — PİD-in
+   "kreditin DÖRD sub-hesabı" qaydası ORA, ÖDƏNİŞİN hansı hesaba düşdüyünü
+   tapmaq üçündür, BURADA, "bu KONKRET GL hesabı açıqdırmı" sualında
+   YARAMIR).
+
+   Düzəliş: dörd-sütunlu UNION ALL TAMAMİLƏ ÇIXARILDI — indi YALNIZ
+   `licschkre` sütunu üzərindən, TƏK equi-join (`a.licschkre = l.licsch`)
+   ilə hesablanır. 31-günlük pəncərə sürət üçün SAXLANILDI (bu, DÖRD-
+   sütunlu versiyada da nəticəni dəyişmirdi — bax YEDDİNCİ DALĞA-nın öz
+   B/C testi, 232=232 — indi TƏK sütunla da eyni qayda keçərlidir). */
 arh_agg as (
     select /*+ materialize */
-           acc,
-           max(date_close) keep (dense_rank first order by date_oper desc, nvl(subschkre,0) asc) date_close
-      from arh_norm
-     where acc is not null
-     group by acc
+           a.licschkre acc,
+           max(a.date_close) keep (dense_rank first order by a.date_oper desc) date_close
+      from odb.arh_licschkre a
+     where a.date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
+       and a.date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
+       and a.licschkre is not null
+     group by a.licschkre
 )
 select
     l.licsch                      hesab,
