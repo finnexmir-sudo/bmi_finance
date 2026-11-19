@@ -567,8 +567,8 @@ public class HesabatController : Controller
         var m = await _service.Os61Async(il, ay);
 
         var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
-        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61", "OS_Eski.xlsx");
-        var adı = $"OS61_Eski_{il}_{ay:D2}.xlsx";
+        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61", "OS_Old.xlsx");
+        var adı = $"OS61_Old_{il}_{ay:D2}.xlsx";
 
         if (System.IO.File.Exists(sablonPath))
         {
