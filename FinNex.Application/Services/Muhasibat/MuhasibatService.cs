@@ -1885,8 +1885,7 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                     Adi = Val(r, "adi")?.ToString() ?? "",
                     AcilibBuAy = Dec(Val(r, "acilib_bu_ay")) == 1,
                     MovcudDovrSonu = Dec(Val(r, "movcud_dovr_sonu")) == 1,
-                    KreditArhTapildi = Dec(Val(r, "kredit_arh_tapildi")) > 0,
-                    KreditDateClose = DateVal(Val(r, "kredit_arh_baglama")),
+                    KreditArhAcikSayi = (int)Dec(Val(r, "kredit_arh_acik_sayi")),
                     Qaliq = Math.Abs(qaliq),
                 };
             }).ToList();
@@ -1942,9 +1941,13 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
                     // depozit kimi arxiv-fərqi olmayan sətirlər) köhnə davranış qalır.
                     if (aktivShert != null)
                     {
+                        // 19.11.2026, DOQQUZUNCU DALĞA — `.Count` (hesab sayı) YOX,
+                        // `.Sum(KreditArhAcikSayi)` (açıq sub-ledger sətri sayı) — eyni
+                        // hesabın eyni tarixdə bir neçə açıq sub-ledger sətri ola bilər,
+                        // rəsmi hesabat bunları AYRI-AYRI sayır (bax SQL-in öz şərhi).
                         var aktivSet = movcud.Where(aktivShert).ToList();
-                        s.I_AktivCemi = elIleQeyd != null ? null : aktivSet.Count;
-                        s.J_AktivXariciValyuta = jFixZero ? 0 : aktivSet.Count(h => h.Valyuta != "00");
+                        s.I_AktivCemi = elIleQeyd != null ? null : aktivSet.Sum(h => h.KreditArhAcikSayi);
+                        s.J_AktivXariciValyuta = jFixZero ? 0 : aktivSet.Where(h => h.Valyuta != "00").Sum(h => h.KreditArhAcikSayi);
                     }
                     else
                     {
@@ -1982,9 +1985,12 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
             // alt-dəstdir). "Bu ay açılan" (D/E, KreditHesabiAktivMenbe-nin ÖZÜ, YUXARI
             // dəyişməz qalır) BUNA TOXUNMUR — o, ledger sətrinin açılma TARİXİ haqqındadır,
             // müqavilənin HAZIRKI statusu haqqında YOX.
+            // 19.11.2026, DOQQUZUNCU DALĞA — `KreditArhAcikSayi > 0` artıq "aktiv-dirmi"
+            // sualına CAVABDIR, SQL-in ÖZÜNDƏ hesablanıb (`arh_agg.acik_sayi`, hesabın ÖZ
+            // ən son arxiv tarixindəki AÇIQ sub-ledger sətri sayı) — əlavə tarix-müqayisəsi
+            // C#-da lazım DEYİL (bax SQL-in öz şərhi).
             bool KreditHesabiAktivDovrSonu(Os61Hesab h) =>
-                KreditHesabiAktivMenbe(h) && h.KreditArhTapildi &&
-                (h.KreditDateClose == null || h.KreditDateClose.Value.Date > sonGun.Date);
+                KreditHesabiAktivMenbe(h) && h.KreditArhAcikSayi > 0;
             bool SahibkarKredit(Os61Hesab h) => sahibkarKreditBolmeler.Contains(h.Bolme);
             bool FizikiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "21";
             bool HuquqiKredit(Os61Hesab h) => KreditHesabiAktivMenbe(h) && h.Klass == "20";
@@ -2187,8 +2193,11 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
         public string Adi { get; set; } = "";
         public bool AcilibBuAy { get; set; }
         public bool MovcudDovrSonu { get; set; }
-        public bool KreditArhTapildi { get; set; }
-        public DateTime? KreditDateClose { get; set; }
+        // 19.11.2026, DOQQUZUNCU DALĞA — tək bool+tarix (KreditArhTapildi/KreditDateClose)
+        // əvəzinə SAY: eyni licschkre-nin eyni tarixdə bir neçə AÇIQ sub-ledger sətri
+        // (fərqli subschkre) ola bilər, rəsmi hesabat bunları AYRI-AYRI sayır (bax SQL-in
+        // öz şərhi, docs/sql/muhasibat/Muhasibat_OracleSorgular_OS6.sql).
+        public int KreditArhAcikSayi { get; set; }
         public decimal Qaliq { get; set; }
     }
 
@@ -2872,9 +2881,4 @@ ORDER BY rr.sahe_kodu, rr.il_start, rr.stage_start";
     // 0-a yox, null-a saxlamaq lazımdır ki, ekranda "—" göstərilsin, "0" yox.
     private static decimal? DecN(object? o) =>
         (o == null || o == DBNull.Value) ? null : Convert.ToDecimal(o);
-
-    // ÖS-6.1 — arh_licschkre.date_close kimi Oracle DATE sütunlarını nullable
-    // DateTime-a çevirir (18.11.2026).
-    private static DateTime? DateVal(object? o) =>
-        (o == null || o == DBNull.Value) ? null : Convert.ToDateTime(o);
 }

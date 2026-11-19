@@ -124,27 +124,50 @@ with
    19.11.2026, SƏKKİZİNCİ DALĞA — YEDDİNCİ DALĞA-nın tək-sütunlu düzəlişi
    YENƏ DƏ 231 verdi (289 yox). İstifadəçinin canlı testi (eyni `D2`-ə qədər
    ən son arxiv tarixində sadə `count(distinct licschkre)` = 289, AMMA
-   `raw_aday`-a `count(*)` ilə bağlayanda = 293) kök səbəbi tapdı: EYNİ
+   `raw_aday`-a `count(*)` ilə bağlayanda = 293) tie-break-i tapdı: EYNİ
    `licschkre` üçün EYNİ `date_oper`-də (fərqli `subschkre`-li) BİRDƏN ÇOX
-   arxiv sətri ola bilir — bəzilərində `date_close=NULL`, bəzilərində
-   doludur. `keep (dense_rank first order by date_oper desc)` bu tarazlıqda
-   (tie) sətri İXTİYARİ seçirdi — bəzən "bağlı" olanı seçib HƏQİQƏTƏN AÇIQ
-   hesabı səhvən bağlı sayırdı (289→231 itkisinin dəqiq mənbəyi).
-   Düzəliş: tie-break-ə "NULL-u ÜSTÜN TUT" şərti əlavə edildi
-   (`case when date_close is null then 0 else 1 end asc`) — eyni `date_oper`-
-   də bir neçə sətir varsa, İSTƏNİLƏN biri `NULL` göstərirsə, HESAB AÇIQ
-   sayılır (yalnız HAMISI dolu olanda bağlı sayılır). */
-arh_agg as (
+   arxiv sətri ola bilir. `keep(dense_rank first)` bu tarazlıqda (tie) sətri
+   İXTİYARİ seçirdi. O vaxt "NULL-u ÜSTÜN TUT" tie-break-i ilə 289-a
+   çatdırılmışdı — AMMA bu, YANLIŞ HƏDƏF İMİŞ.
+
+   19.11.2026, DOQQUZUNCU DALĞA, ƏSL HƏDƏF TƏSDİQLƏNDİ — istifadəçinin
+   göndərdiyi RƏSMİ şablonların (həm "OS old 2026.xls"-in "ÖS-6" vərəqi,
+   həm "OS yeni 2026.xlsm"-in "ÖS-Bank-6" vərəqi, Oktyabr 2026 üçün ARTIQ
+   DOLDURULMUŞ, mühasibin ƏL İLƏ yazdığı) "kredit hesabları" sətri HƏR
+   İKİSİNDƏ G=643, I="ondan aktiv"=**293** göstərir — yəni 293 ƏSL,
+   TƏSDİQLƏNMİŞ hədəfdir, SƏKKİZİNCİ DALĞA-nın 289-u YOX.
+
+   Kök səbəb: "count(distinct)" (289) ilə "count(*)" (293) fərqi (4 hesab)
+   elə O 4 hesabın EYNİ tarixdə İKİ AYRI açıq sub-ledger sətri (fərqli
+   `subschkre`) daşımasıdır — rəsmi hesabat metodologiyası bunları HESAB
+   SAYI kimi deyil, AÇIQ SUB-LEDGER SƏTRİ kimi sayır, yəni həmin 4 hesabın
+   HƏR BİRİ "I" sütununa 1 YOX, 2 ƏLAVƏ EDİR. Düzəliş: `arh_agg` artıq
+   `date_close`-u YOX, hər hesabın ÖZ ən son `date_oper`-indəki AÇIQ sətir
+   SAYINI (`acik_sayi`) hesablayır — `KEEP(DENSE_RANK FIRST)` ilə TƏK dəyər
+   seçmək əvəzinə, iki mərhələli aqreqasiya: əvvəlcə hər hesabın ən son
+   tarixini tap (`arh_latest`), sonra O TARİXDƏ açıq olan sətirləri SAY
+   (`arh_agg`, `count(*)`, 97_Os61_D2_31_vs_30_Testi.sql-in blok (3)-ünün
+   DƏQİQ eyni məntiqi, YALNIZ hər hesab üçün AYRI-AYRI, N×M-siz). */
+arh_latest as (
     select /*+ materialize */
            a.licschkre acc,
-           max(a.date_close) keep (dense_rank first
-               order by a.date_oper desc,
-                        case when a.date_close is null then 0 else 1 end asc) date_close
+           max(a.date_oper) son_date_oper
       from odb.arh_licschkre a
      where a.date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
        and a.date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
        and a.licschkre is not null
      group by a.licschkre
+),
+arh_agg as (
+    select /*+ materialize */
+           al.acc,
+           count(*) acik_sayi
+      from arh_latest al
+      join odb.arh_licschkre a
+        on a.licschkre = al.acc
+       and a.date_oper = al.son_date_oper
+     where (a.date_close is null or a.date_close > to_date(''{D2}'',''dd-mm-yyyy''))
+     group by al.acc
 )
 select
     l.licsch                      hesab,
@@ -166,8 +189,7 @@ select
     case when l.date_open_licsch <= to_date(''{D2}'',''dd-mm-yyyy'')
           and (l.date_close_licsch is null or l.date_close_licsch > to_date(''{D2}'',''dd-mm-yyyy''))
          then 1 else 0 end        movcud_dovr_sonu,
-    case when son.acc is not null then 1 else 0 end          kredit_arh_tapildi,
-    son.date_close                                           kredit_arh_baglama
+    nvl(son.acik_sayi, 0)                                    kredit_arh_acik_sayi
 from odb.licsch l
 left join arh_agg son on son.acc = l.licsch
 where l.date_open_licsch is not null
