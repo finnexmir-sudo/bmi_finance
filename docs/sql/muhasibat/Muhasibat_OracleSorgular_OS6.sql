@@ -119,11 +119,27 @@ with
    `licschkre` sütunu üzərindən, TƏK equi-join (`a.licschkre = l.licsch`)
    ilə hesablanır. 31-günlük pəncərə sürət üçün SAXLANILDI (bu, DÖRD-
    sütunlu versiyada da nəticəni dəyişmirdi — bax YEDDİNCİ DALĞA-nın öz
-   B/C testi, 232=232 — indi TƏK sütunla da eyni qayda keçərlidir). */
+   B/C testi, 232=232 — indi TƏK sütunla da eyni qayda keçərlidir).
+
+   19.11.2026, SƏKKİZİNCİ DALĞA — YEDDİNCİ DALĞA-nın tək-sütunlu düzəlişi
+   YENƏ DƏ 231 verdi (289 yox). İstifadəçinin canlı testi (eyni `D2`-ə qədər
+   ən son arxiv tarixində sadə `count(distinct licschkre)` = 289, AMMA
+   `raw_aday`-a `count(*)` ilə bağlayanda = 293) kök səbəbi tapdı: EYNİ
+   `licschkre` üçün EYNİ `date_oper`-də (fərqli `subschkre`-li) BİRDƏN ÇOX
+   arxiv sətri ola bilir — bəzilərində `date_close=NULL`, bəzilərində
+   doludur. `keep (dense_rank first order by date_oper desc)` bu tarazlıqda
+   (tie) sətri İXTİYARİ seçirdi — bəzən "bağlı" olanı seçib HƏQİQƏTƏN AÇIQ
+   hesabı səhvən bağlı sayırdı (289→231 itkisinin dəqiq mənbəyi).
+   Düzəliş: tie-break-ə "NULL-u ÜSTÜN TUT" şərti əlavə edildi
+   (`case when date_close is null then 0 else 1 end asc`) — eyni `date_oper`-
+   də bir neçə sətir varsa, İSTƏNİLƏN biri `NULL` göstərirsə, HESAB AÇIQ
+   sayılır (yalnız HAMISI dolu olanda bağlı sayılır). */
 arh_agg as (
     select /*+ materialize */
            a.licschkre acc,
-           max(a.date_close) keep (dense_rank first order by a.date_oper desc) date_close
+           max(a.date_close) keep (dense_rank first
+               order by a.date_oper desc,
+                        case when a.date_close is null then 0 else 1 end asc) date_close
       from odb.arh_licschkre a
      where a.date_oper >  to_date(''{D2}'',''dd-mm-yyyy'') - 31
        and a.date_oper <= to_date(''{D2}'',''dd-mm-yyyy'')
