@@ -567,13 +567,13 @@ public class HesabatController : Controller
         var m = await _service.Os61Async(il, ay);
 
         var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
-        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61", "OS_Old.xlsx");
-        var adı = $"OS61_Old_{il}_{ay:D2}.xlsx";
+        var sablonPath = Os61SablonYolTap(dmsRoot, "OS_Old");
 
-        if (System.IO.File.Exists(sablonPath))
+        if (sablonPath != null)
         {
             var dolu = Os61SablonDoldur(sablonPath, "ÖS-6", m, il, ay, kodXeritesi: null);
-            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+            var (mime, uzanti) = Os61MimeVeUzanti(sablonPath);
+            return File(dolu, mime, $"OS61_Old_{il}_{ay:D2}{uzanti}");
         }
 
         return Os61DuzCedvel(m, il, ay, $"OS61_{il}_{ay:D2}.xls");
@@ -591,17 +591,39 @@ public class HesabatController : Controller
         var m = await _service.Os61Async(il, ay);
 
         var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
-        var sablonPath = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61", "OS_Yeni.xlsx");
-        var adı = $"OS61_Yeni_{il}_{ay:D2}.xlsx";
+        var sablonPath = Os61SablonYolTap(dmsRoot, "OS_Yeni");
 
-        if (System.IO.File.Exists(sablonPath))
+        if (sablonPath != null)
         {
             var dolu = Os61SablonDoldur(sablonPath, "ÖS-Bank-6", m, il, ay, Os61YeniKodXeritesi);
-            return File(dolu, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", adı);
+            var (mime, uzanti) = Os61MimeVeUzanti(sablonPath);
+            return File(dolu, mime, $"OS61_Yeni_{il}_{ay:D2}{uzanti}");
         }
 
         return Os61DuzCedvel(m, il, ay, $"OS61_Yeni_{il}_{ay:D2}.xls");
     }
+
+    // AMB-dən fayl .xlsx VƏ .xlsm (makrolu) formatlarının HƏR İKİSİNDƏ gələ bilər
+    // (19.11.2026, istifadəçi: "faylin biri xlsm dir, bizə belə göndəriblər") — ikisini də
+    // qəbul et, fayl adını DƏYİŞDİRMƏYƏ MƏCBUR ETMƏ.
+    private static string? Os61SablonYolTap(string dmsRoot, string adBazaAdi)
+    {
+        var qovluq = Path.Combine(dmsRoot, "hesabat-sablonlari", "muhasibat", "os61");
+        foreach (var uzanti in new[] { ".xlsx", ".xlsm" })
+        {
+            var yol = Path.Combine(qovluq, adBazaAdi + uzanti);
+            if (System.IO.File.Exists(yol)) return yol;
+        }
+        return null;
+    }
+
+    // Tapılan şablonun ÖZ uzantısına görə (.xlsm-dirsə makrolu mime+uzantı ilə, əks halda
+    // adi .xlsx ilə) qaytarır — çıxan fayl mənbənin formatını SAXLAYIR, .xlsx-ə MƏCBUR
+    // ÇEVRİLMİR (Excel-in "uzantı/məzmun uyğunsuzluğu" xəbərdarlığının qarşısı alınır).
+    private static (string Mime, string Uzanti) Os61MimeVeUzanti(string sablonPath) =>
+        Path.GetExtension(sablonPath).Equals(".xlsm", StringComparison.OrdinalIgnoreCase)
+            ? ("application/vnd.ms-excel.sheet.macroEnabled.12", ".xlsm")
+            : ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx");
 
     // Bizim Kod (1-22, Os61Async-ın öz sırası) → YENİ AMB şablonunun ("ÖS-Bank-6") öz
     // "sətirlərin şifrəsi" (C sütunu) nömrəsi. 19.11.2026-da canlı iki şablonun (OS old
@@ -631,6 +653,11 @@ public class HesabatController : Controller
         using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
             wb = new XSSFWorkbook(fs);
 
+        // NPOI formulu HESABLAMIR, yalnız mətnini/köhnə keşlənmiş nəticəsini saxlayır —
+        // bunsuz aşağıda TOXUNULMAYAN düstur xanaları (cəm/alt-cəm sətirləri) Excel-də
+        // köhnə, dondurulmuş dəyərlə açıla bilər.
+        wb.SetForceFormulaRecalculation(true);
+
         var stMain = wb.GetSheet("st_main");
         if (stMain != null)
         {
@@ -649,9 +676,18 @@ public class HesabatController : Controller
                 var row = ws.GetRow(hedefKod + 18); // Excel sətri (1-based) = hedefKod+19
                 if (row == null) continue;
 
+                // 19.11.2026 — ŞABLONUN ÖZÜ bəzi sətirlərdə (cəm/alt-cəm) öz daxili
+                // düsturunu daşıyır (məs. "=F25+F27"). Belə xananı bizim xam ədədlə
+                // ƏVƏZLƏMƏK Excel-i korlayır ("shared formula"/calcChain uyğunsuzluğu,
+                // açılışda "repair" dialoqu) — istifadəçi: "düstur olan yerləri
+                // düsturdan çıxarma". Ona görə DÜSTUR DAŞIYAN xanaya TOXUNULMUR, Excel
+                // onu ƏTRAFDAKI (bizim yazdığımız) xanalardan ÖZÜ yenidən hesablayır.
                 void Yaz(int col, decimal? v)
                 {
-                    if (v.HasValue) row.CreateCell(col).SetCellValue((double)v.Value);
+                    if (!v.HasValue) return;
+                    var movcud = row.GetCell(col);
+                    if (movcud != null && movcud.CellType == CellType.Formula) return;
+                    row.CreateCell(col).SetCellValue((double)v.Value);
                 }
                 Yaz(3, s.D_HesabSayiCemi);
                 Yaz(4, s.E_HesabSayiXariciValyuta);
