@@ -670,13 +670,36 @@ public class HesabatController : Controller
             row3.CreateCell(1).SetCellValue($"{ayAdlari[ay]} {il}");
         }
 
-        // 19.11.2026 — ÖS-6.1-in HƏR dəyəri bir SAYDIR (hesab/sahib sayı), pul məbləği
-        // deyil — xanada vergüldən sonra heç nə görünməməlidir. Stil BİR DƏFƏ yaradılır
-        // (hər xana üçün CreateCellStyle çağırsaq NPOI-nin 64 000 stil həddinə dəyərik —
-        // bax CLAUDE.md-nin "Böyük Excel ixracı" qaydası) və hər yazılan xanaya tətbiq
-        // olunur ki, şablonun ÖZÜNDƏ olan onluq format ("#,##0.00" kimi) üstələnsin.
-        var tamSayiStili = wb.CreateCellStyle();
-        tamSayiStili.DataFormat = wb.CreateDataFormat().GetFormat("#,##0");
+        // 19.11.2026 — ÖS-6-nın HƏR dəyəri bir SAYDIR (hesab/sahib sayı) və ya həcm
+        // (AZN), amma istifadəçi qərarı: HƏR ikisi xanada vergüldən sonra heç nə
+        // görünmədən, tam ədədə yuvarlaqlaşdırılmış göstərilsin ("old da vergülden
+        // sonrası olmasın, tama yuvarlaqlaşdır").
+        //
+        // 19.11.2026-İKİNCİ DÜZƏLİŞ — stil İLK versiyada TƏK, BOŞ bir
+        // `wb.CreateCellStyle()` idi və `yeniXana.CellStyle = tamSayiStili` ilə
+        // BİRBAŞA tətbiq olunurdu — bu, xananın ƏVVƏLKİ (şablondan miras) şriftini/
+        // sərhədini/fonunu da SİLİB NPOI-nin defolt stilinə salırdı (istifadəçi
+        // "səliqəsizlik" kimi gördü — Excel-in şrift qutusu "Arial 10" (şablonun öz
+        // şrifti) əvəzinə "Calibri 11" (NPOI defolt) göstərirdi). İndi HƏR xananın
+        // ÖZ MÖVCUD stilini KLONLAYIB, YALNIZ `DataFormat`-ı dəyişirik — şrift/
+        // sərhəd/fon TOXUNULMADAN qalır. Eyni ƏSL stil üçün TƏKRAR klon
+        // YARADILMIR (keşlənir, açar=əsl stilin indeksi) — CLAUDE.md-nin "hər xana
+        // üçün CreateCellStyle çağırsaq NPOI-nin 64 000 stil həddinə dəyərik"
+        // qaydasına görə, baxmayaraq ki bu hesabatda cəmi bir neçə onlarla xana
+        // yazılır (risk YOXDUR, sadəcə təmiz vərdiş).
+        var tamSayiFormat = wb.CreateDataFormat().GetFormat("#,##0");
+        var stilKesi = new Dictionary<short, ICellStyle>();
+
+        ICellStyle TamSayiStiliAl(ICellStyle? movcudStil)
+        {
+            var acar = movcudStil?.Index ?? (short)0;
+            if (stilKesi.TryGetValue(acar, out var kesli)) return kesli;
+            var yeni = wb.CreateCellStyle();
+            if (movcudStil != null) yeni.CloneStyleFrom(movcudStil);
+            yeni.DataFormat = tamSayiFormat;
+            stilKesi[acar] = yeni;
+            return yeni;
+        }
 
         var ws = wb.GetSheet(vereqAdi);
         if (ws != null)
@@ -694,19 +717,19 @@ public class HesabatController : Controller
                 // düsturdan çıxarma". Ona görə DÜSTUR DAŞIYAN xanaya TOXUNULMUR, Excel
                 // onu ƏTRAFDAKI (bizim yazdığımız) xanalardan ÖZÜ yenidən hesablayır.
                 //
-                // Dəyər HƏMİŞƏ tam ədədə yuvarlaqlaşdırılır (istifadəçi: "tam rəqəmlər
-                // düşməlidir, vergüldən sonra olmasın") — bu, SAY sahəsidir, hesablama
-                // zənciri onsuz da tam ədəd verir, AMMA `double` çevrilməsi nəzəri olaraq
-                // 642.999999999 kimi qalıq buraxa bilər; `Math.Round` + xananın ÖZ formatı
-                // (yuxarı) ikiqat qoruyur.
+                // Dəyər HƏMİŞƏ tam ədədə yuvarlaqlaşdırılır — bu, SAY sahəsidir,
+                // hesablama zənciri onsuz da tam ədəd verir, AMMA `double` çevrilməsi
+                // nəzəri olaraq 642.999999999 kimi qalıq buraxa bilər; `Math.Round` +
+                // xananın ÖZ formatı (yuxarı) ikiqat qoruyur.
                 void Yaz(int col, decimal? v)
                 {
                     if (!v.HasValue) return;
                     var movcud = row.GetCell(col);
                     if (movcud != null && movcud.CellType == CellType.Formula) return;
+                    var movcudStil = movcud?.CellStyle;
                     var yeniXana = row.CreateCell(col);
                     yeniXana.SetCellValue((double)Math.Round(v.Value, 0, MidpointRounding.AwayFromZero));
-                    yeniXana.CellStyle = tamSayiStili;
+                    yeniXana.CellStyle = TamSayiStiliAl(movcudStil);
                 }
                 Yaz(3, s.D_HesabSayiCemi);
                 Yaz(4, s.E_HesabSayiXariciValyuta);
@@ -716,6 +739,33 @@ public class HesabatController : Controller
                 Yaz(8, s.I_AktivCemi);
                 Yaz(9, s.J_AktivXariciValyuta);
                 Yaz(10, s.K_SahibSayi);
+            }
+
+            // 19.11.2026 — "old da vergülden sonrası olmasın" tələbi YALNIZ bizim
+            // hesabladığımız Kod 1-22 sətirlərinə (yuxarı) yox, ŞABLONUN ÖZÜNDƏ olan
+            // digər statik bloklara da aiddir (məs. "ÖS-6.2. ... köçürmələr və
+            // daxilolmalar" bölməsi, rows 44+ — bu, AYRI bir statistik hesabatdır,
+            // bizim `Os61Async`-in HESABLAMADIĞI, şablonun ÖZÜ ilə gələn ədədlərdir).
+            // Ona görə BÜTÖV vərəqin istifadə olunan sahəsi taranır: DÜSTUR OLMAYAN
+            // HƏR ədədi xana (CellType.Numeric) tam ədədə yuvarlaqlaşdırılır və eyni
+            // klon-stil mexanizmi (yuxarı) ilə formatlanır — şriftinə/sərhədinə
+            // TOXUNULMADAN. Mətn/tarix/düstur xanaları TOXUNULMUR.
+            for (var rIdx = ws.FirstRowNum; rIdx <= ws.LastRowNum; rIdx++)
+            {
+                var satir = ws.GetRow(rIdx);
+                if (satir == null) continue;
+                for (var cIdx = (int)satir.FirstCellNum; cIdx < satir.LastCellNum; cIdx++)
+                {
+                    if (cIdx < 0) continue;
+                    var xana = satir.GetCell(cIdx);
+                    if (xana == null || xana.CellType != CellType.Numeric) continue;
+                    if (DateUtil.IsCellDateFormatted(xana)) continue; // tarix xanasına toxunma
+                    var deyer = xana.NumericCellValue;
+                    var yuvarlaq = Math.Round(deyer, 0, MidpointRounding.AwayFromZero);
+                    var movcudStil = xana.CellStyle;
+                    if (deyer != yuvarlaq) xana.SetCellValue(yuvarlaq);
+                    xana.CellStyle = TamSayiStiliAl(movcudStil);
+                }
             }
         }
 
