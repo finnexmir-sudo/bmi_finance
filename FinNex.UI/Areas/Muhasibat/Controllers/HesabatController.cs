@@ -649,7 +649,10 @@ public class HesabatController : Controller
         string sablonPath, string vereqAdi, MuhasibatOs61Dto m, int il, int ay,
         Dictionary<int, int>? kodXeritesi)
     {
-        IWorkbook wb;
+        // CS1061 qoruyucusu — SetForceFormulaRecalculation `IWorkbook` interfeysində YOXDUR,
+        // yalnız konkret `XSSFWorkbook` sinfində (Risk/DashboardController.cs:271-dəki eyni
+        // naxış) — `IWorkbook wb;` yazsaq aşağıdakı çağırış CS1061 verərdi.
+        XSSFWorkbook wb;
         using (var fs = new FileStream(sablonPath, FileMode.Open, FileAccess.Read))
             wb = new XSSFWorkbook(fs);
 
