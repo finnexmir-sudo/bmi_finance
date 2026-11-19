@@ -83,7 +83,7 @@ public class HesabatController : Controller
         // haqqında statistik hesabat (hesab sayı + sahib sayı). "Old"/"yeni" AMB
         // şablonlarının HƏR İKİSİNDƏ eyni 22 sətir/Kod işlədir (bax CLAUDE.md) — bura
         // yalnız BİR, ortaq hesablama kartıdır.
-        new() { Kod = "os-6-1", Ad = "ÖS-6.1 — Müştəri Hesabları", Tesvir = "Müştəri hesablarının sayı və sahib sayı (AMB Ödəniş Statistikası, aylıq)",
+        new() { Kod = "os-6-1", Ad = "ÖS-6.1-6.2 — Müştəri Hesabları", Tesvir = "Müştəri hesablarının sayı və sahib sayı (AMB Ödəniş Statistikası, aylıq)",
                 Kateqoriya = "Aylıq", Ikon = "bi-person-lines-fill", Area = "Muhasibat", Controller = "Hesabat", Action = "Os61" },
         // DSMF Vahid Hesabat Forması — TƏK kataloq kartı (29.10.2026, istifadəçi
         // tələbi: "Vahid hesabat adini yaz, hazirladiqlarini onun icinde goster,

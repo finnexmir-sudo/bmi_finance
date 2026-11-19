@@ -1,7 +1,7 @@
 @using FinNex.Application.DTOs.Muhasibat
 @model MuhasibatOs61Dto
 @{
-    ViewData["Title"] = "ÖS-6.1 — Müştəri Hesabları";
+    ViewData["Title"] = "ÖS-6.1-6.2 — Müştəri Hesabları";
     var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
         "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
     var cariIl = DateTime.Today.Year;
@@ -37,8 +37,8 @@
 <div class="mh-wrap">
     <div class="mh-hero mh-hero--os61">
         <div class="mh-hero-l">
-            <div class="mh-badge"><i class="bi bi-person-lines-fill"></i> Mühasibat / Hesabatlar / ÖS-6.1</div>
-            <h1 class="mh-title">ÖS-6.1 — Müştəri Hesabları</h1>
+            <div class="mh-badge"><i class="bi bi-person-lines-fill"></i> Mühasibat / Hesabatlar / ÖS-6.1-6.2</div>
+            <h1 class="mh-title">ÖS-6.1-6.2 — Müştəri Hesabları</h1>
             <div class="mh-sub"><i class="bi bi-info-circle"></i> AMB "Ödəniş Statistikası" Əlavə 6.1 — @ayAdlari[Model.Ay] @Model.Il</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <a asp-action="Os61Excel" asp-route-il="@Model.Il" asp-route-ay="@Model.Ay" class="mh-xls"><i class="bi bi-file-earmark-excel"></i> Excel (Köhnə şablon)</a>
