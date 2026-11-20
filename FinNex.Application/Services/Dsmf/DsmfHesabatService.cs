@@ -337,6 +337,15 @@ public class DsmfHesabatService : IDsmfHesabatService
         var elillikSetir = new DsmfIstisnaSetirDto { SiraNo = 4, Gostərici = DsmfIstisnaGostericileri.Madde1023 };
         var esgerSetir = new DsmfIstisnaSetirDto { SiraNo = 5, Gostərici = DsmfIstisnaGostericileri.Madde10211416 };
 
+        // 20.11.2026, istifadəçi düzəlişi: "işçinin işçi güzəştlərində şəxsi
+        // azadolunmaları var, onları nəzərə almamısan" — `GuzestNovu.Diger`
+        // tipli (HR-in kataloqa əlavə etdiyi, standart 2 tipdən (Elillik/
+        // MecburiKockun) KƏNAR HƏR hansı) fərdi güzəşt əvvəl HEÇ sorğulanmırdı.
+        // Bu tip qabaqcadan bilinməyən sayda qanun maddəsini daşıya bilər —
+        // ona görə DİNAMİK sətirlərə (Madde, yoxdursa Ad üzrə) qruplaşdırılır,
+        // SiraNo əsas 5 sətirdən SONRA (6-dan başlayaraq) verilir.
+        var digerSetirler = new Dictionary<string, DsmfIstisnaSetirDto>();
+
         for (int i = 0; i < 3; i++)
         {
             // 29.10.2026, istifadəçi düzəlişi: "Azad güzəşt — mən burda sənə
@@ -356,17 +365,42 @@ public class DsmfHesabatService : IDsmfHesabatService
             var standart = await StandartGuzestAsync(il, ayLar[i]);
             SetirAyaYaz(standartSetir, i, standart.Count, standart.Values.Sum());
 
-            var qacqin = await GuzestNovuUzreAsync(il, ayLar[i], GuzestNovu.MecburiKockun);
+            // Fərdi güzəştlərin (işçi üzrə yalnız ƏN BÖYÜYÜ qalib gəlir) TƏK,
+            // NÖVDƏN ASILI OLMAYAN mənbəyi — bax FerdiGuzestQalibleriAsync-in
+            // şərhi (kök səbəb: Diger tipi heç sorğulanmırdı + köhnə uyğunlaşdırma
+            // CANLI Guzest.Mebleg-ə bağlıydı).
+            var ferdiGuzest = await FerdiGuzestQalibleriAsync(il, ayLar[i]);
+
+            var qacqin = ferdiGuzest.Where(kv => kv.Value.Novu == GuzestNovu.MecburiKockun)
+                .ToDictionary(kv => kv.Key, kv => kv.Value.Mebleg);
             SetirAyaYaz(qacqinSetir, i, qacqin.Count, qacqin.Values.Sum());
 
-            var elillik = await GuzestNovuUzreAsync(il, ayLar[i], GuzestNovu.Elillik);
+            var elillik = ferdiGuzest.Where(kv => kv.Value.Novu == GuzestNovu.Elillik)
+                .ToDictionary(kv => kv.Key, kv => kv.Value.Mebleg);
             SetirAyaYaz(elillikSetir, i, elillik.Count, elillik.Values.Sum());
+
+            foreach (var grp in ferdiGuzest.Where(kv => kv.Value.Novu == GuzestNovu.Diger)
+                                            .GroupBy(kv => kv.Value.Madde ?? kv.Value.Ad))
+            {
+                if (!digerSetirler.TryGetValue(grp.Key, out var s))
+                {
+                    s = new DsmfIstisnaSetirDto { SiraNo = 0, Gostərici = grp.Key };
+                    digerSetirler[grp.Key] = s;
+                }
+                SetirAyaYaz(s, i, grp.Count(), grp.Sum(kv => kv.Value.Mebleg));
+            }
 
             var esger = await ManualGelirVergiIstisnasiAsync(il, ayLar[i]);
             SetirAyaYaz(esgerSetir, i, esger.Count, esger.Values.Sum());
         }
 
         dto.Setirler = new List<DsmfIstisnaSetirDto> { hysSetir, standartSetir, qacqinSetir, elillikSetir, esgerSetir };
+        var siraDiger = 6;
+        foreach (var s in digerSetirler.Values)
+        {
+            s.SiraNo = siraDiger++;
+            dto.Setirler.Add(s);
+        }
         return dto;
     }
 
@@ -460,12 +494,26 @@ public class DsmfHesabatService : IDsmfHesabatService
     // HESABLANMIŞ VƏ PERSİST EDİLMİŞ "Vergi Guzesti" izahat addımından (Maas.
     // HesablamaIzahi JSON) oxunur — tək mənbə, canlı payroll ilə HƏMİŞƏ
     // tutuşur.
+    //
+    // ⚠️ `x.BrutMebleg > 0` qoruyucusu 20.11.2026-da əlavə edildi — istifadəçi:
+    // "bizdə iki işçi var ki, onları uzun müddətli öz hesabına məzuniyyətə
+    // göndəriblər və onlara heç bir maaş verilmir, amma sən onlarda 200 AZN
+    // az da yazmışsan." Kök səbəb: `MaasHesablamaService.cs:1238`-dəki
+    // `standartGuzest = brutMaasGuzestYoxlama <= firstBracketMax ? ... : 0`
+    // şərti BRÜT=0 olanda da (0 ≤ 2500) TRUE qayıdır — bu, ƏSL VERGİ
+    // HESABLAMASI üçün ZƏRƏRSİZDİR (vergiBazasi da 0 olduğu üçün net məbləğə
+    // təsir etmir), AMMA DSMF-in "güzəşt/azadolma" sütunu HƏQİQİ EXEMPTED
+    // GƏLİRİ bildirir — gəliri SIFIR olan işçi üçün "200 AZN azad edildi"
+    // demək MƏNTİQSİZDİR (heç bir gəlir yoxdur ki, azad edilsin). Bu qoruyucu
+    // bütün "fərdi güzəşt" oxuyucularına (bax aşağı FerdiGuzestQalibleriAsync)
+    // tətbiq olunur.
     private async Task<Dictionary<int, decimal>> StandartGuzestAsync(int il, int ay)
     {
         var maaslar = await _unitOfWork.Repository<Maas>()
             .Query()
             .AsNoTracking()
             .Where(x => !x.Silinib && x.Il == il && x.Ay == ay
+                     && x.BrutMebleg > 0
                      && (x.Status == MaasStatus.Tesdiqlendi || x.Status == MaasStatus.Odenildi)
                      && x.HesablamaIzahi != null)
             .Select(x => new { x.IsciId, x.HesablamaIzahi })
@@ -480,52 +528,98 @@ public class DsmfHesabatService : IDsmfHesabatService
         return netice;
     }
 
-    // Əlillik/Qaçqın (MecburiKockun) güzəştinin HƏQİQƏTƏN tətbiq olunan payı.
-    // İşçidə eyni anda BİRDƏN ÇOX növdə aktiv güzəşt varsa (nadir), vergi
-    // hesablamasında yalnız ƏN BÖYÜYÜ tətbiq olunur (Madde 102 — toplanmır).
-    // Bu metod HƏR növü ayrıca sorğulayır, amma yalnız HƏQİQƏTƏN qalib gələn
-    // (Maas.HesablamaIzahi-dəki "İşçi güzəştləri" addımının Mebleg-i bu
-    // Guzest-in Mebleg-inə DƏQİQ bərabərdirsə) sətirləri sayır — əks halda
-    // güzəşt qeydiyyatda var, amma HEÇ VAXT tətbiq olunmayıb (başqa, daha
-    // böyük güzəşt qalib gəlib) deməkdir, DSMF-ə yazılmamalıdır.
-    private async Task<Dictionary<int, decimal>> GuzestNovuUzreAsync(int il, int ay, GuzestNovu novu)
+    // Fərdi (işçi) güzəştlərin HƏQİQƏTƏN tətbiq olunan (qalib gələn) payı —
+    // İL/AY üzrə, NÖVÜNDƏN ASILI OLMAYARAQ (Diger/Elillik/MecburiKockun).
+    // Əvvəlki `GuzestNovuUzreAsync` (20.11.2026-da SİLİNİB, bu metodla əvəz
+    // olunub) İKİ bugdan əziyyət çəkirdi — istifadəçi: "DSMF hesabatında azad
+    // güzəştdə sən yalnız 200 vergiyə görəni nəzərə alırsan, amma işçinin
+    // işçi güzəştlərində şəxsi azadolunmaları var, onları nəzərə almamısan":
+    //
+    //  1. `GuzestNovu.Diger` (= 0, "adi vergi güzəşti", HR-in kataloqa əlavə
+    //     etdiyi ƏN GENİŞ/DEFOLT tip) HEÇ VAXT sorğulanmırdı — yalnız
+    //     Elillik/MecburiKockun axtarılırdı. Kataloqda yaradılan İSTƏNİLƏN
+    //     fərdi güzəşt (bu iki standart tipdən BAŞQA) DSMF-ə HEÇ DÜŞMÜRDÜ.
+    //  2. Qalan iki tip üçün belə, uyğunlaşdırma CANLI `Guzest.Mebleg`-ə
+    //     (kataloqun HAZIRKI dəyərinə) bağlı idi (`tetbiqOlunan ==
+    //     isciMax[...]`) — güzəştin məbləği sonradan HR tərəfindən redaktə
+    //     edilsə, keçmiş ayların FROZEN tətbiq olunan dəyəri artıq canlı
+    //     kataloqla uyğun gəlmir və sətir SƏSSİZCƏ İTİRDİ (eyni "canlı dəyərə
+    //     güvənmə YALNIZ hələ baş verməmiş bir şey üçün düzgündür" tələsi —
+    //     bax HysIsciPayiAsync-in 17.11.2026 düzəlişi, HYS üçün artıq bir dəfə
+    //     düzəldilmiş EYNİ sinif xəta).
+    //
+    // Həll — uyğunlaşdırma MİQDARA görə YOX, ADA görə gedir: "İşçi güzəştləri"
+    // addımının Izah mətnindəki "Seçilən (ən böyük): {Ad}" hissəsi FROZEN
+    // qalib güzəştin ADINI, həmin addımın Mebleg sahəsi isə onun FROZEN
+    // tətbiq olunan MƏBLƏĞİNİ birbaşa daşıyır — kataloqa YALNIZ Novu/Madde
+    // ETİKETİ üçün (hələ də canlı, AMMA bu YALNIZ görüntü/qruplaşdırma
+    // üçündür, MƏBLƏĞƏ/SAYMAĞA HEÇ TƏSİR ETMİR) müraciət olunur. Güzəşt
+    // kataloqdan sonradan silinsə/adı dəyişsə belə sətir "Diger" növü ilə,
+    // YENƏ DƏ DOĞRU MƏBLƏĞLƏ (Madde=null) qalır — pul HEÇ VAXT SƏSSİZCƏ İTMİR.
+    //
+    // `x.BrutMebleg > 0` qoruyucusu StandartGuzestAsync-dəki EYNİ qaydadır
+    // (bax onun şərhi, 20.11.2026) — maaşı olmayan (tam ay öz hesabına
+    // məzuniyyət) işçiyə heç bir güzəşt "azad edildi" kimi yazılmır.
+    private async Task<Dictionary<int, (string Ad, string? Madde, GuzestNovu Novu, decimal Mebleg)>>
+        FerdiGuzestQalibleriAsync(int il, int ay)
     {
-        var ayBaslangic = new DateTime(il, ay, 1);
-        var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
-
-        var namizedler = await _unitOfWork.Repository<IsciGuzest>()
-            .Query()
-            .AsNoTracking()
-            .Where(x => !x.Silinib
-                     && x.BaslamaTarixi <= ayBitis
-                     && (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangic))
-            .Include(x => x.Guzest)
-            .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir && x.Guzest.Novu == novu)
-            .Select(x => new { x.IsciId, x.Guzest!.Mebleg })
-            .ToListAsync();
-
-        if (namizedler.Count == 0) return new Dictionary<int, decimal>();
-
-        var isciMax = namizedler.GroupBy(x => x.IsciId).ToDictionary(g => g.Key, g => g.Max(x => x.Mebleg));
-
         var maaslar = await _unitOfWork.Repository<Maas>()
             .Query()
             .AsNoTracking()
             .Where(x => !x.Silinib && x.Il == il && x.Ay == ay
-                     && isciMax.Keys.Contains(x.IsciId)
+                     && x.BrutMebleg > 0
                      && (x.Status == MaasStatus.Tesdiqlendi || x.Status == MaasStatus.Odenildi)
                      && x.HesablamaIzahi != null)
             .Select(x => new { x.IsciId, x.HesablamaIzahi })
             .ToListAsync();
 
-        var netice = new Dictionary<int, decimal>();
+        var qalibler = new Dictionary<int, (string Ad, decimal Mebleg)>();
         foreach (var m in maaslar)
         {
-            var tetbiqOlunan = MaksIsciGuzestindenCixar(m.HesablamaIzahi!);
-            if (tetbiqOlunan > 0 && tetbiqOlunan == isciMax[m.IsciId])
-                netice[m.IsciId] = tetbiqOlunan;
+            var (ad, mebleg) = IsciGuzestiQalibiCixar(m.HesablamaIzahi!);
+            if (ad != null && mebleg > 0)
+                qalibler[m.IsciId] = (ad, mebleg);
+        }
+        if (qalibler.Count == 0) return new();
+
+        // Kataloqdan YALNIZ ETİKET (Madde/Novu) üçün — canlı, AMMA cəm/sayı
+        // DƏYİŞMİR, yuxarıdaki şərhə bax.
+        var adlar = qalibler.Values.Select(x => x.Ad).Distinct().ToList();
+        var kataloq = await _unitOfWork.Repository<Guzest>()
+            .Query()
+            .AsNoTracking()
+            .Where(g => adlar.Contains(g.Ad))
+            .Select(g => new { g.Ad, g.Madde, g.Novu })
+            .ToListAsync();
+        var kataloqMap = kataloq.GroupBy(g => g.Ad).ToDictionary(g => g.Key, g => g.First());
+
+        var netice = new Dictionary<int, (string Ad, string? Madde, GuzestNovu Novu, decimal Mebleg)>();
+        foreach (var (isciId, qalib) in qalibler)
+        {
+            netice[isciId] = kataloqMap.TryGetValue(qalib.Ad, out var k)
+                ? (qalib.Ad, k.Madde, k.Novu, qalib.Mebleg)
+                : (qalib.Ad, null, GuzestNovu.Diger, qalib.Mebleg);
         }
         return netice;
+    }
+
+    // "İşçi güzəştləri" addımının Izah mətnindən qalib güzəştin ADINI çıxarır —
+    // format (bax MaasHesablamaService.cs-in "İşçi güzəştləri" addım yazılışı):
+    // "Aktiv güzəştlər: {Ad} — {Mebleg} ₼, .... Seçilən (ən böyük): {Ad}".
+    // Format tanınmasa belə MƏBLƏĞ İTMİR — "Naməlum güzəşt" etiketi ilə qalır.
+    private static (string? Ad, decimal Mebleg) IsciGuzestiQalibiCixar(string? hesablamaIzahiJson)
+    {
+        var addim = IzahatlarıOxu(hesablamaIzahiJson)?.FirstOrDefault(x => x.Addim == "İşçi güzəştləri");
+        if (addim == null || addim.Mebleg <= 0) return (null, 0m);
+
+        const string acar = "Seçilən (ən böyük): ";
+        var idx = addim.Izah?.IndexOf(acar, StringComparison.Ordinal) ?? -1;
+        if (idx < 0) return ("Naməlum güzəşt", addim.Mebleg);
+
+        var ad = addim.Izah![(idx + acar.Length)..].Trim();
+        if (string.IsNullOrWhiteSpace(ad) || ad == "—") return ("Naməlum güzəşt", addim.Mebleg);
+
+        return (ad, addim.Mebleg);
     }
 
     // Manual gəlir növlərindən gəlir vergisindən azad olanlar — QİSMƏN
@@ -787,9 +881,9 @@ public class DsmfHesabatService : IDsmfHesabatService
     //
     // Son dördü (3.1/4.1/5.1/6.1) Bölmə 2-5-in ARTIQ QURULMUŞ per-işçi
     // dict-lərinin cəmidir — YENİ DÜSTUR YAZILMAYIB, elə yuxarıdakı
-    // HysIsciPayiAsync/HysIsegoturenMapAsync/StandartGuzestAsync/GuzestNovuUzreAsync/
-    // ManualGelirVergiIstisnasiAsync/XestelikSirketOdenisiAsync/
-    // ManualGelirIstisnasiAsync-dən oxunur.
+    // HysIsciPayiAsync/HysIsegoturenMapAsync/StandartGuzestAsync/
+    // FerdiGuzestQalibleriAsync/ManualGelirVergiIstisnasiAsync/
+    // XestelikSirketOdenisiAsync/ManualGelirIstisnasiAsync-dən oxunur.
     public async Task<DsmfHissesi1Dto> Hissesi1HazirlaAsync(int il, int rub)
     {
         rub = Math.Clamp(rub, 1, 4);
@@ -845,8 +939,11 @@ public class DsmfHesabatService : IDsmfHesabatService
         var hys = new Dictionary<int, decimal>[3];
         var hysIseg = new Dictionary<int, decimal>[3];
         var standart = new Dictionary<int, decimal>[3];
-        var qacqin = new Dictionary<int, decimal>[3];
-        var elillik = new Dictionary<int, decimal>[3];
+        // Fərdi güzəşt (Diger/Elillik/MecburiKockun — HAMISI, bax FerdiGuzestQalibleriAsync),
+        // 20.11.2026-da `qacqin`/`elillik` iki ayrı sorğusunun ƏVƏZİNƏ TƏK dict —
+        // bu sütun (3.1) növdən asılı olmayaraq CƏMİ istəyir, Bölmə 2-nin
+        // NÖV-ÜZRƏ ayrı sətirlərinə ehtiyac yoxdur.
+        var ferdiGuzest = new Dictionary<int, decimal>[3];
         var esger = new Dictionary<int, decimal>[3];
         var xst = new Dictionary<int, decimal>[3];
         var manualIssizlik = new Dictionary<int, decimal>[3];
@@ -863,8 +960,8 @@ public class DsmfHesabatService : IDsmfHesabatService
             hys[i] = await HysIsciPayiAsync(il, ay);
             hysIseg[i] = await HysIsegoturenMapAsync(il, ay);
             standart[i] = await StandartGuzestAsync(il, ay);
-            qacqin[i] = await GuzestNovuUzreAsync(il, ay, GuzestNovu.MecburiKockun);
-            elillik[i] = await GuzestNovuUzreAsync(il, ay, GuzestNovu.Elillik);
+            ferdiGuzest[i] = (await FerdiGuzestQalibleriAsync(il, ay))
+                .ToDictionary(kv => kv.Key, kv => kv.Value.Mebleg);
             esger[i] = await ManualGelirVergiIstisnasiAsync(il, ay);
             xst[i] = await XestelikSirketOdenisiAsync(il, ay);
             manualIssizlik[i] = await ManualGelirIstisnasiAsync(il, ay, issizlikFlag: true);
@@ -908,10 +1005,14 @@ public class DsmfHesabatService : IDsmfHesabatService
                     // ⚠️ AzadGuzestCemi (3.1) VƏ DsmfAzadCemi (4.1) HƏR İKİSİ
                     // `hysIseg`-i daxil edir (29.10.2026, ÜÇÜNCÜ dalğa — bax
                     // HysIsegoturenMapAsync-in şərhi, rəsmi şablonun K10 qeydi
-                    // "e/h M+T+U" əsasında).
+                    // "e/h M+T+U" əsasında). `ferdiGuzest[i]` (20.11.2026) —
+                    // köhnə `qacqin[i]+elillik[i]`-nin ƏVƏZİNƏ, Diger/Elillik/
+                    // MecburiKockun NÖVLƏRİNİN HAMISININ CƏMİ (bax
+                    // FerdiGuzestQalibleriAsync-in şərhi) — bu sütun növdən
+                    // asılı olmayaraq TOPLAM istəyir.
                     AzadGuzestCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
                                      + standart[i].GetValueOrDefault(isci.Id)
-                                     + qacqin[i].GetValueOrDefault(isci.Id) + elillik[i].GetValueOrDefault(isci.Id)
+                                     + ferdiGuzest[i].GetValueOrDefault(isci.Id)
                                      + esger[i].GetValueOrDefault(isci.Id),
                     DsmfAzadCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
                                      + xst[i].GetValueOrDefault(isci.Id),

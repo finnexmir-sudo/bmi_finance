@@ -13874,3 +13874,93 @@ Visual Studio-da **Rebuild All** ilə, sonra real mühitdə Oktyabr 2026 ÖS-6.1
 yenidən açıb: Kod 3-ün "HESAB SAYI" (dövrün sonuna)=643-ə, "ONDAN AKTİV"=293-ə
 yaxın (31-günlük pəncərə kiçik fərq yarada bilər, bax ALTINCI DALĞA)
 çıxdığını, HƏR İKİ sütunun artıq FƏRQLİ olduğunu təsdiqləməlidir.
+
+## DSMF Bölmə 2 — Şəxsi Güzəştlər HEÇ Nəzərə Alınmırdı + Maaşı Olmayan İşçiyə 200 AZN Yazılırdı (20.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi iki ayrı bug bildirdi birlikdə: *"DSMF hesabatında, azad güzəştdə sən
+yalnız 200 vergiyə görəni nəzərə alırsan, amma işçinin işçi güzəştlərində şəxsi
+azadolunmaları var, onları nəzərə almamısan. Və bizdə iki işçi var ki, onları uzun
+müddətli öz hesabına məzuniyyətə göndəriblər və onlara heç bir maaş verilmir, amma
+sən onlarda 200 AZN az da yazmışsan — onlara maaş verilmir axi."*
+
+### Bug 1 — `GuzestNovu.Diger` tipli fərdi güzəştlər HEÇ sorğulanmırdı
+
+`GuzestNovu` enum-unda 3 dəyər var: `Diger=0` (HR-in kataloqa əlavə etdiyi
+STANDART-DAN KƏNAR HƏR hansı fərdi güzəşt — ən geniş/defolt tip), `Elillik=1`,
+`MecburiKockun=2`. Köhnə `GuzestNovuUzreAsync` YALNIZ `Elillik`/`MecburiKockun`
+tiplərini sorğulayırdı — kataloqda yaradılan İSTƏNİLƏN "Diger" tipli fərdi güzəşt
+(standart 2 tipdən BAŞQA hamısı) DSMF-ə HEÇ DÜŞMÜRDÜ.
+
+**İKİNCİ, daha gizli səbəb:** qalan iki tip üçün belə, uyğunlaşdırma CANLI
+`Guzest.Mebleg`-ə (kataloqun HAZIRKI dəyərinə) bağlı idi
+(`tetbiqOlunan == isciMax[...]`) — güzəştin məbləği sonradan HR tərəfindən
+redaktə edilsə, keçmiş ayların FROZEN tətbiq olunan dəyəri artıq canlı kataloqla
+uyğun gəlmir və sətir SƏSSİZCƏ İTİRDİ. Bu, elə `HysIsciPayiAsync`-in 17.11.2026-da
+(yuxarı bax, "DSMF — HYS İşçi Payı CANLI Dəyərdən ASILI İDİ") artıq bir dəfə
+HYS üçün düzəldilmiş EYNİ sinif xəta idi — `GuzestNovuUzreAsync`-də TƏKRARLANIB,
+diqqətdən qaçmışdı.
+
+**Həll — `GuzestNovuUzreAsync` TAMAMİLƏ SİLİNDİ, yeni `FerdiGuzestQalibleriAsync`
+ilə əvəz olundu.** Uyğunlaşdırma indi MİQDARA görə YOX, ADA görə gedir: "İşçi
+güzəştləri" addımının (`MaasHesablamaService.cs`-in payroll hesablama anında
+yazdığı, Maas.HesablamaIzahi JSON-unda FROZEN qalan addım) Izah mətnindəki
+"Seçilən (ən böyük): {Ad}" hissəsi FROZEN qalib güzəştin ADINI, həmin addımın
+Mebleg sahəsi isə onun FROZEN tətbiq olunan MƏBLƏĞİNİ birbaşa daşıyır —
+kataloqa YALNIZ Novu/Madde ETİKETİ üçün (hələ də canlı, AMMA bu YALNIZ
+görüntü/qruplaşdırma üçündür, MƏBLƏĞƏ/SAYMAĞA HEÇ TƏSİR ETMİR) müraciət olunur.
+Güzəşt kataloqdan sonradan silinsə/adı dəyişsə belə sətir "Diger" növü ilə,
+YENƏ DƏ DOĞRU MƏBLƏĞLƏ (Madde=null, "naməlum") qalır — pul HEÇ VAXT SƏSSİZCƏ İTMİR.
+
+`Bolme2HazirlaAsync`-ə `Diger` tipli güzəştlər üçün **DİNAMİK sətirlər** əlavə
+edildi (Madde, yoxdursa Ad üzrə qruplaşdırılır, SiraNo əsas 5 sətirdən SONRA
+6-dan başlayır) — bu tip qabaqcadan bilinməyən sayda qanun maddəsini daşıya
+bilər, sabit sətir sayı ilə məhdudlaşdırılmayıb.
+
+`Hissesi1HazirlaAsync`-in "3.1 Azadolunan/güzəşt cəmi" (`AzadGuzestCemi`) sütunu
+isə köhnə `qacqin[i]+elillik[i]` (yalnız 2 tip) əvəzinə yeni, NÖVDƏN ASILI
+OLMAYAN `ferdiGuzest[i]`-dən oxur (bütün növlərin CƏMİ — bu sütun TOPLAM istəyir,
+Bölmə 2-nin nov-üzrə ayrı sətirlərinə ehtiyacı yoxdur).
+
+### Bug 2 — maaşı olmayan işçiyə 200 AZN standart güzəşt yazılırdı
+
+Kök səbəb `MaasHesablamaService.cs:1238`-dəki
+`standartGuzest = brutMaasGuzestYoxlama <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;`
+şərtidir — brüt=0 olanda da (`0 ≤ 2500`) bu şərt TRUE qayıdır. Bu, ƏSL VERGİ
+HESABLAMASI üçün ZƏRƏRSİZDİR (vergi bazası da 0 olduğu üçün net məbləğə təsir
+etmir), AMMA DSMF-in "güzəşt/azadolma" sütunu HƏQİQİ EXEMPTED GƏLİRİ bildirir —
+gəliri SIFIR olan işçi üçün "200 AZN azad edildi" demək MƏNTİQSİZDİR (heç bir
+gəlir yoxdur ki, azad edilsin).
+
+**`MaasHesablamaService.cs`-ə TOXUNULMADI** (CLAUDE.md-nin "İşlək funksiyanı
+silmək/dəyişmək yalnız açıq icazə ilə" qaydası + maaş hesablamasının özünə
+toxunmaq əlavə risk yaradardı, nəticə onsuz da düzgündür) — əvəzinə
+`StandartGuzestAsync` (Bölmə 2-nin 200 AZN sətri) VƏ yeni `FerdiGuzestQalibleriAsync`
+(şəxsi güzəştlər) hər ikisinin Maas sorğusuna **`x.BrutMebleg > 0`** qoruyucusu
+əlavə edildi — maaşı olmayan (tam ay öz hesabına məzuniyyət) işçiyə heç bir
+güzəşt "azad edildi" kimi YAZILMIR.
+
+### Fayllar
+
+`FinNex.Application/Services/Dsmf/DsmfHesabatService.cs` — `StandartGuzestAsync`
+(`BrutMebleg > 0` qoruyucusu), `GuzestNovuUzreAsync` SİLİNDİ, yeni
+`FerdiGuzestQalibleriAsync` + `IsciGuzestiQalibiCixar` (ad-əsaslı parsing
+helper-i), `Bolme2HazirlaAsync` (dinamik Diger sətirləri), `Hissesi1HazirlaAsync`
+(`AzadGuzestCemi` düsturu).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — hər iki düzəliş yalnız BUNDAN SONRA çağırılan
+Bölmə 2/Hissə 1 hesablamalarına təsir edir; bu düzəlişdən əvvəl artıq ixrac
+edilmiş Excel-lər YENİDƏN hazırlanmalıdır (yenidən açmaq kifayətdir, Maas
+sətirlərinin özünə toxunulmayıb — onsuz da canlı sorğudur, saxlanmış heç bir
+dəyər yoxdur).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı Python skriptlə — `git stash` izolyasiyası ilə pre-existing
+−1 paren-fərqinin bu düzəlişdən ASILI OLMADIĞI təsdiqləndi, edit-in ÖZÜ
+net-neytraldır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: (1) kataloqda "Diger" tipli fərdi güzəşti olan bir
+işçinin Bölmə 2-də yeni, dinamik sətirdə (Madde/Ad etiketi ilə) göründüyünü,
+Hissə 1-in 3.1 sütununun da bu məbləği EHTİVA ETDİYİNİ; (2) uzun müddətli öz
+hesabına məzuniyyətdə olan, maaşı olmayan iki işçinin artıq Bölmə 2-nin "Standart
+200 AZN" sətrində HEÇ GÖRÜNMƏDİYİNİ (əvvəlki kimi "200 AZN azad" yazılmadığını)
+— "Maliyyəyə/vergi hesablamasına toxunan hər dəyişiklik" qaydasına görə bu, real
+data ilə təsdiqlənməlidir.
