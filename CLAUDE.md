@@ -12726,6 +12726,58 @@ aralığında HƏM fiziki şəxsin, HƏM hüquqi şəxsin BLR-ə təsdiqlənmiş
 `..._BLR_HUQUQI_...json`) yarandığını, CTR/PEP kimi digər kodlarda isə hələ
 TƏK fayl (sonluqsuz) gəldiyini təsdiqləməlidir.
 
+## GOAML Export — Fayl Adında TİP də GÖRÜNÜR (23.11.2026)
+
+İstifadəçi: *"bizde fayl adinda tip ve melumat novu aydin bilinir?"* —
+araşdırmada tapıldı ki, "Məlumatın növü" (ReportCode) fayl adında AÇIQ idi
+(`GOAML_Ixrac_CTR_...json`), AMMA **Tip (GoamlTipi — Fiziki/Hüquqi/F to F/
+H to H istiqaməti) HEÇ GÖRÜNMÜRDÜ**. Nəticədə eyni ReportCode altında
+TAMAM FƏRQLİ Tip-li əməliyyatlar (məs. "Fiziki (OUT)" və "Hüquqi (IN)", hər
+ikisi CTR seçilibsə) EYNİ faylda qarışıq çıxırdı — operator fayl adına
+baxanda içində HANSI Tip-lərin olduğunu bilmir, faylı açıb hər sətrin
+`trn_type`-ına baxmalı idi.
+
+**Həll — 17.11.2026-dakı "(ReportCode, IndividualPerson)" ikinci-səviyyə
+qruplaşdırmasına ÜÇÜNCÜ bir açar əlavə edildi: `Tip`.** Oracle round-trip
+artıq lazım deyil (`Tip` elə `GoamlEmeliyyat.Tip`-in ÖZÜDÜR, operatorun
+"Təsdiqlə" formasında seçdiyi, əlavə sorğu tələb etmir).
+
+- **`GoamlTipiExtensions.FaylKodu()`** (yeni, `GoamlEnums.cs`) — `Etiket()`-
+  in Azəri hərfli/parentezli mətnindən ("Hüquqi (IN)") FƏRQLİ, SADƏ, ASCII,
+  boşluqsuz fayl-adı kodu ("HUQ_IN") qaytarır — `Etiket()`-i birbaşa fayl
+  adına yazmaq (xüsusən parentez/boşluq) fayl sistemi üçün riskli olardı,
+  ona görə ƏLAVƏ, fayl-adı-üçün YAZILMIŞ bir xəritə.
+- `JsonIxracAsync`-in ikinci-səviyyə `GroupBy`-i indi `(Kod, Tip, Ayirici)`
+  üçlüyünədir (əvvəl `(Kod, Ayirici)` cütü idi). Fayl adı:
+  `GOAML_Ixrac_{Kod}_{TipFaylKodu}{_FIZIKI/_HUQUQI}_{tarix}_TEST.json` —
+  məsələn `GOAML_Ixrac_CTR_HUQ_IN_20261123_143022_TEST.json`.
+- `ReportCodeEtiketi`-ə də Tip-in insan-oxunan etiketi (`Etiket()`) əlavə
+  olundu — "CTR — Cari əməliyyatlara dair məlumat (101) · Hüquqi (IN)" —
+  bu, Export-un "N qeyd, M AYRI fayla ixrac edildi: ..." uğur mesajında VƏ
+  fayl siyahısında avtomatik görünür, heç bir view dəyişikliyi lazım olmadı
+  (hər ikisi `fayl.ReportCodeEtiketi`/`fayl.TeklifOlunanFaylAdi`-ni OLDUĞU
+  KİMİ göstərir).
+- **`Tip == null` (nadir, əməliyyat Tip-siz təsdiqlənibsə) halda fayl adına/
+  etiketə HEÇ bir sonluq əlavə OLUNMUR** — köhnə (bölünməmiş) davranış bu
+  halda DƏYİŞMİR.
+
+⚠️ **Nəticə — fayllar İNDİ ÜÇ ölçüdə bölünür: ReportCode × Tip × (yalnız
+BLR-də) Fiziki/Hüquqi.** Eyni tarix aralığında çox müxtəlif Tip-li əməliyyat
+varsa, Export daha ÇOX, daha KİÇİK fayl yaradacaq — bu, SƏHV DEYİL, məhz
+istədiyi davranışdır (operator hər faylın İÇİNİ fayl adına baxaraq bilsin).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "İxrac et" çağırışlarına
+təsir edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/fiqurlu-mötərizə balansı `git stash` izolyasiyası ilə — `GoamlEnums.cs`
+tam balanslı (59/59, 11/11), `GoamlService.cs`-in bu edit-in ÖZ net-kontribusiyası
+6/6 paren, 4/4 brace, pre-existing -8 paren-fərqi DƏYİŞMƏDİ). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+eyni ReportCode-la (məs. CTR) HƏM "Fiziki (OUT)", HƏM "Hüquqi (IN)" tipli
+əməliyyatı eyni anda ixrac et → İKİ AYRI faylın (adlarında `FIZ_OUT`/`HUQ_IN`
+göründüyünü) yarandığını təsdiqləməlidir.
+
 ## PİD Gündəlik Kredit Ödənişləri — "Vaxtı keçmiş" Sətirləri ÖZÜ "Silinmə" İdi, Cəmi İkiqat Şişirdirdi (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
 
 İstifadəçi canlı ekran-görüntüləri ilə 17.11.2026-da qurulmuş "Gündəlik Kredit

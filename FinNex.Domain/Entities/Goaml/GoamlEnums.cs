@@ -98,6 +98,28 @@ namespace FinNex.Domain.Entities.Goaml
             _ => t.ToString(),
         };
 
+        /// <summary>23.11.2026 — Export-un fayl adında Tip-in ASCII, boşluqsuz
+        /// qısaltması (istifadəçi: fayl adında Tip görünmürdü, eyni ReportCode-un
+        /// içində fərqli Tip-li əməliyyatlar qarışıq çıxırdı). `Etiket()`-in
+        /// Azəri hərfli/parentezli mətnini fayl adına YAZMA — ayrı, sadə kod.</summary>
+        public static string FaylKodu(this GoamlTipi t) => t switch
+        {
+            GoamlTipi.FizikOut => "FIZ_OUT",
+            GoamlTipi.FizikIn => "FIZ_IN",
+            GoamlTipi.HuquqiOut => "HUQ_OUT",
+            GoamlTipi.HuquqiIn => "HUQ_IN",
+            GoamlTipi.HToH => "HTOH",
+            GoamlTipi.HToHIn => "HTOHIN",
+            GoamlTipi.HToFIn => "HTOFIN",
+            GoamlTipi.FToF => "FTOF",
+            GoamlTipi.HToFOut => "HTOFOUT",
+            GoamlTipi.FToHIn => "FTOHIN",
+            GoamlTipi.C2cOut => "C2C_OUT",
+            GoamlTipi.FToHOut => "FTOHOUT",
+            GoamlTipi.C2cIn => "C2C_IN",
+            _ => t.ToString().ToUpperInvariant(),
+        };
+
         /// <summary>Tip-in İSTİQAMƏTİNDƏN (OUT/IN) bizim bankın hesabının Debet,
         /// yoxsa Kredit tərəfdə olduğunu söyləyir — CON/SIG (Nümayəndə/İmza
         /// hüququ) üçün "hansı hesabın sahibinə baxaq" sualının cavabı

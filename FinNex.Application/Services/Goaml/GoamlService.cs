@@ -2142,8 +2142,13 @@ namespace FinNex.Application.Services.Goaml
                     butunRaportlar.Add((e, reportCodeKod, await ReportQurAsync(e, mn, valyutaKoduKesi, ct)));
             }
 
-            // 2-ci səviyyə — (Kod, Fiziki/Hüquqi) cütünə görə. `individualPerson`
-            // artıq header-in ÖZÜNDƏ hesablanıb (yuxarı), ona görə Oracle-a
+            // 2-ci səviyyə — (Kod, Tip, Fiziki/Hüquqi) ÜÇLÜYÜNƏ görə.
+            // 23.11.2026 — istifadəçi: fayl adında Tip görünmürdü, eyni
+            // ReportCode altında FƏRQLİ Tip-li (məs. "Fiziki (OUT)" və
+            // "Hüquqi (IN)") əməliyyatlar eyni faylda qarışıq çıxırdı,
+            // fayl adına baxıb içində NƏ olduğunu bilmək mümkün deyildi —
+            // Tip də ayırıcıya əlavə edildi. `individualPerson` artıq
+            // header-in ÖZÜNDƏ hesablanıb (yuxarı), ona görə Oracle-a
             // YENİDƏN getmir — yalnız nəticə üzərində qruplaşdırma.
             static string FizikiHuquqiAcar(GoamlJsonReportDto r) => r.Header.IndividualPerson switch
             {
@@ -2153,12 +2158,12 @@ namespace FinNex.Application.Services.Goaml
             };
 
             var ikinciSeviyyeQruplar = butunRaportlar
-                .GroupBy(x => (x.Kod, Ayirici: FizikiHuquqiAcar(x.Report)))
-                .OrderBy(g => g.Key.Kod).ThenBy(g => g.Key.Ayirici);
+                .GroupBy(x => (x.Kod, Tip: x.Setir.Tip, Ayirici: FizikiHuquqiAcar(x.Report)))
+                .OrderBy(g => g.Key.Kod).ThenBy(g => g.Key.Tip).ThenBy(g => g.Key.Ayirici);
 
             foreach (var qrup in ikinciSeviyyeQruplar)
             {
-                var (reportCodeKod, ayirici) = qrup.Key;
+                var (reportCodeKod, tip, ayirici) = qrup.Key;
 
                 var root = new GoamlJsonRootDto();
                 foreach (var x in qrup)
@@ -2174,22 +2179,25 @@ namespace FinNex.Application.Services.Goaml
                         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                     });
 
-                var faylAdiSonluq = ayirici == "" ? "" : $"_{ayirici}";
-                var etiketSonluq = ayirici switch
+                var tipKodu = tip?.FaylKodu();
+                var faylTipSonluq = tipKodu != null ? $"_{tipKodu}" : "";
+                var faylAyiriciSonluq = ayirici == "" ? "" : $"_{ayirici}";
+                var etiketAyiriciSonluq = ayirici switch
                 {
                     "FIZIKI" => " (Fiziki şəxs)",
                     "HUQUQI" => " (Hüquqi şəxs)",
                     _ => "",
                 };
+                var etiketTipSonluq = tip?.Etiket() is { } tipEtiketi ? $" · {tipEtiketi}" : "";
 
                 fayllar.Add(new GoamlJsonIxracFaylDto
                 {
                     JsonMetni = json,
-                    TeklifOlunanFaylAdi = $"GOAML_Ixrac_{reportCodeKod}{faylAdiSonluq}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json",
+                    TeklifOlunanFaylAdi = $"GOAML_Ixrac_{reportCodeKod}{faylTipSonluq}{faylAyiriciSonluq}_{DateTime.Now:yyyyMMdd_HHmmss}_TEST.json",
                     SetirSayi = root.Reports.Count,
                     ReportCodeEtiketi = (qrup.First().Setir.ReportCode?.Aciqlama() is { } aciqlama
                         ? $"{reportCodeKod} — {aciqlama}"
-                        : reportCodeKod) + etiketSonluq,
+                        : reportCodeKod) + etiketTipSonluq + etiketAyiriciSonluq,
                 });
             }
 
