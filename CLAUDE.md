@@ -14027,3 +14027,56 @@ real ssenari ilə yoxlamalıdır: artıq ixrac edilmiş bir qeydi "Siyahı"da ta
 bas → "Status" sütunu "Qaralama"ya dönsün → "Export to file"ə gedib EYNİ
 qeydi bu dəfə TƏK-TƏK (filtri daraldaraq/hər dəfə bir qeyd) ixrac edə
 bildiyini təsdiqləməli.
+
+## GOAML — "Təsdiqlənmiş Siyahı" Böyüdükcə Qeydi Tapmaq Çətinləşir — Filtr Zolağı Əlavə Olundu (23.11.2026)
+
+İstifadəçi (yuxarıdakı "İxrac Edilmiş Qeyd Geri Qaytarıla Bilər" düzəlişinin canlı
+ekranına baxaraq): *"burda siyahi cox olsa,onlari tapmaq cetin olacaq axi. buna ne
+teklifin var?"* — "Təsdiqlənmiş əməliyyatlar" (`Siyahi.cshtml`) heç bir filtr
+daşımırdı, `HamisiniGetirAsync()` BÜTÜN qeydləri gətirir, operator uzun siyahıda
+əl ilə scroll edib axtarmalı idi.
+
+**Qərar — CLIENT-SIDE filtr, SERVER DƏYİŞMİR.** Siyahı hazırda nisbətən kiçikdir
+(Oracle-un geniş namizəd universumu YOX, YALNIZ operatorun "Təsdiqlə" ilə öz
+bazamıza yazdığı qeydlər) — Mail modulunun "Yalnız izlənənlər" filtrinin eyni
+prinsipi (bax CLAUDE.md-dəki "Mail İzləmə" bölməsi): bütöv siyahı artıq DOM-dadır,
+əlavə AJAX/server round-trip lazım deyil. **Tradeoff AÇIQ bildirilib** — siyahı
+minlərlə qeydə çatsa, Kassa-nın "Son qeydlər" kimi server-tərəfli səhifələməyə
+keçmək lazım gələcək, HAZIRDA buna ehtiyac yoxdur.
+
+**Filtr sahələri — istifadəçinin konkret sualına görə (iki AYRI tarix sahəsi
+VARDI: "Əməl. tarixi" VƏ "Yaradılma tarixi" — hər ikisi filtr aldı):**
+- Axtarış (sərbəst mətn) — Əməliyyat №, Debet, Kredit, Təsdiqləyən adı üzrə,
+  `data-search` atributunda (hər sətir render olunanda bir dəfə) kiçik hərflə
+  birləşdirilib saxlanılır.
+- Status — Hamısı / Qaralama / İxrac edilib (`data-status`).
+- **Əməliyyat tarixi** aralığı (Dən/Dək) — `data-emel-tarix="yyyy-MM-dd"`.
+- **Yaradılma tarixi** aralığı (Dən/Dək) — `data-yar-tarix="yyyy-MM-dd"`.
+
+**`yyyy-MM-dd` formatı QƏSDƏN seçildi** — bu format sətir müqayisəsi ilə DOĞRU
+xronoloji sıralanır (`"2026-01-05" < "2026-02-01"` sətir müqayisəsində DÜZ işləyir),
+`dd.MM.yyyy` (ekranda göstərilən format) İSƏ YOX — JS-in `<` / `>` sətir
+müqayisəsi ilə tarix aralığı filtrləmək üçün bu, `<input type="date">`-in öz
+dəyər formatı ilə də (brauzer HƏMİŞƏ `yyyy-MM-dd` qaytarır) birbaşa uyğun gəlir,
+əlavə parse/`Date` obyekti yaratmağa ehtiyac qalmır.
+
+**"Təmizlə" düyməsi** bütün 6 sahəni sıfırlayıb filtri yenidən tətbiq edir.
+Görünən/ümumi say (`N / M qeyd`) başlığın sağında göstərilir, uyğun gələn HEÇ
+nə yoxdursa cədvəlin öz daxilində "Filtrə uyğun əməliyyat tapılmadı" sətri çıxır
+(boş-siyahı ilə "filtr heç nə tapmadı" halı QARIŞDIRILMIR — birincisi `@if
+(!Model.Any())` ilə bütün filtr zolağını BELƏ göstərmir, ikincisi filtr zolağı
+altında, cədvəlin öz boş-nəticə sətridir).
+
+⚠️ **Sütun sıralaması (header klik) ƏLAVƏ EDİLMƏDİ** — istifadəçi yalnız
+"tapmaq çətin olacaq" dedi, sıralama AYRICA tələb olunmayıb; `Index.cshtml`-in
+namizəd cədvəlində artıq mövcud olan `data-sort-key` naxışı bura asanlıqla
+köçürülə bilər, gələcəkdə lazım olsa.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/HTML-tag balansı Python skriptlə — parens 68/68, braces 45/45,
+brackets 3/3, bütün tag cütləri (div/form/table/tr/td/th/span/a/button/select/
+option/label) bərabər; `@section Scripts`-in JS bloku ayrıca çıxarılıb `node -c`
+ilə sintaksis yoxlamasından keçdi, mojibake YOX). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: "Təsdiqlənmiş siyahı"da
+mətn/status/hər iki tarix aralığının düzgün filtrlədiyini, "Təmizlə"nin
+hamısını sıfırladığını, uyğun say göstəricisinin (N / M qeyd) düz işlədiyini.

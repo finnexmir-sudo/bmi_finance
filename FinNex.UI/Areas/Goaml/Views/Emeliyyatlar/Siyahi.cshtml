@@ -22,6 +22,15 @@
         .gml-btn-danger:hover { background:#fef2f2 !important; }
         .gml-btn-warn { color:#b45309 !important; border-color:#fde68a !important; }
         .gml-btn-warn:hover { background:#fffbeb !important; }
+
+        /* Filtr zolağı — Index.cshtml-in axtarış forması ilə EYNİ dil (23.11.2026) */
+        .gml-fbar { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-bottom:16px; padding:16px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; }
+        .gml-ffld { display:flex; flex-direction:column; gap:5px; }
+        .gml-ffld-grow { flex:1 1 220px; max-width:320px; }
+        .gml-finp-date { width:140px; }
+        .gml-flbl { display:block; font-size:.74rem; font-weight:600; color:#6b7280; }
+        .gml-fgroup-lbl { font-size:.74rem; font-weight:700; color:#374151; margin-right:2px; align-self:center; }
+        .gml-fcount { color:#64748b; font-size:.82rem; font-weight:600; margin-left:auto; }
     </style>
 }
 
@@ -43,6 +52,44 @@
         }
         else
         {
+            <div style="padding:16px 16px 0">
+                <div class="gml-fbar">
+                    <div class="gml-ffld gml-ffld-grow">
+                        <label class="gml-flbl">Axtarış</label>
+                        <input type="text" id="gmlFSearch" class="fn-input" placeholder="№, Debet, Kredit, Təsdiqləyən..." />
+                    </div>
+                    <div class="gml-ffld">
+                        <label class="gml-flbl">Status</label>
+                        <select id="gmlFStatus" class="fn-input">
+                            <option value="">Hamısı</option>
+                            <option value="qaralama">Qaralama</option>
+                            <option value="ixrac">İxrac edilib</option>
+                        </select>
+                    </div>
+                    <span class="gml-fgroup-lbl">Əməliyyat tarixi:</span>
+                    <div class="gml-ffld">
+                        <label class="gml-flbl">Dən</label>
+                        <input type="date" id="gmlFEmelBas" class="fn-input gml-finp-date" />
+                    </div>
+                    <div class="gml-ffld">
+                        <label class="gml-flbl">Dək</label>
+                        <input type="date" id="gmlFEmelSon" class="fn-input gml-finp-date" />
+                    </div>
+                    <span class="gml-fgroup-lbl">Yaradılma tarixi:</span>
+                    <div class="gml-ffld">
+                        <label class="gml-flbl">Dən</label>
+                        <input type="date" id="gmlFYarBas" class="fn-input gml-finp-date" />
+                    </div>
+                    <div class="gml-ffld">
+                        <label class="gml-flbl">Dək</label>
+                        <input type="date" id="gmlFYarSon" class="fn-input gml-finp-date" />
+                    </div>
+                    <button type="button" id="gmlFTemizle" class="fn-btn fn-btn--outline">
+                        <i class="bi bi-x-circle"></i> Təmizlə
+                    </button>
+                    <span id="gmlFCount" class="gml-fcount"></span>
+                </div>
+            </div>
             <div class="gml-table-wrap">
                 <table class="gml-table">
                     <thead>
@@ -60,10 +107,14 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="gmlTbody">
                         @foreach (var e in Model)
                         {
-                            <tr>
+                            var axtarisMetni = $"{e.CandidateRecNum} {e.Debet} {e.Kredit} {e.TesdiqleyenAdi}".ToLowerInvariant();
+                            <tr data-search="@axtarisMetni"
+                                data-status="@(e.Status == GoamlEmeliyyatStatusu.IxracEdilib ? "ixrac" : "qaralama")"
+                                data-emel-tarix="@e.DateOper.ToString("yyyy-MM-dd")"
+                                data-yar-tarix="@e.YaradilmaTarixi.ToString("yyyy-MM-dd")">
                                 <td>@e.CandidateRecNum</td>
                                 <td>@e.DateOper.ToString("dd.MM.yyyy")</td>
                                 <td style="font-family:ui-monospace,Consolas,monospace">@(e.Debet ?? "—")</td>
@@ -117,9 +168,68 @@
                                 </td>
                             </tr>
                         }
+                        <tr id="gmlNoMatch" style="display:none">
+                            <td colspan="11" class="gml-empty">Filtrə uyğun əməliyyat tapılmadı.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tbody = document.getElementById('gmlTbody');
+            if (!tbody) return; // boş siyahı — filtr zolağı render olunmayıb
+
+            var rows = Array.prototype.filter.call(tbody.querySelectorAll('tr'), function (r) { return r.id !== 'gmlNoMatch'; });
+            var noMatch = document.getElementById('gmlNoMatch');
+            var count = document.getElementById('gmlFCount');
+
+            var fSearch = document.getElementById('gmlFSearch');
+            var fStatus = document.getElementById('gmlFStatus');
+            var fEmelBas = document.getElementById('gmlFEmelBas');
+            var fEmelSon = document.getElementById('gmlFEmelSon');
+            var fYarBas = document.getElementById('gmlFYarBas');
+            var fYarSon = document.getElementById('gmlFYarSon');
+
+            function tetbiqEt() {
+                var axtaris = fSearch.value.trim().toLowerCase();
+                var status = fStatus.value;
+                var emelBas = fEmelBas.value, emelSon = fEmelSon.value;
+                var yarBas = fYarBas.value, yarSon = fYarSon.value;
+                var gorunen = 0;
+
+                rows.forEach(function (r) {
+                    var ok = true;
+                    if (axtaris && (r.dataset.search || '').indexOf(axtaris) === -1) ok = false;
+                    if (ok && status && r.dataset.status !== status) ok = false;
+                    if (ok && emelBas && r.dataset.emelTarix < emelBas) ok = false;
+                    if (ok && emelSon && r.dataset.emelTarix > emelSon) ok = false;
+                    if (ok && yarBas && r.dataset.yarTarix < yarBas) ok = false;
+                    if (ok && yarSon && r.dataset.yarTarix > yarSon) ok = false;
+
+                    r.style.display = ok ? '' : 'none';
+                    if (ok) gorunen++;
+                });
+
+                noMatch.style.display = gorunen === 0 ? '' : 'none';
+                count.textContent = gorunen === rows.length ? (rows.length + ' qeyd') : (gorunen + ' / ' + rows.length + ' qeyd');
+            }
+
+            [fSearch].forEach(function (el) { el.addEventListener('input', tetbiqEt); });
+            [fStatus, fEmelBas, fEmelSon, fYarBas, fYarSon].forEach(function (el) { el.addEventListener('change', tetbiqEt); });
+
+            document.getElementById('gmlFTemizle').addEventListener('click', function () {
+                fSearch.value = ''; fStatus.value = '';
+                fEmelBas.value = ''; fEmelSon.value = '';
+                fYarBas.value = ''; fYarSon.value = '';
+                tetbiqEt();
+            });
+
+            tetbiqEt();
+        })();
+    </script>
+}
