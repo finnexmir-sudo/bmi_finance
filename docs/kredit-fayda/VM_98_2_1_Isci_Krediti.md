@@ -88,12 +88,12 @@ Hazır INSERT: `docs/sql/kredit/Isci_Kredit_Faizi_OracleSorgu.sql`
 - ay ortasında **bağlanan** kredit → o günə qədər faiz hesablanıb → düşür ✅
 - ay ortasında **götürülən** kredit → provodkası var → düşür ✅
 - həmin ay faiz hesablanmayan kredit → `arh_dd`-də sətir yoxdur → düşmür ✅
-  (iyulda Nərminə Qulamova və Rafael Quliyev məhz belədir — qalıqları var,
+  (iyulda İşçi-5 və İşçi-15 məhz belədir — qalıqları var,
   vergiləri isə 0-dır)
 
 > **KRİTİK:** qalıqdan (`summa`) getmək OLMAZ. Mühasib qalıqdan yox, **faktiki
-> hesablanmış faizdən** gedir. Nümunə: Qulamova Nərminə — qalıq 14 569,93, faiz 0,
-> vergi 0. Heydərova Mirvari — qalıq cəmi 1 928,26, faiz 77,88, vergi 12,17.
+> hesablanmış faizdən** gedir. Nümunə: İşçi-5 — qalıq 14 569,93, faiz 0,
+> vergi 0. İşçi-13 — qalıq cəmi 1 928,26, faiz 77,88, vergi 12,17.
 > Qalıqla hesablasaq 6 nəfərdə tam səhv nəticə çıxır.
 
 ---
@@ -113,7 +113,7 @@ Boşluq və təkrar yaranmır: növbəti dövr yeni maaş günündən başlayır
 ondan bir gün əvvəl bitir.
 
 **Yoxlanıldı:** iyul hesabatının real dövrü Excel-in `2-6` vərəqindən çıxarıldı →
-**24.06.2026 – 24.07.2026**. Axundovun 26 provodkası toplandı = **120,58** —
+**24.06.2026 – 24.07.2026**. İşçi-1-in 26 provodkası toplandı = **120,58** —
 Excel-dəki `M` ilə eynidir.
 
 Sistem əvvəlki dövrün son tarixini **yadda saxlamalıdır** ki, növbəti dövrün
@@ -200,9 +200,9 @@ FinNex: Isciler.FIN → IsciId → maaş
 ```
 
 40 sətir üzərində yoxlanıldı, tutuşan hər FIN **simvol-simvol eyni**:
-`11AN3Y1` (Sərvanuş), `2FATQTQ` (Qulu Zadə), `1MMWSTV` (Mahmudova),
-`2GZ1KS3` (Heydərova), `1E0B33` (Najafimarganmaskan), `4XJXXL7` (Nadirova),
-`6JUNK3H` (Bəkirov).
+`XXXXXXX` (İşçi-11), `XXXXXXX` (İşçi-12), `XXXXXXX` (İşçi-6),
+`XXXXXXX` (İşçi-13), `XXXXXXX` (Müştəri-1), `XXXXXXX` (İşçi-10),
+`XXXXXXX` (İşçi-14).
 
 Əl ilə cədvəldən üstündür: mühasibin Exceldə etdiyi səhv (bir kodu **iki** nəfərə
 yazmaq — `019703`) FIN bağında **fiziki olaraq mümkün deyil**.
@@ -211,7 +211,7 @@ yazmaq — `019703`) FIN bağında **fiziki olaraq mümkün deyil**.
 
 | Hal | Nümunə | Davranış |
 |---|---|---|
-| `regnom`-da FIN yanlış | `000091 NAZARİ MORTEZA` → pincode = «XX» | ekranda «işçi tapılmadı», cəmə düşmür |
+| `regnom`-da FIN yanlış | `000091 MÜŞTƏRİ-2` → pincode = «XX» | ekranda «işçi tapılmadı», cəmə düşmür |
 | FinNex-də belə FIN yoxdur | işdən çıxmış / bizim işçi deyil | eyni |
 | Oracle-da 40, FinNex-də 25 işçi | normaldır | dövr filtri onsuz da azaldır (iyul: 15) |
 
@@ -252,8 +252,8 @@ bazadan oxunur, dərəcə dəyişsə kod özü uyğunlaşır.
 
 ## 9. Düzəldiləcək data
 
-- Excel-in `Netice` vərəqində müştəri kodu **`019703`** həm Baxşaliyev Səxavət,
-  həm Vəliyeva Turanə üçün yazılıb. **Doğrusu Baxşaliyevdir**; Vəliyevanın kodu
+- Excel-in `Netice` vərəqində müştəri kodu **`019703`** həm İşçi-16,
+  həm İşçi-17 üçün yazılıb. **Doğrusu İşçi-16-dır**; İşçi-17-nin kodu
   səhvdir, mühasib düzəldəcək. Bağ cədvəli qurulanda diqqət.
 
 ---
@@ -302,12 +302,12 @@ hesabatının eynisi: **24.06.2026 – 24.07.2026**.
 |---|---|
 | Oracle sorğusu (dövrlə) | 15 sətir, `faiz_adi` §10-dakı 15 rəqəmlə eyni |
 | FIN bağı | 15/15 işçiyə bağlandı, problemli sətir yoxdur |
-| Elxan Axundov — dövr faizi | **120,58 ₼** (Excel `M` ilə eyni) |
-| Elxan Axundov — hesabi gəlir | **18,84** (Excel `Netice` ilə eyni) |
+| İşçi-1 — dövr faizi | **120,58 ₼** (Excel `M` ilə eyni) |
+| İşçi-1 — hesabi gəlir | **18,84** (Excel `Netice` ilə eyni) |
 
 ### Yol boyu tapılan iki səhv
 
-**1. Dövr həddindən uzun idi.** İlk açılışda Axundovun sahəsində **3 167,34**
+**1. Dövr həddindən uzun idi.** İlk açılışda İşçi-1-in sahəsində **3 167,34**
 göründü. Tərsinə: 3167,34 / 0,15625 = 20 271 ₼ faiz ≈ 168 aylıq. Səbəb — dövrün
 başlanğıcı çox köhnə bir «Ödənildi» maaşdan götürülmüşdü. → 92 günlük hədd
 əlavə edildi (§7.3).
@@ -323,6 +323,6 @@ Bax: CLAUDE.md — «Oracle Rəqəmi — `ToString()` + `Parse` = 100× SƏHV».
 ### Qalan iş
 
 - Mühasib gələndə **bütün 15 sətri** Excel ilə tutuşdursun (indiyə qədər
-  Axundov yoxlanılıb, qalanı gözlənilir).
+  İşçi-1 yoxlanılıb, qalanı gözlənilir).
 - Dərəcə sətrinin tarixi (`01.07.2026`) real qüvvəyəminmə tarixi ilə
   dəqiqləşdirilsin — 24.06–30.06 aralığı da həmin dərəcə ilə hesablanır.

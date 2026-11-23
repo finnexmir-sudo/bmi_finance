@@ -1009,7 +1009,7 @@ namespace FinNex.Application.Services.Goaml
         /// prefiks uyğun gəlmirsə, 16.11.2026-da əlavə olunan, Oracle-dan
         /// TAMAMİLƏ MÜSTƏQİL bir YEDƏK qaydaya keçir: sənədin BAŞINDAKI
         /// hərf/işarə hissəsi SERİYA, ardınca gələn İLK RƏQƏMDƏN sonrakı
-        /// hissə NÖMRƏDİR ("D10019478" → "D"/"10019478", "AZE1234567" →
+        /// hissə NÖMRƏDİR ("D00000000" → "D"/"10019478", "AZE1234567" →
         /// "AZE"/"1234567") — Azərbaycan şəxsiyyət/sənəd nömrələrinin demək
         /// olar hamısı bu formatdadır, Oracle-un ÖZ MMX_ID_SERIAL siyahısı
         /// olmadan belə əksər halda DOĞRU nəticə verir.</summary>
@@ -2354,7 +2354,7 @@ namespace FinNex.Application.Services.Goaml
                     ReprStatus = "PAT",
                     ReprCitizenship = e.ConVetendasligi ?? "",
                     // 16.11.2026, KRİTİK DÜZƏLİŞ: `ReprIdSerial` RAW, PARÇALANMAMIŞ
-                    // `ConSenedinSeriyaNomresi`-ni (məs. "D10019478") olduğu kimi
+                    // `ConSenedinSeriyaNomresi`-ni (məs. "D00000000") olduğu kimi
                     // yazırdı — `AvtoDolduruAsync`-in (sətir 599-600) ARTIQ
                     // PARÇALADIĞI, təmiz `e.ReprIdSerial`-ı (yalnız "D") HEÇ OXUMURDU.
                     // `ReprIdNumber` düz idi (parçalanmış sahəni oxuyurdu) — yalnız
@@ -2380,7 +2380,7 @@ namespace FinNex.Application.Services.Goaml
             d == null ? "" : d.Value.ToString("yyyy-MM-ddTHH:mm:ss.001Z", CultureInfo.InvariantCulture);
 
         /// <summary>AYSEL-in "entity_name" sahəsi hüquqi şəxsin RƏSMİ adındakı
-        /// dırnaq işarələrini ("HESAM" MMC → HESAM MMC) ÇIXARIR — 17.11.2026, real
+        /// dırnaq işarələrini ("MÜŞTƏRİ ŞİRKƏTİ-A" MMC → MÜŞTƏRİ ŞİRKƏTİ-A MMC) ÇIXARIR — 17.11.2026, real
         /// AYSEL ixracı ilə (BMI_BAKU_CTR_HI_2_15587) sahə-sahə tutuşdurularkən
         /// tapıldı: Oracle-dakı `NAME_UR` sütunu dırnaq işarəsini olduğu kimi
         /// saxlayır (Azəri şirkət adlandırma konvensiyası), amma AYSEL onları

@@ -462,7 +462,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // Provodkada məzuniyyət xərc sətrinə əlavə olunur (cari ay + avans brüt).
         //
         // ✅ 28.10.2026 — AVVƏLKİ "QƏSDƏN KÖHNƏ QALDI" QƏRARI MÜHASİB TƏRƏFİNDƏN
-        // DƏYİŞDİRİLDİ (Elxan Axundov 4.813,85 nümunəsi: 01.10–31.10.2026
+        // DƏYİŞDİRİLDİ (İşçi-1 4.813,85 nümunəsi: 01.10–31.10.2026
         // məzuniyyəti TAM oktyabra aiddir, amma avans sentyabrda ödənildiyi üçün
         // köhnə "ödənmə ayı" filtri bunu sentyabrın provodkasına yazırdı; mühasib
         // qərarı — "bu hesablama oktyabra aiddir, sentyabra yox"). İndi bu metod

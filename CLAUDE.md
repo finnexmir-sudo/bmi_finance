@@ -102,7 +102,7 @@ bazasına daxil edilir. Kəsim: `appsettings → Mezuniyyet:AvansAylaraBolunmeBa
 (2026-08-01). **Geri qayıtmaq:** həmin açarı `2099-01-01` et — köhnə kod silinməyib,
 şərtin o biri qolunda durur.
 
-Real nümunə (Rüfət C., 31.08–11.09, brüt 365,37 / net 308,73, 27.08-də ödənilib):
+Real nümunə (İşçi-9, 31.08–11.09, brüt 365,37 / net 308,73, 27.08-də ödənilib):
 
 | | Avqust | Sentyabr |
 |---|---|---|
@@ -172,7 +172,7 @@ bunu da aylara bölmək istəyirsə — **mühasibin qərarıdır**, özbaşına
 
 ### Provodka — Qabaqcadan Məzuniyyət Xərci AYLARA BÖLÜNMÜŞ Modelə Keçdi (28.10.2026, KRİTİK)
 
-Real hadisə: Elxan Axundov üçün Oktyabr 2026 provodkasının "rezident işçilərə
+Real hadisə: İşçi-1 üçün Oktyabr 2026 provodkasının "rezident işçilərə
 məzuniyyət haqqı" sətri mühasibin gözlədiyindən **4.813,85 AZN az** çıxdı —
 dəqiq onun 01.10–31.10.2026 məzuniyyət avansının brüt dəyəri qədər. Maaş Detalı
 səhifəsi "Mezuniyyet (qabaqcadan — bu ayın payı)" sətrində bu məbləği **artıq
@@ -230,7 +230,7 @@ Excel-i təkrar yükləməlidir ki, düzəliş əks olunsun.
 (mötərizə balansı skriptlə, `_hesablamaService`-in sinif sahəsi kimi artıq
 mövcud olduğu təsdiqləndi — yeni asılılıq əlavə edilmədi). İstifadəçi Visual
 Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: Oktyabr
-2026 provodkasını yenidən ixrac et → Elxan Axundovun (və bənzər hallarda
+2026 provodkasını yenidən ixrac et → İşçi-1-in (və bənzər hallarda
 digər işçilərin) "rezident işçilərə məzuniyyət haqqı" sətrinin indi 4.813,85
 AZN artdığını (yəni Maaş Detalı-dakı "bu ayın payı" ilə üst-üstə düşdüyünü)
 təsdiqləməli — "Maliyyəyə toxunan hər dəyişiklik" qaydasına görə.
@@ -324,7 +324,7 @@ Yuxarıdakı cədvəldə (10.09.2026) `ADMSController` üçün "risk yoxdur, fil
 silinmiş sətri onsuz da tapır" yazılmışdı. Bu qənaət **natamam** idi — yalnız "tapırmı"
 sualına cavab verirdi, "tapandan sonra nə yazırmı" sualına yox.
 
-Real hadisə (IsciId=16, Gürşad B.): işçinin bugünkü məzuniyyəti **təsdiqlənib, sonra
+Real hadisə (IsciId=16, İşçi-3): işçinin bugünkü məzuniyyəti **təsdiqlənib, sonra
 ləğv edilmişdi** → `MezuniyyetService.DavamiyyetIzleriniSilAsync` günün `Davamiyyet`
 sətrini yumşaq sildi (`Silinib=true`). İşçi sonra HƏQİQƏTƏN işə gəldi (08:12 giriş,
 09:36 çıxış — axşama planlaşdırılmış ezamiyyətdən əvvəl). ADMS-in
@@ -632,7 +632,7 @@ Tətbiq olunan **beş** yer:
 
 ## Rol Prioriteti — Servis ilə Göstərmə Qatı Eyni Sırada Olmalıdır (KRİTİK)
 
-Bir işçidə **birdən çox rol** ola bilər (real nümunə: Anar İbrahimov — `Operator` +
+Bir işçidə **birdən çox rol** ola bilər (real nümunə: İşçi-2 — `Operator` +
 `HR` + `Rehber`). Belə halda marşrutu **şərtlərin SIRASI** həll edir və göstərmə qatı
 həmin sıranı **eyni ilə** təkrarlamalıdır.
 
@@ -694,7 +694,7 @@ boşaldır (şöbə adı «—» olur). Amma sorğunun **KÖKÜ** `IsciTeyinat`-
 sətri **kimin siyahıda olacağını** həll edir — çıxmış işçi bütöv sətir kimi qalır.
 
 Real hadisə: **HR → Müqavilə Bitmə** səhifəsi. Şərt `!t.Silinib && t.Aktivdir &&
-t.BitmeTarixi.HasValue` idi. İlkin Q. 17.07.2026-da işdən çıxıb, müqaviləsi 22.07-də
+t.BitmeTarixi.HasValue` idi. İşçi-4 17.07.2026-da işdən çıxıb, müqaviləsi 22.07-də
 bitib → səhifədə «48 gün keçib» sətri və **«Uzat» düyməsi** görünürdü. «İşçilər»
 səhifəsi onu «İşdən Çıxmış» sekmesində göstərirdi — yəni iki səhifə eyni adama
 fərqli baxırdı.
@@ -766,7 +766,7 @@ və «Məz.» sütununa DÜŞMÜR — öz **«Öz hes.»** sütununda sayılır 
 «bu qalıb bizdə»). Əvvəl «M» yazılırdı və ödənişli məzuniyyətlə eyni xanada
 toplanırdı; mühasib öz Exceli ilə tutuşdura bilmirdi.
 
-Nümunə (Nərminə Q., 08.09.2026, 1 gün öz hesabına): `İş günü 21 · Məz. 0 ·
+Nümunə (İşçi-5, 08.09.2026, 1 gün öz hesabına): `İş günü 21 · Məz. 0 ·
 **Öz hes. 1**` — əvvəl `Məz. 1` idi. **İş günü/saatı DƏYİŞMİR** — ödənişsiz gün
 onsuz da işlənməmiş sayılırdı.
 
@@ -811,10 +811,10 @@ rəqəmə görə bloklanmır.
 ⚠️ **MÜHASİBİN EXCELİ İLƏ QƏSDƏN FƏRQLİDİR** (`İşçilərin məzuniyyətləri.xlsx`
 → «Cari qalıq», L sütunu). İki fərq var:
 1. Excel 14-ü **həmişə** çıxır, hətta ≥14 günlük məzuniyyət artıq
-   götürülmüşdüsə də (Nadirova 19 günlük məzuniyyət alıb, Excel yenə `−9`).
+   götürülmüşdüsə də (İşçi-10 19 günlük məzuniyyət alıb, Excel yenə `−9`).
    İstifadəçi təsdiqi: «mənim qaydam, excel səhvdir».
 2. Excel hansı il sütunundan çıxacağını **əl ilə** seçir və özü ilə
-   ziddiyyətlidir — İbrahimov `D3-14`, Axundov `C4-14`, hər ikisi fevral
+   ziddiyyətlidir — İşçi-2 `D3-14`, İşçi-1 `C4-14`, hər ikisi fevral
    işçisidir. Sistem iş ilini avtomatik təyin edir.
 
 **İŞ İLİ ≠ TƏQVİM İLİ** — işə qəbul ildönümündən başlayır. Hesablayan iki yer
@@ -957,7 +957,7 @@ eyni köhnə `ezamiyyetCixisi`-ə baxmağa davam edirdi — qayıdış demək ol
 saatından 30 dəqiqədən çox sonra olduğu üçün `ezamiyyetCixisi = false` qalır və sistem
 qayıdışı sıravi "erkən çıxış" kimi qiymətləndirib bildiriş göndərirdi.
 
-Real hadisə: işçi Gürşad B. eyni günə iki ezamiyyət yazmışdı (biri təsdiqlənmiş, biri
+Real hadisə: işçi İşçi-3 eyni günə iki ezamiyyət yazmışdı (biri təsdiqlənmiş, biri
 gözləyən) və 11:15–17:45 ezamiyyətindən 14:31-də qayıdanda "Erkən çıxış qeydə alındı"
 bildirişi aldı — halbuki `Davamiyyet.Status` düzgün "İşdə" idi. İkinci (gözləyən) ezamiyyətin
 bununla **əlaqəsi yox idi** — sorğu `Status == Tesdiqlendi` filtri ilə `bugunEzamiyyet`-i
@@ -985,7 +985,7 @@ yalnız ezamiyyət göstərir."* Amma köçürmə zamanı Davamiyyətlə əlaqə
 — nə yazma tərəfi (köhnə `Mezuniyyet` axını kimi), nə göstərmə tərəfi (Ezamiyyət kimi).
 `DavamiyyetStatus.Xestelik = 5` enum dəyəri mövcuddur, KPI kartı onu sayır, amma heç
 yerdə yazılmır → sayğac həmişə 0, təsdiqli bülleteni olan işçi isə "Gözlənilir"/"Qayıb"
-düşürdü (real hadisə: Nərminə Q., 23–25.09.2026 xəstəlik, 24.09-da "Gözlənilir").
+düşürdü (real hadisə: İşçi-5, 23–25.09.2026 xəstəlik, 24.09-da "Gözlənilir").
 
 **Həll — Ezamiyyət ilə EYNİ göstərmə qatı naxışı, YALNIZ göstərmə** (istifadəçi
 qərarı: bazaya yazma yoxdur, unikal-indeks/yumşaq-silmə tələsinə düşmə riski qalmır):
@@ -1578,7 +1578,7 @@ sütununun Dashboard-dakı "İcazə saatı — bu il" kartı ilə HƏR işçi ü
 
 ### `HR/Jeton` ("Jeton İdarəetməsi") HƏLƏ KÖHNƏ RƏQƏMİ GÖSTƏRİRDİ — Yuxarıdaki Düzəliş Bu Səhifəyə KÖÇÜRÜLMƏMİŞDİ (15.10.2026, KRİTİK)
 
-İstifadəçi iki ekran-görüntüsü göndərdi: eyni işçinin (Əjdər Dəmirov) "36 Saat
+İstifadəçi iki ekran-görüntüsü göndərdi: eyni işçinin (İşçi-7) "36 Saat
 Hüququ 2026" jetonu `HR → Jeton İdarəetməsi` ("Əməliyyatlar" tabı) səhifəsində
 **QALAN=36** (tam, toxunulmamış) göstərirdi, `HR → İşçi Jeton Saatları`
 səhifəsində isə eyni işçi üçün **Qalıb=32,42** (36 − 3,58 istifadə) göstərirdi
@@ -1713,7 +1713,7 @@ istifadəçi bunu fərq edənə qədər.
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
 (mötərizə balansı, DI dairəsi əl ilə izlənildi — `IcazeService` konstruktoru
 yoxlanıb `IJetonService` daşıdığı təsdiqləndi). İstifadəçi Visual Studio-da
-**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: Əjdər Dəmirov üçün
+**Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: İşçi-7 üçün
 "Jeton İdarəetməsi"ndəki "36 Saat Hüququ 2026" QALAN sütununun artıq
 "İşçi Jeton Saatları"ndəki Qalıb (32,42) ilə DƏQİQ üst-üstə düşdüyünü,
 digər (Platin/Qızıl/Gümüş/Bürünc/Qara) jeton sətirlərinin əvvəlki kimi
@@ -1735,7 +1735,7 @@ işçi adını da genişləndir"*.
    uzunluqlu səbəb indi tək (və ya iki) sətirdə qalır, yalnız HƏDSİZ uzun
    mətn (yüzlərlə simvol) hələ də kəsilib bükülür.
 2. **"İşçi" sütunu (nth-child(1))** eyni səbəbdən `min-width:170px` aldı —
-   ad-soyad (məs. "Məhəmməd Bəkirov") əvvəl sabit eni olmayan sütunda iki
+   ad-soyad (məs. "Kamal Vəliyev") əvvəl sabit eni olmayan sütunda iki
    sözə bölünüb iki sətirə düşə bilirdi.
 3. **Grid/çərçivə görünüşü** — `.hj-table th`/`.hj-table td`-nin yalnız
    `border-bottom` yazan köhnə qaydası **tam `border: 1px solid`**-ə
@@ -2088,7 +2088,7 @@ verir, çünki iki mədəniyyət qarışır:
 "120,58" →  TryParse(Any, Invariant) →  12058   (vergül = MİN AYIRICISI)
 ```
 
-Real hadisə (19.08.2026, VM 98.2.1): Axundovun dövr faizi 120,58 ₼ əvəzinə
+Real hadisə (19.08.2026, VM 98.2.1): İşçi-1-in dövr faizi 120,58 ₼ əvəzinə
 **12 058,00 ₼** göründü, hesabi gəlir 18,84 əvəzinə **1 884,06** çıxdı və
 maaş formasına düşdü. Heç bir xəta yox idi — nisbət tam 100 olduğu üçün tapıldı.
 Tam ədədlər (`isci_faizi`=8, `vk_faizi`=13) ayırıcı daşımadığı üçün düz oxunurdu,
@@ -2456,7 +2456,7 @@ ya da yoxdursa plan).
 **Əlavə (display qatı):** `CixisQayidisAnomaliya` (`IcazeListDto` və
 `IcazeDovriyyeDto`, hər ikisi) əvvəl yalnız "çıxış çox erkən" və "qayıdış çox
 gec" yoxlayırdı — "çıxış çox gec" (bu bugun tapılan hal) və "qayıdış ≤ çıxış"
-(tərs cüt) heç yoxlanmırdı, ona görə "⚠ yoxla" işarəsi Nigarın 21.09 sətrində
+(tərs cüt) heç yoxlanmırdı, ona görə "⚠ yoxla" işarəsi işçinin 21.09 sətrində
 çıxmırdı. İndi dördü də yoxlanır — köhnə (bu düzəlişdən ƏVVƏL yazılmış)
 korrupt qeydlər HR-a görünəcək, `CixisGirisDuzelt` ilə əl ilə düzəldilə bilər.
 
@@ -2505,8 +2505,8 @@ Oracle-da `''` elə `null`-dır və `union all` qollarında tip qarışıqlığ�
 BMI-də ölçülüb (22.09.2026):
 
 ```
-odb.func_utf8_to_latin('ƏLİYEVA ÜLVİYYƏ ŞÖVQİ İSMAYIL ÇƏMƏNZƏMİNLİ')
-     →  ALIYEVA ULVIYYA SOVQI ISMAYIL CAMANZAMINLI
+odb.func_utf8_to_latin('MÜŞTƏRİ-E NÜMUNƏ TAM AD')
+     →  MUSTERI-E NUMUNE TAM AD
 ```
 
 `Ə→A`  `İ→I`  `Ü→U`  `Ö→O`  `Ş→S`  `Ç→C`  `Ğ→G`
@@ -3756,7 +3756,7 @@ təsdiqləndi, nəticələr tam üst-üstə düşdü):
 - `{v1}`…`{v25}` — 5 valyuta × 5 sütun (Valyuta adı, Nağd alış, Nağd satış,
   Qeyri nağd alış, Qeyri nağd satış).
 - İmzalayan adları ("Bank Melli İran Bakı filialının müdiri:
-  A.K.Najafimarganmaskan", "Əslini aldım … Axundov E.A") şablonda **SABİT
+  A.K.Müştəri-1", "Əslini aldım … İşçi-1") şablonda **SABİT
   MƏTNDİR**, token DEYİL — BMI-nin `replacements` dictionary-sində heç vaxt
   olmayıb. Dinamik etmək YENİ funksionallıq olardı, köçürmə deyil — əlavə
   edilmədi, istifadəçi tələb etməyib.
@@ -4146,7 +4146,7 @@ inline təkrarlayırdı. İnline-lar silinib class-lara keçirildi ki, bundan so
 "iri/kiçik" qalma riski aradan qalxdı.
 
 ⚠️ **Mail MƏTNİNİN ÖZÜ (imza, göndərənin HTML-i) TOXUNULMADI** — ekranda görünən
-qalın göy imza mətni (məs. "T.Q.Məmmadov", "Bank Melli Iran Baku branch")
+qalın göy imza mətni (məs. "A.B.Nümunə", "Bank Melli Iran Baku branch")
 bizim CSS-dən YOX, orijinal e-poçtun öz HTML/inline-style-ından gəlir
 (`Html.Raw(Model.MetinHtml)`). Onu "sadələşdirmək" inline `style="font-weight:
 bold;color:navy"` kimi atributları override etmək (yalnız `!important` ilə
@@ -4775,8 +4775,8 @@ tarixi kurs qeydlərini yeni Kassa modulunun (`KassaKursBeyannameleri`/
 "Excel OXUNUŞU" bölməsi, eyni qayda `.xlsx`-dən əlavə köhnə `.xls` üçün də
 keçərlidir): `TARIX, VALYUTA, N_ALIS, N_SATIS, QN_ALIS, QN_SATIS, ICRACI,
 APPROVAL, APPROVAL_DATE, APPROVED_BY, MESAJ, INSERT_GROUP_NO`. Təmiz data:
-bütün 1505 sətir `APPROVAL='təsdiqləndi'`, İCRACİ həmişə "Axundov Elxan",
-APPROVED_BY "Najafi Asghar" (1445) və ya "Ibrahimov Anar" (60). `IRR`/`AED`/
+bütün 1505 sətir `APPROVAL='təsdiqləndi'`, İCRACİ həmişə "İşçi-1",
+APPROVED_BY "Müştəri-1" (1445) və ya "Ibrahimov Anar" (60). `IRR`/`AED`/
 `RUB` sətirlərində alış-satış sütunları HƏMİŞƏ boşdur (yalnız USD/AVRO-da
 real dəyər var) — target cədvəlin `NagdAlis` və s. sütunlarının nullable
 olması elə bu reallığa görədir.
@@ -4893,14 +4893,14 @@ xarici qoruma isə `#QorunanTarixler`).
 
 ### Ad Uyğunluğu — SQL-DƏ "TƏXMİN" YOX, İSTİFADƏÇİ ƏL İLƏ TƏSDİQLƏDİ (15.10.2026)
 
-İlk versiyada 3 adın (Axundov Elxan/Najafi Asghar/Ibrahimov Anar) `Isciler.Id`-si
+İlk versiyada 3 adın (İşçi-1/Müştəri-1/Ibrahimov Anar) `Isciler.Id`-si
 SQL-in özündə (`LTRIM`/`RTRIM`/`CHARINDEX` ilə "Soyad Ad" formatını ayıraraq)
 **təxmin edilirdi**. İstifadəçi SSMS-də əl ilə yoxlayanda **`Soyad = N'Ibrahimov'
 AND Ad = N'Anar'` dəqiq uyğunluğu TAPMADI** (0 sətir), halbuki `Isciler`-də belə
 bir sətir **var idi** (Id=3) — yəqin gizli diakritik/kodlaşdırma fərqi (məs. Azəri
 "İ" ilə ASCII "I" arasında collation-a görə fərq) idi. `LIKE '%ibrahim%'` geniş
-axtarışı isə tapdı. Eyni axtarışla "Najafi Asghar" da aşkarlandı — amma **real
-soyad "Najafimarganmaskan"dır** (Ad=Asghar), BMI-nin köhnə datası yalnız qısaldılmış
+axtarışı isə tapdı. Eyni axtarışla "Müştəri-1" da aşkarlandı — amma **real
+soyad "Müştəri-1"dır** (Ad=Asghar), BMI-nin köhnə datası yalnız qısaldılmış
 "Najafi" formasını saxlayıb — bu, mənim "Soyad=birinci söz" fərziyyəmin xətası idi
 (`SQLQuery1`, Id=25).
 
@@ -4911,8 +4911,8 @@ sabit yazıldı və hər `#Kaynak` sətrinə birbaşa `IcraciIsciId`/`TesdiqEden
 tam ədəd kimi daxil edildi:
 
 ```
-"Axundov Elxan"  → Isciler.Id = 2
-"Najafi Asghar"  → Isciler.Id = 25   (əslində Ad=Asghar, Soyad=Najafimarganmaskan)
+"İşçi-1"  → Isciler.Id = 2
+"Müştəri-1"  → Isciler.Id = 25   (əslində Ad=Asghar, Soyad=Müştəri-1)
 "Ibrahimov Anar" → Isciler.Id = 3
 ```
 
@@ -5530,7 +5530,7 @@ yoxla.
 
 ## Xəstəlik Kəsintisi — TƏQVİM Günü İŞ Günü Dərəcəsinə Vurulurdu (26.10.2026, KRİTİK — DÜZƏLDİLDİ)
 
-İstifadəçi Toplu Maaş siyahısında İlkanə Mahmudovanın "XƏSTƏLİK" kartına baxıb şübhələndi:
+İstifadəçi Toplu Maaş siyahısında İşçi-6-nın "XƏSTƏLİK" kartına baxıb şübhələndi:
 *"11 gün xəstəliyin günüdür amma iş günü deyil, biz cari aydakı iş günündən -11 etmişik
 deyəsən, araşdır"* — haqlı çıxdı.
 
@@ -5574,7 +5574,7 @@ balansı, `BayramGunu`/`GunTipi` tiplərinin faylda artıq istifadə olunduğu t
 dəyişən adları mövcud scope ilə toqquşdurulmadı — `xst`/`ayBaslangic` kimi adlar başqa
 metodlarda işləndiyi üçün yeni dəyişənlərə `xst`/`xstAy...` prefiksi verildi). İstifadəçi
 Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: İlkanə
-Mahmudovanın (və ya həftəsonu əhatə edən hər hansı xəstəlik bülletenli işçinin) Oktyabr
+İşçi-6-nın (və ya həftəsonu əhatə edən hər hansı xəstəlik bülletenli işçinin) Oktyabr
 kəsintisinin əvvəlkindən AZ olduğunu (yalnız real iş günləri qədər), xəstəlik ödənişinin
 (831,32 ₼) dəyişmədiyini — mühasib Exceli ilə bir real halı tutuşdurmalıdır.
 
@@ -6161,7 +6161,7 @@ Azəri hərfi kimi göstərir). Belə run-a müasir Unicode ad yazılanda Word h
 xüsusi hərf üçün başqa şriftə keçir və aralarda **boşluq qalır**:
 
 ```
-HÜSEYNOV SAMİR MİRHÜSEYN OĞLU  →  HÜ SEYNOV SAMİ R Mİ RHÜ SEYN OĞ LU
+MÜŞTƏRİ-D RƏDAN NÖMU  →  MÜ ŞTƏRİ D RA DAN NÖ MU
 ```
 
 Şablonun özü də bunu bilir — «ilə» sözündəki `ə` ayrıca `Times New Roman`
@@ -9005,7 +9005,7 @@ vaxtın düzgün göründüyünü təsdiqləməli.
 ## HR → Görüşlər İdarəetməsi — İlk Dəfə HR-ın Baxış Ekranı (04.11.2026)
 
 İstifadəçi Davamiyyət səhifəsindəki "Tədbirdə" statusunu araşdırarkən
-(«Rüfət Camalzadə — 09:00 · Ağacəkmə aksiyası») suala gəldi: *"tədbirdə olanı
+(«İşçi-8 — 09:00 · Ağacəkmə aksiyası») suala gəldi: *"tədbirdə olanı
 işçi özü yazır yoxsa HR? və bunları hardansa izləmək olur?"* Kod araşdırması
 göstərdi ki, bu status **Ezamiyyət DEYİL** — tamam başqa, `GorushIshtirakci`
 (Görüşlər) modulundan gəlir (`HR/DavamiyyetController`-in prioritet zənciri:
@@ -9738,7 +9738,7 @@ Debet/Kredit/NameUr/ToAdi/SummaVNacval/Primechanie sütunları artıq `NULL`-dur
 — Oracle-un öz namizəd mənbəyi (`DOC_DNA_ALL_TAB`) bu məlumatı saxlamır,
 yalnız AXTARIŞ ANINDA canlı sorğulanır, ona görə köhnə qeydə GERİ QAYIDIB
 bu sahələri doldurmaq mümkün deyil (əməliyyat artıq axtarış pəncərəsindən
-çıxıb). Belə qeydlər (test mühitində İlkanə Mahmudova-nın #1 qeydi daxil)
+çıxıb). Belə qeydlər (test mühitində İşçi-6-nın #1 qeydi daxil)
 YALNIZ silinib YENİDƏN, düzgün formadan təsdiqlənə bilər — GOAML modulunda
 silmə/redaktə funksiyası YOXDUR (qəsdən, "sırf oxunuş" dizaynı), bu səbəbdən
 korrupt test qeydləri SQL Server-dən ƏL İLƏ (`DELETE FROM GoamlEmeliyyatlar
@@ -9857,7 +9857,7 @@ doldurma/banner/dropdown ÇIXMADIĞINI (əvvəlki kimi tam əl ilə doldurma) yo
 ## GOAML — CON/SIG Avtomatik Doldurma `odb.regnom`-un ÖZÜ TAPILMASA, TAM BLOKLANIRDI (09.11.2026, KRİTİK — DÜZƏLDİLDİ)
 
 Yuxarıdakı CON/SIG avtomatik doldurma mexanizmi (eyni günün əvvəlki bölməsi) real
-mühitdə sınandı — hüquqi şəxsin (Kredit sahibi "DR.ESS" MMC) hesabı olan bir
+mühitdə sınandı — hüquqi şəxsin (Kredit sahibi "MÜŞTƏRİ ŞİRKƏTİ-B" MMC) hesabı olan bir
 namizəddə "Nümayəndənin" VƏ "Hesab imza hüququ olan şəxsin" blokları HƏR İKİSİ
 boş qaldı, baxmayaraq ki `imza_huquqi_olan_shexsler`-də bu şirkətin aktiv (1
 sətir) qeydi VAR idi.
@@ -9880,7 +9880,7 @@ olan şəxsi var — amma ekranda heç nə görünmürdü.
 isə `if (regnomSetirler.Count == 0) return null;` ilə **BÜTÖV metodu
 dayandırırdı** — `imza_huquqi_olan_shexsler`-ə ÇATMADAN. `odb.regnom`
 əsasən FİZİKİ şəxs profilləri üçün nəzərdə tutulmuş görünür — hüquqi
-şəxslərin çoxu (DR.ESS daxil) orada HEÇ BİR sətrə malik deyil. Nəticə:
+şəxslərin çoxu (MÜŞTƏRİ ŞİRKƏTİ-B daxil) orada HEÇ BİR sətrə malik deyil. Nəticə:
 BALSCHT_UR-da tanınan, `imza_huquqi_olan_shexsler`-də real data olan BİR
 hüquqi şəxs belə, `odb.regnom`-da sətri olmadığı üçün bütün axın səssizcə
 `null` qayıdırdı.
@@ -9921,7 +9921,7 @@ TƏSİR EDİR.** Artıq açılmış/təsdiqlənmiş formalar dəyişmir.
 (mötərizə balansı — dəyişikliyin ÖZÜ balanslıdır, `git diff`-in əlavə/silinən
 sətirləri ayrıca yoxlanıldı: 9/9 və 10/10 mötərizə, fayl-ümumi -8 fərqi əvvəldən
 mövcud şərh mətnindəndir, dəyişməyib). İstifadəçi Visual Studio-da **Rebuild
-All** ilə, sonra EYNİ namizədi (Kredit sahibi DR.ESS MMC) yenidən açıb
+All** ilə, sonra EYNİ namizədi (Kredit sahibi MÜŞTƏRİ ŞİRKƏTİ-B MMC) yenidən açıb
 yoxlamalıdır: "Nümayəndənin əlaqəli şəxslərindən seçin" dropdown-unun artıq
 göründüyünü, "Hesab imza hüququ olan şəxsin" blokunun "Rəhbər"dən avtomatik
 dolduğunu.
@@ -9930,7 +9930,7 @@ dolduğunu.
 
 İstifadəçi real Visual Studio-da **Rebuild All** etdi (Output: "0 Errors, 136
 Warnings — Rebuild completed", köhnə/əlaqəsiz xəbərdarlıqlar), tətbiqi yenidən
-işə saldı və EYNİ namizədi (DR.ESS MMC, regnom=019843) YENİDƏN açdı —
+işə saldı və EYNİ namizədi (MÜŞTƏRİ ŞİRKƏTİ-B MMC, regnom=019843) YENİDƏN açdı —
 **"Nümayəndənin"** VƏ **"Hesab imza hüququ olan şəxsin"** blokları HƏR İKİSİ
 YENƏ TAM BOŞ idi, heç bir yaşıl "avtomatik dolduruldu" banner-i, heç bir
 "əlaqəli şəxslərdən seçin" dropdown-u görünmürdü.
@@ -10090,7 +10090,7 @@ hesabının özündə) YOXDUR** — istifadəçi bunu DBA/Oracle admin hesabı i
 bir dəyişiklik lazım deyil.
 
 ✅ **TƏSDİQLƏNDİ (09.11.2026, eyni gün).** İstifadəçi GRANT-ları tətbiq etdi,
-EYNİ namizədi (DR.ESS MMC) TƏZƏDƏN (yeni GET sorğusu ilə) açdı — "Nümayəndənin"
+EYNİ namizədi (MÜŞTƏRİ ŞİRKƏTİ-B MMC) TƏZƏDƏN (yeni GET sorğusu ilə) açdı — "Nümayəndənin"
 VƏ "Hesab imza hüququ olan şəxsin" blokları artıq AVTOMATİK DOLU gəldi.
 Diqqət: ARTIQ AÇIQ olan köhnə (GRANT-dan əvvəl yüklənmiş) səhifədə "Saxla"ya
 basmaq kifayət ETMƏDİ — ilk sınaqda hələ boş dəyərlər saxlanıldı, çünki GRANT
@@ -10780,7 +10780,7 @@ sütunu **boş DEYİL** — **"05-05-2125"** yazırdı (başlama "05-05-2025").
 **Kök səbəb:** `HesabSahibiKycAsync`-in SIG sorğusu (`odb.imza_huquqi_olan_
 shexsler`) VƏ `NumayendeSiyahisiAsync`-in CON sorğusu (`odb.NUMAYENDE`) hər
 ikisi "aktiv" şərtini **`imza_bitme is null`** kimi yazmışdı — 09-10.11.2026-da
-test edilən (DR.ESS MMC) hesabda bu sahə HƏQİQƏTƏN `NULL` idi, ona görə şərt
+test edilən (MÜŞTƏRİ ŞİRKƏTİ-B MMC) hesabda bu sahə HƏQİQƏTƏN `NULL` idi, ona görə şərt
 işləyirdi. Bu YENİ hesabda isə Oracle-a məlumatı daxil edən sistem/operator
 "hələ bitməyib" mənasını `NULL` ƏVƏZİNƏ **uzaq-gələcək bir sentinel tarixlə**
 (2125-ci il) ifadə etmişdi — real data İKİ FƏRQLİ konvensiyanı QARIŞIQ işlədir.
@@ -10810,7 +10810,7 @@ Bu, "Qara Jeton — Menfi Miqdar" bölməsindəki "işarə NECƏ YAZILIRSA YAZIL
 miqdarı işlədən kod qoruncaqlı olmalıdır" prinsipinin tarix sahəsi üçün
 formasıdır — `IS NULL` tək başına "aktivdir" demək deyil, "bitmə tarixi hələ
 gəlməyib" (`IS NULL OR > SYSDATE`) daha dözümlü, düzgün şərtdir. Simptom
-xüsusilə çaşdırıcı idi, çünki İKİ DÜZGÜN işləyən köhnə test (DR.ESS MMC) ilə
+xüsusilə çaşdırıcı idi, çünki İKİ DÜZGÜN işləyən köhnə test (MÜŞTƏRİ ŞİRKƏTİ-B MMC) ilə
 YENİ, sükutla boş qalan hal arasında KOD HEÇ DƏYİŞMƏMİŞDİ — fərq YALNIZ
 Oracle-dakı data konvensiyasında idi, bu da "əvvəlki test işləyirdi, deməli
 kod düzgündür" fərziyyəsini xüsusilə təhlükəli edir.
@@ -11547,14 +11547,14 @@ else if (...ToAdi/ToSoyadi...)
 Bu konkret namizəddə `NameUr` **"KASSA - USD"** ilə dolu idi — hesab-sahibi auto-doldurma
 mexanizmi (09-10.11.2026) `Debet` hesabının (10020..., bankın öz kassa/GL hesabı) adını
 `LICSCH_ALL_2`-dən tapıb NameUr-a yazmışdı. Operator isə əməliyyatı açıq-aydın **"Fiziki
-(IN)"** seçmişdi (real şəxs — Asghar Najafimarganmaskan — kassaya nağd pul qoyur). Nəticə:
+(IN)"** seçmişdi (real şəxs — Müştəri-1 — kassaya nağd pul qoyur). Nəticə:
 Sender/Receiver-in HƏR İKİSİ `"Entity": {"...entity_name": "KASSA - USD"}` yazdı, real
 şəxsin KYC-si (ad/soyad/sənəd/vətəndaşlıq) HEÇ YERƏ DÜŞMƏDİ — baxmayaraq ki `ToAdi`/`ToSoyadi`/
 `SigAdi`/`SigSoyadi` sahələri DOLU idi.
 
 AYSEL-in eyni (10020/41025) hesab cütü ilə real ixracı isə `Person` yazır — Sender-i
 "_IN" prosedurunun öz qaydasına görə elə `ToAdi`/`ToSoyadi`-dən (sender_first_name/
-last_name = "ASGHAR"/"NAJAFIMARGANMASKAN"), Receiver-i `Sig`-dən doldurur — Debet
+last_name = "MÜŞTƏRİ-1"/"MÜŞTƏRİ-1"), Receiver-i `Sig`-dən doldurur — Debet
 hesabının texniki olaraq "kassa/GL hesabı" olması ONU dəyişmir.
 
 **Düzəliş — hər iki metoda eyni qoruyucu:** `Tip` **Fizik (OUT/IN)** olduqda `NameUr`-un
@@ -11975,12 +11975,12 @@ aşağıda hər birinin NİYƏ indi fiks edilmədiyi açıq yazılıb.
 
 **1. DÜZƏLDİLDİ — `RepresentativeQur`-un PAT qolu `ReprIdSerial`-ı YANLIŞ,
 RAW sahədən oxuyurdu.** `AvtoDolduruAsync` (sətir 599-600) `ConSenedinSeriyaNomresi`-ni
-(məs. "D10019478") artıq `MMX_ID_SERIAL`-a görə PARÇALAYIR və təmiz nəticəni
+(məs. "D00000000") artıq `MMX_ID_SERIAL`-a görə PARÇALAYIR və təmiz nəticəni
 `e.ReprIdSerial`/`e.ReprIdNumber`-ə yazır (bu, 07.11.2026-dakı "Update New"
 köçürməsinin elə həmin "Sənəd seriya/nömrəsinin parçalanması" addımıdır).
 `RepresentativeQur` isə `ReprIdNumber`-i düz (parçalanmış) sahədən oxuyurdu,
 AMMA `ReprIdSerial`-ı SƏHVƏN yenə RAW, parçalanmamış `ConSenedinSeriyaNomresi`-
-dən oxuyurdu — nəticədə `repr_id_serial` xanasına bütöv "D10019478" düşürdü,
+dən oxuyurdu — nəticədə `repr_id_serial` xanasına bütöv "D00000000" düşürdü,
 "D" yox. SIG (`e.SenderIdSerial`) və TO (`e.RecIdSerial`) qollarının HƏR
 İKİSİ artıq düzgün, parçalanmış sahəni oxuyurdu — yalnız CON/PAT qolu
 unudulmuşdu. Düzəliş: `ReprIdSerial = e.ReprIdSerial ?? ""`.
@@ -11990,7 +11990,7 @@ DİSPLAY ADINI daşıyır ("VAL.M/MƏN NƏGD PUL-AZN (EUR)"), real müştəri
 adı DEYİL.** Kök: `EmeliyyatlarController.Tesdiq` GET-i `ToAdi`/`NameUr`-u
 HƏR ZAMAN namizədin "Kredit sahibi"/"Debet sahibi" DISPLAY mətnindən
 (`nameLicschKre`/`nameLicschDe`) doldurur — bu, REAL müştəri hesabında
-("Jamshidi Arsalan Hashem" kimi) düzgün bir ilk-təxmindir, AMMA mübadilə-
+("Müştəri-A" kimi) düzgün bir ilk-təxmindir, AMMA mübadilə-
 stolu/GL hesabında (prefiks "100") bu mətn bir İNSAN ADI DEYİL, hesabın
 ÖZ ÜNVANIDIR — buna baxmayaraq `SenderQurAsync`/`ReceiverQurAsync`-ın
 Person qolu `ToAdi`/`SigAdi`-ni olduğu kimi "ad" sahəsinə yazır.
@@ -12038,12 +12038,12 @@ mövcud, `AvtoDolduruAsync`-də artıq doldurulan bir sahə olduğu təsdiqlənd
 İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
 yoxlamalıdır: CON (Nümayəndə) sənəd seriyası "D" kimi bir hərf/rəqəm
 daşıyan bir namizədi təsdiqləyib export et → `repr_id_serial`-ın artıq
-TƏK HƏRF/QISA seriyanı (bütöv "D10019478" yox) göstərdiyini təsdiqləməli.
+TƏK HƏRF/QISA seriyanı (bütöv "D00000000" yox) göstərdiyini təsdiqləməli.
 
 ### "Açıq Qalan #2" Qapandı — Mübadilə Stolunda Sender/Receiver Representative-in ÖZÜDÜR (16.11.2026)
 
 İstifadəçi AYSEL-in ƏVVƏLKİ (12.11.2026-cı tarixli) real ixracını — EYNİ
-RecNum 22903177, EYNİ müştəri (ARSALAN JAMSHIDI HASHEM) — göndərdi: orada
+RecNum 22903177, EYNİ müştəri (MÜŞTƏRİ-A) — göndərdi: orada
 Representative, Sender.Person VƏ Receiver.Person-un ÜÇÜ DƏ EYNİ şəxsin
 KYC-sini (ad/soyad/ata adı/sənəd/pin/vətəndaşlıq) daşıyır. İstifadəçinin öz
 sözü: *"əməliyyat goamldən gələndir, müştəri məlumatını sil yaddaşından"* —
@@ -12112,8 +12112,8 @@ yoxlanıldı** (mötərizə balansı 5 dəyişən faylda, Con*/Repr* sahə adlar
 `RepresentativeQur`-un ARTIQ işlətdiyi adlarla bir-bir tutuşduruldu).
 İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ (RecNum 22903177,
 mübadilə-stolu) namizədi yenidən təsdiqləyib export etməlidir: Sender.Person
-VƏ Receiver.Person-un indi Representative İLƏ EYNİ (ARSALAN/JAMSHIDI/HASHEM/
-IR/8407144) məlumatı daşıdığını, `sender_curr_amount`-ın artıq 0 yox 23500
+VƏ Receiver.Person-un indi Representative İLƏ EYNİ (MÜŞTƏRİ-A/MÜŞTƏRİ-A/MÜŞTƏRİ-A/
+IR/XXXXXXX) məlumatı daşıdığını, `sender_curr_amount`-ın artıq 0 yox 23500
 olduğunu təsdiqləməli — valyuta kodunun (EUR/AZN) VƏ sənəd seriya/nömrəsinin
 hələ də gözlənilən ola biləcəyini (yuxarıdakı iki açıq bənd) nəzərə alaraq.
 
@@ -12157,7 +12157,7 @@ Sender.Account artıq mübadilə-stolu olanda yazılmırdı (əvvəlki dalğa). 
 
 ### `repr_id_serial`/`repr_id_number` — GRANT ARTIQ TƏLƏB OLUNMUR
 
-İstifadəçinin "niyə grant verməliyəm" sualına ən doğru cavab: **lazım DEYİL**. `ParcalaSenedNomresi` (CON/SIG/TO sənəd-parçalayıcı) Oracle `odb.mmx_id_serial` lüğəti boş/əlçatmaz olanda (GRANT olsun-olmasın, FƏRQ ETMİR) indi Oracle-dan TAMAMİLƏ MÜSTƏQİL bir yedək qaydaya keçir: sənədin başındaki hərf/işarə hissəsi **seriya**, ardınca gələn (ilk rəqəmdən sonrakı) hissə **nömrə** ("D10019478" → `D`/`10019478`, "AZE1234567" → `AZE`/`1234567`) — Azərbaycan şəxsiyyət/sənəd nömrələrinin demək olar hamısı bu formatdadır.
+İstifadəçinin "niyə grant verməliyəm" sualına ən doğru cavab: **lazım DEYİL**. `ParcalaSenedNomresi` (CON/SIG/TO sənəd-parçalayıcı) Oracle `odb.mmx_id_serial` lüğəti boş/əlçatmaz olanda (GRANT olsun-olmasın, FƏRQ ETMİR) indi Oracle-dan TAMAMİLƏ MÜSTƏQİL bir yedək qaydaya keçir: sənədin başındaki hərf/işarə hissəsi **seriya**, ardınca gələn (ilk rəqəmdən sonrakı) hissə **nömrə** ("D00000000" → `D`/`10019478`, "AZE1234567" → `AZE`/`1234567`) — Azərbaycan şəxsiyyət/sənəd nömrələrinin demək olar hamısı bu formatdadır.
 
 `AvtoDolduruAsync`-dəki `if (serialler.Count > 0)` qoruyucu da SİLİNDİ — əvvəl bu, Oracle siyahısı boş olanda BÜTÜN parçalama blokunu (CON/SIG/TO-nun ÜÇÜ) keçirirdi, indi hər çağırış MÜSTƏQİL baş verir, Oracle lüğəti ilə İLK CƏHD edilir, uğursuz olarsa həmin KONKRET sahə üçün yedək qaydaya düşür.
 
@@ -12370,7 +12370,7 @@ imza_huquqi_olan_shexsler) qolları boş idi.
 ixracımızı (`GOAML_Ixrac_CTR_20261117_095942_TEST.json`) birbaşa fayl-fayl müqayisə etdi
 — *"yene duz deyil faylimiz. 1ci goamlden cixandir, 2ci ise bizimki."* Eyni namizəd
 (RecNum 22904033, Debet="10020" — kassa, Kredit="40160010001690100000" — real müştəri
-"HESAM MMC") iki MÜSTƏQİL sahədə fərqli çıxdı.
+"MÜŞTƏRİ ŞİRKƏTİ-A MMC") iki MÜSTƏQİL sahədə fərqli çıxdı.
 
 ### Kök səbəb — "Debet HƏMİŞƏ əsas tərəfdir" fərziyyəsi kassa/GL hesablarında YANLIŞDIR
 
@@ -12384,7 +12384,7 @@ amma kod bunu fərqləndirmirdi.
 **Nəticə — iki sahədə:**
 - `NameUr` = "KASSA - USD" (Debet-in öz GL adı) → `SenderQurAsync`/`ReceiverQurAsync`-ın
   HƏR İKİSİ bunu Entity adı kimi yazdı (`sender_entity_name`/`receiver_entity_name`) —
-  AYSEL isə Kredit-in real adını ("HESAM MMC") HƏR İKİ blokda yazırdı.
+  AYSEL isə Kredit-in real adını ("MÜŞTƏRİ ŞİRKƏTİ-A MMC") HƏR İKİ blokda yazırdı.
 - `RegistracNomer` = "000001" (Debet/kassanın öz, çox güman sabit, registrac_nomer-i) →
   `trn_detailed_id`-ə düşdü — AYSEL "016901" (Kredit-in REAL registrac_nomer-i) yazırdı.
 
@@ -12526,20 +12526,20 @@ daşıdığını təsdiqləməlidir.
 ## GOAML Export — Entity Adındakı Dırnaqlar + Account Bloku TAM BOŞ — Real AYSEL İxracı ilə Sahə-Sahə Tutuşdurma (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
 
 İstifadəçi real AYSEL ixracını (`BMI_BAKU_CTR_HI_2_15587_20261116_TEST.JSON`) bizim
-EYNİ əməliyyatın (Debet=10020 kassa, Kredit=40160... "HESAM" MMC) ixracı ilə birbaşa
+EYNİ əməliyyatın (Debet=10020 kassa, Kredit=40160... "MÜŞTƏRİ ŞİRKƏTİ-A" MMC) ixracı ilə birbaşa
 fayl-fayl müqayisə etdi (iki ekran-görüntüsü) — iki fərq tapıldı: *"dusmeyen
 yerler,ve adda bizde / / arasinda dusub"* (uyğun gəlməyən yerlər, VƏ adda bizdə
 dırnaq işarələri arada qalıb).
 
-### 1. `receiver_entity_name` — "\"HESAM\" MMC" (bizdə) vs "HESAM MMC" (AYSEL)
+### 1. `receiver_entity_name` — "\"MÜŞTƏRİ ŞİRKƏTİ-A\" MMC" (bizdə) vs "MÜŞTƏRİ ŞİRKƏTİ-A MMC" (AYSEL)
 
 Oracle-dakı `NAME_UR` sütunu Azəri şirkət adlandırma konvensiyasına görə dırnaq
-işarəsini HƏRFİ saxlayır (`"HESAM" MMC`) — AYSEL bunu `entity_name`-ə yazmazdan
-ƏVVƏL çıxarır, biz isə olduğu kimi yazırdıq (JSON serializer-i bunu `\"HESAM\"
+işarəsini HƏRFİ saxlayır (`"MÜŞTƏRİ ŞİRKƏTİ-A" MMC`) — AYSEL bunu `entity_name`-ə yazmazdan
+ƏVVƏL çıxarır, biz isə olduğu kimi yazırdıq (JSON serializer-i bunu `\"MÜŞTƏRİ ŞİRKƏTİ-A\"
 MMC` kimi ESCAPE edir, Notepad++-da "dırnaq arada qalıb" kimi görünür).
 
 **Düzəliş — yeni `TemizEntityAdi(ad)` helper** (`GoamlService.cs`) — `"` işarələrini
-çıxarır, boş sətirlər (`"HESAM"  MMC` → `HESAM MMC`, ikiqat boşluq) təmizlənir.
+çıxarır, boş sətirlər (`"MÜŞTƏRİ ŞİRKƏTİ-A"  MMC` → `MÜŞTƏRİ ŞİRKƏTİ-A MMC`, ikiqat boşluq) təmizlənir.
 `SenderQurAsync`/`ReceiverQurAsync`-ın Entity bloklarında `e.NameUr ?? ""` ƏVƏZİNƏ
 `TemizEntityAdi(e.NameUr)` çağırılır. `NameUr`-un ÖZÜ (ekranda, digər KYC
 sahələrində) TOXUNULMADI — YALNIZ bu ixrac sahəsi təmizlənir.
@@ -12593,7 +12593,7 @@ ayrıca ölçülüb — net fərq SIFIR; DTO-dakı `SenderAccountFinInstTaxId`/
 `ReceiverAccountFinInstTaxId` sahə adları `GoamlJsonIxracDto.cs`-dən bir-bir
 təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ (Debet=
 kassa, Kredit=huquqi müştəri) namizədi yenidən Təsdiqləyib Export etməlidir:
-`receiver_entity_name`-in artıq dırnaqsız ("HESAM MMC") çıxdığını, `Account`
+`receiver_entity_name`-in artıq dırnaqsız ("MÜŞTƏRİ ŞİRKƏTİ-A MMC") çıxdığını, `Account`
 blokunun (account_number=Kredit-in tam nömrəsi, fin_inst_name/branch=bizim ÖZ
 filialımız, fin_inst_tax_id/bic=ATTRIB-dən) dolu gəldiyini AYSEL-in nümunəsi ilə
 tutuşdurub təsdiqləməlidir.
@@ -12737,11 +12737,11 @@ yoxdur"*.
 
 ### 1. "Vaxtı keçmiş əsas/faiz (birbaşa)" — EYNİ pul 2-3 dəfə sayılırdı
 
-Real nümunə (ekran-görüntüsündən): ƏLİYEV NİZAM Ç.O. üçün eyni gün 4 sətir
+Real nümunə (ekran-görüntüsündən): KREDİT MÜŞTƏRİSİ-B üçün eyni gün 4 sətir
 çıxırdı — "Cari hesaba daxil olub" (500,00) + **İKİ** "Vaxtı keçmiş faiz
 (birbaşa)" sətri (hər biri 500,00, çox-kreditli fan-out) + yenidən "Cari
 hesaba daxil olub" (500,00) — görünən cəm **2000,00**, real daxil olan isə
-**500,00**. MƏMİŞOV D.H.O. nümunəsi bunu rəqəmlə sübut etdi: "Cari hesaba
+**500,00**. KREDİT MÜŞTƏRİSİ-C nümunəsi bunu rəqəmlə sübut etdi: "Cari hesaba
 daxil olub" = 90,00, "Əsas (birbaşa)" = 83,42, "Faiz (birbaşa)" = 6,58 —
 83,42+6,58=90,00 **DƏQİQ** — yəni bu üçü eyni 90 AZN-in HƏR İKİ ADDIMI
 (addım 1: kassa→cari hesab, addım 2: cari hesab→kreditin öz performing
@@ -12843,7 +12843,7 @@ bir müştəridə "təkrarlanır" pilinin göründüyünü təsdiqləməlidir.
 
 Əvvəlki düzəlişdən (bax yuxarı, "'Vaxtı keçmiş' Sətirləri ÖZÜ 'Silinmə' İdi") DƏRHAL
 sonra istifadəçi Excel ixracında (ekran-görüntüsü) eyni RECNUM-un İKİ sətirdə
-göründüyünü tapdı: ƏLİYEV NİZAM ÇALI OĞLU (regnom 019738) üçün EYNİ 500,00 ödənişi
+göründüyünü tapdı: KREDİT MÜŞTƏRİSİ-B (regnom 019738) üçün EYNİ 500,00 ödənişi
 İKİ fərqli kreditə ("DAŞINMAZ ƏMLAK" girovlu, Gecikir/3947,63 və "F/Ş TƏR.VER.ZƏMANƏT"
 girovlu, Vaxtında/0,00) aid "Cari hesaba daxil olub" sətri kimi göstərilirdi.
 İstifadəçinin öz sözü: *"eyni setiri iki defe gosterib,sebeb ise hemin regnomum iki
@@ -12947,7 +12947,7 @@ faiz alt-hesabı) HƏR DÖRD HALDA eyni pulun DAXİLİ YENİDƏN TƏSNİFATIDIR 
 köhnə "fərqli silinmə" (`frm_odenis_ferqlisilinme.cs`) formasının izlədiyi məhz
 bu hərəkətdir, overdue olub-olmamasından asılı olmayaraq.
 
-Real nümunə (screenshot, DƏMİROV ƏJDƏR ƏSGƏR OĞLU): eyni günün ÜÇ AYRI RECNUM-u —
+Real nümunə (screenshot, KREDİT MÜŞTƏRİSİ-A): eyni günün ÜÇ AYRI RECNUM-u —
 (1) kassa→cari 4.895,14, (2) cari→Əsas alt-hesab 4.874,52, (3) cari→Faiz alt-hesab
 20,62 — **(2)+(3) = (1) DƏQİQ bərabərdir**: (1) elə HƏMİN pulun daxil olması, (2)/(3)
 isə onun daxili bölünməsidir. Üçünü də göstərmək eyni pulu İKİ DƏFƏ sayır.
@@ -12983,7 +12983,7 @@ sorğulamalara təsir edir.
 etdiyi sətirləri üzrə ayrıca ölçülərək — hər iki dəyişən faylda (SQL, `.cshtml`)
 əlavə/silinən sətirlərin mötərizə/tag sayı BALANSLI təsdiqləndi). İstifadəçi
 SQL faylını SQL Server-də YENİDƏN işlədib, Visual Studio-da **Rebuild All**
-edib, sonra real ssenari ilə yoxlamalıdır: DƏMİROV ƏJDƏR (və ya oxşar, həm
+edib, sonra real ssenari ilə yoxlamalıdır: KREDİT MÜŞTƏRİSİ-A (və ya oxşar, həm
 kassa→cari, həm cari→loan-split əməliyyatı olan hər hansı müştəri) üçün artıq
 YALNIZ "Cari hesaba daxil olub" sətrinin (tək dəfə) göründüyünü, "Əsas (birbaşa)"/
 "Faiz (birbaşa)" sətirlərinin siyahıdan TAMAMİLƏ çıxdığını, Cəmin artıq ikiqat
@@ -14298,7 +14298,7 @@ qayıdıb-gələndə həmin qeydin artıq Qaralama kimi göründüyünü təsdiq
 
 ## GOAML — "sphereOfActivity" HƏQİQƏTƏN Hüquqi Şəxsin "Business" Sütunundan Gəlirdi — `odb.huquqi_shexs` HEÇ VAXT SORĞULANMIRDI (24.11.2026, KRİTİK — DÜZƏLDİLDİ)
 
-İstifadəçi konkret sual verdi (hesab regnomu **016901** — "HESAM" MMC, bir
+İstifadəçi konkret sual verdi (hesab regnomu **016901** — "MÜŞTƏRİ ŞİRKƏTİ-A" MMC, bir
 hüquqi şəxs): *"sphereOfActivity bu hisseni elave etdin? huquqi shexsde
 business sutunundan gelir?"* — ŞÜBHƏSİ DOĞRU ÇIXDI.
 
@@ -14382,7 +14382,7 @@ balanslıdır; fayl-ümumi pre-existing -8 paren fərqi (şərh mətnindən,
 `CUSTOMERCREATIONDATE`/`QEYDIYYAT_TARIXI` — AYSEL-in cursor WHERE-i və
 field-referenslərindən BİRƏ-BİR, təxminsiz köçürülüb). İstifadəçi Visual
 Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: regnom
-016901 (HESAM MMC) üçün HRZ(BLR)/PEP ixracı et → `sphereOfActivity`-nin
+016901 (MÜŞTƏRİ ŞİRKƏTİ-A MMC) üçün HRZ(BLR)/PEP ixracı et → `sphereOfActivity`-nin
 (SIG-in öz fəaliyyət kodu yoxdursa) indi `odb.huquqi_shexs.BUSINESS`-dən
 ("46360" kimi) gəldiyini, `businessStartDate`/`note`/`idNumber`-in də
 yeni prioritetlə doğru göründüyünü təsdiqləməli — əvvəlcə Oracle-da

@@ -70,7 +70,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // təsdiqlənmiş icazə saatı. Əks halda bu sətir adi mükafat jetonu kimi
         // QalanSaat-ı (Qara Jeton kəsintisi xaric dəyişməz) göstərir — "36 Saat
         // Hüququ" 36/36 qalır, halbuki işçi onun bir hissəsini icazəyə sərf edib
-        // (15.10.2026, real hadisə: Əjdər Dəmirov — burada 36, İşçi Jeton
+        // (15.10.2026, real hadisə: İşçi-7 — burada 36, İşçi Jeton
         // Saatlarında 32,42).
         private async Task EffektivQalanDoldurAsync(IList<IsciJetonuListDto> list)
         {

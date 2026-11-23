@@ -1,5 +1,5 @@
 -- ============================================================================
--- Elxan Axundov (və ya axtarılan istənilən işçi) üçün "qabaqcadan ödənilmiş
+-- İşçi-1 (və ya axtarılan istənilən işçi) üçün "qabaqcadan ödənilmiş
 -- məzuniyyət" qeydlərinin tarix sahələrini göstərir — yalnız SELECT, heç nə
 -- dəyişmir.
 --
@@ -27,5 +27,5 @@ SELECT
     m.Silinib
 FROM Mezuniyyetler m
 JOIN Isciler i ON i.Id = m.IsciId
-WHERE i.Ad LIKE N'%Elxan%' AND i.Soyad LIKE N'%Axundov%'
+WHERE i.Ad LIKE N'%AD%' AND i.Soyad LIKE N'%SOYAD%'
 ORDER BY m.BaslamaTarixi DESC;

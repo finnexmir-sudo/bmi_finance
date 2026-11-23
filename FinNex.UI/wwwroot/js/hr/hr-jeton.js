@@ -215,7 +215,7 @@ function hjQalanGoster(r) {
     // CLAUDE.md "'36 Saat Hüququ' — illik limit artıq JETONDUR" bölməsi).
     // Ona görə burada server-in hesabladığı effektivQalanSaat (Hüquq − cari
     // ilin təsdiqlənmiş icazə saatı, İşçi Jeton Saatları ilə EYNİ düstur)
-    // istifadə olunur — 15.10.2026, real hadisə: Əjdər Dəmirov 36/36 YOX,
+    // istifadə olunur — 15.10.2026, real hadisə: İşçi-7 36/36 YOX,
     // 32,42 göstərməlidir.
     if (r.sistemli && r.effektivQalanSaat != null) {
         const eff = r.effektivQalanSaat;

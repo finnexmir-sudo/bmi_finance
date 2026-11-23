@@ -83,14 +83,14 @@ namespace FinNex.Application.Services.HR
         // (27.08.2026, mühasibin uçot modeli — istifadəçi qərarı)
         //
         // KÖHNƏ DAVRANIŞ: məzuniyyətin BÜTÜN brütü ÖDƏNİLMƏ ayının vergi bazasına
-        //   düşürdü (Rüfət C.: avqustda 761,90 + 365,37 = 1 127,27).
+        //   düşürdü (İşçi-9: avqustda 761,90 + 365,37 = 1 127,27).
         // YENİ DAVRANIŞ: hər ay yalnız ÖZ payını götürür
         //   (avqust 761,90 + 38,10 = 800,00; sentyabr 472,73 + 327,27 = 800,00).
         //
         // ⚠️ İŞÇİYƏ ÖDƏNİLƏN MƏBLƏĞ DƏYİŞMİR. Düstur (bax addım 11):
         //     net = brutMaas − [vergilər(brutMaas + pay) + avans − (pay − payın neti)]
         //   İki model eyni nəticəni verir, çünki «payın neti» elə vergili və
-        //   vergisiz bazanın fərqi kimi təyin olunub. Yoxlanıb (Rüfət C., 2026):
+        //   vergisiz bazanın fərqi kimi təyin olunub. Yoxlanıb (İşçi-9, 2026):
         //     köhnə  avqust 761,90 − 151,74 − 200 + 56,64 = 466,80
         //     yeni   avqust 761,90 − 101,00 − 200 +  5,90 = 466,80
         //     köhnə  sentyabr 472,73 − 50,26            = 422,47
@@ -157,7 +157,7 @@ namespace FinNex.Application.Services.HR
 
             // ⚠️ EH payları ÖDƏNİLƏN CƏMƏ normallaşdırılır, xam götürülmür.
             // ÜSUL B qalib gələndə ΣEH = CemiOdenis olur və pay elə EH-ə bərabər
-            // çıxır (Rüfət C.: 38,10 / 327,27). ÜSUL A qalibdirsə CemiOdenis daha
+            // çıxır (İşçi-9: 38,10 / 327,27). ÜSUL A qalibdirsə CemiOdenis daha
             // böyükdür — normallaşdırmasaq payların cəmi ödənilən brütdən AZ olar
             // və həm vergi bazası, həm əvəzləşmə səssizcə əskik qalar.
             decimal ehCemi = hesab.AySliceleri.Sum(x => x.EH);
@@ -543,7 +543,7 @@ namespace FinNex.Application.Services.HR
                         // BÖLGÜ ÜSULU — vergi bazası ilə EYNİ olmalıdır (27.08.2026):
                         //  · YENİ  → slPay.EH («cari maaş hesabı», iş günü bölgüsü).
                         //            İşlənmiş maaş + EH = işçinin tam aylıq qazancı
-                        //            (Rüfət C.: avqust 761,90 + 38,10 = 800,00;
+                        //            (İşçi-9: avqust 761,90 + 38,10 = 800,00;
                         //             sentyabr 472,73 + 327,27 = 800,00).
                         //            Mühasib Exceli də məhz bunu yazır — «Cəmi
                         //            hesablanmış aylıq ödənişlər» sütunu 800,00
@@ -715,7 +715,7 @@ namespace FinNex.Application.Services.HR
                 // təqvim üzrə hesablanır, bax XestelikService.OdenisleriYaratAsync). Bunu
                 // birbaşa kəsinti düsturunda (esasMaas/ayIsGunu — İŞ GÜNÜ dərəcəsi)
                 // işlətmək səhvdir: şənbə/bazar işçi onsuz da işləməyəcəkdi, o günlər üçün
-                // əlavə kəsmək artıq kəsintidir (26.10.2026, real hadisə: İlkanə Mahmudova,
+                // əlavə kəsmək artıq kəsintidir (26.10.2026, real hadisə: İşçi-6,
                 // mezuniyyətin IGS/HIGS ayrımı ilə EYNİ tələ). Kəsinti üçün bülletənin bu
                 // aya düşən REAL iş günü lazımdır — TƏK mənbə: XestelikHaqiqiIsGunuSayAsync
                 // (Toplu Maaş önizləməsi də EYNİ metodu çağırır, bax MaasController).

@@ -79,8 +79,8 @@ public class EmeliyyatlarController : Controller
 
         // 17.11.2026, KRİTİK — "Debet = əsas tərəf" fərziyyəsi AYSEL-in real ixracı
         // ilə tutuşdurularkən YANLIŞ çıxdı: Debet="10020" (kassa/GL), Kredit="40160…"
-        // (real müştəri, "HESAM MMC") olan bir namizəddə AYSEL HƏR İKİ Entity blokunu
-        // (Sender VƏ Receiver) "HESAM MMC" ilə yazırdı, biz isə Debet-in ÖZ display
+        // (real müştəri, "MÜŞTƏRİ ŞİRKƏTİ-A MMC") olan bir namizəddə AYSEL HƏR İKİ Entity blokunu
+        // (Sender VƏ Receiver) "MÜŞTƏRİ ŞİRKƏTİ-A MMC" ilə yazırdı, biz isə Debet-in ÖZ display
         // adını ("KASSA - USD") yazırdıq — kassa/GL hesabının "adı" real müştəri
         // adı DEYİL. Eyni "100"-prefiks qaydası (`TrnTipTeyinEt`-in artıq işlətdiyi)
         // burada da — hansı tərəf kassadırsa, DİGƏR tərəfin adı/registrac_nomer-i
