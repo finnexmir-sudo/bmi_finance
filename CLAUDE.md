@@ -13964,3 +13964,66 @@ hesabına məzuniyyətdə olan, maaşı olmayan iki işçinin artıq Bölmə 2-n
 200 AZN" sətrində HEÇ GÖRÜNMƏDİYİNİ (əvvəlki kimi "200 AZN azad" yazılmadığını)
 — "Maliyyəyə/vergi hesablamasına toxunan hər dəyişiklik" qaydasına görə bu, real
 data ilə təsdiqlənməlidir.
+
+## GOAML — İxrac Edilmiş Qeyd GERİ QAYTARILA Bilər (23.11.2026)
+
+İstifadəçi real hadisə bildirdi: operator bir neçə namizədi **tək-tək** ixrac
+etməli ikən hamısını **eyni "Export et" çağırışında, birlikdə** ixrac edib —
+nəticədə JSON-lar eyni fayla düşdü, operatorun real niyyəti (hər biri üçün
+AYRI fayl) alınmadı. "İşçi dedi ki mən tək-tək etməli idim amma bir yerdə
+etdim, indi isə təkrar hazırlaya bilmirəm" — çünki `JsonIxracAsync`-in filtri
+(`IxracSertiQur`) YALNIZ `Status == Qaralama` olan qeydləri götürür (bax
+"Export to JSON" bölməsi, 12.11.2026) — artıq `IxracEdilib` olmuş qeyd BİR
+DAHA götürülmür, YENİDƏN (bu dəfə düzgün, tək-tək) ixrac etmək mümkün deyildi.
+
+**Kök problem — "İşlək Funksiyanı Silmək" qaydasının ƏKSİ bir boşluq idi:**
+`SilAsync`-in öz şərhi artıq (09.11.2026) "gələcəkdə status əlavə olunanda bu
+qoruyucu avtomatik işə düşəcək" deyirdi — AMMA həmin status (`IxracEdilib`,
+12.11.2026-da əlavə olundu) üçün HEÇ bir **geri qaytarma** yolu yazılmamışdı.
+Operator üçün bu, çıxılmaz bir vəziyyət idi: nə "Sil" (bloklanır — artıq ixrac
+edilib), nə "Export et" (filtr onu görmür) işləyirdi.
+
+**Həll — `IGoamlService.IxracGeriQaytarAsync(int id)`** (`GoamlService.cs`,
+`SilAsync`-in DƏRHAL yanında) — YALNIZ `Status == IxracEdilib` olan qeydi
+`Qaralama`-ya qaytarır (əks halda `Result.Fail`, "hələ ixrac edilməyib").
+Qeydin ÖZÜNƏ (KYC/Debet/Kredit/Tip/ReportCode) **TOXUNMUR** — yalnız status
+geri çevrilir, kim/nə vaxt etdiyi `BaseEntity`-nin audit interceptoru ilə
+AVTOMATİK yazılır (əlavə "səbəb" sahəsi YAZILMADI — `Sil`-in özü də belə bir
+sahə tələb etmir, eyni səviyyədə qalındı).
+
+`EmeliyyatlarController.IxracGeriQaytar` (POST, `[ValidateAntiForgeryToken]`,
+`Sil`-in EYNİ naxışı) + `Siyahi.cshtml`-ə iki dəyişiklik:
+1. **Yeni "Status" sütunu** — əvvəl ekranda status HEÇ görünmürdü (operator
+   hansı qeydin artıq ixrac edildiyini BİLMƏDƏN "Sil"ə basır, "artıq ixrac
+   edilib" xətası ilə qarşılaşırdı — elə bu sessiyanın şikayətinin bir hissəsi).
+2. **Status-a görə AYRI düymə** — `Qaralama` sətirlərdə "Sil" (əvvəlki kimi),
+   `IxracEdilib` sətirlərdə ƏVƏZİNƏ **"Qaralamaya qaytar"** (bənövşəyi-sarı,
+   `gml-btn-warn`) — iki düymə heç vaxt eyni sətirdə görünmür, operator
+   "hansı düymə işə düşəcək" sualı ilə qarşılaşmır.
+
+⚠️ **Sistem real goAML portalına göndərilib-göndərilmədiyini İZLƏMİR —
+bu, operatorun ÖZ MƏSULİYYƏTİDİR.** "Qaralamaya qaytar" düyməsinin təsdiq
+dialoqu bunu AÇIQ yazır: *"əgər fayl artıq real goAML portalına göndərilibsə,
+bu qeydi YENİDƏN ixrac etmək TƏKRAR göndərişə səbəb olar"*. Sistemdə "bu
+fayl göndərilib" bayrağı/tarixi SAXLANMIR (`GoamlEmeliyyat`-da heç bir
+export-tarixi/fayl-adı sütunu yoxdur) — operator yalnız HƏQİQƏTƏN səhv
+(bölünməli ikən birləşmiş) ixracları geri qaytarmalıdır, artıq göndərilmiş,
+DÜZGÜN ixracları YOX.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR DEYİL — ƏKSİNƏ, DƏRHAL TƏTBİQ OLUNUR.** Bu, DSMF/
+HYS-dəki "canlı dəyərə güvənmə" tələsindən FƏRQLİDİR — burada status sadəcə
+BİR BAYRAQDIR, "geriyə" deyiləcək keçmiş bir HESABLAMA yoxdur. Geri qaytarılan
+qeyd DƏRHAL (əlavə SQL/migrasiya olmadan) yenidən "Export et"ə görünən olur.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı Python skriptlə hər 4 dəyişən faylda —
+`GoamlService.cs`-in `git diff`-lə izolyasiya olunmuş ƏLAVƏ hissəsi 17/17
+paren, pre-existing -8 fərqi DƏYİŞMƏDİ; `IGoamlService.cs`-in əlavəsi 7/7,
+pre-existing +1 fərqi DƏYİŞMƏDİ; `EmeliyyatlarController.cs` tam balanslı;
+`Siyahi.cshtml`-in HTML tag-ları — div/form/table/td/th/span/a/button —
+hər biri cüt sayda). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra
+real ssenari ilə yoxlamalıdır: artıq ixrac edilmiş bir qeydi "Siyahı"da tap
+(yeni "Status" sütunu "İxrac edilib" göstərməlidir) → "Qaralamaya qaytar"a
+bas → "Status" sütunu "Qaralama"ya dönsün → "Export to file"ə gedib EYNİ
+qeydi bu dəfə TƏK-TƏK (filtri daraldaraq/hər dəfə bir qeyd) ixrac edə
+bildiyini təsdiqləməli.

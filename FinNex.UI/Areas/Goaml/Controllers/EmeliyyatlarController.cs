@@ -326,6 +326,18 @@ public class EmeliyyatlarController : Controller
         return RedirectToAction(nameof(Siyahi));
     }
 
+    // ── POST /Goaml/Emeliyyatlar/IxracGeriQaytar/{id} — ixrac edilmiş qeydi
+    //    "Qaralama"ya qaytarır ki, operator onu YENİDƏN (bu dəfə, məs., tək-tək)
+    //    ixrac edə bilsin (23.11.2026, real hadisə). ──────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> IxracGeriQaytar(int id)
+    {
+        var netice = await _goaml.IxracGeriQaytarAsync(id);
+        TempData[netice.Success ? "Success" : "Error"] = netice.Message;
+        return RedirectToAction(nameof(Siyahi));
+    }
+
     // ── GET /Goaml/Emeliyyatlar/Export — tarix/filtr forması ────────────────
     public IActionResult Export()
     {

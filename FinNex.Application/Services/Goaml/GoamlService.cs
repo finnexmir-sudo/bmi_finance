@@ -397,6 +397,33 @@ namespace FinNex.Application.Services.Goaml
             return Result.Ok("Qeyd silindi.");
         }
 
+        /// <summary>23.11.2026, real hadisə: operator bir neçə namizədi TƏK-TƏK
+        /// ixrac etməli ikən hamısını eyni "Export et" çağırışında, BİRLİKDƏ ixrac
+        /// edib — nəticədə JSON hamısını bir faylda birləşdirdi, operatorun real
+        /// niyyəti (hər biri ÜÇÜN AYRI fayl) alınmadı. "Export to file" isə YALNIZ
+        /// "Qaralama" statuslu qeydləri götürdüyü üçün (bax <see cref="IxracSertiQur"/>)
+        /// artıq "İxracEdilib" olan həmin qeydləri YENİDƏN, bu dəfə düzgün (tək-tək)
+        /// ixrac etmək mümkün deyildi. Bu metod qeydi "Qaralama"ya qaytarır ki,
+        /// operator onu YENİDƏN, istədiyi tərzdə (tək-tək, filtri daraldaraq) ixrac
+        /// edə bilsin. Qeydin ÖZÜNƏ (KYC/Debet/Kredit/Tip/ReportCode) TOXUNMUR —
+        /// yalnız Status geri çevrilir, kim/nə vaxt etdiyi `BaseEntity`-nin audit
+        /// interceptoru ilə avtomatik yazılır (bax CLAUDE.md "SaveChangesAsync
+        /// interceptor"). Operatorun ÖZÜ məsuldur ki, geri qaytarılan qeyd ARTIQ
+        /// real goAML portalına göndərilibsə, onu TƏKRAR göndərməsin — sistem bunu
+        /// izləmir (fayl göndərilib-göndərilməməsi bizim bazamızda saxlanmır).</summary>
+        public async Task<Result> IxracGeriQaytarAsync(int id)
+        {
+            var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);
+            if (e == null) return Result.Fail("Qeyd tapılmadı.");
+
+            if (e.Status != GoamlEmeliyyatStatusu.IxracEdilib)
+                return Result.Fail("Bu qeyd hələ ixrac edilməyib — geri qaytarmağa ehtiyac yoxdur.");
+
+            e.Status = GoamlEmeliyyatStatusu.Qaralama;
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Qeyd \"Qaralama\" statusuna qaytarıldı — indi yenidən (istədiyiniz tərzdə) ixrac edə bilərsiniz.");
+        }
+
         public async Task<Result<GoamlEmeliyyatDetalDto>> DetalGetirAsync(int id)
         {
             var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);

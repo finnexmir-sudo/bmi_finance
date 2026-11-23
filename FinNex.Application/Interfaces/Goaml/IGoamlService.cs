@@ -37,6 +37,18 @@ namespace FinNex.Application.Interfaces.Goaml
         /// olsa YENİDƏN təsdiqlənə bilər.</summary>
         Task<Result> SilAsync(int id);
 
+        /// <summary>İxrac edilmiş (Status==İxracEdilib) qeydi YENİDƏN "Qaralama"
+        /// statusuna qaytarır ki, <see cref="JsonIxracAsync"/>-in filtri (bax
+        /// <see cref="IxracSertiQur"/>) onu bir daha götürə bilsin (23.11.2026,
+        /// real hadisə: operator bir neçə qeydi TƏK-TƏK ixrac etməli ikən
+        /// hamısını BİRLİKDƏ eyni fayla salıb — "Export to file" ixrac edilmiş
+        /// qeydi bir daha götürmədiyi üçün YENİDƏN, bu dəfə düzgün (tək-tək)
+        /// ixrac edə bilmirdi). Qeydin özünə (KYC/Debet/Kredit) TOXUNMUR, YALNIZ
+        /// statusu geri çevirir — audit (kim/nə vaxt) `BaseEntity`-nin interceptoru
+        /// ilə avtomatik yazılır. YALNIZ artıq ixrac edilmiş qeyd üçün işləyir —
+        /// hələ "Qaralama" olan qeydə tətbiq edilsə `Result.Fail` qaytarır.</summary>
+        Task<Result> IxracGeriQaytarAsync(int id);
+
         /// <summary>Təsdiqlə formasının GET-i açılanda çağırılır (09.11.2026, istifadəçi
         /// qərarı: "sistem gətirə bilmirsə, işçi doldurur"; 12.11.2026-da HƏR İKİ
         /// tərəfi MÜSTƏQİL qaytaracaq şəkildə düzəldildi — bax <see cref="GoamlHesabSahibiKycHerIkiTerefDto"/>.
