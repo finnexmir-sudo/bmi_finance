@@ -231,6 +231,12 @@ public class EmeliyyatlarController : Controller
         dto.SigDogulduguTarix = kyc.TekSexs.DogulduguTarix;
         dto.SigDogulduguYer = kyc.TekSexs.DogulduguYer;
         dto.SigVetendasligi = kyc.TekSexs.Vetendasligi;
+        // 23.11.2026 — `Snn` (SIG-in FİN-i) burada ARTIQ ƏLDƏ İDİ (`kyc.TekSexs.Pin`,
+        // ConPin-in elə eyni mənbəyi), AMMA heç bir dto sahəsinə YAZILMIRDI — nəticə,
+        // `HeaderZenginlesdirAsync`-in regnom+fin axtarışı (sphereOfActivity,
+        // businessStartDate və s.) HƏMİŞƏ boş qalırdı, çünki `fin` arqumenti
+        // (Snn) heç vaxt dolu deyildi. Bax CLAUDE.md.
+        dto.Snn = kyc.TekSexs.Pin;
         dto.SigUnvan = kyc.TekSexs.Unvan;
         dto.SigSenedinNovu = kyc.TekSexs.SenedinNovu;
         dto.SigSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;

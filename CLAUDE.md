@@ -14162,3 +14162,62 @@ yeniləndiyini; (2) "Hesab imza hüququ olan şəxs" blokunda Ünvan/Şəhər
 doldurulmuş, PEP və ya HRZ (BLR) kodu ilə təsdiqlənmiş bir qeydi ixrac
 edib JSON-un header-indəki `city`/`street`/`home` sahələrinin artıq boş
 olmadığını təsdiqləməlidir.
+
+## GOAML — "sphereOfActivity"/"businessStartDate" HEÇ ÇIXMIRDI — SIG-in ÖZ FİN-İ ÜÇÜN HEÇ BİR FORMA SAHƏSİ YOXDU (23.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real AYSEL faylı ilə tutuşdurarkən iki konkret sətri göstərdi —
+`"sphereOfActivity": "46360"`, `"businessStartDate": "2026-06-02T00:00:00.001Z"`
+— və dedi: *"bunlari gormurem faylda"* (bizim ixracda bu iki sahə yox idi).
+
+**Kök səbəb — `e.Snn` (SIG-in FİN-i, `HeaderZenginlesdirAsync`-in PEP(4)/
+HRZ(8) sahələrini — Tin/Fin/SphereOfActivity/CustomerCreationDate və s. —
+doldurmaq üçün `odb.fiziki_shexs`/`odb.imza_huquqi_olan_shexsler`-ə
+`regnom+fin` ilə getdiyi Oracle axtarışının İKİNCİ açarı) HƏMİŞƏ `null`
+idi.** Nə bunun üçün formada bir `<input>` var idi (CON-un `ConPin`-i ilə
+EYNİ sırada, SIG blokunda "PİN" sahəsi ÜMUMİYYƏTLƏ YOX idi), nə də
+avtomatik doldurma onu yazırdı — baxmayaraq ki dəyərin ÖZÜ artıq
+`GoamlElaqaliSexsDto.Pin` (`odb.imza_huquqi_olan_shexsler.FIN`/
+`odb.NUMAYENDE.FIN`-dən) kimi Oracle-dan OXUNURDU və CON tərəfə
+(`dto.ConPin = kyc.TekSexs.Pin`) düzgün yazılırdı — YALNIZ SIG tərəfə
+yazılmırdı. Nəticədə `FizikiShexsRegnomFinAsync`/`ImzaHuquqGenisAsync`
+(`if (string.IsNullOrWhiteSpace(fin)) return null;`) HƏR ZAMAN erkən
+`null` qaytarırdı — `SphereOfActivity`/`CustomerCreationDate`
+(`BusinessStartDate`-in əsas mənbəyi) demək olar HEÇ VAXT dolmurdu;
+`ReceiverPinCode = e.Snn ?? ""` (mübadilə-stolu olmayan Fiziki ixraclarda)
+isə HƏMİŞƏ boş sətir idi.
+
+**Düzəliş — üç yer, "ConPin"in artıq işlək naxışının SIG-ə tətbiqi:**
+1. `Tesdiq.cshtml` — SIG blokuna `<input asp-for="Snn">` ("PİN" etiketi,
+   "Vətəndaşlığı"dan dərhal sonra, CON-dakı "PİN" sahəsinin eyni mövqeyi).
+2. `Tesdiq.cshtml`-in `gmlKycTetbiqEt(kyc)` JS-i — `gmlDoldur('Snn',
+   s.pin);` əlavə olundu (operator Tip-i istiqamətli seçəndə, ya da
+   "Debet/Kredit tərəfini götür" düyməsi ilə, SIG indi öz FİN-ini DƏ alır).
+3. `EmeliyyatlarController.KycTetbiqEt` (C#, ilk GET-dəki "yalnız bir
+   tərəfdə nəticə var" avtomatik doldurma) — `dto.Snn = kyc.TekSexs.Pin;`
+   əlavə olundu.
+
+**Yan təsir — `SnnTo` DƏ düzəldi, əlavə kod YAZILMADI.** `AvtoDolduruAsync`
+artıq `e.SnnTo = e.Snn;` yazır (boşdursa) — Snn indi dolu olduğu üçün bu,
+avtomatik düzəlir.
+
+⚠️ **Entity/DTO-ya YENİ SÜTUN ƏLAVƏ EDİLMƏDİ, MİQRASİYA YOXDUR** — `Snn`
+(entity) və `Snn` (DTO) HƏR İKİSİ ARTIQ MÖVCUD İDİ (`FinNex.Domain/
+Entities/Goaml/GoamlEmeliyyat.cs:210`, `GoamlTesdiqDto.cs:167`) — yalnız
+formada görünən/avtomatik-doldurulan bir `<input>`-i YOX idi, elə əvvəlki
+sessiyalarda tapılmış "Şərtli Render Olunan Form Sahəsi" / "Hesablanan
+dəyər var, amma heç bir `<input>`-ə bağlı deyil" tələsinin YENİ bir
+nümunəsi.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə" GET/POST-
+larına təsir edir, artıq təsdiqlənmiş qeydlər YENİDƏN Təsdiq edilmədən
+düzəlmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı hər iki dəyişən faylda tam — `Tesdiq.cshtml`
+307/307 paren, 65/65 brace; `EmeliyyatlarController.cs` 207/207 paren,
+60/60 brace; mojibake YOX). İstifadəçi Visual Studio-da **Rebuild All**
+ilə, sonra real ssenari ilə yoxlamalıdır: hesab-əsaslı KYC avtomatik
+doldurma işləyən (yoxsa Debet/Kredit-dən BİRİ kassa olmayan, real müştəri
+hesabı olan) bir namizəd aç → SIG blokunda "PİN" sahəsinin artıq boş
+olmadığını, PEP/HRZ kodu ilə ixrac edəndə JSON-dakı `fin`/`sphereOfActivity`/
+`businessStartDate` sahələrinin dolu çıxdığını təsdiqləməlidir.

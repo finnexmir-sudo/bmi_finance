@@ -349,6 +349,14 @@
                     </div>
                     <div><label class="gml-flbl">Doğulduğu yer</label><input asp-for="SigDogulduguYer" class="fn-input" /></div>
                     <div><label class="gml-flbl">Vətəndaşlığı</label><input asp-for="SigVetendasligi" class="fn-input" /></div>
+                    @* 23.11.2026 — "PİN" sahəsi HEÇ VAXT YOX İDİ: SIG-in FİN-i
+                       (`Snn`) backend-də (header.Fin, ReceiverPinCode, Oracle
+                       regnom+fin axtarışı — sphereOfActivity/businessStartDate
+                       kimi sahələrin TƏK mənbəyi) artıq işlənirdi, AMMA operator
+                       ONU HEÇ VAXT YAZA BİLMİRDİ VƏ avtomatik doldurma (CON-un
+                       `ConPin`-i kimi) ora heç yazılmırdı — nəticə HƏR ZAMAN
+                       boş idi. *@
+                    <div><label class="gml-flbl">PİN</label><input asp-for="Snn" class="fn-input" /></div>
                     <div><label class="gml-flbl">Vəzifə</label><input asp-for="SigVezife" class="fn-input" /></div>
                     <div><label class="gml-flbl">İş yerinin adı</label><input asp-for="SigIsYeriAdi" class="fn-input" /></div>
                     <div><label class="gml-flbl">Telefon növü</label><input asp-for="SigTelefonNovu" class="fn-input" /></div>
@@ -536,6 +544,7 @@
             gmlDoldur('SigDogulduguTarix', s.dogulduguTarix ? s.dogulduguTarix.substring(0, 10) : '');
             gmlDoldur('SigDogulduguYer', s.dogulduguYer);
             gmlDoldur('SigVetendasligi', s.vetendasligi);
+            gmlDoldur('Snn', s.pin);
             gmlDoldur('SigUnvan', s.unvan);
             gmlDoldur('SigSenedinNovu', s.senedinNovu);
             gmlDoldur('SigSenedinSeriyaNomresi', s.senedinSeriyaNomresi);
