@@ -14080,3 +14080,85 @@ ilə sintaksis yoxlamasından keçdi, mojibake YOX). İstifadəçi Visual Studio
 **Rebuild All** ilə, sonra real mühitdə yoxlamalıdır: "Təsdiqlənmiş siyahı"da
 mətn/status/hər iki tarix aralığının düzgün filtrlədiyini, "Təmizlə"nin
 hamısını sıfırladığını, uyğun say göstəricisinin (N / M qeyd) düz işlədiyini.
+
+## GOAML Export — Filtr Dəyişəndə Önizləmə AVTOMATİK Yenilənir + Header-dəki Ünvan (City/Street) Üçün Forma-Fallback (23.11.2026)
+
+İstifadəçi iki ayrı şikayət bildirdi: *"mecburam namizedleri goster vurumki
+gelsin,sen ele etki secimler de islek olsun,"* (Tarix/Tip/Məlumat növü
+dəyişəndə "Namizədləri göstər"ə əl ilə basmaq MƏCBURİ idi — Filtr dəyişəndə
+ekran yalnız "yenidən basın" mesajı göstərirdi) VƏ *"ve birde baxiramki
+bizde jsonda unvanlar cixmir"* (ixrac olunan JSON-da ünvan sahələri boşdur).
+
+### 1. Filtr avtomatik önizləmə — `gmlFiltrDeyisdi()`
+
+`Export.cshtml`-in hər filtr sahəsi (`Tarixdən`/`Tarixə qədər`/`Tip`/
+`Məlumatın növü`) `onchange="gmlFiltrDeyisdi()"` daşıyır. Köhnə kod YALNIZ
+"İxrac et" düyməsini söndürüb *"Filtr dəyişdi — yenidən 'Namizədləri
+göstər'ə basın."* mesajı göstərirdi — nəticəni YENİDƏN görmək üçün operator
+HƏR filtr dəyişikliyindən sonra əl ilə düyməyə basmalı idi.
+
+**Düzəliş:** `gmlFiltrDeyisdi()` indi birbaşa `gmlOnizle()`-ni çağırır —
+filtr dəyişən kimi önizləmə AVTOMATİK yenidən sorğulanır (eyni `/Onizle`
+AJAX endpoint-i, server-dəki `IxracSertiQur`-u YENİDƏN çağırır — kod
+TƏKRARLANMADI). "Namizədləri göstər" düyməsi SAXLANILDI (ilk yükləmədə/
+operator istəsə əl ilə təkrar sorğu üçün) — yalnız AVTOMATİK olmayan
+MƏCBURİ addım aradan qaldırıldı.
+
+### 2. Ünvan — `header.City`/`header.Street` demək olar HƏR ZAMAN boş idi
+
+**Kök səbəb (iki qatlı):**
+1. Header-zənginləşdirmə (PEP=4/HRZ=8 üçün, `HeaderZenginlesdirAsync`)
+   `City`/`Street`-i YALNIZ canlı Oracle sorğusundan (`odb.fiziki_shexs`/
+   `odb.imza_huquqi_olan_shexsler`) oxuyurdu, `regnom+fin` CÜTÜ ilə
+   (`FizikiShexsRegnomFinAsync`/`ImzaHuquqGenisAsync`) — AMMA bu sorğunun
+   `fin` arqumenti (`e.Snn`) heç bir formada DOLDURULMUR (nə "Təsdiqlə"
+   ekranında bir `<input>` var, nə `AvtoDolduruAsync` onu yazır) — demək
+   olar HƏMİŞƏ `null`, ona görə bu İKİ Oracle sorğusu TEZ-TEZ sıfır sətir
+   qaytarır.
+2. **Daha önəmlisi:** eyni blokdakı DİGƏR HƏR sahə (`Country`, `Citizenship`,
+   `PepCountry`, `Residency` və s.) Oracle tapmasa `?? e.SigOlke`/
+   `?? e.SigVetendasligi` kimi operatorun "Hesab imza hüququ olan şəxs"
+   (SIG) blokunda ƏL İLƏ yazdığı dəyərə DÜŞÜR — AMMA `City`/`Street`
+   YALNIZ bu ikisində HEÇ BİR FORM-FALLBACK-İ yox idi, baxmayaraq ki
+   entity-də artıq `SigUnvan`/`SigSeher` (və Tesdiq.cshtml-də bunlara
+   uyğun `<input asp-for="SigUnvan">`/`<input asp-for="SigSeher">`)
+   sahələri VAR və operator onları adətən doldurur.
+
+**Düzəliş — `GoamlService.HeaderZenginlesdirAsync`, HƏM PEP, HƏM HRZ
+budaqlarında, digər sahələrlə EYNİ "?? forma" naxışı:**
+```csharp
+header.City = fizik?.Sheher ?? imzaHuquq?.Sheher ?? e.SigSeher;
+header.Street = TemizMetn(fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi) ?? TemizMetn(e.SigUnvan);
+header.Home = header.Street; // dəyişmədi — AYSEL-in özü də eyni dəyəri iki sahəyə yazır
+```
+(HRZ budağında `cif?.Sheher ?? fizik?.Sheher ?? imzaHuquq?.Sheher ?? e.SigSeher`
+— eyni zəncirə sadəcə `e.SigSeher` ƏLAVƏ OLUNDU, mövcud Oracle prioritetinə
+TOXUNULMADI.)
+
+⚠️ **`District` (PochtIndeksi-dən, poçt indeksi) VƏ `Flat` TOXUNULMADI** —
+bunların heç bir form qarşılığı (SigUnvan/SigSeher ayrıca poçt indeksi/mənzil
+sahəsi daşımır) yoxdur, uydurma dəyər YAZILMADI.
+
+⚠️ **`e.Snn`-in ÖZÜ (həmişə `null` qalan FİN sahəsi) DÜZƏLDİLMƏDİ** — bu,
+AYRI, daha böyük bir iş olardı (yeni entity sütunu + form sahəsi + "Update
+New" avtomatik doldurma ilə bağlamaq) və forma-fallback onsuz da real
+nəticəni (operatorun özünün yazdığı ünvan JSON-a düşür) verir — bu
+sessiyada EDİLMƏDİ, açıq qalan kiçik bir item kimi qeyd olunur.
+
+⚠️ **YALNIZ PEP(4)/HRZ(8) hesabat növlərinə aiddir** — CTR/ETR/BCR/NGR/
+STR/TFR-in real goAML sxemində HEÇ bir ünvan sahəsi YOXDUR (AYSEL-in öz
+mənbə SQL-i — `97_Goaml_JSON_MMX_IN_Tam_Metn.sql`, sətir 907-911/988-992 —
+bunu YALNIZ PEP/HRZ-in header-ində daşıyır), ona görə digər növlərdə
+"ünvan yoxdur" GÖZLƏNİLƏN davranışdır, bug DEYİL.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə
+etdiyi sətirləri üzrə ayrıca ölçülüb — net balanslı; `Export.cshtml`-in
+`@section Scripts` bloku `node -c` ilə sintaksis yoxlamasından keçdi).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: (1) Export səhifəsində Tarix/Tip/Məlumat növünü dəyişəndə
+"Namizədləri göstər"ə əl ilə basmadan önizlemə cədvəlinin AVTOMATİK
+yeniləndiyini; (2) "Hesab imza hüququ olan şəxs" blokunda Ünvan/Şəhər
+doldurulmuş, PEP və ya HRZ (BLR) kodu ilə təsdiqlənmiş bir qeydi ixrac
+edib JSON-un header-indəki `city`/`street`/`home` sahələrinin artıq boş
+olmadığını təsdiqləməlidir.

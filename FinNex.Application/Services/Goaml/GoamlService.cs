@@ -1661,9 +1661,15 @@ namespace FinNex.Application.Services.Goaml
                 header.PepCountry = fizik?.Vetendashligi ?? e.SigVetendasligi;
                 header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
                 header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
-                header.City = fizik?.Sheher ?? imzaHuquq?.Sheher;
+                // 23.11.2026 — digər HƏR sahədə olan "?? e.Sig..." forma-fallback-ı
+                // YALNIZ City/Street-də ƏSKİK idi: Oracle (fizik/imzaHuquq) axtarışı
+                // `e.Snn`-ə (SIG-in FİN-i) bağlıdır, AMMA həmin sahə heç bir formada
+                // doldurulmur (həmişə null) — nəticədə BU İKİSİ demək olar HƏR ZAMAN
+                // boş qalırdı, "Ünvan" bloku operator ƏL İLƏ doldursa belə (SigUnvan/
+                // SigSeher). İndi Oracle tapmasa, operatorun ÖZ yazdığı dəyərə düşür.
+                header.City = fizik?.Sheher ?? imzaHuquq?.Sheher ?? e.SigSeher;
                 header.District = fizik?.PochtIndeksi ?? imzaHuquq?.PochtIndeksi;
-                header.Street = TemizMetn(fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi);
+                header.Street = TemizMetn(fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi) ?? TemizMetn(e.SigUnvan);
                 header.Home = header.Street;
                 header.Flat = "";
                 header.AverageMonthlyIncome = fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
@@ -1696,9 +1702,10 @@ namespace FinNex.Application.Services.Goaml
                 header.CustomerRiskDegree = customerRiskDegreeCif ?? customerRiskDegree;
                 header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
                 header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
-                header.City = cif?.Sheher ?? fizik?.Sheher ?? imzaHuquq?.Sheher;
+                // 23.11.2026 — eyni fallback, bax yuxarıdakı (PEP) şərh.
+                header.City = cif?.Sheher ?? fizik?.Sheher ?? imzaHuquq?.Sheher ?? e.SigSeher;
                 header.District = cif?.PochtIndeksi ?? fizik?.PochtIndeksi ?? imzaHuquq?.PochtIndeksi;
-                header.Street = TemizMetn(cif?.KuchaVeNomresi ?? fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi);
+                header.Street = TemizMetn(cif?.KuchaVeNomresi ?? fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi) ?? TemizMetn(e.SigUnvan);
                 header.Home = header.Street;
                 header.Flat = "";
                 header.SofIncome = 0;

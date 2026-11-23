@@ -192,13 +192,16 @@
             return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Filtr dəyişəndə köhnə önizləmə artıq ETİBARSIZDIR — "İxrac et" sönür,
-        // operator YENİDƏN "Namizədləri göstər" basmalıdır.
+        // Filtr dəyişəndə köhnə önizləmə artıq ETİBARSIZDIR — ƏVVƏL operator
+        // əl ilə YENİDƏN "Namizədləri göstər" basmalıydı (23.11.2026-da
+        // istifadəçi tələbi: "məcburam vuraram ki gəlsin, seçimlər özü işlək
+        // olsun") — indi "İxrac et" sönür VƏ önizləmə AVTOMATİK yenidən
+        // sorğulanır, əl ilə klikə ehtiyac qalmır. "Namizədləri göstər"
+        // düyməsi SAXLANILIR (ilk yükləmədə/istəyə bağlı təkrar sorğu üçün).
         function gmlFiltrDeyisdi() {
             gmlSonOnizlemeSayi = 0;
             document.getElementById('gmlIxracBtn').disabled = true;
-            document.getElementById('gmlOnizlemeWrap').innerHTML =
-                '<div class="gml-onizleme-hint">Filtr dəyişdi — yenidən "Namizədləri göstər"ə basın.</div>';
+            gmlOnizle();
         }
 
         async function gmlOnizle() {
