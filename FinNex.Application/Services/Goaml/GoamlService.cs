@@ -1382,6 +1382,24 @@ namespace FinNex.Application.Services.Goaml
             public string? Vetendashligi;
         }
 
+        // 24.11.2026 — `odb.huquqi_shexs` ("Hüquqi şəxs"in öz AML/KYC sətri,
+        // AYSEL-in `v_PV_HUQUQI`/`c_PV_HUQUQI`-si, `97_...sql:283-289`-dan
+        // canlı mənbə mətni ilə TƏSDİQLƏNİB). İstifadəçinin sualı
+        // ("sphereOfActivity huquqi şəxsdə BUSINESS sütunundan gəlir?")
+        // birbaşa BU BOŞLUĞU tapdı — əvvəl bu cədvəl ÜMUMİYYƏTLƏ
+        // sorğulanmırdı, `SphereOfActivity`/`BusinessStartDate`/`Note`/
+        // `IdNumber` YALNIZ fiziki_shexs/imza_huquqi_olan_shexsler/cif-dən
+        // doldurulurdu — AYSEL isə bunların HƏR DÖRDÜNDƏ `v_PV_HUQUQI`-ni
+        // NVL zəncirinin bir qoluna (bəzən BİRİNCİ prioritetlə) salır.
+        private sealed class GoamlHuquqiShexsSetiri
+        {
+            public string? Regnom;
+            public string? Business;
+            public string? AmlComment;
+            public DateTime? CustomerCreationDate;
+            public DateTime? QeydiyyatTarixi;
+        }
+
         private async Task<GoamlFizikiShexsSetiri?> FizikiShexsRegnomFinAsync(string? regnom, string? fin, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(regnom) || string.IsNullOrWhiteSpace(fin)) return null;
@@ -1440,6 +1458,42 @@ namespace FinNex.Application.Services.Goaml
             TaxActivityCode = DVal(r, "TAXACTIVITYCODE") as string,
             CustomerCreationDate = TarixiParseEt(DVal(r, "CUSTOMERCREATIONDATE")),
         };
+
+        // 24.11.2026 — `odb.huquqi_shexs` (AYSEL-in `v_PV_HUQUQI`-si, açar
+        // `QEYDIYYAT_NOMRESI_VE_YA_VOEN` + `REGNOM`, cursor WHERE-dən birə-bir
+        // köçürülüb — bax `97_Goaml_JSON_MMX_IN_Tam_Metn.sql:283-287`). AYSEL
+        // bunu `registrac_nomer_k` (HƏMİŞƏ Kredit tərəfi) ilə açır — biz əvəzinə
+        // artıq Tip-dən asılı olmayaraq kassa-aware hesabladığımız
+        // `e.RegistracNomer`/`e.IncorporationNumber` cütünü (digər bütün
+        // CON/SIG/hesab sorğularının işlətdiyi EYNİ ümumiləşdirilmiş açar)
+        // ötürürük — AYSEL-in "_IN" axınının özünəməxsus "Kredit=müştəri"
+        // qaydası YOX, bizim kassa-aware qaydamız.
+        private async Task<GoamlHuquqiShexsSetiri?> HuquqiShexsAsync(string? voen, string? regnom, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(voen) || string.IsNullOrWhiteSpace(regnom)) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    "select regnom, business, aml_comment, customercreationdate, qeydiyyat_tarixi " +
+                    "from odb.huquqi_shexs " +
+                    $"where qeydiyyat_nomresi_ve_ya_voen = '{Tehlukesiz(voen)}' and regnom = '{Tehlukesiz(regnom)}'", 1, ct);
+                if (setirler.Count == 0) return null;
+                var r = setirler[0];
+                return new GoamlHuquqiShexsSetiri
+                {
+                    Regnom = DVal(r, "REGNOM") as string,
+                    Business = DVal(r, "BUSINESS") as string,
+                    AmlComment = DVal(r, "AML_COMMENT") as string,
+                    CustomerCreationDate = TarixiParseEt(DVal(r, "CUSTOMERCREATIONDATE")),
+                    QeydiyyatTarixi = TarixiParseEt(DVal(r, "QEYDIYYAT_TARIXI")),
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML header-zənginləşdirməsi — huquqi_shexs (voen+regnom) sorğusu uğursuz oldu");
+                return null;
+            }
+        }
 
         private async Task<GoamlImzaHuquqGenisSetiri?> ImzaHuquqGenisAsync(string? regnom, string? fin, CancellationToken ct)
         {
@@ -1570,13 +1624,21 @@ namespace FinNex.Application.Services.Goaml
 
             if (reportType == 3)
             {
-                // NGR — real sxemdə YALNIZ tin/tinDate/organizationType/note
-                // var (97_...sql-də bu reportType-ə aid qol YOXDUR — bu BÜTÖV
-                // YENİ bir budaqdır). Yalnız VÖEN (tin) üçün mövcud Oracle
-                // mənbəyimiz (InnRegnom) var; tinDate/organizationType üçün
-                // HƏLƏ təsdiqlənmiş mənbə yoxdur — operator əl ilə doldurur.
+                // NGR — real sxemdə tin/tinDate/organizationType/note var.
+                // ⚠️ 24.11.2026 — "tinDate/note üçün mənbə TAPILMAYIB" qeydi
+                // KÖHNƏ idi: `97_...sql:886-888`-də (QHT sub-case) hər ikisi
+                // `v_PV_HUQUQI`-dən (`odb.huquqi_shexs`) gəlir —
+                // `HuquqiShexsAsync` əlavə olunanda bu da düzəldi.
+                // `organizationType` HƏLƏ TOXUNULMADI — AYSEL onu SABİT "1"
+                // yazır (yalnız QHT sub-case-i üçün), bizdə bunu seçən forma
+                // sahəsi YOXDUR, uydurma dəyər yazılmadı.
                 var regnumberNgr = await PvRegnomAllAsync(e.CandidateFilialNumber, e.RegistracNomer, ct);
+                var huquqiNgr = await HuquqiShexsAsync(e.IncorporationNumber, e.RegistracNomer, ct);
                 header.Tin = regnumberNgr?.InnRegnom;
+                // AYSEL: to_char(TO_DATE(Qeydiyyat_Tarixi,'DD-MM-YYYY')+0.1, ...) —
+                // +0,1 gün (≈2 saat 24 dəq) ofseti BİRƏ-BİR saxlanıldı.
+                header.TinDate = HeaderTarixYaz(huquqiNgr?.QeydiyyatTarixi?.AddDays(0.1));
+                header.Note = huquqiNgr?.AmlComment;
                 return;
             }
 
@@ -1689,7 +1751,15 @@ namespace FinNex.Application.Services.Goaml
             }
             else if (reportType == 8)
             {
-                // HRZ — sətir 973-1007 — v_PV_HUQUQI fallback-ları SKİP edilib (bax yuxarı şərh).
+                // HRZ — sətir 973-1007. ⚠️ 24.11.2026 — "v_PV_HUQUQI fallback-ları
+                // SKİP edilib" qeydi KÖHNƏ idi: istifadəçi SphereOfActivity-nin
+                // mənbəyini sual edəndə (`emeliyyatın hüquqi şəxsi` — regnom=016901)
+                // real mətn yenidən oxunub TƏSDİQLƏNDİ — `v_PV_HUQUQI`
+                // (`odb.huquqi_shexs`, bax `HuquqiShexsAsync`) DÖRD sahədə
+                // iştirak edir: sphereOfActivity, businessStartDate (BİRİNCİ
+                // prioritet), note, idNumber (BİRİNCİ prioritet) — hamısı
+                // AYSEL-in ÖZ NVL sırası ilə BİRƏ-BİR aşağıda tətbiq olundu.
+                var huquqiHrz = await HuquqiShexsAsync(e.IncorporationNumber, e.RegistracNomer, ct);
                 header.IndividualPerson = individualPerson;
                 header.Tin = regnumber?.InnRegnom;
                 header.CountryOfRegistration = e.SigVetendasligi ?? emitent?.Vetendashligi ?? fizik?.Vetendashligi;
@@ -1698,7 +1768,8 @@ namespace FinNex.Application.Services.Goaml
                 header.Serial = e.SenderIdSerial;
                 header.DocumentNumber = e.SenderIdNumber;
                 header.Fin = e.Snn;
-                header.SphereOfActivity = fizik?.TaxActivityCode;
+                // AYSEL: nvl(v_fizik.taxactivitycode, v_PV_HUQUQI.Business)
+                header.SphereOfActivity = fizik?.TaxActivityCode ?? huquqiHrz?.Business;
                 header.CustomerRiskDegree = customerRiskDegreeCif ?? customerRiskDegree;
                 header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
                 header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
@@ -1712,13 +1783,16 @@ namespace FinNex.Application.Services.Goaml
                 header.AverageMonthlyIncome = cif?.AyliqGelir ?? fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
                 header.Position = cif?.Vezifesi ?? fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
                 header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi);
-                header.BusinessStartDate = HeaderTarixYaz(cif?.CustomerCreationDate ?? fizik?.CustomerCreationDate ?? imzaHuquq?.ImzaBashlama);
+                // AYSEL: nvl(nvl(nvl(v_PV_HUQUQI.Customercreationdate, v_cif.customercreationdate), v_fizik.customercreationdate), v_imza_huquq.imza_bashlama)
+                header.BusinessStartDate = HeaderTarixYaz(huquqiHrz?.CustomerCreationDate ?? cif?.CustomerCreationDate ?? fizik?.CustomerCreationDate ?? imzaHuquq?.ImzaBashlama);
                 header.BusinessEndDate = "";
-                header.Note = cif?.AmlComment ?? fizik?.AmlComment;
+                // AYSEL: nvl(nvl(v_cif.aml_comment, v_fizik.aml_comment), v_PV_HUQUQI.Aml_Comment)
+                header.Note = cif?.AmlComment ?? fizik?.AmlComment ?? huquqiHrz?.AmlComment;
                 header.TypeOfConnectionToHrz = typeOfConnectionToHrz;
                 header.HrzCountry = e.SigVetendasligi ?? cif?.Vetendashligi ?? fizik?.Vetendashligi;
                 header.FullName = fullName;
-                header.IdNumber = cif?.Regnom ?? fizik?.Regnom;
+                // AYSEL: NVL(nvl(v_PV_HUQUQI.Regnom, v_cif.regnom), v_fizik.Regnom)
+                header.IdNumber = huquqiHrz?.Regnom ?? cif?.Regnom ?? fizik?.Regnom;
             }
         }
 

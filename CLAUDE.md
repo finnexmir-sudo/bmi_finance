@@ -14295,3 +14295,96 @@ yoxlamalıdır: ixrac edilmiş bir qeydin yanındaki "Qaralamaya qaytar"a basıb
 — səhifənin skroll mövqeyinin DƏYİŞMƏDİYİNİ, status pilinin "Qaralama"ya
 dönüb "Sil" düyməsinin onun yerinə çıxdığını, "Yeni namizəd axtar"
 qayıdıb-gələndə həmin qeydin artıq Qaralama kimi göründüyünü təsdiqləməlidir.
+
+## GOAML — "sphereOfActivity" HƏQİQƏTƏN Hüquqi Şəxsin "Business" Sütunundan Gəlirdi — `odb.huquqi_shexs` HEÇ VAXT SORĞULANMIRDI (24.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi konkret sual verdi (hesab regnomu **016901** — "HESAM" MMC, bir
+hüquqi şəxs): *"sphereOfActivity bu hisseni elave etdin? huquqi shexsde
+business sutunundan gelir?"* — ŞÜBHƏSİ DOĞRU ÇIXDI.
+
+**Kök səbəb:** `HeaderZenginlesdirAsync`-in HRZ (reportType=8) budağı
+`header.SphereOfActivity = fizik?.TaxActivityCode;` yazırdı — YALNIZ
+`odb.fiziki_shexs.TAXACTIVITYCODE` (FİZİKİ şəxs cədvəli, SIG-in öz FİN-i
+ilə axtarılır). **`odb.huquqi_shexs` (hüquqi şəxsin öz cədvəli) HEÇ VAXT
+sorğulanmırdı** — nəticə həmişə SIG-in fiziki profilindən gəlirdi,
+ŞİRKƏTİN özünün fəaliyyət kodundan YOX.
+
+`docs/sql/goaml/97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-in (AYSEL-in əsl mənbəyi)
+HƏRFİ mətni (sətir 984) bunu dəqiq göstərir:
+```
+"sphereOfActivity": nvl(v_fizik.taxactivitycode, v_PV_HUQUQI.Business)
+```
+`v_PV_HUQUQI` = `odb.huquqi_shexs` (cursor `c_PV_HUQUQI`, sətir 283-287:
+`WHERE QEYDIYYAT_NOMRESI_VE_YA_VOEN=P_VOEN and REGNOM=p_Regnom`). Yəni
+**BƏLİ — hüquqi şəxslərdə bu, DƏQIQ "Business" sütunundan gəlməlidir**,
+amma YALNIZ `fizik` (SIG-in fiziki profili) tapılmayanda — NVL-in BİRİNCİ
+qolu hələ də `v_fizik.taxactivitycode`-dur (operatoru yazan KONKRET şəxsin
+öz fəaliyyət kodu, VARSA, ÜSTÜN tutulur).
+
+**Eyni mənbə mətnində `v_PV_HUQUQI` DAHA ÜÇ sahədə iştirak edirdi, hamısı
+EYNİ dərəcədə yoxdur idi — ÜÇÜ DƏ bu sessiyada düzəldildi:**
+
+| Sahə | AYSEL-in NVL zənciri (sətir) | Əvvəl | İndi |
+|---|---|---|---|
+| `sphereOfActivity` | `nvl(v_fizik.taxactivitycode, v_PV_HUQUQI.Business)` (984) | yalnız fizik | fizik ?? huquqi.Business |
+| `businessStartDate` | `nvl(nvl(nvl(v_PV_HUQUQI.Customercreationdate, v_cif.customercreationdate), v_fizik.customercreationdate), v_imza_huquq.imza_bashlama)` (997) | huquqi YOX idi, cif BİRİNCİ idi | huquqi.CustomerCreationDate **BİRİNCİ**, sonra cif/fizik/imzaHuquq |
+| `note` | `nvl(nvl(v_cif.aml_comment, v_fizik.aml_comment), v_PV_HUQUQI.Aml_Comment)` (999) | yalnız cif/fizik | cif ?? fizik ?? huquqi.AmlComment |
+| `idNumber` | `NVL(nvl(v_PV_HUQUQI.Regnom, v_cif.regnom), v_fizik.Regnom)` (1003) | huquqi YOX idi, cif BİRİNCİ idi | huquqi.Regnom **BİRİNCİ**, sonra cif/fizik |
+
+**Əlavə tapıntı — NGR (QHT) budağının "tinDate/note mənbəyi tapılmayıb"
+qeydi DƏ KÖHNƏ İMİŞ.** Eyni `v_PV_HUQUQI` mənbə mətnində (sətir 886-888,
+QHT sub-case) bu iki sahənin DƏ formulu var idi:
+```
+"tinDate": to_char(TO_DATE(v_PV_HUQUQI.Qeydiyyat_Tarixi,'DD-MM-YYYY')+0.1, ...)
+"note": v_PV_HUQUQI.Aml_Comment
+```
+Hər ikisi indi `reportType==3` budağına əlavə olundu — `+0,1` gün (≈2 saat
+24 dəq) ofseti AYSEL-in özündə olduğu kimi birə-bir saxlanıldı (digər tarix
+sahələrində belə ofset YOXDUR — bu, YALNIZ `Qeydiyyat_Tarixi` üçündür,
+AYSEL-in öz idiosinkrazisidir).
+
+### Yeni Oracle sorğusu — `HuquqiShexsAsync(voen, regnom)`
+
+`odb.huquqi_shexs` cədvəli — açar `QEYDIYYAT_NOMRESI_VE_YA_VOEN` (VÖEN) **VƏ**
+`REGNOM` BİRGƏ (AYSEL-in cursor WHERE-indən HƏRFİ köçürülüb, təxmin edilməyib).
+Sütunlar: `REGNOM`, `BUSINESS`, `AML_COMMENT`, `CUSTOMERCREATIONDATE`,
+`QEYDIYYAT_TARIXI`.
+
+⚠️ **AYSEL `registrac_nomer_k`-nı (HƏMİŞƏ Kredit tərəfi) işlədir — biz
+əvəzinə `e.RegistracNomer`-i (bizim artıq kassa-aware hesabladığımız,
+Tip-dən asılı olmayan ümumi açar — bax "GOAML Export — Kassa/GL Tərəfi"
+bölməsi) ötürürük.** Bu, AYSEL-in "_IN" axınına xas, bizim ümumiləşdirilmiş
+modelimizə UYĞUN GƏLMƯYƏN bir qısayoldur — CON/SIG/fizik/imzaHuquq
+sorğularının HAMISI onsuz da `e.RegistracNomer`-dən istifadə edir, bu
+yeni sorğu da EYNİ konvensiyaya tabe oldu.
+
+⚠️ **`e.IncorporationNumber` (VÖEN) artıq MÖVCUD İDİ** (17.11.2026-da
+`odb.regnom.INN_REGNOM`-dan əlavə olunmuşdu) — yeni migrasiya/entity sahəsi
+LAZIM OLMADI, yalnız yeni Oracle sorğusu yazıldı.
+
+⚠️ **`organizationType` HƏLƏ TOXUNULMADI.** AYSEL bunu SABİT `1` yazır
+(yalnız QHT sub-case-i üçün) — bizdə bunu seçən forma sahəsi ÜMUMİYYƏTLƏ
+YOXDUR (yoxlanıldı, `Tesdiq.cshtml`-də "OrganizationType"/"TinDate" adlı
+heç bir input yoxdur) — uydurma dəyər YAZILMADI, bu, ayrıca, gələcək bir
+qərar tələb edir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə" (GET zamanı
+avtomatik doldurma deyil, bu zənginləşdirmə YALNIZ ixrac anında, `JsonIxracAsync`
+daxilində çağırılır) ixraclarına təsir edir, artıq ixrac edilmiş fayllar
+dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə
+etdiyi sətirləri üzrə ayrıca ölçülüb — 47/47 paren, 7/7 brace, tam
+balanslıdır; fayl-ümumi pre-existing -8 paren fərqi (şərh mətnindən,
+çoxsaylı əvvəlki sessiyalarda artıq sənədləşmiş) dəyişməyib; sütun adları
+— `QEYDIYYAT_NOMRESI_VE_YA_VOEN`/`REGNOM`/`BUSINESS`/`AML_COMMENT`/
+`CUSTOMERCREATIONDATE`/`QEYDIYYAT_TARIXI` — AYSEL-in cursor WHERE-i və
+field-referenslərindən BİRƏ-BİR, təxminsiz köçürülüb). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: regnom
+016901 (HESAM MMC) üçün HRZ(BLR)/PEP ixracı et → `sphereOfActivity`-nin
+(SIG-in öz fəaliyyət kodu yoxdursa) indi `odb.huquqi_shexs.BUSINESS`-dən
+("46360" kimi) gəldiyini, `businessStartDate`/`note`/`idNumber`-in də
+yeni prioritetlə doğru göründüyünü təsdiqləməli — əvvəlcə Oracle-da
+`select * from odb.huquqi_shexs where qeydiyyat_nomresi_ve_ya_voen='<VÖEN>'
+and regnom='016901'` ilə sətrin HƏQİQƏTƏN mövcud olduğunu yoxlaya bilər.
