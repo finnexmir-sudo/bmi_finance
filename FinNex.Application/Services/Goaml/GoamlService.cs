@@ -130,15 +130,27 @@ namespace FinNex.Application.Services.Goaml
                 var maxTarix = setirler.Max(x => x.DateOper);
                 var movcud = await _unitOfWork.Repository<GoamlEmeliyyat>()
                     .HamisiniGetirAsync(x => x.CandidateDateOper >= minTarix && x.CandidateDateOper <= maxTarix);
-                // Açar → artıq hansı Tip(lər)lə təsdiqlənib (12.11.2026, AML məsul
-                // şəxsin tələbi: hər iki tərəfdə KYC olan əməliyyat ADƏTƏN iki
-                // ayrı Tip ilə iki dəfə göndərilir — bax GoamlNamizedSetirDto.
-                // TesdiqlenmisTipler şərhi). Tam "artıq göndərilib, bloklu" DEYİL.
+                // Açar → artıq hansı Tip(lər)/ReportCode(lar)-la təsdiqlənib
+                // (12.11.2026, AML məsul şəxsin tələbi: hər iki tərəfdə KYC olan
+                // əməliyyat ADƏTƏN iki ayrı Tip ilə iki dəfə göndərilir — bax
+                // GoamlNamizedSetirDto.TesdiqlenmisTipler şərhi). Tam "artıq
+                // göndərilib, bloklu" DEYİL.
+                // 23.11.2026, KRİTİK — əvvəl YALNIZ Tip-ə görə qruplaşdırılırdı
+                // (ReportCode nəzərə alınmırdı). Eyni Tip ilə BİR NEÇƏ ReportCode-
+                // lu sətir mövcud olanda (məs. CTR + BLR, bax TesdiqleAsync-in
+                // "çoxseçimli ReportCodes" qaydası) badge sadəcə "Hüquqi (IN)"
+                // göstərirdi — operator CTR sətrini silib BLR qalanda ekranda
+                // HEÇ NƏ dəyişmirdi ("niyə hələ də təsdiqlənib yazır?" şikayəti).
+                // İndi hər etiket Tip + ReportCode CÜTÜDÜR ki, qismən silmə
+                // ekranda GÖRÜNƏN olsun.
                 var tipleriLuget = movcud
                     .GroupBy(x => (x.CandidateFilialNumber, x.CandidateDateOper, x.CandidateRecNum))
                     .ToDictionary(
                         g => g.Key,
-                        g => g.Select(x => x.Tip).Where(t => t != null).Select(t => t!.Value.Etiket()).Distinct().ToList());
+                        g => g.Where(x => x.Tip != null)
+                            .Select(x => x.Tip!.Value.Etiket() + (x.ReportCode != null ? $" · {x.ReportCode.Value.Kod()}" : ""))
+                            .Distinct()
+                            .ToList());
                 foreach (var s in setirler)
                 {
                     if (tipleriLuget.TryGetValue((s.FilialNumber, s.DateOper, s.RecNum), out var tipler))
@@ -177,7 +189,18 @@ namespace FinNex.Application.Services.Goaml
             // (`Tesdiq.cshtml` → `ReportCodes`), controller hər kod üçün bu
             // metodu AYRI çağırır — dedup açarı həmin dövrələrin bir-birini
             // BLOKLAMAMASI üçün `ReportCode`-u da daşımalıdır.
+            // ⚠️ 23.11.2026, KRİTİK — `!x.Silinib` BURADA ƏSKİK İDİ.
+            // `MovcuddurmuAsync` (bütün repository-lərdə ORTAQ, `EfRepositoryAsync.
+            // MovcuddurmuAsync`) `HamisiniGetirAsync`/`Query()`-dən FƏRQLİ olaraq
+            // Silinib-i ÖZÜ FİLTRLƏMİR — çağıran tərəf əlavə etməlidir (layihədə
+            // onlarla yerdə — VezifeService, MezuniyyetService və s. — artıq belə
+            // edilir, bura UNUDULMUŞDU). Real hadisə: operator "Sil" ilə bir
+            // qeydi silib (Silinib=true) EYNİ Tip+ReportCode ilə YENİDƏN
+            // təsdiqləməyə çalışanda bu sorğu YUMŞAQ SİLİNMİŞ sətri DƏ "mövcuddur"
+            // sayır və "Bu əməliyyat ... artıq təsdiqlənib" xətası ilə rədd
+            // edirdi — baxmayaraq ki, əslində HEÇ bir aktiv qeyd yox idi.
             var movcuddur = await _unitOfWork.Repository<GoamlEmeliyyat>().MovcuddurmuAsync(x =>
+                !x.Silinib &&
                 x.CandidateFilialNumber == dto.CandidateFilialNumber &&
                 x.CandidateDateOper == dto.CandidateDateOper &&
                 x.CandidateRecNum == dto.CandidateRecNum &&
@@ -192,139 +215,8 @@ namespace FinNex.Application.Services.Goaml
                 CandidateFilialNumber = dto.CandidateFilialNumber,
                 CandidateDateOper = dto.CandidateDateOper,
                 CandidateRecNum = dto.CandidateRecNum,
-                Debet = dto.Debet,
-                Kredit = dto.Kredit,
-                VipNetDa = dto.VipNetDa,
-                SummaVInval = dto.SummaVInval,
-                SummaVNacval = dto.SummaVNacval,
-                KodValuti = dto.KodValuti,
-                KursValuti = dto.KursValuti,
-                Tip = dto.Tip,
-                ReportCode = dto.ReportCode,
-                TransactionNumber = dto.TransactionNumber,
-                Primechanie = dto.Primechanie,
-                DateOper = dto.DateOper,
-                DocumentSource = dto.DocumentSource,
-                TransmodeCode = dto.TransmodeCode,
-                TransmodeComment = dto.TransmodeComment,
-                AmountLocal = dto.AmountLocal,
-                FromFundsCode = dto.FromFundsCode,
-                ForeignCurrencyCode = dto.ForeignCurrencyCode,
-                ForeignCurrencyCodeFrom = dto.ForeignCurrencyCodeFrom,
-                ForeignAmount = dto.ForeignAmount,
-                ForeignExchangeRate = dto.ForeignExchangeRate,
-                ToFundsCode = dto.ToFundsCode,
-                Action = dto.Action,
-                Reason = dto.Reason,
-                Url = dto.Url,
-                Opened = dto.Opened,
-                Business = dto.Business,
-                RegistracNomer = dto.RegistracNomer,
-                Branch = dto.Branch,
-                Iban = dto.Iban,
-                PersonalAccountType = dto.PersonalAccountType,
-                GelirMenbeyi = dto.GelirMenbeyi,
-                ToFizik = dto.ToFizik,
-                ToYurik = dto.ToYurik,
-                ToPred = dto.ToPred,
-                PanTo = dto.PanTo,
-                ConAdi = dto.ConAdi,
-                ConAtasininAdi = dto.ConAtasininAdi,
-                ConSoyadi = dto.ConSoyadi,
-                ConDogulduguTarix = dto.ConDogulduguTarix,
-                ConDogulduguYer = dto.ConDogulduguYer,
-                ConVetendasligi = dto.ConVetendasligi,
-                ConTelefonNovu = dto.ConTelefonNovu,
-                ConRabiteNovu = dto.ConRabiteNovu,
-                ConTelefonNomresi = dto.ConTelefonNomresi,
-                ConUnvaninNovu = dto.ConUnvaninNovu,
-                ConUnvan = dto.ConUnvan,
-                ConSeher = dto.ConSeher,
-                ConOlke = dto.ConOlke,
-                ConSenedinNovu = dto.ConSenedinNovu,
-                ConSenedinSeriyaNomresi = dto.ConSenedinSeriyaNomresi,
-                ConSenedinVerilmeTarixi = dto.ConSenedinVerilmeTarixi,
-                ConSenedinEtibarliliqMuddeti = dto.ConSenedinEtibarliliqMuddeti,
-                ConVerenOrqan = dto.ConVerenOrqan,
-                ConVerildiyiOlke = dto.ConVerildiyiOlke,
-                ConCinsi = dto.ConCinsi,
-                ConPin = dto.ConPin,
-                ReprIdType = dto.ReprIdType,
-                ReprIdSerial = dto.ReprIdSerial,
-                ReprIdNumber = dto.ReprIdNumber,
-                SigAdi = dto.SigAdi,
-                SigAtasininAdi = dto.SigAtasininAdi,
-                SigSoyadi = dto.SigSoyadi,
-                SigDogulduguTarix = dto.SigDogulduguTarix,
-                SigDogulduguYer = dto.SigDogulduguYer,
-                SigVetendasligi = dto.SigVetendasligi,
-                SigTelefonNovu = dto.SigTelefonNovu,
-                SigRabiteNovu = dto.SigRabiteNovu,
-                SigTelefonNomresi = dto.SigTelefonNomresi,
-                SigUnvaninNovu = dto.SigUnvaninNovu,
-                SigUnvan = dto.SigUnvan,
-                SigSeher = dto.SigSeher,
-                SigOlke = dto.SigOlke,
-                SigSenedinNovu = dto.SigSenedinNovu,
-                SigSenedinSeriyaNomresi = dto.SigSenedinSeriyaNomresi,
-                SigSenedinVerilmeTarixi = dto.SigSenedinVerilmeTarixi,
-                SigSenedinEtibarliliqMuddeti = dto.SigSenedinEtibarliliqMuddeti,
-                SigVerenOrqan = dto.SigVerenOrqan,
-                SigVerildiyiOlke = dto.SigVerildiyiOlke,
-                SigVezife = dto.SigVezife,
-                SigIsYeriAdi = dto.SigIsYeriAdi,
-                InstitutionName = dto.InstitutionName,
-                Swift = dto.Swift,
-                Account = dto.Account,
-                IncorporationNumber = dto.IncorporationNumber,
-                IncorporationCountryCode = dto.IncorporationCountryCode,
-                NameUr = dto.NameUr,
-                FromCountry = dto.FromCountry,
-                HesabinAcilmaTarixi = dto.HesabinAcilmaTarixi,
-                BankinAdi = dto.BankinAdi,
-                SeherinKodu = dto.SeherinKodu,
-                FealiyyatIstiqameti = dto.FealiyyatIstiqameti,
-                ToAdi = dto.ToAdi,
-                ToAtasininAdi = dto.ToAtasininAdi,
-                ToSoyadi = dto.ToSoyadi,
-                ToDogulduguTarix = dto.ToDogulduguTarix,
-                ToDogulduguYer = dto.ToDogulduguYer,
-                ToVetendasligi = dto.ToVetendasligi,
-                ToTelefonNovu = dto.ToTelefonNovu,
-                ToRabiteNovu = dto.ToRabiteNovu,
-                ToTelefonNomresi = dto.ToTelefonNomresi,
-                ToUnvaninNovu = dto.ToUnvaninNovu,
-                ToUnvan = dto.ToUnvan,
-                ToSeher = dto.ToSeher,
-                ToOlke = dto.ToOlke,
-                ToOlkeAdi = dto.ToOlkeAdi,
-                ToSenedinNovu = dto.ToSenedinNovu,
-                ToSenedinSeriyaNomresi = dto.ToSenedinSeriyaNomresi,
-                ToSenedinVerilmeTarixi = dto.ToSenedinVerilmeTarixi,
-                ToSenedinEtibarliliqMuddeti = dto.ToSenedinEtibarliliqMuddeti,
-                ToVerenOrqan = dto.ToVerenOrqan,
-                ToVerildiyiOlke = dto.ToVerildiyiOlke,
-                IncorporationCountryCodeTo = dto.IncorporationCountryCodeTo,
-                IncorporationNumberTo = dto.IncorporationNumberTo,
-                NameUrTo = dto.NameUrTo,
-                InstitutionNameTo = dto.InstitutionNameTo,
-                SwiftTo = dto.SwiftTo,
-                AccountTo = dto.AccountTo,
-                AlaqeNovuTo = dto.AlaqeNovuTo,
-                InstitutionNameBranchTo = dto.InstitutionNameBranchTo,
-                Gender = dto.Gender,
-                Snn = dto.Snn,
-                GenderTo = dto.GenderTo,
-                SnnTo = dto.SnnTo,
-                Occupation = dto.Occupation,
-                EmployerName = dto.EmployerName,
-                SenderIdType = dto.SenderIdType,
-                SenderIdSerial = dto.SenderIdSerial,
-                SenderIdNumber = dto.SenderIdNumber,
-                RecIdType = dto.RecIdType,
-                RecIdSerial = dto.RecIdSerial,
-                RecIdNumber = dto.RecIdNumber,
             };
+            DtoDenDoldur(e, dto);
 
             // AYSEL-in "Update New" düyməsinin ekvivalenti — operator "Təsdiqlə"
             // basan kimi, HƏMİN KONKRET qeyd üçün avtomatik tətbiq olunur (ayrıca
@@ -336,6 +228,340 @@ namespace FinNex.Application.Services.Goaml
             await _unitOfWork.YaddaSaxlaAsync();
 
             return Result.Ok("Əməliyyat təsdiqləndi.");
+        }
+
+        /// <summary>`GoamlTesdiqDto`-nun BÜTÜN redaktə oluna bilən sahələrini
+        /// mövcud (yaddaşda, hələ `SaveChanges`-ə getməmiş) entity-yə yazır —
+        /// <see cref="TesdiqleAsync"/> (YARAT) VƏ <see cref="RedakteSaxlaAsync"/>
+        /// (YENİLƏ) TƏK bu metodu paylaşır ki, ~140 sətirlik sahə siyahısı İKİ
+        /// yerdə TƏKRAR YAZILMASIN (23.11.2026). Qəsdən TOXUNMAYAN sahələr:
+        /// `TesdiqleyenIsciId`, `CandidateFilialNumber/DateOper/RecNum`, `Status`,
+        /// `Silinib` — bunlar namizədin ÖZ KİMLİYİNİ/vəziyyətini anladır, KYC
+        /// redaktəsi onlara TOXUNMAMALIDIR.</summary>
+        private static void DtoDenDoldur(GoamlEmeliyyat e, GoamlTesdiqDto dto)
+        {
+            e.Debet = dto.Debet;
+            e.Kredit = dto.Kredit;
+            e.VipNetDa = dto.VipNetDa;
+            e.SummaVInval = dto.SummaVInval;
+            e.SummaVNacval = dto.SummaVNacval;
+            e.KodValuti = dto.KodValuti;
+            e.KursValuti = dto.KursValuti;
+            e.Tip = dto.Tip;
+            e.ReportCode = dto.ReportCode;
+            e.TransactionNumber = dto.TransactionNumber;
+            e.Primechanie = dto.Primechanie;
+            e.DateOper = dto.DateOper;
+            e.DocumentSource = dto.DocumentSource;
+            e.TransmodeCode = dto.TransmodeCode;
+            e.TransmodeComment = dto.TransmodeComment;
+            e.AmountLocal = dto.AmountLocal;
+            e.FromFundsCode = dto.FromFundsCode;
+            e.ForeignCurrencyCode = dto.ForeignCurrencyCode;
+            e.ForeignCurrencyCodeFrom = dto.ForeignCurrencyCodeFrom;
+            e.ForeignAmount = dto.ForeignAmount;
+            e.ForeignExchangeRate = dto.ForeignExchangeRate;
+            e.ToFundsCode = dto.ToFundsCode;
+            e.Action = dto.Action;
+            e.Reason = dto.Reason;
+            e.Url = dto.Url;
+            e.Opened = dto.Opened;
+            e.Business = dto.Business;
+            e.RegistracNomer = dto.RegistracNomer;
+            e.Branch = dto.Branch;
+            e.Iban = dto.Iban;
+            e.PersonalAccountType = dto.PersonalAccountType;
+            e.GelirMenbeyi = dto.GelirMenbeyi;
+            e.ToFizik = dto.ToFizik;
+            e.ToYurik = dto.ToYurik;
+            e.ToPred = dto.ToPred;
+            e.PanTo = dto.PanTo;
+            e.ConAdi = dto.ConAdi;
+            e.ConAtasininAdi = dto.ConAtasininAdi;
+            e.ConSoyadi = dto.ConSoyadi;
+            e.ConDogulduguTarix = dto.ConDogulduguTarix;
+            e.ConDogulduguYer = dto.ConDogulduguYer;
+            e.ConVetendasligi = dto.ConVetendasligi;
+            e.ConTelefonNovu = dto.ConTelefonNovu;
+            e.ConRabiteNovu = dto.ConRabiteNovu;
+            e.ConTelefonNomresi = dto.ConTelefonNomresi;
+            e.ConUnvaninNovu = dto.ConUnvaninNovu;
+            e.ConUnvan = dto.ConUnvan;
+            e.ConSeher = dto.ConSeher;
+            e.ConOlke = dto.ConOlke;
+            e.ConSenedinNovu = dto.ConSenedinNovu;
+            e.ConSenedinSeriyaNomresi = dto.ConSenedinSeriyaNomresi;
+            e.ConSenedinVerilmeTarixi = dto.ConSenedinVerilmeTarixi;
+            e.ConSenedinEtibarliliqMuddeti = dto.ConSenedinEtibarliliqMuddeti;
+            e.ConVerenOrqan = dto.ConVerenOrqan;
+            e.ConVerildiyiOlke = dto.ConVerildiyiOlke;
+            e.ConCinsi = dto.ConCinsi;
+            e.ConPin = dto.ConPin;
+            e.ReprIdType = dto.ReprIdType;
+            e.ReprIdSerial = dto.ReprIdSerial;
+            e.ReprIdNumber = dto.ReprIdNumber;
+            e.SigAdi = dto.SigAdi;
+            e.SigAtasininAdi = dto.SigAtasininAdi;
+            e.SigSoyadi = dto.SigSoyadi;
+            e.SigDogulduguTarix = dto.SigDogulduguTarix;
+            e.SigDogulduguYer = dto.SigDogulduguYer;
+            e.SigVetendasligi = dto.SigVetendasligi;
+            e.SigTelefonNovu = dto.SigTelefonNovu;
+            e.SigRabiteNovu = dto.SigRabiteNovu;
+            e.SigTelefonNomresi = dto.SigTelefonNomresi;
+            e.SigUnvaninNovu = dto.SigUnvaninNovu;
+            e.SigUnvan = dto.SigUnvan;
+            e.SigSeher = dto.SigSeher;
+            e.SigOlke = dto.SigOlke;
+            e.SigSenedinNovu = dto.SigSenedinNovu;
+            e.SigSenedinSeriyaNomresi = dto.SigSenedinSeriyaNomresi;
+            e.SigSenedinVerilmeTarixi = dto.SigSenedinVerilmeTarixi;
+            e.SigSenedinEtibarliliqMuddeti = dto.SigSenedinEtibarliliqMuddeti;
+            e.SigVerenOrqan = dto.SigVerenOrqan;
+            e.SigVerildiyiOlke = dto.SigVerildiyiOlke;
+            e.SigVezife = dto.SigVezife;
+            e.SigIsYeriAdi = dto.SigIsYeriAdi;
+            e.InstitutionName = dto.InstitutionName;
+            e.Swift = dto.Swift;
+            e.Account = dto.Account;
+            e.IncorporationNumber = dto.IncorporationNumber;
+            e.IncorporationCountryCode = dto.IncorporationCountryCode;
+            e.NameUr = dto.NameUr;
+            e.FromCountry = dto.FromCountry;
+            e.HesabinAcilmaTarixi = dto.HesabinAcilmaTarixi;
+            e.BankinAdi = dto.BankinAdi;
+            e.SeherinKodu = dto.SeherinKodu;
+            e.FealiyyatIstiqameti = dto.FealiyyatIstiqameti;
+            e.ToAdi = dto.ToAdi;
+            e.ToAtasininAdi = dto.ToAtasininAdi;
+            e.ToSoyadi = dto.ToSoyadi;
+            e.ToDogulduguTarix = dto.ToDogulduguTarix;
+            e.ToDogulduguYer = dto.ToDogulduguYer;
+            e.ToVetendasligi = dto.ToVetendasligi;
+            e.ToTelefonNovu = dto.ToTelefonNovu;
+            e.ToRabiteNovu = dto.ToRabiteNovu;
+            e.ToTelefonNomresi = dto.ToTelefonNomresi;
+            e.ToUnvaninNovu = dto.ToUnvaninNovu;
+            e.ToUnvan = dto.ToUnvan;
+            e.ToSeher = dto.ToSeher;
+            e.ToOlke = dto.ToOlke;
+            e.ToOlkeAdi = dto.ToOlkeAdi;
+            e.ToSenedinNovu = dto.ToSenedinNovu;
+            e.ToSenedinSeriyaNomresi = dto.ToSenedinSeriyaNomresi;
+            e.ToSenedinVerilmeTarixi = dto.ToSenedinVerilmeTarixi;
+            e.ToSenedinEtibarliliqMuddeti = dto.ToSenedinEtibarliliqMuddeti;
+            e.ToVerenOrqan = dto.ToVerenOrqan;
+            e.ToVerildiyiOlke = dto.ToVerildiyiOlke;
+            e.IncorporationCountryCodeTo = dto.IncorporationCountryCodeTo;
+            e.IncorporationNumberTo = dto.IncorporationNumberTo;
+            e.NameUrTo = dto.NameUrTo;
+            e.InstitutionNameTo = dto.InstitutionNameTo;
+            e.SwiftTo = dto.SwiftTo;
+            e.AccountTo = dto.AccountTo;
+            e.AlaqeNovuTo = dto.AlaqeNovuTo;
+            e.InstitutionNameBranchTo = dto.InstitutionNameBranchTo;
+            e.Gender = dto.Gender;
+            e.Snn = dto.Snn;
+            e.GenderTo = dto.GenderTo;
+            e.SnnTo = dto.SnnTo;
+            e.Occupation = dto.Occupation;
+            e.EmployerName = dto.EmployerName;
+            e.SenderIdType = dto.SenderIdType;
+            e.SenderIdSerial = dto.SenderIdSerial;
+            e.SenderIdNumber = dto.SenderIdNumber;
+            e.RecIdType = dto.RecIdType;
+            e.RecIdSerial = dto.RecIdSerial;
+            e.RecIdNumber = dto.RecIdNumber;
+        }
+
+        /// <summary>`DtoDenDoldur`-un GÜZGÜSÜ — mövcud qeydi "Redaktə et" formasına
+        /// yükləmək üçün (23.11.2026). Oracle-a HEÇ müraciət etmir — sırf DB-də
+        /// artıq saxlanan dəyərləri geri oxuyur.</summary>
+        private static GoamlTesdiqDto DtoyaCevir(GoamlEmeliyyat e) => new()
+        {
+            CandidateFilialNumber = e.CandidateFilialNumber,
+            CandidateDateOper = e.CandidateDateOper,
+            CandidateRecNum = e.CandidateRecNum,
+            Debet = e.Debet,
+            Kredit = e.Kredit,
+            VipNetDa = e.VipNetDa,
+            SummaVInval = e.SummaVInval,
+            SummaVNacval = e.SummaVNacval,
+            KodValuti = e.KodValuti,
+            KursValuti = e.KursValuti,
+            Tip = e.Tip,
+            ReportCode = e.ReportCode,
+            TransactionNumber = e.TransactionNumber,
+            Primechanie = e.Primechanie,
+            DateOper = e.DateOper,
+            DocumentSource = e.DocumentSource,
+            TransmodeCode = e.TransmodeCode,
+            TransmodeComment = e.TransmodeComment,
+            AmountLocal = e.AmountLocal,
+            FromFundsCode = e.FromFundsCode,
+            ForeignCurrencyCode = e.ForeignCurrencyCode,
+            ForeignCurrencyCodeFrom = e.ForeignCurrencyCodeFrom,
+            ForeignAmount = e.ForeignAmount,
+            ForeignExchangeRate = e.ForeignExchangeRate,
+            ToFundsCode = e.ToFundsCode,
+            Action = e.Action,
+            Reason = e.Reason,
+            Url = e.Url,
+            Opened = e.Opened,
+            Business = e.Business,
+            RegistracNomer = e.RegistracNomer,
+            Branch = e.Branch,
+            Iban = e.Iban,
+            PersonalAccountType = e.PersonalAccountType,
+            GelirMenbeyi = e.GelirMenbeyi,
+            ToFizik = e.ToFizik,
+            ToYurik = e.ToYurik,
+            ToPred = e.ToPred,
+            PanTo = e.PanTo,
+            ConAdi = e.ConAdi,
+            ConAtasininAdi = e.ConAtasininAdi,
+            ConSoyadi = e.ConSoyadi,
+            ConDogulduguTarix = e.ConDogulduguTarix,
+            ConDogulduguYer = e.ConDogulduguYer,
+            ConVetendasligi = e.ConVetendasligi,
+            ConTelefonNovu = e.ConTelefonNovu,
+            ConRabiteNovu = e.ConRabiteNovu,
+            ConTelefonNomresi = e.ConTelefonNomresi,
+            ConUnvaninNovu = e.ConUnvaninNovu,
+            ConUnvan = e.ConUnvan,
+            ConSeher = e.ConSeher,
+            ConOlke = e.ConOlke,
+            ConSenedinNovu = e.ConSenedinNovu,
+            ConSenedinSeriyaNomresi = e.ConSenedinSeriyaNomresi,
+            ConSenedinVerilmeTarixi = e.ConSenedinVerilmeTarixi,
+            ConSenedinEtibarliliqMuddeti = e.ConSenedinEtibarliliqMuddeti,
+            ConVerenOrqan = e.ConVerenOrqan,
+            ConVerildiyiOlke = e.ConVerildiyiOlke,
+            ConCinsi = e.ConCinsi,
+            ConPin = e.ConPin,
+            ReprIdType = e.ReprIdType,
+            ReprIdSerial = e.ReprIdSerial,
+            ReprIdNumber = e.ReprIdNumber,
+            SigAdi = e.SigAdi,
+            SigAtasininAdi = e.SigAtasininAdi,
+            SigSoyadi = e.SigSoyadi,
+            SigDogulduguTarix = e.SigDogulduguTarix,
+            SigDogulduguYer = e.SigDogulduguYer,
+            SigVetendasligi = e.SigVetendasligi,
+            SigTelefonNovu = e.SigTelefonNovu,
+            SigRabiteNovu = e.SigRabiteNovu,
+            SigTelefonNomresi = e.SigTelefonNomresi,
+            SigUnvaninNovu = e.SigUnvaninNovu,
+            SigUnvan = e.SigUnvan,
+            SigSeher = e.SigSeher,
+            SigOlke = e.SigOlke,
+            SigSenedinNovu = e.SigSenedinNovu,
+            SigSenedinSeriyaNomresi = e.SigSenedinSeriyaNomresi,
+            SigSenedinVerilmeTarixi = e.SigSenedinVerilmeTarixi,
+            SigSenedinEtibarliliqMuddeti = e.SigSenedinEtibarliliqMuddeti,
+            SigVerenOrqan = e.SigVerenOrqan,
+            SigVerildiyiOlke = e.SigVerildiyiOlke,
+            SigVezife = e.SigVezife,
+            SigIsYeriAdi = e.SigIsYeriAdi,
+            InstitutionName = e.InstitutionName,
+            Swift = e.Swift,
+            Account = e.Account,
+            IncorporationNumber = e.IncorporationNumber,
+            IncorporationCountryCode = e.IncorporationCountryCode,
+            NameUr = e.NameUr,
+            FromCountry = e.FromCountry,
+            HesabinAcilmaTarixi = e.HesabinAcilmaTarixi,
+            BankinAdi = e.BankinAdi,
+            SeherinKodu = e.SeherinKodu,
+            FealiyyatIstiqameti = e.FealiyyatIstiqameti,
+            ToAdi = e.ToAdi,
+            ToAtasininAdi = e.ToAtasininAdi,
+            ToSoyadi = e.ToSoyadi,
+            ToDogulduguTarix = e.ToDogulduguTarix,
+            ToDogulduguYer = e.ToDogulduguYer,
+            ToVetendasligi = e.ToVetendasligi,
+            ToTelefonNovu = e.ToTelefonNovu,
+            ToRabiteNovu = e.ToRabiteNovu,
+            ToTelefonNomresi = e.ToTelefonNomresi,
+            ToUnvaninNovu = e.ToUnvaninNovu,
+            ToUnvan = e.ToUnvan,
+            ToSeher = e.ToSeher,
+            ToOlke = e.ToOlke,
+            ToOlkeAdi = e.ToOlkeAdi,
+            ToSenedinNovu = e.ToSenedinNovu,
+            ToSenedinSeriyaNomresi = e.ToSenedinSeriyaNomresi,
+            ToSenedinVerilmeTarixi = e.ToSenedinVerilmeTarixi,
+            ToSenedinEtibarliliqMuddeti = e.ToSenedinEtibarliliqMuddeti,
+            ToVerenOrqan = e.ToVerenOrqan,
+            ToVerildiyiOlke = e.ToVerildiyiOlke,
+            IncorporationCountryCodeTo = e.IncorporationCountryCodeTo,
+            IncorporationNumberTo = e.IncorporationNumberTo,
+            NameUrTo = e.NameUrTo,
+            InstitutionNameTo = e.InstitutionNameTo,
+            SwiftTo = e.SwiftTo,
+            AccountTo = e.AccountTo,
+            AlaqeNovuTo = e.AlaqeNovuTo,
+            InstitutionNameBranchTo = e.InstitutionNameBranchTo,
+            Gender = e.Gender,
+            Snn = e.Snn,
+            GenderTo = e.GenderTo,
+            SnnTo = e.SnnTo,
+            Occupation = e.Occupation,
+            EmployerName = e.EmployerName,
+            SenderIdType = e.SenderIdType,
+            SenderIdSerial = e.SenderIdSerial,
+            SenderIdNumber = e.SenderIdNumber,
+            RecIdType = e.RecIdType,
+            RecIdSerial = e.RecIdSerial,
+            RecIdNumber = e.RecIdNumber,
+        };
+
+        /// <summary>"Redaktə et" — GET. YALNIZ "Qaralama" statuslu qeyd üçün.
+        /// 23.11.2026, real hadisə: operator bir qeydi Təsdiqlə → Export →
+        /// "Qaralamaya qaytar" etdikdən sonra ona YENİDƏN TOXUNA bilmirdi —
+        /// Siyahi.cshtml-də yalnız "Bax" (sırf oxunuş), "Sil", "Qaralamaya
+        /// qaytar" var idi, redaktə YOX idi. Yeganə yol "Sil edib YENİDƏN
+        /// Təsdiqlə" idi — bu da yuxarıdakı Silinib bugu üzündən BLOKLANIRDI.</summary>
+        public async Task<Result<GoamlTesdiqDto>> RedakteFormuAsync(int id)
+        {
+            var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);
+            if (e == null) return Result<GoamlTesdiqDto>.Fail("Qeyd tapılmadı.");
+            if (e.Status != GoamlEmeliyyatStatusu.Qaralama)
+                return Result<GoamlTesdiqDto>.Fail("Yalnız \"Qaralama\" statuslu qeyd redaktə edilə bilər — ixrac edilmiş qeydi əvvəlcə \"Qaralamaya qaytar\" ilə geri çevirin.");
+
+            return Result<GoamlTesdiqDto>.Ok(DtoyaCevir(e));
+        }
+
+        /// <summary>"Redaktə et" — POST. Mövcud qeydi YERİNDƏ yeniləyir, YENİ sətir
+        /// YARATMIR. Tip/ReportCode DƏ dəyişdirilə bilər, AMMA nəticə BAŞQA
+        /// (silinməmiş) bir qeydlə toqquşarsa rədd edilir — "xaricId" qaydası
+        /// (CLAUDE.md, üst-üstə düşən məzuniyyət/hesab yoxlamaları ilə EYNİ
+        /// prinsip: redaktə yolunda qeydin ÖZÜ ilə toqquşması GÖZLƏNİLƏN
+        /// haldır, bloklanmamalıdır).</summary>
+        public async Task<Result> RedakteSaxlaAsync(int id, GoamlTesdiqDto dto)
+        {
+            if (dto.Tip == null) return Result.Fail("Tip seçilməlidir.");
+            if (dto.ReportCode == null) return Result.Fail("Məlumatın növü seçilməlidir.");
+
+            var e = await _unitOfWork.Repository<GoamlEmeliyyat>().IdIleGetirAsync(id);
+            if (e == null) return Result.Fail("Qeyd tapılmadı.");
+            if (e.Status != GoamlEmeliyyatStatusu.Qaralama)
+                return Result.Fail("Yalnız \"Qaralama\" statuslu qeyd redaktə edilə bilər.");
+
+            var basqaSetirVarmi = await _unitOfWork.Repository<GoamlEmeliyyat>().MovcuddurmuAsync(x =>
+                !x.Silinib &&
+                x.Id != id &&
+                x.CandidateFilialNumber == e.CandidateFilialNumber &&
+                x.CandidateDateOper == e.CandidateDateOper &&
+                x.CandidateRecNum == e.CandidateRecNum &&
+                x.Tip == dto.Tip &&
+                x.ReportCode == dto.ReportCode);
+            if (basqaSetirVarmi)
+                return Result.Fail("Bu Tip VƏ Məlumat növü ilə artıq BAŞQA bir qeyd mövcuddur — dublikat yaranmasın deyə redaktə bloklandı.");
+
+            DtoDenDoldur(e, dto);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Dəyişikliklər yadda saxlanıldı.");
         }
 
         public async Task<Result<List<GoamlEmeliyyatListDto>>> HamisiniGetirAsync()

@@ -300,6 +300,57 @@ public class EmeliyyatlarController : Controller
         return RedirectToAction(nameof(Siyahi));
     }
 
+    // ── GET /Goaml/Emeliyyatlar/RedakteEt/{id} — mövcud ("Qaralama" statuslu)
+    //    qeydi redaktə formasında açır. Tesdiq.cshtml-in EYNİ görünüşünü paylaşır
+    //    (23.11.2026, real hadisə: "Qaralamaya qaytar"dan sonra qeydə YENİDƏN
+    //    toxuna bilmirdilər). Oracle-a HEÇ müraciət olunmur, auto-doldurma
+    //    banner-ləri/dropdown-ları söndürülür (qeyd ARTIQ bir dəfə doldurulub,
+    //    operatorun özünün yazdığı/düzəltdiyi dəyərlər canlı Oracle ilə
+    //    ÜSTƏLƏNMƏMƏLİDİR).
+    public async Task<IActionResult> RedakteEt(int id)
+    {
+        ViewData["Title"] = "GOAML — Redaktə et";
+        var netice = await _goaml.RedakteFormuAsync(id);
+        if (!netice.Success || netice.Data == null)
+        {
+            TempData["Error"] = netice.Message ?? "Qeyd tapılmadı.";
+            return RedirectToAction(nameof(Siyahi));
+        }
+
+        ViewBag.RedaktaId = id;
+        ViewBag.ElaqaliSexsler = new List<GoamlElaqaliSexsDto>();
+        ViewBag.AvtoDolduruldu = false;
+        ViewBag.EmitentDenDolduruldu = false;
+        ViewBag.KycDebet = null;
+        ViewBag.KycKredit = null;
+        ViewBag.HerIkiTerefdeKycVar = false;
+        return View("Tesdiq", netice.Data);
+    }
+
+    // ── POST /Goaml/Emeliyyatlar/RedakteEt/{id} — mövcud qeydi YERİNDƏ yeniləyir
+    //    (YENİ sətir yaratmır) ──────────────────────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RedakteEt(int id, GoamlTesdiqDto dto)
+    {
+        var netice = await _goaml.RedakteSaxlaAsync(id, dto);
+        if (!netice.Success)
+        {
+            TempData["Error"] = netice.Message;
+            ViewBag.RedaktaId = id;
+            ViewBag.ElaqaliSexsler = new List<GoamlElaqaliSexsDto>();
+            ViewBag.AvtoDolduruldu = false;
+            ViewBag.EmitentDenDolduruldu = false;
+            ViewBag.KycDebet = null;
+            ViewBag.KycKredit = null;
+            ViewBag.HerIkiTerefdeKycVar = false;
+            return View("Tesdiq", dto);
+        }
+
+        TempData["Success"] = netice.Message;
+        return RedirectToAction(nameof(Siyahi));
+    }
+
     // ── GET /Goaml/Emeliyyatlar/Siyahi — təsdiqlənmiş qeydlər ───────────────
     public async Task<IActionResult> Siyahi()
     {

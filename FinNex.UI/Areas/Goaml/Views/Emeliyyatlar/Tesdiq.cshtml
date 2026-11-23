@@ -27,6 +27,15 @@
     // cavabı. TƏK mənbə `GoamlTipiExtensions.BizimTerefDebetdir()`-dir —
     // burada YENİDƏN YAZILMIR, sadəcə JSON-a render olunur (12.11.2026).
     var tipYonleri = Enum.GetValues<GoamlTipi>().ToDictionary(t => (int)t, t => t.BizimTerefDebetdir());
+
+    // 23.11.2026 — "Redaktə et" (`EmeliyyatlarController.RedakteEt`) EYNİ bu
+    // görünüşü paylaşır (yeni, ayrı bir redaktə səhifəsi YAZILMADI — ~140
+    // sahəlik CON/SIG/TO bloklarını TƏKRAR qurmaq əvəzinə). Fərq YALNIZ:
+    // (a) forma "RedakteEt"-ə POST edir, (b) "Məlumatın növü" TƏK seçimli
+    // select-dir (çoxseçimli checkbox YOX — redaktə BİR mövcud sətri dəyişir,
+    // yeni sətirlər YARATMIR), (c) auto-doldurma banner-ləri/dropdown-ları
+    // söndürülür (ViewBag-dən, controller-də).
+    var gmlRedaktaId = ViewBag.RedaktaId as int?;
 }
 
 @section Styles {
@@ -80,15 +89,27 @@
 <div class="fn-page">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">GOAML — Namizəd əməliyyatı Təsdiqlə</div>
-            <div class="fn-page-sub">Oracle namizədindən doldurulub gəldi — qalan sahələri doldurub yadda saxlayın</div>
+            <div class="fn-page-title">@(gmlRedaktaId != null ? "GOAML — Əməliyyatı Redaktə Et" : "GOAML — Namizəd əməliyyatı Təsdiqlə")</div>
+            <div class="fn-page-sub">
+                @(gmlRedaktaId != null
+                    ? "Artıq təsdiqlənmiş (Qaralama statuslu) qeydi dəyişdirirsiniz — \"Dəyişiklikləri Saxla\" YENİ sətir YARATMIR, mövcud qeydi yeniləyir."
+                    : "Oracle namizədindən doldurulub gəldi — qalan sahələri doldurub yadda saxlayın")
+            </div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+        <a asp-action="@(gmlRedaktaId != null ? "Siyahi" : "Index")" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
 
     @if (TempData["Error"] != null)
     {
         <div class="fn-alert fn-alert--error" style="margin-bottom:16px">@TempData["Error"]</div>
+    }
+    @if (gmlRedaktaId != null)
+    {
+        <div class="gml-banner gml-banner--info">
+            <i class="bi bi-pencil-square"></i>
+            Mövcud qeydi redaktə edirsiniz — sahələr Oracle-dan YENİDƏN doldurulmur,
+            aşağıda artıq saxlanmış dəyərlər göstərilir.
+        </div>
     }
 
     @{
@@ -130,7 +151,11 @@
          istiqamətsizdirsə (H to H/F to F) operator ORADA, imza bloku
          açılanda seçir — ayrıca, hər namizəddə görünən bir banner yoxdur. ── *@
 
-    <form method="post" asp-action="Tesdiq">
+    <form method="post" asp-action="@(gmlRedaktaId != null ? "RedakteEt" : "Tesdiq")">
+        @if (gmlRedaktaId != null)
+        {
+            <input type="hidden" name="id" value="@gmlRedaktaId" />
+        }
         <input type="hidden" asp-for="CandidateFilialNumber" />
         <input type="hidden" name="CandidateDateOper" value="@Model.CandidateDateOper.ToString("yyyy-MM-dd")" />
         <input type="hidden" asp-for="CandidateRecNum" />
@@ -203,36 +228,56 @@
             </div>
             <div>
                 <label class="gml-flbl">Məlumatın növü <span class="gml-req">*</span>
-                    <span style="color:#94a3b8; font-weight:400">(bir neçəsi ola bilər)</span></label>
-                @* ── AML məsul şəxsin tələbi: "ele emeliyyat varki, hem ctr,hem
-                     blr hemde ve s. ola biler" — tək seçimli `<select>` ƏVƏZİNƏ
-                     çoxseçimli checkbox qrupu. Hər işarələnmiş kod üçün
-                     controller (`EmeliyyatlarController.Tesdiq` POST) AYRI,
-                     öz `GoamlEmeliyyat` sətrini yaradır (eyni KYC, fərqli
-                     ReportCode) — bax GoamlService.TesdiqleAsync-in dedup
-                     açarına (Tip+ReportCode). ── *@
-                <div class="gml-report-grid">
-                    <div class="gml-report-col">
-                        @foreach (var r in reportSolSutun)
+                    @if (gmlRedaktaId == null)
+                    {
+                        <span style="color:#94a3b8; font-weight:400">(bir neçəsi ola bilər)</span>
+                    }
+                </label>
+                @if (gmlRedaktaId != null)
+                {
+                    @* ── Redaktədə TƏK seçim — bu, MÖVCUD BİR sətrin ReportCode-unu
+                         dəyişir, YENİ sətirlər yaratmır (çoxseçimli checkbox YARAMAZ,
+                         bax RedakteSaxlaAsync). ── *@
+                    <select name="ReportCode" class="fn-select" required style="max-width:420px">
+                        <option value="">— seçin —</option>
+                        @foreach (var r in reportSecimler)
                         {
-                            <label class="gml-report-item">
-                                <input type="checkbox" name="ReportCodes" value="@r.Value"
-                                    checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
-                                @r.Text
-                            </label>
+                            <option value="@r.Value" selected="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)">@r.Text</option>
                         }
+                    </select>
+                }
+                else
+                {
+                    @* ── AML məsul şəxsin tələbi: "ele emeliyyat varki, hem ctr,hem
+                         blr hemde ve s. ola biler" — tək seçimli `<select>` ƏVƏZİNƏ
+                         çoxseçimli checkbox qrupu. Hər işarələnmiş kod üçün
+                         controller (`EmeliyyatlarController.Tesdiq` POST) AYRI,
+                         öz `GoamlEmeliyyat` sətrini yaradır (eyni KYC, fərqli
+                         ReportCode) — bax GoamlService.TesdiqleAsync-in dedup
+                         açarına (Tip+ReportCode). ── *@
+                    <div class="gml-report-grid">
+                        <div class="gml-report-col">
+                            @foreach (var r in reportSolSutun)
+                            {
+                                <label class="gml-report-item">
+                                    <input type="checkbox" name="ReportCodes" value="@r.Value"
+                                        checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
+                                    @r.Text
+                                </label>
+                            }
+                        </div>
+                        <div class="gml-report-col">
+                            @foreach (var r in reportSagSutun)
+                            {
+                                <label class="gml-report-item">
+                                    <input type="checkbox" name="ReportCodes" value="@r.Value"
+                                        checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
+                                    @r.Text
+                                </label>
+                            }
+                        </div>
                     </div>
-                    <div class="gml-report-col">
-                        @foreach (var r in reportSagSutun)
-                        {
-                            <label class="gml-report-item">
-                                <input type="checkbox" name="ReportCodes" value="@r.Value"
-                                    checked="@(Model.ReportCode.HasValue && (int)Model.ReportCode.Value == r.Value)" />
-                                @r.Text
-                            </label>
-                        }
-                    </div>
-                </div>
+                }
             </div>
         </div>
 
@@ -404,8 +449,16 @@
         </details>
 
         <div style="display:flex;gap:10px;margin-top:18px">
-            <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-circle"></i> Təsdiqlə və Saxla</button>
-            <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            @if (gmlRedaktaId != null)
+            {
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-circle"></i> Dəyişiklikləri Saxla</button>
+                <a asp-action="Siyahi" class="fn-btn fn-btn--outline">Ləğv et</a>
+            }
+            else
+            {
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-circle"></i> Təsdiqlə və Saxla</button>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+            }
         </div>
     </form>
 </div>

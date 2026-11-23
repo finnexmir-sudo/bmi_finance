@@ -154,6 +154,16 @@
                                     <a asp-action="Detal" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm">
                                         <i class="bi bi-eye"></i> Bax
                                     </a>
+                                    @* 23.11.2026, real hadisə: operator "Qaralamaya qaytar"dan sonra
+                                       qeydə YENİDƏN TOXUNA bilmirdi (yalnız Bax/Sil var idi) — YALNIZ
+                                       "Qaralama" statuslu qeydlərdə görünür (ixrac edilmiş qeyd ƏVVƏLCƏ
+                                       "Qaralamaya qaytar" ilə geri çevrilməlidir, "Sil"in eyni şərti). *@
+                                    @if (e.Status != GoamlEmeliyyatStatusu.IxracEdilib)
+                                    {
+                                        <a asp-action="RedakteEt" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm">
+                                            <i class="bi bi-pencil"></i> Redaktə et
+                                        </a>
+                                    }
                                     <form method="post" asp-action="IxracGeriQaytar" asp-route-id="@e.Id"
                                           class="gml-geri-form"
                                           style="@(e.Status == GoamlEmeliyyatStatusu.IxracEdilib ? "" : "display:none")">

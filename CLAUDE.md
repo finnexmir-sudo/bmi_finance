@@ -14388,3 +14388,110 @@ Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: regnom
 yeni prioritetlə doğru göründüyünü təsdiqləməli — əvvəlcə Oracle-da
 `select * from odb.huquqi_shexs where qeydiyyat_nomresi_ve_ya_voen='<VÖEN>'
 and regnom='016901'` ilə sətrin HƏQİQƏTƏN mövcud olduğunu yoxlaya bilər.
+
+## GOAML — "Qaralamaya Qaytarılan Qeydə Yenidən Toxuna Bilmirəm" + "Silinən Qeyd Yenə Təsdiqlənib Deyir" (23.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi: *"isci bir emeliyyati qaralamaya atdi,json yaratdi sonra qaralamaya
+qaytardi. yeniden hemin emeliyyata deyisiklik ede bilmir? siyahidan silirsen
+de yene tediqlenib yazir,bu biraz narahat edicidir."* İki AYRI, hər ikisi
+real problem idi.
+
+### 1. Redaktə funksiyası HEÇ VAXT YOX İDİ
+
+`Siyahi.cshtml` (təsdiqlənmiş qeydlər) yalnız **Bax** (sırf oxunuş), **Sil**
+və **Qaralamaya qaytar** (status geri çevirmə) təqdim edirdi — qeydin KYC
+sahələrini (ad/soyad/sənəd/ünvan və s.) dəyişmək üçün **heç bir yol yox
+idi**. "Qaralamaya qaytar" YALNIZ statusu dəyişir (`IxracGeriQaytarAsync`,
+23.11.2026-nın əvvəlki dalğası), qeydin ÖZÜNƏ TOXUNMUR — operator "indi
+düzəldə bilərəm" gözləyirdi, amma heç bir "Redaktə et" düyməsi yox idi.
+
+**Həll — yeni "Redaktə et" axını, YALNIZ "Qaralama" statuslu qeydlər üçün.**
+Yeni, ayrı bir redaktə səhifəsi YAZILMADI (~140 sahəlik CON/SIG/TO bloklarını
+TƏKRAR qurmaq əvəzinə) — mövcud `Tesdiq.cshtml` EYNİ görünüşü PAYLAŞIR,
+`ViewBag.RedaktaId` ilə iki rejim arasında fərqlənir:
+
+- **GET `EmeliyyatlarController.RedakteEt(id)`** — `IGoamlService.
+  RedakteFormuAsync(id)` çağırır, qeydi (YALNIZ `Status==Qaralama`-dırsa)
+  `GoamlTesdiqDto`-ya çevirir. Oracle-a HEÇ müraciət ETMİR — auto-doldurma
+  banner-ləri/dropdown-ları (`ElaqaliSexsler`, `KycDebet`/`KycKredit`,
+  `HerIkiTerefdeKycVar`) BOŞ/`false` göndərilir ki, operatorun artıq
+  yazdığı/düzəltdiyi dəyərlər CANLI Oracle sorğusu ilə SƏSSİZCƏ
+  ÜSTƏLƏNMƏSİN.
+- **POST `RedakteEt(id, dto)`** → `RedakteSaxlaAsync(id, dto)` — mövcud
+  entity-ni **YERİNDƏ** yeniləyir (YENİ sətir YARATMIR). Tip/ReportCode DƏ
+  dəyişdirilə bilər, AMMA nəticə BAŞQA (silinməmiş) bir qeydlə toqquşarsa
+  (`x.Id != id` — "xaricId" qaydası, CLAUDE.md-nin üst-üstə düşən
+  məzuniyyət/hesab yoxlamaları ilə EYNİ prinsip) rədd edilir.
+- `Tesdiq.cshtml`-də fərq YALNIZ: forma `RedakteEt`-ə POST edir (gizli
+  `id` sahəsi ilə), "Məlumatın növü" artıq çoxseçimli checkbox YOX, **TƏK
+  seçimli `<select>`**-dir (redaktə BİR mövcud sətri dəyişir, yeni sətirlər
+  yaratmır), "Geri"/"Ləğv et" linkləri `Index` yox `Siyahi`-yə gedir.
+- `Siyahi.cshtml`-ə yeni "Redaktə et" düyməsi — **YALNIZ** `Status !=
+  IxracEdilib` olan sətirlərdə (Sil-in eyni şərti) görünür.
+- Kod TƏKRARLANMASIN deyə `GoamlService`-ə iki paylaşılan metod əlavə
+  olundu: `DtoDenDoldur(e, dto)` (dto→entity, `TesdiqleAsync` VƏ
+  `RedakteSaxlaAsync` HƏR İKİSİ çağırır) və onun güzgüsü `DtoyaCevir(e)`
+  (entity→dto, `RedakteFormuAsync` üçün) — əvvəlki ~140 sətirlik object-
+  initializer `TesdiqleAsync`-dən bu paylaşılan metoda ÇIXARILDI.
+
+### 2. KRİTİK BUG — `MovcuddurmuAsync` Silinib-i FİLTRLƏMİR, silinmiş qeyd "artıq təsdiqlənib" bloku yaradırdı
+
+"Siyahidan silirsen de yene tesdiqlenib yazir" — sözün həqiqi mənasında DOĞRU
+İDİ. Kök səbəb: `EfRepositoryAsync<T>.MovcuddurmuAsync` (`DataAccess/
+Repositories/EfRepositoryAsync.cs:96-99`) `_dbSet.AnyAsync(predicate)`
+yazır — `HamisiniGetirAsync`/`Query()`-dən **FƏRQLİ olaraq**, `!Silinib`-i
+ÖZÜ FİLTRLƏMİR. Bu, layihə-geniş, ÇOXDAN mövcud bir konvensiyadır
+(`VezifeService`/`SenedNovuService`/`MezuniyyetService` kimi onlarla yerdə
+çağıran tərəf əl ilə `&& !x.Silinib` ƏLAVƏ EDİR) — GOAML-in `TesdiqleAsync`-
+indəki dedup sorğusu (sətir 180-185) bunu UNUTMUŞDU.
+
+Nəticə: operator "Sil" ilə bir qeydi silirdi (`Silinib=true`), sonra EYNİ
+Tip+ReportCode ilə YENİDƏN təsdiqləməyə çalışanda `MovcuddurmuAsync` HƏLƏ DƏ
+`true` qaytarırdı (yumşaq silinmiş sətri "mövcuddur" sayırdı) və **"Bu
+əməliyyat eyni Tip VƏ eyni Məlumat növü ilə artıq təsdiqlənib"** xətası
+göstərirdi — baxmayaraq ki, aktiv HEÇ bir qeyd qalmamışdı. İstifadəçinin
+gördüyü "yenə təsdiqlənib yazır" mətni elə BU xəta mesajının ÖZÜ idi.
+
+**Düzəliş** — iki yerdə, hər ikisi `!x.Silinib` əlavə edildi:
+`TesdiqleAsync`-in dedup sorğusu VƏ yeni `RedakteSaxlaAsync`-in "başqa
+sətirlə toqquşma" sorğusu.
+
+### 3. Əlavə — badge-in ÖZÜ ReportCode-u NƏZƏRƏ ALMIRDI
+
+Ayrıca, qismən əlaqəli bir görüntü boşluğu: namizəd axtarışındakı
+"Təsdiqlənib" bedge-i (`NamizedAxtarAsyncCore`) qrupları YALNIZ **Tip**-ə
+görə hesablayırdı, ReportCode-u YOX. Eyni Tip altında bir neçə ReportCode-lu
+sətir (məs. CTR + BLR, 17.11.2026-dakı çoxseçimli təsdiq) olanda, operator
+CTR sətrini silib BLR qalanda ekranda HEÇ NƏ dəyişmirdi — badge eyni
+"Təsdiqlənib (Hüquqi (IN))" mətnini göstərməyə davam edirdi, baxmayaraq ki
+BU DƏFƏ DOĞRU idi (BLR hələ aktiv qalıb) — sadəcə OPERATOR bunu BİLMİRDİ,
+çünki hansı ReportCode-un qaldığı GÖSTƏRİLMİRDİ.
+
+**Düzəliş:** badge etiketi indi **Tip + ReportCode** cütüdür — "Hüquqi (IN)
+· CTR, Hüquqi (IN) · BLR" kimi. CTR silindikdən sonra badge avtomatik
+"Hüquqi (IN) · BLR"-ə düşür — operatora NİYƏ hələ "təsdiqlənib" yazdığını
+AÇIQ göstərir, əvvəlki kimi vaqe sualı doğurmur.
+
+⚠️ **`MovcuddurmuAsync`-ın bu Silinib-filtrləməməsi YALNIZ GOAML-ə aid
+DEYİL — `EfRepositoryAsync`-in ÖZÜDÜR, layihə-geniş.** Başqa bir modulda
+oxşar "silinmiş sətir hələ mövcud sayılır" şikayəti gələrsə, əvvəlcə HƏMİN
+modulun öz `MovcuddurmuAsync` çağırışında `!x.Silinib` olub-olmadığını
+yoxla — bu, "Yumşaq Silinmiş Sətir + Unikal İndeks" bölməsindəki tələnin
+EYNİ ailəsindən, sadəcə `MovcuddurmuAsync`-a məxsus formasıdır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — hər üç düzəliş yalnız BUNDAN SONRAKI
+Sil/Təsdiqlə/Redaktə çağırışlarına təsir edir, artıq mövcud qeydlər
+dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/brace balansı hər 4 dəyişən/yeni faylda ayrıca
+skriptlə, `git diff` izolyasiyası ilə hər edit-in ÖZ net-kontribusiyası
+balanslı təsdiqləndi; interfeys↔implementasiya↔controller↔view dörd qatı
+sahə adı-adı əl ilə tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real ssenari ilə yoxlamalıdır: (1) Təsdiqlə → Export →
+Qaralamaya qaytar → "Redaktə et" → bir sahəni dəyiş → "Dəyişiklikləri
+Saxla" → "Təsdiqlənmiş siyahı"da YENİ sətir YARANMADIĞINI, mövcud sətrin
+DƏYİŞDİYİNİ təsdiqlə; (2) Sil → EYNİ Tip+ReportCode ilə namizəd siyahısından
+YENİDƏN Təsdiqlə → bu dəfə "artıq təsdiqlənib" xətası ÇIXMADIĞINI; (3) eyni
+Tip altında CTR+BLR ilə təsdiqlənmiş bir namizəddə CTR sətrini sil →
+badge-in "Hüquqi (...) · BLR"-ə düşdüyünü təsdiqləməlidir.

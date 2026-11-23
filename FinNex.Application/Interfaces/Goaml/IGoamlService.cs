@@ -91,5 +91,17 @@ namespace FinNex.Application.Interfaces.Goaml
         /// dəyişdirmir — <see cref="JsonIxracAsync"/> ilə EYNİ filtr şərtini paylaşır,
         /// ona görə nəticə HƏMİŞƏ real ixracla UYĞUN gəlir.</summary>
         Task<Result<List<GoamlEmeliyyatListDto>>> IxracOnizlemeAsync(GoamlJsonIxracFiltrDto filtr, CancellationToken ct = default);
+
+        /// <summary>"Redaktə et" formunun GET-i — YALNIZ "Qaralama" statuslu qeyd
+        /// üçün (23.11.2026, real hadisə: "Qaralamaya qaytar"dan sonra qeydə
+        /// YENİDƏN TOXUNA bilmirdilər — yalnız Bax/Sil var idi). Oracle-a HEÇ
+        /// müraciət etmir — qeydin ÖZÜNDƏ artıq saxlanan dəyərləri geri oxuyur.</summary>
+        Task<Result<GoamlTesdiqDto>> RedakteFormuAsync(int id);
+
+        /// <summary>"Redaktə et" formunun POST-u — mövcud qeydi YERİNDƏ yeniləyir
+        /// (YENİ sətir yaratmır). YALNIZ "Qaralama" statuslu qeydlər üçün. Tip/
+        /// ReportCode dəyişdirilə bilər, AMMA nəticə BAŞQA (silinməmiş) bir
+        /// qeydlə toqquşarsa rədd edilir.</summary>
+        Task<Result> RedakteSaxlaAsync(int id, GoamlTesdiqDto dto);
     }
 }
