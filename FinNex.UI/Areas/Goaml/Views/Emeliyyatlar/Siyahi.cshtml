@@ -150,7 +150,7 @@
                                     @if (e.Status == GoamlEmeliyyatStatusu.IxracEdilib)
                                     {
                                         <form method="post" asp-action="IxracGeriQaytar" asp-route-id="@e.Id"
-                                              onsubmit="return confirm('Bu qeyd \'Qaralama\' statusuna qaytarılacaq və ixrac edilmiş fayldan GERİ ÇƏKİLMİR — əgər fayl artıq real goAML portalına göndərilibsə, bu qeydi YENİDƏN ixrac etmək TƏKRAR göndərişə səbəb olar. Davam edilsin?');">
+                                              onsubmit="return confirm('Qeyd \'Qaralama\'ya qaytarılsın? Diqqət: fayl artıq göndərilibsə, təkrar ixrac TƏKRAR göndərişə səbəb ola bilər.');">
                                             <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-warn">
                                                 <i class="bi bi-arrow-counterclockwise"></i> Qaralamaya qaytar
                                             </button>
