@@ -133,7 +133,7 @@
                                 </td>
                                 <td>@(e.TesdiqleyenAdi ?? "—")</td>
                                 <td>@e.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td>
+                                <td class="gml-status-cell">
                                     @if (e.Status == GoamlEmeliyyatStatusu.IxracEdilib)
                                     {
                                         <span class="gml-pill gml-pill--ixrac"><i class="bi bi-check2-circle"></i> İxrac edilib</span>
@@ -143,28 +143,32 @@
                                         <span class="gml-pill gml-pill--qaralama">Qaralama</span>
                                     }
                                 </td>
+                                @* 23.11.2026, İKİNCİ DALĞA — "Qaralamaya qaytar" basanda səhifə YENİDƏN
+                                   YÜKLƏNİB yuxarı sıçrayırdı (istifadəçi şikayəti). İndi HƏR İKİ forma
+                                   (geri qaytar + sil) HƏMİŞƏ DOM-dadır, YALNIZ biri görünür — JS uğurlu
+                                   AJAX cavabından sonra sadəcə görünüşü/status pilini dəyişir, "Sil"
+                                   formunu REDAKTƏ ETMƏDƏN (öz antiforgery tokeni ilə) göstərir — yeni
+                                   token generasiyası/HTML qurmaq lazım deyil. "Sil" özü hələ də adi
+                                   postback-dir (istifadəçi bunu şikayət etmədi, qapsam genişlənmədi). *@
                                 <td style="display:flex; gap:6px">
                                     <a asp-action="Detal" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm">
                                         <i class="bi bi-eye"></i> Bax
                                     </a>
-                                    @if (e.Status == GoamlEmeliyyatStatusu.IxracEdilib)
-                                    {
-                                        <form method="post" asp-action="IxracGeriQaytar" asp-route-id="@e.Id"
-                                              onsubmit="return confirm('Qeyd \'Qaralama\'ya qaytarılsın? Diqqət: fayl artıq göndərilibsə, təkrar ixrac TƏKRAR göndərişə səbəb ola bilər.');">
-                                            <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-warn">
-                                                <i class="bi bi-arrow-counterclockwise"></i> Qaralamaya qaytar
-                                            </button>
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <form method="post" asp-action="Sil" asp-route-id="@e.Id"
-                                              onsubmit="return confirm('Bu təsdiqlənmiş əməliyyatı silmək istədiyinizə əminsiniz?');">
-                                            <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-danger">
-                                                <i class="bi bi-trash"></i> Sil
-                                            </button>
-                                        </form>
-                                    }
+                                    <form method="post" asp-action="IxracGeriQaytar" asp-route-id="@e.Id"
+                                          class="gml-geri-form"
+                                          style="@(e.Status == GoamlEmeliyyatStatusu.IxracEdilib ? "" : "display:none")">
+                                        <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-warn">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Qaralamaya qaytar
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-action="Sil" asp-route-id="@e.Id"
+                                          class="gml-sil-form"
+                                          style="@(e.Status == GoamlEmeliyyatStatusu.IxracEdilib ? "display:none" : "")"
+                                          onsubmit="return confirm('Bu təsdiqlənmiş əməliyyatı silmək istədiyinizə əminsiniz?');">
+                                        <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm gml-btn-danger">
+                                            <i class="bi bi-trash"></i> Sil
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }
@@ -230,6 +234,45 @@
             });
 
             tetbiqEt();
+
+            // 23.11.2026, İKİNCİ DALĞA — "Qaralamaya qaytar" AJAX-la, səhifə
+            // yenidən yüklənmədən (yuxarı sıçramadan). "Sil" TOXUNULMADI —
+            // adi postback olaraq qalır, bu sessiyada şikayət olunan YALNIZ
+            // "Qaralamaya qaytar" idi.
+            Array.prototype.forEach.call(document.querySelectorAll('.gml-geri-form'), function (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    if (!confirm('Qeyd \'Qaralama\'ya qaytarılsın? Diqqət: fayl artıq göndərilibsə, təkrar ixrac TƏKRAR göndərişə səbəb ola bilər.')) return;
+
+                    var btn = form.querySelector('button');
+                    var tr = form.closest('tr');
+                    var tokenInp = form.querySelector('[name="__RequestVerificationToken"]');
+                    btn.disabled = true;
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': tokenInp ? tokenInp.value : '' }
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (!data || !data.success) {
+                                alert((data && data.message) || 'Xəta baş verdi.');
+                                btn.disabled = false;
+                                return;
+                            }
+                            tr.dataset.status = 'qaralama';
+                            var statusCell = tr.querySelector('.gml-status-cell');
+                            if (statusCell) statusCell.innerHTML = '<span class="gml-pill gml-pill--qaralama">Qaralama</span>';
+                            form.style.display = 'none';
+                            var silForm = tr.querySelector('.gml-sil-form');
+                            if (silForm) silForm.style.display = '';
+                        })
+                        .catch(function () {
+                            alert('Şəbəkə xətası — yenidən cəhd edin.');
+                            btn.disabled = false;
+                        });
+                });
+            });
         })();
     </script>
 }

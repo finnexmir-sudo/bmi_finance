@@ -14221,3 +14221,77 @@ doldurma işləyən (yoxsa Debet/Kredit-dən BİRİ kassa olmayan, real müştə
 hesabı olan) bir namizəd aç → SIG blokunda "PİN" sahəsinin artıq boş
 olmadığını, PEP/HRZ kodu ilə ixrac edəndə JSON-dakı `fin`/`sphereOfActivity`/
 `businessStartDate` sahələrinin dolu çıxdığını təsdiqləməlidir.
+
+## GOAML — Üç Sual: Header-dəki Hesab Məlumatı, Ünvanın Bölünməsi, "Qaralamaya Qaytar" AJAX-sız İdi (23.11.2026)
+
+İstifadəçi üç sual verdi, biri kod dəyişikliyi tələb etdi (3-cü), ikisi İSƏ
+mövcud vəziyyətin TƏSDİQİDİR (1-ci, 2-ci).
+
+### 1. "Headerde bizde hesab melumati gelir?" — XEYR, VƏ BU DÜZGÜNDÜR
+
+`GoamlJsonHeaderDto`-da (PEP=4/HRZ=8/NGR=3 üçün zənginləşdirilən blok) HEÇ
+bir hesab (account number/bank/IBAN) sahəsi YOXDUR — bu, YANLIŞLIQ DEYİL,
+real goAML sxeminin ÖZÜNÜN quruluşudur. 13.11.2026-da istifadəçinin göndərdiyi
+6 real portal sxemi (CTR/ETR/BCR/HRZ/NGR/PEP) üzərində TƏSDİQLƏNİB: header
+YALNIZ fiziki/hüquqi şəxsin KYC-sini (ad, FİN, ünvan, vətəndaşlıq, vəzifə,
+gəlir və s.) daşıyır — hesab məlumatı (`account_number`/`fin_inst_name`/
+`bic` və s.) **Transaction blokunun ÖZÜNDƏ, Sender/Receiver-in `Account`
+alt-obyektində** yer alır (`GoamlJsonSenderAccountDto`/`ReceiverAccountDto`,
+17.11.2026-da artıq qurulub — bax yuxarı "Entity Adındakı Dırnaqlar + Account
+Bloku" bölməsi). Yəni "hesab məlumatı" HEÇ ÇIXMIR demək SƏHVDİR — Header-də
+yox, Transaction-da çıxır, bu, real sxemin gözlədiyi yerdir.
+
+### 2. "Unvani bolmek?" — BƏLİ MÜMKÜNDÜR, HAZIRDA Rayon AYRI DEYİL
+
+Hazırkı vəziyyət: `header.City` (Şəhər) AYRI sahədir (Oracle `SHEHER` və ya
+operatorun "Şəhər" inputundan), AMMA **`header.District`** hazırda Oracle-un
+`POCHT_INDEKSI` (poçt indeksi) sütunundan doldurulur — bu, REAL "Rayon"
+DEYİL, sadəcə sxemdə "district" adlı sahə olduğu üçün ƏN YAXIN tapılan
+sütun seçilmişdi (13.11.2026). **`header.Street`** isə TƏK bir sahədir —
+Oracle-un `KUCHENIN_ADI_VE_NOMRESI` (küçə+ev nömrəsi BİRLİKDƏ) sütunundan,
+yoxsa operatorun formadaki TƏK "Ünvan" sərbəst-mətn inputundan (`SigUnvan`)
+gəlir — küçə adı ilə ev/mənzil nömrəsi AYRILMIR.
+
+İstifadəçi qeyd etdi ki, yüklənən proqramda (real goAML portalı) Şəhər/
+Rayon/Küçə ÜÇ ayrı sahədir və bu bölgünü ÖZÜ göndərəcək. **Gözlənilir** —
+istifadəçinin göndərəcəyi dəqiq xəritə (hansı Oracle sütunu Rayona, hansı
+Küçəyə uyğun gəlir, formaya yeni "Rayon" inputu lazımdırmı) alınanda bu
+üç sahə düzgün ayrılacaq. Dəyişdirilməli yerlər əvvəlcədən bilinir:
+`HeaderZenginlesdirAsync`-in PEP/HRZ budaqlarındaki `header.City`/
+`District`/`Street` sətirləri (`GoamlService.cs`), lazım gəlsə
+`Tesdiq.cshtml`-ə yeni "Rayon" inputu (SIG blokunda, "Ünvan"ın yanında) və
+uyğun `GoamlEmeliyyat`/`GoamlTesdiqDto` sahəsi (yeni EF migration tələb edə
+bilər).
+
+### 3. "Qaralamaya qaytaranda JS ilə?" — HƏLL EDİLDİ, TAM SƏHİFƏ YENİLƏNMƏSİ ARADAN QALDIRILDI
+
+Kök səbəb: "Qaralamaya qaytar" düyməsi adi `<form method="post">` idi —
+POST → `RedirectToAction(Siyahi)` → BÜTÖV səhifə yenidən render olunur,
+brauzer skrollu yuxarı sıfırlanır — istifadəçinin "səhifə oynayır, qalxır
+yuxarı" şikayətinin SƏBƏBİ məhz bu idi.
+
+**Düzəliş — Gələn Mail-in `HamisiniOxunduIsareEt`-i ilə EYNİ naxış** (bax
+CLAUDE.md-dəki həmin bölmə): server tərəfi redirect/TempData ƏVƏZİNƏ
+HƏMİŞƏ `Json({success, message})` qaytarır; görüntü tərəfi isə HƏR sətirdə
+İKİ formu (Qaralamaya qaytar + Sil) EYNİ ANDA DOM-da saxlayır, YALNIZ biri
+görünür (`style="display:none"` digərində) — bu, yeni antiforgery tokeni
+JS-dən qurmaq ehtiyacını aradan qaldırır (hər formun ÖZ tokeni onsuz da
+Razor-un `asp-action` tag helper-i ilə render olunub). JS "Qaralamaya
+qaytar"ın submit-ini tutur (`preventDefault`), `fetch`-lə serverə göndərir,
+uğurlu cavabda: status pilini "Qaralama"ya dəyişir, "Qaralamaya qaytar"
+formunu gizlədir, "Sil" formunu göstərir — **səhifə HEÇ YERDƏN yenidən
+yüklənmir**, skroll mövqeyi qorunur.
+
+⚠️ **"Sil" düyməsinə TOXUNULMADI** — istifadəçi yalnız "Qaralamaya qaytar"
+üçün şikayət etdi, qapsam genişləndirilmədi; o hələ adi postback-dir (öz
+skroll-sıçrama "problemi" eyni səbəbdəndir, amma İSTƏNMƏYİB).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/fiqurlu-mötərizə balansı Python skriptlə — Siyahi.cshtml
+100/100 paren, 51/51 brace; EmeliyyatlarController.cs 208/208 paren, 61/61
+brace; `<script>` bloku Node ilə sintaksis yoxlamasından keçdi; mojibake
+YOX). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real mühitdə
+yoxlamalıdır: ixrac edilmiş bir qeydin yanındaki "Qaralamaya qaytar"a basıb
+— səhifənin skroll mövqeyinin DƏYİŞMƏDİYİNİ, status pilinin "Qaralama"ya
+dönüb "Sil" düyməsinin onun yerinə çıxdığını, "Yeni namizəd axtar"
+qayıdıb-gələndə həmin qeydin artıq Qaralama kimi göründüyünü təsdiqləməlidir.
