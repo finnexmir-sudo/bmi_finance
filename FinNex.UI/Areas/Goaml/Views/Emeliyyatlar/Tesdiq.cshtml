@@ -404,6 +404,10 @@
                     <div><label class="gml-flbl">PİN</label><input asp-for="Snn" class="fn-input" /></div>
                     <div><label class="gml-flbl">Vəzifə</label><input asp-for="SigVezife" class="fn-input" /></div>
                     <div><label class="gml-flbl">İş yerinin adı</label><input asp-for="SigIsYeriAdi" class="fn-input" /></div>
+                    @* 24.11.2026 — decimal sahə, asp-for YAZMA (az-AZ mədəniyyəti
+                       vergüllə render edər, <input type="number"> yalnız NÖQTƏ qəbul
+                       edir — bax CLAUDE.md "Dəyər Sahəsi — step və decimal(p,s)"). *@
+                    <div><label class="gml-flbl">Aylıq gəlir</label><input type="number" step="any" name="SigAyliqGelir" class="fn-input" value="@(Model.SigAyliqGelir?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" /></div>
                     <div><label class="gml-flbl">Telefon növü</label><input asp-for="SigTelefonNovu" class="fn-input" /></div>
                     <div><label class="gml-flbl">Rabitə növü</label><input asp-for="SigRabiteNovu" class="fn-input" /></div>
                     <div><label class="gml-flbl">Telefon nömrəsi</label><input asp-for="SigTelefonNomresi" class="fn-input" /></div>
@@ -606,6 +610,7 @@
             gmlDoldur('SigVerenOrqan', s.verenOrqan);
             gmlDoldur('SigVezife', s.vezife);
             gmlDoldur('SigIsYeriAdi', s.isYeriAdi);
+            gmlDoldur('SigAyliqGelir', s.ayliqGelir);
         }
         gmlConDropdownYenile(kyc.fiziki ? [] : kyc.elaqaliSexsler);
     }

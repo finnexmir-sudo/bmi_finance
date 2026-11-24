@@ -12838,15 +12838,61 @@ LAZIM DEYİLDİ.** İstifadəçinin "city yoxdur" şikayəti bu halda data boşl
 (SIG blokunda "Şəhər" inputu doldurulmayıb) — operator bu namizədi "Redaktə
 et"lə açıb "Şəhər" sahəsini doldurub YENİDƏN ixrac etməlidir.
 
-⚠️ **`averageMonthlyIncome` DÜZƏLDİLMƏDİ** — yuxarıda izah olunduğu kimi, bu,
-TAMAMİLƏ Oracle-dan gələn bir sahədir (AYSEL-in ÖZÜNDƏ belə forma-fallback-ı
-yoxdur), əlavə forma sahəsi (yeni DB sütunu + migration) olmadan düzəldilə
-bilməz — bu, AÇIQ İCAZƏ tələb edən bir qərardır, özbaşına əlavə edilmədi.
+### `averageMonthlyIncome` — EYNİ GÜN DÜZƏLDİLDİ: bu da `imza_huquqi_olan_shexsler`-in ÖZÜNDƏDİR, AYRI KYC bazası DEYİL
+
+Yuxarıdakı "ƏLAVƏ FORMA SAHƏSİ olmadan düzəldilə bilməz" qənaəti SƏHV çıxdı —
+istifadəçi AYSEL-in Oracle Forms "Properties of item AYLIQ_GELIR" ekranını
+göndərdi: **Canvas=HUQUQI_SHEXS, Master Mirror Item=IMZA_HUQUQI_OLAN_
+SHEXSLER.AYLIQ_GELIR, Insert Allowed=TRUE, Update Allowed=TRUE, Enabled=TRUE**.
+Bu, `SigVezife`/`SigIsYeriAdi`-nin elə EYNİ cədvəlidir (`odb.imza_huquqi_
+olan_shexsler`) — AYSEL-in özündə AYLIQ_GELIR Vəzifə/İş yeri ilə YANAŞI,
+operatorun ƏL İLƏ doldura bildiyi bir sahədir, sadəcə bizim `rehberSetirleri`
+SQL-i onu SELECT siyahısına əlavə ETMƏMİŞDİ.
+
+**Düzəliş — "position/workplace"-in elə özü ilə EYNİ naxış:**
+1. `GoamlEmeliyyat.SigAyliqGelir` (`decimal?`, migration
+   `20261124090000_GoamlSigAyliqGelir.cs`, yalnız `AddColumn`).
+2. `GoamlElaqaliSexsDto.AyliqGelir` (yeni sahə) — `HesabSahibiKycAsync`-in
+   "Rəhbər" sorğusuna `s.ayliq_gelir` əlavə olundu, `ImzaHuququSetirdenQur`-a
+   mapping (`NumayendeSetirdenQur`-a YOX — Vezife/IsYeriAdi kimi, bu da
+   YALNIZ SIG-dədir, CON-a yazılmır).
+3. `GoamlTesdiqDto.SigAyliqGelir` + `DtoDenDoldur`/`DtoyaCevir`-in HƏR İKİ
+   nüsxəsi (SigVezife/SigIsYeriAdi-nin yanında, üç yerdə).
+4. `header.AverageMonthlyIncome` (HƏM PEP, HƏM HRZ) — son ehtiyat olaraq
+   `?? e.SigAyliqGelir` əlavə olundu (`?? 0m`-dan ƏVVƏL).
+5. `EmeliyyatlarController.KycTetbiqEt` + `Tesdiq.cshtml`-in `gmlDoldur`
+   çağırışı — auto-doldurma zənciri (CON/SIG avtomatik KYC, 09-10.11.2026)
+   bu sahəni DƏ daşıyır.
+6. Forma — "Aylıq gəlir" input-u **`asp-for` YAZMADAN** (decimal sahə, az-AZ
+   mədəniyyəti vergüllə render edər — "Dəyər Sahəsi" qaydası), `type="number"
+   step="any"`, dəyər `InvariantCulture` ilə əl ilə yazılıb.
 
 ⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə"/"Export"
 çağırışlarına təsir edir; artıq ixrac edilmiş qeydlər üçün operator "Qaralamaya
-qaytar" → "Redaktə et" (Şəhər/Vəzifə/İş yeri/Ölkə sahələrini doldur) → yenidən
-Təsdiqlə/Export axınından keçməlidir.
+qaytar" → "Redaktə et" (Şəhər/Vəzifə/İş yeri/Ölkə/Aylıq gəlir sahələrini
+doldur) → yenidən Təsdiqlə/Export axınından keçməlidir.
+
+⚠️ **Qayda (bu sessiyada İKİNCİ dəfə təkrarlanan dərs):** "bu sahə Oracle-dan
+gəlir, forma-fallback-ı yoxdur, düzəldilə bilməz" qənaətinə — hətta AYSEL-in
+ÖZ mənbə SQL-i (`v_goal.*` fallback-ı yoxluğu) bunu TƏSDİQLƏYİRMİŞ kimi
+görünsə belə — tələsmə. "Mənbə SQL-də forma-fallback yoxdur" ilə "bu sahə
+HEÇ VAXT əl ilə doldurulmur" EYNİ ŞEY DEYİL — AYSEL-in ÖZ EKRANINDA (Oracle
+Forms Properties) bu sahə Insert/Update Allowed=TRUE ola bilər, yəni
+operator onu BAŞQA bir yoldan (export zamanı YOX, əsas KYC-doldurma zamanı)
+daxil edir və nəticə elə O CƏDVƏLDƏ (bizim onsuz da oxuduğumuz
+`imza_huquqi_olan_shexsler`) qalır — sadəcə bizim SELECT siyahımız o sütunu
+əskik qoyub. Şübhəli qalanda Oracle Forms-un öz "Properties" ekranını
+(Insert/Update/Enabled bayraqları) istəmək, mənbə SQL-in NVL zəncirinə
+güvənməkdən DAHA ETİBARLI bir dəlildir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri
+üzrə hər faylda ayrıca ölçülüb — hamısı net balanslı). İstifadəçi Visual
+Studio-da **Rebuild All**, `Update-Database`, sonra real ssenari ilə
+yoxlamalıdır: "Hesab imza hüququ olan şəxs" blokunda "Aylıq gəlir" inputunun
+göründüyünü, auto-doldurma işlədikdə (Oracle-da uyğun sətir tapılsa) bu
+sahənin özbaşına dolduğunu, operator əl ilə dəyişə bildiyini, ixrac edilən
+JSON-da `averageMonthlyIncome`-un artıq bu dəyəri daşıdığını təsdiqləməlidir.
 
 ⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
 (mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri

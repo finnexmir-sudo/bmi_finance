@@ -321,6 +321,7 @@ namespace FinNex.Application.Services.Goaml
             e.SigVerildiyiOlke = dto.SigVerildiyiOlke;
             e.SigVezife = dto.SigVezife;
             e.SigIsYeriAdi = dto.SigIsYeriAdi;
+            e.SigAyliqGelir = dto.SigAyliqGelir;
             e.InstitutionName = dto.InstitutionName;
             e.Swift = dto.Swift;
             e.Account = dto.Account;
@@ -463,6 +464,7 @@ namespace FinNex.Application.Services.Goaml
             SigVerildiyiOlke = e.SigVerildiyiOlke,
             SigVezife = e.SigVezife,
             SigIsYeriAdi = e.SigIsYeriAdi,
+            SigAyliqGelir = e.SigAyliqGelir,
             InstitutionName = e.InstitutionName,
             Swift = e.Swift,
             Account = e.Account,
@@ -748,6 +750,7 @@ namespace FinNex.Application.Services.Goaml
                 SigVerildiyiOlke = e.SigVerildiyiOlke,
                 SigVezife = e.SigVezife,
                 SigIsYeriAdi = e.SigIsYeriAdi,
+                SigAyliqGelir = e.SigAyliqGelir,
                 InstitutionName = e.InstitutionName,
                 Swift = e.Swift,
                 Account = e.Account,
@@ -1340,7 +1343,7 @@ namespace FinNex.Application.Services.Goaml
                     "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
                     "s.sheher, s.olke, s.senedin_novu, s.seriyasi_ve_nomresi, s.verilme_tarixi, " +
                     "s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi, " +
-                    "s.ish_yerinin_adi, s.vetendashligi " +
+                    "s.ish_yerinin_adi, s.vetendashligi, s.ayliq_gelir " +
                     "from odb.imza_huquqi_olan_shexsler s " +
                     "where s.regnom = '" + regnomKodu + "' and (s.imza_bitme is null or s.imza_bitme > sysdate) " +
                     "and exists (select 1 from odb.aml_related_persons rp where rp.id_aml = s.id_aml and rp.id_related_persons = 2)",
@@ -1469,6 +1472,7 @@ namespace FinNex.Application.Services.Goaml
             VerildiyiOlke = DVal(r, "VERILDIYI_OLKE") as string,
             Vezife = DVal(r, "VEZIFESI") as string,
             IsYeriAdi = DVal(r, "ISH_YERININ_ADI") as string,
+            AyliqGelir = ToDecimal(DVal(r, "AYLIQ_GELIR")),
             Vetendasligi = DVal(r, "VETENDASHLIGI") as string,
         };
 
@@ -1961,7 +1965,7 @@ namespace FinNex.Application.Services.Goaml
                 header.Street = TemizMetn(fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi) ?? TemizMetn(e.SigUnvan);
                 header.Home = header.Street;
                 header.Flat = "";
-                header.AverageMonthlyIncome = fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
+                header.AverageMonthlyIncome = fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? e.SigAyliqGelir ?? 0m;
                 // Position/Workplace — SigVezife/SigIsYeriAdi ARTIQ formada var
                 // (operator doldurur), AMMA header bunlara HEÇ TOXUNMURDU — Oracle
                 // tapmasa iki sahə də SƏSSİZCƏ boş qalırdı. Düzəliş: City/Street-in
@@ -2013,7 +2017,7 @@ namespace FinNex.Application.Services.Goaml
                 header.Home = header.Street;
                 header.Flat = "";
                 header.SofIncome = 0;
-                header.AverageMonthlyIncome = cif?.AyliqGelir ?? fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
+                header.AverageMonthlyIncome = cif?.AyliqGelir ?? fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? e.SigAyliqGelir ?? 0m;
                 header.Position = cif?.Vezifesi ?? fizik?.Vezifesi ?? imzaHuquq?.Vezifesi ?? e.SigVezife;
                 header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi);
                 // AYSEL: nvl(nvl(nvl(v_PV_HUQUQI.Customercreationdate, v_cif.customercreationdate), v_fizik.customercreationdate), v_imza_huquq.imza_bashlama)

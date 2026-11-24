@@ -45,6 +45,11 @@ namespace FinNex.Application.DTOs.Goaml
         /// <summary>Yalnız SIG blokunda var (iş yeri/vəzifə) — CON-a yazılmır.</summary>
         public string? Vezife { get; set; }
         public string? IsYeriAdi { get; set; }
+
+        /// <summary>Yalnız SIG blokunda — "Aylıq gəlir" (24.11.2026, Vezife/
+        /// IsYeriAdi ilə EYNİ cədvəl/tab, `imza_huquqi_olan_shexsler.
+        /// AYLIQ_GELIR`) — CON-a (NUMAYENDE) yazılmır.</summary>
+        public decimal? AyliqGelir { get; set; }
     }
 
     /// <summary>

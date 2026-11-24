@@ -155,6 +155,12 @@ namespace FinNex.Domain.Entities.Goaml
         public string? SigVerildiyiOlke { get; set; }         // ID_ISSUE_COUNTRY_SIG
         public string? SigVezife { get; set; }                // "Vəzifə" — Oracle sütunu formada ayrıca görünüb, adı hələ tutulmayıb
         public string? SigIsYeriAdi { get; set; }             // "İş yerinin adı" — eyni
+        public decimal? SigAyliqGelir { get; set; }           // AYLIQ_GELIR — 24.11.2026, `odb.imza_huquqi_olan_shexsler`-in
+                                                                // ÖZÜNDƏ (SigVezife/SigIsYeriAdi ilə EYNİ cədvəl/tab, AYSEL-in
+                                                                // öz Oracle Forms item-i — Canvas=HUQUQI_SHEXS, Master Mirror
+                                                                // Item=IMZA_HUQUQI_OLAN_SHEXSLER.AYLIQ_GELIR, Insert/Update
+                                                                // Allowed=TRUE) — operator əl ilə doldura/düzəldə bilər,
+                                                                // auto-doldurma da ora sorğulayır (bax HesabSahibiKycAsync).
 
         // ══ BLOK 3 — "Hüquqi şəxsin" (göndərən tərəf, suffikssiz) ══════════
         public string? InstitutionName { get; set; }          // INSTITUTION_NAME
