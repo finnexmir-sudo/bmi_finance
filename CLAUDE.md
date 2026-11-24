@@ -14915,3 +14915,63 @@ varsa) İNDİ göründüyünü, seçimdən sonra CON sahələrinin dolduğunu,
 SEÇMƏSƏN heç nəyin dəyişmədiyini; (2) Risk tabından bir namizədi aç →
 "Geri"/"Ləğv et"in Risk-in öz Index-inə qayıtdığını, Əməliyyatlar tabından
 açılanda isə Əməliyyatlar-ın Index-inə qayıtdığını təsdiqləməlidir.
+
+## GOAML — NUMAYENDE "Sənədin Verilmə Tarixi"/"Etibarlılıq Müddəti" — KOD YOLU ARTIQ MÖVCUDDUR, DİAQNOSTİKA ƏLAVƏ OLUNDU (24.11.2026)
+
+İstifadəçi AYSEL-in Oracle Forms "Properties" ekranının NUMAYENDE tab
+page-indəki `VERILME_TARIXI`/`ETIBARLILIQ_MUDDETI` item-lərini göstərib:
+*"NUMAYENDEDE senedin verilme tarixi ve etibarliliq muddetinide elave
+edek, proqramda bos gelir"* — dropdown-dan nümayəndə seçiləndə bu iki
+tarix xanasının boş qaldığını bildirdi.
+
+**Kod tərəfi BÜTÖV, UCDAN-UCA yoxlanıldı — HEÇ bir boşluq tapılmadı:**
+Oracle `SELECT` (`NumayendeSiyahisiAsync`, `n.verilme_tarixi`/
+`n.etibarliliq_muddeti`, 09.11.2026-dan bəri var) → DTO mapping
+(`NumayendeSetirdenQur` → `GoamlElaqaliSexsDto.SenedinVerilmeTarixi`/
+`SenedinEtibarliliqMuddeti`) → forma input-ları (`Tesdiq.cshtml`,
+`name="ConSenedinVerilmeTarixi"`/`"ConSenedinEtibarliliqMuddeti"`) → JS
+dropdown-seçim handler-i (`gmlConSec` → `gmlDoldur`) → "Bax" (Detal.cshtml)
+sırf-oxunuş görüntüsü → JSON ixracı (`RepresentativeQur`-un
+`ReprIdIssueDate`/`ReprIdExpiryDate`-i) — hamısı İSTƏNİLƏN KYC sahəsi
+(məs. `ConDogulduguTarix`/doğum tarixi, istifadəçinin öz sözü ilə "işlək")
+İLƏ BİRƏ-BİR EYNİ naxışı izləyir, fərqli/əskik bir həlqə TAPILMADI.
+
+**İlk sualım ("harada dəqiq boşdur?") istifadəçini haqlı olaraq
+narahat etdi** ("sen ne danisirsan?") — kod artıq işlək görünürdüsə
+texniki sual vermək əvəzinə birbaşa diaqnoz üçün bir addım atmaq
+lazım idi. Kod yolu bu qədər ətraflı yoxlanılıb TAPILMADIĞI üçün
+qalan YEGANƏ izah **Oracle-un ÖZ datasıdır** — ya bu konkret NUMAYENDE
+sətrində sütun həqiqətən `NULL`-dur, ya da raw dəyərin .NET tipi/mətn
+formatı `TarixiParseEt`-in gözlədiyindən fərqlidir (NUMAYENDE-nin bu iki
+sütununun `DATE` yoxsa `VARCHAR2` olduğu HEÇ VAXT canlı təsdiqlənməyib —
+yalnız `imza_huquqi_olan_shexsler`-in eyni-adlı sütunları VARCHAR2 kimi
+təsdiqlənib, 09.11.2026).
+
+**Həll — kod dəyişikliyi YOX, DİAQNOSTİKA + ehtiyat genişlənmə:**
+1. `NumayendeSiyahisiAsync`-ə hər qaytarılan sətir üçün `LogInformation` —
+   `VERILME_TARIXI`/`ETIBARLILIQ_MUDDETI`-nin RAW .NET tipini (`GetType().
+   FullName`) və dəyərini loglayır (`Logs\log-<tarix>.txt`-də "GOAML
+   NUMAYENDE tarix" axtarışı ilə görünür) — Oracle-a ƏLAVƏ sorğu
+   YAZMIR, artıq çəkilmiş sətirlərin NECƏ göründüyünü göstərir.
+2. `TarixiParseEt`-ə beş ehtiyat format (`dd-MMM-yy`/`dd-MMM-yyyy`,
+   `dd.MM.yy`, vaxtlı variantlar) — VARCHAR2 sütunda Oracle-un
+   NLS_DATE_FORMAT-a görə fərqli mətn yazma ehtimalına qarşı, zərərsiz
+   genişlənmə.
+
+**Qayda:** kod yolunu tam izləyib (hər qatı, hər adı) heç bir uyğunsuzluq
+TAPMADIQDA — xüsusən EYNİ naxışın BAŞQA bir sahədə (burada: doğum tarixi)
+işlək olduğu TƏSDİQ olunubsa — problem çox vaxt artıq KODDA DEYİL,
+CANLI DATADADIR. Növbəti addım yenidən soruşmaq YOX, canlı datanı GÖRMƏYƏ
+imkan verən bir log sətri əlavə etməkdir — istifadəçi bir dəfə eyni
+senarini sınayıb loqu göndərsə, kök səbəb (NULL data, yoxsa format
+uyğunsuzluğu) DƏRHAL aydınlaşacaq.
+
+⚠️ **Bu sessiyada `dotnet build`/Oracle bağlantısı mümkün olmadığı üçün
+yalnız əl ilə yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu
+sessiyanın əlavə etdiyi sətirləri üzrə ölçülüb — tam balanslı).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra EYNİ nümayəndəni
+(verilmə/bitmə tarixi boş gələn) dropdown-dan YENİDƏN seçməlidir — forma
+hələ də boş gəlirsə, `Logs\log-<bugünkü-tarix>.txt`-də "GOAML NUMAYENDE
+tarix" sətrini tapıb göndərməlidir: "tip=null, dəyər=NULL" çıxarsa Oracle-da
+sütun həqiqətən boşdur (data məsələsi, kodda düzəliş yoxdur); naməlum bir
+mətn/tip çıxarsa, həmin konkret formatı əlavə etmək növbəti addım olacaq.
