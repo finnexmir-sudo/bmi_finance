@@ -154,6 +154,29 @@ public class EmeliyyatlarController : Controller
         // istiqaməti deyil. Mənbə: `odb.regnom.INN_REGNOM` (istifadəçi tapıntısı).
         dto.IncorporationNumber = debetKassadir ? herIkiTeref.Kredit?.Voen : herIkiTeref.Debet?.Voen;
 
+        // 24.11.2026, istifadəçi tapıntısı: "Huquqi IN seçirik, json-da fiziki
+        // şəxs düşür" — NameUr/RegistracNomer/IncorporationNumber yuxarıda
+        // (108-130) YALNIZ kassa yoxlamasına görə sabitlənib, Tip-dən TAMAMİLƏ
+        // ASILI DEYİL (Tip hələ seçilməyib — operator onu BU formada seçəcək).
+        // Kassa olmayan hallarda (debetKassadir=false, kreditKassadir=false,
+        // yəni HƏR İKİ tərəf real hesab) default HƏMİŞƏ Debet-ə düşür — Huquqi
+        // (IN) seçilsə belə. Həll CON/SIG-in artıq işlətdiyi EYNİ qaydadır
+        // (BizimTerefDebetdir: OUT→Debet, IN→Kredit) — AMMA bunu YALNIZ Tip
+        // seçiləndə (client-side) tətbiq etmək olar, ona görə hər iki tərəfin
+        // xam namizəd dəyərləri (De/Kre) + kassa bayraqları Tesdiq.cshtml-ə
+        // ötürülür, Tip "change" JS-i (gmlEntityTerefiTetbiqEt) kassa YOXDURSA
+        // Tip-in istiqamətinə görə yenidən tətbiq edir. Kassa VARSA (bir tərəf
+        // GL/kassa hesabıdırsa) bu üç sahə HƏMİŞƏ kassa-olmayan tərəfdə qalır —
+        // Tip-dən ASILI OLMUR (kassa heç vaxt real "hüquqi şəxs" deyil).
+        ViewBag.NameUrDe = nameLicschDe;
+        ViewBag.NameUrKre = nameLicschKre;
+        ViewBag.RegDe = registracNomerDe;
+        ViewBag.RegKre = registracNomerKre;
+        ViewBag.VoenDe = herIkiTeref.Debet?.Voen;
+        ViewBag.VoenKre = herIkiTeref.Kredit?.Voen;
+        ViewBag.DebetKassadir = debetKassadir;
+        ViewBag.KreditKassadir = kreditKassadir;
+
         ViewBag.KycDebet = herIkiTeref.Debet;
         ViewBag.KycKredit = herIkiTeref.Kredit;
         ViewBag.HerIkiTerefdeKycVar = herIkiTeref.Debet != null && herIkiTeref.Kredit != null;

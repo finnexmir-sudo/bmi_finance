@@ -556,6 +556,38 @@
     //    null/undefined = istiqamətsiz (HToH/FToF) — operator özü seçsin. ──
     const gmlTipBizimDebetdir = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(tipYonleri));
 
+    // ── NameUr/RegistracNomer/IncorporationNumber — "hansı tərəf hüquqi şəxs/
+    //    reporting subject-dir" sualı (24.11.2026, istifadəçi tapıntısı: "Huquqi
+    //    IN seçirik, json-da fiziki şəxs düşür"). Server GET-də bu üç sahəni
+    //    YALNIZ kassa yoxlamasına görə sabitləyir (Tip hələ seçilməyib) — kassa
+    //    OLMAYAN hallarda (hər iki tərəf real hesab) HƏMİŞƏ Debet-ə düşür, Tip
+    //    nə olursa olsun. Burada hər iki tərəfin XAM namizəd dəyərləri +
+    //    kassa bayraqları var — Tip dəyişəndə, kassa YOXDURSA, CON/SIG-in artıq
+    //    işlətdiyi EYNİ qayda (BizimTerefDebetdir: OUT→Debet, IN→Kredit) tətbiq
+    //    olunur. Redaktə modunda (Oracle sorgusu YOXDUR) hər ikisi `null` gəlir. ──
+    const gmlNameUrDe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.NameUrDe as string));
+    const gmlNameUrKre = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.NameUrKre as string));
+    const gmlRegDe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.RegDe as string));
+    const gmlRegKre = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.RegKre as string));
+    const gmlVoenDe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.VoenDe as string));
+    const gmlVoenKre = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.VoenKre as string));
+    const gmlDebetKassadir = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((bool?)ViewBag.DebetKassadir ?? false));
+    const gmlKreditKassadir = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((bool?)ViewBag.KreditKassadir ?? false));
+
+    function gmlEntityTerefiTetbiqEt(bizimDebetdir) {
+        // Redaktə modu — bu dəyərlər heç vaxt göndərilməyib, toxunma.
+        if (gmlNameUrDe == null && gmlNameUrKre == null) return;
+        var terefDebet;
+        if (gmlDebetKassadir) terefDebet = false;        // Debet kassadır → real tərəf Kredit
+        else if (gmlKreditKassadir) terefDebet = true;   // Kredit kassadır → real tərəf Debet
+        else if (bizimDebetdir === true) terefDebet = true;    // OUT → bizim tərəf Debet
+        else if (bizimDebetdir === false) terefDebet = false;  // IN → bizim tərəf Kredit
+        else return; // istiqamətsiz (H to H/F to F) VƏ heç biri kassa deyil — qərar vermə
+        gmlDoldur('NameUr', terefDebet ? gmlNameUrDe : gmlNameUrKre);
+        gmlDoldur('RegistracNomer', terefDebet ? (gmlRegDe || gmlRegKre) : (gmlRegKre || gmlRegDe));
+        gmlDoldur('IncorporationNumber', terefDebet ? gmlVoenDe : gmlVoenKre);
+    }
+
     function gmlDoldur(ad, deyer) {
         const el = document.querySelector('[name="' + ad + '"]');
         if (!el) return;
@@ -716,6 +748,7 @@
             var bizimDebetdir = gmlTipBizimDebetdir[this.value];
             if (bizimDebetdir === true && gmlKycDebet) gmlKycTetbiqEt(gmlKycDebet);
             else if (bizimDebetdir === false && gmlKycKredit) gmlKycTetbiqEt(gmlKycKredit);
+            gmlEntityTerefiTetbiqEt(bizimDebetdir);
 
             // ── Tərəf-seçim dropdown-u İSTİQAMƏTLİ Tip seçiləndə yoxa çıxır
             //    (13.11.2026) — Tip artıq "hansı tərəf bizimdir" sualını özü

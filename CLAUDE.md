@@ -15345,3 +15345,95 @@ case blokunun ÖZÜNDƏ). İstifadəçi Visual Studio-da **Rebuild All** ilə
 yenidən sınamalıdır — RZ1010 artıq ÇIXMAMALIDIR, VƏ yuxarıdakı bölmədəki
 real-ssenari yoxlaması (Risk-dən "Təsdiqlə" açanda sidebar-da "Risk"in aktiv
 qaldığı) bu dəfə HƏQİQƏTƏN icra oluna bilər.
+
+## GOAML — NameUr/RegistracNomer/IncorporationNumber Tip-dən ASILI DEYİLDİ — "Huquqi (IN)" Seçəndə Debet Qalırdı, Fiziki Şəxs JSON-a Düşürdü (24.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı testdə: *"huquqi in secirik,jsonda false umumiyyetle yoxdur.
+fiziki sexs dusur yuklediyimiz yere."* — sonra sual-cavabla kök səbəb birgə
+dəqiqləşdirildi: *"basqa ne lazimdirki bize, demeli kredit goturulmeli
+deyil?"* (yəni: NameUr/RegistracNomer DƏ CON/SIG-in artıq izlədiyi "Tip-in
+istiqaməti" qaydasına tabe olmalıdır, Kredit götürülməlidir — Debet YOX).
+
+### Kök səbəb — İKİ MÜSTƏQİL "hansı tərəf?" mexanizmi var idi, biri Tip-i GÖRMÜRDÜ
+
+`EmeliyyatlarController.Tesdiq` (GET) `NameUr`/`RegistracNomer`/
+`IncorporationNumber`-i **YALNIZ** "kassadırmı" yoxlamasına
+(`debetKassadir`/`kreditKassadir`, "100" prefiksi) görə təyin edirdi:
+
+```csharp
+NameUr = debetKassadir ? nameLicschKre : nameLicschDe,
+...
+RegistracNomer = debetKassadir ? (registracNomerKre ?? registracNomerDe)
+    : kreditKassadir ? (registracNomerDe ?? registracNomerKre)
+    : (registracNomerDe ?? registracNomerKre),
+...
+dto.IncorporationNumber = debetKassadir ? herIkiTeref.Kredit?.Voen : herIkiTeref.Debet?.Voen;
+```
+
+Bu, **GET zamanı, Tip SEÇİLMƏZDƏN ƏVVƏL** hesablanır (operator Tip-i formada
+seçəcək) — kassa olmayan hallarda (hər iki tərəf real hesab, məs. həqiqi
+Hüquqi-Hüquqi əməliyyat) `debetKassadir=false, kreditKassadir=false`-dur →
+**HƏMİŞƏ Debet** götürülür, operator "Huquqi (IN)" seçsə belə. Paralel
+olaraq, CON/SIG (Nümayəndə/İmza hüququ olan şəxs) ARTIQ Tip-in istiqamətinə
+(`GoamlTipiExtensions.BizimTerefDebetdir()`: OUT→Debet, IN→Kredit) görə
+düzgün tərəfi seçirdi (`Tesdiq.cshtml`-in Tip `change` listener-i) — AMMA bu
+qayda YALNIZ CON/SIG-ə tətbiq olunurdu, NameUr/RegistracNomer/
+IncorporationNumber-ə HEÇ TOXUNMURDU. Nəticə: Tip="Huquqi (IN)" seçiləndə
+SIG (İmza hüququ) doğru Kredit-dən dolurdu, AMMA `SenderQurAsync`/
+`ReceiverQurAsync`-ın Entity şərti (`!string.IsNullOrWhiteSpace(e.NameUr)`)
+HƏLƏ DƏ Debet-in (boş ola bilən) adına baxırdı — boş olanda `else if
+(ToAdi/ToSoyadi)` qoluna düşüb **Person** (fiziki şəxs) yazırdı, "Huquqi"
+seçilsə belə. `individualPerson` (HRZ header-i) da eyni səbəbdən — Debet-in
+(mövcud olmaya bilən) `RegistracNomer`-i ilə Oracle-da sətir tapılmadığı
+üçün `null` qalıb JSON-dan tamamilə düşürdü ("false yoxdur").
+
+### Düzəliş — NameUr/RegistracNomer/IncorporationNumber DƏ eyni Tip-qaydasına tabe oldu
+
+Server GET-i hər iki tərəfin XAM namizəd dəyərlərini (`nameLicschDe/Kre`,
+`registracNomerDe/Kre`, `herIkiTeref.Debet/Kredit.Voen`) + kassa bayraqlarını
+`ViewBag`-ə yazır (`EmeliyyatlarController.cs`, `IncorporationNumber`
+sətrindən dərhal sonra). `Tesdiq.cshtml`-in Tip `change` listener-i indi
+YENİ `gmlEntityTerefiTetbiqEt(bizimDebetdir)` funksiyasını DA çağırır:
+
+```js
+function gmlEntityTerefiTetbiqEt(bizimDebetdir) {
+    if (gmlNameUrDe == null && gmlNameUrKre == null) return; // Redaktə modu
+    var terefDebet;
+    if (gmlDebetKassadir) terefDebet = false;        // Debet kassadır → real tərəf Kredit
+    else if (gmlKreditKassadir) terefDebet = true;   // Kredit kassadır → real tərəf Debet
+    else if (bizimDebetdir === true) terefDebet = true;    // OUT → Debet
+    else if (bizimDebetdir === false) terefDebet = false;  // IN → Kredit
+    else return; // H to H/F to F, heç biri kassa deyil — qərar vermə
+    gmlDoldur('NameUr', terefDebet ? gmlNameUrDe : gmlNameUrKre);
+    gmlDoldur('RegistracNomer', terefDebet ? (gmlRegDe || gmlRegKre) : (gmlRegKre || gmlRegDe));
+    gmlDoldur('IncorporationNumber', terefDebet ? gmlVoenDe : gmlVoenKre);
+}
+```
+
+**Kassa yoxlaması HƏMİŞƏ ÜSTÜNDÜR, Tip-dən ASILI OLMUR** — kassa/GL hesabı
+heç vaxt real "hüquqi şəxs" deyil, bu, 17.11.2026-da artıq həll edilmiş
+qaydadır (bax yuxarı "Kassa/GL Tərəfi" bölməsi) və TOXUNULMADI. YALNIZ
+kassa YOXDURSA (hər iki tərəf real hesab — bu düzəlişin əhatə etdiyi dəqiq
+hal) Tip-in istiqaməti qərar verir, eyni istiqaməti CON/SIG artıq işlədir.
+
+⚠️ **Redaktə modunda (Qaralamaya qaytarılmış qeydin redaktəsi) bu dəyərlər
+ÜMUMİYYƏTLƏ göndərilmir** (`RedakteEt` GET Oracle-a müraciət etmir, bax
+24.11.2026-dakı "Redaktə" bölməsi) — `gmlNameUrDe == null && gmlNameUrKre ==
+null` qoruyucusu bu halda funksiyanı dərhal dayandırır, Redaktədə ƏL İLƏ
+yazılmış NameUr/RegistracNomer/IncorporationNumber Tip dəyişəndə SƏSSİZCƏ
+SİLİNMİR.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRAKI "Təsdiqlə" Tip-
+seçimlərinə təsir edir, artıq təsdiqlənmiş/ixrac edilmiş qeydlər dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı hər iki faylda, JS sintaksisi `node -c` ilə Razor-un
+`@Html.Raw(...)` çağırışları balanslı mötərizə ilə əvəz edilərək yoxlanıldı,
+`RedakteEt` GET-in bu yeni ViewBag sahələrini HƏQİQƏTƏN göndərmədiyi təsdiq
+olundu). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari
+ilə yoxlamalıdır: kassa olmayan Hüquqi-Hüquqi namizəd aç, "Huquqi (IN)" seç →
+"Nümayəndə/İmza hüququ" ilə EYNİ tərəf (Kredit) NameUr/RegistracNomer/
+IncorporationNumber-i də doldursun, Export edəndə Sender/Receiver-in Entity
+(Person YOX) yazdığını, HRZ seçilibsə `individualPerson`-un artıq `true`/
+`false` ilə JSON-da göründüyünü (əvvəlki kimi tamamilə yox olmadığını)
+təsdiqləməli.
