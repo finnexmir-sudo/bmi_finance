@@ -15241,3 +15241,65 @@ tam bir F5/yenidən-yükləmə kifayətdir) dropdown-dan nümayəndəni YENİDƏ
 təsdiqləməlidir — eyni zamanda "Doğulduğu tarix" (ConDogulduguTarix/
 SigDogulduguTarix, EYNİ `type="date"`+fn-datepicker tələsinə düşən DİGƏR sahələr)
 JS-dən avtomatik doldurulan hallarda da indi düzgün göründüyünü yoxlamalıdır.
+
+## GOAML — Risk-dən "Təsdiqlə"yə Keçəndə Sidebar "Əməliyyatlar"a Dəyişirdi (24.11.2026, tapşırıq #65-in natamam qalan hissəsi)
+
+İstifadəçi: *"men baxiramki riskden tesdiqlemeye girirsen yene emeliyyat tabina
+kecir,bu mesele alinmir? alinmirsa de bilim,her defe sorusmayim."* — tapşırıq
+#65-in (`qaynaqTab` ilə "Geri"/"Ləğv et" düymələrini düzgün taba yönləndirmək)
+İŞİNİ başqa, FƏRQLİ bir simptomla QARIŞDIRMAQ asan idi: #65 YALNIZ "Geri"/
+"Ləğv et" düymələrinin HARA APARDIĞINI düzəltdi, SİDEBAR-IN "aktiv" işartısına
+HEÇ TOXUNMADI.
+
+**Kök səbəb — "Təsdiqlə" (Tesdiq action) FİZİKİ olaraq `EmeliyyatlarController`-dən
+gəlir, hansı tabdan açıldığından ASILI OLMADAN.** `_UserLayout.cshtml`-in Goaml
+sidebar-ı hər sətrin "aktiv"liyini SIRF `currentController`-ə görə hesablayırdı:
+`"Risk"` sətri `currentController == "Risk"` şərtinə, `"Əməliyyatlar"` sətri
+`currentController == "Emeliyyatlar"` şərtinə baxırdı. Tesdiq səhifəsi HƏMİŞƏ
+`EmeliyyatlarController`-in bir action-udur — operator "Risk"dən namizəd seçib
+"Təsdiqlə"yə girəndə URL `/Goaml/Emeliyyatlar/Tesdiq?...&qaynaqTab=risk` olur,
+`qaynaqTab` isə HEÇ YERDƏ sidebar-ın özünə ötürülmürdü — nəticə: sidebar hər dəfə
+"Əməliyyatlar"ı aktiv göstərirdi, operator vizual olaraq "Risk-dən çıxmış" kimi
+görünürdü, baxmayaraq ki "Geri"/"Ləğv et" düymələri (artıq #65-dən bəri) düzgün
+Risk-ə qayıdırdı.
+
+**Həll — `_UserLayout.cshtml`-in "goaml" case blokuna, `qaynaqTab`-ı sidebar-a
+BAĞLAYAN üç sətir:**
+```razor
+@{
+    var goamlRiskdenGelib = currentController == "Emeliyyatlar"
+        && currentAction == "Tesdiq" && ViewBag.QaynaqTab == "risk";
+}
+<a ... "Əməliyyatlar" ... class="... && !goamlRiskdenGelib ? "active" : "" ...">
+<a ... "Risk" ... class="@((currentController == "Risk" || goamlRiskdenGelib) && ...)">
+```
+`ViewBag.QaynaqTab` artıq `EmeliyyatlarController.Tesdiq`-in HƏM GET, HƏM POST
+qolunda yazılırdı (tapşırıq #65-dən) — YENİ bir sahə/parametr ƏLAVƏ ETMƏYƏ EHTİYAC
+QALMADI, mövcud siqnal sidebar-a DA oxundu. `ViewBag.QaynaqTab == "risk"` dinamik
+müqayisəsi `null`-la (bu dəyər YALNIZ Tesdiq-də yazılır, qalan BÜTÜN GOAML
+səhifələrində `null`-dur) TƏHLÜKƏSİZDİR — DLR runtime-da `null == "risk"` sadəcə
+`false` qaytarır, istisna atmır.
+
+⚠️ **`RedakteEt` action-una TOXUNULMADI** — redaktə HƏMİŞƏ "Emeliyyatlar/Siyahi"-yə
+qayıdır (CLAUDE.md-dəki #64-ün qeydi), Siyahı HƏR İKİ tabın ortaq nəticəsidir,
+"hansı tabdan gəlib" sualı Redaktədə MƏNASIZDIR — ona görə `qaynaqTab`-ı
+`RedakteEt`-ə ötürmək/sidebar-da oxumaq lazım deyil, sadəcə "Əməliyyatlar" aktiv
+qalır (əvvəlki kimi).
+
+**Qayda:** bir naviqasiya düzəlişi (burada: #65-in `qaynaqTab`-ı) İKİ AYRI görünən
+simptomu (1. "Geri" düyməsi hara aparır, 2. sidebar-ın özü hansı tabı aktiv
+göstərir) EYNİ ANDA həll ETMƏYƏ bilər — ikisi eyni kökə (fiziki controller vs
+MƏNTİQİ tab) bağlı olsa da, İKİ AYRI UI elementidir (bir `<a>` linki vs sidebar-ın
+`class="active"` hesablanması), hər ikisini AYRI-AYRI yoxlamaq lazımdır. İstifadəçi
+"bu hələ də baş verir" deyəndə, "mən artıq bunu düzəltmişdim" fərziyyəsinə
+güvənmədən, DƏQIQ hansı simptomdan danışdığını KODDA YENİDƏN YOXLA.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ dəyişən "goaml" case blokunun tamında
+ölçülüb — 9/9 paren, 2/2 brace, tam balanslıdır). İstifadəçi Visual Studio-da
+**Rebuild All** (və ya ".cshtml" view-u cəmi dəyişdiyi üçün ehtimal ki F5/yenidən-
+yükləmə belə kifayətdir) ilə, sonra real ssenari ilə yoxlamalıdır: Risk tabından
+bir namizədi "Təsdiqlə" ilə açıb, sidebar-da artıq "Risk" sətrinin AKTİV (bənövşəyi
+fon) qaldığını, "Əməliyyatlar" sətrinin SÖNDÜYÜNÜ təsdiqləməli — Əməliyyatlar
+tabından açılan namizəddə isə əksinə (Əməliyyatlar aktiv, Risk sönük) qaldığını
+yoxlamalıdır.

@@ -1539,12 +1539,22 @@
                        class="fn-nav-item @(currentController == "Dashboard" && currentArea == "Goaml" ? "active" : "")">
                         <i class="bi bi-grid-1x2"></i> Əsas
                     </a>
+                    @{
+                        // 24.11.2026 — "Təsdiqlə" (Tesdiq action) FİZİKİ olaraq
+                        // EmeliyyatlarController-dən gəlir, Risk-dən açılsa belə —
+                        // `qaynaqTab=risk` olanda sidebar "Risk" sətri AKTİV qalsın
+                        // deyə (əvvəl HƏMİŞƏ "Əməliyyatlar" göstərirdi, "Geri"/"Ləğv
+                        // et"in özü düzgün yönləndirsə belə, sidebar-da tab dəyişib
+                        // Risk-dən çıxmış kimi görünürdü — bax CLAUDE.md, eyni bölmə).
+                        var goamlRiskdenGelib = currentController == "Emeliyyatlar"
+                            && currentAction == "Tesdiq" && ViewBag.QaynaqTab == "risk";
+                    }
                     <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index"
-                       class="fn-nav-item @(currentController == "Emeliyyatlar" && currentAction != "Export" && currentArea == "Goaml" ? "active" : "")">
+                       class="fn-nav-item @(currentController == "Emeliyyatlar" && currentAction != "Export" && currentArea == "Goaml" && !goamlRiskdenGelib ? "active" : "")">
                         <i class="bi bi-list-check"></i> Əməliyyatlar
                     </a>
                     <a asp-area="Goaml" asp-controller="Risk" asp-action="Index"
-                       class="fn-nav-item @(currentController == "Risk" && currentArea == "Goaml" ? "active" : "")">
+                       class="fn-nav-item @((currentController == "Risk" || goamlRiskdenGelib) && currentArea == "Goaml" ? "active" : "")">
                         <i class="bi bi-shield-exclamation"></i> Risk
                     </a>
                     <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Export"
