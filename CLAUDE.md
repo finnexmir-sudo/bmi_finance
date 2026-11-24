@@ -15437,3 +15437,72 @@ IncorporationNumber-i də doldursun, Export edəndə Sender/Receiver-in Entity
 (Person YOX) yazdığını, HRZ seçilibsə `individualPerson`-un artıq `true`/
 `false` ilə JSON-da göründüyünü (əvvəlki kimi tamamilə yox olmadığını)
 təsdiqləməli.
+
+## GOAML — `dubl_number` Sahəsi Mənbəyi TƏSDİQLƏNDİ (AYSEL-in öz Properties ekranı ilə) — İNDİ YAZILIR (24.11.2026)
+
+İstifadəçi AYSEL-in Oracle Forms "Properties of item REGISTRATION_NUMBER"
+ekranını göndərdi: `Tab Page = HUQUQI_SHEXS`, `Master Mirror Item =
+HUQUQI_SHEXS.REGISTRATION_NUMBER` — bu, 05-11.11.2026 araşdırmasının
+(`97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-in öz baş şərhi, sətir 20-25:
+*"`sender_account_dubl_number`/`receiver_account_dubl_number` =
+`huquqi_shexs.REGISTRATION_NUMBER` ... `C_REGISTRATION_NUMBER(P_VOEN)`
+kursoru ilə VÖEN üzrə tapılır"*) **ƏLAVƏ, canlı təsdiqidir** — həmin tapıntı
+o vaxt kodla PORT EDİLMƏMİŞDİ (dəyərin real nümunədə məhkəmə/icra sənədi
+nömrəsinə bənzəməsi şübhə yaratmışdı), indi Oracle Forms-un ÖZÜ sütunu
+TƏSDİQLƏDİYİ üçün yazıldı.
+
+**Yeni Oracle sorğusu YOXDUR** — `odb.huquqi_shexs` artıq `HuquqiShexsAsync`
+(24.11.2026, `sphereOfActivity`/`businessStartDate` üçün qurulmuş) ilə
+sorğulanır, `registration_number` sütunu ONUN SELECT siyahısına əlavə
+olundu (`GoamlHuquqiShexsSetiri.RegistrationNumber`). `SenderQurAsync`/
+`ReceiverQurAsync`-ın Account bloku indi `HuquqiShexsAsync(e.
+IncorporationNumber, e.RegistracNomer, ct)` çağırır (SenderQurAsync-ın
+baş şərhindəki ARTIQ qəbul edilmiş qayda — AYSEL-in "Sender VÖEN-i ayrı,
+Receiver VÖEN-i ayrı" (`V_REGISTRATION_NUMBER_SEN`/`_REC`) modeli DEYİL,
+bizim ÜMUMİLƏŞDİRİLMİŞ, tək "bizim tərəf" VÖEN+regnom cütümüz).
+
+⚠️ **Eyni sorğu BİRDƏN ÇOX dəfə çağırıla bilər** (NGR/HRZ header-
+zənginləşdirməsi + Sender + Receiver, hər biri eyni `voen+regnom` ilə) —
+qəsdən optimallaşdırılmadı, layihənin digər report-generation-time Oracle
+çağırışları ilə EYNİ "bir-dəfəlik xərc qəbul edilir" qaydasına uyğundur.
+
+### Sender.Entity-nin mənbəyi — AYSEL-lə BİRƏ-BİR eynidir, TƏSDİQLƏNDİ
+
+İstifadəçi ayrıca soruşdu: "bizdə faylda Sender hissəsində 'Huquqi (IN)'-in
+məlumatı düşür, amma real goAML-də haradan gəlib o məlumat düşür?" —
+`97_Goaml_JSON_MMX_IN_Tam_Metn.sql:1112-1132` (Sender) VƏ `:1286-1312`
+(Receiver) oxunub TƏSDİQLƏNDİ: **hər ikisi EYNİ `v_goal.Name_Ur`/
+`Incorporation_Country_Code`/`Incorporation_Number`-dən** yazılır — bizim
+`e.NameUr`/`IncorporationCountryCode`/`IncorporationNumber`-in BİRƏ-BİR
+qarşılığı. Tip=HuquqiIn (4) üçün AYSEL-in ÖZ şərti (`tip not in (1,2,8,12,14)`
+Sender-də, `tip <> 3` Receiver-də) **HƏR İKİSİNİ EYNİ ANDA yazır** —
+bu, bizim kodda da (`SenderQurAsync`/`ReceiverQurAsync`-ın hər ikisi `e.
+NameUr`-a baxır) eyni nəticəni verir və bu, BUQ DEYİL, AYSEL-in ÖZ,
+TƏSDİQLƏNMİŞ davranışıdır (çünki AYSEL-də ayrıca "NAME_UR_TO" demək olar
+heç vaxt doldurulmur — bizdə də `NameUrTo` Blok-5-in 06.11.2026-da formadan
+çıxarılmış, daimi NULL qalan sahəsidir).
+
+⚠️ **TAPILAN, HƏLƏ DÜZƏLDİLMƏYƏN REAL BOŞLUQ — `IncorporationCountryCode`
+(sender/receiver_entity_reg_country-un mənbəyi) TAMAMİLƏ ÖLÜ SAHƏDİR.**
+Yoxlanıldı: `EmeliyyatlarController.cs`-də bu adda HEÇ BİR `ViewBag`/dto
+təyinatı YOXDUR (fix #67-nin `NameUr`/`IncorporationNumber`-ə etdiyi kimi
+Tip-aware edilməyib), `Tesdiq.cshtml`-də də `IncorporationCountryCode`-a
+bağlı `<input>` YOXDUR (yalnız `IncorporationCountryCodeTo`, Blok-5-in öz
+sahəsi, formadadır) — demək bu sahə NƏ operator tərəfindən doldurula bilir,
+NƏ avtomatik doldurulur, HƏMİŞƏ `null` → export-da `""`. Bu, istifadəçinin
+`sender_entity_name`/`tax_number`-dən FƏRQLİ, AYRICA bir boşluqdur — həmin
+ikisi (fix #67-dən bəri) artıq Tip-aware doludur, YALNIZ "Ölkə" sahəsi
+daimi boşdur. Kodda DÜZƏLİŞ EDİLMƏDİ — Oracle-da bu "qeydiyyat ölkəsi"nin
+hansı konkret sütundan gəlməli olduğu (SIG-in öz "Ölkə"si — şəxsi yaşayış
+ölkəsi — ilə eyni OLA BİLMƏZ, hüquqi şəxsin ÖZ qeydiyyat ölkəsi ayrı
+konsepsiyadır) TƏSDİQLƏNMƏYİB, uydurma mənbə/defolt ("AZ") YAZILMADI.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə
+etdiyi sətirləri üzrə ölçülüb — 6/6 paren, tam balanslıdır). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+VÖEN-i Oracle-da `huquqi_shexs.REGISTRATION_NUMBER`-i dolu olan bir hüquqi
+şəxsin hesabı ilə namizəd aç, Təsdiqlə, Export et → `sender_account_
+dubl_number`/`receiver_account_dubl_number`-in (hansı bloka düşürsə)
+artıq bu dəyəri daşıdığını təsdiqləməli — "Ölkə" sahəsinin isə (ayrıca
+qərar gözləyir) hələ də boş qalacağını gözləməli.

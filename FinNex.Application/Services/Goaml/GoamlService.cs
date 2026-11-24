@@ -1661,6 +1661,14 @@ namespace FinNex.Application.Services.Goaml
             public string? AmlComment;
             public DateTime? CustomerCreationDate;
             public DateTime? QeydiyyatTarixi;
+
+            /// <summary>24.11.2026, istifadəçinin AYSEL-in öz Oracle Forms "Properties"
+            /// ekranından göndərdiyi sübutla TƏSDİQLƏNDİ: item adı REGISTRATION_NUMBER,
+            /// Tab Page=HUQUQI_SHEXS, Master Mirror Item=HUQUQI_SHEXS.REGISTRATION_NUMBER.
+            /// Bu, `sender/receiver_account_dubl_number`-in mənbəyidir (bax
+            /// `97_Goaml_JSON_MMX_IN_Tam_Metn.sql:20-25` — VÖEN-dən AYRI, hüquqi şəxsin
+            /// İKİNCİ dövlət qeydiyyat nömrəsi).</summary>
+            public string? RegistrationNumber;
         }
 
         private async Task<GoamlFizikiShexsSetiri?> FizikiShexsRegnomFinAsync(string? regnom, string? fin, CancellationToken ct)
@@ -1737,7 +1745,7 @@ namespace FinNex.Application.Services.Goaml
             try
             {
                 var setirler = await _oracle.SelectAsync(
-                    "select regnom, business, aml_comment, customercreationdate, qeydiyyat_tarixi " +
+                    "select regnom, business, aml_comment, customercreationdate, qeydiyyat_tarixi, registration_number " +
                     "from odb.huquqi_shexs " +
                     $"where qeydiyyat_nomresi_ve_ya_voen = '{Tehlukesiz(voen)}' and regnom = '{Tehlukesiz(regnom)}'", 1, ct);
                 if (setirler.Count == 0) return null;
@@ -1749,6 +1757,7 @@ namespace FinNex.Application.Services.Goaml
                     AmlComment = DVal(r, "AML_COMMENT") as string,
                     CustomerCreationDate = TarixiParseEt(DVal(r, "CUSTOMERCREATIONDATE")),
                     QeydiyyatTarixi = TarixiParseEt(DVal(r, "QEYDIYYAT_TARIXI")),
+                    RegistrationNumber = DVal(r, "REGISTRATION_NUMBER") as string,
                 };
             }
             catch (Exception ex)
@@ -2590,10 +2599,14 @@ namespace FinNex.Application.Services.Goaml
                 // təsdiqləyir), fin_inst_* `HesabinOzBankiAsync`-dən — bax o metodun
                 // baş şərhi.
                 var (bankAdi, bankVoen, bankSwift) = await HesabinOzBankiAsync(e.CandidateFilialNumber, e.Debet, ct);
+                // 24.11.2026 — `huquqi_shexs.REGISTRATION_NUMBER`, `HuquqiShexsAsync`-in
+                // ARTIQ mövcud (header-zənginləşdirmə üçün işlədilən) sorğusundan, EYNİ
+                // bizim-tərəf VÖEN+regnom cütü ilə (bax o metodun baş şərhi).
+                var dublSender = await HuquqiShexsAsync(e.IncorporationNumber, e.RegistracNomer, ct);
                 sender.Account = new GoamlJsonSenderAccountDto
                 {
                     SenderAccountNumber = e.Debet ?? (e.AccountTo ?? e.Account) ?? "",
-                    SenderAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
+                    SenderAccountDublNumber = dublSender?.RegistrationNumber ?? "",
                     SenderAccountCurrency = currType,
                     SenderAccountFinInstCountry = e.FromCountry ?? "",
                     SenderAccountFinInstBicId = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
@@ -2712,10 +2725,12 @@ namespace FinNex.Application.Services.Goaml
                 // (ATTRIB+MFO, canlı) — bax o metodun baş şərhi: Debet/Kredit-dəki
                 // HƏR hesab strukturca bizim ÖZ bankımızdadır, Tip-dən ASILI DEYİL.
                 var (bankAdi, bankVoen, bankSwift) = await HesabinOzBankiAsync(e.CandidateFilialNumber, e.Kredit, ct);
+                // 24.11.2026 — SenderQurAsync-dəki EYNİ, artıq mövcud sorğu/şərh.
+                var dublReceiver = await HuquqiShexsAsync(e.IncorporationNumber, e.RegistracNomer, ct);
                 receiver.Account = new GoamlJsonReceiverAccountDto
                 {
                     ReceiverAccountNumber = e.Kredit ?? (e.Account ?? e.AccountTo) ?? "",
-                    ReceiverAccountDublNumber = "", // huquqi_shexs.REGISTRATION_NUMBER — bax baş şərh
+                    ReceiverAccountDublNumber = dublReceiver?.RegistrationNumber ?? "",
                     ReceiverAccountCurrency = currType,
                     ReceiverAccountFinInstName = bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
                     ReceiverAccountFinInstCountry = e.IncorporationCountryCode ?? "",
