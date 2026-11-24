@@ -14975,3 +14975,42 @@ hələ də boş gəlirsə, `Logs\log-<bugünkü-tarix>.txt`-də "GOAML NUMAYENDE
 tarix" sətrini tapıb göndərməlidir: "tip=null, dəyər=NULL" çıxarsa Oracle-da
 sütun həqiqətən boşdur (data məsələsi, kodda düzəliş yoxdur); naməlum bir
 mətn/tip çıxarsa, həmin konkret formatı əlavə etmək növbəti addım olacaq.
+
+### NƏTİCƏ — KÖK SƏBƏB KOD DEYİL, KÖHNƏ BUILD/SƏHİFƏ İMİŞ (24.11.2026, EYNİ GÜN)
+
+İstifadəçi ilk cəhddə loqda **heç nə tapmadı** ("her ikisini yoxladim,hecne
+gelmedi" — həm cari sənəddə, həm bütün açıq sənədlərdə axtardı). Bu, loq
+sətrinin BÜTÖVLÜKDƏ heç çağırılmadığını göstərirdi — yəni `NumayendeSiyahisiAsync`
+həmin test zamanı İCRA OLUNMAMIŞDI. Səbəb İKİ variantdan biri ola bilərdi:
+(a) son iki commit (`cbb8b329`/`13a68985`) hələ `git pull`+**Rebuild All**
+edilməmişdi, (b) bu loq YALNIZ səhifə SERVERDƏN TƏZƏDƏN yüklənəndə (GET)
+yazılır — artıq açıq bir tabda dropdown-dan seçim etmək HEÇ bir yeni server
+sorğusu göndərmir (JS artıq səhifənin öz içindəki siyahıdan oxuyur), ona görə
+əməliyyatın Tesdiq/Redaktə səhifəsini TAM YENİDƏN (F5/yenidən açaraq)
+yükləmək MƏCBURİ idi.
+
+İstifadəçi bu iki addımı (pull+rebuild, səhifənin tam yenidən yüklənməsi)
+atdıqdan SONRA loq dərhal göründü: `idAml=1731, VERILME_TARIXI tip=
+System.String dəyər=20-09-2024, ETIBARLILIQ_MUDDETI tip=System.String
+dəyər=20-09-2029` — VƏ sayt özü artıq bu tarixləri DÜZGÜN göstərdi ("gelir
+ve duzdur"). `TarixiParseEt`-in `"dd-MM-yyyy"` formatı bu mətni onsuz da
+sınanmış, işlək bir formatdır (ilk dörd formatın biri) — demək kodun ÖZÜNDƏ
+HEÇ VAXT bir xəta olmayıb, 24.11.2026-nın əvvəlki hissəsindəki bütün
+araşdırma (format genişləndirmə daxil) artıq DÜZGÜN olan bir koda qarşı
+aparılırdı.
+
+**Təmizlik:** diaqnostik `foreach`+`LogInformation` bloku `NumayendeSiyahisiAsync`-
+dən TAMAMİLƏ SİLİNDİ (məqsədinə çatdı, artıq hər sorğuda lazımsız log-səs-
+küyü yaratmasın) — metod sadəcə `return setirler.Select(NumayendeSetirdenQur).
+ToList();` ilə bitir, Oracle `SELECT`-in özünə TOXUNULMADI. `TarixiParseEt`-in
+ehtiyat format genişlənməsi (dd-MMM-yy və s.) isə ZƏRƏRSİZ olduğu üçün
+SAXLANILDI — lazım olmasa da, gələcək bir VARCHAR2 formatı üçün hazır qalır.
+
+**Qayda (bu layihənin ən çox təkrarlanan dərsi, YENİDƏN təsdiqləndi):**
+"kod düzgün görünür, amma istifadəçi gözlədiyini görmür" halında İLK yoxlanacaq
+şey HƏMİŞƏ "istifadəçi real mühitdə son commiti çəkib (`git pull`) və
+YENİDƏN qurubmu (Rebuild All)" sualıdır — VƏ əlavə olaraq, server-tərəfli bir
+loq GET-əsaslı bir action-dadırsa, "istifadəçi səhifəni HƏQİQƏTƏN TƏZƏDƏN
+yükləyib, yoxsa artıq açıq bir tabda sadəcə client-side bir UI əməliyyatı
+(dropdown seçimi kimi) edibmi" sualı da EYNİ dərəcədə vacibdir — hər ikisi
+"kodda səhv axtarmaq"dan DAHA ƏVVƏL yoxlanmalıdır.

@@ -1414,27 +1414,6 @@ namespace FinNex.Application.Services.Goaml
                     "from odb.numayende n " +
                     "where n.regnom = '" + regnomKodu + "' and (n.imza_bitme is null or n.imza_bitme > sysdate)", 50, ct);
 
-                // 24.11.2026, DİAQNOSTİKA — istifadəçi: "verilmə/bitmə tarixi dropdown-dan
-                // seçəndə boş gəlir", amma kod yolu (SQL→DTO→JS) ConDogulduguTarix (işlək)
-                // ilə EYNİDİR. Səbəb ya Oracle-da bu konkret sətirdə HƏQIQƏTƏN NULL-dur,
-                // ya da raw dəyərin tipi/formatı `TarixiParseEt`-in gözlədiyindən fərqlidir —
-                // bunu KOD oxuyaraq müəyyən etmək mümkün deyil, canlı Oracle dəyəri lazımdır.
-                // Hər sətir üçün raw tip+dəyəri bir dəfə loglayır ki, növbəti şikayətdə
-                // `Logs\log-<tarix>.txt`-dən "GOAML NUMAYENDE tarix" axtarıb SƏBƏBİ
-                // dərhal görmək mümkün olsun — Oracle-a təkrar sorğu YAZMIR.
-                foreach (var setir in setirler)
-                {
-                    var verilme = DVal(setir, "VERILME_TARIXI");
-                    var etibar = DVal(setir, "ETIBARLILIQ_MUDDETI");
-                    _logger.LogInformation(
-                        "GOAML NUMAYENDE tarix — regnomKodu={RegnomKodu}, idAml={IdAml}, " +
-                        "VERILME_TARIXI tip={VerilmeTip} dəyər={VerilmeDeyer}, " +
-                        "ETIBARLILIQ_MUDDETI tip={EtibarTip} dəyər={EtibarDeyer}",
-                        regnomKodu, DVal(setir, "ID_AML"),
-                        verilme?.GetType().FullName ?? "null", verilme ?? "NULL",
-                        etibar?.GetType().FullName ?? "null", etibar ?? "NULL");
-                }
-
                 return setirler.Select(NumayendeSetirdenQur).ToList();
             }
             catch (Exception ex)
