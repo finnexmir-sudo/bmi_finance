@@ -1413,6 +1413,28 @@ namespace FinNex.Application.Services.Goaml
                     "n.vetendashligi " +
                     "from odb.numayende n " +
                     "where n.regnom = '" + regnomKodu + "' and (n.imza_bitme is null or n.imza_bitme > sysdate)", 50, ct);
+
+                // 24.11.2026, DİAQNOSTİKA — istifadəçi: "verilmə/bitmə tarixi dropdown-dan
+                // seçəndə boş gəlir", amma kod yolu (SQL→DTO→JS) ConDogulduguTarix (işlək)
+                // ilə EYNİDİR. Səbəb ya Oracle-da bu konkret sətirdə HƏQIQƏTƏN NULL-dur,
+                // ya da raw dəyərin tipi/formatı `TarixiParseEt`-in gözlədiyindən fərqlidir —
+                // bunu KOD oxuyaraq müəyyən etmək mümkün deyil, canlı Oracle dəyəri lazımdır.
+                // Hər sətir üçün raw tip+dəyəri bir dəfə loglayır ki, növbəti şikayətdə
+                // `Logs\log-<tarix>.txt`-dən "GOAML NUMAYENDE tarix" axtarıb SƏBƏBİ
+                // dərhal görmək mümkün olsun — Oracle-a təkrar sorğu YAZMIR.
+                foreach (var setir in setirler)
+                {
+                    var verilme = DVal(setir, "VERILME_TARIXI");
+                    var etibar = DVal(setir, "ETIBARLILIQ_MUDDETI");
+                    _logger.LogInformation(
+                        "GOAML NUMAYENDE tarix — regnomKodu={RegnomKodu}, idAml={IdAml}, " +
+                        "VERILME_TARIXI tip={VerilmeTip} dəyər={VerilmeDeyer}, " +
+                        "ETIBARLILIQ_MUDDETI tip={EtibarTip} dəyər={EtibarDeyer}",
+                        regnomKodu, DVal(setir, "ID_AML"),
+                        verilme?.GetType().FullName ?? "null", verilme ?? "NULL",
+                        etibar?.GetType().FullName ?? "null", etibar ?? "NULL");
+                }
+
                 return setirler.Select(NumayendeSetirdenQur).ToList();
             }
             catch (Exception ex)
@@ -1490,7 +1512,14 @@ namespace FinNex.Application.Services.Goaml
             if (deyer is DateTime dt) return dt;
             if (deyer is not string metn || string.IsNullOrWhiteSpace(metn)) return null;
             var temiz = metn.Trim();
-            string[] formatlar = { "dd.MM.yyyy", "dd.MM.yyyy HH:mm:ss", "yyyy-MM-dd", "dd-MM-yyyy", "dd/MM/yyyy", "yyyy.MM.dd" };
+            string[] formatlar =
+            {
+                "dd.MM.yyyy", "dd.MM.yyyy HH:mm:ss", "yyyy-MM-dd", "dd-MM-yyyy", "dd/MM/yyyy", "yyyy.MM.dd",
+                // 24.11.2026 — NUMAYENDE-nin tarix sütunları VARCHAR2 çıxsa, Oracle-un
+                // NLS_DATE_FORMAT-a görə fərqli mətn yaza bilər — əlavə ehtiyat formatlar
+                // (ay qısaltması, vaxtsız/vaxtlı variantlar).
+                "dd-MMM-yy", "dd-MMM-yyyy", "dd.MM.yy", "dd-MM-yyyy HH:mm:ss", "yyyy-MM-dd HH:mm:ss",
+            };
             foreach (var f in formatlar)
                 if (DateTime.TryParseExact(temiz, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tarix))
                     return tarix;
