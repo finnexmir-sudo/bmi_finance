@@ -73,9 +73,13 @@ public class EmeliyyatlarController : Controller
         string? debet, string? kredit, decimal? summaVNacval, decimal? summaVInval, int? kodValuti,
         string? innDebet, string? innKredit, string? primechanie,
         string? nameLicschDe, string? nameLicschKre, string? documentSource,
-        string? registracNomerDe, string? registracNomerKre)
+        string? registracNomerDe, string? registracNomerKre, string? qaynaqTab)
     {
         ViewData["Title"] = "GOAML — Təsdiqlə";
+        // 24.11.2026 — "Geri"/"Ləğv et" linklərinin hansı taba (Risk/Əməliyyatlar)
+        // qayıdacağını Tesdiq.cshtml-ə ötürür — bax Index.cshtml/Risk/Index.cshtml-in
+        // "Təsdiqlə" linkinə əlavə olunan `qaynaqTab` query parametri.
+        ViewBag.QaynaqTab = qaynaqTab;
 
         // 17.11.2026, KRİTİK — "Debet = əsas tərəf" fərziyyəsi AYSEL-in real ixracı
         // ilə tutuşdurularkən YANLIŞ çıxdı: Debet="10020" (kassa/GL), Kredit="40160…"
@@ -261,8 +265,12 @@ public class EmeliyyatlarController : Controller
     //    bir-birini BLOKLAMIR.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Tesdiq(GoamlTesdiqDto dto)
+    public async Task<IActionResult> Tesdiq(GoamlTesdiqDto dto, string? qaynaqTab)
     {
+        // 24.11.2026 — formun gizli "qaynaqTab" sahəsindən gəlir (bax Tesdiq.cshtml) —
+        // validasiya uğursuz olub forma YENİDƏN göstəriləndə "Geri"/"Ləğv et" doğru
+        // taba (Risk/Əməliyyatlar) qayıtmağa davam etsin deyə.
+        ViewBag.QaynaqTab = qaynaqTab;
         var isciId = await GetCurrentIsciIdAsync();
         if (isciId == null)
         {
@@ -305,10 +313,24 @@ public class EmeliyyatlarController : Controller
     // ── GET /Goaml/Emeliyyatlar/RedakteEt/{id} — mövcud ("Qaralama" statuslu)
     //    qeydi redaktə formasında açır. Tesdiq.cshtml-in EYNİ görünüşünü paylaşır
     //    (23.11.2026, real hadisə: "Qaralamaya qaytar"dan sonra qeydə YENİDƏN
-    //    toxuna bilmirdilər). Oracle-a HEÇ müraciət olunmur, auto-doldurma
-    //    banner-ləri/dropdown-ları söndürülür (qeyd ARTIQ bir dəfə doldurulub,
-    //    operatorun özünün yazdığı/düzəltdiyi dəyərlər canlı Oracle ilə
-    //    ÜSTƏLƏNMƏMƏLİDİR).
+    //    toxuna bilmirdilər).
+    //
+    //    24.11.2026, KRİTİK DÜZƏLİŞ — real hadisə: operator Nümayəndəni (CON)
+    //    QƏSDƏN boş buraxıb təsdiqləmişdi, sonra "Qaralamaya qaytar" edib
+    //    Redaktədə doldurmaq istədi — AMMA "Əlaqəli şəxslərdən seçin" dropdown-u
+    //    ÜMUMİYYƏTLƏ GÖRÜNMƏDİ. Köhnə kod HƏR ŞEYİ (ElaqaliSexsler/KycDebet/
+    //    KycKredit/HerIkiTerefdeKycVar) BOŞ göndərirdi — niyyət düzgün idi
+    //    ("artıq doldurulmuş sahələr canlı Oracle ilə ÜSTƏLƏNMƏSİN"), AMMA
+    //    SƏHV YERƏ tətbiq olunmuşdu: problem AUTO-APPLY-dədir (`KycTetbiqEt`-in
+    //    dto-ya yazması), DROPDOWN-UN ÖZÜNDƏ DEYİL. İndi KYC YENİDƏN sorğulanır
+    //    (yalnız dropdown/"tərəfini götür" seçimləri üçün), AMMA `KycTetbiqEt`
+    //    ÇAĞIRILMIR — dto-nun CON/SIG sahələrinə TOXUNULMUR, operator YALNIZ
+    //    dropdown-dan seçib/"tərəfini götür" düyməsinə basıb ƏL İLƏ tətbiq edə
+    //    bilər (Tesdiq.cshtml-in öz JS-i — gmlConSec/gmlTerefTetbiqEt — heç vaxt
+    //    səhifə AÇILANDA özbaşına çağırılmır, YALNIZ operator seçimində).
+    //    `EmitentKycAsync` (emitent_benefisiar-dan DİREKT auto-apply) isə hələ də
+    //    ÇAĞIRILMIR — o, yaratma anında BİR DƏFƏLİK avtomatik yazma üçündür,
+    //    redaktədə TƏKRAR çağırsaq artıq saxlanmış CON-u SƏSSİZCƏ ÜSTƏLƏYƏRDİ.
     public async Task<IActionResult> RedakteEt(int id)
     {
         ViewData["Title"] = "GOAML — Redaktə et";
@@ -319,14 +341,22 @@ public class EmeliyyatlarController : Controller
             return RedirectToAction(nameof(Siyahi));
         }
 
+        var dto = netice.Data;
         ViewBag.RedaktaId = id;
-        ViewBag.ElaqaliSexsler = new List<GoamlElaqaliSexsDto>();
+
+        var herIkiTeref = await _goaml.HesabSahibiKycTapAsync(dto.CandidateFilialNumber, dto.Debet, dto.Kredit);
+        var yalnizBirTerefdeVar = (herIkiTeref.Debet != null) ^ (herIkiTeref.Kredit != null);
+        var yeganeKyc = yalnizBirTerefdeVar ? (herIkiTeref.Debet ?? herIkiTeref.Kredit) : null;
+
+        ViewBag.ElaqaliSexsler = yeganeKyc != null && !yeganeKyc.Fiziki
+            ? yeganeKyc.ElaqaliSexsler
+            : new List<GoamlElaqaliSexsDto>();
         ViewBag.AvtoDolduruldu = false;
         ViewBag.EmitentDenDolduruldu = false;
-        ViewBag.KycDebet = null;
-        ViewBag.KycKredit = null;
-        ViewBag.HerIkiTerefdeKycVar = false;
-        return View("Tesdiq", netice.Data);
+        ViewBag.KycDebet = herIkiTeref.Debet;
+        ViewBag.KycKredit = herIkiTeref.Kredit;
+        ViewBag.HerIkiTerefdeKycVar = herIkiTeref.Debet != null && herIkiTeref.Kredit != null;
+        return View("Tesdiq", dto);
     }
 
     // ── POST /Goaml/Emeliyyatlar/RedakteEt/{id} — mövcud qeydi YERİNDƏ yeniləyir

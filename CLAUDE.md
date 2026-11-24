@@ -14814,3 +14814,104 @@ deməkdir (bu, "AYSEL-ə uyğunlaşmaq" məqsədinin ƏKSİNƏ gedərdi).
 ⚠️ **Kod dəyişikliyi EDİLMƏDİ** — yalnız bu tapıntı sənədləşdirilir ki,
 gələcəkdə eyni sual (institusional Tip-də Representative niyə boşdur) yenidən
 soruşulanda dərhal cavablana bilsin.
+
+## GOAML Redaktə — "Nümayəndə" Dropdown-u Qaralamaya Qaytarılan Qeyddə HEÇ GÖRÜNMÜRDÜ (24.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi real ssenari göstərdi: *"ilkinde senedi yaratdim numayendeni
+secmedim, tesdiq, json etdim, sonra qaralamaya qaytardim, redakte edende
+numayende filteri hec gelmedi"* — yəni Nümayəndəni (CON) QƏSDƏN boş buraxıb
+əməliyyatı təsdiqləmişdi, sonra "Qaralamaya qaytar" edib Redaktədən doldurmaq
+istəmişdi (ekran-görüntüsü: Tip="Hüquqi (OUT)", "Nümayəndənin" bloku tam boş,
+HEÇ bir "Əlaqəli şəxslərdən seçin" dropdown-u görünmür).
+
+**Kök səbəb — 23.11.2026-dakı "Redaktə" düzəlişi (bax yuxarı, "İxrac Edilmiş
+Qeyd GERİ QAYTARILA Bilər" bölməsinin yanındakı iş) auto-doldurmanı
+SÖNDÜRƏRKƏN DÜZGÜN niyyətlə SƏHV YERƏ tətbiq etmişdi.** `RedakteEt` GET
+action-ı `ViewBag.ElaqaliSexsler`/`KycDebet`/`KycKredit`/`HerIkiTerefdeKycVar`-ı
+HƏR ZAMAN BOŞ/`null`/`false` göndərirdi ki, "operatorun artıq yazdığı/düzəltdiyi
+dəyərlər canlı Oracle ilə SƏSSİZCƏ ÜSTƏLƏNMƏSİN" — bu, DOĞRU bir ehtiyat idi,
+AMMA DROPDOWN-UN ÖZÜNÜN GÖSTƏRİLMƏSİNİ DƏ bloklayırdı, baxmayaraq ki
+`Tesdiq.cshtml`-in `gmlConSelectWrap`-ı (`gmlConSec(this)` JS funksiyası ilə)
+YALNIZ OPERATOR seçim edəndə CON sahələrini doldurur — avtomatik, səhifə
+YÜKLƏNƏNDƏ heç nəyə TOXUNMUR. Problem **auto-APPLY**-da idi (`KycTetbiqEt`-in
+dto-ya yazması), **DROPDOWN-UN GÖSTƏRİLMƏSİNDƏ** DEYİL — amma düzəliş hər
+ikisini birlikdə söndürmüşdü.
+
+**Düzəliş — `EmeliyyatlarController.RedakteEt` GET:** indi `_goaml.
+HesabSahibiKycTapAsync(dto.CandidateFilialNumber, dto.Debet, dto.Kredit)`-i
+YENİDƏN çağırır (Tesdiq GET-in elə özünün işlətdiyi metod) — AMMA `KycTetbiqEt`
+ÇAĞIRILMIR, yəni `dto`-nun CON/SIG sahələrinə HEÇ TOXUNULMUR. Nəticə
+`ViewBag.ElaqaliSexsler`/`KycDebet`/`KycKredit`/`HerIkiTerefdeKycVar`-a
+yazılır — dropdown/"tərəfini götür" seçimləri İNDİ görünür, operator ONLARI
+ƏL İLƏ seçib tətbiq edə bilər, AMMA heç biri səhifə AÇILANDA avtomatik işə
+düşmür. `ViewBag.AvtoDolduruldu` isə Redaktədə HƏMİŞƏ `false` qalır (yaşıl
+"sistem artıq bunları bilir" banner-i Redaktə zamanı GÖSTƏRİLMİR, çünki
+HEÇ nə avtomatik yazılmadı) — `EmitentKycAsync` (emitent_benefisiar-dan
+DİREKT auto-apply, YARADILMA anında işləyən, dto-ya BİRBAŞA yazan mexanizm)
+İSƏ Redaktədə HƏLƏ DƏ ÇAĞIRILMIR, çünki o, TƏKRAR çağrılsa artıq saxlanmış
+CON-u SƏSSİZCƏ ÜSTƏLƏYƏRDİ — bu fərq bilərəkdən saxlanıldı.
+
+**Qayda:** "artıq edilmiş avtomatik doldurmanı TƏKRAR etmə" ehtiyatı YALNIZ
+"**yaz**" əməliyyatına aid olmalıdır — "operator seçsin deyə **göstər**"
+əməliyyatına deyil. Bir banner/dropdown-u "təhlükəsizlik üçün söndürürəm"
+deyəndə, əvvəlcə onun İKİ fərqli funksiyası ola biləcəyini yoxla: (a) SƏHİFƏ
+AÇILANDA avtomatik yaza bilən bir kod yolu, VƏ (b) operatorun ƏL İLƏ
+tətiklədiyi, sırf SEÇİM imkanı verən bir UI elementi — birincini söndürmək
+lazım ola bilər, AMMA ikincini də eyni zərbə ilə söndürmək, operatorun
+ÜMUMİYYƏTLƏ seçim etmək imkanını əlindən alır (bu konkret hadisədə baş
+verdiyi kimi).
+
+### Əlavə — "Geri"/"Ləğv et" Namizədin GƏLDİYİ Taba (Risk/Əməliyyatlar) Qaytarır
+
+Eyni mesajda istifadəçi ikinci bir sual da verdi: *"birdeki emeliyyatdaki
+emeliyyatda riskdeki risk tabi altinda acilmagini etmek cetindirki?"* — Risk
+tabından açılan bir namizədin "Təsdiqlə" ekranında "Geri"/"Ləğv et" HƏMİŞƏ
+Əməliyyatlar-ın öz Index-inə qayıdırdı, Risk-in Index-inə YOX (bax yuxarı,
+"Risk tabı qur" bölməsindəki "AÇIQ QALAN, KİÇİK UX BOŞLUĞU" qeydi — indi
+qapandı).
+
+**Həll — yeni `qaynaqTab` sahəsi, DTO-ya YOX, sırf naviqasiya üçün ayrıca
+parametr kimi:**
+- `Emeliyyatlar/Index.cshtml` VƏ `Risk/Index.cshtml`-in "Təsdiqlə" linkini
+  quran `URLSearchParams`-a `qaynaqTab: 'emeliyyatlar'` / `qaynaqTab: 'risk'`
+  əlavə olundu.
+- `EmeliyyatlarController.Tesdiq` GET (`string? qaynaqTab` yeni parametr) →
+  `ViewBag.QaynaqTab`-a yazır. POST `Tesdiq(GoamlTesdiqDto dto, string?
+  qaynaqTab)` (DTO-nun ÖZÜNƏ ƏLAVƏ EDİLMƏDİ — sırf UI naviqasiyası, biznes
+  obyektini çirkləndirməsin) — validasiya uğursuz olub forma YENİDƏN
+  göstəriləndə (`return View(dto)`) `ViewBag.QaynaqTab` yenə düzgün qalsın
+  deyə, metodun ƏN BAŞINDA təyin olunur (üç `return View(dto)` qolunun
+  hamısını əhatə edir, təkrar yazmağa ehtiyac qalmadan).
+- `Tesdiq.cshtml`: `gmlQaynaqTab` dəyişəni + `gmlGeriController = (gmlRedaktaId
+  == null && gmlQaynaqTab == "risk") ? "Risk" : "Emeliyyatlar"` — **YALNIZ
+  yaratma modunda (gmlRedaktaId == null)** mənalıdır, Redaktə modu HƏMİŞƏ
+  "Emeliyyatlar/Siyahi"-yə qayıdır ("Siyahi" action-u `RiskController`-də
+  YOXDUR, üstəlik `RedakteEt` GET-i `qaynaqTab`-ı heç göndərmir). "Geri"
+  (yuxarı) VƏ "Ləğv et" (aşağı, yalnız create-mode qolunda) hər ikisi bu
+  dəyişənlə `asp-controller`/`asp-action` ilə yönləndirilir.
+- Formanın ÖZÜNDƏ gizli `<input type="hidden" name="qaynaqTab">` (YALNIZ
+  create-mode-da, Redaktə-nin öz `id` gizli sahəsinin `else if` qolu kimi) —
+  validasiya POST-u uğursuz olub forma YENİDƏN render olunanda bu dəyər
+  itməsin deyə (hidden input YOXDURSA, POST-dakı `qaynaqTab` parametri HEÇ
+  GƏLMƏZ, ViewBag yenidən `null` olar, "Geri" səhvən Əməliyyatlar-a düşərdi).
+
+⚠️ **POST-un UĞURLU nəticəsi (`RedirectToAction(nameof(Siyahi))`) TOXUNULMADI** —
+"Təsdiqlənmiş siyahı" HƏR ikisi üçün (Risk VƏ Əməliyyatlar mənşəli namizəd)
+ORTAQ, TƏK bir siyahıdır, mənşəyinə görə fərqli bir yerə yönləndirmək
+mənasız olardı — bu, YALNIZ "Ləğv et"/"Geri" (əməliyyatı TƏRK edəndə) üçün
+mənalı bir fərqdir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə
+etdiyi sətirləri üzrə ayrıca ölçülüb — hər bir "imbalans" görüntüsü ya
+metod-imzasının çoxsətrli qapanışı, ya da şərh mətninin cüt sətrə bölünmüş
+mötərizəsi idi, HƏR İKİSİNİN DƏ qarşı tərəfi unchanged-context sətirdə
+olduğu üçün diff-only saymada "çatmır" görünür — tam fayl səviyyəsində
+balanslıdır). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: (1) Nümayəndəni boş buraxıb təsdiqlənmiş, sonra
+Qaralamaya qaytarılmış bir Hüquqi əməliyyatı Redaktə et → "Əlaqəli
+şəxslərdən seçin" dropdown-unun (əgər hesabın Oracle-da `NUMAYENDE` qeydi
+varsa) İNDİ göründüyünü, seçimdən sonra CON sahələrinin dolduğunu,
+SEÇMƏSƏN heç nəyin dəyişmədiyini; (2) Risk tabından bir namizədi aç →
+"Geri"/"Ləğv et"in Risk-in öz Index-inə qayıtdığını, Əməliyyatlar tabından
+açılanda isə Əməliyyatlar-ın Index-inə qayıtdığını təsdiqləməlidir.

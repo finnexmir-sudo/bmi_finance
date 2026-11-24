@@ -33,9 +33,24 @@
     // sahəlik CON/SIG/TO bloklarını TƏKRAR qurmaq əvəzinə). Fərq YALNIZ:
     // (a) forma "RedakteEt"-ə POST edir, (b) "Məlumatın növü" TƏK seçimli
     // select-dir (çoxseçimli checkbox YOX — redaktə BİR mövcud sətri dəyişir,
-    // yeni sətirlər YARATMIR), (c) auto-doldurma banner-ləri/dropdown-ları
-    // söndürülür (ViewBag-dən, controller-də).
+    // yeni sətirlər YARATMIR), (c) dto-ya AVTOMATİK YAZMA (KycTetbiqEt)
+    // söndürülür — dropdown-un ÖZÜ (24.11.2026-dan) ARTIQ göstərilir, YALNIZ
+    // operatorun ƏL İLƏ seçməsi ilə tətbiq olunur (bax CLAUDE.md).
     var gmlRedaktaId = ViewBag.RedaktaId as int?;
+
+    // 24.11.2026 — "Geri"/"Ləğv et" Risk-dən gələn namizədi Əməliyyatlar-ın
+    // Index-inə DEYİL, ÖZ gəldiyi taba qaytarsın (istifadəçi: "riskdeki
+    // emeliyyatda risk tabi altinda acilmagini etmek cetindirki?"). Yalnız
+    // YARADILMA (gmlRedaktaId==null) üçün mənalıdır — Redaktə özü artıq
+    // "Siyahi"-yə qayıdır (toxunulmur). `qaynaqTab` Index.cshtml/Risk/
+    // Index.cshtml-in "Təsdiqlə" linkindən gəlir, hidden input-la POST-da da
+    // qorunur (aşağı bax).
+    var gmlQaynaqTab = ViewBag.QaynaqTab as string;
+    // Redaktə mode (gmlRedaktaId != null) HƏMİŞƏ "Emeliyyatlar/Siyahi"-yə
+    // qayıdır — "Siyahi" action-u RiskController-də YOXDUR, qaynaqTab bu
+    // halda heç set olunmur da (RedakteEt GET-i onu göndərmir).
+    var gmlGeriController = (gmlRedaktaId == null && gmlQaynaqTab == "risk") ? "Risk" : "Emeliyyatlar";
+    var gmlGeriAction = gmlRedaktaId != null ? "Siyahi" : "Index";
 }
 
 @section Styles {
@@ -96,7 +111,7 @@
                     : "Oracle namizədindən doldurulub gəldi — qalan sahələri doldurub yadda saxlayın")
             </div>
         </div>
-        <a asp-action="@(gmlRedaktaId != null ? "Siyahi" : "Index")" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+        <a asp-controller="@gmlGeriController" asp-action="@gmlGeriAction" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
 
     @if (TempData["Error"] != null)
@@ -107,8 +122,10 @@
     {
         <div class="gml-banner gml-banner--info">
             <i class="bi bi-pencil-square"></i>
-            Mövcud qeydi redaktə edirsiniz — sahələr Oracle-dan YENİDƏN doldurulmur,
-            aşağıda artıq saxlanmış dəyərlər göstərilir.
+            Mövcud qeydi redaktə edirsiniz — aşağıda artıq saxlanmış dəyərlər göstərilir,
+            ONLARA toxunulmur. "Nümayəndə"/"Hesab imza hüququ" dropdown-ları (əgər
+            hesab üçün Oracle-da uyğun şəxs tapılsa) seçim üçün yenilənib — seçməsəniz
+            heç nə dəyişmir.
         </div>
     }
 
@@ -155,6 +172,14 @@
         @if (gmlRedaktaId != null)
         {
             <input type="hidden" name="id" value="@gmlRedaktaId" />
+        }
+        else if (!string.IsNullOrEmpty(gmlQaynaqTab))
+        {
+            @* 24.11.2026 — Yaratma POST-u uğursuz olub forma YENİDƏN göstəriləndə
+               (validasiya xətası) "Geri"/"Ləğv et" doğru taba (Risk/Əməliyyatlar)
+               qayıtmağa davam etsin deyə — controller bunu "qaynaqTab" adı ilə
+               qəbul edib ViewBag.QaynaqTab-a yazır. *@
+            <input type="hidden" name="qaynaqTab" value="@gmlQaynaqTab" />
         }
         <input type="hidden" asp-for="CandidateFilialNumber" />
         <input type="hidden" name="CandidateDateOper" value="@Model.CandidateDateOper.ToString("yyyy-MM-dd")" />
@@ -471,7 +496,7 @@
             else
             {
                 <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-circle"></i> Təsdiqlə və Saxla</button>
-                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                <a asp-controller="@gmlGeriController" asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
             }
         </div>
     </form>
