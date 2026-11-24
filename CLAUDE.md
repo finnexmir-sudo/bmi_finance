@@ -15110,3 +15110,134 @@ Oracle-dan dolduğunu; (2) EYNİ nümayəndəni (regnom 016901) `gmlConSec`
 dropdown-undan YENİDƏN seçib "Sənədin verilmə/bitmə tarixi"nin artıq
 göründüyünü (bu, köhnə build/səhifə məsələsi idi, F5/yenidən-açma ilə
 düzəlməli idi) təsdiqləməlidir.
+
+## GOAML — "Sənədin Tarixi" Xanaları CON-da HEÇ VAXT Görünmürdü — `fn-datepicker.js` Görünən İnputun `name`-ini SİLİR (24.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi günlərlə davam edən "CON-un (Nümayəndə) sənəd tarixləri boşdur" şikayətini
+addım-addım diaqnostika ilə (server-dəki parse-sonrası loq → `console.log(gmlElaqaliSexsler)`
+→ `gmlConSec.toString()`-un repo ilə tutuşdurulması → manual `.value=` testi → nəhayət
+"debug ilə yoxlayacam" deyib brauzerin ÖZ `Object.defineProperty` override-ni işlədərək)
+sona qədər apardı və nəticədə DƏQIQ kök səbəbi ÖZÜ tapdı — konsol stack-trace-ində
+`fn-datepicker.js` adlı tanımadığım bir kitabxananın adı çıxdı.
+
+### Kök səbəb — FinNex-in ÖZ, in-house `fn-datepicker.js`-i HƏR `type="date"` inputu "ələ keçirir"
+
+`FinNex.UI/wwwroot/js/fn-datepicker.js` (CSP-safe, asılılıqsız öz təqvim widget-i) səhifə
+yüklənəndə BÜTÜN `input[type="date"]:not([data-no-fn-dp])` elementlərini TAPIB hər birini
+`FnDatePicker` instansı ilə "sarıyır":
+
+```js
+this.hidden = null;
+if (input.name) {
+    this.hidden = document.createElement('input');
+    this.hidden.type = 'hidden';
+    this.hidden.name = input.name;
+    this.hidden.value = this._iso;
+    input.removeAttribute('name');   // ⚠️ GÖRÜNƏN input `name`-ini İTİRİR
+    input.parentNode.insertBefore(this.hidden, input.nextSibling);
+}
+if (input.type === 'date') {
+    input.type = 'text';             // görünən input artıq type="text", readonly
+    input.classList.add('fn-dp-input');
+}
+Object.defineProperty(input, 'value', { get() {...}, set(v) { self._setValue(v || ''); } });
+```
+
+Yəni: görünən (`type="date"` → `type="text"`-ə çevrilmiş, `.fn-dp-input` sinifli) input
+`name` atributunu İTİRİR, həmin ADI isə YENİ, GİZLİ (`type="hidden"`) bir "yoldaş" input
+daşımağa başlayır (forma submit-i üçün). `gmlDoldur`-un `document.querySelector('[name="'
++ ad + '"]')` axtarışı artıq görünən inputu TAPMIR — bunun ƏVƏZİNƏ bu GİZLİ yoldaşı tapır.
+
+**Niyə mətn sahələri işləyirdi, YALNIZ tarixlər boş qalırdı:** gizli yoldaşa `.value=`
+yazmaq forma SUBMIT dəyərini DÜZGÜN dəyişir (ona görə "Verən orqan" kimi adi mətn
+sahələri problemsiz göründü — onlar `type="date"` deyil, fn-datepicker onlara TOXUNMUR)
+— AMMA gizli yoldaş fn-datepicker-in ÖZ `_iso`/görünüş state-indən TAM MÜSTƏQİLDİR, ona
+görə EKRANDAKI widget (həmişəki "gg-aa-iiii" placeholder) heç vaxt yenilənmirdi.
+
+**Niyə SIG-in eyni sahələri İŞLƏYİRDİ, CON-unku YOX:** SIG-in sənəd tarixləri (bu
+konkret test ssenarisində) SERVER-dən, Razor render anında `value="@Model.Sig...
+?.ToString("yyyy-MM-dd")"` atributu ilə HAZIR gəlirdi — fn-datepicker `initAll()`-i
+(səhifə JS-i tam yüklənəndə) işə düşəndə bu dəyəri KONSTRUKTOR zamanı artıq-mövcud
+`input.value`-dan oxuyub öz `_iso`-sunu ONUNLA başladır (`this._iso = input.value ||
+'';`) — yəni SIG-in tarixi fn-datepicker-in ÖZÜ İNİSİALİZASİYA olunmazdan ƏVVƏL artıq
+yerində idi, problemsiz sinxronlaşdı. CON isə YALNIZ SƏHİFƏ YÜKLƏNDİKDƏN SONRA, operator
+dropdown-dan seçim edəndə (`gmlConSec`) VƏ ya Tip seçiləndə (`gmlKycTetbiqEt`) JS-dən
+yazılır — bu ANDA fn-datepicker ARTIQ inisiallaşıb, `name`-i artıq silib — ona görə
+`gmlDoldur` tam bu tələyə düşürdü.
+
+### Düzəliş — `gmlDoldur`-un özündə, TƏK yerdə (bütün çağıranlar avtomatik düzəlir)
+
+```js
+function gmlDoldur(ad, deyer) {
+    const el = document.querySelector('[name="' + ad + '"]');
+    if (!el) return;
+    if (el.type === 'hidden') {
+        const vizual = el.previousElementSibling;
+        if (vizual && vizual.classList && vizual.classList.contains('fn-dp-input')) {
+            vizual.value = deyer || '';
+            return;
+        }
+    }
+    el.value = deyer || '';
+}
+```
+
+`[name="..."]` axtarışı GİZLİ yoldaşı tapırsa (`el.type === 'hidden'`), ONUN ƏVVƏLKİ
+bacı-qardaşına (`previousElementSibling` — fn-datepicker `insertBefore(hidden,
+input.nextSibling)` yazdığı üçün HƏMİŞƏ GÖRÜNƏN input gizlinin DƏRHAL ƏVVƏLİNDƏDİR,
+`.fn-dp-input` sinfi ilə TƏSDİQLƏNİR) yazılır — bu, fn-datepicker-in ÖZ `value`
+override-indən (yuxarı, `set(v) { self._setValue(v || ''); }`) keçir, bu da HƏM
+`_iso` state-i, HƏM gizli yoldaşı, HƏM görünüşü EYNİ ANDA, düzgün sinxronlaşdırır.
+
+`gmlDoldur` TƏK çağırılma nöqtəsidir (`gmlConSec`, `gmlKycTetbiqEt`, server-tərəfli
+`EmeliyyatlarController.KycTetbiqEt`-in Razor-da render etdiyi dəyərlərə TOXUNMUR,
+çünki o, HTML `value="..."` ATTRİBUTU kimi yazılır, JS funksiyası ilə YOX) — bu TƏK
+düzəliş CON-un həm dropdown-seçimini (`gmlConSec`), həm Tip-əsaslı avtomatik doldurmasını
+(`gmlKycTetbiqEt`, fiziki hesabda), həm SIG-in JS-əsaslı (Tip seçimi/"tərəfi götür")
+avtomatik doldurmasını EYNİ ANDA düzəldir.
+
+**Qayda — eyni ailədən, YENİ bir forma:** "Şərtli Render Olunan Form Sahəsi" və
+"gmlConSec/gmlKycTetbiqEt-i eyniləşdir" qaydalarının İKİSİNDƏN DƏ FƏRQLİ, AMMA
+oxşar kateqoriyalı bir tələdir — JS-dən forma sahəsinə `name` ATRİBUTU ilə MÜRACİƏT
+edən HƏR funksiya, həmin sahənin BAŞQA bir JS kitabxanəsi (burada: öz in-house
+datepicker-imiz) tərəfindən "sarılıb-sarılmadığını" yoxlamalıdır — kitabxanə DOM-u
+RUNTIME-da elə dəyişə bilər ki (burada: `name` atributunu başqa elementə köçürə bilər),
+sadə `querySelector('[name="..."]')` artıq GÖZLƏNİLƏN elementi YOX, kitabxanənin
+yaratdığı bir YAN-MƏHSULU (gizli yoldaş) tapsın — heç bir JS xətası, heç bir boş
+nəticə (`el` özü `null` DEYİL, sadəcə YANLIŞ elementdir) vermədən.
+
+### Diaqnoz metodologiyası — istifadəçinin öz "debug" addımı HƏLLEDİCİ oldu
+
+Bir neçə əvvəlki dalğa (server-side parse loqu, `console.log(gmlElaqaliSexsler)`,
+`gmlConSec.toString()` tutuşdurması, manual `.value=` testi) HAMISI "server/JS-data
+düzgündür, kodun MƏTNİ də düzgündür" nəticəsinə gəldi — buna baxmayaraq EKRANDA
+nəticə DƏYİŞMİRDİ. Son addım — istifadəçinin ÖZ təklifi ilə ("debug ilə yoxlayacam")
+bir native `value` property-sinə `Object.defineProperty` ilə YAZMA-İZLƏYİCİSİ
+(write-interceptor, `console.trace`) quraşdırmaq oldu — bu, "heç bir JS xətası yoxdur,
+data da düzgündür, AMMA ekranda nəticə fərqlidir" tipli tapmacalarda YALNIZ stack-trace-in
+göstərə biləcəyi bir məlumatı (hansı KİTABXANƏ/FUNKSIYA sonuncu yazır, VƏ başqa HANSI
+element üzərində) üzə çıxartdı — "server-data düzgündür" + "JS məntiqi düzgündür"
+yoxlamalarının HEÇ BİRİ bunu tapa BİLMƏZDİ, çünki problem HEÇ BİRİNDƏ deyildi, ÜÇÜNCÜ,
+görünməyən bir qatda (runtime DOM transformasiyası) idi.
+
+**Qayda:** "data düzgündür + məntiq düzgün OXUNUR, amma ekranda nəticə fərqlidir"
+görünən hər tapmacada, əgər adi statik oxuma bir neçə dəfə TAM TƏSDİQLƏYİBSƏ (server
+loqu + console-dan data oxuma + funksiya mətninin özünü tutuşdurma) və YENƏ DƏ
+uyğunsuzluq qalırsa — İSTİFADƏÇİYƏ bir `Object.defineProperty`-based yazma-izləyici
+TƏKLİF ETMƏK (və ya ÖZÜ təklif edirsə DƏSTƏKLƏMƏK) sona qədər gözləməli OLMAYAN,
+ERKƏN başvurulması lazım olan bir vasitədir — xüsusən DOM-u runtime-da dəyişən (3-cü
+tərəf, YA DA öz in-house) bir kitabxanə şübhəsi varsa.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR — yalnız BUNDAN SONRAKI `gmlDoldur` çağırışlarına təsir
+edir.** Artıq doldurulmuş formalarda operator sahəni YENİDƏN seçməli/tətbiq etməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri üzrə
+ölçülüb — 12/12 paren, 2/2 brace, 1/1 bracket, tam balanslıdır). İstifadəçi artıq
+real brauzerdə (eyni açıq tab-da, rebuild/pull GƏRƏK OLMADAN — bu, ".cshtml" view
+faylıdır, IIS Express adətən view dəyişikliklərini canlı tutur, AMMA EMİN DEYİLİKSƏ
+tam bir F5/yenidən-yükləmə kifayətdir) dropdown-dan nümayəndəni YENİDƏN seçib
+"Sənədin verilmə tarixi"/"Sənədin etibarlılıq müddəti" xanalarının İNDİ GÖRÜNDÜYÜNÜ
+təsdiqləməlidir — eyni zamanda "Doğulduğu tarix" (ConDogulduguTarix/
+SigDogulduguTarix, EYNİ `type="date"`+fn-datepicker tələsinə düşən DİGƏR sahələr)
+JS-dən avtomatik doldurulan hallarda da indi düzgün göründüyünü yoxlamalıdır.

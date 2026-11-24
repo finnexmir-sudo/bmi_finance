@@ -558,7 +558,32 @@
 
     function gmlDoldur(ad, deyer) {
         const el = document.querySelector('[name="' + ad + '"]');
-        if (el) el.value = deyer || '';
+        if (!el) return;
+        // 24.11.2026, KRİTİK — `fn-datepicker.js` HƏR `type="date"` inputunu
+        // özününküləşdirir: görünən inputun `name`-ini SİLİR, eyni adla GİZLİ
+        // (hidden) bir yoldaş yaradır (forma submit üçün), görünən input isə
+        // `.fn-dp-input` sinfi ilə ƏVVƏLKİ bacı-qardaş (previousElementSibling)
+        // olaraq qalır. `[name="..."]` seçicisi artıq görünən inputu YOX, bu
+        // gizli yoldaşı tapır — ora yazsaq forma submit-i düz gedir (mətn
+        // sahələrində fərq görünmür), AMMA EKRANDAKI təqvim widget-i HEÇ VAXT
+        // yenilənmir — fn-datepicker öz görünüşünü YALNIZ öz `value`
+        // override-i (görünən inputun ÜZƏRİNDƏ) vasitəsilə sinxronlaşdırır.
+        // Real nümunə: CON-un "Sənədin verilmə/etibarlılıq tarixi" dropdown-dan
+        // seçimdə həmişə boş qalırdı — SIG-in EYNİ sahələri isə SERVER-dən,
+        // fn-datepicker INİSİALİZASİYADAN ƏVVƏL `value="..."` atributu ilə
+        // gəldiyi üçün problemsiz idi (bax CLAUDE.md, eyni tarixli bölmə).
+        // Həll: gizli yoldaşı tapanda, ƏVVƏLKİ bacı-qardaşa (əsl, görünən,
+        // fn-datepicker-in override etdiyi input) yazırıq — onun öz setter-i
+        // bunu HƏM ISO state-ə, HƏM gizli yoldaşa, HƏM görünüşə eyni anda,
+        // düzgün yayır (bax fn-datepicker.js, FnDatePicker._setValue).
+        if (el.type === 'hidden') {
+            const vizual = el.previousElementSibling;
+            if (vizual && vizual.classList && vizual.classList.contains('fn-dp-input')) {
+                vizual.value = deyer || '';
+                return;
+            }
+        }
+        el.value = deyer || '';
     }
 
     // ── CON seçim dropdown-unu YENİDƏN qurur (siyahı Debet/Kredit-ə görə
