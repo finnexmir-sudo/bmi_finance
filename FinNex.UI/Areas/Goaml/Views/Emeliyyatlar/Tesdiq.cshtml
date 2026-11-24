@@ -408,6 +408,16 @@
                        vergüllə render edər, <input type="number"> yalnız NÖQTƏ qəbul
                        edir — bax CLAUDE.md "Dəyər Sahəsi — step və decimal(p,s)"). *@
                     <div><label class="gml-flbl">Aylıq gəlir</label><input type="number" step="any" name="SigAyliqGelir" class="fn-input" value="@(Model.SigAyliqGelir?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" /></div>
+                    @* 24.11.2026 — SigVezife/SigIsYeriAdi/SigAyliqGelir ilə EYNİ
+                       cədvəl/tab (imza_huquqi_olan_shexsler.GELIR_MENBEYI),
+                       istifadəçinin Oracle Forms "Properties" ekranı ilə
+                       təsdiqlədiyi. AYSEL-in "workplace" sahəsi İş yerinin adı
+                       boş olanda elə BUNA düşür (məs. "ƏMƏK HAQQı"). ⚠️ YENİ
+                       sahədir (`SigGelirMenbeyi`) — DTO-dakı mövcud, SEMANTIK
+                       OLARAQ FƏRQLİ `GelirMenbeyi` (GOAML_CLIENTS-in raw
+                       "Əməliyyatın əlavə sahələri" mirror sütunu, Business/
+                       Branch/PanTo ilə EYNİ qrup) İLƏ QARIŞDIRILMADAN. *@
+                    <div><label class="gml-flbl">Gəlir mənbəyi</label><input asp-for="SigGelirMenbeyi" class="fn-input" /></div>
                     <div><label class="gml-flbl">Telefon növü</label><input asp-for="SigTelefonNovu" class="fn-input" /></div>
                     <div><label class="gml-flbl">Rabitə növü</label><input asp-for="SigRabiteNovu" class="fn-input" /></div>
                     <div><label class="gml-flbl">Telefon nömrəsi</label><input asp-for="SigTelefonNomresi" class="fn-input" /></div>
@@ -611,6 +621,7 @@
             gmlDoldur('SigVezife', s.vezife);
             gmlDoldur('SigIsYeriAdi', s.isYeriAdi);
             gmlDoldur('SigAyliqGelir', s.ayliqGelir);
+            gmlDoldur('SigGelirMenbeyi', s.gelirMenbeyi);
         }
         gmlConDropdownYenile(kyc.fiziki ? [] : kyc.elaqaliSexsler);
     }

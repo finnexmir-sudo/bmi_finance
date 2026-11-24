@@ -50,6 +50,12 @@ namespace FinNex.Application.DTOs.Goaml
         /// IsYeriAdi ilə EYNİ cədvəl/tab, `imza_huquqi_olan_shexsler.
         /// AYLIQ_GELIR`) — CON-a (NUMAYENDE) yazılmır.</summary>
         public decimal? AyliqGelir { get; set; }
+
+        /// <summary>Yalnız SIG blokunda — "Gəlir mənbəyi" (24.11.2026,
+        /// Vezife/IsYeriAdi/AyliqGelir ilə EYNİ cədvəl/tab, `imza_huquqi_
+        /// olan_shexsler.GELIR_MENBEYI` — istifadəçinin Oracle Forms
+        /// "Properties" ekranı ilə təsdiqlədiyi). CON-a yazılmır.</summary>
+        public string? GelirMenbeyi { get; set; }
     }
 
     /// <summary>

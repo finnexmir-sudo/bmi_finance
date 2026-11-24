@@ -246,6 +246,7 @@ public class EmeliyyatlarController : Controller
         dto.SigVezife = kyc.TekSexs.Vezife;
         dto.SigIsYeriAdi = kyc.TekSexs.IsYeriAdi;
         dto.SigAyliqGelir = kyc.TekSexs.AyliqGelir;
+        dto.SigGelirMenbeyi = kyc.TekSexs.GelirMenbeyi;
     }
 
     // ── POST /Goaml/Emeliyyatlar/Tesdiq — KYC formunu yaddaşa yazır ─────────

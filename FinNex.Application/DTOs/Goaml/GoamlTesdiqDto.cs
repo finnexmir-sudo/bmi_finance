@@ -118,6 +118,7 @@ namespace FinNex.Application.DTOs.Goaml
         public string? SigVezife { get; set; }
         public string? SigIsYeriAdi { get; set; }
         public decimal? SigAyliqGelir { get; set; }
+        public string? SigGelirMenbeyi { get; set; }
 
         // Hüquqi şəxsin (suffikssiz, göndərən tərəf)
         public string? InstitutionName { get; set; }

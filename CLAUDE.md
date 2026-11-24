@@ -14673,3 +14673,144 @@ DƏYİŞDİYİNİ təsdiqlə; (2) Sil → EYNİ Tip+ReportCode ilə namizəd siy
 YENİDƏN Təsdiqlə → bu dəfə "artıq təsdiqlənib" xətası ÇIXMADIĞINI; (3) eyni
 Tip altında CTR+BLR ilə təsdiqlənmiş bir namizəddə CTR sətrini sil →
 badge-in "Hüquqi (...) · BLR"-ə düşdüyünü təsdiqləməlidir.
+
+## GOAML — SIG Blokuna "Gəlir Mənbəyi" Sahəsi — ÖZ SƏHVİMİ ÖZÜM TUTDUM: Eyni Adlı, Tamam BAŞQA Sahə İlə QARIŞDIRMIŞDIM (24.11.2026, KRİTİK)
+
+İstifadəçi AYSEL-in Oracle Forms "Properties" ekranının İKİNCİ ekran-görüntüsünü
+göndərdi: `Name = GELIR_MENBEYI` — "workplace bunun yeri" (workplace-in mənbəyi
+budur). Bu, `AYLIQ_GELIR` (əvvəlki bölmə) ilə EYNİ "SIG/Aylıq gəlir" tapıntısının
+davamı idi — AYSEL-in öz mənbə düsturu (`97_Goaml_JSON_MMX_IN_Tam_Metn.sql:919,
+996`) artıq təsdiqləyir: `workplace = nvl(Ish_Yerinin_Adi, gelir_menbeyi)` — "İş
+yerinin adı" boşdursa, "workplace" sahəsi `GELIR_MENBEYI`-yə (gəlirin NÖVÜ, məs.
+"ƏMƏK HAQQı") düşür. Bu, EXPORT ZAMANI (canlı Oracle sorğusu ilə) ARTIQ işlək
+idi — AMMA operator bu dəyəri ƏL İLƏ YAZA BİLMİRDİ (heç bir `<input>` yox idi).
+
+### Öz səhvim — `GoamlTesdiqDto.GelirMenbeyi` ADI ilə YANILDIM
+
+İlk cəhddə DTO-da `GelirMenbeyi` adlı bir sahə TAPDIM (artıq mövcud idi) və
+"deməli bu elə odur" deyə ORA bağladım (`<input asp-for="GelirMenbeyi">` SIG
+blokunda, JS auto-fill, controller auto-fill). **BU SƏHV İDİ** — həmin sahə
+`Business`/`RegistracNomer`/`Branch`/`Iban`/`PersonalAccountType`/`ToFizik`/
+`PanTo` ilə EYNİ qrupdadır (`Detal.cshtml`-in "Əməliyyatın əlavə sahələri"
+bölməsi — `GOAML_CLIENTS`-in 124-sütunlu raw mirror-u, "Hüquqi şəxsin (göndərən
+tərəf)" bloku ilə eyni başlanğıc bölgədə) — SIG-in şəxsi "gəlir mənbəyi"ndən
+TAMAMİLƏ MÜSTƏQİL, TƏSADÜFƏN eyni Azəri adı daşıyan bir sahə. Kodu PUBLISH
+ETMƏZDƏN ƏVVƏL bu DTO-nun bütün sahə qrupunu (yuxarı/aşağı kontekst) oxuyub
+AŞKARLADIM — `dotnet build` mümkün olmasaydı bu xəta YALNIZ real mühitdə
+(Detal.cshtml-də İKİ fərqli yerdə eyni dəyər, yanlış kontekstdə görünərdi)
+üzə çıxardı.
+
+**Düzəliş:** YENİ, AYRICA sahə — `SigGelirMenbeyi` (`GoamlEmeliyyat`,
+`GoamlTesdiqDto`, migration `20261124110000_GoamlSigGelirMenbeyi.cs`) —
+`SigVezife`/`SigIsYeriAdi`/`SigAyliqGelir` ilə EYNİ "Sig" prefiksli
+konvensiyaya uyğun. Oracle SELECT (`rehberSetirleri`) `s.gelir_menbeyi`-ni
+əlavə seçir, `ImzaHuququSetirdenQur` onu `GoamlElaqaliSexsDto.GelirMenbeyi`-ə
+(bu DTO-da ƏVVƏLDƏN də belə adlanırdı, CON-a yazılmır — şərhi dəqiqdir)
+map edir, controller/JS bunu `SigGelirMenbeyi`-ə auto-doldurur.
+`header.Workplace`-in son fallback-i (`e.SigIsYeriAdi` ardınca) indi
+`e.SigGelirMenbeyi`-dir (ƏVVƏL səhvən `e.GelirMenbeyi`-ə yazılmışdı — bu
+PUBLISH OLUNMADAN düzəldildi).
+
+**Qayda (bu sessiyada İKİNCİ dəfə təsdiqlənən dərs, "Hesab Risk" bölməsindəki
+`v_PV_HUQUQI`/`huquqi_shexs` qarışıqlığı ilə EYNİ sinif):** bir DTO-da mövcud,
+oxşar/eyni adlı bir sahə tapanda "bu, axtardığım konsepsiyadır" deyə DƏRHAL
+bağlama — həmin sahənin HANSI QRUPDA (hansı digər sahələrin yanında) olduğuna,
+HANSI EKRAN BÖLMƏSİNDƏ göstərildiyinə (`Detal.cshtml`-in `@section`/başlıq
+adına) BAX. Eyni Azəri termini (bura: "Gəlir mənbəyi") iki tamam fərqli Oracle
+sütununun (SIG-in şəxsi gəlir mənbəyi vs GOAML_CLIENTS-in raw hesab sahəsi)
+ekran etiketi ola bilər — ad TƏSADÜFƏN üst-üstə düşür, MƏNA düşmür.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə" GET/POST-larına
+təsir edir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/fiqurlu-mötərizə balansı HƏR dəyişən faylda tam-fayl səviyyəsində
+yoxlanıldı, `GoamlService.cs`-in baza -8 paren-fərqi `git show HEAD` ilə
+TƏSDİQLƏNDİ — bu sessiyadan ƏVVƏL də mövcud idi, bu sessiyanın ƏLAVƏSİ
+BALANSLIDIR). İstifadəçi Visual Studio-da **Rebuild All**, `Update-Database`,
+sonra real ssenari ilə yoxlamalıdır: "Hesab imza hüququ olan şəxs" blokunda
+yeni "Gəlir mənbəyi" inputunun göründüyünü, Oracle-da uyğun sətir tapılanda
+avtomatik dolduğunu, İş yerinin adı boş olan bir namizəddə ixrac edilən
+JSON-un `workplace` sahəsinin bu dəyərə düşdüyünü, VƏ `Detal.cshtml`-in
+"Əməliyyatın əlavə sahələri" bölməsindəki (başqa, əlaqəsiz) "Gəlir mənbəyi"
+sətrinin DƏYİŞMƏDİYİNİ (hələ öz, ayrı dəyərini göstərdiyini) təsdiqləməli.
+
+## GOAML Export — Fayl Adındakı Fiziki/Hüquqi Suffiksi Tip-in ÖZÜ Kifayət Edəndə ÇIXARILDI (24.11.2026)
+
+İstifadəçi: *"fayl adinda tip olsa bes eder... sen ise GOAML_Ixrac_BLR_HTOHIN_
+HUQUQI_...json bele verirsen. blr daliyca h to h olsa yaxsi olar, elave huquqi
+in falan, ona ehtiyac varki?"* — Tip kodu (`HTOHIN` = `GoamlTipi.HToHIn`,
+"Hüquqi-Hüquqi, IN") ARTIQ hər iki tərəfin hüquqi olduğunu deyir, ardınca
+əlavə `_HUQUQI` (individualPerson-dan gələn, 17.11.2026-dakı BLR-fiziki/hüquqi
+ayrımı) LAZIMSIZDIR.
+
+**Haqlı idi, AMMA YALNIZ Tip-in adı HƏR İKİ tərəfi EYNİ CÜR göstərdiyi
+hallarda.** `FizikiHuquqiAcar` indi əvvəlcə `FizikiHuquqiBirmenalidirmi(tip)`-ə
+baxır:
+- `FizikOut/FizikIn/FToF` → `true` (fizik), `HuquqiOut/HuquqiIn/HToH/HToHIn`
+  → `false` (hüquqi) — Tip adının ÖZÜ birmənalıdır, suffiks ARTIQ YAZILMIR.
+- Qalan hər şey (`HToFIn/HToFOut/FToHIn/FToHOut` — bir tərəf hüquqi, digəri
+  fizik; `C2cOut/C2cIn` — kart-kart köçürməsinin hər iki tərəfinin fiziki
+  olacağına Oracle-dan TƏSDİQ yoxdur; Tip `null`) → `null`, suffiks ƏVVƏLKİ
+  kimi `individualPerson`-a görə YAZILIR.
+
+⚠️ **Yalnız FAYL ADI sadələşdi, QRUPLAŞDIRMA TƏHLÜKƏSİZLİYİ dəyişmədi.**
+`(Kod, Tip, Ayirici)` üçlüyünün özü qalır — "birmənalı" tiplərdə `Ayirici=""`
+olur (fayl adında görünmür), AMMA əgər data REAL HƏYATDA gözlənilənin əksinə
+çıxarsa (məs. operator Tip-i səhv seçib, hesabın regnom-u əslində fərqli
+sinifdədirsə), individualPerson YENƏ DƏ fərqli dəyərlər üçün AYRI qruplar
+yaradır — yalnız HƏR İKİ faylın adı eyni olar (son çarə kimi, timestamp
+fərqi onları ayırd edir, amma etiketdə görünmür). Bu, qəbul edilən,
+aşağı-ehtimallı bir tradeoff-dur — "hüquqi/fizik tiplərdə qarışıqlıq"
+real nümunədə HEÇ görülməyib.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — `git diff` tam-hunk oxunub, köhnə switch-in bağlayıcı `};`-si
+yeni kodun İLK funksiyası üçün TƏKRAR İSTİFADƏ OLUNDUĞU təsdiqləndi, sintaktik
+olaraq düz). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: Tip="Hüquqi (IN)" və ya "H to H in" ilə təsdiqlənmiş
+bir BLR qeydini ixrac et → fayl adının artıq `..._HUQUQI` SONLUĞU DAŞIMADIĞINI
+(yalnız `..._HTOHIN_...`), AMMA Tip="H to F in" (qarışıq) kimi bir qeyddə
+suffiksin HƏLƏ DƏ göründüyünü təsdiqləməlidir.
+
+## GOAML — Tip="H to H in" Olanda Representative HƏMİŞƏ "NRP"-dir — BU, BUG DEYİL, AYSEL-in ÖZ QAYDASIDIR (24.11.2026)
+
+İstifadəçi: *"Representative buda bos geldi bizde, numayendeni doldurdugum
+halda"* — Nümayəndə (CON) doldurulsa da, Tip="H to H in" olan bir namizəddə
+`Representative` bloku `{"repr_status": "NRP"}` çıxır. **Bu, AYSEL-in ÖZ
+mənbə düsturunun (`97_Goaml_JSON_MMX_IN_Tam_Metn.sql:1044-1079`) hərfi
+nəticəsidir, kodumuzda SƏHV YOXDUR:**
+
+```
+if First_Name_Con is not null AND Tip not in (5,6,7,11) then PAT (CON-un KYC-si)
+if First_Name_Con is null OR Tip in (5,6,7,11) then NRP
+```
+
+Tip=6 (`HToHIn`, "H TO H in") HƏR İKİ şərtdə "institusional" (5,6,7,11)
+siyahısındadır — birinci şərt CON dolu olsa belə Tip-ə görə RƏDD edir, ikinci
+şərt (`OR Tip in (5,6,7,11)`) isə CON-dan ASILI OLMADAN NRP yazır. Yəni
+H-to-H (institusional) əməliyyatlarda AYSEL QƏSDƏN Representative-i HEÇ VAXT
+göstərmir — institusional tərəflər arasında "fiziki nümayəndə" konsepti bu
+hesabat formatında işlənmir. `GoamlService.RepresentativeQur`-un
+`konInstitusional` yoxlaması (`HToH/HToHIn/HToFIn/HToFOut`) bunu artıq BİRƏ-BİR
+əks etdirir — DƏYİŞİKLİK LAZIM DEYİL.
+
+**Əlavə tapıntı — AYSEL-in öz mənbəyində bir "elsif" budağı (SIG-dən
+Representative doldurma, Tip 1-4 üçün) var, AMMA bu, ÖLÜ KODDUR:** `elsif
+First_Name_Con is null and Tip in (1,2,3,4)` — bu şərt əvvəlki `if`-in
+(`First_Name_Con is null OR Tip in (5,6,7,11)`) ALT-ÇOXLUĞUDUR (CON boşdursa,
+birinci `if` artıq TRUE olur, Oracle-un `if...elsif`-i BİRİNCİ uyğun gələndə
+DAYANIR) — yəni bu "SIG-dən Representative" budağı AYSEL-in REAL icrasında
+HEÇ VAXT İŞLƏMİR, sadəcə tarixi, unudulmuş ölü koddur. Bizim kodumuz bunu
+İCAD ETMƏDİ (qəsdən) — AYSEL-in GÖRÜNƏN DAVRANIŞINI (yalnız PAT/NRP) əks
+etdirir, onun ÖLÜ KOD YOLUNU YOX.
+
+**Qayda:** köhnə Oracle PL/SQL mənbəyini PORT edərkən hər budağın HƏQİQƏTƏN
+ÇATILA BİLƏN olduğunu (əvvəlki `if`/`elsif` şərtlərinin ÖZ-ÖZLƏRİNİ SUBSET
+ETMƏDİYİNİ) yoxla — əks halda real sistemdə heç vaxt işləməyən bir budağı
+köçürmək, bizim sistemimizdə ONU İŞLƏDİB AYSEL-dən FƏRQLİ NƏTİCƏ almaq
+deməkdir (bu, "AYSEL-ə uyğunlaşmaq" məqsədinin ƏKSİNƏ gedərdi).
+
+⚠️ **Kod dəyişikliyi EDİLMƏDİ** — yalnız bu tapıntı sənədləşdirilir ki,
+gələcəkdə eyni sual (institusional Tip-də Representative niyə boşdur) yenidən
+soruşulanda dərhal cavablana bilsin.

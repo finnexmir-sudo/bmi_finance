@@ -161,6 +161,13 @@ namespace FinNex.Domain.Entities.Goaml
                                                                 // Item=IMZA_HUQUQI_OLAN_SHEXSLER.AYLIQ_GELIR, Insert/Update
                                                                 // Allowed=TRUE) — operator əl ilə doldura/düzəldə bilər,
                                                                 // auto-doldurma da ora sorğulayır (bax HesabSahibiKycAsync).
+        // SigGelirMenbeyi: GELIR_MENBEYI — 24.11.2026, EYNİ cədvəl/tab (SigVezife/
+        // SigIsYeriAdi/SigAyliqGelir ilə). ⚠️ `GelirMenbeyi` (aşağıda, "Əməliyyatın
+        // əlavə sahələri" bloku) ilə QARIŞDIRMA — o, GOAML_CLIENTS-in raw mirror
+        // sütunudur (Business/RegistracNomer/Branch/Iban/PersonalAccountType/
+        // PanTo ilə EYNİ qrup), SIG-in şəxsi gəlir mənbəyi İLƏ HEÇ BİR ƏLAQƏSİ
+        // YOXDUR — iki sahə TƏSADÜFƏN eyni Azəri adı daşıyır.
+        public string? SigGelirMenbeyi { get; set; }           // GELIR_MENBEYI (SIG)
 
         // ══ BLOK 3 — "Hüquqi şəxsin" (göndərən tərəf, suffikssiz) ══════════
         public string? InstitutionName { get; set; }          // INSTITUTION_NAME

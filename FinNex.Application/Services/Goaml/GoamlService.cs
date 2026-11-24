@@ -322,6 +322,7 @@ namespace FinNex.Application.Services.Goaml
             e.SigVezife = dto.SigVezife;
             e.SigIsYeriAdi = dto.SigIsYeriAdi;
             e.SigAyliqGelir = dto.SigAyliqGelir;
+            e.SigGelirMenbeyi = dto.SigGelirMenbeyi;
             e.InstitutionName = dto.InstitutionName;
             e.Swift = dto.Swift;
             e.Account = dto.Account;
@@ -465,6 +466,7 @@ namespace FinNex.Application.Services.Goaml
             SigVezife = e.SigVezife,
             SigIsYeriAdi = e.SigIsYeriAdi,
             SigAyliqGelir = e.SigAyliqGelir,
+            SigGelirMenbeyi = e.SigGelirMenbeyi,
             InstitutionName = e.InstitutionName,
             Swift = e.Swift,
             Account = e.Account,
@@ -751,6 +753,7 @@ namespace FinNex.Application.Services.Goaml
                 SigVezife = e.SigVezife,
                 SigIsYeriAdi = e.SigIsYeriAdi,
                 SigAyliqGelir = e.SigAyliqGelir,
+                SigGelirMenbeyi = e.SigGelirMenbeyi,
                 InstitutionName = e.InstitutionName,
                 Swift = e.Swift,
                 Account = e.Account,
@@ -1343,7 +1346,7 @@ namespace FinNex.Application.Services.Goaml
                     "s.cinsi, s.fin, s.telefon_nomresi, s.unvanin_teyinati, s.kuchenin_adi_ve_nomresi, " +
                     "s.sheher, s.olke, s.senedin_novu, s.seriyasi_ve_nomresi, s.verilme_tarixi, " +
                     "s.etibarliliq_muddeti, s.veren_orqanin_adi, s.verildiyi_olke, s.vezifesi, " +
-                    "s.ish_yerinin_adi, s.vetendashligi, s.ayliq_gelir " +
+                    "s.ish_yerinin_adi, s.vetendashligi, s.ayliq_gelir, s.gelir_menbeyi " +
                     "from odb.imza_huquqi_olan_shexsler s " +
                     "where s.regnom = '" + regnomKodu + "' and (s.imza_bitme is null or s.imza_bitme > sysdate) " +
                     "and exists (select 1 from odb.aml_related_persons rp where rp.id_aml = s.id_aml and rp.id_related_persons = 2)",
@@ -1473,6 +1476,7 @@ namespace FinNex.Application.Services.Goaml
             Vezife = DVal(r, "VEZIFESI") as string,
             IsYeriAdi = DVal(r, "ISH_YERININ_ADI") as string,
             AyliqGelir = ToDecimal(DVal(r, "AYLIQ_GELIR")),
+            GelirMenbeyi = DVal(r, "GELIR_MENBEYI") as string,
             Vetendasligi = DVal(r, "VETENDASHLIGI") as string,
         };
 
@@ -1977,7 +1981,7 @@ namespace FinNex.Application.Services.Goaml
                 header.BusinessStartDate = pepTarix;
                 header.BusinessEndDate = null;
                 header.Note = fizik?.AmlComment;
-                header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi);
+                header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi ?? e.SigGelirMenbeyi);
                 header.TypeOfConnectionToPep = typeOfConnectionToPep;
                 header.FullName = fullName;
                 header.SofIncome = 0;
@@ -2019,7 +2023,7 @@ namespace FinNex.Application.Services.Goaml
                 header.SofIncome = 0;
                 header.AverageMonthlyIncome = cif?.AyliqGelir ?? fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? e.SigAyliqGelir ?? 0m;
                 header.Position = cif?.Vezifesi ?? fizik?.Vezifesi ?? imzaHuquq?.Vezifesi ?? e.SigVezife;
-                header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi);
+                header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi ?? e.SigGelirMenbeyi);
                 // AYSEL: nvl(nvl(nvl(v_PV_HUQUQI.Customercreationdate, v_cif.customercreationdate), v_fizik.customercreationdate), v_imza_huquq.imza_bashlama)
                 header.BusinessStartDate = HeaderTarixYaz(huquqiHrz?.CustomerCreationDate ?? cif?.CustomerCreationDate ?? fizik?.CustomerCreationDate ?? imzaHuquq?.ImzaBashlama);
                 header.BusinessEndDate = "";
@@ -2161,15 +2165,41 @@ namespace FinNex.Application.Services.Goaml
             // Tip də ayırıcıya əlavə edildi. `individualPerson` artıq
             // header-in ÖZÜNDƏ hesablanıb (yuxarı), ona görə Oracle-a
             // YENİDƏN getmir — yalnız nəticə üzərində qruplaşdırma.
-            static string FizikiHuquqiAcar(GoamlJsonReportDto r) => r.Header.IndividualPerson switch
+            //
+            // 24.11.2026 — istifadəçi: "BLR_HTOHIN_HUQUQI" kimi fayl adı
+            // artıqdır, "H to H in" Tip-in ÖZÜ artıq hər iki tərəfin hüquqi
+            // olduğunu deyir, əlavə "_HUQUQI" lazımsızdır. Düzgündür — AMMA
+            // YALNIZ Tip-in adı HƏR İKİ tərəfi EYNİ CÜR (Fizik+Fizik və ya
+            // Huquqi+Huquqi) göstərdiyi tiplər üçün: FizikOut/FizikIn/FToF,
+            // HuquqiOut/HuquqiIn/HToH/HToHIn. QARIŞIQ tiplərdə (HToFIn/
+            // HToFOut/FToHIn/FToHOut — bir tərəf huquqi, digəri fizik) Tip
+            // adının ÖZÜ hansı tərəfin header-ə düşdüyünü söyləmir — orada
+            // (və Tip naməlum/null olanda, həm də C2C-də, çünki kart-kart
+            // köçürməsinin HƏR İKİ tərəfinin fiziki olacağına Oracle-dan
+            // TƏSDİQ yoxdur) suffiks TƏHLÜKƏSİZLİK ŞƏBƏKƏSİ kimi saxlanılır —
+            // Tip adı tək başına kifayət etmirsə, individualPerson-a görə
+            // qruplaşdırma YENƏ DƏ fərqli dəyərləri eyni fayla qarışdırmır,
+            // sadəcə fayl adında görünmür.
+            static bool? FizikiHuquqiBirmenalidirmi(GoamlTipi? tip) => tip switch
             {
-                true => "FIZIKI",
-                false => "HUQUQI",
-                null => "",
+                GoamlTipi.FizikOut or GoamlTipi.FizikIn or GoamlTipi.FToF => true,
+                GoamlTipi.HuquqiOut or GoamlTipi.HuquqiIn or GoamlTipi.HToH or GoamlTipi.HToHIn => false,
+                _ => null,
             };
 
+            static string FizikiHuquqiAcar(GoamlTipi? tip, GoamlJsonReportDto r)
+            {
+                if (FizikiHuquqiBirmenalidirmi(tip) != null) return "";
+                return r.Header.IndividualPerson switch
+                {
+                    true => "FIZIKI",
+                    false => "HUQUQI",
+                    null => "",
+                };
+            }
+
             var ikinciSeviyyeQruplar = butunRaportlar
-                .GroupBy(x => (x.Kod, Tip: x.Setir.Tip, Ayirici: FizikiHuquqiAcar(x.Report)))
+                .GroupBy(x => (x.Kod, Tip: x.Setir.Tip, Ayirici: FizikiHuquqiAcar(x.Setir.Tip, x.Report)))
                 .OrderBy(g => g.Key.Kod).ThenBy(g => g.Key.Tip).ThenBy(g => g.Key.Ayirici);
 
             foreach (var qrup in ikinciSeviyyeQruplar)
