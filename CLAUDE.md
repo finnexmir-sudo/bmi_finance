@@ -15303,3 +15303,45 @@ bir namizədi "Təsdiqlə" ilə açıb, sidebar-da artıq "Risk" sətrinin AKTİ
 fon) qaldığını, "Əməliyyatlar" sətrinin SÖNDÜYÜNÜ təsdiqləməli — Əməliyyatlar
 tabından açılan namizəddə isə əksinə (Əməliyyatlar aktiv, Risk sönük) qaldığını
 yoxlamalıdır.
+
+### DÜZƏLİŞ — RZ1010, Eyni Gün: `@{ }` YENİDƏN "Kod Bloku İçində Kod Bloku Açma" Tələsinə Düşdü
+
+İstifadəçi real Visual Studio-da bu dəyişikliyi açar-açmaz **RZ1010** aldı:
+*"Unexpected '{' after '@' character. Once inside the body of a code block
+(@if {}, @{}, etc.) you do not need to use '@{' to switch to code."* — elə
+CLAUDE.md-nin ÖZÜNDƏKİ "Razor — `@if {}` Blokunun İçində Kod Bloku Açma
+(RZ1010)" qaydasının YENİ bir forması, bu dəfə `@switch`-in `case` blokunda.
+
+**Səbəb:** `goamlRiskdenGelib`-i `@{ ... }` ilə sarmışdım, çünki ƏVVƏLKİ sətir
+`</a>` (markup) ilə bitirdi — "markup-dan sonra kod yazanda `@{` aç" qaydasını
+tətbiq etdim. AMMA bu, YANLIŞ idi: `case "goaml": { ... }` ÖZÜ onsuz da bir
+C# KOD BLOKUDUR (`@switch`-in daxilində) — `<div>`/`<a>` teqləri Razor-un
+"kod blokunda tag görünəndə avtomatik markup-a keç" davranışı ilə göstərilir,
+AMMA bir teq BAĞLANANDA (`</a>`) nəzarət YENİDƏN eyni, əhatə edən KOD BLOKUNA
+qayıdır — "ÜMUMİ markup rejiminə" YOX. Elə faylın ÖZÜNDƏ, `case "hr":`
+blokunda (sətir 971-975) BİRƏ-BİR eyni nümunə onsuz da var idi:
+`</div>`-dən DƏRHAL sonra `var hrDavSubActive = ...;` **ÇILPAQ**, HEÇ bir
+`@{ }` olmadan yazılıb — mən bu nümunəni YOXLAMADAN öz fərziyyəmi tətbiq
+etdim.
+
+**Düzəliş:** `@{`/`}` SİLİNDİ, `var goamlRiskdenGelib = ...;` artıq `case
+"hr"`-dəki `hrDavSubActive` İLƏ EYNİ formada — çılpaq, sarılmamış bir C#
+ifadə kimi yazıldı.
+
+**Qayda (CLAUDE.md-nin RZ1010 bölməsinə ƏLAVƏ):** "ƏVVƏLKİ sətir `</tag>` ilə
+bitir, demək markup-dayıq" qaydası `@if`/`@foreach` kimi TƏK-SƏVİYYƏLİ kod
+bloklarında doğrudur, AMMA `@switch`-in `case: { ... }` blokunda (və ümumiyyətlə,
+bir kod blokunun İÇİNDƏ bir-birinin ardınca gələn ÇOXLU auto-transition markup
+teqi olan HƏR yerdə) BU QAYDA KİFAYƏT ETMİR — qərarı EKRANDAKI son teqin
+özünə görə YOX, HƏMİN TEQİ ƏHATƏ EDƏN ƏN YAXIN `@`-blokunun NÖVÜNƏ (sadə
+markup-mu, yoxsa artıq bir kod-bloku, `@switch`/`@{ }` kimi, İÇİNDƏKİ
+avtomatik-transition markup-mı) görə ver. Ən sürətli yoxlama: eyni fayldakı
+OXŞAR bir yerdə (bura: `case "hr"`-in `hrDavSubActive`-i) artıq işlək bir
+nümunə var-yoxdur onu `grep` ilə TAP və BİRƏ-BİR TƏKRARLA — təxmin etmə.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı — 11/11 paren, 2/2 brace, tam fayldakı "goaml"
+case blokunun ÖZÜNDƏ). İstifadəçi Visual Studio-da **Rebuild All** ilə
+yenidən sınamalıdır — RZ1010 artıq ÇIXMAMALIDIR, VƏ yuxarıdakı bölmədəki
+real-ssenari yoxlaması (Risk-dən "Təsdiqlə" açanda sidebar-da "Risk"in aktiv
+qaldığı) bu dəfə HƏQİQƏTƏN icra oluna bilər.
