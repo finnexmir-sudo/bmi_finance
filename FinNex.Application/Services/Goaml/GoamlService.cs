@@ -1947,28 +1947,33 @@ namespace FinNex.Application.Services.Goaml
                 header.Fin = e.Snn;
                 header.CustomerRiskDegree = customerRiskDegree;
                 header.PepCountry = fizik?.Vetendashligi ?? e.SigVetendasligi;
-                header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
+                // 24.11.2026 — "Ölkə"/"Vəzifə"/"İş yerinin adı" Oracle-da
+                // tapılmasa, operatorun ÖZ SIG blokunda yazdığı dəyərə DÜŞMƏLİDİR —
+                // Country üçün (City/Street-dəki EYNİ 23.11.2026 naxışı) artıq
+                // `e.SigOlke` var idi, AMMA son ehtiyat kimi `e.SigVetendasligi`
+                // (operator çox vaxt YALNIZ "Vətəndaşlığı"nı doldurur, "Ölkə"ni
+                // boş qoyur) ƏLAVƏ EDİLDİ — istifadəçi: "country yoxdur, residency
+                // üstündə olmalı idi" (dəyər residency-ə düşüb, country-ə yox).
+                header.Country = fizik?.YashadigiOlke ?? e.SigOlke ?? e.SigVetendasligi;
                 header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
-                // 23.11.2026 — digər HƏR sahədə olan "?? e.Sig..." forma-fallback-ı
-                // YALNIZ City/Street-də ƏSKİK idi: Oracle (fizik/imzaHuquq) axtarışı
-                // `e.Snn`-ə (SIG-in FİN-i) bağlıdır, AMMA həmin sahə heç bir formada
-                // doldurulmur (həmişə null) — nəticədə BU İKİSİ demək olar HƏR ZAMAN
-                // boş qalırdı, "Ünvan" bloku operator ƏL İLƏ doldursa belə (SigUnvan/
-                // SigSeher). İndi Oracle tapmasa, operatorun ÖZ yazdığı dəyərə düşür.
                 header.City = fizik?.Sheher ?? imzaHuquq?.Sheher ?? e.SigSeher;
                 header.District = fizik?.PochtIndeksi ?? imzaHuquq?.PochtIndeksi;
                 header.Street = TemizMetn(fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi) ?? TemizMetn(e.SigUnvan);
                 header.Home = header.Street;
                 header.Flat = "";
                 header.AverageMonthlyIncome = fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
-                header.Position = fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
+                // Position/Workplace — SigVezife/SigIsYeriAdi ARTIQ formada var
+                // (operator doldurur), AMMA header bunlara HEÇ TOXUNMURDU — Oracle
+                // tapmasa iki sahə də SƏSSİZCƏ boş qalırdı. Düzəliş: City/Street-in
+                // elə özü ilə EYNİ "Oracle tapmasa operatorun yazdığına düş" qaydası.
+                header.Position = fizik?.Vezifesi ?? imzaHuquq?.Vezifesi ?? e.SigVezife;
                 var pepTarix = HeaderTarixYaz(fizik?.VezifeyeTeyinOlunmaTarixi ?? imzaHuquq?.ImzaBashlama);
                 header.PositionStartDate = pepTarix;
                 header.PositionEndDate = null; // AYSEL-in özündə də şərh içindədir, həmişə boş
                 header.BusinessStartDate = pepTarix;
                 header.BusinessEndDate = null;
                 header.Note = fizik?.AmlComment;
-                header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi);
+                header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi);
                 header.TypeOfConnectionToPep = typeOfConnectionToPep;
                 header.FullName = fullName;
                 header.SofIncome = 0;
@@ -1997,9 +2002,11 @@ namespace FinNex.Application.Services.Goaml
                 // AYSEL: nvl(v_fizik.taxactivitycode, v_PV_HUQUQI.Business)
                 header.SphereOfActivity = fizik?.TaxActivityCode ?? huquqiHrz?.Business;
                 header.CustomerRiskDegree = customerRiskDegreeCif ?? customerRiskDegree;
-                header.Country = fizik?.YashadigiOlke ?? e.SigOlke;
+                // 24.11.2026 — Country/Position/Workplace, PEP-dəki EYNİ 3 düzəliş
+                // (bax yuxarı, "24.11.2026" şərhi) — `e.SigVetendasligi`/`SigVezife`/
+                // `SigIsYeriAdi` son ehtiyat olaraq əlavə olundu.
+                header.Country = fizik?.YashadigiOlke ?? e.SigOlke ?? e.SigVetendasligi;
                 header.Residency = fizik?.Vetendashligi ?? e.SigVetendasligi;
-                // 23.11.2026 — eyni fallback, bax yuxarıdakı (PEP) şərh.
                 header.City = cif?.Sheher ?? fizik?.Sheher ?? imzaHuquq?.Sheher ?? e.SigSeher;
                 header.District = cif?.PochtIndeksi ?? fizik?.PochtIndeksi ?? imzaHuquq?.PochtIndeksi;
                 header.Street = TemizMetn(cif?.KuchaVeNomresi ?? fizik?.KuchaVeNomresi ?? imzaHuquq?.KuchaVeNomresi) ?? TemizMetn(e.SigUnvan);
@@ -2007,8 +2014,8 @@ namespace FinNex.Application.Services.Goaml
                 header.Flat = "";
                 header.SofIncome = 0;
                 header.AverageMonthlyIncome = cif?.AyliqGelir ?? fizik?.AyliqGelir ?? imzaHuquq?.AyliqGelir ?? 0m;
-                header.Position = cif?.Vezifesi ?? fizik?.Vezifesi ?? imzaHuquq?.Vezifesi;
-                header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi);
+                header.Position = cif?.Vezifesi ?? fizik?.Vezifesi ?? imzaHuquq?.Vezifesi ?? e.SigVezife;
+                header.Workplace = TemizMetn(cif?.IshYerininAdi ?? fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi);
                 // AYSEL: nvl(nvl(nvl(v_PV_HUQUQI.Customercreationdate, v_cif.customercreationdate), v_fizik.customercreationdate), v_imza_huquq.imza_bashlama)
                 header.BusinessStartDate = HeaderTarixYaz(huquqiHrz?.CustomerCreationDate ?? cif?.CustomerCreationDate ?? fizik?.CustomerCreationDate ?? imzaHuquq?.ImzaBashlama);
                 header.BusinessEndDate = "";

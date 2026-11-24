@@ -12778,6 +12778,86 @@ eyni ReportCode-la (məs. CTR) HƏM "Fiziki (OUT)", HƏM "Hüquqi (IN)" tipli
 əməliyyatı eyni anda ixrac et → İKİ AYRI faylın (adlarında `FIZ_OUT`/`HUQ_IN`
 göründüyünü) yarandığını təsdiqləməlidir.
 
+## GOAML Export — HRZ Header-də Country/Position/Workplace Boş Qalırdı — Oracle Tapmasa, Operatorun ÖZ SIG Sahələrinə HEÇ DÜŞMÜRDÜ (24.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi AYSEL-in real çıxışı ilə bizimkini sahə-sahə tutuşdurub üç boşluq
+göstərdi: *"country: AZ, bu yoxdu, residency üstündə olmalı idi. city bu
+yoxdur. averageMonthlyIncome: 1000.00, position: Direktor, workplace:
+ƏMƏK HAQQı — bunlar bizdə yoxdur."* Əvvəlcə sual aydınlaşdırıldı — bu
+header kimə aiddir? `fullName`/`fin`/`serial`/`position`/`workplace` HAMISI
+**SIG-ə** (Hesab imza hüququ olan şəxs, adətən Rəhbər) aiddir — `fullName`
+`e.SigAdi/SigAtasininAdi/SigSoyadi`-dən, `Fin` `e.Snn`-dən (SIG-in FİN-i)
+qurulur; `individualPerson` İSƏ FƏRQLİ bir şeydir — HESABIN ÖZÜNÜN (regnom-un)
+`odb.pv_regnom_all`-dakı təsnifatıdır (Yurik/Predprinimatel=1 → `false`,
+yəni hesab sahibi hüquqi şəxsdir); `sphereOfActivity`/`idNumber`-in BİRİNCİ
+prioriteti isə `odb.huquqi_shexs`-dən (hüquqi şəxsin ÖZ biznes datası) gəlir.
+
+**Kök səbəb — `docs/sql/goaml/97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-in HƏRFİ
+mətni YENİDƏN oxundu (sətir 892-926 PEP, 973-1007 HRZ) və üç fərqli vəziyyət
+tapıldı:**
+
+1. **`country`** — AYSEL-in ÖZ formulu artıq bizdə DÜZGÜN yazılmışdı
+   (`fizik?.YashadigiOlke ?? e.SigOlke` = `nvl(v_fizik.yashadigi_olke,
+   v_goal.Country_Code_Sig)`) — AMMA `e.SigOlke` ("Ölkə" input-u) operator
+   tərəfindən tez-tez BOŞ qoyulur (yalnız "Vətəndaşlığı" doldurulur). Nəticə:
+   dəyər `residency`-ə (SigVetendasligi-dən) düşür, `country` isə `null` qalıb
+   JSON-dan SİLİNİR (`DefaultIgnoreCondition=WhenWritingNull`) — istifadəçinin
+   tapdığı DƏQIQ budur.
+2. **`position`/`workplace`** — formada operatorun doldura biləcəyi
+   `SigVezife`/`SigIsYeriAdi` sahələri ARTIQ VAR idi (06.11.2026-dan, "130→6
+   qrup" trimindən qalan əsas bloklardan biri), AMMA `HeaderZenginlesdirAsync`
+   bunlara HEÇ TOXUNMURDU — Oracle (`fizik`/`imzaHuquq`) tapmasa, iki sahə
+   də SƏSSİZCƏ boş qalırdı. Bu, elə 23.11.2026-da City/Street-ə əlavə olunan
+   "Oracle tapmasa operatorun yazdığına düş" fallback-ının `City`/`Street`-dən
+   KƏNARDA UNUDULMUŞ FORMASIDIR.
+3. **`averageMonthlyIncome`** — AYSEL-in ÖZ formulunda belə (PEP VƏ HRZ
+   hər ikisində) bu sahə üçün `v_goal.*` (forma) fallback-ı YOXDUR, YALNIZ
+   `v_fizik`/`v_imza_huquq`/`v_cif`-dən gəlir, tapılmasa `0`-a düşür — bizim
+   kod bunu BİRƏ-BİR təkrarlayır (`?? 0m`). Yəni bu, kod bugu DEYİL — real
+   AYSEL fayldakı 1000,00 dəyəri Oracle-da (`imza_huquqi_olan_shexsler`/
+   `fiziki_shexs`) SIG-in FİN+regnom ilə HƏQİQƏTƏN tapılan bir sətirdən
+   gəlir. Bizdə boş çıxmasının səbəbi Oracle axtarışının o sətri TAPMAMASIDIR
+   (çox güman SIG-in FİN-i — `e.Snn` — bu konkret qeyddə hələ doldurulmayıb,
+   ya da Oracle-da uyğun sətir yoxdur) — ƏLAVƏ FORMA SAHƏSİ (yeni DB sütunu)
+   olmadan kodda düzəldilə bilən bir şey YOXDUR, bu səbəbdən TOXUNULMADI.
+
+**Düzəliş — `GoamlService.cs`, HƏM PEP (reportType=4), HƏM HRZ (reportType=8)
+budaqlarında, EYNİ üç sətir:**
+```csharp
+header.Country = fizik?.YashadigiOlke ?? e.SigOlke ?? e.SigVetendasligi;
+...
+header.Position = fizik?.Vezifesi ?? imzaHuquq?.Vezifesi ?? e.SigVezife;
+...
+header.Workplace = TemizMetn(fizik?.IshYerininAdi ?? imzaHuquq?.GelirMenbeyi ?? e.SigIsYeriAdi);
+```
+(HRZ-də eyni sətirlər `cif?.`-i də daşıyır, dəyişməyib — yalnız son ehtiyat
+olaraq `e.Sig...` əlavə olunub.)
+
+⚠️ **`City` artıq (23.11.2026-dan) `e.SigSeher`-ə düşür, kod TƏRƏFDƏ dəyişiklik
+LAZIM DEYİLDİ.** İstifadəçinin "city yoxdur" şikayəti bu halda data boşluğudur
+(SIG blokunda "Şəhər" inputu doldurulmayıb) — operator bu namizədi "Redaktə
+et"lə açıb "Şəhər" sahəsini doldurub YENİDƏN ixrac etməlidir.
+
+⚠️ **`averageMonthlyIncome` DÜZƏLDİLMƏDİ** — yuxarıda izah olunduğu kimi, bu,
+TAMAMİLƏ Oracle-dan gələn bir sahədir (AYSEL-in ÖZÜNDƏ belə forma-fallback-ı
+yoxdur), əlavə forma sahəsi (yeni DB sütunu + migration) olmadan düzəldilə
+bilməz — bu, AÇIQ İCAZƏ tələb edən bir qərardır, özbaşına əlavə edilmədi.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə"/"Export"
+çağırışlarına təsir edir; artıq ixrac edilmiş qeydlər üçün operator "Qaralamaya
+qaytar" → "Redaktə et" (Şəhər/Vəzifə/İş yeri/Ölkə sahələrini doldur) → yenidən
+Təsdiqlə/Export axınından keçməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri
+üzrə ayrıca ölçülüb — 7/7 paren, net balanslı). İstifadəçi Visual Studio-da
+**Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: "Hesab imza hüququ
+olan şəxs" blokunda "Vəzifə"/"İş yerinin adı" doldurulmuş, Oracle-da uyğun
+sətri OLMAYAN bir namizədi PEP və ya HRZ kodu ilə ixrac et → `position`/
+`workplace`-in indi operatorun yazdığı dəyərlə dolduğunu, "Ölkə" boş AMMA
+"Vətəndaşlığı" dolu olan hallarda `country`-nin artıq boş qalmadığını
+təsdiqləməlidir.
+
 ## PİD Gündəlik Kredit Ödənişləri — "Vaxtı keçmiş" Sətirləri ÖZÜ "Silinmə" İdi, Cəmi İkiqat Şişirdirdi (17.11.2026, KRİTİK — DÜZƏLDİLDİ)
 
 İstifadəçi canlı ekran-görüntüləri ilə 17.11.2026-da qurulmuş "Gündəlik Kredit
