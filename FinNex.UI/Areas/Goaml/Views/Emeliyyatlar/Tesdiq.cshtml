@@ -623,10 +623,22 @@
             gmlDoldur('ConVetendasligi', c.vetendasligi);
             gmlDoldur('ConCinsi', c.cinsi);
             gmlDoldur('ConPin', c.pin);
+            // 24.11.2026 — bu altı sahə (TelefonNomresi/UnvaninNovu/Unvan/Seher/
+            // Olke/SenedinNovu/VerildiyiOlke) `gmlConSec`-də (dropdown-dan əl ilə
+            // seçim) ARTIQ yazılırdı, AMMA bu avtomatik-doldurma blokunda unudulmuşdu
+            // — istifadəçi şikayəti: "imza sahibində verildiyi ölkə/telefon/şəhər/
+            // ölkə boşdur" (SIG blokunun eyni boşluğu, aşağı bax).
+            gmlDoldur('ConTelefonNomresi', c.telefonNomresi);
+            gmlDoldur('ConUnvaninNovu', c.unvaninNovu);
+            gmlDoldur('ConUnvan', c.unvan);
+            gmlDoldur('ConSeher', c.seher);
+            gmlDoldur('ConOlke', c.olke);
+            gmlDoldur('ConSenedinNovu', c.senedinNovu);
             gmlDoldur('ConSenedinSeriyaNomresi', c.senedinSeriyaNomresi);
             gmlDoldur('ConSenedinVerilmeTarixi', c.senedinVerilmeTarixi ? c.senedinVerilmeTarixi.substring(0, 10) : '');
             gmlDoldur('ConSenedinEtibarliliqMuddeti', c.senedinEtibarliliqMuddeti ? c.senedinEtibarliliqMuddeti.substring(0, 10) : '');
             gmlDoldur('ConVerenOrqan', c.verenOrqan);
+            gmlDoldur('ConVerildiyiOlke', c.verildiyiOlke);
         }
         if (kyc.tekSexs) {
             var s = kyc.tekSexs;
@@ -637,6 +649,15 @@
             gmlDoldur('SigDogulduguYer', s.dogulduguYer);
             gmlDoldur('SigVetendasligi', s.vetendasligi);
             gmlDoldur('Snn', s.pin);
+            // 24.11.2026 — istifadəçi şikayəti: "imza sahibində verildiyi ölkə
+            // boşdur, telefon nöm boşdur, şəhər/ölkə boşdur" — bu dörd sahə
+            // `gmlDoldur`-a HEÇ ÇAĞIRILMIRDI (forma/DTO-da onsuz da var idi,
+            // yalnız bu JS funksiyasında unudulmuşdu).
+            gmlDoldur('SigUnvaninNovu', s.unvaninNovu);
+            gmlDoldur('SigTelefonNomresi', s.telefonNomresi);
+            gmlDoldur('SigSeher', s.seher);
+            gmlDoldur('SigOlke', s.olke);
+            gmlDoldur('SigVerildiyiOlke', s.verildiyiOlke);
             gmlDoldur('SigUnvan', s.unvan);
             gmlDoldur('SigSenedinNovu', s.senedinNovu);
             gmlDoldur('SigSenedinSeriyaNomresi', s.senedinSeriyaNomresi);

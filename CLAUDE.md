@@ -15014,3 +15014,99 @@ loq GET-əsaslı bir action-dadırsa, "istifadəçi səhifəni HƏQİQƏTƏN TƏ
 yükləyib, yoxsa artıq açıq bir tabda sadəcə client-side bir UI əməliyyatı
 (dropdown seçimi kimi) edibmi" sualı da EYNİ dərəcədə vacibdir — hər ikisi
 "kodda səhv axtarmaq"dan DAHA ƏVVƏL yoxlanmalıdır.
+
+### İKİNCİ DALĞA — "Numayendeni secirem,tarix yene gelmedi" + SIG-də Telefon/Şəhər/Ölkə/Verildiyi Ölkə BOŞ — HƏR İKİSİ GERÇƏK KOD BUGU İDİ (24.11.2026, EYNİ GÜN, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı "köhnə build/səhifə" nəticəsi QISMƏN YANLIŞ İDİ — istifadəçinin
+"gelir ve duzdur" cavabı əslində YALNIZ loqun özünün (Oracle dəyərinin DÜZ
+olduğu) təsdiqi idi, saytın ÖZÜNÜN tarixi göstərdiyi mənasına GƏLMİRDİ.
+İstifadəçi dərhal geri döndü: *"yene gelmir axi tarixler? numayendeni
+secirem ama tarix yene gelmedi"*. İKİNCİ bir diaqnostik (bu dəfə `TarixiParseEt`-
+dən SONRAKI, PARSE OLUNMUŞ dəyəri loglayan) əlavə edildi — nəticə
+`SenedinVerilmeTarixi(parse-sonrası)=2024-09-20, SenedinEtibarliliqMuddeti
+(parse-sonrası)=2029-09-20` — yəni **server tərəfdə, DTO səviyyəsində hər
+şey tam düzgün idi**. Bu, problemin KÖKÜNÜ server-dən BRAUZER/JS tərəfinə
+yönəltdi.
+
+Eyni mesajda istifadəçi İKİNCİ, bir az fərqli görünən, AMMA EYNİ KÖKLÜ bir
+şikayət də əlavə etdi: *"imza sahibinde-verildiyi olke bosdur,telefon nom
+bosdur,seher olke bosdur"*.
+
+**Kök səbəb — `gmlKycTetbiqEt` (Tesdiq.cshtml-in JS-i) VƏ onun C# güzgüsü
+`EmeliyyatlarController.KycTetbiqEt` İKİSİ DƏ natamam idi.** Layihədə CON
+(Nümayəndə) üçün İKİ MÜSTƏQİL doldurma yolu var:
+1. **`gmlConSec`** (dropdown-dan ƏL İLƏ seçim) — TAM, bütün 20+ sahəni
+   (TelefonNomresi, UnvaninNovu, Unvan, Seher, Olke, SenedinNovu,
+   VerildiyiOlke daxil) `gmlDoldur`-a göndərir.
+2. **`gmlKycTetbiqEt`** (Tip seçiləndə/"tərəfi götür" düyməsi ilə AVTOMATİK,
+   həm CON-un fiziki-hesab qolu, həm SIG-in YEGANƏ doldurma yolu) — bu İKİ
+   bloku **ARTIQ bu 7 sahəni YAZMIRDI**: `TelefonNomresi`, `UnvaninNovu`,
+   `Seher`, `Olke`, `SenedinNovu` (yalnız CON-da əskik idi, SIG-də var idi),
+   `VerildiyiOlke`, (CON-da əlavə olaraq `Unvan`-ın özü də əskik idi).
+
+SIG-in HEÇ bir "dropdown-dan əl ilə seç" yolu YOXDUR (yalnız BİR "Rəhbər"
+var) — SIG-in YEGANƏ doldurma yolu elə BU natamam `gmlKycTetbiqEt`-dir, ona
+görə istifadəçinin "imza sahibində boşdur" şikayəti BİRƏ-BİR bu boşluğa
+uyğun gəldi (4 sahə: Verildiyi ölkə, Telefon nömrəsi, Şəhər, Ölkə).
+
+**CON-un "tarix gəlmir" şikayəti İSƏ `gmlConSec` üzərindən idi (TAM
+funksiya, bu bugdan TƏSİRLƏNMƏZDİ) — ona görə bu KONKRET şikayətin əsl
+səbəbi hələ YUXARIDAKI "köhnə build" izahında qala bilər** (parse-sonrası
+loq onsuz da düzgün çıxdı, brauzerdə F5/yenidən-aç ilə indi işləməlidir) —
+AMMA eyni mesajda tapılan İKİNCİ, SIG-ə aid şikayət TAM AYRI, REAL bir kod
+bugu idi və bu dəfə TƏSADÜFƏN eyni mesajda qarışıq gəldi.
+
+**Niyə C#-da da EYNİ bug var idi — `KycTetbiqEt`-in öz şərhi `gmlKycTetbiqEt`-i
+"JS güzgüsü" adlandırır:** iki fayl eyni sahə siyahısını MÜSTƏQİL əl ilə
+yazıb saxlayır (ortaq mənbə/şablon yoxdur) — biri bir sahəni unudanda, o
+biri DƏ eyni sahəni unutmuşdu, çünki ikisi də, görünür, eyni (natamam)
+ilkin siyahıdan köçürülüb.
+
+**Düzəliş — hər iki fayl, eyni 7 sahə:**
+```javascript
+// Tesdiq.cshtml, gmlKycTetbiqEt — CON bloku (yeni sətirlər)
+gmlDoldur('ConTelefonNomresi', c.telefonNomresi);
+gmlDoldur('ConUnvaninNovu', c.unvaninNovu);
+gmlDoldur('ConUnvan', c.unvan);
+gmlDoldur('ConSeher', c.seher);
+gmlDoldur('ConOlke', c.olke);
+gmlDoldur('ConSenedinNovu', c.senedinNovu);
+// ...
+gmlDoldur('ConVerildiyiOlke', c.verildiyiOlke);
+
+// SIG bloku (yeni sətirlər)
+gmlDoldur('SigUnvaninNovu', s.unvaninNovu);
+gmlDoldur('SigTelefonNomresi', s.telefonNomresi);
+gmlDoldur('SigSeher', s.seher);
+gmlDoldur('SigOlke', s.olke);
+gmlDoldur('SigVerildiyiOlke', s.verildiyiOlke);
+```
+C# tərəfdə (`EmeliyyatlarController.KycTetbiqEt`) EYNİ 7 sahə eyni şəkildə,
+`dto.Con*`/`dto.Sig*` = `kyc.TekSexs.*` formasında əlavə edildi.
+
+**Qayda:** eyni KYC-ni DOLDURAN birdən çox YAZICI yol (burada: dropdown-dan
+əl-ilə-seçim VƏ Tip-əsaslı avtomatik-tətbiq, HƏM JS, HƏM onun C# "güzgüsü")
+varsa, biri YENİ bir sahə (və ya tam sahə dəsti) əldə edəndə DİGƏR BÜTÜN
+yollar da YENİLƏNMƏLİDİR — "tam" yolun (gmlConSec) özünü "natamam" yola
+(gmlKycTetbiqEt) nümunə kimi göstərib YAN-YANA tutuşdurmaq, hər ikisinin
+EYNİ sahə siyahısını daşıdığını yoxlamaq lazımdır. Bu, "Bir Kəmiyyətə Üç
+Yazıcı" qaydasının JS/C# qoşa-güzgü formasıdır — fərq budur ki, burada SƏHV
+hər iki güzgüdə EYNİ idi (biri o birini kor-koranə köçürüb), ona görə
+nəticələr arasında ziddiyyət YOX idi — sadəcə HƏR İKİSİ səhv idi.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Tip seçimi"/"tərəfi
+götür" əməliyyatlarına təsir edir; artıq doldurulmuş formalarda bu 7 sahə
+hələ boşdursa, operator "Təmizlə"+yenidən Tip seçimi, yaxud `gmlConSec`
+dropdown-undan (CON üçün) yenidən seçim etməlidir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı hər iki faylda `git diff`-in YALNIZ əlavə
+olunan sətirləri üzrə ölçülüb — tam balanslı; hər yeni `gmlDoldur`/`dto.Con*`/
+`dto.Sig*` sahə adı `GoamlTesdiqDto.cs`-dən bir-bir təsdiqləndi). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+(1) Tip seçib (və ya "tərəfi götür" düyməsi ilə) SIG-in avtomatik dolduğu bir
+namizəddə "Telefon nömrəsi"/"Şəhər"/"Ölkə"/"Verildiyi ölkə" sahələrinin artıq
+Oracle-dan dolduğunu; (2) EYNİ nümayəndəni (regnom 016901) `gmlConSec`
+dropdown-undan YENİDƏN seçib "Sənədin verilmə/bitmə tarixi"nin artıq
+göründüyünü (bu, köhnə build/səhifə məsələsi idi, F5/yenidən-açma ilə
+düzəlməli idi) təsdiqləməlidir.

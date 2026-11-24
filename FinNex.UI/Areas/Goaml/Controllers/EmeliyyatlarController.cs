@@ -223,6 +223,16 @@ public class EmeliyyatlarController : Controller
             dto.ConUnvan = kyc.TekSexs.Unvan;
             dto.ConVetendasligi = kyc.TekSexs.Vetendasligi;
             dto.ConPin = kyc.TekSexs.Pin;
+            // 24.11.2026 — bu altı sahə (gmlConSec/Tesdiq.cshtml-in JS-dəki
+            // manual-seçim yolu ARTIQ yazırdı) bu C# auto-apply yolunda unudulmuşdu
+            // — istifadəçi şikayəti: SIG-in eyni boşluğu (aşağı bax), CON-da da
+            // eyni risk var (fiziki-hesab ssenarisi).
+            dto.ConTelefonNomresi = kyc.TekSexs.TelefonNomresi;
+            dto.ConUnvaninNovu = kyc.TekSexs.UnvaninNovu;
+            dto.ConSeher = kyc.TekSexs.Seher;
+            dto.ConOlke = kyc.TekSexs.Olke;
+            dto.ConSenedinNovu = kyc.TekSexs.SenedinNovu;
+            dto.ConVerildiyiOlke = kyc.TekSexs.VerildiyiOlke;
             dto.ConSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
             dto.ConSenedinVerilmeTarixi = kyc.TekSexs.SenedinVerilmeTarixi;
             dto.ConSenedinEtibarliliqMuddeti = kyc.TekSexs.SenedinEtibarliliqMuddeti;
@@ -241,6 +251,16 @@ public class EmeliyyatlarController : Controller
         // businessStartDate və s.) HƏMİŞƏ boş qalırdı, çünki `fin` arqumenti
         // (Snn) heç vaxt dolu deyildi. Bax CLAUDE.md.
         dto.Snn = kyc.TekSexs.Pin;
+        // 24.11.2026 — istifadəçi şikayəti: "imza sahibində verildiyi ölkə boşdur,
+        // telefon nöm boşdur, şəhər/ölkə boşdur" — bu beş sahə Oracle-dan ARTIQ
+        // gəlirdi (`kyc.TekSexs`-in özündə), AMMA bu metod onları `dto`-ya
+        // HEÇ YAZMIRDI. JS-dəki EYNİ bugun (gmlKycTetbiqEt) bura köçürülmüş
+        // forması — bax CLAUDE.md.
+        dto.SigUnvaninNovu = kyc.TekSexs.UnvaninNovu;
+        dto.SigTelefonNomresi = kyc.TekSexs.TelefonNomresi;
+        dto.SigSeher = kyc.TekSexs.Seher;
+        dto.SigOlke = kyc.TekSexs.Olke;
+        dto.SigVerildiyiOlke = kyc.TekSexs.VerildiyiOlke;
         dto.SigUnvan = kyc.TekSexs.Unvan;
         dto.SigSenedinNovu = kyc.TekSexs.SenedinNovu;
         dto.SigSenedinSeriyaNomresi = kyc.TekSexs.SenedinSeriyaNomresi;
