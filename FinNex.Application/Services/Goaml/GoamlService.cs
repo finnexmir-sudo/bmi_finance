@@ -1414,7 +1414,28 @@ namespace FinNex.Application.Services.Goaml
                     "from odb.numayende n " +
                     "where n.regnom = '" + regnomKodu + "' and (n.imza_bitme is null or n.imza_bitme > sysdate)", 50, ct);
 
-                return setirler.Select(NumayendeSetirdenQur).ToList();
+                var natija = setirler.Select(NumayendeSetirdenQur).ToList();
+
+                // 24.11.2026, İKİNCİ DALĞA — ƏVVƏLKİ loq YALNIZ raw Oracle dəyərini
+                // göstərirdi (idAml=1731 üçün tarixlər parse oluna bilən mətn idi),
+                // AMMA istifadəçi YENİDƏN "tarix gəlmir" dedi — deməli ya (a) bu dəfə
+                // dropdown-dan BAŞQA bir nümayəndə seçilib (o şəxsin sənəd tarixi
+                // Oracle-da HƏQİQƏTƏN boşdur), ya da (b) `TarixiParseEt`-in ÖZÜ bu
+                // konkret sətirdə gözlənilmədən `null` qaytarır. Bu dəfə PARSE OLUNMUŞ
+                // (TarixiParseEt-dən SONRAKI) dəyəri HƏR namizəd üçün loglayır ki,
+                // istifadəçi seçdiyi ADA görə hansı idAml-in NİYƏ boş qaldığını
+                // birbaşa görə bilsin — "GOAML NUMAYENDE parse" axtarışı ilə.
+                foreach (var n in natija)
+                {
+                    _logger.LogInformation(
+                        "GOAML NUMAYENDE parse — regnomKodu={RegnomKodu}, idAml={IdAml}, ad={Ad} {Soyad}, " +
+                        "SenedinVerilmeTarixi(parse-sonrası)={Verilme}, SenedinEtibarliliqMuddeti(parse-sonrası)={Etibar}",
+                        regnomKodu, n.IdAml, n.Adi, n.Soyadi,
+                        n.SenedinVerilmeTarixi?.ToString("yyyy-MM-dd") ?? "NULL",
+                        n.SenedinEtibarliliqMuddeti?.ToString("yyyy-MM-dd") ?? "NULL");
+                }
+
+                return natija;
             }
             catch (Exception ex)
             {
