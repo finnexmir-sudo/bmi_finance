@@ -122,6 +122,7 @@ namespace FinNex.Application.Services.Goaml
                 DocumentSource = r[16] as string,
                 NameLicschDe = r[17] as string,
                 NameLicschKre = r[18] as string,
+                IdVd = r[19] == null ? null : ToLong(r[19]),
             }).ToList();
 
             if (setirler.Count > 0)
@@ -253,6 +254,7 @@ namespace FinNex.Application.Services.Goaml
             e.Primechanie = dto.Primechanie;
             e.DateOper = dto.DateOper;
             e.DocumentSource = dto.DocumentSource;
+            e.IdVd = dto.IdVd;
             e.TransmodeCode = dto.TransmodeCode;
             e.TransmodeComment = dto.TransmodeComment;
             e.AmountLocal = dto.AmountLocal;
@@ -397,6 +399,7 @@ namespace FinNex.Application.Services.Goaml
             Primechanie = e.Primechanie,
             DateOper = e.DateOper,
             DocumentSource = e.DocumentSource,
+            IdVd = e.IdVd,
             TransmodeCode = e.TransmodeCode,
             TransmodeComment = e.TransmodeComment,
             AmountLocal = e.AmountLocal,
@@ -684,6 +687,7 @@ namespace FinNex.Application.Services.Goaml
                 Primechanie = e.Primechanie,
                 DateOper = e.DateOper,
                 DocumentSource = e.DocumentSource,
+                IdVd = e.IdVd,
                 TransmodeCode = e.TransmodeCode,
                 TransmodeComment = e.TransmodeComment,
                 AmountLocal = e.AmountLocal,
@@ -2494,6 +2498,38 @@ namespace FinNex.Application.Services.Goaml
             return (filialAdi ?? ozBankimiz?.AdSoyad, ozBankimiz?.InnBank, ozBankimiz?.BicSwift);
         }
 
+        /// <summary>24.11.2026 — SWIFT/xarici invaluta mənşəli əməliyyatlarda Sender-in
+        /// HƏQİQİ (bizim ÖZ bankımız DEYİL, xarici) bank adı. İstifadəçi Oracle Forms
+        /// "Properties of item SENDER_BANK_NAME" (Master Mirror Item =
+        /// `DOC_VNESH_SWIFT1.SENDER_BANK_NAME`) göstərdi, sonra canlı Oracle sorğusu
+        /// ilə join açarını TƏSDİQLƏDİ: `odb.doc_vnesh_swift.id = doc_dna_all_risk.
+        /// id_vd` (real nümunələr: RECNUM 22906763 → "Export Development Bank of
+        /// Iran", RECNUM 22906811 → "BMI Ardabil br"). Bu, AYSEL-in öz
+        /// `sender_account_fin_inst_name` düsturunun (`97_Goaml_JSON_MMX_IN_Tam_
+        /// Metn.sql:1252`) BİRİNCİ NVL-qoludur: `NVL(NVL(v_goal.Institution_Name_TO,
+        /// 'Premium Bank ASC'), v_goal.institution_name)` — `Institution_Name_TO`
+        /// elə bu SWIFT axtarışının nəticəsidir, tapılmasa "bizim öz bankımız"a
+        /// (`HesabinOzBankiAsync`) düşür. Receiver-in fin_inst_name-i İSƏ AYSEL-də
+        /// ŞƏRTSİZ öz bankımızdır (`V_ATTRIB.NAIMEN_UCHREJ`) — bu axtarış YALNIZ
+        /// Sender üçündür, `ReceiverQurAsync`-a TƏTBİQ EDİLMİR.</summary>
+        private async Task<string?> SwiftSenderBankAdiAsync(long? idVd, CancellationToken ct)
+        {
+            if (idVd is null) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select sender_bank_name from odb.doc_vnesh_swift where id = {idVd.Value}", 1, ct);
+                if (setirler.Count == 0) return null;
+                var ad = DVal(setirler[0], "SENDER_BANK_NAME") as string;
+                return string.IsNullOrWhiteSpace(ad) ? null : ad;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML Sender bank adı — doc_vnesh_swift (id_vd={IdVd}) sorğusu uğursuz oldu", idVd);
+                return null;
+            }
+        }
+
         /// <summary>Oracle sətir 1070-1246 — "_IN" (GƏLƏN əməliyyat) prosedurunda
         /// Sender.Person/Account ƏSLİNDƏ "To*" (bizim "Alan fiziki şəxsin" bloku)
         /// sahələrindən doldurulur — xarici tərəf PULU GÖNDƏRƏN kimi qeydə alınır.
@@ -2603,6 +2639,11 @@ namespace FinNex.Application.Services.Goaml
                 // ARTIQ mövcud (header-zənginləşdirmə üçün işlədilən) sorğusundan, EYNİ
                 // bizim-tərəf VÖEN+regnom cütü ilə (bax o metodun baş şərhi).
                 var dublSender = await HuquqiShexsAsync(e.IncorporationNumber, e.RegistracNomer, ct);
+                // 24.11.2026 — SWIFT mənşəli namizədlərdə Sender-in HƏQİQİ (xarici) bank
+                // adı `bankAdi`-dan (bizim ÖZ bankımız) ÜSTÜNDÜR — bax SwiftSenderBankAdiAsync
+                // şərhi, AYSEL-in `NVL(Institution_Name_TO, 'öz bankımız')` zənciri.
+                var swiftBankAdi = await SwiftSenderBankAdiAsync(e.IdVd, ct);
+                var senderFinInstAdi = swiftBankAdi ?? bankAdi;
                 sender.Account = new GoamlJsonSenderAccountDto
                 {
                     SenderAccountNumber = e.Debet ?? (e.AccountTo ?? e.Account) ?? "",
@@ -2610,8 +2651,8 @@ namespace FinNex.Application.Services.Goaml
                     SenderAccountCurrency = currType,
                     SenderAccountFinInstCountry = e.FromCountry ?? "",
                     SenderAccountFinInstBicId = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
-                    SenderAccountFinInstName = bankAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
-                    SenderAccountFinInstBranch = bankAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstName = senderFinInstAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstBranch = senderFinInstAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
                     SenderAccountFinInstBic = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
                     SenderAccountFinInstTaxId = bankVoen ?? "",
                 };

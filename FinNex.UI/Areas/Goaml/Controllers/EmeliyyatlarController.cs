@@ -73,7 +73,7 @@ public class EmeliyyatlarController : Controller
         string? debet, string? kredit, decimal? summaVNacval, decimal? summaVInval, int? kodValuti,
         string? innDebet, string? innKredit, string? primechanie,
         string? nameLicschDe, string? nameLicschKre, string? documentSource,
-        string? registracNomerDe, string? registracNomerKre, string? qaynaqTab)
+        string? registracNomerDe, string? registracNomerKre, string? qaynaqTab, long? idVd)
     {
         ViewData["Title"] = "GOAML — Təsdiqlə";
         // 24.11.2026 — "Geri"/"Ləğv et" linklərinin hansı taba (Risk/Əməliyyatlar)
@@ -114,6 +114,7 @@ public class EmeliyyatlarController : Controller
             NameUr = debetKassadir ? nameLicschKre : nameLicschDe,
             ToAdi = nameLicschKre,
             DocumentSource = documentSource,
+            IdVd = idVd,
             // 16.11.2026: AYSEL-in real ixracı ilə tutuşdurularkən üzə çıxdı —
             // "trn_detailed_id" elə bu sahədən (REGISTRAC_NOMER) gəlir, namizəd
             // sorğusu onu artıq daşıyır (RegistracNomerDe/Kre), amma heç yerə

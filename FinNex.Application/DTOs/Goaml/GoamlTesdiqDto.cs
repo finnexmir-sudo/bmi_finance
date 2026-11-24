@@ -45,6 +45,13 @@ namespace FinNex.Application.DTOs.Goaml
         /// lazımdır (bax `97_Goaml_JSON_MMX_IN_Tam_Metn.sql`-dəki `document_source`
         /// mətn-uyğunluğu şərtləri).</summary>
         public string? DocumentSource { get; set; }
+        /// <summary>Oracle `DOC_DNA_ALL_RISK.ID_VD` — `DocumentSource` ilə EYNİ
+        /// qayda: namizəd axtarışından ötürülür, operator ƏL İLƏ YAZMIR, gizli
+        /// sahədir. 24.11.2026 — SWIFT/xarici invaluta mənşəli əməliyyatlarda
+        /// Sender-in bank adının (`sender_account_fin_inst_name`) mənbə açarıdır
+        /// (bax <c>SwiftSenderBankAdiAsync</c>, `odb.doc_vnesh_swift.id = id_vd`,
+        /// canlı Oracle-da təsdiqlənib).</summary>
+        public long? IdVd { get; set; }
         public string? TransmodeCode { get; set; }
         public string? TransmodeComment { get; set; }
         public decimal? AmountLocal { get; set; }

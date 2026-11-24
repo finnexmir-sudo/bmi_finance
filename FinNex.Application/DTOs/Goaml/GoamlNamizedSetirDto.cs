@@ -29,6 +29,13 @@ namespace FinNex.Application.DTOs.Goaml
         public string? NameLicschDe { get; set; }
         /// <summary>Kredit hesabın sahibi (DOC_DNA_ALL_RISK.NAME_LICSCH_KRE).</summary>
         public string? NameLicschKre { get; set; }
+        /// <summary>DOC_DNA_ALL_RISK.ID_VD — SWIFT/xarici invaluta mənşəli
+        /// əməliyyatlarda mənbə sənədin açarı. 24.11.2026, canlı Oracle-da
+        /// TƏSDİQLƏNDİ: `odb.doc_vnesh_swift.id = id_vd` (AYSEL-in "Update New"
+        /// kaskadının Sender-in bank adını (`sender_account_fin_inst_name`)
+        /// SWIFT-dən doldurduğu açar). `null` ola bilər — SWIFT mənşəli
+        /// olmayan (daxili) əməliyyatlarda belədir.</summary>
+        public long? IdVd { get; set; }
 
         /// <summary>Bu namizəd artıq (ən azı bir Tip ilə) bizim bazada
         /// təsdiqlənibmi — siyahıda "artıq göndərilib" işarəsi üçün. 12.11.2026-

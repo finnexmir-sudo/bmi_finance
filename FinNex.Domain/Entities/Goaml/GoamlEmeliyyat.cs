@@ -79,6 +79,12 @@ namespace FinNex.Domain.Entities.Goaml
         /// köçürülür (əl ilə doldurulmur). YALNIZ Export to JSON-da trn_type/
         /// trn_payment_system/trn_chanel təyini üçün istifadə olunur — 12.11.2026.</summary>
         public string? DocumentSource { get; set; }          // DOCUMENT_SOURCE
+        /// <summary>DOC_DNA_ALL_RISK.ID_VD — Təsdiqlə zamanı namizəddən köçürülür
+        /// (əl ilə doldurulmur). 24.11.2026 — SWIFT/xarici invaluta mənşəli
+        /// əməliyyatlarda Sender-in bank adının (sender_account_fin_inst_name)
+        /// mənbə açarı — bax <c>SwiftSenderBankAdiAsync</c>. Daxili əməliyyatlarda
+        /// `null` qalır.</summary>
+        public long? IdVd { get; set; }                      // ID_VD
         public string? TransmodeCode { get; set; }           // TRANSMODE_CODE — "Vəsaitin növü"
         public string? TransmodeComment { get; set; }        // TRANSMODE_COMMENT — "Əməliyyatın növün İzahatı"
         public decimal? AmountLocal { get; set; }            // AMOUNT_LOCAL — "Manat ekvivalenti"

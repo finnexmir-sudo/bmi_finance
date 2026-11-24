@@ -15506,3 +15506,93 @@ VÖEN-i Oracle-da `huquqi_shexs.REGISTRATION_NUMBER`-i dolu olan bir hüquqi
 dubl_number`/`receiver_account_dubl_number`-in (hansı bloka düşürsə)
 artıq bu dəyəri daşıdığını təsdiqləməli — "Ölkə" sahəsinin isə (ayrıca
 qərar gözləyir) hələ də boş qalacağını gözləməli.
+
+## GOAML — Sender Bank Adı: SWIFT Mənşəli Əməliyyatlarda XARİCİ Bankın Adı — `ID_VD` Bağlantısı Köçürüldü (24.11.2026)
+
+İstifadəçi Oracle Forms "Properties of item SENDER_BANK_NAME" ekranını göstərdi
+(Master Mirror Item = `DOC_VNESH_SWIFT1.SENDER_BANK_NAME`), sonra: *"sender name
+burdan gelir,kassa deyilse demeli diger hansisa hesandan gelib"*. Araşdırmanın
+əvvəlində mən bunu AYDINLAŞDIRMAQ əvəzinə sual verməyə başlayanda istifadəçi
+HAQLI olaraq kəsdi: *"ale yoxe yox yox yox,bu poxu qurtara bilmirik biz,goamlin
+jsonunda sender terefinde o melumat yazilib"* — yəni bu, real goAML JSON-un
+ÖZÜNDƏ Sender bölməsində yazılan, canlı doğrulanmalı bir sahə idi, fərziyyə
+DEYİL.
+
+### Kök araşdırma — `AYSEL`-in öz formulu, canlı Oracle ilə TƏSDİQLƏNDİ
+
+`97_Goaml_JSON_MMX_IN_Tam_Metn.sql:1252` — `sender_account_fin_inst_name`:
+```
+NVL(NVL(v_goal.Institution_Name_TO, 'Premium Bank ASC'), v_goal.institution_name)
+```
+`'Premium Bank ASC'` sözü **sabit literaldır** — bu bizim ÖZ bankımızın adı
+(`V_YURIK__NAME` cursor-unun özü, `97_...sql:404-422`) — AYSEL-in bu sahəni
+belə yazmasının səbəbi `V_YURIK__NAME.BANK AS BANK`-ın özünün HARDCODE
+literal olmasıdır. Yəni zəncir: **ƏVVƏLCƏ `Institution_Name_TO` (xarici bank,
+SWIFT mənşəli) sınanır, tapılmasa bizim ÖZ bankımıza düşülür.** `Receiver`-in
+EYNİ sahəsi (`:1412`) İSƏ ŞƏRTSİZ öz bankımızdır (`V_ATTRIB.NAIMEN_UCHREJ`) —
+Receiver-in heç bir SWIFT/ID_VD asılılığı YOXDUR, YALNIZ Sender-ə aiddir.
+
+**`Institution_Name_TO`-nun ÖZ mənbəyi canlı Oracle-da iki dəfə sınanıb
+TƏSDİQLƏNDİ.** İstifadəçi əvvəlcə `SELECT * FROM doc_vnesh_swift a where
+a.date_oper='23-11-2026'` ilə real cədvəl adının **`doc_vnesh_swift`**
+olduğunu göstərdi (Oracle Forms-un "DOC_VNESH_SWIFT1" adı yalnız BLOKUN ÖZ
+daxili ALİASI idi, HƏRFİ cədvəl adı DEYİL — bu, mənim ilk fərziyyəmin
+SƏHVİ idi, diaqnostik SQL-i düzəltdim). Sonra mənim verdiyim JOIN-testi
+işlədib **2 sətir** qaytardı:
+
+| RECNUM | ID_VD | SENDER_BANK_NAME |
+|---|---|---|
+| 22906763 | 47218 | Export Development Bank of Iran |
+| 22906811 | 47222 | BMI Ardabil br |
+
+Yəni **`odb.doc_vnesh_swift.id = odb.doc_dna_all_risk.id_vd`** join açarı
+TƏSDİQLƏNDİ — `ID_VD` artıq (11.11.2026-dan, Risk tabı işində) `DOC_DNA_
+ALL_RISK`-in nativ sütunu kimi tanınırdı, bu, onun İKİNCİ, konkret
+istifadəsidir (06-07.11.2026-dakı "Update New"-un 7 ID_VD-asılı qaydasından
+BİRİNİN mənbəyi).
+
+### Tətbiq — yeni sütun, 4-qat mapping, yeni Oracle axtarışı
+
+`GoamlEmeliyyat.IdVd` (`long?`, migration `20261124170000_GoamlIdVd.cs`,
+yalnız `AddColumn`) — namizəd axtarışından (`DOC_DNA_ALL_RISK.ID_VD`,
+`90_Goaml_OracleSorgular.sql`/`91_Goaml_Risk_OracleSorgular.sql`-in hər
+ikisinin SELECT siyahısının SONUNA əlavə edildi, POZİSİYA-əsaslı oxuma
+pozulmasın deyə) `DocumentSource` İLƏ EYNİ qayda ilə axır: namizəd →
+`GoamlNamizedSetirDto.IdVd` → "Təsdiqlə" linkinin query-string-i (hər iki
+Index.cshtml) → `Tesdiq` GET-in parametri → `GoamlTesdiqDto.IdVd` → gizli
+`<input type="hidden" asp-for="IdVd" />` (POST-da itməsin, "Şərtli Render
+Olunan Form Sahəsi" qaydası) → `DtoDenDoldur`/`DtoyaCevir`/"Bax" detal
+mapping-inin ÜÇÜ DƏ yeniləndi (eyni "Bir Kəmiyyətə Üç Yazıcı" riski).
+
+**Yeni `GoamlService.SwiftSenderBankAdiAsync(long? idVd, ct)`** — `odb.
+doc_vnesh_swift where id = {idVd}` sorğusu, `sender_bank_name`-i qaytarır,
+tapılmasa/Oracle əlçatmaz olsa `null` (try/catch, `_logger.LogWarning`,
+digər bütün Oracle-lookup-larla EYNİ "ən yaxşı cəhd" naxışı). `SenderQurAsync`-ın
+Account blokunda indi `senderFinInstAdi = swiftBankAdi ?? bankAdi` —
+SWIFT bank adı (əgər `e.IdVd` doludur VƏ Oracle-da tapılırsa) `HesabinOzBankiAsync`-in
+(bizim öz bankımız) ÜSTÜNDƏ, AYSEL-in `NVL` zəncirinin BİRƏ-BİR eynisi.
+`ReceiverQurAsync`-A TOXUNULMADI — AYSEL-in şərtsiz "öz bankımız" qaydası
+dəyişmir.
+
+⚠️ **YALNIZ Debet/Kredit "kassa olmayan" halda, Sender.Account bloku
+YAZILAN namizədlərdə TƏTBİQ OLUNUR** — mübadilə-stolu/`FizikIn`/`HuquqiIn`/
+`FToF` tiplərində Account bloku onsuz da YAZILMIR (16.11.2026-dakı qayda),
+bu halda `SwiftSenderBankAdiAsync` çağırılsa belə nəticəsi İSTİFADƏ OLUNMUR.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə"/"Export"
+çağırışlarına təsir edir, artıq ixrac edilmiş fayllar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı `git diff`-in YALNIZ bu sessiyanın əlavə etdiyi sətirləri
+üzrə ayrıca ölçülüb — `GoamlService.cs`-ə əlavə olunan 24/24 paren, 5/5 brace
+balanslıdır, pre-existing -8 fərqi DƏYİŞMƏDİ; namizəd sorğusunun SELECT
+siyahısındakı 20 sütunun sırası (`r[0]`…`r[19]`) sütun-sütun sayılıb
+`NamizedAxtarAsyncCore`-un mapping-i ilə tutuşduruldu — `id_vd` DƏQIQ
+20-ci (indeks 19) sütundur, HƏR İKİ SQL faylında). İstifadəçi SQL fayllarını
+(`90`/`91`) SQL Server-də YENİDƏN işlədib, Visual Studio-da **Rebuild All**,
+`Update-Database`, sonra real ssenari ilə yoxlamalıdır: RECNUM 22906763 və ya
+22906811 kimi, ID_VD-si Oracle-da `doc_vnesh_swift`-ə bağlı bir namizədi
+Təsdiqlə+Export et → `sender_account_fin_inst_name`-in artıq bizim öz bankımız
+YOX, real xarici bankın (məs. "Export Development Bank of Iran") adını
+göstərdiyini, `receiver_account_fin_inst_name`-in isə HƏLƏ DƏ bizim öz
+bankımız olaraq qaldığını təsdiqləməlidir.

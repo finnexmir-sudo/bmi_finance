@@ -77,7 +77,7 @@ SET @Sql      = N'select t.recnum, t.date_oper, t.filialnumber, t.debet, t.kredi
        substr(t.debet,10,6) as registrac_nomer_de,
        substr(t.kredit,10,6) as registrac_nomer_kre,
        t.document_source,
-       t.name_licsch_de, t.name_licsch_kre
+       t.name_licsch_de, t.name_licsch_kre, t.id_vd
   from odb.doc_dna_all_risk t
  where t.date_oper between to_date(''{DOVREVVEL}'',''DD-MM-YYYY'')
                         and to_date(''{DOVRSON}'',''DD-MM-YYYY'')
