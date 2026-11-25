@@ -15667,3 +15667,45 @@ ilə yoxlamalıdır: "Banka aid olmayan müştəri" blokunun artıq SWIFT-in ÖZ
 göndərən adı ilə (banner göstərişi ilə, blok avtomatik açıq) avtomatik
 dolduğunu, Export edəndə `sender_entity_name`-in Receiver-in adı İLƏ EYNİ
 ÇIXMADIĞINI təsdiqləməlidir.
+
+## GOAML — "Qaralamaya Qaytar"dan Sonra "Redaktə et" Düyməsi GÖRÜNMÜRDÜ, Taba Çıxıb-Girmək LAZIM İDİ (25.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı ekranda (iki ekran-görüntüsü) göstərdi: "Təsdiqlənmiş
+əməliyyatlar" siyahısında "İxrac edilib" statuslu bir qeydi "Qaralamaya
+qaytar" ilə geri çevirir, status pili dərhal "Qaralama"ya dönür, AMMA
+"Redaktə et" düyməsi HEÇ GÖRÜNMÜR — YALNIZ səhifədən çıxıb (Risk tabına)
+YENİDƏN "Əməliyyatlar/Siyahı"ya qayıdanda düymə görünürdü.
+
+**Kök səbəb — 23.11.2026-dakı "Qaralamaya qaytar" AJAX düzəlişinin ÖZÜNÜN
+natamam qalan hissəsi.** O düzəliş geri-qaytarma düyməsini TAM SƏHİFƏ
+YENİLƏNMƏSİNDƏN (skroll sıçrayışından) xilas etmək üçün HƏR sətirdə İKİ
+formu (`.gml-geri-form`/`.gml-sil-form`) EYNİ ANDA DOM-da saxlayıb YALNIZ
+birini gizlədirdi — AJAX uğur handler-i sadəcə HANSININ görünəcəyini
+dəyişir. **"Redaktə et" `<a>` linki İSƏ HƏLƏ DƏ `@if (e.Status !=
+IxracEdilib)` ilə server-tərəfli ŞƏRTLƏ RENDER OLUNURDU** — "İxrac edilib"
+statuslu sətirdə bu link DOM-da **HEÇ MÖVCUD DEYİLDİ** (gizli YOX, tamamilə
+yox idi). AJAX handler-i statusu "Qaralama"ya çevirəndə linki GÖSTƏRƏ
+bilmirdi, çünki göstəriləcək bir element YOX idi — YALNIZ səhifənin
+YENİDƏN render olunması (başqa taba keçib-qayıtmaq) bu `@if`-i yenidən
+qiymətləndirib linki yaradırdı.
+
+**Düzəliş — `Siyahi.cshtml`:** "Redaktə et" linki artıq "Qaralamaya
+qaytar"/"Sil" formları İLƏ EYNİ naxışla — **HƏMİŞƏ DOM-dadır**, `@if`
+ƏVƏZİNƏ inline `style="display:none"` ilə gizlənir (`gml-redakte-link`
+sinfi ilə işarələnib). AJAX uğur handler-inə bir sətir əlavə olundu:
+`redakteLink.style.display = ''`.
+
+**Qayda (bu modulun 23.11.2026-dakı "iki form DOM-da saxla" prinsipinin
+TAM TƏTBİQİ):** AJAX-la statusu dəyişdirən bir handler əlavə edəndə, həmin
+statusdan ASILI OLAN **BÜTÜN** UI elementlərini (düymələr, linklər, pillər)
+sadala — yalnız İLK fikirdə ağla gələn ikisini (geri/sil formu) YOX. Server-
+tərəfli `@if` ilə RENDER OLUNMAYAN (gizlənməyən, mövcud olmayan) bir element
+AJAX-dan HEÇ VAXT "göstərilə" bilməz — əvvəlcə onu HƏMİŞƏ DOM-a yaz (inline
+`style` ilə gizlədərək), sonra AJAX-ın görünüşünü dəyişməsinə icazə ver.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/tag balansı Python skriptlə — tam fayl balanslı).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: "İxrac edilib" statuslu bir qeydi "Qaralamaya qaytar" edəndə
+"Redaktə et" düyməsinin EYNİ ANDA, səhifədən çıxmadan göründüyünü
+təsdiqləməli.
