@@ -15777,3 +15777,99 @@ et → `sender_entity_name`-in indi "Bankın adı"nı daşıdığını,
 `sender_account_fin_inst_name`/`_branch`-in (real SWIFT/Oracle bank adı
 tapılmayıbsa) İNDİ BOŞ qaldığını təsdiqləməli — "Adı" (NameUrTo) DOLU olan
 hallarda (əvvəlki, artıq işlək ssenari) heç bir dəyişiklik GÖRÜNMƏMƏLİDİR.
+
+## GOAML Export — DAXİLİ (SWIFT-SİZ) H to H/BLR Köçürmələrdə Receiver.Account BİZİM ÖZ BANKIMIZI Göstərirdi (25.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi beynimizi sıfırlayıb yenidən fikirləşmə tələbi ilə yeni bir
+uyğunsuzluq göstərdi: *"biz h to h secende faylimizda iki dene Account emele
+gelir,niye?"* — araşdırma göstərdi ki, bu ÖZÜ problem DEYİL (real goAML-in
+özündə də `Sender.Account` VƏ `Receiver.Account` hər zaman İKİ ayrı obyektdir,
+istifadəçi özü təsdiqlədi: *"yox yox,onlardakindada iki denedeir"*). Əsl
+problem başqa yerdə idi: *"mesele odurki biz kocurme hesabinin melumatini
+yazmisiq,bu bank daxili hesabdir ama bu kocurmedir ve kocurulen bank hesabi ve
+adi yazilib"* — yəni `Receiver.Account` BİZİM ÖZ (daxili ledger) hesabımızı/
+bankımızı göstərirdi, halbuki DAXİLİ (SWIFT-siz) köçürmədə pul HƏQİQƏTƏN
+BAŞQA, XARİCİ bir banka gedir — real goAML ora KÖÇÜRÜLƏN bankın məlumatını
+yazır.
+
+### Kök səbəb
+
+`ReceiverQurAsync`-in `Receiver.Account` bloku `HesabinOzBankiAsync(e.
+CandidateFilialNumber, e.Kredit, ct)`-i ŞƏRTSİZ çağırırdı — bu metod (17.11.2026-
+dan) QƏSDƏN "Debet/Kredit-dəki HƏR hesab STRUKTURCA bizim ÖZ bankımızdadır"
+fərziyyəsi üzərində qurulub, çünki namizəd sorğusu (`doc_dna_all_risk`) YALNIZ
+bizim ÖZ ledgerimizdən (`arh_dd`) gəlir. Bu fərziyyə **SWIFT** mənşəli (xarici)
+əməliyyatlar üçün artıq (24.11.2026-da, `SwiftSenderBankAdiAsync` ilə, YALNIZ
+Sender tərəfə) üstələnmişdi, AMMA **DAXİLİ, dövlətdaxili köçürmələr**
+(`doc_vnesh_nacval`-dan gələn, Oracle Forms-un "H TO H" kateqoriyası) üçün HEÇ
+bir ekvivalent YOX idi — `e.Kredit` elə BİZİM ledger sətrimiz idi, REAL
+köçürülən (xarici) bank hesabı/adı DEYİL.
+
+### Doğrulama — tamamilə istifadəçinin öz canlı Oracle sorğuları ilə (bu mühitdən Oracle-a bağlantı yoxdur)
+
+İstifadəçi zənciri addım-addım, hər addımı PL/SQL Developer-də VƏ AYSEL-in öz
+Progress 4GL ekranında işlədib ekran-görüntüsü ilə TƏSDİQLƏDİ:
+
+1. **Bank-məlumatı cədvəli** — əvvəlcə `odb.muxbir_hesab` (başqa bir AML
+   modulundan tanış) sınandı, AMMA İSTİFADƏÇİNİN ÖZ testi bunu RƏDD ETDİ:
+   eyni bankın `muxbir_hesab.KOD`-u (805250) Progress ekranındaki "Bankın
+   kodu" (805722) ilə ÜST-ÜSTƏ DÜŞMƜDİ — iki AYRI kodlaşdırma sxemi.
+   **`odb.MFO`** (sütunlar: `mfo`, `bank_shot_name`, `inn`, `bic_xoks`,
+   `bic_swift` və s.) DOĞRU cədvəl çıxdı: `select * from odb.mfo where mfo =
+   '509761'` → 1 sətir, "Melli Iran Banki Baki filiali" — bu, Debet (bizim)
+   tərəf üçün `HesabinOzBankiAsync`-in artıq istifadə etdiyi EYNİ cədvəl və
+   NƏTİCƏ idi (YENİDƏN yoxlanıldı, Debet tərəfə TOXUNULMADI).
+2. **Real hesab/bank mənbəyi** — `odb.doc_vnesh_nacval.KREDIT` (real köçürülən
+   hesab, IBAN) VƏ `MFO_CREDIT` (`odb.MFO.mfo`-ya açar) — "1-ci şəkil
+   onlarinki, 2-ci şəkil bizimki" müqayisəsi ilə təsdiqləndi.
+3. **Join açarı** — `select r.recnum, r.id_vd, v.id, v.kredit, v.mfo_credit
+   from odb.doc_dna_all_risk r join odb.doc_vnesh_nacval v on v.id = r.id_vd
+   where r.date_oper = to_date('20-11-2026','dd-mm-yyyy')` → **5 sətir**,
+   `ID_VD = ID` bir-bir üst-üstə düşdü — `SwiftSenderBankAdiAsync`-in
+   `doc_vnesh_swift.id = id_vd` (24.11.2026) ilə EYNİ naxışın, daxili
+   köçürmələr üçün qarşılığı.
+
+### Düzəliş
+
+**Yeni `NacvalKreditHesabAsync(long? idVd, ct)`** (`GoamlService.cs`,
+`SwiftGonderenAdiTapAsync`-in DƏRHAL ardınca) — `odb.doc_vnesh_nacval v left
+join odb.mfo m on m.mfo = v.mfo_credit where v.id = {idVd}` sorğusu, real
+hesab nömrəsini (`KREDIT`) + bank adını/VÖEN-ini/BIC-ini (`BANK_SHOT_NAME`/
+`INN`/`BIC_XOKS`) qaytarır — `SwiftSenderBankAdiAsync` İLƏ EYNİ "try/catch,
+`_logger.LogWarning` ilə `null`-a düş, heç vaxt atma" naxışı.
+
+**`ReceiverQurAsync`-in `Receiver.Account` bloku** — `nacval?.Hesab ?? e.
+Kredit`, `nacval?.BankAdi ?? bankAdi`, `nacval?.Voen ?? bankVoen`, `nacval?.Bic
+?? bankSwift` — `SenderQurAsync`-in ARTIQ mövcud `swiftBankAdi ?? bankAdi`
+PRİORİTET naxışının BİRƏ-BİR tətbiqi: real köçürülən bank (nacval tapılarsa)
+`HesabinOzBankiAsync`-in (bizim öz bankımız, fallback) ÜSTÜNDƏ.
+
+⚠️ **Sender tərəfə TOXUNULMADI** — Debet (bizim) tərəf üçün `HesabinOzBankiAsync`
+artıq DÜZGÜNDÜR (YENİDƏN yoxlanıldı, dəyişiklik lazım deyil), bu bug YALNIZ
+Receiver (köçürülən) tərəfdə idi.
+
+⚠️ **`odb.doc_vnesh_nacval`/`odb.MFO`-nun HƏR İKİSİNİN FOXPRO (tətbiq hesabı)
+üçün SELECT icazəsi olub-olmadığı TƏSDİQLƏNMƏYİB** — istifadəçi bu sorğuları
+ÖZ, şəxsi PL/SQL Developer sessiyası ilə işlətdi, FOXPRO ilə YOX (09.11.2026-
+dakı `balscht_fiz`/`balscht_ur`/`malumatin_novu` `ORA-01031` tələsi ilə EYNİ
+risk). Əgər real mühitdə `NacvalKreditHesabAsync` sakitcə `null` qaytarırsa
+(Receiver.Account köhnə kimi bizim öz bankımıza düşürsə), ƏVVƏLCƏ
+`Logs\log-<tarix>.txt`-də "GOAML Nacval kredit hesabı" sətrini axtar — `ORA-
+01031` çıxarsa, DBA-dan `GRANT SELECT ON odb.doc_vnesh_nacval TO FOXPRO;` VƏ
+`GRANT SELECT ON odb.mfo TO FOXPRO;` istə (`odb.MFO`-ya artıq `MfoFilialAdiAsync`
+üzərindən icazə var idi — bax `view_licsch_all` join-i — amma `doc_vnesh_nacval`
+bu modulda İLK DƏFƏ toxunulan cədvəldir, ayrıca yoxlanmalıdır).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə"/"Export"
+çağırışlarına təsir edir, artıq ixrac edilmiş fayllar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu dəyişikliyin əlavə
+etdiyi sətirləri üzrə ayrıca ölçülüb — 45/45 paren, 5/5 brace, 4/4 bracket,
+net fərq SIFIR). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra
+`doc_vnesh_nacval`-da real sətri olan bir DAXİLİ (H to H/BLR, SWIFT-siz) namizədi
+Təsdiqləyib Export etməlidir: `receiver_account_number`-in artıq bizim ÖZ
+kredit-hesabımızı YOX, `doc_vnesh_nacval.KREDIT`-i (real köçürülən IBAN),
+`receiver_account_fin_inst_name`/`_branch`/`_tax_id`/`_bic`-in isə köçürülən
+bankın (bizim ÖZ bankımız YOX) adını/VÖEN-ini/BIC-ini daşıdığını AYSEL-in
+real ixracı ilə tutuşdurub təsdiqləməli.

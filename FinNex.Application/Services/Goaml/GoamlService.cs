@@ -2566,6 +2566,52 @@ namespace FinNex.Application.Services.Goaml
             }
         }
 
+        /// <summary>25.11.2026, KRİTİK — DAXİLİ (SWIFT-SİZ, H to H/BLR) köçürmələrdə
+        /// Receiver.Account HƏMİŞƏ bizim ÖZ bankımızı (`HesabinOzBankiAsync`)
+        /// göstərirdi — istifadəçi: "biz h to h secende faylimizda... kocurme
+        /// hesabinin melumatini yazmisiq, bu kocurmedir ve kocurulen bank hesabi
+        /// ve adi yazilib" (bu, BİZİM hesabımız deyil, KÖÇÜRÜLƏN REAL bankın
+        /// hesabı/adı olmalıdır). İstifadəçi canlı Oracle ilə bütün zənciri
+        /// addım-addım təsdiqlədi: (1) `odb.MFO` (`odb.muxbir_hesab` DEYİL — iki
+        /// AYRI kodlaşdırma sxemidir, eyni bank üçün `MFO.mfo` ≠
+        /// `muxbir_hesab.KOD`, canlı sınaqla rədd edildi) bank adı/VÖEN/BIC-i
+        /// saxlayan DOĞRU cədvəldir — `MFO=509761` → "Melli Iran Banki Baki
+        /// filiali" (real ixracla eyni, Debet/bizim tərəf üçün `HesabinOzBankiAsync`
+        /// artıq DÜZGÜNDÜR, YENİDƏN YOXLANILDI); (2) `odb.doc_vnesh_nacval.KREDIT`
+        /// real köçürülən hesab nömrəsidir (bizim `e.Kredit` — daxili ledger
+        /// hesabı — DEYİL), `MFO_CREDIT` isə `odb.MFO.mfo`-ya açardır; (3) join
+        /// açarı `doc_vnesh_nacval.id = doc_dna_all_risk.id_vd` (= `e.IdVd`) canlı
+        /// sorğu ilə TƏSDİQLƏNDİ (5 sətir, RECNUM/ID_VD/ID bir-bir üst-üstə düşdü) —
+        /// `SwiftSenderBankAdiAsync`-in `doc_vnesh_swift.id=id_vd` ilə EYNİ
+        /// naxışın, DAXİLİ köçürmələr üçün qarşılığıdır.</summary>
+        private async Task<(string? Hesab, string? BankAdi, string? Voen, string? Bic)?> NacvalKreditHesabAsync(long? idVd, CancellationToken ct)
+        {
+            if (idVd is null) return null;
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select v.kredit, m.bank_shot_name, m.inn, m.bic_xoks " +
+                    $"from odb.doc_vnesh_nacval v left join odb.mfo m on m.mfo = v.mfo_credit " +
+                    $"where v.id = {idVd.Value}", 1, ct);
+                if (setirler.Count == 0) return null;
+                var hesab = DVal(setirler[0], "KREDIT") as string;
+                var bankAdi = DVal(setirler[0], "BANK_SHOT_NAME") as string;
+                var voen = DVal(setirler[0], "INN") as string;
+                var bic = DVal(setirler[0], "BIC_XOKS") as string;
+                if (string.IsNullOrWhiteSpace(hesab) && string.IsNullOrWhiteSpace(bankAdi)) return null;
+                return (
+                    string.IsNullOrWhiteSpace(hesab) ? null : hesab.Trim(),
+                    string.IsNullOrWhiteSpace(bankAdi) ? null : bankAdi.Trim(),
+                    string.IsNullOrWhiteSpace(voen) ? null : voen.Trim(),
+                    string.IsNullOrWhiteSpace(bic) ? null : bic.Trim());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML Nacval kredit hesabı — doc_vnesh_nacval (id_vd={IdVd}) sorğusu uğursuz oldu", idVd);
+                return null;
+            }
+        }
+
         /// <summary>Oracle sətir 1070-1246 — "_IN" (GƏLƏN əməliyyat) prosedurunda
         /// Sender.Person/Account ƏSLİNDƏ "To*" (bizim "Alan fiziki şəxsin" bloku)
         /// sahələrindən doldurulur — xarici tərəf PULU GÖNDƏRƏN kimi qeydə alınır.
@@ -2848,17 +2894,21 @@ namespace FinNex.Application.Services.Goaml
                 var (bankAdi, bankVoen, bankSwift) = await HesabinOzBankiAsync(e.CandidateFilialNumber, e.Kredit, ct);
                 // 24.11.2026 — SenderQurAsync-dəki EYNİ, artıq mövcud sorğu/şərh.
                 var dublReceiver = await HuquqiShexsAsync(e.IncorporationNumber, e.RegistracNomer, ct);
+                // 25.11.2026, KRİTİK — SWIFT-in `swiftBankAdi ?? bankAdi` (Sender)
+                // naxışının DAXİLİ (nacval) qarşılığı: köçürülən REAL bank (nacval
+                // tapılarsa) `HesabinOzBankiAsync`-in (bizim öz bankımız) ÜSTÜNDƏ.
+                var nacval = await NacvalKreditHesabAsync(e.IdVd, ct);
                 receiver.Account = new GoamlJsonReceiverAccountDto
                 {
-                    ReceiverAccountNumber = e.Kredit ?? (e.Account ?? e.AccountTo) ?? "",
+                    ReceiverAccountNumber = nacval?.Hesab ?? e.Kredit ?? (e.Account ?? e.AccountTo) ?? "",
                     ReceiverAccountDublNumber = dublReceiver?.RegistrationNumber ?? "",
                     ReceiverAccountCurrency = currType,
-                    ReceiverAccountFinInstName = bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                    ReceiverAccountFinInstName = nacval?.BankAdi ?? bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
                     ReceiverAccountFinInstCountry = e.IncorporationCountryCode ?? "",
-                    ReceiverAccountFinInstBicId = bankSwift ?? (e.Swift ?? e.SwiftTo) ?? "",
-                    ReceiverAccountFinInstBranch = bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
-                    ReceiverAccountFinInstBic = bankSwift ?? (e.Swift ?? e.SwiftTo) ?? "",
-                    ReceiverAccountFinInstTaxId = bankVoen ?? "",
+                    ReceiverAccountFinInstBicId = nacval?.Bic ?? bankSwift ?? (e.Swift ?? e.SwiftTo) ?? "",
+                    ReceiverAccountFinInstBranch = nacval?.BankAdi ?? bankAdi ?? (e.InstitutionName ?? e.InstitutionNameTo) ?? "",
+                    ReceiverAccountFinInstBic = nacval?.Bic ?? bankSwift ?? (e.Swift ?? e.SwiftTo) ?? "",
+                    ReceiverAccountFinInstTaxId = nacval?.Voen ?? bankVoen ?? "",
                 };
             }
 
