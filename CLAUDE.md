@@ -15709,3 +15709,71 @@ yoxlanıldı** (mötərizə/tag balansı Python skriptlə — tam fayl balanslı
 yoxlamalıdır: "İxrac edilib" statuslu bir qeydi "Qaralamaya qaytar" edəndə
 "Redaktə et" düyməsinin EYNİ ANDA, səhifədən çıxmadan göründüyünü
 təsdiqləməli.
+
+## GOAML — "Bankın adı" Sender.Entity-yə YOX, Sender.Account-a Yazılırdı (25.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi iki MARKER-MƏTN testi ilə (real müştəri datası göndərmədən, "bax
+bura" / "ama burda olmalidir" / "sen bura atmisan" kimi özünü-izah edən
+ifadələri konkret forma xanalarına yazıb Export edərək) dəqiq göstərdi:
+*"yene sehv yene sehv yene sehv. sen accountdaki sendere atmisan,ama
+senderdeki senderlere atmaliydin."* (Account-un daxilindəki sender sahəsinə
+yazmısan, amma Sender-in ÖZ sahələrinə yazmalı idin.)
+
+**İkinci ekran-görüntü (`GOAML_Ixrac_BLR_HTOHIN_...json`) dəqiq sübut idi:**
+`Sender.Entity.sender_entity_name = "ama burda olmalidir"` ("amma BURADA
+olmalı idi"), `Sender.Account.sender_account_fin_inst_name`/`_branch = "sen
+bura atmisan"` ("sən BURAYA atmısan"). Yəni "Bankın adı" (forma sahəsi
+`InstitutionNameTo`, "Banka aid olmayan müştəri" blokunun 4-cü xanası) o an
+YALNIZ `Account.SenderAccountFinInstName`/`Branch`-i dolduran fallback
+zəncirinə (`senderFinInstAdi ?? (e.InstitutionNameTo ?? e.InstitutionName)`)
+yazılırdı — operatorun gözlədiyi yer isə `Entity.SenderEntityName` (Sender-in
+ÖZ KİMLİYİ) idi.
+
+**İlk hipotez rədd edildi.** Əvvəlcə `Sender.Person`-u SWIFT-in real
+göndərənindən (YOX "Alan fiziki şəxs"dən) doldurmağı düşündüm — AMMA
+`97_Goaml_JSON_MMX_IN_Tam_Metn.sql:1156-1162`-ni YENİDƏN oxuyanda AYSEL-in
+ÖZ düsturu `sender_first_name = v_goal.first_name_to` (yəni "Alan fiziki
+şəxs"in, BİZİM müştərimizin adı) olduğunu göstərdi — bu, QƏSDƏN belədir,
+AYSEL-in ÖZ konfirmasiya edilmiş davranışıdır. Person-u dəyişmək AYSEL-dən
+UZAQLAŞARDI, ona görə bu hipotez TƏRK EDİLDİ.
+
+**Düzəliş — `SenderQurAsync` (`GoamlService.cs`), İKİ yerdə:**
+1. **Entity-nin ad mənbəyi** indi `e.NameUrTo ?? e.InstitutionNameTo`
+   zəncirinə keçdi — "Adı" (NameUrTo) doludursa O işlənir (ƏVVƏLKİ kimi),
+   AMMA "Adı" BOŞDURSA "Bankın adı" (InstitutionNameTo) ARTIQ Entity-nin
+   ÖZÜNDƏ (Account-un YOX) sender-in kimliyi kimi istifadə olunur — H-to-H
+   (bank-bank) kimi institusional əməliyyatlarda tərəfin ÖZÜ elə bankdır,
+   "Bankın adı" bu halda DOĞRU bir kimlik mənbəyidir. Ölkə/VÖEN hələ də EYNİ
+   "To" qrupundan (`IncorporationCountryCodeTo`/`IncorporationNumberTo`)
+   gəlir — dəyişmədi, çünki `InstitutionNameTo`-nun özünün ayrıca ölkə/VÖEN
+   sahəsi yoxdur.
+2. **Account-un fin_inst_* fallback zəncirindən `InstitutionNameTo`
+   ÇIXARILDI** (`senderFinInstAdi ?? e.InstitutionNameTo ?? e.InstitutionName`
+   → `senderFinInstAdi ?? e.InstitutionName`) — əks halda EYNİ dəyər İKİ
+   YERDƏ (Entity VƏ Account) TƏKRARLANARDI, AYSEL-in real ixracında bu iki
+   sahə MÜSTƏQİLDİR. `e.InstitutionName` (suffikssiz) — formada HEÇ bir
+   `<input>`-ə bağlı DEYİL (həmişə `null`), son ehtiyat kimi ZƯRƏRSİZ qalır.
+
+**Qayda (bu modulun TƏKRARLANAN dərsi, YENİ forması):** eyni konseptual qrup
+(burada: "Banka aid olmayan müştəri" bloku — VÖEN/Ölkə/Adı/Bankın adı) içində
+QONŞU, görünüşcə OXŞAR iki forma sahəsi (NameUrTo="Adı" vs
+InstitutionNameTo="Bankın adı") **İKİ AYRI JSON-məqsədə** xidmət edə bilər —
+biri Sender-in ÖZ KİMLİYİ (Entity), digəri isə ARTIQ başqa bir fallback-ə
+(Account.fin_inst) bağlı qala bilər. Operatorun "mən bu xananı doldurdum,
+NİYƏ o YERDƏ görünmür" şikayətində, əvvəlcə HƏR İKİ sahənin kodda HARA
+YAZILDIĞINI (grep) yoxla — bir sahənin "doğru göründüyü" fərziyyəsi (NameUrTo
+artıq 24.11.2026-da düzəlmişdi) qonşusunun DA düz olduğunu GƏTİRMİR.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə"/"Export"
+çağırışlarına təsir edir, artıq ixrac edilmiş fayllar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff`-in YALNIZ bu dəyişikliyin əlavə/
+silinən sətirləri üzrə ayrıca ölçülüb — net fərq SIFIR, düzəliş balanslıdır).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: "Adı" (NameUrTo) BOŞ, "Bankın adı" (InstitutionNameTo) DOLU
+olan, Tip=HToHIn (və ya oxşar institusional) bir namizədi Təsdiqlə+Export
+et → `sender_entity_name`-in indi "Bankın adı"nı daşıdığını,
+`sender_account_fin_inst_name`/`_branch`-in (real SWIFT/Oracle bank adı
+tapılmayıbsa) İNDİ BOŞ qaldığını təsdiqləməli — "Adı" (NameUrTo) DOLU olan
+hallarda (əvvəlki, artıq işlək ssenari) heç bir dəyişiklik GÖRÜNMƏMƏLİDİR.

@@ -2602,12 +2602,25 @@ namespace FinNex.Application.Services.Goaml
             // bankımızın hesabıdırsa" bölməsi, yuxarı) `e.NameUrTo`/`IncorporationNumberTo`/
             // `IncorporationCountryCodeTo`-ya BİRBAŞA yazılıb — bu metod YALNIZ o dəyəri
             // OXUYUR, təkrar hesablamır.
-            if (!string.IsNullOrWhiteSpace(e.NameUrTo)
+            // 25.11.2026, KRİTİK — "Bankın adı" (`InstitutionNameTo`) SƏHVƏN YALNIZ
+            // `Account.SenderAccountFinInstName/Branch`-ə yazılırdı (aşağı bax).
+            // İstifadəçi iki markerli test ("ama burda olmalidir" → Entity,
+            // "sen bura atmisan" → Account) ilə AÇIQ göstərdi: "Adı" (NameUrTo)
+            // boşdursa, "Bankın adı" elə SENDER-İN ÖZ KİMLİYİ kimi (H-to-H kimi
+            // institusional əməliyyatlarda tərəf elə bankın özüdür) `Entity.
+            // SenderEntityName`-ə düşməlidir, "servis edən bank" kimi Account-un
+            // DAXİLİNƏ YOX. Ölkə/VÖEN hələ də EYNİ "To" qrupundan (IncorporationCountryCodeTo/
+            // IncorporationNumberTo) gəlir — InstitutionNameTo-nun özünün ayrıca
+            // ölkə/VÖEN sahəsi yoxdur.
+            var senderToAdi = !string.IsNullOrWhiteSpace(e.NameUrTo) ? e.NameUrTo
+                : !string.IsNullOrWhiteSpace(e.InstitutionNameTo) ? e.InstitutionNameTo
+                : null;
+            if (senderToAdi != null
                 && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn or GoamlTipi.FToF))
             {
                 sender.Entity = new GoamlJsonSenderEntityDto
                 {
-                    SenderEntityName = TemizEntityAdi(e.NameUrTo),
+                    SenderEntityName = TemizEntityAdi(senderToAdi),
                     SenderEntityRegCountry = e.IncorporationCountryCodeTo ?? "",
                     SenderEntityTaxNumber = e.IncorporationNumberTo ?? "",
                 };
@@ -2704,6 +2717,13 @@ namespace FinNex.Application.Services.Goaml
                 // şərhi, AYSEL-in `NVL(Institution_Name_TO, 'öz bankımız')` zənciri.
                 var swiftBankAdi = await SwiftSenderBankAdiAsync(e.IdVd, ct);
                 var senderFinInstAdi = swiftBankAdi ?? bankAdi;
+                // 25.11.2026, KRİTİK: `InstitutionNameTo` ("Bankın adı") BURADAN
+                // ÇIXARILDI — o, yuxarıda artıq `Entity.SenderEntityName`-in
+                // (ikinci) mənbəyidir. Burada qalsaydı EYNİ dəyər İKİ YERDƏ
+                // (Entity VƏ Account.fin_inst_*) təkrarlanardı — AYSEL-in real
+                // ixracında bu iki sahə MÜSTƏQİLDİR. `e.InstitutionName`
+                // (suffikssiz, formada HEÇ bir `<input>`-ə bağlı DEYİL, həmişə
+                // null) son ehtiyat olaraq qalır — zərərsizdir.
                 sender.Account = new GoamlJsonSenderAccountDto
                 {
                     SenderAccountNumber = e.Debet ?? (e.AccountTo ?? e.Account) ?? "",
@@ -2711,8 +2731,8 @@ namespace FinNex.Application.Services.Goaml
                     SenderAccountCurrency = currType,
                     SenderAccountFinInstCountry = e.FromCountry ?? "",
                     SenderAccountFinInstBicId = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
-                    SenderAccountFinInstName = senderFinInstAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
-                    SenderAccountFinInstBranch = senderFinInstAdi ?? (e.InstitutionNameTo ?? e.InstitutionName) ?? "",
+                    SenderAccountFinInstName = senderFinInstAdi ?? e.InstitutionName ?? "",
+                    SenderAccountFinInstBranch = senderFinInstAdi ?? e.InstitutionName ?? "",
                     SenderAccountFinInstBic = bankSwift ?? (e.SwiftTo ?? e.Swift) ?? "",
                     SenderAccountFinInstTaxId = bankVoen ?? "",
                 };
