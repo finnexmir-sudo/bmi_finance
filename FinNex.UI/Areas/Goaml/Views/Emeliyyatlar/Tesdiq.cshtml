@@ -135,6 +135,7 @@
         var gmlKycDebet = ViewBag.KycDebet as GoamlHesabSahibiKycDto;
         var gmlKycKredit = ViewBag.KycKredit as GoamlHesabSahibiKycDto;
         var gmlHerIkiTerefdeVar = ViewBag.HerIkiTerefdeKycVar == true;
+        var gmlSwiftGonderenDenDolduruldu = ViewBag.SwiftGonderenDenDolduruldu == true;
         // ── 13.11.2026: aşağıdakı "Hesab imza hüququ olan şəxs" blokunun öz
         //    tərəf-seçim dropdown-u üçün etiket mətnləri — TekSexs varsa adı
         //    göstərir (operator kimin seçildiyini görsün), yoxdursa sadəcə
@@ -155,6 +156,15 @@
             <i class="bi bi-info-circle-fill"></i>
             "Nümayəndənin" məlumatı bu KONKRET əməliyyatın öz qeydindən (Emitent) avtomatik gətirildi —
             yoxlayın, lazım olsa düzəldin və ya yuxarıdakı "Əlaqəli şəxslərdən seçin" siyahısından fərqli birini seçin.
+        </div>
+    }
+    @if (ViewBag.SwiftGonderenDenDolduruldu == true)
+    {
+        <div class="gml-banner gml-banner--info">
+            <i class="bi bi-info-circle-fill"></i>
+            "Banka aid olmayan müştəri" blokundaki ad/ölkə SWIFT mesajının ÖZ məlumatından
+            (göndərənin adı) avtomatik gətirildi — yoxlayın, lazım olsa düzəldin. Bu, Sender
+            tərəfdə YANLIŞ olaraq ALANIN adının çıxmasının qarşısını alır.
         </div>
     }
     @* ── Hər iki tərəfdə (Debet VƏ Kredit) KYC tapılanda ayrıca bir banner
@@ -471,7 +481,7 @@
              sadələşdirilmiş birləşməsi. Checkbox + VÖEN/Ölkə/ADI/Bankın adı — işçinin
              dediyinə görə YALNIZ bunlar işlənir; qalan (Alan fiziki şəxsin tam detalı,
              SWIFT/Hesab/Əlaqə növü) formadan çıxarılıb, entity-də qalır. ── *@
-        <details class="gml-block">
+        <details class="gml-block" open="@(gmlSwiftGonderenDenDolduruldu ? "open" : null)">
             <summary>Banka aid olmayan müştəri <i class="bi bi-chevron-down gml-chevron"></i></summary>
             <div class="gml-block-body">
                 <div class="gml-checks" style="margin-bottom:16px">

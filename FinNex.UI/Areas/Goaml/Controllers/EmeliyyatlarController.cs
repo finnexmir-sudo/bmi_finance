@@ -218,6 +218,24 @@ public class EmeliyyatlarController : Controller
         }
         ViewBag.EmitentDenDolduruldu = emitentKyc != null;
 
+        // 25.11.2026, KRİTİK — SWIFT-lə gələn əməliyyatlarda Sender tərəfdə SƏHVƏN
+        // ALANIN adı yazılırdı (bax GoamlService.SenderQurAsync-in yeni NameUrTo
+        // qolu) — kök səbəb: Sender.Entity-nin yeganə mənbəyi Name_Ur (bizim öz
+        // müştərimiz) idi. Burada "Banka aid olmayan müştəri" blokunun NameUrTo/
+        // IncorporationCountryCodeTo sahələrini SWIFT mesajının ÖZ SENDER_NAME/
+        // COUNTRYCODE sütunlarından (odb.doc_vnesh_swift, id_vd açarı ilə) avtomatik
+        // doldururuq — operator "Bax"a bu dəyəri görüb İSTƏSƏ düzəldə bilər, bu
+        // yalnız BAŞLANĞIC nöqtəsidir (digər avtomatik-doldurma banner-ləri ilə
+        // EYNİ naxış). idVd yoxdursa/Oracle-da sətir tapılmasa heç nə yazılmır.
+        var (swiftAdi, swiftOlke) = await _goaml.SwiftGonderenAdiTapAsync(idVd);
+        if (!string.IsNullOrWhiteSpace(swiftAdi))
+        {
+            dto.NameUrTo = swiftAdi;
+            if (!string.IsNullOrWhiteSpace(swiftOlke))
+                dto.IncorporationCountryCodeTo = swiftOlke;
+        }
+        ViewBag.SwiftGonderenDenDolduruldu = !string.IsNullOrWhiteSpace(swiftAdi);
+
         return View(dto);
     }
 
@@ -397,6 +415,7 @@ public class EmeliyyatlarController : Controller
             : new List<GoamlElaqaliSexsDto>();
         ViewBag.AvtoDolduruldu = false;
         ViewBag.EmitentDenDolduruldu = false;
+        ViewBag.SwiftGonderenDenDolduruldu = false;
         ViewBag.KycDebet = herIkiTeref.Debet;
         ViewBag.KycKredit = herIkiTeref.Kredit;
         ViewBag.HerIkiTerefdeKycVar = herIkiTeref.Debet != null && herIkiTeref.Kredit != null;
@@ -417,6 +436,7 @@ public class EmeliyyatlarController : Controller
             ViewBag.ElaqaliSexsler = new List<GoamlElaqaliSexsDto>();
             ViewBag.AvtoDolduruldu = false;
             ViewBag.EmitentDenDolduruldu = false;
+            ViewBag.SwiftGonderenDenDolduruldu = false;
             ViewBag.KycDebet = null;
             ViewBag.KycKredit = null;
             ViewBag.HerIkiTerefdeKycVar = false;

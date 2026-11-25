@@ -2530,6 +2530,42 @@ namespace FinNex.Application.Services.Goaml
             }
         }
 
+        /// <summary>25.11.2026, KRİTİK — SWIFT ilə gələn əməliyyatlarda göndərənin ÖZ
+        /// adı (bank adı DEYİL). İstifadəçi şikayəti: "sender tərəfdə alanın adı
+        /// çıxır" — kök səbəb AYSEL-in öz kodunda (97_...sql:1112-1132) sübut
+        /// olundu: `Sender.Entity.sender_entity_name` HƏM `Name_Ur` (bizim öz
+        /// müştərimiz — Receiver-in DƏ istifadə etdiyi EYNİ dəyər), HƏM `Name_Ur_To`
+        /// (DƏYƏR VARSA ÜSTÜN tutulur — "Banka aid olmayan müştəri" bloku, xarici
+        /// tərəf) ola bilər. SWIFT-lə gələndə real göndərən XARİCDƏDİR, bizim KYC-də
+        /// yoxdur — ona görə Name_Ur HƏMİŞƏ bizim öz müştərimizi (Receiver-i)
+        /// göstərəcək, bu da "sender=alan" simptomunun ÖZÜDÜR. Həll: `Name_Ur_To`-nu
+        /// SWIFT mesajının ÖZ `SENDER_NAME` sütunundan (bank adından AYRI, 25.11.2026-
+        /// da istifadəçinin göndərdiyi canlı sütun siyahısından təsdiqləndi —
+        /// `doc_vnesh_swift`-in 8-ci sütunu) avtomatik doldur, operator ÖZÜ görüb
+        /// düzəldə bilsin (bax EmeliyyatlarController.Tesdiq GET). `COUNTRYCODE`
+        /// (23-cü sütun) — `IncorporationCountryCodeTo`-nun mənbəyi, AYSEL-in öz
+        /// branch-2 düsturunun (`r_country(NVL(V_YURIK__NAME.COUNTRYCODE,
+        /// v_goal.incorporation_country_code_to))`) ikinci qoluna uyğun.</summary>
+        public async Task<(string? SenderAdi, string? OlkeKodu)> SwiftGonderenAdiTapAsync(long? idVd, CancellationToken ct = default)
+        {
+            if (idVd is null) return (null, null);
+            try
+            {
+                var setirler = await _oracle.SelectAsync(
+                    $"select sender_name, countrycode from odb.doc_vnesh_swift where id = {idVd.Value}", 1, ct);
+                if (setirler.Count == 0) return (null, null);
+                var ad = DVal(setirler[0], "SENDER_NAME") as string;
+                var olke = DVal(setirler[0], "COUNTRYCODE") as string;
+                return (string.IsNullOrWhiteSpace(ad) ? null : ad.Trim(),
+                        string.IsNullOrWhiteSpace(olke) ? null : olke.Trim());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GOAML Göndərənin adı — doc_vnesh_swift (id_vd={IdVd}) sorğusu uğursuz oldu", idVd);
+                return (null, null);
+            }
+        }
+
         /// <summary>Oracle sətir 1070-1246 — "_IN" (GƏLƏN əməliyyat) prosedurunda
         /// Sender.Person/Account ƏSLİNDƏ "To*" (bizim "Alan fiziki şəxsin" bloku)
         /// sahələrindən doldurulur — xarici tərəf PULU GÖNDƏRƏN kimi qeydə alınır.
@@ -2552,7 +2588,31 @@ namespace FinNex.Application.Services.Goaml
             // Person-u YAZAN tiplər siyahısındadır (`tip not in (3,4,5,6,7,11)` — 8=FToF
             // bu siyahıda deyil, deməli yazılır), Entity-ni YAZAN siyahıda (sətir 1113,
             // 1123: `tip not in (1,2,8,12,14)`) isə 8=FToF AÇIQ İSTİSNADIR.
-            if (!string.IsNullOrWhiteSpace(e.NameUr)
+            // 25.11.2026, KRİTİK — AYSEL-in öz "branch-2" düsturu (97_Goaml_JSON_MMX_IN_
+            // Tam_Metn.sql:1123-1132): `Name_Ur_To` DOLUDURSA, Sender.Entity ONDAN
+            // (Name_Ur-dən YOX) qurulur — real hadisə: SWIFT-lə gələn əməliyyatda
+            // Sender tərəfdə SƏHVƏN ALANIN adı (Name_Ur, Receiver-lə EYNİ dəyər) yazılırdı,
+            // çünki bu NameUrTo qolu ÜMUMİYYƏTLƏ yox idi. `NameUrTo`/`IncorporationCountryCodeTo`/
+            // `IncorporationNumberTo` — "Banka aid olmayan müştəri" blokunun sahələridir,
+            // operator ƏL İLƏ doldura bilər, SWIFT əməliyyatlarında isə `SwiftGonderenAdiTapAsync`
+            // ilə (bax EmeliyyatlarController.Tesdiq GET) avtomatik doldurulur.
+            // AYSEL-in `V_YURIK__NAME` (Tip=HToHIn/HToFIn-ə MƏXSUS, Debet OUR ÖZ bankımızın
+            // hüquqi şəxs hesabıdırsa işə düşən ehtiyat-üstünlük qolu) BURAYA YENİDƏN YAZILMIR,
+            // çünki o, ARTIQ TƏSDİQ ANINDA (`AvtoDolduruAsync`-in "5) Alan tərəf bizim ÖZ
+            // bankımızın hesabıdırsa" bölməsi, yuxarı) `e.NameUrTo`/`IncorporationNumberTo`/
+            // `IncorporationCountryCodeTo`-ya BİRBAŞA yazılıb — bu metod YALNIZ o dəyəri
+            // OXUYUR, təkrar hesablamır.
+            if (!string.IsNullOrWhiteSpace(e.NameUrTo)
+                && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn or GoamlTipi.FToF))
+            {
+                sender.Entity = new GoamlJsonSenderEntityDto
+                {
+                    SenderEntityName = TemizEntityAdi(e.NameUrTo),
+                    SenderEntityRegCountry = e.IncorporationCountryCodeTo ?? "",
+                    SenderEntityTaxNumber = e.IncorporationNumberTo ?? "",
+                };
+            }
+            else if (!string.IsNullOrWhiteSpace(e.NameUr)
                 && e.Tip is not (GoamlTipi.FizikOut or GoamlTipi.FizikIn or GoamlTipi.FToF))
             {
                 sender.Entity = new GoamlJsonSenderEntityDto

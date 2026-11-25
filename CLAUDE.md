@@ -15596,3 +15596,74 @@ Təsdiqlə+Export et → `sender_account_fin_inst_name`-in artıq bizim öz bank
 YOX, real xarici bankın (məs. "Export Development Bank of Iran") adını
 göstərdiyini, `receiver_account_fin_inst_name`-in isə HƏLƏ DƏ bizim öz
 bankımız olaraq qaldığını təsdiqləməlidir.
+
+## GOAML Export — SWIFT Əməliyyatında Sender ÖZÜ "Alanın Adını" Göstərirdi (25.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+Yuxarıdakı bank-adı düzəlişindən sonra istifadəçi real SWIFT ixracında İKİNCİ,
+AYRI bir boşluq tapdı: *"sender yenede alan sirketin adi cixir"* — bu, bank
+adı (`sender_account_fin_inst_name`, artıq düzəlib) YOX, Sender-in ÖZ **şəxs/
+şirkət adı** (`sender_entity_name`) sahəsi idi.
+
+### Kök səbəb — AYSEL-in öz "branch-2" düsturu, bizdə HEÇ PORT EDİLMƏYİB
+
+`97_Goaml_JSON_MMX_IN_Tam_Metn.sql:1112-1132` iki MÜSTƏQİL, bir-birini
+istisna edən qol daşıyır:
+```sql
+IF Name_Ur IS NOT NULL and name_ur_to IS NULL  and  tip not in (1,2,8,12,14) THEN
+  sender_entity_name = Name_Ur   -- bizim ÖZ müştərimiz (Receiver-lə EYNİ dəyər!)
+IF name_ur_to IS NOT NULL   and  tip not in (1,2,8,12,14) THEN
+  sender_entity_name = NVL(V_YURIK__NAME.NAME_LICSCH, name_ur_to)   -- XARİCİ tərəf
+```
+Bizim `SenderQurAsync`-də YALNIZ BİRİNCİ qol var idi (`e.NameUr`-dən) — 24.11.2026-da
+(tapşırıq #67) `NameUr`-un özü Tip-in istiqamətinə görə Debet/Kredit arasında
+keçməyə başlayandan bəri, SWIFT-lə gələn (IN) əməliyyatda "bizim öz tərəfimiz"
+= Kredit (bizim müştərimiz, Receiver) olur — `NameUr` da ONU göstərir. Sender.Entity
+DƏ həmin `NameUr`-ə baxdığı üçün Sender SƏHVƏN Receiver-in adını göstərirdi —
+bu, 24.11.2026-dakı düzəlişin BUGU DEYİL, sadəcə AYSEL-in İKİNCİ qolunun (xarici
+tərəf üçün `Name_Ur_To`) bizdə heç vaxt YAZILMAMASI idi.
+
+### Həll — "Banka aid olmayan müştəri" bloku, SWIFT-dən avtomatik dolduruldu
+
+`GoamlEmeliyyat`/`GoamlTesdiqDto`-nun ARTIQ mövcud olan (06.11.2026-dan,
+"Banka aid olmayan müştəri" bloku — xarici/digər-bank tərəfləri üçün)
+`NameUrTo`/`IncorporationCountryCodeTo`/`IncorporationNumberTo` sahələri məhz
+bu məqsəd üçün nəzərdə tutulub, AMMA `SenderQurAsync` onlara HEÇ BAXMIRDI.
+
+**`SenderQurAsync`-ə AYSEL-in İKİNCİ qolu əlavə edildi** (`NameUrTo` doludursa,
+`NameUr`-dən ÜSTÜN) — digər Tip-istisnaları (FizikOut/FizikIn/FToF) BİRİNCİ
+qolla EYNİ saxlanıldı (simmetriya, 13-16.11.2026-dakı həmin düzəlişlərə TOXUNULMADI).
+
+**`IGoamlService.SwiftGonderenAdiTapAsync(idVd)`** (yeni, public) —
+`odb.doc_vnesh_swift.SENDER_NAME`/`COUNTRYCODE`-i `id_vd` açarı ilə oxuyur
+(istifadəçinin 24.11.2026-da canlı Oracle-da verdiyi TAM sütun siyahısından —
+`SENDER_BANK_NAME`-dən AYRI sütun, bank adı YOX, göndərənin ÖZ adı).
+`EmeliyyatlarController.Tesdiq` GET-i (EmitentKycAsync-in DƏRHAL ardınca, EYNİ
+naxışla) bunu çağırıb `dto.NameUrTo`/`IncorporationCountryCodeTo`-ya yazır —
+operator "Bax"a görüb lazım olsa düzəldə bilsin (digər avtomatik-doldurma
+banner-ləri ilə EYNİ üslub, `Tesdiq.cshtml`-ə yeni bir `gml-banner--info` +
+blokun özünün `open="@(...)"` ilə avtomatik açılması).
+
+⚠️ **AYSEL-in `V_YURIK__NAME` (Tip=HToHIn/HToFIn-ə MƏXSUS, Debet BİZİM ÖZ
+bankımızın hüquqi şəxs hesabı olanda işə düşən) ehtiyat-üstünlük qolu AYRICA
+PORT EDİLMƏDİ, çünki ARTIQ VAR İDİ** — bu, elə `AvtoDolduruAsync`-in "5) Alan
+tərəf bizim öz bankımızın hesabıdırsa" bölməsinin (tapşırıq #16-dan, TƏSDİQ
+ANINDA işləyir) etdiyidir: `e.NameUrTo`/`IncorporationNumberTo`/
+`IncorporationCountryCodeTo`-ya HƏMİN tip/şərtdə BİRBAŞA yazılır — `SenderQurAsync`
+YALNIZ bu dəyəri OXUYUR, təkrar hesablamır.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI "Təsdiqlə"/"Export"
+çağırışlarına təsir edir, artıq ixrac edilmiş fayllar dəyişmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə/fiqurlu-mötərizə balansı hər dəyişən/yeni faylda ayrıca ölçülüb —
+hər ƏLAVƏ edilən blok TƏK-TƏK balanslı təsdiqləndi, `GoamlService.cs`-in
+fayl-ümumi pre-existing paren-fərqinin (şərh mətnindən, bu dəyişiklikdən ASILI
+OLMAYAN) dəyişmədiyi `git`-siz izolyasiya ilə yoxlanıldı; `IGoamlService.cs`/
+`GoamlTesdiqDto.cs`/`GoamlEmeliyyat.cs`-dəki sahə adları — `NameUrTo`/
+`IncorporationCountryCodeTo`/`IncorporationNumberTo`/`IdVd` — bir-bir
+mövcudluğu təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild All** ilə,
+sonra SWIFT ilə gələn (Tip="Hüquqi (IN)" və ya "Fiziki (IN)") real ssenari
+ilə yoxlamalıdır: "Banka aid olmayan müştəri" blokunun artıq SWIFT-in ÖZ
+göndərən adı ilə (banner göstərişi ilə, blok avtomatik açıq) avtomatik
+dolduğunu, Export edəndə `sender_entity_name`-in Receiver-in adı İLƏ EYNİ
+ÇIXMADIĞINI təsdiqləməlidir.

@@ -72,6 +72,18 @@ namespace FinNex.Application.Interfaces.Goaml
         /// TOXUNULMUR (operator ondan fərqli birini seçə bilər).</summary>
         Task<GoamlElaqaliSexsDto?> EmitentKycAsync(long recNum, CancellationToken ct = default);
 
+        /// <summary>25.11.2026, KRİTİK — SWIFT-lə gələn əməliyyatlarda göndərənin ÖZ
+        /// adını (bank adı DEYİL) `odb.doc_vnesh_swift.SENDER_NAME`-dən (+ ölkə kodu
+        /// `COUNTRYCODE`-dən) tapır, `id_vd` açarı ilə. Real hadisə: operator "SWIFT
+        /// ilə əməliyyət olmuşdu, sender tərəfdə SƏHVƏN alanın adı yazılmışdı" — kök
+        /// səbəb Sender.Entity-nin `Name_Ur`-ə (bizim öz müştərimizə, Receiver-lə
+        /// EYNİ dəyərə) bağlı olmasıdır; bu metodun nəticəsi "Banka aid olmayan
+        /// müştəri" blokunun `NameUrTo`/`IncorporationCountryCodeTo` sahələrinə
+        /// YAZILMALIDIR (operator görüb düzəldə bilsin) — `SenderQurAsync` bu
+        /// sahələri `Name_Ur`-dən ÜSTÜN tutur (bax AYSEL-in öz branch-2 düsturu).
+        /// `id_vd` yoxdursa/Oracle-da sətir tapılmasa `null` qaytarır.</summary>
+        Task<(string? SenderAdi, string? OlkeKodu)> SwiftGonderenAdiTapAsync(long? idVd, CancellationToken ct = default);
+
         /// <summary>Export to JSON (#15, 12.11.2026) — verilmiş tarix aralığında (+ istəyə
         /// bağlı Tip/ReportCode filtri) `Status==Qaralama` olan TƏSDİQLƏNMİŞ qeydləri
         /// goAML-in rəsmi JSON sxeminə (bax `docs/sql/goaml/97_Goaml_JSON_MMX_IN_
