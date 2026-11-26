@@ -16107,22 +16107,17 @@ Müraciətləri" siyahısında (Status=Təsdiqlənib, Səbəb mətni düzgün
 göründü), HƏM Noyabr əmək haqqı hesablamasında nəticəni TƏSDİQLƏDİ
 ("düzdür, baxdım əmək haqqıya").
 
-⚠️ **AÇIQ QALAN SUAL — İSTİFADƏÇİDƏN HƏLƏ CAVAB ALINMAYIB.** Yuxarıdakı
-6-item mexanizm YALNIZ `OdenisTipi=QabaqcadanOdenis` seçilmiş
-məzuniyyətlərə işləyir. Fuad-ın real hadisəsi isə `AySonuOdenis` tipli bir
-qeyddə baş verdi — yəni mühasibin təsvir etdiyi real praktika
-`OdenisTipi`-dən ASILI OLMADAN baş verə bilər. İstifadəçiyə iki seçim
-təklif edildi:
-1. Gating şərtini genişləndirmək — `OdenisTipi`-dən asılı olmadan, sadəcə
-   "çoxaylı + artıq ödənilmiş" məzuniyyətlərdə işə salmaq.
-2. Olduğu kimi saxlamaq — yalnız `QabaqcadanOdenis`; oxşar "AySonuOdenis"
-   halları yenə əl ilə (bu SQL-in eyni naxışı ilə) düzəldilsin.
-
-**Cavab HƏLƏ ALINMAYIB.** Bu seçim edilənə qədər, 6-item mexanizm YALNIZ
-`QabaqcadanOdenis` tipli qeydləri əhatə etməyə davam edir — OXŞAR bir
-"AySonuOdenis" halı aşkarlansa, kodu dəyişmədən, EYNİ SQL naxışı ilə əl
-ilə düzəldilməlidir, gating şərtinin özünü dəyişdirmədən ƏVVƏL istifadəçi
-ilə razılaşmaq lazımdır (maaş/vergi bazasına toxunan məntiqdir).
+✅ **QƏRAR VERİLDİ (26.11.2026) — gating şərti OLDUĞU KİMİ QALIR,
+GENİŞLƏNDİRİLMİR.** İstifadəçinin öz sözü: *"bəli, yalnız qabaqcadanda,
+işçi nə istəyib odur"* — yəni `OdenisTipi` işçinin məzuniyyət müraciəti
+verərkən ÖZÜ seçdiyi bir şeydir, sistemin onu "düzəltməsi"/avtomatik
+genişlətməsi lazım deyil. 6-item mexanizm **YALNIZ**
+`OdenisTipi=QabaqcadanOdenis` seçilmiş məzuniyyətlərə işləyir, bu QƏSDƏN
+belədir. Fuad-ın hadisəsi (`AySonuOdenis` tipli, amma faktiki qabaqcadan
+ödənilmiş qeyd) **istisna** sayılır — oxşar hal təkrar aşkarlansa, gating
+DƏYİŞDİRİLMİR, həmin konkret qeyd üçün EYNİ SQL naxışı (bax yuxarı,
+`Fuad_QuluZade_Noyabr_Evezlesme_Birdefelik.sql`) əl ilə təkrarlanmalıdır —
+növbəti sessiya bu sualı YENİDƏN AÇIQ SAYMASIN.
 
 **Qayda:** retroaktiv-düzəliş təlimatı yazarkən (bura: "4-cü addım") "bu
 UI yolu mövcud qeydə tətbiq olunacaq" fərziyyəsini CANLI SQL ilə
