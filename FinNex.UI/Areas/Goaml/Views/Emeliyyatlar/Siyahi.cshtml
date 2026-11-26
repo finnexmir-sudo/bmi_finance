@@ -174,7 +174,7 @@
                                             <i class="bi bi-arrow-counterclockwise"></i> Qaralamaya qaytar
                                         </button>
                                     </form>
-                                    <form method="post" asp-action="Sil" asp-route-id="@e.Id"
+                                    <form method="post" asp-action="Sil" asp-route-id="@e.Id" asp-route-qaynaqTab="@(ViewBag.QaynaqTab as string)"
                                           class="gml-sil-form"
                                           style="@(e.Status == GoamlEmeliyyatStatusu.IxracEdilib ? "display:none" : "")"
                                           onsubmit="return confirm('Bu təsdiqlənmiş əməliyyatı silmək istədiyinizə əminsiniz?');">

@@ -1548,8 +1548,14 @@
                     // RZ1010: `case "hr"` blokundakı `hrDavSubActive`-in (yuxarı)
                     // EYNİ naxışı — `</a>` tag-ından SONRA belə, bu kod bloku hələ
                     // DA C# kontekstindədir, @{ } AÇMAQ ARTIQ (və SƏHV) olardı.
+                    // 26.11.2026 — "Siyahi" (Təsdiqlənmiş siyahı) DƏ EYNİ tələyə
+                    // düşürdü: Risk/Index-in öz "Təsdiqlənmiş siyahı" düyməsi
+                    // bura keçid verir (istifadəçi: "riskde tesdiqlenmis vururam
+                    // siyahi gelir ama emeliyyat tabina kecir") — `currentAction`
+                    // yoxlamasına "Siyahi" DƏ əlavə olundu.
                     var goamlRiskdenGelib = currentController == "Emeliyyatlar"
-                        && currentAction == "Tesdiq" && ViewBag.QaynaqTab == "risk";
+                        && (currentAction == "Tesdiq" || currentAction == "Siyahi")
+                        && ViewBag.QaynaqTab == "risk";
                     <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index"
                        class="fn-nav-item @(currentController == "Emeliyyatlar" && currentAction != "Export" && currentArea == "Goaml" && !goamlRiskdenGelib ? "active" : "")">
                         <i class="bi bi-list-check"></i> Əməliyyatlar

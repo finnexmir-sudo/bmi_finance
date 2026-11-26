@@ -15873,3 +15873,42 @@ kredit-hesabımızı YOX, `doc_vnesh_nacval.KREDIT`-i (real köçürülən IBAN)
 `receiver_account_fin_inst_name`/`_branch`/`_tax_id`/`_bic`-in isə köçürülən
 bankın (bizim ÖZ bankımız YOX) adını/VÖEN-ini/BIC-ini daşıdığını AYSEL-in
 real ixracı ilə tutuşdurub təsdiqləməli.
+
+## GOAML — Risk-dən "Təsdiqlənmiş Siyahı"ya Keçəndə Sidebar "Əməliyyatlar"a Dəyişirdi (26.11.2026)
+
+İstifadəçi: *"riskde tesdiqlenmis vururam siyahi gelir ama emeliyyat tabina
+kecir,o qalib onuda duzelt"* — 24.11.2026-da "Təsdiqlə" (Tesdiq action) üçün
+qurulan `qaynaqTab` mexanizminin (bax yuxarı, eyni başlıqlı bölmə) EYNİ
+tələsi, bu dəfə `Risk/Index.cshtml`-in öz "Təsdiqlənmiş siyahı" düyməsində —
+bu düymə də fiziki olaraq `EmeliyyatlarController.Siyahi`-yə keçid verir, VƏ
+həmin action HEÇ `qaynaqTab` qəbul etmirdi.
+
+**Düzəliş — EYNİ naxış, "Siyahi"yə köçürülüb:**
+- `EmeliyyatlarController.Siyahi(string? qaynaqTab)` — `ViewBag.QaynaqTab`-a
+  yazır (`Tesdiq`-in artıq etdiyi kimi).
+- `Risk/Index.cshtml`-in "Təsdiqlənmiş siyahı" linkinə `asp-route-qaynaqTab
+  ="risk"` əlavə olundu.
+- `_UserLayout.cshtml`-in `goamlRiskdenGelib` şərtinə `currentAction ==
+  "Siyahi"` DƏ əlavə edildi (əvvəl YALNIZ "Tesdiq" yoxlanırdı).
+- **`Sil` POST-u da `qaynaqTab`-ı DAŞIYIR** — əks halda Risk-dən açılmış
+  siyahıda bir qeydi silmək (tam səhifə `redirect`, AJAX YOX — `Sil`
+  `IxracGeriQaytar`-dan fərqli olaraq hələ adi postback-dir) sidebar-ı yenidən
+  "Əməliyyatlar"a sıçradardı: `Siyahi.cshtml`-in "Sil" formuna `asp-route-
+  qaynaqTab="@(ViewBag.QaynaqTab as string)"` əlavə olundu, `Sil(int id,
+  string? qaynaqTab)` → `RedirectToAction(nameof(Siyahi), new { qaynaqTab })`.
+
+⚠️ **`Detal`/`RedakteEt`/`IxracGeriQaytar`-a TOXUNULMADI** — istifadəçi
+YALNIZ birbaşa "Siyahı" naviqasiyasından şikayət etdi. `IxracGeriQaytar`
+artıq AJAX-dır (səhifə yenidən yüklənmir, `qaynaqTab` təbii qorunur).
+`Detal`/`RedakteEt`-ə keçəndə sidebar "Əməliyyatlar"a dönə bilər — bu, AYRI,
+HƏLƏ bildirilməmiş bir simptomdur, eyni naxışla (həmin action-lara da
+`qaynaqTab` əlavə etmək) düzəldilə bilər, istifadəçi bunu bildirsə.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə, dörd dəyişən faylın hamısında —
+yalnız ƏLAVƏ olunan sətirlərdə, həm də tam fayl səviyyəsində — balanslı
+çıxdı). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: Risk tabından "Təsdiqlənmiş siyahı"ya basanda
+sidebar-da "Risk"in aktiv qaldığını (əvvəlki kimi "Əməliyyatlar"a
+sıçramadığını), həmin siyahıdan bir qeydi "Sil"lə silərkən sidebar-ın
+YENƏ "Risk" göstərdiyini təsdiqləməlidir.

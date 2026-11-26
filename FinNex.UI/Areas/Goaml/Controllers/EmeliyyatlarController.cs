@@ -448,9 +448,15 @@ public class EmeliyyatlarController : Controller
     }
 
     // ── GET /Goaml/Emeliyyatlar/Siyahi — təsdiqlənmiş qeydlər ───────────────
-    public async Task<IActionResult> Siyahi()
+    // 26.11.2026 — "Siyahi" FİZİKİ olaraq bu controller-dədir, Risk/Index.cshtml-in
+    // öz "Təsdiqlənmiş siyahı" düyməsi də birbaşa bura keçid verir (istifadəçi:
+    // "riskde tesdiqlenmis vururam siyahi gelir ama emeliyyat tabina kecir") —
+    // `Tesdiq`-in artıq işlətdiyi `qaynaqTab` naxışının EYNİSİ: sidebar (bax
+    // _UserLayout.cshtml) bunu oxuyub "Risk" sətrini aktiv saxlayır.
+    public async Task<IActionResult> Siyahi(string? qaynaqTab)
     {
         ViewData["Title"] = "GOAML — Təsdiqlənmiş əməliyyatlar";
+        ViewBag.QaynaqTab = qaynaqTab;
         var netice = await _goaml.HamisiniGetirAsync();
         return View(netice.Data ?? new List<GoamlEmeliyyatListDto>());
     }
@@ -472,11 +478,11 @@ public class EmeliyyatlarController : Controller
     // ── POST /Goaml/Emeliyyatlar/Sil/{id} — təsdiqlənmiş qeydi geri götürür ──
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Sil(int id)
+    public async Task<IActionResult> Sil(int id, string? qaynaqTab)
     {
         var netice = await _goaml.SilAsync(id);
         TempData[netice.Success ? "Success" : "Error"] = netice.Message;
-        return RedirectToAction(nameof(Siyahi));
+        return RedirectToAction(nameof(Siyahi), new { qaynaqTab });
     }
 
     // ── POST /Goaml/Emeliyyatlar/IxracGeriQaytar/{id} — ixrac edilmiş qeydi
