@@ -62,7 +62,9 @@ namespace FinNex.UI.Areas.User.Controllers
             var isciId = await GetIsciIdAsync();
             if (isciId == null) return RedirectToAction("Index", "Dashboard");
 
-            // Bu ay artiq muraciet varmi?
+            // Bu ay artiq muraciet varmi? (sistemin avtomatik yaratdığı
+            // əvəzləşmə avansları — MezuniyyetId dolu olanlar — işçinin öz
+            // müraciətini bloklamır, bax Avans.MezuniyyetId-in şərhi)
             var buAy = DateTime.Now;
             var mevcud = await _unitOfWork.Repository<Avans>()
                 .Query()
@@ -71,7 +73,8 @@ namespace FinNex.UI.Areas.User.Controllers
                     x.IsciId == isciId.Value &&
                     x.Il == buAy.Year &&
                     x.Ay == buAy.Month &&
-                    x.Status != AvansStatus.ImtinaEdildi);
+                    x.Status != AvansStatus.ImtinaEdildi &&
+                    x.MezuniyyetId == null);
 
             if (mevcud)
             {
@@ -103,7 +106,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var buAy = DateTime.Now;
 
-            // Tekrar yoxla
+            // Tekrar yoxla (sistemin avtomatik əvəzləşmə avansları xaric)
             var mevcud = await _unitOfWork.Repository<Avans>()
                 .Query()
                 .AnyAsync(x =>
@@ -111,7 +114,8 @@ namespace FinNex.UI.Areas.User.Controllers
                     x.IsciId == isciId.Value &&
                     x.Il == buAy.Year &&
                     x.Ay == buAy.Month &&
-                    x.Status != AvansStatus.ImtinaEdildi);
+                    x.Status != AvansStatus.ImtinaEdildi &&
+                    x.MezuniyyetId == null);
 
             if (mevcud)
             {

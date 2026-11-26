@@ -28,19 +28,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IBildirisService _bildirisService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IIsciHYSDondurmaService _hysDondurmaService;
+        private readonly IMezuniyyetAvansService _mezuniyyetAvansService;
 
         public MezuniyyetOdenisController(
             IUnitOfWork unitOfWork,
             IMaasHesablamaService maasHesablamaService,
             IBildirisService bildirisService,
             UserManager<AppUser> userManager,
-            IIsciHYSDondurmaService hysDondurmaService)
+            IIsciHYSDondurmaService hysDondurmaService,
+            IMezuniyyetAvansService mezuniyyetAvansService)
         {
             _unitOfWork = unitOfWork;
             _maasHesablamaService = maasHesablamaService;
             _bildirisService = bildirisService;
             _userManager = userManager;
             _hysDondurmaService = hysDondurmaService;
+            _mezuniyyetAvansService = mezuniyyetAvansService;
         }
 
         // ── GET /HR/MezuniyyetOdenis ─────────────────────────────
@@ -233,6 +236,14 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.EvvelkiAyBaglidir = evvelkiAyBagli;
             ViewBag.EvvelkiAyAdi = evvelkiAyAdi;
 
+            // Artıq yaradılmış əvəzləşmə avansı varmı? — view-da "Retroaktiv yarat"
+            // düyməsini yalnız HƏLƏ YARADILMAYANLARDA göstərmək üçün (26.11.2026,
+            // Item 6: mövcud bazadakı, bu funksiyadan ƏVVƏL Planla-sı icra olunmuş
+            // qeydlər üçün bir dəfəlik manual tətik — bax IMezuniyyetAvansService).
+            ViewBag.EvezlesmeAvansSayi = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .CountAsync(x => !x.Silinib && x.MezuniyyetId == mez.Id);
+
             ViewBag.Mezuniyyet = mez;
             return View(hesab);
         }
@@ -315,6 +326,22 @@ namespace FinNex.UI.Areas.HR.Controllers
             // Planlı ödəniş tarixi — məzuniyyətdən bir iş günü əvvəl
             var planliTarix = await EvvelkiIsGunuAsync(mez.BaslamaTarixi);
 
+            // ── Birdən çox aya düşən qabaqcadan ödənişin ƏVƏZLƏŞMƏ avansları ──
+            // Mühasibin əl ilə yazdığı sətrin (sonrakı ay(lar)ın NET-dən kəsilməsi)
+            // AVTOMATİK qarşılığı — MƏCBURİ addımdır: mühasib üçün tesdiqin
+            // ÖZÜ necə bu hesablamanı tələb edirsə, elə bu da ONUN İÇİNDƏ həll
+            // olunmalıdır (istifadəçi qərarı). Mez-i HƏLƏ MUTASIYA ETMƏMİŞDƏN
+            // ƏVVƏL çağırılır ki, uğursuz olarsa heç nə yazılmasın/saxlanmasın.
+            var evezlesmeNeticesi = await _mezuniyyetAvansService.EvezlesmeAvanslariniHazirlaAsync(
+                mez.Id, yekunMebleg.Value, muhasibIsciId);
+
+            if (!evezlesmeNeticesi.Success)
+            {
+                TempData["Error"] = evezlesmeNeticesi.Message
+                    ?? "Əvəzləşmə avansları hazırlanarkən xəta baş verdi.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
             mez.OdenenMebleg = yekunMebleg;
             mez.OdenisStatus = MezuniyyetOdenisStatus.PlanliOdenis;
             if (!string.IsNullOrWhiteSpace(odenenMeblegBrut))
@@ -328,6 +355,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             mez.OdeyenMuhasibId = muhasibIsciId;
             mez.YenilenmeTarixi = DateTime.Now;
 
+            // TƏK `YaddaSaxlaAsync()` — mez-in statusu VƏ əvəzləşmə avansları
+            // (artıq `EvezlesmeAvanslariniHazirlaAsync` daxilində `YaratAsync`
+            // ilə stage edilib) EYNİ tranzaksiyada, ATOMİK yazılır.
             await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(mez);
             await _unitOfWork.YaddaSaxlaAsync();
 
@@ -346,7 +376,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             catch { /* bildiriş xətası əsas işləməni pozmasın */ }
 
-            TempData["Success"] = $"Ödəniş planlaşdı — {planliTarix:dd.MM.yyyy} ({yekunMebleg:N2} ₼).";
+            var evezlesmeSay = evezlesmeNeticesi.Data?.Count ?? 0;
+            TempData["Success"] = evezlesmeSay > 0
+                ? $"Ödəniş planlaşdı — {planliTarix:dd.MM.yyyy} ({yekunMebleg:N2} ₼). " +
+                  $"Əlavə olaraq {evezlesmeSay} aylıq əvəzləşmə avansı avtomatik yaradıldı."
+                : $"Ödəniş planlaşdı — {planliTarix:dd.MM.yyyy} ({yekunMebleg:N2} ₼).";
             return RedirectToAction(nameof(Index));
         }
 
@@ -421,6 +455,63 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             TempData["Success"] = $"Ödəniş icra edildi ({mez.OdenenMebleg:N2} ₼).";
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── POST /HR/MezuniyyetOdenis/EvezlesmeAvansYarat ────────────
+        // RETROAKTİV, BİR DƏFƏLİK tətik (26.11.2026) — bu funksiya qurulmazdan
+        // ƏVVƏL "Planla" edilmiş qeydlər üçün (o zaman əvəzləşmə avansları
+        // avtomatik yaradılmırdı). Yeni müraciətlərdə Planla bunu artıq
+        // MƏCBURİ addım kimi özü edir — bu endpoint YALNIZ köhnə qalığı
+        // bağlamaq üçündür, TƏKRAR basılsa belə təhlükəsizdir (servisin öz
+        // idempotentlik yoxlaması — bax MezuniyyetAvansService).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EvezlesmeAvansYarat(int id)
+        {
+            var mez = await _unitOfWork.Repository<Mezuniyyet>()
+                .GetirAsync(x => x.Id == id);
+
+            if (mez == null)
+            {
+                TempData["Error"] = "Müraciət tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (mez.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis
+                && mez.OdenisStatus != MezuniyyetOdenisStatus.Odenilib)
+            {
+                TempData["Error"] = "Bu funksiya yalnız artıq planlaşdırılmış/icra edilmiş ödəniş üçündür " +
+                                     "— hələ gözləyən müraciətlərdə əvəzləşmə \"Ödənişi planlaşdır\" " +
+                                     "zamanı avtomatik yaradılır.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            if (mez.OdenenMebleg == null || mez.OdenenMebleg <= 0)
+            {
+                TempData["Error"] = "Ödənilən məbləğ məlum deyil — əvvəlcə ödənişi planlaşdırın.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            var appUser = await _userManager.GetUserAsync(User);
+            var muhasibIsciId = appUser?.IsciId;
+
+            var neticesi = await _mezuniyyetAvansService.EvezlesmeAvanslariniHazirlaAsync(
+                mez.Id, mez.OdenenMebleg.Value, muhasibIsciId);
+
+            if (!neticesi.Success)
+            {
+                TempData["Error"] = neticesi.Message ?? "Əvəzləşmə avansları hazırlanarkən xəta baş verdi.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            // Servis yalnız STAGE edib (YaratAsync) — commit BURADA, TƏK dəfə.
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            var say = neticesi.Data?.Count ?? 0;
+            TempData["Success"] = say > 0
+                ? $"{say} aylıq əvəzləşmə avansı geriyə (retroaktiv) yaradıldı."
+                : "Yaradılası yeni əvəzləşmə avansı yoxdur — artıq hamısı mövcuddur, yaxud bu məzuniyyət bir aya düşür.";
+            return RedirectToAction(nameof(Detail), new { id });
         }
 
         private static readonly string[] AzAylar =

@@ -21,5 +21,25 @@ namespace FinNex.Domain.Entities.HR
         public Isci? Muhasib { get; set; }
         public DateTime? TesdiqTarixi { get; set; }
         public string? ImtinaSebebi { get; set; }
+
+        /// <summary>
+        /// Qabaqcadan ödənilmiş məzuniyyətin ikinci (və sonrakı) ayına görə
+        /// SİSTEM tərəfindən avtomatik yaradılan ƏVƏZLƏŞMƏ qeydi (26.11.2026).
+        ///
+        /// NİYƏ VAR: qabaqcadan ödənilmiş məzuniyyət bir neçə təqvim ayına
+        /// düşəndə, mühasib indiyədək HƏR sonrakı ay üçün əl ilə bir "Avans"
+        /// sətri yazırdı ki, artıq birinci ayda ödənilmiş pul maaş hesablamasında
+        /// İKİNCİ dəfə (NET-dən) çıxılmasın. Bu sahə həmin əl işini
+        /// MezuniyyetAvansService vasitəsilə avtomatlaşdırır.
+        ///
+        /// Null = işçinin öz adi (ixtiyari) avans müraciəti.
+        /// Dolu = bu konkret Mezuniyyet-in ödənişinin ƏVƏZLƏŞMƏ payıdır —
+        ///   işçinin özü BU qeydi görmür/ləğv edə bilmir (User/AvansController
+        ///   "bu ay artıq avans götürülüb" yoxlaması bunu xaric edir), Mühasib
+        ///   PravodkaExport-da bunu AYRI bir mühasibat hesabına (
+        ///   "MezQabaqcadanAvansDebet") yazır — adi avansla QARIŞDIRILMIR.
+        /// </summary>
+        public int? MezuniyyetId { get; set; }
+        public Mezuniyyet? Mezuniyyet { get; set; }
     }
 }

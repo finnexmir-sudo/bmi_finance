@@ -17,6 +17,7 @@
     // Avans hazırdırmı — əvvəlki ay maaşı bağlanıb? (yoxsa 12 aylıq orta natamam olur)
     bool eaBagli = ViewBag.EvvelkiAyBaglidir == null || (bool)ViewBag.EvvelkiAyBaglidir;
     string eaAdi = ViewBag.EvvelkiAyAdi as string ?? "";
+    int evezlesmeAvansSayi = ViewBag.EvezlesmeAvansSayi != null ? (int)ViewBag.EvezlesmeAvansSayi : 0;
 }
 
 @if (TempData["Success"] != null)
@@ -356,6 +357,33 @@
                     <span>Təsdiqləyən Mühasib</span>
                     <strong>@(mez.OdeyenMuhasib?.TamAd ?? "—")</strong>
                 </div>
+                @if (evezlesmeVar)
+                {
+                    if (evezlesmeAvansSayi > 0)
+                    {
+                        <div class="mod-warn" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;margin-top:10px;">
+                            <i class="bi bi-check-circle"></i>
+                            Bu məzuniyyət bir neçə aya düşdüyü üçün <strong>@evezlesmeAvansSayi</strong>
+                            aylıq əvəzləşmə avansı artıq yaradılıb (bax: HR → Avans müraciətləri).
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mod-warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-top:10px;">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Bu məzuniyyət bir neçə aya düşür, amma sonrakı ay(lar) üçün əvəzləşmə
+                            avansı HƏLƏ YARADILMAYIB (bu ödəniş yeni funksiyadan ƏVVƏL planlaşdırılıb).
+                            Əks halda işçinin netindən bu məbləğ bir daha çıxılmaz — ikiqat ödəniş riski var.
+                        </div>
+                        <form asp-action="EvezlesmeAvansYarat" method="post" style="margin-top:8px;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@mez.Id" />
+                            <button type="submit" class="mod-btn mod-btn--outline">
+                                <i class="bi bi-arrow-repeat"></i> Əvəzləşmə avanslarını indi yarat
+                            </button>
+                        </form>
+                    }
+                }
             }
             else if (planli)
             {
@@ -367,6 +395,33 @@
                     <span>Təsdiqləyən Mühasib</span>
                     <strong>@(mez.OdeyenMuhasib?.TamAd ?? "—")</strong>
                 </div>
+                @if (evezlesmeVar)
+                {
+                    if (evezlesmeAvansSayi > 0)
+                    {
+                        <div class="mod-warn" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;margin-top:10px;">
+                            <i class="bi bi-check-circle"></i>
+                            Bu məzuniyyət bir neçə aya düşdüyü üçün <strong>@evezlesmeAvansSayi</strong>
+                            aylıq əvəzləşmə avansı artıq yaradılıb (bax: HR → Avans müraciətləri).
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mod-warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-top:10px;">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Bu məzuniyyət bir neçə aya düşür, amma sonrakı ay(lar) üçün əvəzləşmə
+                            avansı HƏLƏ YARADILMAYIB (bu ödəniş yeni funksiyadan ƏVVƏL planlaşdırılıb).
+                            Əks halda işçinin netindən bu məbləğ bir daha çıxılmaz — ikiqat ödəniş riski var.
+                        </div>
+                        <form asp-action="EvezlesmeAvansYarat" method="post" style="margin-top:8px;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@mez.Id" />
+                            <button type="submit" class="mod-btn mod-btn--outline">
+                                <i class="bi bi-arrow-repeat"></i> Əvəzləşmə avanslarını indi yarat
+                            </button>
+                        </form>
+                    }
+                }
                 <div class="mod-warn" style="margin-top:10px;">
                     <i class="bi bi-info-circle"></i>
                     Ödəniş planlı tarixdə avtomatik icra ediləcək. Bank köçürməsini

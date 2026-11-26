@@ -125,6 +125,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IIcazeService, IcazeService>();
         services.AddScoped<IEmrService, EmrService>();
         services.AddScoped<IMuhasibatHesabService, MuhasibatHesabService>();
+        services.AddScoped<IMezuniyyetAvansService, MezuniyyetAvansService>();
 
         services.AddScoped<IDashboardService, DashboardService>();
 

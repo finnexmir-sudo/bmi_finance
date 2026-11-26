@@ -94,13 +94,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var debetHesab = await _muhasibatHesabService.HesabAlAsync("AvansDebet");
-            if (string.IsNullOrWhiteSpace(debetHesab))
-            {
-                TempData["Error"] = "Avans Debet hesabı təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.";
-                return RedirectToAction(nameof(Index));
-            }
-
             var avanslar = await _unitOfWork.Repository<Avans>()
                 .Query()
                 .Where(x => !x.Silinib && x.Il == il && x.Ay == ay
@@ -113,6 +106,36 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 TempData["Error"] = $"{il}/{ay:D2} üçün təsdiqlənmiş avans tapılmadı.";
                 return RedirectToAction(nameof(Index));
+            }
+
+            // İşçinin öz (ixtiyari) avansı ilə qabaqcadan ödənilmiş məzuniyyətin
+            // ƏVƏZLƏŞMƏ avansı (MezuniyyetId dolu) AYRI mühasibat hesabına
+            // yazılır — bax Avans.MezuniyyetId-in şərhi. Hər qrup YALNIZ
+            // özündə sətir varsa öz hesabını tələb edir.
+            var adiAvanslar = avanslar.Where(x => x.MezuniyyetId == null).ToList();
+            var evezlesmeAvanslari = avanslar.Where(x => x.MezuniyyetId != null).ToList();
+
+            string? debetHesab = null;
+            if (adiAvanslar.Count > 0)
+            {
+                debetHesab = await _muhasibatHesabService.HesabAlAsync("AvansDebet");
+                if (string.IsNullOrWhiteSpace(debetHesab))
+                {
+                    TempData["Error"] = "Avans Debet hesabı təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            string? mezDebetHesab = null;
+            if (evezlesmeAvanslari.Count > 0)
+            {
+                mezDebetHesab = await _muhasibatHesabService.HesabAlAsync("MezQabaqcadanAvansDebet");
+                if (string.IsNullOrWhiteSpace(mezDebetHesab))
+                {
+                    TempData["Error"] = "Məzuniyyət əvəzləşməsi Debet hesabı təyin edilməyib — " +
+                        "Mühasibat Hesabları səhifəsindən \"MezQabaqcadanAvansDebet\" açarını təyin edin.";
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             var ayAdlar = new[] { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
@@ -155,8 +178,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var iban = a.Isci?.Maliye?.BankHesabNo?.Trim() ?? "";
                 var row = sheet.CreateRow(r);
 
+                // Hər sətir ÖZ qrupunun (adi avans / məzuniyyət əvəzləşməsi)
+                // Debet hesabını yazır — bax yuxarıdaki iki ayrı HesabAlAsync çağırışı.
+                var setirDebet = a.MezuniyyetId == null ? debetHesab : mezDebetHesab;
+
                 var c0 = row.CreateCell(0); c0.SetCellValue(r);               if (colStil[0] != null) c0.CellStyle = colStil[0]; // Sənədin № (sıra)
-                var c3 = row.CreateCell(3); c3.SetCellValue(debetHesab);      c3.CellStyle = colStil[3] ?? textStyle;             // Debet (sabit)
+                var c3 = row.CreateCell(3); c3.SetCellValue(setirDebet);      c3.CellStyle = colStil[3] ?? textStyle;             // Debet (qrupa görə)
                 var c5 = row.CreateCell(5); c5.SetCellValue(iban);            c5.CellStyle = colStil[5] ?? textStyle;             // Kredit (işçi hesabı)
                 var c6 = row.CreateCell(6); c6.SetCellValue((double)a.Mebleg); c6.CellStyle = colStil[6] ?? pulStyle;            // Məbləğ
                 var c9 = row.CreateCell(9); c9.SetCellValue(qeyd);            if (colStil[9] != null) c9.CellStyle = colStil[9];  // Qeyd
