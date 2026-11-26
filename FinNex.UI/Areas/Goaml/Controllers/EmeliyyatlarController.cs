@@ -369,7 +369,11 @@ public class EmeliyyatlarController : Controller
             return View(dto);
         }
 
-        return RedirectToAction(nameof(Siyahi));
+        // 26.11.2026 — uğurlu Təsdiq SONRASI da `qaynaqTab`-ı qoruyur (istifadəçi:
+        // "riskde senedi tesdiqleyirsen sonra siyahi gelir,orda emeliyyat tabina
+        // kecir,ama bu riskdeki siyahi idi") — əvvəl YALNIZ uğursuz qollar (310,
+        // 497 və s.) bunu edirdi, UĞURLU nəticə (ən çox baş verən hal) unudulmuşdu.
+        return RedirectToAction(nameof(Siyahi), new { qaynaqTab });
     }
 
     // ── GET /Goaml/Emeliyyatlar/RedakteEt/{id} — mövcud ("Qaralama" statuslu)

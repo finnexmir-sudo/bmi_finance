@@ -15956,3 +15956,34 @@ ilə, sonra real ssenari ilə yoxlamalıdır: Risk → "Təsdiqlənmiş siyahı"
 "Bax" → "Geri" → sidebar-ın HƏR ADDIMDA "Risk" göstərdiyini; eyni zənciri
 "Redaktə et" → "Dəyişiklikləri Saxla" (həm uğurlu, həm validasiya xətalı
 halda) ilə də təkrarlamalıdır.
+
+### Davamı — Təsdiqin ÖZÜNÜN UĞURLU Nəticəsi `qaynaqTab`-ı Unutmuşdu (26.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi: *"yene biri qalib,riskde senedi tesdiqleyirsen sonra siyahi
+gelir,orda emeliyyat tabina kecir,ama bu riskdeki siyahi idi,onuda duzelt"* —
+yuxarıdaki iki dalğa `Tesdiq` POST-un **uğursuz** qollarını (validasiya xətası,
+`TesdiqleAsync` özü uğursuz) `qaynaqTab`-la örtmüşdü, AMMA ƏN TEZ-TEZ baş verən
+hal — **UĞURLU** təsdiq (`RedirectToAction(nameof(Siyahi));`, sətir 372) —
+unudulmuşdu. Operator Risk-dən bir namizədi Təsdiqləyib UĞURLA Siyahiya
+yönləndiriləndə, elə BU yol `qaynaqTab`-ı daşımadığı üçün sidebar
+"Əməliyyatlar"a sıçrayırdı.
+
+**Düzəliş — tək sətir:** `RedirectToAction(nameof(Siyahi));` →
+`RedirectToAction(nameof(Siyahi), new { qaynaqTab });`.
+
+`grep -n "RedirectToAction(nameof(Siyahi))"` ilə controllerdə BAŞQA bir
+`qaynaqTab`-sız redirect QALMADIĞI təsdiqləndi — bu, modulda `Siyahi`-yə gedən
+HƏR yolun indi `qaynaqTab`-ı daşıdığını göstərir.
+
+**Qayda (eyni zəncirin üçüncü dalğası, dərs daha da dəqiqləşdi):** bir metodun
+BİRDƏN ÇOX çıxış yolu (uğur + N uğursuzluq qolu) varsa, `qaynaqTab` kimi bir
+parametri YALNIZ UĞURSUZLUQ qollarına əlavə edib "hələ bitmədi" demək
+KİFAYƏT ETMİR — HƏR BİR `return`/`RedirectToAction` sətrini (uğurlu olan
+DAXİL, çox vaxt elə ONU UNUTMAQ asandır, çünki "əsas axın" kimi görünür)
+`grep` ilə sadalayıb birər-birər yoxla.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı — yalnız əlavə sətirlərdə, həm də tam fayl
+səviyyəsində). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: Risk-dən bir namizədi Təsdiqləyib UĞURLA
+yönləndiriləndə sidebar-ın artıq "Risk" göstərdiyini.
