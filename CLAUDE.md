@@ -16125,3 +16125,67 @@ TƏSDİQLƏMƏDƏN yazma — konkret real qeydin, mexanizmin tələb etdiyi gati
 şərtini HƏQİQƏTƏN ödəyib-ödəmədiyini (bura: `OdenisTipi`) əvvəlcədən
 yoxlamaq, "funksiya hazırdır" ilə "bu funksiya BU qeydə tətbiq olunur"
 arasındakı fərqi aşkar edir.
+
+### MezuniyyetOdenis Detail — Tək Aylıq Məzuniyyətdə Yanlış Xəbərdarlıq (26.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi iki ekran-görüntüsü göstərdi: Ülviyyə Kazımova Məmmədiyyə-nin
+məzuniyyəti (02.11.2026–17.11.2026) **tək bir ay** (Noyabr) daxilindədir —
+"Addım-addım hesablama məntiqi" bölməsi, cədvəl, hamısı yalnız "Noyabr
+2026"dan danışır. Buna baxmayaraq Detail səhifəsi sarı xəbərdarlıq
+göstərirdi: *"Bu məzuniyyət bir neçə aya düşür, amma sonrakı ay(lar) üçün
+əvəzləşmə avansı HƏLƏ YARADILMAYIB... İKİQAT ÖDƱNİŞ RİSKİ VAR"* + "Əvəzləşmə
+avanslarını indi yarat" düyməsi. İstifadəçinin sualı: *"buki eyni aydadir,
+niye bu sari mesaj cixir?"*
+
+**Kök səbəb — `Detail.cshtml`-də TƏK bir dəyişən (`evezlesmeVar`) İKİ AYRI
+sualı cavablandırmağa çalışırdı.** `MezuniyyetOdenisController`-in
+"Mühasib cədvəli üçün" göstərmə-məqsədli döngəsi (26.10.2026-dan, HƏR ay
+üçün, BİRİNCİ ay DAXİL, `EvezlesmeNet`/`EvezlesmeTutulma`-nı doldurur) ilə
+`MezuniyyetAvansService.EvezlesmeAvanslariniHazirlaAsync`-ın ÖZ "hansı
+aylar HƏQİQƏTƏN əvəzləşmə TƏLƏB EDİR" qaydası (`AySliceleri.Skip(1)` —
+BİRİNCİ ay, pulun VERİLDİYİ ay, HEÇ VAXT əvəzləşmə tələb etmir) **İKİ AYRI,
+üst-üstə düşməyən şərtdir**. `evezlesmeVar = Model.AySliceleri.Any(x =>
+x.EvezlesmeNet.HasValue)` İSƏ YALNIZ BİRİNCİNİ (ƏN AZI bir ayda dəyər var)
+yoxlayırdı — tək aylıq (bir-ay) məzuniyyətdə bu HƏMİŞƏ `true` olur (elə o
+BİR AYIN özündə dəyər doludur), baxmayaraq ki SONRAKI AY ÜMUMİYYƏTLƏ YOXDUR.
+
+**Düzəliş — `evezlesmeVar` TAMAMİLƏ SİLİNDİ, YALNIZ `evezlesmeLazimdir`
+qaldı:** `var evezlesmeLazimdir = Model.AySliceleri.Skip(1).Any(x =>
+x.EvezlesmeNet.HasValue);` — `MezuniyyetAvansService`-in ÖZ `.Skip(1)`
+qaydasının BİRƏ-BİR eynisi. Bu, YALNIZ xəbərdarlıq banner-ini/düyməni YOX,
+**"Əvəzləşmə (NET)" cədvəl sütunlarını, footer-i VƏ info-qutusunu DA**
+eyni şərtə bağladı — ilk baxışda bu üçü "zərərsiz göstəriş" kimi görünsə
+belə, əslində tək aylıq leave-də MƏNASIZDIR: o sütunun göstərdiyi rəqəm
+«Cari maaş hesabı»-nın elə ÖZÜDÜR (yalnız "əvəzləşmə" etiketi ilə), çünki
+bütöv pul HƏMİN BİR AYIN daxilində ödənilib/vergilənib — "sonrakı aya
+keçən" heç nə yoxdur ki, əvəzləşdirmək lazım gəlsin. Bu sütunun sarı
+xəbərdarlıqla YANAŞI göstərilməsi elə "niyə bu, bir neçə aya aiddir?"
+çaşqınlığının ÖZÜNÜ GÜCLƏNDİRİRDİ.
+
+⚠️ **`MezuniyyetOdenisController`-in `EvezlesmeNet`/`EvezlesmeTutulma`
+doldurma döngəsinə (bütün ay-payları, BİRİNCİ ay daxil, doldurur)
+TOXUNULMADI** — bu, QƏSDƏN belədir (26.10.2026-dan), çünki DTO-nun özü
+hər ay üçün bu dəyərləri daşımaq ÜÇÜN nəzərdə tutulub; problem YALNIZ
+GÖRÜNTÜ qatında (`Detail.cshtml`-in HANSI sütunları/banner-i hansı şərtə
+bağladığında) idi, controller/servis məntiqi DƏYİŞMƏDİ.
+
+**Qayda:** eyni DTO sahəsinin (`EvezlesmeNet`) dolu/boş olması İKİ FƏRQLİ
+sualın (1. "bu ay üçün hesablanmış rəqəm varmı, göstəriş üçün" VƏ 2. "bu
+leave HƏQİQƏTƏN sonrakı aya/aylara düşür, əvəzləşmə TƏLƏB OLUNUR") cavabı
+ola bilər — İKİSİ ÜST-ÜSTƏ DÜŞMƜR (birinci bayraq BİRİNCİ ayı DA əhatə
+edir, ikincisi YOX). Bir `@if`-in məqsədi "N aydan çox"u (çox-aylılıq)
+yoxlamaqdırsa, "ƏN AZI bir ayda dəyər var"a güvənmə — mənbə servisin
+ÖZ "hansı aylar tələb edir" düsturunu (bura: `.Skip(1)`) HƏRFİ təkrarla,
+daha asan görünən "Any()" yoxlamasına sadələşdirmə.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı skriptlə — 92/92, mojibake YOX, `grep` ilə
+`evezlesmeVar`-ın faylda HEÇ YERDƏ qalmadığı, `evezlesmeLazimdir`-in 7
+yerin HAMISINDA (tərif + 6 istifadə: cədvəl header/body/footer, info-qutu,
+iki xəbərdarlıq banner-i) işlədiyi təsdiqləndi). İstifadəçi Visual
+Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: (1)
+Ülviyyə Kazımova Məmmədiyyə-nin Detail səhifəsində sarı xəbərdarlığın VƏ
+"Əvəzləşmə (NET)" sütununun artıq HEÇ GÖRÜNMƏDİYİNİ; (2) həqiqətən çox-aylı
+bir leave-in (məs. Fuad Qulu Zadə-nin 16.10.2026–03.11.2026 qeydi) Detail
+səhifəsində HƏR İKİSİNİN (sütun + banner) ƏVVƏLKİ kimi düzgün göründüyünü
+təsdiqləməlidir.
