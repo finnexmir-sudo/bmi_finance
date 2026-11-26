@@ -15987,3 +15987,91 @@ yoxlanıldı** (mötərizə balansı — yalnız əlavə sətirlərdə, həm də
 səviyyəsində). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
 ssenari ilə yoxlamalıdır: Risk-dən bir namizədi Təsdiqləyib UĞURLA
 yönləndiriləndə sidebar-ın artıq "Risk" göstərdiyini.
+
+## Qabaqcadan Məzuniyyət — Çox Aylı Ödənişə AVTOMATİK Əvəzləşmə Avansı (26.11.2026, KRİTİK)
+
+Real hadisə: İşçi-9-un (Fuad Qulu Zadə) noyabr ayı Avans sütunu **300,00 ₼**
+göstərirdi, mühasibin öz Excel-i isə **542,20 ₼** — **242,20 ₼** fərq.
+
+**Kök səbəb:** qabaqcadan ödənilən məzuniyyət bir neçə təqvim ayına
+düşəndə, mühasib indiyə qədər **hər sonrakı ay** üçün əl ilə bir "Avans"
+sətri yazırdı ki, birinci ayda artıq ödənilmiş pul maaş hesablamasında
+İKİNCİ dəfə (NET-dən) çıxılmasın. Bu, elə "Qabaqcadan Məzuniyyət — Vergi
+Bazası AYLARA BÖLÜNÜR" bölməsindəki (yuxarı) ay-ay NET bölgüsünün — artıq
+Detail səhifəsinin "Əvəzləşmə (NET)" sütununda GÖSTƏRİLƏN, amma heç vaxt
+bazaya YAZILMAYAN — əl işi qarşılığı idi. Sistemdə bunun avtomatı yox idi.
+
+### Struktur — 6 hissə
+
+1. **`Avans.MezuniyyetId`** (nullable FK → `Mezuniyyet`, migration
+   `20261126090000_AvansMezuniyyetId.cs`, `Restrict` — `EvezediciTesdiqler`-in
+   eyni hədəfə olan FK-sı ilə EYNİ qayda). `null` = işçinin öz adi avans
+   müraciəti; dolu = BU konkret məzuniyyətin əvəzləşmə payı.
+2. **`IMezuniyyetAvansService`/`MezuniyyetAvansService`** (yeni,
+   `IIsciHYSDondurmaService`/`IsciHYSDondurmaService`-in EYNİ qovluq
+   konvensiyası) — `EvezlesmeAvanslariniHazirlaAsync(mezuniyyetId, odenenNet,
+   muhasibIsciId)`: `MezuniyyetOdenisiDetalliHesablaAsync`/
+   `MezuniyyetAvansAyPaylariAsync`-ı (Detail səhifəsinin ARTIQ istifadə etdiyi
+   **TƏK mənbə**, YENİ hesablama İCAD EDİLMƏYİB) çağırıb, `AySliceleri.
+   Skip(1)` (ilk ay — ödənişin verildiyi ay — onsuz da öz hesablamasında
+   əhatə olunur) üzrə hər aya BİR `Avans` sətri STAGE edir (`YaratAsync`,
+   `SaveChanges` YOX — çağıran tərəf atomik commit edir).
+3. **`MezuniyyetOdenisController.Planla`** bu servisi **MƏCBURİ**, `mez`-i
+   mutasiya etməzdən ƏVVƏL çağırır (uğursuz olsa `mez`-ə HEÇ TOXUNULMUR) —
+   istifadəçi qərarı: *"necəki mühasib təsdiq etməsi mütləqdirsə eyni onun
+   içində mütləq həll olunmalıdır"*. Status dəyişikliyi VƏ yeni əvəzləşmə
+   sətirləri **TƏK `YaddaSaxlaAsync()`** ilə, EYNİ tranzaksiyada yazılır.
+4. **`User/AvansController`** — işçinin öz aylıq avans müraciətini bloklayan
+   hər iki `mevcud` yoxlamasına `&& x.MezuniyyetId == null` əlavə olundu —
+   sistem-yaradılan əvəzləşmə sətri işçinin öz müraciətini artıq bloklamır.
+5. **`HR/AvansController.PravodkaExport`** — ixrac olunan avans siyahısı
+   `MezuniyyetId == null`/`!= null` iki qrupa bölünür, hər qrup ÖZ
+   mühasibat hesabını (`"AvansDebet"` / yeni **`"MezQabaqcadanAvansDebet"`**,
+   `IMuhasibatHesabService.HesabAlAsync`-dən) YALNIZ özü boş olmayanda
+   tələb edir — adi avans ilə əvəzləşmə avansı EYNİ sətirdə QARIŞMIR.
+6. **Retroaktiv tətik** — `MezuniyyetOdenisController.EvezlesmeAvansYarat`
+   (POST) + `Detail.cshtml`-də `planli`/`odenilib` statuslarının HƏR
+   ikisində göstərilən kart (yalnız çox-aylı qabaqcadan ödənişdə) — bu
+   funksiyadan ƏVVƏL `Planla` edilmiş qeydlər (Fuad kimi) üçün BİR
+   DƏFƏLİK, əl ilə tətiklənən əvəzləşmə — eyni servisi çağırır, TƏKRAR
+   basılsa belə təhlükəsizdir (aşağıdaki idempotentlik yoxlaması).
+
+### Tələlər, diqqətlə yoxlanılıb qarşısı alınanlar
+
+- **`EfRepositoryAsync<T>.MovcuddurmuAsync`/`AnyAsync` `Silinib`-i
+  FİLTRLƍMİR** (bax "GOAML — Təsdiqlənmiş Qeydin Silinməsi" bölməsindəki
+  EYNİ repo tələsi) — servisin öz idempotentlik yoxlaması bunun ƏVƏZİNƏ
+  `.Query().AnyAsync(x => !x.Silinib && ...)` işlədir, yoxsa yumşaq-silinmiş
+  köhnə bir əvəzləşmə sətri "artıq var" sayılıb yenisinin yaradılmasını
+  səssizcə bloklayardı.
+- **Missing ay-payı / `Net<=0` HARD FAIL EDİLMİR, `continue`** — Detail-in
+  öz `if (p == null) continue;` naxışının EYNİSİ (iki metod EYNİ
+  `(isciId, baslama, bitme)` ilə çağırıldığı üçün struktural uyğunsuzluq
+  gözlənilmir, amma yeni, daha sərt bir fail-mode İCAD EDİLMƏYİB).
+- **Servis `mezuniyyetId: int` qəbul edir, hazır `Mezuniyyet` obyekti
+  YOX** — `Planla`-dan çağırılanda (eyni scoped DbContext-də `mez` artıq
+  tracking olunur, EF identity-map eyni instansı qaytarır) VƏ retroaktiv
+  tətikdən (heç bir `mez` əvvəlcədən yüklənməyib) TƏK bir çağırış
+  konvensiyası ilə işləsin deyə.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — `Planla`-nın məcburi çağırışı YALNIZ
+BUNDAN SONRAKI planlaşdırmalara təsir edir. Fuad kimi, bu funksiyadan
+ƏVVƏL artıq `PlanliOdenis`/`Odenilib` statusunda olan qeydlər üçün
+YALNIZ #6-dakı retroaktiv düymə işə düşür — avtomatik, özbaşına düzəlmir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (hər dəyişən/yeni faylın mötərizə balansı skriptlə ayrıca
+ölçüldü — hamısı balanslı). İstifadəçi aşağıdakı addımları atmalıdır:
+1. Migrasiyanı tətbiq et (`Update-Database` və ya ekvivalent).
+2. Mühasibat Hesabları səhifəsindən **`MezQabaqcadanAvansDebet`** açarını
+   təyin et (yoxsa həmin ayın Pravodka ixracı əvəzləşmə sətri olan
+   hər hansı aya görə "hesab təyin edilməyib" xətası ilə DAYANACAQ).
+3. Visual Studio-da **Rebuild All**.
+4. Fuad Qulu Zadə-nin məzuniyyətini aç (HR → Məzuniyyət Ödənişləri →
+   Detail) → **"Əvəzləşmə avanslarını indi yarat"** düyməsini bas →
+   noyabr ayına uyğun, təxminən **242,20 ₼** məbləğli yeni əvəzləşmə
+   avansının yarandığını, bundan sonra noyabr Avans sütununun mühasibin
+   Excel-indəki 542,20 ₼-ə uyğunlaşdığını təsdiqlə.
+5. YENİ bir qabaqcadan, çox-aylı məzuniyyət müraciətini "Planla" edib
+   əvəzləşmə avanslarının İNDİ avtomatik (düymə lazım olmadan) yarandığını
+   yoxla.
