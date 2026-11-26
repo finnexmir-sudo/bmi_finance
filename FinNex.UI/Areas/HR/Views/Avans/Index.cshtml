@@ -12,6 +12,7 @@
     int secilmisAy = (int)(ViewBag.SecilmisAy ?? DateTime.Now.Month);
     var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
     string dovrMetni = (secilmisAy >= 1 && secilmisAy <= 12) ? $"{ayAdlar[secilmisAy]} {secilmisIl}" : $"{secilmisIl} — bütün aylar";
+    bool odeyeBiler = User.IsInRole(FinNex.Domain.RoleNames.Muhasib) || User.IsInRole(FinNex.Domain.RoleNames.Admin);
 }
 
 @section Styles {
@@ -167,7 +168,7 @@
                                         <span class="ha-badge ha-badge--ok">Təsdiqlənib</span>
                                         break;
                                     case AvansStatus.Odenilib:
-                                        <span class="ha-badge ha-badge--ok">Ödənilib</span>
+                                        <span class="ha-badge ha-badge--paid" title="Pul çıxarıla bilər">Ödənilib</span>
                                         break;
                                     case AvansStatus.ImtinaEdildi:
                                         <span class="ha-badge ha-badge--reject">Rədd</span>
@@ -195,6 +196,19 @@
                                             <i class="bi bi-x-lg"></i>
                                         </button>
                                     </div>
+                                }
+                                else if (a.Status == AvansStatus.Tesdiqlenib && odeyeBiler)
+                                {
+                                    <form asp-action="Ode" method="post" style="display:inline"
+                                          onsubmit="return confirm('Pul BMI-də pravodka vurulub, ulduzlar götürülüb — çıxarıla bilən vəziyyətdədir? Təsdiqləsəniz işçiyə ödənildi bildirişi gedəcək.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@a.Id" />
+                                        <input type="hidden" name="il" value="@secilmisIl" />
+                                        <input type="hidden" name="ay" value="@secilmisAy" />
+                                        <button type="submit" class="ha-btn ha-btn--ok ha-btn--sm" title="Pul hazırdır — işçiyə bildir">
+                                            <i class="bi bi-cash-coin"></i> Ödə
+                                        </button>
+                                    </form>
                                 }
                             </td>
                         </tr>

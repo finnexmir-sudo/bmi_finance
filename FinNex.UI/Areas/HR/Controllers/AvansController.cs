@@ -252,19 +252,16 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // İşçiyə bildiriş — qərar nəticəsi
-            var redirectUrl = Url.Action("Index", "Avans", new { area = "User" });
-            if (tesdiq)
+            // Təsdiqdə işçiyə bildiriş GETMİR — istifadəçi qərarı (26.11.2026):
+            // "iki bildirişə ehtiyac yoxdur, bir bildiriş olsun, o da ən sonda."
+            // Yeganə bildiriş aşağıdaki `Ode` action-undadır (mühasib BMI
+            // pravodkasını vurub, pul HƏQİQƏTƏN hazır olandan sonra, AYRICA
+            // düymə ilə) — bax CLAUDE.md. Rədd isə prosesi BİTİRİR (sonra heç
+            // bir addım yoxdur), ona görə rədd bildirişi elə BURADA, YEGANƏ
+            // bildiriş olaraq qalır.
+            if (!tesdiq)
             {
-                await _bildirisRouter.NotifyIsciAsync(
-                    avans.IsciId,
-                    BildirisNovu.AvansTesdiq,
-                    "Avansınız təsdiqləndi",
-                    $"{avans.Il}/{avans.Ay:D2} ayı üçün {avans.Mebleg:N2} ₼ avans müraciətiniz təsdiqləndi.",
-                    redirectUrl: redirectUrl);
-            }
-            else
-            {
+                var redirectUrl = Url.Action("Index", "Avans", new { area = "User" });
                 var sebebMetn = string.IsNullOrWhiteSpace(avans.ImtinaSebebi) ? "" : $" Səbəb: {avans.ImtinaSebebi}";
                 await _bildirisRouter.NotifyIsciAsync(
                     avans.IsciId,
@@ -274,6 +271,56 @@ namespace FinNex.UI.Areas.HR.Controllers
                     redirectUrl: redirectUrl);
             }
 
+            return RedirectToAction(nameof(Index), DovrRoute());
+        }
+
+        // ── POST /HR/Avans/Ode ───────────────────────────────
+        // Mühasib bunu YALNIZ BMI-də pravodkanı vurub, "ulduzları" götürüb,
+        // pul HƏQİQƏTƏN çıxarıla bilən olandan SONRA basmalıdır — "Tesdiq"
+        // artıq heç bir bildiriş göndərmir, YEGANƏ bildiriş elə buradadır
+        // (26.11.2026, istifadəçi qərarı: "bir bildiriş olsun, o da ən sonda").
+        //
+        // Sistem-yaradılan əvəzləşmə sətirlərinə (MezuniyyetId != null) də
+        // tətbiq olunur (Pravodka/status ardıcıllığı qorunsun deyə), AMMA
+        // onlara bildiriş GETMİR — işçi bu pulu artıq məzuniyyət ödənişinin
+        // özü ilə alıb, bu sətir sırf mühasibat əvəzləşməsidir.
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Ode(int id, int? il = null, int? ay = null)
+        {
+            object DovrRoute() => new { il, ay };
+
+            var avans = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+
+            if (avans == null)
+            {
+                TempData["Error"] = "Müraciət tapılmadı.";
+                return RedirectToAction(nameof(Index), DovrRoute());
+            }
+
+            if (avans.Status != AvansStatus.Tesdiqlenib)
+            {
+                TempData["Error"] = "Yalnız 'Təsdiqlənib' statusundakı avansı ödənilmiş kimi işarələmək olar.";
+                return RedirectToAction(nameof(Index), DovrRoute());
+            }
+
+            avans.Status = AvansStatus.Odenilib;
+            avans.OdenisTarixi = DateTime.Now;
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            if (avans.MezuniyyetId == null)
+            {
+                await _bildirisRouter.NotifyIsciAsync(
+                    avans.IsciId,
+                    BildirisNovu.AvansOdenildi,
+                    "Avansınız ödənildi",
+                    $"{avans.Il}/{avans.Ay:D2} ayı üçün {avans.Mebleg:N2} ₼ avans müraciətiniz təsdiqləndi və pulunuz hazırdır — çıxara bilərsiniz.",
+                    redirectUrl: Url.Action("Index", "Avans", new { area = "User" }));
+            }
+
+            TempData["Success"] = $"Avans ödənilmiş kimi işarələndi — {avans.Mebleg:N2} ₼";
             return RedirectToAction(nameof(Index), DovrRoute());
         }
     }

@@ -91,5 +91,13 @@ namespace FinNex.Domain.Entities.Communication
 
         // Kassa — gündəlik kurs beyannaməsi təsdiqləndi (28.10.2026)
         KassaKursTesdiqlendi = 56,
+
+        // Avans — mühasib BMI pravodkasını vurub, pul HƏQİQƏTƏN hazırdır
+        // (26.11.2026). YEGANƏ avans bildirişidir — istifadəçi qərarı:
+        // "iki bildirişə ehtiyac yoxdur, bir bildiriş olsun, o da ən sonda."
+        // `Tesdiq` action-u artıq təsdiqdə bildiriş GÖNDƏRMİR (yalnız rədd
+        // halında, bax AvansController.Tesdiq) — AvansTesdiq (21) bu axında
+        // bir daha işlənmir, köhnə qeydlər üçün saxlanılıb.
+        AvansOdenildi = 57,
     }
 }

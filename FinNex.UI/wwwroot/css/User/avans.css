@@ -19,6 +19,7 @@
 .av-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .av-badge--pending { background: #fef3c7; color: #92400e; }
 .av-badge--ok { background: #d1fae5; color: #065f46; }
+.av-badge--paid { background: #065f46; color: #fff; }
 .av-badge--reject { background: #fecaca; color: #991b1b; }
 
 .av-btn { display: inline-flex; gap: 5px; align-items: center; padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: all .15s; font-family: inherit; }

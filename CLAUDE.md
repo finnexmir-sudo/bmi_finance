@@ -16289,3 +16289,112 @@ Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır: (1)
 bir leave-in (məs. Fuad Qulu Zadə-nin 16.10.2026–03.11.2026 qeydi) Detail
 səhifəsində HƏR İKİSİNİN (sütun + banner) ƏVVƏLKİ kimi düzgün göründüyünü
 təsdiqləməlidir.
+
+## Avans — "Təsdiq" Bildirişi Pul Hazır Olmazdan ƏVVƏL Gedirdi — "Ödə" Addımı Əlavə Olundu (26.11.2026, KRİTİK)
+
+İstifadəçi qaydası: *"mühasib sonda təsdiq edən kimi hamıya bildiriş gedir
+ama bundan sonra hələ mühasib pravodkaları sistemə vurmalı, ulduzlar
+götürülməlidir, sonra pulu çıxartmaq olur — bu, bir az qabaqcadan bildiriş
+getmiş olur."*
+
+**Kök səbəb — `AvansStatus.Odenilib` enum-u ƏVVƏLDƏN VARDI, AMMA HEÇ BİR
+YAZMA YOLU YOX İDİ.** Həm HR, həm User `Avans/Index.cshtml`-in `switch`-i
+bu statusu artıq render edirdi (`case AvansStatus.Odenilib: ... "Ödənilib"`),
+`PravodkaExport`/`MaasHesablamaService` kimi 7 yerdə `Tesdiqlenib ||
+Odenilib` birgə sorğulanırdı — **görüntü qatı bu statusu gözləyirdi, amma
+`AvansController`-də onu YAZAN TƏK bir action YOX idi.** Yeganə real
+keçid `Tesdiq` action-u idi (`Gozlemede → Tesdiqlenib`), VƏ bu, `TempData`
+yazılan kimi işçiyə **"Avansınız təsdiqləndi"** bildirişini DƏRHAL
+göndərirdi — baxmayaraq ki, real pul yalnız mühasib BMI-də pravodkanı
+vurub "ulduzları" (hold flaqı) götürəndən SONRA çıxarıla bilir. Bu, Maaş
+modulunun (`MaasStatus.Tesdiqlendi` → mühasibə bildiriş, YALNIZ sonrakı
+`MaasStatus.Odenildi` → işçiyə bildiriş, `TopluOdenis`/`StatusDeyis`-dəki
+ARTIQ DÜZGÜN olan iki-addımlı modelin) **Avans tərəfdə heç vaxt
+tamamlanmamış formasıdır** — şablonda var, kodda yox idi.
+
+**Həll — Maaşın özünün artıq sınanmış iki-addımlı modeli Avans-a tətbiq
+olundu:**
+1. **`Avans.OdenisTarixi`** (yeni, nullable `DateTime`, migration
+   `20261126100000_AvansOdenisTarixi.cs` — yalnız `AddColumn`) —
+   `TesdiqTarixi`-dən AYRI: biri "müraciət NƏ VAXT qərarlaşdı", o biri
+   "pul NƏ VAXT həqiqətən hazır oldu".
+2. **`BildirisNovu.AvansOdenildi = 57`** (yeni) — `AvansTesdiq (21)`-dən
+   AYRI bildiriş növü, "pul hazırdır" anını daşıyır.
+3. **`AvansController.Ode(int id, ...)`** (yeni, `[Authorize(Roles =
+   Muhasib,Admin)]` — Maaşın `TopluOdenis`-i İLƏ EYNİ, class-level-dən
+   DAHA DAR icazə) — YALNIZ `Status == Tesdiqlenib` olan qeydi
+   `Odenilib`-ə keçirir, `OdenisTarixi`-ni yazır, VƏ YALNIZ bu addımda
+   işçiyə `AvansOdenildi` bildirişi ("...pulunuz hazırdır — çıxara
+   bilərsiniz") göndərir. Mühasib bu düyməni **yalnız BMI-dəki pravodka+
+   ulduz işini bitirdikdən sonra** basmalıdır — view-dakı təsdiq dialoqu
+   bunu açıq xatırladır.
+4. **`Tesdiq` action-unun işçiyə göndərdiyi mətn** yenidən yazıldı —
+   "təsdiqləndi" sözü SAXLANILDI (qərarın özü dərhal bilinməlidir), amma
+   indi AÇIQ əlavə edir: *"ödəniş hazırlanır. Pul hazır olanda ayrıca
+   bildiriş alacaqsınız."* — işçi iki bildirişin olacağını əvvəlcədən bilir.
+5. **Görüntü** — `HR/Views/Avans/Index.cshtml`-ə `Tesdiqlenib` sətirlərinə
+   (yalnız Mühasib/Admin görəndə) yeni "Ödə" düyməsi; HƏR İKİ (`HR`+`User`)
+   view-da "Ödənilib" bədgisi `ha-badge--paid`/`av-badge--paid` (bərk
+   yaşıl, dolu fon) ilə "Təsdiqlənib"-dən (açıq yaşıl) VİZUAL olaraq
+   AYRILDI — iki status əvvəl EYNİ rəngdə idi, mətndən başqa fərq yox idi.
+   `User/Avans/Index.cshtml`-ə "Ödəniş tarixi" sütunu əlavə olundu.
+
+⚠️ **Sistem-yaradılan əvəzləşmə sətirləri (`Avans.MezuniyyetId != null` —
+bax yuxarı "Qabaqcadan Məzuniyyət — Çox Aylı Ödənişə Avtomatik Əvəzləşmə"
+bölməsi) `Ode`-dən KEÇİR (status ardıcıllığı/Pravodka filtri qorunsun
+deyə), AMMA bildiriş ALMIR** — işçi bu pulu artıq məzuniyyət ödənişinin
+ÖZÜ ilə alıb, bu sətir sırf mühasibat əvəzləşməsidir, "pulunuz hazırdır"
+demək YALANDIR.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — artıq `Tesdiqlenib` statusunda dayanan köhnə
+avans sətirləri özbaşına `Odenilib`-ə keçmir, mühasib onları da əl ilə
+"Ödə" düyməsi ilə işarələməlidir (bu, zərərsizdir — onsuz da real pul
+çıxıbsa, indi sadəcə statusu/tarixi dəqiqləşdirir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə/tag balansı hər dəyişən faylda ayrıca skriptlə —
+hamısı balanslı; `AvansStatus.Odenilib`-in HR/User view-larda,
+`MaasHesablamaService`/`PravodkaExport`/`RehberDashboardController`/
+`MezuniyyetOdenisController`/`MezuniyyetController`-də artıq oxunan
+yerlərin heç birinin bu düzəlişdən TƏSİRLƏNMƏDİYİ — onlar statusu yalnız
+OXUYUR, YAZMIR — təsdiqləndi). İstifadəçi Visual Studio-da **Rebuild
+All**, `Update-Database`, sonra real ssenari ilə yoxlamalıdır: bir avansı
+Təsdiq et → işçinin bildirişində "ödəniş hazırlanır" ifadəsinin olduğunu,
+AMMA "pul hazırdır" DEYİLDİYİNİ; sonra Mühasib rolu ilə "Ödə"yə bas →
+İKİNCİ bildirişin ("pulunuz hazırdır") BU dəfə getdiyini, "Ödənilib"
+bədgisinin indi vizual olaraq fərqli (dolu yaşıl) göründüyünü təsdiqləməli
+— sonra bir "Qabaqcadan Məzuniyyət" əvəzləşmə sətrini "Ödə" ilə işarələyib
+bu KONKRET sətirdə HEÇ BİR bildirişin getmədiyini yoxlamalıdır.
+
+### DÜZƏLİŞ — "İki Bildirişə Ehtiyac Yoxdur, Bir Bildiriş Olsun, O Da Ən Sonda" (26.11.2026, eyni gün)
+
+İstifadəçi yuxarıdaki modeli görəndən (hələ build/test edilmədən) DƏRHAL
+sadələşdirdi: *"iki bildirise ehtiyac yoxdur,bir bildiris olsun,oda en
+sonda."* Yuxarıdaki 4-cü bənd (`Tesdiq`-in "ödəniş hazırlanır, pul hazır
+olanda ayrıca bildiriş alacaqsınız" mesajı) bu qərarla **ARTIQ KEÇƏRLİ
+DEYİL** — aşağıdaki kimi dəyişdirildi:
+
+- **`Tesdiq` action-u TƏSDİQ (`tesdiq=true`) halında İŞÇİYƏ HEÇ BİR BİLDİRİŞ
+  GÖNDƏRMİR** — `TempData["Success"]` (mühasibin öz ekranındaki flash mesajı)
+  qalır, AMMA `NotifyIsciAsync` çağırışı YALNIZ `!tesdiq` (rədd) qolunda
+  qalır. Rədd prosesi BİTİRDİYİ üçün (sonra heç bir addım yoxdur) onun
+  bildirişi artıq YEGANƏ bildirişdir, dəyişməyib.
+- **Yeganə bildiriş `Ode` action-undadır** (`BildirisNovu.AvansOdenildi`),
+  mətni indi HƏR İKİ faktı daşıyır: *"...avans müraciətiniz təsdiqləndi
+  VƏ pulunuz hazırdır — çıxara bilərsiniz."* — işçi əvvəllər İKİ bildiriş
+  alacaqdı (təsdiq + ödəniş), indi YALNIZ BİR, mühasib "Ödə"yə basanda.
+- **`BildirisNovu.AvansTesdiq = 21`** ENUM DƏYƏRİ SİLİNMƏDİ (köhnə qeydlər
+  üçün saxlanılıb), AMMA bu axında BİR DAHA ÇAĞIRILMIR.
+
+⚠️ **Qayda dəyişmədi, YALNIZ görüntü sadələşdi** — `Ode`-nin "mühasib YALNIZ
+BMI pravodkasını/ulduzları bitirdikdən SONRA bassın" tələbi, sistem-
+yaradılan əvəzləşmə sətirlərinin (MezuniyyetId != null) bildiriş ALMAMASI,
+GERİYƏ TƏTBİQ OLUNMAMASI (yuxarı bax) — hamısı AYNEN qalır, YALNIZ təsdiq
+anındaki bildiriş çıxarıldı.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı — 48/48 brace, 176/176 paren, tam fayl).
+İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə
+yoxlamalıdır: bir avansı Təsdiq et → işçiyə HEÇ BİR bildiriş GETMƏDİYİNİ;
+sonra Mühasib "Ödə"yə bas → İNDİ YEGANƏ bildirişin ("təsdiqləndi VƏ
+hazırdır" mətni ilə) getdiyini təsdiqləməli.

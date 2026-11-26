@@ -23,6 +23,14 @@ namespace FinNex.Domain.Entities.HR
         public string? ImtinaSebebi { get; set; }
 
         /// <summary>
+        /// Mühasib pravodkanı BMI-də vurub, "ulduzları" götürüb, pul HƏQİQƏTƏN
+        /// çıxarıla bilən olanda bu tarix yazılır (26.11.2026). `TesdiqTarixi`
+        /// yalnız MÜRACİƏTİN təsdiqləndiyini göstərir — pulun hazır olduğunu
+        /// YOX. Bu sahə dolu olanda `Status == Odenilib`-dir.
+        /// </summary>
+        public DateTime? OdenisTarixi { get; set; }
+
+        /// <summary>
         /// Qabaqcadan ödənilmiş məzuniyyətin ikinci (və sonrakı) ayına görə
         /// SİSTEM tərəfindən avtomatik yaradılan ƏVƏZLƏŞMƏ qeydi (26.11.2026).
         ///
