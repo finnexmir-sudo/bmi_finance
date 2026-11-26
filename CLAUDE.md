@@ -16075,3 +16075,58 @@ yoxlanıldı** (hər dəyişən/yeni faylın mötərizə balansı skriptlə ayr�
 5. YENİ bir qabaqcadan, çox-aylı məzuniyyət müraciətini "Planla" edib
    əvəzləşmə avanslarının İNDİ avtomatik (düymə lazım olmadan) yarandığını
    yoxla.
+
+### Davamı — Fuad-ın ÖZ Qeydi `QabaqcadanOdenis` DEYİLDİ, Düzəliş SQL İLƏ Edildi (26.11.2026)
+
+İstifadəçi yuxarıdakı 4-cü addımı (Detail səhifəsindəki "Əvəzləşmə
+avanslarını indi yarat" düyməsi) tətbiq etmək üçün Fuad-ın problemli
+qeydini (16.10.2026–03.11.2026) "HR → Məzuniyyət Ödənişləri" siyahısında
+axtardı — **HEÇ BİR filtrdə (o cümlədən "Hamısı") görünmədi**. Diaqnostik
+SQL (`SELECT Id, OdenisTipi, OdenisStatus, Silinib, HrTesdiqTarixi FROM
+Mezuniyyetler WHERE ...`) birbaşa SSMS-də işlədilib, nəticə: bu qeydin
+**`OdenisTipi = AySonuOdenis` (1)** olduğunu göstərdi, **`QabaqcadanOdenis`
+(2) DEYİL**.
+
+**Kök səbəb:** `MezuniyyetOdenisController.Index`-in sorğusu VƏ
+`MezuniyyetAvansService.EvezlesmeAvanslariniHazirlaAsync`-in öz gating
+şərti — İKİSİ DƏ `OdenisTipi == QabaqcadanOdenis` tələb edir. Fuad-ın
+real qeydi bu şərti ödəmədiyi üçün zəncirin HEÇ BİR həlqəsinə çatmırdı —
+nə siyahıda görünürdü, nə Detail-ə, nə də düyməyə. 4-cü addımdakı "düyməni
+bas" təlimatı Fuad-ın REAL qeydi üçün İCRA OLUNA BİLMƏZ idi, baxmayaraq ki
+mühasibin təsvir etdiyi real hərəkət (əvvəlki ayda ödəyib, sonrakı aya
+"avans" kimi yazmaq) elə bu qeydin ÖZÜNDƏ baş vermişdi.
+
+**Həll — SQL ilə birbaşa, bir dəfəlik düzəliş**
+(`docs/sql/hr/Fuad_QuluZade_Noyabr_Evezlesme_Birdefelik.sql`):
+`MezuniyyetAvansService`-in avtomatik yaratdığı sətirlə BİRƏ-BİR eyni
+formatda (Sebeb mətni, Status=Tesdiqlenib, MezuniyyetId=1150) bir `Avans`
+sətri (Noyabr 2026, 242,20 ₼) **gating şərtini/kodun özünü dəyişmədən**
+birbaşa INSERT edildi — yalnız bu bir qeyd üçün, idempotent
+(`IF NOT EXISTS`) qoruyucu ilə. İstifadəçi tətbiqdə HƏM "Avans
+Müraciətləri" siyahısında (Status=Təsdiqlənib, Səbəb mətni düzgün
+göründü), HƏM Noyabr əmək haqqı hesablamasında nəticəni TƏSDİQLƏDİ
+("düzdür, baxdım əmək haqqıya").
+
+⚠️ **AÇIQ QALAN SUAL — İSTİFADƏÇİDƏN HƏLƏ CAVAB ALINMAYIB.** Yuxarıdakı
+6-item mexanizm YALNIZ `OdenisTipi=QabaqcadanOdenis` seçilmiş
+məzuniyyətlərə işləyir. Fuad-ın real hadisəsi isə `AySonuOdenis` tipli bir
+qeyddə baş verdi — yəni mühasibin təsvir etdiyi real praktika
+`OdenisTipi`-dən ASILI OLMADAN baş verə bilər. İstifadəçiyə iki seçim
+təklif edildi:
+1. Gating şərtini genişləndirmək — `OdenisTipi`-dən asılı olmadan, sadəcə
+   "çoxaylı + artıq ödənilmiş" məzuniyyətlərdə işə salmaq.
+2. Olduğu kimi saxlamaq — yalnız `QabaqcadanOdenis`; oxşar "AySonuOdenis"
+   halları yenə əl ilə (bu SQL-in eyni naxışı ilə) düzəldilsin.
+
+**Cavab HƏLƏ ALINMAYIB.** Bu seçim edilənə qədər, 6-item mexanizm YALNIZ
+`QabaqcadanOdenis` tipli qeydləri əhatə etməyə davam edir — OXŞAR bir
+"AySonuOdenis" halı aşkarlansa, kodu dəyişmədən, EYNİ SQL naxışı ilə əl
+ilə düzəldilməlidir, gating şərtinin özünü dəyişdirmədən ƏVVƏL istifadəçi
+ilə razılaşmaq lazımdır (maaş/vergi bazasına toxunan məntiqdir).
+
+**Qayda:** retroaktiv-düzəliş təlimatı yazarkən (bura: "4-cü addım") "bu
+UI yolu mövcud qeydə tətbiq olunacaq" fərziyyəsini CANLI SQL ilə
+TƏSDİQLƏMƏDƏN yazma — konkret real qeydin, mexanizmin tələb etdiyi gating
+şərtini HƏQİQƏTƏN ödəyib-ödəmədiyini (bura: `OdenisTipi`) əvvəlcədən
+yoxlamaq, "funksiya hazırdır" ilə "bu funksiya BU qeydə tətbiq olunur"
+arasındakı fərqi aşkar edir.
