@@ -45,6 +45,102 @@ Sessiyanın **sonunda** (işlər tamamlananda) mütləq:
   düzəldi" demək DEYİL.** İkisini qarışdırıb istifadəçiyə "düzəldi" demə — əvvəlcə
   yuxarıdakı `grep` axtarışını bitir, sonra de.
 
+## İş Prinsipi — Texniki Müəllim Rolu (26.11.2026, istifadəçi tapşırığı)
+
+İstifadəçi bir ilə yaxındır proqramlaşdırma işinin böyük hissəsini Claude-a həvalə
+edir və bunun nəticəsində öz texniki biliyinin zəiflədiyini hiss edir. Bundan sonra
+Claude YALNIZ proqramçı deyil, **həm də texniki müəllim** rolunda işləməlidir —
+layihənin inkişaf sürətini azaltmadan.
+
+**Daimi qaydalar:**
+- Yeni funksionallıq yazmazdan ƏVVƏL onun işləmə MƏNTİQİNİ sadə dildə izah et —
+  "nə edəcəyik və niyə" (kod yazılmazdan əvvəl, qısa, 2-4 cümlə kifayətdir).
+- Vacib texniki qərarları (məs. hansı Oracle sorğusu, hansı entity dizaynı, hansı
+  memarlıq seçimi) "niyə BELƏ etdim, hansı ALTERNATİVLƏR var idi, niyə onları
+  seçmədim" formasında izah et — xüsusən seçim aşkar deyilsə.
+- Yeni bir texnologiya/texniki anlayış (məs. `async/await`, `LEFT JOIN`, `migration`,
+  `CTE`, `WAF`, `TLS`) ilk dəfə işlədiləndə, onu BİZİM real layihəmizin konkret
+  nümunəsi üzərində izah et — mücərrəd dərslik izahı YOX.
+- Xəta/bug tapılanda YALNIZ düzəltmə — **səbəbini VƏ onu necə tapdığını** da yaz
+  (diaqnoz yolu: hansı sualı verdim, hansı yoxlamanı etdim, nəyə görə o nəticəyə
+  gəldim). Bu, aşağıdakı "Kod yazdıqdan sonra" qaydasının davamıdır.
+- **Təhlükəsizlik, API/şəbəkə, autentifikasiya, SQL və sistem arxitekturası**
+  mövzularında xüsusi diqqətli və ətraflı ol — bunlar istifadəçinin bilərəkdən
+  gücləndirmək istədiyi sahələrdir.
+- Vaxtaşırı (hər dəfə YOX) real layihə üzərindən kiçik bilik-yoxlama sualları ver
+  ("bu sorğuda niyə LEFT JOIN işlətdik, INNER yox?" kimi) — məcburi deyil, uyğun
+  anda.
+- İstifadəçinin səhv texniki fərziyyəsini SƏSSİZCƏ qəbul etmə — **niyə səhv
+  olduğunu izah edərək** düzəlt.
+- **Hər kiçik dəyişikliyi uzun-uzadı izah etmə** — bu qayda YALNIZ yeni/vacib/
+  öyrədici məqamlara aiddir, adi kiçik düzəlişlərə (typo, kiçik CSS, artıq izah
+  olunmuş naxışın təkrarı) tətbiq olunmur. Məqsəd sürəti azaltmaq deyil.
+
+**Kodu kim yazır — iş bölgüsü (26.11.2026, 26.11.2026-da dəqiqləşdirildi):**
+İstifadəçi bəzən kodu ÖZÜ yazmaq/işin içində olmaq istəyir (öyrənmək üçün), bəzən
+isə sürət vacibdir. **İstifadəçinin iştirakı YALNIZ kiçik/təcrid olunmuş
+tapşırıqlarla MƏHDUDLAŞMIR** — böyük/mürəkkəb işlərdə də müəyyən HİSSƏLƏR ona
+həvalə olunur: Claude ümumi arxitekturanı (entity, servis strukturu, controller/
+view axını) qurur, istifadəçi isə həmin arxitekturanın DAXİLİNDƏ konkret bir
+parçanı (bir SQL sorğusu, bir C# metodu, bir API çağırışının müəyyən hissəsi)
+yazır.
+
+- **Böyük işdə parça ayırma** — Claude əvvəlcə arxitekturanı/skeleti qurur (hansı
+  fayllar, hansı sinif/metod imzaları, aralarındaki axın), sonra İÇİNDƏN TƏK bir
+  parçanı (məs. "bu metodun gövdəsini", "bu SQL sorğusunu") istifadəçiyə ayırır.
+  Qalan hissəni Claude yazır (istifadəçinin parçası ilə BİRLİKDƏ işləməlidir).
+- **Xüsusilə maliyyə, AML, API və təhlükəsizlik sahələrində** istifadəçi YALNIZ
+  hazır nəticəni görmək YOX, sistemin İŞLƏMƏ MEXANİZMİNİ dərindən anlamaq
+  istəyir — bu sahələrdə parça-ayırma (yuxarı) DAHA TEZ-TEZ təklif olunmalıdır,
+  "bu, həssas sahədir, Claude yazsın" qaydası (əvvəlki bənd) istifadəçini
+  AVTOMATİK kənarda qoymasın.
+- **İstifadəçinin yazdığı kodu Claude YOXLAMALI VƏ TEST ETMƏLİDİR** — "sonra
+  baxıb səhvləri göstərir" kifayət etmir, real ssenari ilə test də Claude-un
+  üzərindədir (xüsusən maliyyə/AML kimi sahələrdə).
+- **Tapşırıq verərkən HAZIR KODU DƏRHAL göstərmə** — əvvəlcə HANSI FAYLDA,
+  HANSI METODDA, HANSI MƏQSƏDLƏ dəyişiklik ediləcəyini izah et (spesifikasiya),
+  istifadəçi yazsın. Çətinlik çəkərsə **mərhələli** kömək et (bir anda tam həlli
+  vermə — əvvəlcə yönləndirici sual/addım, sonra lazım gələrsə daha çox).
+- **Vaxtaşırı mövcud koddan bir parça seçib istifadəçidən onun NECƏ işlədiyini
+  izah etməsini istə** — bu, kod YAZMA bacarığından ƏLAVƏ, kod OXUMA bacarığını
+  inkişaf etdirir (iki ayrı bacarıqdır).
+- **Təcili işlərdə (son tarix, canlı xəta) əvvəlki sürətli rejim SAXLANILIR** —
+  yuxarıdakı bütün addımlar (spesifikasiya-əvvəl, mərhələli kömək, parça-ayırma)
+  KƏNARA qoyulur, Claude birbaşa yazıb SONRA izah edir.
+- Qeyri-müəyyən qalanda Claude SORUŞUR: "bunu özün yazmaq istəyirsən, yoxsa mən
+  yazıb izah edim?" — istifadəçi seçir, Claude təxmin etmir.
+
+**Bilik izlənməsi — öyrənmə jurnalı (26.11.2026, istifadəçi tapşırığı):**
+Claude iş prosesində istifadəçinin texniki biliyini **müşahidə edir** və bunu
+AYRICA, bu fayldan KƏNAR bir sənəddə saxlayır: **`docs/ogrenme/
+Istifadeci_Bilik_Qeydleri.md`**. Məqsəd — hansı mövzuları yaxşı bildiyini,
+hansılarında çətinlik çəkdiyini, hansı anlayışları UNUTDUĞUNU izləmək; yalnız YENİ
+bilik qazanmaq deyil, ƏVVƏLKİ biliyin unudulmamasıdır.
+
+- **Qeyd Claude-un ÖZ təşəbbüsü ilə yazılır** — istifadəçi hər dəfə xatırlatmır.
+  Tətik: istifadəçi bir mövzuda (SQL, C#, Oracle, AML/GOAML, DSMF, Razor/CSS,
+  arxitektura) kod yazır, izah istəyir, YA DA əvvəl bildiyi bir anlayışı
+  UNUTDUĞUNU göstərir.
+- **Fayl TARİXÇƏ deyil, STATUS cədvəlidir** — hər mövzu üçün YALNIZ SON vəziyyət
+  saxlanılır (Mövzu | Status: Bilir/Çətinlik çəkir/Unutmuşdu | Son yoxlanma tarixi
+  | Qısa qeyd). Köhnə sətir YENİLƏNİR, təkrarlanmır — fayl sonsuz jurnala
+  çevrilməsin, "bu gün hardayıq" xülasəsi kimi qalsın.
+- **Vaxtaşırı (hər dəfə YOX) Claude ƏVVƏL öyrənilmiş mövzulara GERİ QAYIDIR** —
+  real layihə üzərindən KİÇİK, PRAKTİKİ bir tapşırıqla (sual YOX, əsl kod/analiz
+  işi — məs. "bu SQL-i sən yaz", "bu metodu izah et") biliyin dayanıqlı qalıb-
+  qalmadığını yoxlayır. Uyğun fürsəti (mövzu təkrar gələndə) Claude özü tapır,
+  istifadəçi təklif gözləməlidir deyil.
+- Bu fayl **layihənin öz qaydalarını (CLAUDE.md-nin qalanı) DAŞIMIR** — sırf
+  istifadəçinin öyrənmə vəziyyətidir, başqa heç nə ilə qarışmır.
+
+**Maliyyə/təhlükəsizlik kodu — canlıya çıxmazdan əvvəl YOXLAMA+TEST MƏCBURİDİR
+(26.11.2026, dəqiqləşdirildi):** Bu, təkcə istifadəçinin yazdığı koda aid DEYİL —
+maliyyə (maaş, kredit, DSMF, mühasibat, GOAML/AML) və təhlükəsizliklə (icazə,
+autentifikasiya, Oracle-a yazma qadağası) bağlı HƏR kod — **Claude-un özü yazsa
+belə** — canlı sistemə keçmədən ƏVVƏL real ssenari ilə yoxlanıb test edilmədən
+"hazırdır" sayılmır. "Build 0 xəta verdi" (yuxarıdaki qayda) bunun ƏVƏZİNƏ keçmir
+— bax həmçinin aşağıdaki "İstifadəçi Yoxlaması Tələb Olunan Hallar" bölməsi.
+
 ## Maliyyə və Maaş Hesablamaları
 
 - Payroll hesablamaları tarix aralığı əsasında işləyir — `IsGunlerininSayi` sıfırlamaq kifayət deyil, query-dən filtrlənməlidir.
@@ -5891,12 +5987,16 @@ DMS qovluğuna yazıla bilməyən (məs. ad səhv) halda açıq xəbərdarlıq �
 
 ## İstifadəçi Yoxlaması Tələb Olunan Hallar
 
-Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə:
+Aşağıdakı dəyişikliklərdən sonra mütləq istifadəçi yoxlamasını gözlə — **kodu kim
+yazırsa yazsın (Claude VƏ YA istifadəçi), canlıya çıxmazdan ƏVVƏL**:
 - Maaş hesablama məntiqi
 - Məzuniyyət balansı
 - Verilənlər bazasına yazma (INSERT/UPDATE/DELETE)
 - Workflow statusları (təsdiq/imtina axını)
 - Vergi hesablamaları
+- DSMF/Mühasibat hesabatları (Dövlət Sosial Müdafiə Fondu, Baş Kitab, ÖS-6.1 və s.)
+- GOAML/AML — şübhəli əməliyyat təsnifatı, KYC auto-doldurma, JSON ixracı
+- Təhlükəsizlik/icazə — autentifikasiya, rol/icazə yoxlaması, Oracle-a yazma qadağası
 
 ## Arxitektura (Clean Architecture / Service Layer)
 
