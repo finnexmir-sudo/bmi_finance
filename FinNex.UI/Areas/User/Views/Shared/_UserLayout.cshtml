@@ -1552,9 +1552,12 @@
                     // düşürdü: Risk/Index-in öz "Təsdiqlənmiş siyahı" düyməsi
                     // bura keçid verir (istifadəçi: "riskde tesdiqlenmis vururam
                     // siyahi gelir ama emeliyyat tabina kecir") — `currentAction`
-                    // yoxlamasına "Siyahi" DƏ əlavə olundu.
+                    // yoxlamasına "Siyahi" DƏ əlavə olundu. İstifadəçi dərhal
+                    // davam etdi: "bildirmeye ehtiyac varki,oda sehvdirse onuda
+                    // duzelt" — Siyahi-dən açılan "Bax" (Detal) VƏ "Redaktə et"
+                    // (RedakteEt) EYNİ zəncirin davamıdır, ONLAR DA əlavə olundu.
                     var goamlRiskdenGelib = currentController == "Emeliyyatlar"
-                        && (currentAction == "Tesdiq" || currentAction == "Siyahi")
+                        && currentAction is "Tesdiq" or "Siyahi" or "Detal" or "RedakteEt"
                         && ViewBag.QaynaqTab == "risk";
                     <a asp-area="Goaml" asp-controller="Emeliyyatlar" asp-action="Index"
                        class="fn-nav-item @(currentController == "Emeliyyatlar" && currentAction != "Export" && currentArea == "Goaml" && !goamlRiskdenGelib ? "active" : "")">

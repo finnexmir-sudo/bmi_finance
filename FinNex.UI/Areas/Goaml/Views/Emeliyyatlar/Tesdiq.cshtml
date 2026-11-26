@@ -111,7 +111,7 @@
                     : "Oracle namizədindən doldurulub gəldi — qalan sahələri doldurub yadda saxlayın")
             </div>
         </div>
-        <a asp-controller="@gmlGeriController" asp-action="@gmlGeriAction" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+        <a asp-controller="@gmlGeriController" asp-action="@gmlGeriAction" asp-route-qaynaqTab="@gmlQaynaqTab" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
 
     @if (TempData["Error"] != null)
@@ -183,12 +183,16 @@
         {
             <input type="hidden" name="id" value="@gmlRedaktaId" />
         }
-        else if (!string.IsNullOrEmpty(gmlQaynaqTab))
+        @if (!string.IsNullOrEmpty(gmlQaynaqTab))
         {
             @* 24.11.2026 — Yaratma POST-u uğursuz olub forma YENİDƏN göstəriləndə
                (validasiya xətası) "Geri"/"Ləğv et" doğru taba (Risk/Əməliyyatlar)
                qayıtmağa davam etsin deyə — controller bunu "qaynaqTab" adı ilə
-               qəbul edib ViewBag.QaynaqTab-a yazır. *@
+               qəbul edib ViewBag.QaynaqTab-a yazır. 26.11.2026 — Redaktə modunda
+               (`id` hidden-i ilə YANAŞI, əvvəl `else if` idi — iki hidden
+               AYRI məqsədə xidmət edir, bir-birini ƏVƏZ ETMİR) DƏ eyni naxış:
+               "Dəyişiklikləri Saxla" uğurlu/uğursuz olanda sidebar Risk-dən
+               çıxmış kimi görünməsin. *@
             <input type="hidden" name="qaynaqTab" value="@gmlQaynaqTab" />
         }
         <input type="hidden" asp-for="CandidateFilialNumber" />
@@ -502,12 +506,12 @@
             @if (gmlRedaktaId != null)
             {
                 <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-circle"></i> Dəyişiklikləri Saxla</button>
-                <a asp-action="Siyahi" class="fn-btn fn-btn--outline">Ləğv et</a>
+                <a asp-action="Siyahi" asp-route-qaynaqTab="@gmlQaynaqTab" class="fn-btn fn-btn--outline">Ləğv et</a>
             }
             else
             {
                 <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-circle"></i> Təsdiqlə və Saxla</button>
-                <a asp-controller="@gmlGeriController" asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                <a asp-controller="@gmlGeriController" asp-action="Index" asp-route-qaynaqTab="@gmlQaynaqTab" class="fn-btn fn-btn--outline">Ləğv et</a>
             }
         </div>
     </form>

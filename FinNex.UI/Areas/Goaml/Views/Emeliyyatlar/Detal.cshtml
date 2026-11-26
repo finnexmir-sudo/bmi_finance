@@ -44,7 +44,7 @@
             <div class="fn-page-title">GOAML — Əməliyyat detalı</div>
             <div class="fn-page-sub">#@Model.Id — sırf oxunuş, redaktə bu ekrandan aparılmır</div>
         </div>
-        <a asp-action="Siyahi" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
+        <a asp-action="Siyahi" asp-route-qaynaqTab="@(ViewBag.QaynaqTab as string)" class="fn-btn fn-btn--outline"><i class="bi bi-arrow-left"></i> Geri</a>
     </div>
 
     @if (TempData["Error"] != null)

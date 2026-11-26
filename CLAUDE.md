@@ -15912,3 +15912,47 @@ ssenari ilə yoxlamalıdır: Risk tabından "Təsdiqlənmiş siyahı"ya basanda
 sidebar-da "Risk"in aktiv qaldığını (əvvəlki kimi "Əməliyyatlar"a
 sıçramadığını), həmin siyahıdan bir qeydi "Sil"lə silərkən sidebar-ın
 YENƏ "Risk" göstərdiyini təsdiqləməlidir.
+
+### Davamı — "Bildirməyə Ehtiyac Varki?" — Zəncirin BÜTÜN Həlqələri Proaktiv Düzəldildi (26.11.2026)
+
+İstifadəçi yuxarıdakı düzəlişdən DƏRHAL sonra: *"bildirmeye ehtiyac varki? oda
+sehvdirse onuda duzelt,duzu haradirsa oda olmalidirda"* — "Hər dəfə mən bildirim
+lazımdı?" sualına cavab: XEYR, eyni zəncirin qalan həlqələrini GÖZLƏMƏDƏN
+düzəltdim.
+
+`Siyahi`-nin "Bax" (→`Detal`) və "Redaktə et" (→`RedakteEt`) linkləri EYNİ
+tələyə düşürdü — Risk-dən açılmış siyahıdan bu düymələrə basanda sidebar YENƏ
+"Əməliyyatlar"a sıçrayırdı. **Bütün zəncir `qaynaqTab`-ı DAŞIYACAQ şəkildə
+tamamlandı:**
+
+- `Detal(int id, string? qaynaqTab)` — `ViewBag.QaynaqTab`-a yazır, uğursuz
+  axtarışın redirect-i (`Siyahi`-yə) DƏ qoruyur.
+- `RedakteEt` **GET**(`int id, string? qaynaqTab`) VƏ **POST**(`int id,
+  GoamlTesdiqDto dto, string? qaynaqTab`) — hər ikisi, HƏM uğur, HƏM uğursuzluq
+  qollarında (forma yenidən göstəriləndə DƏ) `qaynaqTab`-ı qoruyur.
+- `Siyahi.cshtml`-in "Bax"/"Redaktə et" linkləri + `Detal.cshtml`-in "Geri"
+  linki — `ViewBag.QaynaqTab`-ı `asp-route-qaynaqTab` ilə ötürür.
+- `Tesdiq.cshtml` (Redaktə modu, `gmlRedaktaId != null`) — "Geri" linki VƏ
+  "Ləğv et" linki də indi `asp-route-qaynaqTab="@gmlQaynaqTab"` daşıyır; forma
+  daxilindəki hidden sahə (`else if` idi) `@if`-ə çevrildi ki, Redaktə modunda
+  HƏM `id`, HƏM `qaynaqTab` hidden sahəsi EYNİ ANDA mövcud ola bilsin (əvvəl
+  bir-birini ƏVƏZ EDİRDİ — redaktədə `id` varkən `qaynaqTab` heç yazılmırdı).
+- `_UserLayout.cshtml`-in `goamlRiskdenGelib` şərtinə `currentAction is
+  "Tesdiq" or "Siyahi" or "Detal" or "RedakteEt"` — artıq Risk-dən başlayan
+  BÜTÜN alt-səhifələrdə (Tesdiq/Siyahi/Detal/RedakteEt) sidebar "Risk" aktiv
+  qalır.
+
+**Qayda (bu modulun TƏKRARLANAN dərsi, bu dəfə istifadəçinin öz açıq tələbi
+ilə ümumiləşdirildi):** eyni naviqasiya zəncirinin BİR həlqəsini (burada:
+"Siyahi") düzəldəndə, ZƏNCİRİN QALAN HƏLQƏLƏRİNİ (Siyahi-dən çıxan hər link —
+Bax/Redaktə/Sil) DƏRHAL yoxla, istifadəçinin HƏR BİRİNİ AYRI-AYRI bildirməsini
+GÖZLƏMƏ — eyni kök səbəb (fiziki controller ≠ məntiqi tab) adətən BÜTÜN
+qonşu keçidlərə eyni dərəcədə aiddir.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı — yalnız ƏLAVƏ olunan sətirlərdə, həm də bütün beş dəyişən
+faylın tam mətnində, skriptlə). İstifadəçi Visual Studio-da **Rebuild All**
+ilə, sonra real ssenari ilə yoxlamalıdır: Risk → "Təsdiqlənmiş siyahı" →
+"Bax" → "Geri" → sidebar-ın HƏR ADDIMDA "Risk" göstərdiyini; eyni zənciri
+"Redaktə et" → "Dəyişiklikləri Saxla" (həm uğurlu, həm validasiya xətalı
+halda) ilə də təkrarlamalıdır.

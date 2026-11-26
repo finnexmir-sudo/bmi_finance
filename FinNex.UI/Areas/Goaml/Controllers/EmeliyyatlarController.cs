@@ -393,14 +393,21 @@ public class EmeliyyatlarController : Controller
     //    `EmitentKycAsync` (emitent_benefisiar-dan DİREKT auto-apply) isə hələ də
     //    ÇAĞIRILMIR — o, yaratma anında BİR DƏFƏLİK avtomatik yazma üçündür,
     //    redaktədə TƏKRAR çağırsaq artıq saxlanmış CON-u SƏSSİZCƏ ÜSTƏLƏYƏRDİ.
-    public async Task<IActionResult> RedakteEt(int id)
+    //
+    //    26.11.2026 — "Siyahi"-nin `qaynaqTab` naxışı (yuxarı) bura da köçürüldü:
+    //    `Siyahi.cshtml`-in "Redaktə et" linki bunu ötürür, biz ViewBag-ə yazıb
+    //    "Geri" linkinə (Tesdiq.cshtml) VƏ POST-un hidden sahəsinə ötürürük ki,
+    //    Risk-dən gəlmiş bir qeydi redaktə edərkən sidebar "Əməliyyatlar"a
+    //    sıçramasın.
+    public async Task<IActionResult> RedakteEt(int id, string? qaynaqTab)
     {
         ViewData["Title"] = "GOAML — Redaktə et";
+        ViewBag.QaynaqTab = qaynaqTab;
         var netice = await _goaml.RedakteFormuAsync(id);
         if (!netice.Success || netice.Data == null)
         {
             TempData["Error"] = netice.Message ?? "Qeyd tapılmadı.";
-            return RedirectToAction(nameof(Siyahi));
+            return RedirectToAction(nameof(Siyahi), new { qaynaqTab });
         }
 
         var dto = netice.Data;
@@ -426,13 +433,14 @@ public class EmeliyyatlarController : Controller
     //    (YENİ sətir yaratmır) ──────────────────────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RedakteEt(int id, GoamlTesdiqDto dto)
+    public async Task<IActionResult> RedakteEt(int id, GoamlTesdiqDto dto, string? qaynaqTab)
     {
         var netice = await _goaml.RedakteSaxlaAsync(id, dto);
         if (!netice.Success)
         {
             TempData["Error"] = netice.Message;
             ViewBag.RedaktaId = id;
+            ViewBag.QaynaqTab = qaynaqTab;
             ViewBag.ElaqaliSexsler = new List<GoamlElaqaliSexsDto>();
             ViewBag.AvtoDolduruldu = false;
             ViewBag.EmitentDenDolduruldu = false;
@@ -444,7 +452,7 @@ public class EmeliyyatlarController : Controller
         }
 
         TempData["Success"] = netice.Message;
-        return RedirectToAction(nameof(Siyahi));
+        return RedirectToAction(nameof(Siyahi), new { qaynaqTab });
     }
 
     // ── GET /Goaml/Emeliyyatlar/Siyahi — təsdiqlənmiş qeydlər ───────────────
@@ -462,14 +470,18 @@ public class EmeliyyatlarController : Controller
     }
 
     // ── GET /Goaml/Emeliyyatlar/Detal/{id} — TƏK qeydin tam (sırf oxunuş) detalı ──
-    public async Task<IActionResult> Detal(int id)
+    // 26.11.2026 — "Siyahi"-nin `qaynaqTab` naxışının EYNİSİ (bax yuxarı) — "Bax"
+    // linki də Siyahi.cshtml-dən bunu ötürür, "Geri" (Detal.cshtml) VƏ uğursuz
+    // axtarışın redirect-i bunu qoruyur.
+    public async Task<IActionResult> Detal(int id, string? qaynaqTab)
     {
         ViewData["Title"] = "GOAML — Əməliyyat detalı";
+        ViewBag.QaynaqTab = qaynaqTab;
         var netice = await _goaml.DetalGetirAsync(id);
         if (!netice.Success || netice.Data == null)
         {
             TempData["Error"] = netice.Message ?? "Qeyd tapılmadı.";
-            return RedirectToAction(nameof(Siyahi));
+            return RedirectToAction(nameof(Siyahi), new { qaynaqTab });
         }
 
         return View(netice.Data);

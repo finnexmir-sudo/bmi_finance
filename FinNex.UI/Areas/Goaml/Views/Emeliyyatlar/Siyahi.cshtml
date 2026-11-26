@@ -151,7 +151,7 @@
                                    token generasiyası/HTML qurmaq lazım deyil. "Sil" özü hələ də adi
                                    postback-dir (istifadəçi bunu şikayət etmədi, qapsam genişlənmədi). *@
                                 <td style="display:flex; gap:6px">
-                                    <a asp-action="Detal" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm">
+                                    <a asp-action="Detal" asp-route-id="@e.Id" asp-route-qaynaqTab="@(ViewBag.QaynaqTab as string)" class="fn-btn fn-btn--outline fn-btn--sm">
                                         <i class="bi bi-eye"></i> Bax
                                     </a>
                                     @* 23.11.2026, real hadisə: operator "Qaralamaya qaytar"dan sonra
@@ -163,7 +163,7 @@
                                        uğur handler-i onu göstərə bilsin — səhifə yenidən yüklənmədən
                                        geri qaytarılan qeyddə operator dərhal "Redaktə et"ə bassın,
                                        başqa taba (Risk) gedib-gəlmədən. *@
-                                    <a asp-action="RedakteEt" asp-route-id="@e.Id" class="fn-btn fn-btn--outline fn-btn--sm gml-redakte-link"
+                                    <a asp-action="RedakteEt" asp-route-id="@e.Id" asp-route-qaynaqTab="@(ViewBag.QaynaqTab as string)" class="fn-btn fn-btn--outline fn-btn--sm gml-redakte-link"
                                        style="@(e.Status == GoamlEmeliyyatStatusu.IxracEdilib ? "display:none" : "")">
                                         <i class="bi bi-pencil"></i> Redaktə et
                                     </a>
