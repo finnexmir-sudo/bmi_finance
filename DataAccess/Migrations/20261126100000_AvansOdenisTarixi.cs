@@ -14,8 +14,9 @@ namespace FinNex.DataAccess.Migrations
     /// NİYƏ: mühasib müraciəti təsdiqləyəndən (Status=Tesdiqlenib) sonra
     /// işçiyə DƏRHAL "ödənildi" bildirişi gedirdi — amma real pul ancaq
     /// mühasib BMI-də pravodkanı vurub "ulduzları" götürəndən SONRA çıxarıla
-    /// bilir. Bu sütun + yeni "Ödə" düyməsi (AvansController.Ode) bu ikinci,
-    /// HƏQİQİ anı qeyd edir; bax CLAUDE.md.
+    /// bilir. Bu sütun + "Bildiriş göndər" düyməsi (AvansController.
+    /// BildirisGonder/BildirisGonderToplu) bu ikinci, HƏQİQİ anı qeyd edir;
+    /// bax CLAUDE.md.
     ///
     /// MÖVCUD DATAYA TOXUNMUR: yalnız bir nullable sütun əlavə olunur,
     /// bütün köhnə sətirlərdə NULL qalır.

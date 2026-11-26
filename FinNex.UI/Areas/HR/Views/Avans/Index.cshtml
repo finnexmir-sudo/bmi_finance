@@ -11,8 +11,10 @@
     int secilmisIl = (int)(ViewBag.SecilmisIl ?? DateTime.Now.Year);
     int secilmisAy = (int)(ViewBag.SecilmisAy ?? DateTime.Now.Month);
     var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
-    string dovrMetni = (secilmisAy >= 1 && secilmisAy <= 12) ? $"{ayAdlar[secilmisAy]} {secilmisIl}" : $"{secilmisIl} — bütün aylar";
+    bool ayTekdir = secilmisAy >= 1 && secilmisAy <= 12;
+    string dovrMetni = ayTekdir ? $"{ayAdlar[secilmisAy]} {secilmisIl}" : $"{secilmisIl} — bütün aylar";
     bool odeyeBiler = User.IsInRole(FinNex.Domain.RoleNames.Muhasib) || User.IsInRole(FinNex.Domain.RoleNames.Admin);
+    int bildirisGozleyirSayi = (int)(ViewBag.BildirisGozleyirSayi ?? 0);
 }
 
 @section Styles {
@@ -80,6 +82,30 @@
             </button>
         </form>
     </div>
+
+    @* ── Toplu "Bildiriş göndər" — YALNIZ konkret ay seçilib, Mühasib/Admin görəndə ── *@
+    @if (odeyeBiler && ayTekdir && bildirisGozleyirSayi > 0)
+    {
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#065f46">
+                    <i class="bi bi-bell"></i> @dovrMetni üçün @bildirisGozleyirSayi işçi "Ödənilib" bildirişini gözləyir
+                </div>
+                <div style="font-size:11px;color:#047857">
+                    BMI-də pravodka+ulduz işini BÜTÜN bu işçilər üçün bitirmisinizsə, bir kliklə hamısına bildiriş göndərin.
+                </div>
+            </div>
+            <form asp-action="BildirisGonderToplu" method="post" style="margin-left:auto"
+                  onsubmit="return confirm(@bildirisGozleyirSayi + ' işçiyə birlikdə \'pul hazırdır\' bildirişi göndəriləcək. Hamısı üçün BMI pravodka+ulduz işi bitibmi?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="il" value="@secilmisIl" />
+                <input type="hidden" name="ay" value="@secilmisAy" />
+                <button type="submit" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer">
+                    <i class="bi bi-bell-fill"></i> Hamısına bildiriş göndər (@bildirisGozleyirSayi)
+                </button>
+            </form>
+        </div>
+    }
 
     @* ── Əməliyyatın yazılışı (Excel) — mühasib üçün ── *@
     <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;padding:14px 16px;margin-bottom:16px">
@@ -199,14 +225,14 @@
                                 }
                                 else if (a.Status == AvansStatus.Tesdiqlenib && odeyeBiler)
                                 {
-                                    <form asp-action="Ode" method="post" style="display:inline"
-                                          onsubmit="return confirm('Pul BMI-də pravodka vurulub, ulduzlar götürülüb — çıxarıla bilən vəziyyətdədir? Təsdiqləsəniz işçiyə ödənildi bildirişi gedəcək.');">
+                                    <form asp-action="BildirisGonder" method="post" style="display:inline"
+                                          onsubmit="return confirm('Pul BMI-də pravodka vurulub, ulduzlar götürülüb — çıxarıla bilən vəziyyətdədir? Təsdiqləsəniz işçiyə pul hazırdır bildirişi gedəcək.');">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@a.Id" />
                                         <input type="hidden" name="il" value="@secilmisIl" />
                                         <input type="hidden" name="ay" value="@secilmisAy" />
                                         <button type="submit" class="ha-btn ha-btn--ok ha-btn--sm" title="Pul hazırdır — işçiyə bildir">
-                                            <i class="bi bi-cash-coin"></i> Ödə
+                                            <i class="bi bi-bell"></i> Bildiriş göndər
                                         </button>
                                     </form>
                                 }

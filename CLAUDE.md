@@ -16398,3 +16398,61 @@ yoxlanıldı** (mötərizə balansı — 48/48 brace, 176/176 paren, tam fayl).
 yoxlamalıdır: bir avansı Təsdiq et → işçiyə HEÇ BİR bildiriş GETMƏDİYİNİ;
 sonra Mühasib "Ödə"yə bas → İNDİ YEGANƏ bildirişin ("təsdiqləndi VƏ
 hazırdır" mətni ilə) getdiyini təsdiqləməli.
+
+### DÜZƏLİŞ — "Ödə" → "Bildiriş göndər" (ad dəyişikliyi) + Toplu Bildiriş Düyməsi (26.11.2026, eyni gün, davam)
+
+İstifadəçi düymə ADI ÜZƏRİNDƏ dayandı: *"tesdiq, ode, bir birine oxsardi
+sanki"* — "Təsdiq et" və "Ödə" düymələri bir-birinə görüntücə/mənaca çox
+yaxın görünürdü, halbuki real əməliyyat heç vaxt "ödəniş" DEYİL (pulun ÖZÜ
+BMI-də, bu sistemdən KƏNARDA çıxarılır) — bu düymənin YEGANƏ funksiyası
+işçiyə "pul hazırdır" BİLDİRİŞİ göndərməkdir. İki sual eyni anda soruşuldu
+və iki qərar da verildi:
+
+1. **Ad: "Ödə" → "Bildiriş göndər"** (istifadəçinin öz seçimi, tövsiyə
+   edilən variant kimi təklif olunub seçildi) — düymənin ikonu da
+   `bi-cash-coin` (pul) → `bi-bell` (bildiriş) dəyişdi, funksiyanı ADI ilə
+   DÜZGÜN adlandırmaq üçün.
+2. **Toplu düymə əlavə edildi** — istifadəçi: *"toplu düymə də əlavə et"*.
+
+**Kod tərəfi — `Ode` action-u `BildirisGonder`-ə YENİDƏN ADLANDIRILDI**
+(imza/məntiq DƏYİŞMƏDİ, YALNIZ ad + şərh). Yeni, AYRICA bir
+**`BildirisGonderToplu(int il, int ay)`** action-u əlavə olundu
+(`MaasController.TopluOdenis`-in EYNİ, artıq sınanmış naxışı — bax yuxarı
+"Bildirişlər — Paralel Yazı" qaydası): seçilmiş (il, ay) üçün BÜTÜN
+`Tesdiqlenib` statuslu sətirləri **bir dəfəyə** `Odenilib`-ə keçirir (TƏK
+`SaveChanges`), SONRA hər sətri **ARDICIL** (`Task.WhenAll` YOX — EF
+Core-un paylaşılan `DbContext`-i thread-safe deyil) bildirir.
+
+**Qoruyucular, köhnə tək-sətir action-dan BİRƏ-BİR köçürüldü:**
+- `MezuniyyetId != null` olan sistem-yaradılan əvəzləşmə sətirləri statusu
+  dəyişir (Pravodka ardıcıllığı qorunsun deyə), AMMA bildiriş ALMIR —
+  işçi bu pulu artıq məzuniyyət ödənişinin özü ilə alıb.
+- **YALNIZ KONKRET bir ay üçün işləyir** (`il`/`ay`, 1-12) — "bütün aylar"
+  (ay=0) görünüşündə toplu düymə HEÇ GÖSTƏRİLMİR (`ayTekdir` şərti) VƏ
+  server tərəfi DƏ `ay < 1 || ay > 12` olsa açıq xəta qaytarır. Səbəb:
+  `MaasController.TopluOdenis`-in ÖZÜNDƏ DƏ "bütün aylar" görünüşü YOXDUR —
+  bu, TƏSADÜFİ seçim deyil, Maaşın öz presedentinin təkrarıdır.
+
+**Görüntü — `Index.cshtml`-ə yeni, yaşıl-tonlu info/əməliyyat qutusu**
+(`@if (odeyeBiler && ayTekdir && bildirisGozleyirSayi > 0)`) — "N müraciət
+gözləyir" sayı + "Hamısına bildiriş göndər (N)" düyməsi, təsdiq dialoqu
+ilə. `ViewBag.BildirisGozleyirSayi` (`Index` action-unun ÖZÜNDƏ,
+`HamisiSayi`-nin dərhal yanında) hesablanır.
+
+⚠️ **Qayda dəyişmədi, YALNIZ AD + bir toplu yol əlavə olundu** — "mühasib
+YALNIZ BMI pravodkasını/ulduzları bitirdikdən SONRA bassın" tələbi,
+sistem-sətir istisnası, geriyə tətbiq olunmaması (yuxarı bax) — HAMISI
+AYNEN qalır, həm tək-sətir, həm toplu yol üçün.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı — `AvansController.cs` 60/60 brace, 204/204
+paren; `Index.cshtml` 25/25 brace, 69/69 paren — tam fayl). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+(1) bir avansı Təsdiq et → "Bildiriş göndər" düyməsinin (əvvəlki "Ödə"
+əvəzinə) göründüyünü, basanda işçiyə YEGANƏ bildirişin getdiyini; (2) eyni
+ay üçün bir neçə "Təsdiqlənib" müraciəti olanda yeni "Hamısına bildiriş
+göndər (N)" düyməsinin göründüyünü, basanda HAMISININ `Odenilib`-ə
+keçdiyini VƏ hər işçiyə ARDICIL (bir anda deyil) bildiriş getdiyini; (3)
+sistem-yaradılan əvəzləşmə sətirinin (varsa) statusu dəyişsə də bildiriş
+ALMADIĞINI; (4) "bütün aylar" görünüşündə toplu düymənin HEÇ GÖRÜNMƍDİYİNİ
+təsdiqləməli.

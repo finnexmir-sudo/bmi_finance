@@ -73,6 +73,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.TesdiqSayi = ayListesi.Count(x => x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib);
             ViewBag.ImtinaSayi = ayListesi.Count(x => x.Status == AvansStatus.ImtinaEdildi);
             ViewBag.HamisiSayi = ayListesi.Count;
+            // Toplu "Bildiriş göndər" düyməsi üçün — YALNIZ hələ bildiriş
+            // göndərilməmiş (Tesdiqlenib) sətirlər, Odenilib DAXİL DEYİL.
+            ViewBag.BildirisGozleyirSayi = ayListesi.Count(x => x.Status == AvansStatus.Tesdiqlenib);
 
             // Göstərilən siyahı — status filtri (varsa) tətbiq olunur
             var list = statusFilter.HasValue
@@ -254,11 +257,12 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // Təsdiqdə işçiyə bildiriş GETMİR — istifadəçi qərarı (26.11.2026):
             // "iki bildirişə ehtiyac yoxdur, bir bildiriş olsun, o da ən sonda."
-            // Yeganə bildiriş aşağıdaki `Ode` action-undadır (mühasib BMI
-            // pravodkasını vurub, pul HƏQİQƏTƏN hazır olandan sonra, AYRICA
-            // düymə ilə) — bax CLAUDE.md. Rədd isə prosesi BİTİRİR (sonra heç
-            // bir addım yoxdur), ona görə rədd bildirişi elə BURADA, YEGANƏ
-            // bildiriş olaraq qalır.
+            // Yeganə bildiriş aşağıdaki `BildirisGonder`/`BildirisGonderToplu`
+            // action-larındadır (mühasib BMI pravodkasını vurub, pul
+            // HƏQİQƏTƏN hazır olandan sonra, AYRICA düymə ilə) — bax
+            // CLAUDE.md. Rədd isə prosesi BİTİRİR (sonra heç bir addım
+            // yoxdur), ona görə rədd bildirişi elə BURADA, YEGANƏ bildiriş
+            // olaraq qalır.
             if (!tesdiq)
             {
                 var redirectUrl = Url.Action("Index", "Avans", new { area = "User" });
@@ -274,11 +278,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Index), DovrRoute());
         }
 
-        // ── POST /HR/Avans/Ode ───────────────────────────────
+        // ── POST /HR/Avans/BildirisGonder ────────────────────
         // Mühasib bunu YALNIZ BMI-də pravodkanı vurub, "ulduzları" götürüb,
-        // pul HƏQİQƏTƏN çıxarıla bilən olandan SONRA basmalıdır — "Tesdiq"
-        // artıq heç bir bildiriş göndərmir, YEGANƏ bildiriş elə buradadır
-        // (26.11.2026, istifadəçi qərarı: "bir bildiriş olsun, o da ən sonda").
+        // pul HƏQİQƏTƏN çıxarıla bilən olandan SONRA basmalıdır. Sistemdə
+        // pul "ödənmir" — bu action YALNIZ statusu "Ödənilib"ə keçirir VƏ
+        // işçiyə bildirir ki, pul hazırdır. Ad qəsdən "Ödə" YOX
+        // (26.11.2026, istifadəçi qərarı: "Təsdiq"/"Ödə" bir-birinə oxşar
+        // görünürdü, əsl funksiyanı — bildiriş göndərməyi — açıq adlandırdıq).
         //
         // Sistem-yaradılan əvəzləşmə sətirlərinə (MezuniyyetId != null) də
         // tətbiq olunur (Pravodka/status ardıcıllığı qorunsun deyə), AMMA
@@ -286,7 +292,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // özü ilə alıb, bu sətir sırf mühasibat əvəzləşməsidir.
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
-        public async Task<IActionResult> Ode(int id, int? il = null, int? ay = null)
+        public async Task<IActionResult> BildirisGonder(int id, int? il = null, int? ay = null)
         {
             object DovrRoute() => new { il, ay };
 
@@ -321,6 +327,61 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             TempData["Success"] = $"Avans ödənilmiş kimi işarələndi — {avans.Mebleg:N2} ₼";
+            return RedirectToAction(nameof(Index), DovrRoute());
+        }
+
+        // ── POST /HR/Avans/BildirisGonderToplu ───────────────
+        // Dövr üzrə BÜTÜN "Təsdiqlənib" statuslu avansları bir kliklə
+        // "Ödənilib"ə keçirir — Maaşın `TopluOdenis`-i İLƏ EYNİ naxış.
+        // Bildirişlər ARDICIL (foreach) göndərilir, Task.WhenAll YOX —
+        // paylaşılan DbContext thread-safe deyil (bax CLAUDE.md,
+        // "Bildirişlər — Paralel Yazı").
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
+        public async Task<IActionResult> BildirisGonderToplu(int il, int ay)
+        {
+            object DovrRoute() => new { il, ay };
+
+            if (ay < 1 || ay > 12)
+            {
+                TempData["Error"] = "Toplu bildiriş yalnız konkret bir ay seçiləndə işləyir.";
+                return RedirectToAction(nameof(Index), DovrRoute());
+            }
+
+            var avanslar = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay && x.Status == AvansStatus.Tesdiqlenib)
+                .ToListAsync();
+
+            if (avanslar.Count == 0)
+            {
+                TempData["Error"] = "Bildiriş göndəriləcək 'Təsdiqlənib' statuslu avans tapılmadı.";
+                return RedirectToAction(nameof(Index), DovrRoute());
+            }
+
+            var indi = DateTime.Now;
+            foreach (var a in avanslar)
+            {
+                a.Status = AvansStatus.Odenilib;
+                a.OdenisTarixi = indi;
+            }
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            var isciRedirect = Url.Action("Index", "Avans", new { area = "User" });
+            int bildirisSayi = 0;
+            foreach (var a in avanslar)
+            {
+                if (a.MezuniyyetId != null) continue;
+                await _bildirisRouter.NotifyIsciAsync(
+                    a.IsciId,
+                    BildirisNovu.AvansOdenildi,
+                    "Avansınız ödənildi",
+                    $"{a.Il}/{a.Ay:D2} ayı üçün {a.Mebleg:N2} ₼ avans müraciətiniz təsdiqləndi və pulunuz hazırdır — çıxara bilərsiniz.",
+                    redirectUrl: isciRedirect);
+                bildirisSayi++;
+            }
+
+            TempData["Success"] = $"{avanslar.Count} avans 'Ödənilib' işarələndi, {bildirisSayi} işçiyə bildiriş göndərildi.";
             return RedirectToAction(nameof(Index), DovrRoute());
         }
     }
