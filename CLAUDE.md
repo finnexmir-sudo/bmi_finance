@@ -14306,6 +14306,111 @@ hesabına məzuniyyətdə olan, maaşı olmayan iki işçinin artıq Bölmə 2-n
 — "Maliyyəyə/vergi hesablamasına toxunan hər dəyişiklik" qaydasına görə bu, real
 data ilə təsdiqlənməlidir.
 
+## DSMF Bölmə 2 — Qaçqın/Əlillik Güzəştləri "Diger" Kimi Qeydə Alınanda YENİ Sətirə Düşürdü, Mövcud 4.5.3/4.4-ə YOX (27.11.2026, KRİTİK — DÜZƏLDİLDİ)
+
+İstifadəçi canlı ekranda (Bölmə 2, `/Muhasibat/Hesabat/Bolme2345?bolmeNo=2`)
+göstərdi: statik 3-cü sətir ("4.5.3 - VM-nin 102.4.5-ci maddəsi", Qaçqın) VƏ
+4-cü sətir ("4.4 - VM-nin 102.3-cü maddəsi üzrə", Əlillik) hər üç ayda "—"
+(boş) göstərir, AMMA EYNİ məbləğlər (400,00/300,00/300,00 və 200,00/200,00/
+200,00) cədvəlin ƏN AŞAĞISINDA "V.M. 102.4.5" / "V.M. 102.3" adlı YENİ,
+dinamik sətirlər kimi görünür. İstifadəçinin öz sözü: *"ele onlar 4.5.3 ve
+4.4 de olmalidir"* — bu məbləğlər YENİ sətir yox, MÖVCUD statik sətirlərin
+özü olmalıdır.
+
+**Kök səbəb — `GuzestNovu` enum-u ƏSLİNDƏ DSMF üçün YOX, MƏZUNİYYƏT modulu
+üçün yazılıb.** `Guzest.cs`-in öz şərhi (entity-nin `Novu` sahəsinin
+üzərində) bunu açıq deyir: *"Güzəştin növü — məzuniyyət modulu əlilliyi bu
+tiplə tanıyır (adla yox). Vergi hesablamasına təsir etmir; yalnız məzuniyyət
+balansı üçün istifadə olunur."* — `Novu=Elillik` seçiləndə işçi avtomatik
+42 günlük məzuniyyət balansı hüququ qazanır (DSMF-dən tamam ASILI OLMAYAN
+bir yan-təsir). Mühasib (və ya HR) sırf DSMF hesabatı üçün ("bu VM 102.4.5-ə
+görə vergidən azaddır") bir güzəşt yaradanda, əgər işçi HƏQİQƏTƏN qaçqın/
+əlil DEYİLSƏ, `Novu`-nu **QƏSDƏN** `Diger` saxlayır (42-günlük balans
+hüququ SƏHVƏN verilməsin deyə) — VM maddə referansını isə sadəcə `Madde`
+(və ya `Ad`) sahəsinə AZAD MƏTN kimi yazır ("V.M. 102.4.5", "V.M. 102.3").
+
+20.11.2026-dakı düzəliş (yuxarı) `Bolme2HazirlaAsync`-in `Diger` tipli
+güzəştləri YALNIZ `Novu` enum-una görə statik (qacqinSetir/elillikSetir) VƏ
+dinamik sətirlər arasında bölürdü — `Novu=Diger` olan HƏR şey (Madde mətni
+"V.M. 102.4.5" olsa belə) dinamik sətrə düşürdü, çünki `Novu` ilə `Madde`-nin
+MƏTNİ arasında heç bir əlaqə YOXLANILMIRDI.
+
+**Düzəliş — `Bolme2HazirlaAsync`-in klassifikasiya məntiqi İKİ yoldan birini
+qəbul edir:** `Novu` BİRBAŞA `MecburiKockun`/`Elillik`-dirsə (köhnə yol,
+dəyişmədi) **VƏ YA** güzəştin `Madde ?? Ad` mətni VM maddə NÖMRƏSİNİ
+(SƏRHƏD-TƏHLÜKƏSİZ şəkildə, "102.3" "102.30"/"102.3.1"-in daxilində səhvən
+uyğun gəlməsin deyə) daşıyırsa — yeni `MaddeNomresineUygundur(metin,
+maddeNomresi)` köməkçisi, `(?<!\d){nömrə}(?!\.?\d)` regex-i ilə hər iki
+tərəfdə əlavə rəqəm olmamasını tələb edir. Hər iki yol EYNİ nəticəyə —
+qacqinSetir/elillikSetir-ə — aparır, heç biri o birini əvəz etmir.
+
+⚠️ **`Hissesi1HazirlaAsync`-in 3.1 ("Azadolunan güzəşt cəmi") sütununa HEÇ
+TƏSİR ETMƏDİ** — o, artıq (20.11.2026-dan) `ferdiGuzest[i]`-dən, NÖVDƏN
+ASILI OLMAYARAQ CƏMİ oxuyur (bax yuxarı), yəni bu bug yalnız Bölmə 2-nin
+ÖZ GÖRÜNTÜSÜNƏ (hansı sətirdə göstərildiyinə) aiddi idi — məbləğ hər iki
+halda düzgün hesablanırdı, "Diger" sətri də DSMF hesabatının BİR hissəsi
+olduğu üçün rəqəm İTMİRDİ, sadəcə SƏHV sətirdə görünürdü.
+
+**Fayllar:** `FinNex.Application/Services/Dsmf/DsmfHesabatService.cs` —
+yeni `using System.Text.RegularExpressions;`, yeni `MaddeNomresineUygundur`
+private static helper, `Bolme2HazirlaAsync`-in qacqin/elillik/dinamik-sətir
+klassifikasiya döngəsi yenidən yazıldı (dinamik sətrə YALNIZ heç bir maddəyə
+uyğun gəlməyən qalıqlar düşür).
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — düzəliş yalnız BUNDAN SONRA çağırılan Bölmə 2
+hesablamalarına təsir edir, canlı Oracle/Maas sorğusudur, saxlanmış heç bir
+dəyər yoxdur (yenidən açmaq kifayətdir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(mötərizə balansı Python skriptlə — `git stash` izolyasiyası ilə pre-existing
+−1 paren-fərqinin bu düzəlişdən ASILI OLMADIĞI təsdiqləndi, edit-in ÖZÜ
+21/21 paren ilə net-balanslıdır; `FerdiGuzestQalibleriAsync`-in qaytardığı
+named-tuple sahə adları — `Ad`/`Madde`/`Novu`/`Mebleg` — yeni kodun istifadə
+etdiyi adlarla bir-bir tutuşduruldu). İstifadəçi Visual Studio-da **Rebuild
+All** ilə, sonra real ssenari ilə yoxlamalıdır: "V.M. 102.4.5"/"V.M. 102.3"
+mətnli, `Novu=Diger` qalan güzəştləri olan işçilərin Bölmə 2-də artıq 4.5.3/
+4.4 statik sətirlərində (dinamik sətrdə YOX) göründüyünü, VƏ Hissə 1-in 3.1
+sütununun (dəyişməməli) əvvəlki kimi qaldığını.
+
+## DSMF Hissə 1 — "DSMF Azad" (4.1) "Azad Güzəşt" (3.1) ÜSTÜNƏ GƏLMİR — BU, QƏSDƏN BELƏDİR (27.11.2026, İZAH, KOD DƏYİŞİKLİYİ YOXDUR)
+
+İstifadəçi (eyni mesajda, 2-ci bənd) Hissə 1 Önizləmə cədvəlindən bir işçinin
+3 ayını göstərdi: 1-2-ci aylarda HESABLANMIŞ=2.000,00, AZAD GÜZƏŞT=200,00,
+DSMF/İŞSİZLİK/İTSS AZAD="—"; 3-cü ayda (xəstəlik vərəqəsi olan ay) HESABLANMIŞ
+az qədər aşağı düşür, AZAD GÜZƏŞT HƏLƏ DƏ 200,00 QALIR, DSMF/İŞSİZLİK/İTSS
+AZAD isə HƏR ÜÇÜ 242,65-ə sıçrayır. İstifadəçinin sözü: *"dsmf azad da 242.65
+yaziriq ama azad guzestin ustune gelmirik"* — gözlədiyi, 242,65-in AZAD
+GÜZƏŞT (3.1) üzərinə ƏLAVƏ OLUNMASI idi.
+
+**Araşdırma — bu, BUG DEYİL, 27 Aprel 2026-dan bəri TESTLƏ KİLİDLƏNMİŞ qanun
+qaydasının DƏQIQ gözlənilən nəticəsidir.** `Hissesi1HazirlaAsync`-in dörd
+paralel düsturu (dəyişməz qalır):
+```
+AzadGuzestCemi (3.1) = HYS + HYS-işəgötürən + Standart 200 + Fərdi güzəşt + Əsgər pulu
+DsmfAzadCemi   (4.1) = HYS + HYS-işəgötürən + Xəstəlik (şirkət ödənişi)
+```
+`XestelikVergiAzadliqTests.cs`-in öz sənədləşmiş qaydası (həmin faylın baş
+şərhi): *"Xəstəlik vərəqəsi şirkət ödənişi YALNIZ gəlir vergisinə cəlb olunur
+[yəni 3.1-ə DAXİL EDİLMİR, çünki vergidən AZAD DEYİL]. DSMF, İşsizlik, İTSS
+bazalarından ÇIXILIR [yəni 4.1/5.1/6.1-ə DAXİLDİR]."* Yəni ekranda görünən
+242,65-in 3.1-ə DAXİL OLMAMASI — gəlir vergisi bazasının xəstəlik pulunu
+HƏLƏ DƏ ƏHATƏ ETMƏSİ deməkdir, bu, işçinin VERGİ XEYRİNƏ DEYİL (əksinə,
+gəlir vergisi xəstəlik üzərinə də tutulur) — AMMA DSMF/İşsizlik/İTSS bu
+pulu görmür, elə buna görə 4.1/5.1/6.1 eyni anda sıçrayır.
+
+İstifadəçi elə BU SESSİYANIN ÖZÜNDƏ (əvvəlki mesajda) bu qaydanı artıq
+TƏSDİQLƏMİŞDİ: *"xestelik pulu Hisse 1 e aiddir"* (yəni yalnız DSMF/İşsizlik/
+İTSS sütunlarına, Bölmə 2-yə YOX) — bu, elə HAZIRKI kodun etdiyi şeydir.
+3.1-ə əlavə etmək bu qaydanı BİRBAŞA POZARDI (gəlir vergisi bazasını
+SƏHVƏN azaldardı, dövlətə YANLIŞ bəyannamə göndərilərdi).
+
+**KOD DƏYİŞİKLİYİ EDİLMƏDİ.** İstifadəçiyə bu ziddiyyət açıq bildirilib,
+başqa bir sütun/hesabat nəzərdə tutulub-tutulmadığı soruşulub — "DSMF azad"
+ilə "Azad güzəşt"in BİRLƏŞDİRİLMƏSİ əvəzinə, əgər istifadəçi KONKRET fərqli
+bir nəticə istəyirsə (məs. xəstəlik qaydasının ÖZÜNÜN yenidən nəzərdən
+keçirilməsi — bu, çox daha böyük, diqqətlə işarələnməli bir dəyişiklik
+olardı), AYRICA, dəqiq təsvir edilməlidir.
+
 ## GOAML — İxrac Edilmiş Qeyd GERİ QAYTARILA Bilər (23.11.2026)
 
 İstifadəçi real hadisə bildirdi: operator bir neçə namizədi **tək-tək** ixrac

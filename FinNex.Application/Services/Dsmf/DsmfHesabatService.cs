@@ -7,6 +7,7 @@ using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace FinNex.Application.Services.Dsmf;
 
@@ -371,16 +372,37 @@ public class DsmfHesabatService : IDsmfHesabatService
             // CANLI Guzest.Mebleg-ə bağlıydı).
             var ferdiGuzest = await FerdiGuzestQalibleriAsync(il, ayLar[i]);
 
-            var qacqin = ferdiGuzest.Where(kv => kv.Value.Novu == GuzestNovu.MecburiKockun)
-                .ToDictionary(kv => kv.Key, kv => kv.Value.Mebleg);
+            // 27.11.2026, istifadəçi düzəlişi: "problem odurki 4.5.3 ve 4.4
+            // bosdur ama sen en asagida yeni setrde onlari elave etmisen, ele
+            // onlar 4.5.3 ve 4.4-də olmalıdır." Kök səbəb: `GuzestNovu` enum-u
+            // ƏSLİNDƏ məzuniyyət modulunun daxili klassifikasiyasıdır (bax
+            // Guzest.cs-in öz şərhi: "məzuniyyət modulu əlilliyi bu tiplə
+            // tanıyır... VERGİ HESABLAMASINA TƏSİR ETMİR, yalnız məzuniyyət
+            // balansı üçün"). HR vergi-YALNIZ (DSMF hesabatı üçün) bir güzəşt
+            // yaradanda, 42-günlük məzuniyyət balansı yan-təsirini TƏTİK
+            // ETMƏMƏK üçün QƏSDƏN Novu=Diger saxlayıb, VM maddə referansını
+            // sadəcə AZAD MƏTN kimi (Madde, yoxdursa Ad — "V.M. 102.4.5"/
+            // "V.M. 102.3") yazıb. Ona görə Qaçqın/Əlillik indi İKİ yoldan
+            // tanınır — Novu BİRBAŞA seçilibsə (köhnə yol, hələ dəstəklənir)
+            // VƏ YA Madde/Ad mətni maddə NÖMRƏSİNİ daşıyırsa (yeni yol,
+            // MaddeNomresineUygundur) — hər iki yol EYNİ nəticəyə aparır.
+            var qacqin = new Dictionary<int, decimal>();
+            var elillik = new Dictionary<int, decimal>();
+            var digerQalanlar = new List<KeyValuePair<int, (string Ad, string? Madde, GuzestNovu Novu, decimal Mebleg)>>();
+            foreach (var kv in ferdiGuzest)
+            {
+                var metin = kv.Value.Madde ?? kv.Value.Ad;
+                if (kv.Value.Novu == GuzestNovu.MecburiKockun || MaddeNomresineUygundur(metin, "102.4.5"))
+                    qacqin[kv.Key] = kv.Value.Mebleg;
+                else if (kv.Value.Novu == GuzestNovu.Elillik || MaddeNomresineUygundur(metin, "102.3"))
+                    elillik[kv.Key] = kv.Value.Mebleg;
+                else
+                    digerQalanlar.Add(kv);
+            }
             SetirAyaYaz(qacqinSetir, i, qacqin.Count, qacqin.Values.Sum());
-
-            var elillik = ferdiGuzest.Where(kv => kv.Value.Novu == GuzestNovu.Elillik)
-                .ToDictionary(kv => kv.Key, kv => kv.Value.Mebleg);
             SetirAyaYaz(elillikSetir, i, elillik.Count, elillik.Values.Sum());
 
-            foreach (var grp in ferdiGuzest.Where(kv => kv.Value.Novu == GuzestNovu.Diger)
-                                            .GroupBy(kv => kv.Value.Madde ?? kv.Value.Ad))
+            foreach (var grp in digerQalanlar.GroupBy(kv => kv.Value.Madde ?? kv.Value.Ad))
             {
                 if (!digerSetirler.TryGetValue(grp.Key, out var s))
                 {
@@ -402,6 +424,20 @@ public class DsmfHesabatService : IDsmfHesabatService
             dto.Setirler.Add(s);
         }
         return dto;
+    }
+
+    /// <summary>
+    /// 27.11.2026 — `metin` (bir güzəştin Madde ?? Ad sahəsi) VM maddə nömrəsini
+    /// (məs. "102.4.5", "102.3") SƏRHƏD-TƏHLÜKƏSİZ şəkildə daşıyırmı. Sadə
+    /// `Contains` kifayət etmir — "102.3" "102.30" və ya "102.3.1" kimi tam
+    /// FƏRQLİ bir maddənin DAXİLİNDƏ də görünərdi. `(?&lt;!\d)...(?!\.?\d)`
+    /// hər iki tərəfdə əlavə rəqəm olmamasını tələb edir.
+    /// </summary>
+    private static bool MaddeNomresineUygundur(string? metin, string maddeNomresi)
+    {
+        if (string.IsNullOrWhiteSpace(metin)) return false;
+        var pattern = Regex.Escape(maddeNomresi);
+        return Regex.IsMatch(metin, $@"(?<!\d){pattern}(?!\.?\d)");
     }
 
     // ── Bölmə 2/3-ün PAYLAŞDIĞI və Hissə 1-in DƏ istifadə etdiyi köməkçilər ──
