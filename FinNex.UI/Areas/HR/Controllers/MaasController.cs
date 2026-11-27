@@ -103,13 +103,14 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // Saxlanmış maaşları provodka mənbəyinə (PravodkaIsciKaynak) çevir.
             var mezBrutMap = await MezQabaqcadanBrutMapAsync(il, ay);
+            var mezNetMap  = await MezQabaqcadanNetMapAsync(il, ay);
             var isciler = maaslar.Select(m => new PravodkaIsciKaynak
             {
                 IsciId           = m.IsciId,
                 AdSoyad          = $"{m.Isci?.Ad} {m.Isci?.Soyad}".Trim(),
                 BankHesabNo      = m.Isci?.Maliye?.BankHesabNo,
                 NetMebleg        = m.NetMebleg,
-                MezQabaqcadanNet = ProvodkaMezQabaqcadanOxu(m.HesablamaIzahi),
+                MezQabaqcadanNet = mezNetMap.GetValueOrDefault(m.IsciId),
                 MezQabaqcadanBrut = mezBrutMap.GetValueOrDefault(m.IsciId),
                 CixisKesintisi   = ProvodkaIzahMeblegCem(m.HesablamaIzahi, "Çıxış Kəsintisi"),
                 DetalCemi        = m.Detallar
@@ -403,15 +404,14 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // Dry-run nəticələrini provodka mənbəyinə (PravodkaIsciKaynak) çevir.
             var mezBrutMap = await MezQabaqcadanBrutMapAsync(il, ay);
+            var mezNetMap  = await MezQabaqcadanNetMapAsync(il, ay);
             var isciler = r.Data!.FerdiNeticeler.Select(d => new PravodkaIsciKaynak
             {
                 IsciId           = d.IsciId,
                 AdSoyad          = d.IsciAdSoyad,
                 BankHesabNo      = d.BankHesabNo,
                 NetMebleg        = d.NetMaas,
-                MezQabaqcadanNet = d.Izahatlar
-                    .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
-                    .Sum(z => z.Mebleg),
+                MezQabaqcadanNet = mezNetMap.GetValueOrDefault(d.IsciId),
                 MezQabaqcadanBrut = mezBrutMap.GetValueOrDefault(d.IsciId),
                 CixisKesintisi   = d.Izahatlar
                     .Where(z => z.Addim == "Çıxış Kəsintisi")
@@ -521,6 +521,79 @@ namespace FinNex.UI.Areas.HR.Controllers
                 map[av.IsciId] = map.GetValueOrDefault(av.IsciId) + brut;
             }
             return map;
+        }
+
+        // Bu ay ÖDƏNİLMİŞ/BU AYA DÜŞƏN (qabaqcadan) məzuniyyət avanslarının NET-i — işçi üzrə.
+        // Provodkada "qabaqcadan ödənilmiş məzuniyyət" ÖHDƏLİYİNİN bağlanması sətrinə
+        // gedir (Kredit MezuniyyetQabaqcadanKredit, bax setirler siyahısı yuxarıda).
+        //
+        // ✅ 27.11.2026, KRİTİK — ƏVVƏLKİ MƏNBƏ (`ProvodkaMezQabaqcadanOxu`, saxlanmış
+        // maaşın HesablamaIzahi JSON-undan `Addim == "Mezuniyyet (qabaqcadan ödənildi)"`
+        // axtaran metod) YALNIZ KÖHNƏ MODELDƏ (kəsimdən ƏVVƏLKİ aylarda) doğru işləyirdi.
+        // Kəsimdən SONRA (`AvansAylaraBolunurmu`=true) `FerdiHesabla` bu addımı HEÇ VAXT
+        // yazmır — əvəzinə "Mezuniyyet (qabaqcadan — bu ayın payı)" adlı FƏRQLİ bir addım
+        // yazıb `continue` edir (bax MaasHesablamaService.cs). Nəticə: kəsimdən sonrakı
+        // HƏR ay üçün bu cəm səssizcə 0 çıxırdı → "məbləği 0 olan sətir yazılmır" qaydasına
+        // görə MezuniyyetQabaqcadanKredit sətri Excel-dən TAMAMİLƏ İTİRDİ, baxmayaraq ki
+        // hesab düzgün təyin olunmuşdu (real hadisə: "qabaqcadan odenilmis hesabi var ama
+        // excelde ayrica dusmur"). `MezuniyyetXercRezident`/`QeyriRezident` (BRÜT, yuxarıda
+        // 199-200-cü sətir, `MezQabaqcadanBrutMapAsync`-dan) bu bugdan TƏSİRLƏNMİRDİ —
+        // ona görə xərc sətri görünürdü, amma onu bağlayan öhdəlik sətri YOX idi (balanssız
+        // provodka, operator üçün görünməz).
+        //
+        // Düzəliş — `MezQabaqcadanBrutMapAsync`-in (28.10.2026-da düzəldilmiş) ARTIQ
+        // model-aware naxışı NET üçün də BİRƏ-BİR TƏKRARLANDI: yeni model üçün
+        // `MezuniyyetAvansAyPaylariAsync`-dan `buAy.Net`, köhnə model üçün isə
+        // `Mezuniyyet.OdenenMebleg`-in ÖZÜ (JSON-dan YOX, birbaşa bazadan — brüt qolu
+        // ilə EYNİ mənbə/şərt). Yeni düstur İCAD EDİLMƏYİB.
+        //
+        // ⚠️ `ProvodkaMezQabaqcadanOxu` SİLİNMƏDİ (hələ başqa bir çağıran ola bilər
+        // ehtiyatı ilə, "İşlək funksiyanı silmək yalnız açıq icazə ilə" qaydasına görə),
+        // AMMA bu iki metoddan (PravodkaExport, PravodkaOnizlemeExport) ARTIQ ÇAĞIRILMIR —
+        // hər ikisi bu metodu işlədir.
+        private async Task<Dictionary<int, decimal>> MezQabaqcadanNetMapAsync(int il, int ay)
+        {
+            bool avansAylaraBolunur = _hesablamaService.AvansAylaraBolunurmu(il, ay);
+            var ayIlkGunu    = new DateTime(il, ay, 1);
+            var novbetiAyIlk = ayIlkGunu.AddMonths(1);
+
+            var avansBazaSorgu = _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis &&
+                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib);
+
+            // Kəsişmə şərti `.Date`-siz — MezQabaqcadanBrutMapAsync ilə EYNİ naxış.
+            var avanslarNet = avansAylaraBolunur
+                ? await avansBazaSorgu
+                    .Where(x => x.BaslamaTarixi < novbetiAyIlk && x.BitmeTarixi >= ayIlkGunu)
+                    .ToListAsync()
+                : await avansBazaSorgu
+                    .Where(x => x.OdenilmeTarixi.HasValue &&
+                                x.OdenilmeTarixi.Value.Year == il &&
+                                x.OdenilmeTarixi.Value.Month == ay)
+                    .ToListAsync();
+
+            var netMap = new Dictionary<int, decimal>();
+            foreach (var av in avanslarNet)
+            {
+                decimal net;
+                if (avansAylaraBolunur)
+                {
+                    var paylar = await _hesablamaService.MezuniyyetAvansAyPaylariAsync(
+                        av.IsciId, av.BaslamaTarixi, av.BitmeTarixi, av.OdenenMebleg);
+                    var buAy = paylar.FirstOrDefault(p => p.Il == il && p.Ay == ay);
+                    net = buAy?.Net ?? 0m;
+                }
+                else
+                {
+                    net = av.OdenenMebleg ?? 0m;
+                }
+                if (net <= 0) continue;
+                netMap[av.IsciId] = netMap.GetValueOrDefault(av.IsciId) + net;
+            }
+            return netMap;
         }
 
         // Provodka mənbəyi — saxlanmış Maas və dry-run nəticəsi eyni şəklə düşür.

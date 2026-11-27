@@ -331,6 +331,69 @@ digər işçilərin) "rezident işçilərə məzuniyyət haqqı" sətrinin indi 
 AZN artdığını (yəni Maaş Detalı-dakı "bu ayın payı" ilə üst-üstə düşdüyünü)
 təsdiqləməli — "Maliyyəyə toxunan hər dəyişiklik" qaydasına görə.
 
+### Provodka — Öhdəlik Sətri (`MezuniyyetQabaqcadanKredit`) HƏLƏ KÖHNƏ Modeldə QALMIŞDI (27.11.2026, KRİTİK)
+
+Yuxarıdakı (28.10.2026) düzəliş YALNIZ **xərc** tərəfini (BRÜT,
+`MezuniyyetXercRezident`/`QeyriRezident`, `MezQabaqcadanBrutMapAsync`-dan)
+yeni modelə uyğunlaşdırmışdı. **Öhdəliyi bağlayan sətir (NET, Kredit
+`MezuniyyetQabaqcadanKredit`) unudulmuşdu** — real hadisə: hesab düzgün
+təyin olunub (Mühasibat Hesabları səhifəsində aktiv), AMMA Excel-də heç vaxt
+ayrıca sətir kimi çıxmır (*"qabaqcadan odenilmis hesabi var ama excelde
+ayrica dusmur"*).
+
+**Kök səbəb:** `ProvodkaMezQabaqcadanOxu(hesablamaIzahi)` saxlanmış maaşın
+`HesablamaIzahi` JSON-undan **TƏK bir addım adını** (`"Mezuniyyet
+(qabaqcadan ödənildi)"`) axtarırdı. `MaasHesablamaService.FerdiHesabla` bu
+addımı YALNIZ **KÖHNƏ modeldə** (kəsimdən — 01.08.2026 — ƏVVƏLKİ aylarda)
+yazır; kəsimdən SONRA (`AvansAylaraBolunurmu`=true) FƏRQLİ bir addım
+(`"Mezuniyyet (qabaqcadan — bu ayın payı)"`) yazıb `continue` edir, köhnə
+budağa HEÇ ÇATMIR. Nəticə: kəsimdən sonrakı HƏR ay üçün bu cəm səssizcə
+**0** çıxırdı → "məbləği 0 olan sətir Excel-ə yazılmır" qaydasına (bax
+yuxarı `ProvodkaBaytlariniQurAsync`) görə sətir TAMAMİLƏ İTİRDİ — balanssız
+(öhdəlik bağlanmayan) bir provodka, heç bir xəta vermədən. `PravodkaOnizlemeExport`
+(dry-run) öz, AYRICA yazılmış, AMMA EYNİ tək-ad filtrini (`d.Izahatlar.
+Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")`) daşıdığı üçün
+önizləmə də eyni bugu göstərirdi — "Bir Kəmiyyətə İKİ Yazıcı" qaydasının
+başqa bir forması (iki fayl-sahəsində eyni bug, HƏR İKİSİ düzəldilməli).
+
+**Düzəliş — yeni `MaasController.MezQabaqcadanNetMapAsync(il, ay)`**,
+`MezQabaqcadanBrutMapAsync`-in (28.10.2026) ARTIQ model-aware naxışının
+BİRƏ-BİR NET tərəfə təkrarı — yeni düstur İCAD EDİLMƏYİB:
+- `AvansAylaraBolunurmu(il, ay)` **true**-dursa → EYNİ tarix-kəsişməsi
+  sorğusu, hər qeyd üçün `MezuniyyetAvansAyPaylariAsync`-dan bu AYIN
+  **Net**-i oxunur (Brut ƏVƏZİNƏ).
+- **false**-dursa (kəsimdən ƏVVƏLKİ aylar) → `Mezuniyyet.OdenenMebleg`-in
+  ÖZÜ (JSON-dan YOX, birbaşa bazadan — `OdenenMeblegBrut`-un NET qarşılığı,
+  EYNİ mənbə/şərt) — bu, köhnə JSON-oxuyucunun köhnə model üçün onsuz da
+  verdiyi DOĞRU nəticə ilə BİRƏ-BİR eynidir, davranış dəyişmir.
+
+**Çağırış yerləri (ikisi də, `MezQabaqcadanBrutMapAsync`-ın yanında):**
+`PravodkaExport` (saxlanmış maaşdan, sətir ~106) VƏ `PravodkaOnizlemeExport`
+(dry-run, sətir ~407) — hər ikisi `ProvodkaMezQabaqcadanOxu(...)`/inline
+JSON-filtri ƏVƏZİNƏ bu yeni metodu çağırır.
+
+⚠️ **`ProvodkaMezQabaqcadanOxu` SİLİNMƏDİ** (CLAUDE.md-nin "İşlək funksiyanı
+silmək yalnız açıq icazə ilə" qaydasına görə) — artıq HEÇ bir çağıran yoxdur,
+orfan qalıb, zərərsizdir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — yalnız BUNDAN SONRAKI `PravodkaExport`/
+`PravodkaOnizlemeExport` çağırışlarına təsir edir. Artıq yaradılmış (bu
+düzəlişdən əvvəlki) Excel-lərdə öhdəlik sətri yoxdursa, istifadəçi provodkanı
+YENİDƏN ixrac etməlidir ki, düzəliş əks olunsun.
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə
+yoxlanıldı** (mötərizə balansı `git diff` izolyasiyası ilə — edit-in ÖZÜ
+net-balanslıdır; `_hesablamaService`/`_unitOfWork`-un sinif sahəsi kimi artıq
+mövcud olduğu, `Mezuniyyet.OdenenMebleg`/`MezuniyyetAvansAyPayiDto.Net`
+sahə adlarının mənbə fayllardan təsdiqləndiyi əl ilə yoxlanıldı). İstifadəçi
+Visual Studio-da **Rebuild All** ilə, sonra real ssenari ilə yoxlamalıdır:
+kəsimdən (01.08.2026) SONRAKI bir ayda qabaqcadan ödənilmiş məzuniyyəti olan
+bir işçinin provodkasını YENİDƏN ixrac et → "qabaqcadan ödənilmiş məzuniyyət
+haqqının bağlanılması" (Kredit `MezuniyyetQabaqcadanKredit`) sətrinin indi
+Excel-də AYRICA göründüyünü, məbləğinin Maaş Detalı-dakı "bu ayın payı"
+sətrinin NET dəyəri ilə üst-üstə düşdüyünü təsdiqləməli — "Maliyyəyə toxunan
+hər dəyişiklik" qaydasına görə.
+
 ### Qazanc tarixçəsi də iş günü bölgüsündədir
 
 `IsciAyliqQazanc` (məzuniyyət ortalamasının **yeganə** mənbəyi) də `EH` bölgüsünə
