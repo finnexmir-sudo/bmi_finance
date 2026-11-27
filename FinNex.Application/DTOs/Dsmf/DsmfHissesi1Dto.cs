@@ -62,7 +62,14 @@ public class DsmfHissesi1AyDto
     /// <summary>2.3 — Hesablanmış əmək haqqı və digər gəlirlər (Maas.BrutMebleg).</summary>
     public decimal HesablananMebleg { get; set; }
 
-    /// <summary>3.1 — Azadolunan və güzəşt verilən cəmi gəlirin məbləği (Bölmə 2 cəmi).</summary>
+    /// <summary>
+    /// 3.1 — Azadolunan və güzəşt verilən cəmi gəlirin məbləği. 27.11.2026-a
+    /// qədər YALNIZ "Bölmə 2 cəmi" (gəlir vergisi/VM güzəştləri) sayılırdı —
+    /// mühasib bunun rəsmi başlığın (hər növ azadolma/güzəştin ÜMUMİ cəmini
+    /// istəyən "cəmi gəlirin məbləği") tələb etdiyindən DAR olduğunu
+    /// təsdiqlədi. İndi Bölmə 2 (gəlir vergisi güzəştləri) + Xəstəlik şirkət
+    /// ödənişi (DSMF/İşsizlik/İTSS-dən azad olan hissə) birlikdə.
+    /// </summary>
     public decimal AzadGuzestCemi { get; set; }
 
     /// <summary>4.1 — Məcburi Dövlət Sosial Sığorta haqqına cəlb olunmayan cəmi məbləğ (Bölmə 3 cəmi).</summary>

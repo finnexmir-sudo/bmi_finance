@@ -1046,10 +1046,19 @@ public class DsmfHesabatService : IDsmfHesabatService
                     // MecburiKockun NÖVLƏRİNİN HAMISININ CƏMİ (bax
                     // FerdiGuzestQalibleriAsync-in şərhi) — bu sütun növdən
                     // asılı olmayaraq TOPLAM istəyir.
+                    // ⚠️ 27.11.2026, mühasibin düzəlişi: 3.1-in rəsmi başlığı
+                    // ("Azadolunan VƏ güzəşt verilən CƏMİ gəlirin məbləği") heç
+                    // yerdə "yalnız gəlir vergisindən azad olanlar" demir —
+                    // "Bölmə 2 cəmi" YALNIZ bu layihənin əvvəlki (sübut
+                    // edilməmiş) fərziyyəsi idi. Mühasib TƏSDİQLƏDİ: sütun
+                    // HƏR NÖV azadolma/güzəştin (gəlir vergisi VƏ DSMF/
+                    // Xəstəlik DAXİL) ÜMUMİ CƏMİNİ istəyir — ona görə `xst[i]`
+                    // (Xəstəlik şirkət ödənişi) də əlavə olundu.
                     AzadGuzestCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
                                      + standart[i].GetValueOrDefault(isci.Id)
                                      + ferdiGuzest[i].GetValueOrDefault(isci.Id)
-                                     + esger[i].GetValueOrDefault(isci.Id),
+                                     + esger[i].GetValueOrDefault(isci.Id)
+                                     + xst[i].GetValueOrDefault(isci.Id),
                     DsmfAzadCemi = hys[i].GetValueOrDefault(isci.Id) + hysIseg[i].GetValueOrDefault(isci.Id)
                                      + xst[i].GetValueOrDefault(isci.Id),
                     IssizlikAzadCemi = xst[i].GetValueOrDefault(isci.Id) + manualIssizlik[i].GetValueOrDefault(isci.Id),

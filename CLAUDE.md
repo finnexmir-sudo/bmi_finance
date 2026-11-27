@@ -14411,6 +14411,60 @@ bir nəticə istəyirsə (məs. xəstəlik qaydasının ÖZÜNÜN yenidən nəz�
 keçirilməsi — bu, çox daha böyük, diqqətlə işarələnməli bir dəyişiklik
 olardı), AYRICA, dəqiq təsvir edilməlidir.
 
+### GERİ ÇEVRİLDİ — Mühasib Təsdiqlədi: 3.1 Bölmə-2-dən GENİŞDİR, XƏSTƏLİK DƏ DAXİLDİR (27.11.2026, KOD DƏYİŞDİ)
+
+Yuxarıdakı "qəsdən belədir" qərarı **SƏHV İDİ** — mənim "3.1 yalnız gəlir
+vergisi güzəştlərinin cəmidir" fərziyyəm heç bir rəsmi mənbədən gəlmirdi,
+sadəcə DTO-nun köhnə `(Bölmə 2 cəmi)` şərhindən (əvvəlki sessiyada MƏNİM öz
+qərarım) irəli gəlirdi. İstifadəçi mühasiblə yoxladı: *"muhasib dediki,azad
+guzest sutunu o demek deyilki o yalniz vergiden azadlara aiddri,bu sutunda
+toplamini isteyire"* — sonra RƏSMİ ŞABLONUN ÖZÜNÜN sütun başlığını göstərdi
+(`DSMF_Elave1_Hisse1_2026_R3.xlsx`, AF sütunu, 3.1): **"Azadolunan VƏ güzəşt
+verilən CƏMİ gəlirin məbləği"** — bu mətndə "yalnız gəlir vergisindən azad
+olanlar" YAZILMIR, "cəmi" (TOPLAM) sözü isə AÇIQ var.
+
+**Düzəliş — `DsmfHesabatService.Hissesi1HazirlaAsync`, `AzadGuzestCemi`
+(3.1) düsturuna `+ xst[i].GetValueOrDefault(isci.Id)` (Xəstəlik şirkət
+ödənişi) əlavə edildi:**
+```
+AzadGuzestCemi (3.1) = HYS + HYS-işəgötürən + Standart 200 + Fərdi güzəşt
+                       + Əsgər pulu + Xəstəlik (şirkət ödənişi)
+DsmfAzadCemi   (4.1) = HYS + HYS-işəgötürən + Xəstəlik (şirkət ödənişi)   ← DƏYİŞMƏDİ
+```
+`DsmfAzadCemi`/`IssizlikAzadCemi`/`ItssAzadCemi` (4.1/5.1/6.1) **TOXUNULMADI** —
+bunlar Bölmə 3/4/5-in ÖZ cəmləridir, Hissə 1-in 3.1-i ilə heç vaxt eyni
+olmaq MƏCBURİ deyildi, indi də deyil (3.1 indi DAHA GENİŞ, onları DA əhatə
+edən bir TOPLAMDIR — alt-çoxluq münasibəti, bərabərlik yox).
+
+⚠️ **`XestelikVergiAzadliqTests.cs`-in ÖZ qaydası (gəlir vergisi bazası
+xəstəlik pulunu ÇIXMIR) DƏYİŞMƏDİ — bu, MAAŞ HESABLAMASININ (real vergi
+tutulması) qaydasıdır, DSMF HESABATININ 3.1 sütununun NƏYİ GÖSTƏRDİYİ ilə
+AYRI məsələdir.** 3.1-ə xəstəlik pulunu əlavə etmək heç bir real vergi
+tutulmasını DƏYİŞMİR (`MaasHesablamaService`-ə TOXUNULMADI) — yalnız DSMF
+HESABATININ bu sütununda HANSI RƏQƏMİN göstəriləcəyini dəyişir. Əvvəlki
+qərarımda bu ikisini (hesabat sütununun MƏZMUNU vs. real vergi DÜSTURU)
+QARIŞDIRMIŞDIM — "3.1-ə əlavə etsək dövlətə yanlış bəyannamə gedər" qorxusu
+əsassız idi, çünki 3.1 artıq ƏVVƏLDƏN "yalnız gəlir vergisi" sütunu
+DEYİLDİ (bax yuxarı, rəsmi başlıq).
+
+**Qayda:** DTO-nun ÖZ köhnə şərhinə (`(Bölmə 2 cəmi)`) — hətta bu şərhi ƏVVƏLKİ
+bir sessiyada MƏN YAZMIŞAM — rəsmi formanın TƏLƏBİ kimi güvənmə. Bir hesabat
+sütununun HƏQİQİ əhatəsini YALNIZ rəsmi şablonun ÖZ sütun başlığı (yaxud
+mühasibin rəsmi təsdiqi) müəyyən edə bilər — kodun daxili dəyişkən adı/şərhi
+(`AzadGuzestCemi`, "Bölmə 2 cəmi") ADƏTƏN sadəcə İLK YAZILIŞ zamanı edilmiş
+bir TƏXMİNDİR, sonradan "qanun" kimi müdafiə edilməməlidir.
+
+⚠️ **GERİYƏ TƏTBİQ OLUNMUR** — canlı Maas/Oracle sorğusudur, hər çağırışda
+yenidən hesablanır, saxlanmış heç bir dəyər yoxdur (yenidən açmaq kifayətdir).
+
+⚠️ **Bu sessiyada `dotnet build` mümkün olmadığı üçün yalnız əl ilə yoxlanıldı**
+(`xst` dəyişəni artıq eyni blokda `DsmfAzadCemi`-də istifadə olunduğu üçün
+scope-da idi, yeni dəyişən/parametr lazım olmadı; mötərizə balansı əl ilə
+yoxlanıldı). İstifadəçi Visual Studio-da **Rebuild All** ilə, sonra real
+ssenari ilə yoxlamalıdır: xəstəlik vərəqəsi olan ayda 3.1 sütununun indi
+4.1 (DSMF azad) ilə EYNİ sıçrayışı göstərdiyini (əvvəlki kimi sabit 200
+qalmadığını) təsdiqləməlidir.
+
 ## GOAML — İxrac Edilmiş Qeyd GERİ QAYTARILA Bilər (23.11.2026)
 
 İstifadəçi real hadisə bildirdi: operator bir neçə namizədi **tək-tək** ixrac
