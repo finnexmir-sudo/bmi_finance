@@ -29,7 +29,7 @@ dəlilə görə qeyd olunur.
 | Oracle SQL oxuma/analiz (sorğu nəticəsini şərh etmək) | 🟢 | 24.11.2026 | PL/SQL Developer-də özü sorğu işlədib nəticəni şərh edib |
 | Oracle SQL YAZMA (özü sıfırdan sorğu qurmaq) | ⚪ | — | Hələ sınanmayıb |
 | C# — metod gövdəsi yazmaq | ⚪ | — | Hələ sınanmayıb |
-| C# — əsas anlayışlar (`async/await`, DI, LINQ) | ⚪ | — | Hələ sınanmayıb |
+| C# — əsas anlayışlar (`async/await`, DI, LINQ) | 🟡 | 27.11.2026 | Hələ yazmayıb, amma `Dictionary<int,decimal>.GetValueOrDefault(isci.Id)` + `[i]` indeksləməsi olan bir düsturu oxuyub, öz çıxardığı sətri (`AzadGuzestCemi`-nin `xst[i]` əlavəsi) kodla sözbəsöz tutuşdurub düzgün təsdiqlədi — ilk oxuma dəlili, hələ YAZMA yoxdur |
 | Razor/CSS/JS (görüntü qatı) | ⚪ | — | Hələ sınanmayıb |
 | Git əsasları (commit, branch, push) | ⚪ | — | Hələ sınanmayıb |
 | Arxitektura oxuma (layihənin Clean Architecture qatları) | ⚪ | — | Hələ sınanmayıb |
